@@ -79,7 +79,13 @@ const signed char       opcodeSizes[] =
 // clang-format on
 
 const BYTE varTypeClassification[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) tf,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) tf,
+#include "typelist.h"
+#undef DEF_TP
+};
+
+const BYTE varTypeRegister[] = {
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -105,7 +111,7 @@ extern const BYTE opcodeArgKinds[] = {
 const char* varTypeName(var_types vt)
 {
     static const char* const varTypeNames[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) nm,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) nm,
 #include "typelist.h"
 #undef DEF_TP
     };
@@ -246,15 +252,23 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 #define REGDEF(name, rnum, mask, sname) "y" sname,
 #include "register.h"
     };
+    static const char* regNamesZMM[] = {
+#define REGDEF(name, rnum, mask, sname) "z" sname,
+#include "register.h"
+    };
 #endif // FEATURE_SIMD
     assert((unsigned)reg < ArrLen(regNamesFloat));
 
-#ifdef FEATURE_SIMD
-    if (type == TYP_SIMD32)
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+    if (type == TYP_SIMD64)
+    {
+        return regNamesZMM[reg];
+    }
+    else if (type == TYP_SIMD32)
     {
         return regNamesYMM[reg];
     }
-#endif // FEATURE_SIMD
+#endif // FEATURE_SIMD && TARGET_XARCH
 
     return regNamesFloat[reg];
 #endif
@@ -328,6 +342,14 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
 #elif defined(TARGET_LOONGARCH64)
                 if (REG_A0 <= regNum && regNum <= REG_T8)
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
+#elif defined(TARGET_RISCV64)
+                if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
+                    (REG_T2 <= regNum && REG_T6 >= regNum))
                 {
                     regHead    = regNum;
                     inRegRange = true;
@@ -1311,6 +1333,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             case CORINFO_HELP_NEW_MDARR:
+            case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -1440,6 +1463,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
 
                 // These do not invoke static class constructors
                 //
@@ -2646,6 +2670,22 @@ uint32_t BitOperations::BitScanReverse(uint64_t value)
 }
 
 //------------------------------------------------------------------------
+// BitOperations::DoubleToUInt64Bits: Gets the underlying bits for a double-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint64_t BitOperations::DoubleToUInt64Bits(double value)
+{
+    uint64_t result;
+    memcpy(&result, &value, sizeof(double));
+    return result;
+}
+
+//------------------------------------------------------------------------
 // BitOperations::LeadingZeroCount: Count the number of leading zero bits in a mask.
 //
 // Arguments:
@@ -2933,6 +2973,22 @@ uint64_t BitOperations::RotateRight(uint64_t value, uint32_t offset)
 }
 
 //------------------------------------------------------------------------
+// BitOperations::SingleToUInt32Bits: Gets the underlying bits for a single-precision floating-point value.
+//
+// Arguments:
+//    value - The number to convert
+//
+// Return Value:
+//    The underlying bits for value.
+//
+uint32_t BitOperations::SingleToUInt32Bits(float value)
+{
+    uint32_t result;
+    memcpy(&result, &value, sizeof(float));
+    return result;
+}
+
+//------------------------------------------------------------------------
 // BitOperations::TrailingZeroCount: Count the number of trailing zero bits in an integer value.
 //
 // Arguments:
@@ -2978,6 +3034,38 @@ uint32_t BitOperations::TrailingZeroCount(uint64_t value)
     int32_t result = __builtin_ctzll(value);
     return static_cast<uint32_t>(result);
 #endif
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt32BitsToSingle: Gets a single-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The single-precision floating-point from value.
+//
+float BitOperations::UInt32BitsToSingle(uint32_t value)
+{
+    float result;
+    memcpy(&result, &value, sizeof(uint32_t));
+    return result;
+}
+
+//------------------------------------------------------------------------
+// BitOperations::UInt64BitsToDouble: Gets a double-precision floating-point from its underlying bit value.
+//
+// Arguments:
+//    value - The underlying bit value.
+//
+// Return Value:
+//    The double-precision floating-point from value.
+//
+double BitOperations::UInt64BitsToDouble(uint64_t value)
+{
+    double result;
+    memcpy(&result, &value, sizeof(uint64_t));
+    return result;
 }
 
 namespace MagicDivide

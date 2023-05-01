@@ -40,13 +40,24 @@ namespace ILCompiler.Metadata
                 Signature = new PropertySignature
                 {
                     CallingConvention = sig.IsStatic ? CallingConventions.Standard : CallingConventions.HasThis,
-                    Type = HandleType(sig.ReturnType)
                 },
             };
 
             result.Signature.Parameters.Capacity = sig.Length;
-            for (int i = 0; i < sig.Length; i++)
-                result.Signature.Parameters.Add(HandleType(sig[i]));
+            if (!sig.HasEmbeddedSignatureData)
+            {
+                result.Signature.Type = HandleType(sig.ReturnType);
+                for (int i = 0; i < sig.Length; i++)
+                    result.Signature.Parameters.Add(HandleType(sig[i]));
+            }
+            else
+            {
+                sigBlobReader.ReadSignatureHeader();
+                int count = sigBlobReader.ReadCompressedInteger();
+                result.Signature.Type = HandleType(module, ref sigBlobReader);
+                for (int i = 0; i < count; i++)
+                    result.Signature.Parameters.Add(HandleType(module, ref sigBlobReader));
+            }
 
             if (getterHasMetadata)
             {

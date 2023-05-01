@@ -66,6 +66,10 @@
 #include "interp-intrins.h"
 #include "tiering.h"
 
+#ifdef INTERP_ENABLE_SIMD
+#include "interp-simd.h"
+#endif
+
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/aot-runtime.h>
@@ -76,6 +80,7 @@
 #include <mono/mini/trace.h>
 
 #include <mono/metadata/components.h>
+#include <mono/metadata/loader-internals.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -1849,7 +1854,7 @@ interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoE
 		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
 			*out_info = imethod->del_info;
 		} else if (!imethod->del_info) {
-			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method, FALSE);
 			*out_info = imethod->del_info;
 		}
 	}
@@ -3794,30 +3799,10 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
-#ifdef HOST_BROWSER
-MONO_ALWAYS_INLINE static ptrdiff_t
-mono_interp_tier_enter_jiterpreter (
-	JiterpreterThunk thunk, InterpFrame *frame, unsigned char *locals, ThreadContext *context,
-	const guint16 *ip
-)
-{
-	// g_assert(thunk);
-	ptrdiff_t offset = thunk(frame, locals);
-	/*
-	* Verify that the offset returned by the thunk is not total garbage
-	* FIXME: These constants might actually be too small since a method
-	*  could have massive amounts of IL - maybe we should disable the jiterpreter
-	*  for methods that big
-	*/
-	// g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
-#ifdef ENABLE_EXPERIMENT_TIERED
-	if (offset < 0) {
-		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
-	}
+#if HOST_BROWSER
+// Dummy call info used outside of monitoring phase. We don't care what's in it
+static JiterpreterCallInfo jiterpreter_call_info = { 0 };
 #endif
-	return offset;
-}
-#endif // HOST_BROWSER
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -5436,6 +5421,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) >> ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I4)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) << (LOCAL_VAR (ip [3], gint32) & 31);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I8)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) << (LOCAL_VAR (ip [3], gint64) & 63);
+			ip += 4;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEG_I4)
 			LOCAL_VAR (ip [1], gint32) = - LOCAL_VAR (ip [2], gint32);
 			ip += 3;
@@ -5816,6 +5809,124 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 7;
 			goto call;
 		}
+
+		MINT_IN_CASE(MINT_ROL_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val << amount) | (val >> (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROL_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val << amount) | (val >> (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val >> amount) | (val << (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val >> amount) | (val << (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CLZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_ctz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_ctz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_popcount_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_popcount_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I4) LOCAL_VAR (ip [1], gint32) = 31 ^ interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32) | 1); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I8) LOCAL_VAR (ip [1], gint32) = 63 ^ interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64) | 1); ip += 3; MINT_IN_BREAK;
+
+#ifdef INTERP_ENABLE_SIMD
+		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
+			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
+			ip += 10;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint8);
+			gint8 res_buffer [num_elements];
+			gint8 *args = (gint8*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint16);
+			gint16 res_buffer [num_elements];
+			gint16 *args = (gint16*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint32);
+			gint32 res_buffer [num_elements];
+			gint32 *args = (gint32*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint64);
+			gint64 res_buffer [num_elements];
+			gint64 *args = (gint64*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+			interp_simd_p_p_table [ip [3]] (locals + ip [1], locals + ip [2]);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+			interp_simd_p_pp_table [ip [4]] (locals + ip [1], locals + ip [2], locals + ip [3]);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			interp_simd_p_ppp_table [ip [5]] (locals + ip [1], locals + ip [2], locals + ip [3], locals + ip [4]);
+			ip += 6;
+			MINT_IN_BREAK;
+#else
+		MINT_IN_CASE(MINT_SIMD_V128_LDC)
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#endif
+
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
 			gpointer ptr = LOCAL_VAR (ip [2], gpointer);
 			int len = LOCAL_VAR (ip [3], gint32);
@@ -5864,11 +5975,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_INTRINS_WIDEN_ASCII_TO_UTF16) {
 			LOCAL_VAR (ip [1], mono_u) = interp_intrins_widen_ascii_to_utf16 (LOCAL_VAR (ip [2], guint8*), LOCAL_VAR (ip [3], mono_unichar2*), LOCAL_VAR (ip [4], mono_u));
 			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
-			LOCAL_VAR (ip [1], mono_u) = LOCAL_VAR (ip [3], guint8*) - LOCAL_VAR (ip [2], guint8*);
-			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE) {
@@ -6943,20 +7049,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LEAVE)
-		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
 			int leave_opcode = *ip;
-			gboolean const check = leave_opcode == MINT_LEAVE_CHECK || leave_opcode == MINT_LEAVE_S_CHECK;
 
-			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, ip);
 			}
 
-			gboolean const short_offset = leave_opcode == MINT_LEAVE_S || leave_opcode == MINT_LEAVE_S_CHECK;
+			gboolean const short_offset = leave_opcode == MINT_LEAVE_S_CHECK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
@@ -7674,9 +7777,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						break;
 					case JITERPRETER_NOT_JITTED:
 						// Patch opcode to disable it because this trace failed to JIT.
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
+						if (!mono_opt_jiterpreter_estimate_heat) {
+							mono_memory_barrier ();
+							*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+							mono_memory_barrier ();
+						}
 						ip += 3;
 						break;
 					default:
@@ -7688,17 +7793,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						 * (note that right now threading doesn't work, but it's worth being correct
 						 *  here so that implementing thread support will be easier later.)
 						 */
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
-						*(volatile JiterpreterThunk*)(ip + 1) = prepare_result;
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+						*mutable_ip = MINT_TIER_MONITOR_JITERPRETER;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = mono_interp_tier_enter_jiterpreter (
-							prepare_result, frame, locals, context, ip
-						);
+						offset = prepare_result(frame, locals, &jiterpreter_call_info);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7709,11 +7808,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_TIER_MONITOR_JITERPRETER) {
+			// The trace is in monitoring mode, where we track how far it actually goes
+			//  each time it is executed for a while. After N more hits, we either
+			//  turn it into an ENTER or a NOP depending on how well it is working
+			ptrdiff_t offset = mono_jiterp_monitor_trace (ip, frame, locals);
+			ip = (guint16*) (((guint8*)ip) + offset);
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			ptrdiff_t offset = mono_interp_tier_enter_jiterpreter (
-				thunk, frame, locals, context, ip
-			);
+			ptrdiff_t offset = thunk(frame, locals, &jiterpreter_call_info);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
@@ -7829,6 +7935,12 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_BBLOCKS;
 			else if (strncmp (arg, "tiering", 7) == 0)
 				opt = INTERP_OPT_TIERING;
+			else if (strncmp (arg, "simd", 4) == 0)
+				opt = INTERP_OPT_SIMD;
+#if HOST_BROWSER
+			else if (strncmp (arg, "jiterp", 6) == 0)
+				opt = INTERP_OPT_JITERPRETER;
+#endif
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
@@ -8477,7 +8589,6 @@ metadata_update_prepare_to_invalidate (void)
 	/* (2) invalidate all the registered imethods */
 }
 
-
 static void
 interp_invalidate_transformed (void)
 {
@@ -8488,16 +8599,26 @@ interp_invalidate_transformed (void)
                 need_stw_restart = TRUE;
         }
 
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	GPtrArray *alcs = mono_alc_get_all ();
 
-	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
-	jit_mm_unlock (jit_mm);
+	if (alcs) {
+		MonoAssemblyLoadContext* alc;
+		for (guint i = 0; i < alcs->len; ++i) {
+			alc = (MonoAssemblyLoadContext*)g_ptr_array_index (alcs, i);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
+
+			jit_mm_lock (jit_mm);
+			mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
+			jit_mm_unlock (jit_mm);
+		}
+		
+		g_ptr_array_free (alcs, TRUE);
+	}
 
 	if (need_stw_restart)
 		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 }
+
 
 typedef struct {
 	MonoJitInfo **jit_info_array;
@@ -8516,27 +8637,34 @@ interp_copy_jit_info_func (gpointer imethod, gpointer user_data)
 static void
 interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
-	InterpCopyJitInfoFuncUserData copy_jit_info_data;
+	GPtrArray *alcs = mono_alc_get_all ();
 
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	if (alcs) {
+		MonoAssemblyLoadContext* alc;
+		for (guint i = 0; i < alcs->len; ++i) {
+			alc = (MonoAssemblyLoadContext*)g_ptr_array_index (alcs, i);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
+			InterpCopyJitInfoFuncUserData copy_jit_info_data;
+			// Can't keep memory manager lock while iterating and calling callback since it might take other locks
+			// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
+			// plain array and use pointers from array when when running callbacks.
+			copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
+			copy_jit_info_data.next = 0;
+			copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
+			if (copy_jit_info_data.jit_info_array) {
+				jit_mm_lock (jit_mm);
+				mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
+				jit_mm_unlock (jit_mm);
+			}
 
-	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
-	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
-	// plain array and use pointers from array when when running callbacks.
-	copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
-	copy_jit_info_data.next = 0;
-	copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
-	if (copy_jit_info_data.jit_info_array) {
-		jit_mm_lock (jit_mm);
-		mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
-		jit_mm_unlock (jit_mm);
-	}
-
-	if (copy_jit_info_data.jit_info_array) {
-		for (int i = 0; i < copy_jit_info_data.next; ++i)
-			func (copy_jit_info_data.jit_info_array [i], user_data);
-		g_free (copy_jit_info_data.jit_info_array);
+			if (copy_jit_info_data.jit_info_array) {
+				for (int j = 0; j < copy_jit_info_data.next; ++j)
+					func (copy_jit_info_data.jit_info_array [j], user_data);
+				g_free (copy_jit_info_data.jit_info_array);
+			}
+		}
+		
+		g_ptr_array_free (alcs, TRUE);
 	}
 }
 

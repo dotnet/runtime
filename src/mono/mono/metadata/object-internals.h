@@ -616,6 +616,7 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
+	MonoBoolean external_eventloop;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;
@@ -687,7 +688,6 @@ typedef struct {
 	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
@@ -696,7 +696,7 @@ typedef struct {
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
-	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
+	gpointer (*get_ftnptr)(MonoMethod *method, gboolean need_unbox, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);
@@ -836,17 +836,15 @@ struct _MonoDelegate {
 	gpointer delegate_trampoline;
 	/* Extra argument passed to the target method in llvmonly mode */
 	gpointer extra_arg;
-	/*
-	 * If non-NULL, this points to a memory location which stores the address of
-	 * the compiled code of the method, or NULL if it is not yet compiled.
-	 */
-	guint8 **method_code;
+	/* MonoDelegateTrampInfo */
+	gpointer invoke_info;
 	gpointer interp_method;
 	/* Interp method that is executed when invoking the delegate */
 	gpointer interp_invoke_impl;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };
@@ -1237,19 +1235,12 @@ struct _MonoReflectionTypeBuilder {
 typedef struct {
 	MonoReflectionType type;
 	MonoReflectionType *element_type;
+	gint32 type_kind;
 	gint32 rank;
-} MonoReflectionArrayType;
+} MonoReflectionSymbolType;
 
-/* Safely access System.Reflection.Emit.ArrayType (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionArrayType);
-
-typedef struct {
-	MonoReflectionType type;
-	MonoReflectionType *element_type;
-} MonoReflectionDerivedType;
-
-/* Safely access System.Reflection.Emit.SymbolType and subclasses (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionDerivedType);
+/* Safely access System.Reflection.Emit.SymbolType from native code */
+TYPED_HANDLE_DECL (MonoReflectionSymbolType);
 
 typedef struct {
 	MonoReflectionType type;
@@ -1473,8 +1464,10 @@ MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMe
 
 MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
+MONO_COMPONENT_API
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
+
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle type, int type_argc, MonoType **types, MonoError *error);
 void

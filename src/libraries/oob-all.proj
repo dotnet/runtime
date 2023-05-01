@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup Condition="'$(BuildTargetFramework)' == 'net48'">
+  <PropertyGroup Condition="'$(BuildTargetFramework)' != '' and '$(BuildTargetFramework)' == '$(NetFrameworkCurrent)'">
     <TargetFramework>$(BuildTargetFramework)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
@@ -13,20 +13,22 @@
                                $(MSBuildThisFileDirectory)*\src\**\*.shproj;
                                shims\src\*.csproj" />
 
+    <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj"
+                      Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
+                                 (
+                                  '$(BuildingAnOfficialBuildLeg)' != 'true' or
+                                  '$(BuildAllConfigurations)' == 'true'
+                                 )" />
+
     <!-- Build these packages in the allconfigurations leg only. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
-                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj;
-                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+                              Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj"
                       Condition="'$(BuildAllConfigurations)' != 'true'" />
 
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->
-    <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj;
-                              Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+    <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
                       Condition="'$(DotNetBuildFromSource)' == 'true'" />
-
-    <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj"
-                      Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
 </Project>

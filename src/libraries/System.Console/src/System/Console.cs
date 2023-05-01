@@ -235,16 +235,16 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            return TextWriter.Synchronized(outputStream == Stream.Null ?
-                StreamWriter.Null :
-                new StreamWriter(
+            return outputStream == Stream.Null ?
+                TextWriter.Null :
+                TextWriter.Synchronized(new StreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
                     leaveOpen: true)
-                {
-                    AutoFlush = true
-                });
+                    {
+                        AutoFlush = true
+                    });
         }
 
         private static StrongBox<bool>? _isStdInRedirected;
@@ -696,7 +696,15 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(newOut);
 
-            newOut = TextWriter.Synchronized(newOut);
+            // Ensure all access to the writer is synchronized. If it's the known Null
+            // singleton writer, which may be used if someone wants to suppress all
+            // console output, we needn't add synchronization because all operations
+            // are nops.
+            if (newOut != TextWriter.Null)
+            {
+                newOut = TextWriter.Synchronized(newOut);
+            }
+
             lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
@@ -708,7 +716,12 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(newError);
 
-            newError = TextWriter.Synchronized(newError);
+            // Ensure all access to the writer is synchronized. See comment in SetOut.
+            if (newError != TextWriter.Null)
+            {
+                newError = TextWriter.Synchronized(newError);
+            }
+
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;

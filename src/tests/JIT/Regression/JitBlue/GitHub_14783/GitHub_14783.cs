@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // When the implicit tail call optimization
 // was done inside inlinee with several returns, the compiler created a return spill
@@ -69,7 +70,8 @@ public class GitHub_14783
         return B(x);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string v = A("Hello");
         return v.Length + 95;

@@ -83,7 +83,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.ObjectArray.SerializeHandler);
-            Assert.Null(MetadataAndSerializationContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.SourceGenSampleEnum.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.String.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataAndSerializationContext.Default.JsonDocument.SerializeHandler);

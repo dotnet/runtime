@@ -7,6 +7,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -39,6 +40,8 @@ namespace System
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

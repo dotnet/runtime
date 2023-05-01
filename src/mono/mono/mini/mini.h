@@ -303,15 +303,7 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
-#ifdef TARGET_ARM64
-/*
- * SIMD is only supported on arm64 when using the LLVM backend. When not using
- * the LLVM backend, treat SIMD datatypes as regular value types.
- */
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && COMPILE_LLVM (cfg) && m_class_is_simd_type (klass))
-#else
 #define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-#endif
 
 #else
 
@@ -1172,6 +1164,7 @@ typedef struct
 	gpointer impl_this;
 	gpointer impl_nothis;
 	gboolean need_rgctx_tramp;
+	gboolean is_virtual;
 } MonoDelegateTrampInfo;
 
 /*
@@ -1253,6 +1246,7 @@ typedef struct {
 	gboolean         have_op_tailcall_membase : 1;
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean         have_volatile_non_param_register : 1;
+	guint            have_init_mrgctx : 1;
 	guint            gshared_supported : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
@@ -1261,7 +1255,6 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
-	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1679,9 +1672,6 @@ typedef struct {
 
 	MonoProfilerCallInstrumentationFlags prof_flags;
 	gboolean prof_coverage;
-
-	/* For deduplication */
-	gboolean skip;
 } MonoCompile;
 
 #define MONO_CFG_PROFILE(cfg, flag) \
@@ -1705,7 +1695,6 @@ typedef enum {
 
 typedef enum {
 	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-	MONO_CFG_USES_SIMD_INTRINSICS_SIMPLIFY_INDIRECTION = 1 << 1
 } MonoSimdIntrinsicsFlags;
 
 typedef struct {
@@ -2006,6 +1995,13 @@ typedef enum {
 	CMP_UNORD
 } CompRelation;
 
+enum {
+	XBINOP_FORCEINT_AND,
+	XBINOP_FORCEINT_OR,
+	XBINOP_FORCEINT_ORNOT,
+	XBINOP_FORCEINT_XOR,
+};
+
 typedef enum {
 	CMP_TYPE_L,
 	CMP_TYPE_I,
@@ -2275,8 +2271,7 @@ gpointer          mono_create_jump_trampoline (MonoMethod *method,
 gpointer mono_create_jit_trampoline (MonoMethod *method, MonoError *error);
 gpointer          mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token);
 gpointer          mono_create_delegate_trampoline (MonoClass *klass);
-MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method);
-gpointer          mono_create_delegate_virtual_trampoline (MonoClass *klass, MonoMethod *method);
+MonoDelegateTrampInfo* mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method, gboolean is_virtual);
 gpointer          mono_create_rgctx_lazy_fetch_trampoline (guint32 offset);
 gpointer          mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr);
 gpointer          mono_create_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
@@ -2938,11 +2933,18 @@ enum {
 	SIMD_PREFETCH_MODE_2,
 };
 
+enum {
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
+};
+
+int mini_primitive_type_size (MonoTypeEnum type);
+MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
+
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-void        mono_simd_simplify_indirection (MonoCompile *cfg);
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);

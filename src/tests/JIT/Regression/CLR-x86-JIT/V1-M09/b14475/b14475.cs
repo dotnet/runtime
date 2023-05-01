@@ -3,6 +3,7 @@
 
 
 using System;
+using Xunit;
 
 
 namespace DefaultNamespace
@@ -32,7 +33,8 @@ namespace DefaultNamespace
             return true;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Character.IsWhitespace() -- Bug_Cb4270 runTest started.");
             (new Bug_Cb4270()).runTest();

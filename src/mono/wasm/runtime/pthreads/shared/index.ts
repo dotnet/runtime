@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
-import { MonoConfig } from "../../types";
+import { Module } from "../../globals";
+import { MonoConfig } from "../../types-api";
 import { pthread_ptr } from "./types";
 
 export interface PThreadInfo {
@@ -20,7 +20,7 @@ export const MainThread: PThreadInfo = {
 let browser_thread_id_lazy: pthread_ptr | undefined;
 export function getBrowserThreadID(): pthread_ptr {
     if (browser_thread_id_lazy === undefined) {
-        browser_thread_id_lazy = (<any>Module)["_emscripten_main_browser_thread_id"]() as pthread_ptr;
+        browser_thread_id_lazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthread_ptr;
     }
     return browser_thread_id_lazy;
 }

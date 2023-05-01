@@ -198,6 +198,7 @@ set(libunwind_la_SOURCES_riscv
     riscv/Lget_proc_info.c  riscv/Linit.c  riscv/Lis_signal_frame.c
     riscv/Lstep.c
     riscv/getcontext.S
+    riscv/setcontext.S
     riscv/Lget_save_loc.c
     riscv/Linit_local.c   riscv/Lregs.c
     riscv/Lcreate_addr_space.c  riscv/Lglobal.c  riscv/Linit_remote.c  riscv/Lresume.c

@@ -297,15 +297,8 @@ namespace System.Runtime
         //
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
-
-        internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
-            => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
-        private static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
+        internal static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
         internal static unsafe bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType)
             => AreTypesAssignable(pSourceType.ToPointer(), pTargetType.ToPointer());
@@ -344,14 +337,14 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBoxAny")]
-        private static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
+        internal static extern unsafe object RhBoxAny(ref byte pData, MethodTable* pEEType);
 
         internal static unsafe object RhBoxAny(ref byte pData, EETypePtr pEEType)
             => RhBoxAny(ref pData, pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static extern unsafe object RhNewObject(MethodTable* pEEType);
+        internal static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());
@@ -372,7 +365,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBox")]
-        private static extern unsafe object RhBox(MethodTable* pEEType, ref byte data);
+        internal static extern unsafe object RhBox(MethodTable* pEEType, ref byte data);
 
         internal static unsafe object RhBox(EETypePtr pEEType, ref byte data)
             => RhBox(pEEType.ToPointer(), ref data);
@@ -561,12 +554,8 @@ namespace System.Runtime
         internal static extern IntPtr RhGetOSModuleFromEEType(IntPtr pEEType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
-        internal static extern unsafe object[] RhGetThreadStaticStorageForModule(int moduleIndex);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhSetThreadStaticStorageForModule")]
-        internal static extern unsafe bool RhSetThreadStaticStorageForModule(object[] storage, int moduleIndex);
+        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorage")]
+        internal static extern ref object[][] RhGetThreadStaticStorage();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
@@ -602,10 +591,6 @@ namespace System.Runtime
 #else
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
 #endif
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetExceptionsForCurrentThread")]
-        internal static extern unsafe bool RhGetExceptionsForCurrentThread(Exception[] outputArray, out int writtenCountOut);
 
         // returns the previous value.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

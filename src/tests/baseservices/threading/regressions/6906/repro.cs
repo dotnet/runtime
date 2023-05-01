@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 
 public class Beta 
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
     		int rValue = 100;
 		Console.WriteLine("Setup an Infinite Wait with negative value other than -1");

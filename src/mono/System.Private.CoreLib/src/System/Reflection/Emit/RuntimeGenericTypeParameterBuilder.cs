@@ -424,8 +424,9 @@ namespace System.Reflection.Emit
             get { return mbuilder; }
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -438,12 +439,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        // FIXME: "unverified implementation"
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         private static NotSupportedException not_supported()
@@ -471,20 +466,19 @@ namespace System.Reflection.Emit
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
-            return new ArrayType(this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
-            if (rank < 1)
-                throw new IndexOutOfRangeException();
-            return new ArrayType(this, rank);
+            string s = GetRankString(rank);
+            return SymbolType.FormCompoundType(s, this, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return new ByRefType(this);
+            return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
@@ -496,7 +490,7 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType()
         {
-            return new PointerType(this);
+            return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
         internal override bool IsUserType

@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 
 using Internal.TypeSystem;
 
@@ -43,6 +45,17 @@ namespace ILCompiler.DependencyAnalysis
             if (_field is EcmaField ecmaField)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaField);
+
+                // On a reflectable field, perform generic data flow for the field's type
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
+            }
+
+            if (_field.HasEmbeddedSignatureData)
+            {
+                foreach (var sigData in _field.GetEmbeddedSignatureData())
+                    if (sigData.type != null)
+                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a field signature");
             }
 
             return dependencies;

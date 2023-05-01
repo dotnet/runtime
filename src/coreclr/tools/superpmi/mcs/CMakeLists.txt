@@ -54,6 +54,7 @@ target_precompile_headers(mcs PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:standardpch.h>"
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(mcs
+        PRIVATE
         utilcodestaticnohost
         mscorrc
         coreclrpal
@@ -61,6 +62,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(mcs
+        PRIVATE
         advapi32.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}

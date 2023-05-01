@@ -1167,6 +1167,14 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         return false;
     }
 
+    // Bypass handler blocks, as they can have unusual PHI args.
+    // In particular multiple SSA defs coming from the same block.
+    //
+    if (bbIsHandlerBeg(block))
+    {
+        return false;
+    }
+
     // Find occurrences of phi def VNs in the relop VN.
     // We currently just do one level of func destructuring.
     //
@@ -1273,15 +1281,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                     ValueNum phiArgVN = phiArgNode->GetVN(VNK_Liberal);
 
                     // We sometimes see cases where phi args do not have VNs.
-                    // (I recall seeing this before... track down why)
+                    // (VN works in RPO, so PHIs from back edges won't have VNs.
                     //
                     if (phiArgVN != ValueNumStore::NoVN)
                     {
                         newRelopArgs[i] = phiArgVN;
                         updatedArg      = true;
-
-                        // paranoia: keep walking uses to make sure no other
-                        // comes from this pred
                         break;
                     }
                 }

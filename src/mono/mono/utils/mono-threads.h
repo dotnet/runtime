@@ -632,6 +632,9 @@ gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
 
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void);
+
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
 

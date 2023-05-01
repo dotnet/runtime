@@ -313,7 +313,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
         return tree;
     }
 
-    return nullptr;
+    return folded ? tree : nullptr;
 }
 
 //-------------------------------------------------------------------------------------------

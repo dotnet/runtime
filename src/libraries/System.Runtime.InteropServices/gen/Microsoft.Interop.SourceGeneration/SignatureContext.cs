@@ -123,7 +123,7 @@ namespace Microsoft.Interop
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
-                NativeIndex = TypePositionInfo.ReturnIndex
+                NativeIndex = TypePositionInfo.ReturnIndex,
             };
 
             typeInfos.Add(retTypeInfo);

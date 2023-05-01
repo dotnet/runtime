@@ -16,6 +16,7 @@
     <Compile Include="CancellationTokenTests.cs" />
     <Compile Include="MethodCoverage.cs" />
     <Compile Include="CESchedulerPairTests.cs" />
+    <Compile Include="TaskToAsyncResultTests.cs" />
     <!-- Task -->
     <Compile Include="Task\AsyncEnumerableToBlockingEnumerableTests.cs" />
     <Compile Include="Task\ExecutionContextFlowTest.cs" />

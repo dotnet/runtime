@@ -291,7 +291,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             ClassWithCustomConverterFactoryProperty obj = new()
             {
-                MyEnum = SampleEnum.One
+                MyEnum = SourceGenSampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -311,7 +311,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactoryProperty);
-                Assert.Equal(SampleEnum.One, obj.MyEnum);
+                Assert.Equal(SourceGenSampleEnum.One, obj.MyEnum);
             }
         }
 
@@ -322,7 +322,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             StructWithCustomConverterFactoryProperty obj = new()
             {
-                MyEnum = SampleEnum.One
+                MyEnum = SourceGenSampleEnum.One
             };
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
@@ -342,7 +342,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             else
             {
                 obj = JsonSerializer.Deserialize(Json, DefaultContext.StructWithCustomConverterFactoryProperty);
-                Assert.Equal(SampleEnum.One, obj.MyEnum);
+                Assert.Equal(SourceGenSampleEnum.One, obj.MyEnum);
             }
         }
 

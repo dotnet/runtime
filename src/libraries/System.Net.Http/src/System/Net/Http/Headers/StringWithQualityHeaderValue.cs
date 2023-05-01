@@ -9,24 +9,21 @@ namespace System.Net.Http.Headers
 {
     public class StringWithQualityHeaderValue : ICloneable
     {
+        private const double NotSetSentinel = double.PositiveInfinity;
+
         private readonly string _value;
-        private readonly double? _quality;
+        private readonly double _quality;
 
-        public string Value
-        {
-            get { return _value; }
-        }
+        public string Value => _value;
 
-        public double? Quality
-        {
-            get { return _quality; }
-        }
+        public double? Quality => _quality == NotSetSentinel ? null : _quality;
 
         public StringWithQualityHeaderValue(string value)
         {
             HeaderUtilities.CheckValidToken(value, nameof(value));
 
             _value = value;
+            _quality = NotSetSentinel;
         }
 
         public StringWithQualityHeaderValue(string value, double quality)
@@ -48,54 +45,21 @@ namespace System.Net.Http.Headers
             _quality = source._quality;
         }
 
-        public override string ToString()
-        {
-            if (_quality.HasValue)
-            {
-                return string.Create(CultureInfo.InvariantCulture, stackalloc char[128], $"{_value}; q={_quality.Value:0.0##}");
-            }
+        public override string ToString() =>
+            _quality == NotSetSentinel
+                ? _value
+                : string.Create(CultureInfo.InvariantCulture, stackalloc char[128], $"{_value}; q={_quality:0.0##}");
 
-            return _value;
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is StringWithQualityHeaderValue other &&
+            string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase) &&
+            // Note that we don't consider double.Epsilon here. We really consider two values equal if they're
+            // actually equal. This makes sure that we also get the same hashcode for two values considered equal
+            // by Equals().
+            _quality == other._quality;
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            StringWithQualityHeaderValue? other = obj as StringWithQualityHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
-            if (!string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (_quality.HasValue)
-            {
-                // Note that we don't consider double.Epsilon here. We really consider two values equal if they're
-                // actually equal. This makes sure that we also get the same hashcode for two values considered equal
-                // by Equals().
-                return other._quality.HasValue && (_quality.Value == other._quality.Value);
-            }
-
-            // If we don't have a quality value, then 'other' must also have no quality assigned in order to be
-            // considered equal.
-            return !other._quality.HasValue;
-        }
-
-        public override int GetHashCode()
-        {
-            int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
-
-            if (_quality.HasValue)
-            {
-                result ^= _quality.Value.GetHashCode();
-            }
-
-            return result;
-        }
+        public override int GetHashCode() =>
+            HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(_value), _quality);
 
         public static StringWithQualityHeaderValue Parse(string input)
         {

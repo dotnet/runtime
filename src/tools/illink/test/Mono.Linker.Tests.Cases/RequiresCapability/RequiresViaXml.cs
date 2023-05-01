@@ -17,14 +17,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[SetupLinkerDescriptorFile ("RequiresViaXml.descriptor.xml")]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	// [LogContains ("--RequiresOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
-	[ExpectedWarning ("IL2026", "RequiresOnFieldOnlyViaDescriptor.Field", FileName = "RequiresViaXml.descriptor.xml", ProducedBy = ProducedBy.Trimmer)]
 	class RequiresViaXml
 	{
 
 		// The second attribute is added through link attribute XML
 		[RequiresUnreferencedCode ("Message for --MethodWithDuplicateRequiresAttribute--")]
-		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = Tool.Trimmer)]
 		static void MethodWithDuplicateRequiresAttribute ()
 		{
 		}

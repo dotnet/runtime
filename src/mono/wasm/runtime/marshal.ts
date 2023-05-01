@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
+import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types";
 import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
@@ -41,8 +41,7 @@ export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
-    const anyModule = Module as any;
-    const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * size);
+    const args = Module.stackAlloc(JavaScriptMarshalerArgSize * size) as any;
     mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
     const exc = get_arg(args, 0);
     set_arg_type(exc, MarshalerType.None);
@@ -479,38 +478,4 @@ export class ArraySegment extends MemoryView {
     get isDisposed(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
-}
-
-// please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
-    None = 0,
-    Void = 1,
-    Discard,
-    Boolean,
-    Byte,
-    Char,
-    Int16,
-    Int32,
-    Int52,
-    BigInt64,
-    Double,
-    Single,
-    IntPtr,
-    JSObject,
-    Object,
-    String,
-    Exception,
-    DateTime,
-    DateTimeOffset,
-
-    Nullable,
-    Task,
-    Array,
-    ArraySegment,
-    Span,
-    Action,
-    Function,
-
-    // only on runtime
-    JSException,
 }

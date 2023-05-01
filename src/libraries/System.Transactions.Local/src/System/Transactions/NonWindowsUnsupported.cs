@@ -58,7 +58,7 @@ namespace System.Transactions.Oletx
     /// clones have the same capabilities as the original transaction, except for the ability to commit
     /// the transaction.
     /// </summary>
-    internal class OletxTransaction : ISerializable, IObjectReference
+    internal class OletxTransaction : ISerializable
     {
         internal OletxTransaction()
         {
@@ -106,9 +106,6 @@ namespace System.Transactions.Oletx
             => throw NotSupported();
 
         internal static byte[] GetExportCookie(byte[] whereaboutsCopy)
-            => throw NotSupported();
-
-        public object GetRealObject(StreamingContext context)
             => throw NotSupported();
 
         internal static byte[] GetTransmitterPropagationToken()

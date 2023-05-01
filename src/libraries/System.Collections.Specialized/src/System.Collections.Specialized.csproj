@@ -14,6 +14,8 @@
     <Compile Include="System\Collections\Specialized\StringDictionary.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\CompatibleComparer.cs"
              Link="Common\System\Collections\CompatibleComparer.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.ComponentModel.Primitives" />

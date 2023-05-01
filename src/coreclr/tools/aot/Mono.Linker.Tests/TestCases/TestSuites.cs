@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public class All
 	{
-
 		[Theory]
 		[MemberData(nameof(TestDatabase.DataFlow), MemberType = typeof(TestDatabase))]
 		public void DataFlow(string t)
@@ -25,10 +24,31 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Generics), MemberType = typeof (TestDatabase))]
+		public void Generics (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.LinkXml), MemberType = typeof (TestDatabase))]
 		public void LinkXml (string t)
 		{
 			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Reflection), MemberType = typeof (TestDatabase))]
+		public void Reflection (string t)
+		{
+			switch (t) {
+			case "TypeHierarchyReflectionWarnings":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
 		}
 
 		[Theory]
@@ -43,6 +63,13 @@ namespace Mono.Linker.Tests.TestCases
 		public void RequiresCapability(string t)
 		{
 			Run(t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.SingleFile), MemberType = typeof (TestDatabase))]
+		public void SingleFile (string t)
+		{
+			Run (t);
 		}
 
 		[Theory]

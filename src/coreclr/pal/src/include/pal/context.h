@@ -54,6 +54,10 @@ using asm_sigcontext::_xstate;
 #include <mach/mach_port.h>
 #endif // !HAVE_MACH_EXCEPTIONS else
 
+#if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS))
+bool Xstate_IsAvx512Supported();
+#endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
+
 #ifdef HOST_S390X
 
 #define MCREG_PSWMask(mc)   ((mc).psw.mask)
@@ -157,7 +161,6 @@ using asm_sigcontext::_xstate;
 #define MCREG_Pc(mc)      ((mc).__pc)
 
 #elif defined(HOST_RISCV64)
-#error "TODO-RISCV64: review this"
 
 #define MCREG_Ra(mc)      ((mc).__gregs[1])
 #define MCREG_Sp(mc)      ((mc).__gregs[2])
@@ -166,7 +169,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_T0(mc)      ((mc).__gregs[5])
 #define MCREG_T1(mc)      ((mc).__gregs[6])
 #define MCREG_T2(mc)      ((mc).__gregs[7])
-#define MCREG_S0(mc)      ((mc).__gregs[8])
+#define MCREG_Fp(mc)      ((mc).__gregs[8])
 #define MCREG_S1(mc)      ((mc).__gregs[9])
 #define MCREG_A0(mc)      ((mc).__gregs[10])
 #define MCREG_A1(mc)      ((mc).__gregs[11])
@@ -192,7 +195,7 @@ using asm_sigcontext::_xstate;
 #define MCREG_T6(mc)      ((mc).__gregs[31])
 #define MCREG_Pc(mc)      ((mc).__gregs[0])
 
-#else // HOST_LOONGARCH64
+#else // !HOST_LOONGARCH64 && !HOST_RISCV64
 
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
@@ -354,12 +357,54 @@ using asm_sigcontext::_xstate;
 #define FPSTATE_RESERVED padding
 #endif
 
-// The mask for YMM registers presence flag stored in the xfeatures (formerly xstate_bv). On current Linuxes, this definition is
-// only in internal headers, so we define it here. The xfeatures (formerly xstate_bv) is extracted from the processor xstate bit
-// vector register, so the value is OS independent.
-#ifndef XSTATE_YMM
-#define XSTATE_YMM 4
+// Presence for various extended state registers is detected via the xfeatures (formerly xstate_bv) field. On some
+// Linux distros, this definition is only in internal headers, so we define it here. The masks are extracted from
+// the processor xstate bit vector register, so the value is OS independent.
+
+#ifndef XFEATURE_MASK_YMM
+#define XFEATURE_MASK_YMM (1 << XSTATE_AVX)
+#endif // XFEATURE_MASK_YMM
+
+#ifndef XFEATURE_MASK_OPMASK
+#define XFEATURE_MASK_OPMASK (1 << XSTATE_AVX512_KMASK)
+#endif // XFEATURE_MASK_OPMASK
+
+#ifndef XFEATURE_MASK_ZMM_Hi256
+#define XFEATURE_MASK_ZMM_Hi256 (1 << XSTATE_AVX512_ZMM_H)
+#endif // XFEATURE_MASK_ZMM_Hi256
+
+#ifndef XFEATURE_MASK_Hi16_ZMM
+#define XFEATURE_MASK_Hi16_ZMM (1 << XSTATE_AVX512_ZMM)
+#endif // XFEATURE_MASK_Hi16_ZMM
+
+#ifndef XFEATURE_MASK_AVX512
+#define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
+#endif // XFEATURE_MASK_AVX512
+
+#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
+#define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xstate_bv
+#else
+#define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xfeatures
 #endif
+
+// The internal _xstate struct is exposed as fpstate, xstate_hdr, ymmh. However, in reality this is
+// fpstate, xstate_hdr, extended_state_area and "technically" we are supposed to be determining the
+// offset and size of each XFEATURE_MASK_* via CPUID. The extended region always starts at offset
+// 576 which is the same as the address of ymmh
+
+#define FPREG_Xstate_ExtendedStateArea_Offset offsetof(_xstate, ymmh)
+#define FPREG_Xstate_ExtendedStateArea(uc) (reinterpret_cast<uint8_t *>(FPREG_Fpstate(uc)) + \
+                                            FPREG_Xstate_ExtendedStateArea_Offset)
+
+struct Xstate_ExtendedFeature
+{
+    bool     initialized;
+    uint32_t offset;
+    uint32_t size;
+};
+
+#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
+extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
 {
@@ -378,7 +423,7 @@ inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
     return FPREG_FpxSwBytes(uc)->extended_size;
 }
 
-inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
+inline bool FPREG_HasExtendedState(const ucontext_t *uc)
 {
     // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
     static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
@@ -401,21 +446,100 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
         return false;
     }
 
-#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
-    return (FPREG_FpxSwBytes(uc)->xstate_bv & XSTATE_YMM) != 0;
-#else
-    return (FPREG_FpxSwBytes(uc)->xfeatures & XSTATE_YMM) != 0;
-#endif
+    return true;
 }
 
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 {
-    static_assert_no_msg(sizeof(reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space) == 16 * 16);
-    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
 
-    return reinterpret_cast<_xstate *>(FPREG_Fpstate(uc))->ymmh.ymmh_space;
+    return (FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM;
 }
 
+inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featureSize, uint32_t featureIndex)
+{
+    _ASSERTE(featureSize != nullptr);
+    _ASSERTE(featureIndex < (sizeof(Xstate_ExtendedFeatures) / sizeof(Xstate_ExtendedFeature)));
+    _ASSERT(FPREG_Xstate_ExtendedStateArea_Offset == 576);
+
+    Xstate_ExtendedFeature *extendedFeature = &Xstate_ExtendedFeatures[featureIndex];
+
+    if (!extendedFeature->initialized)
+    {
+        int cpuidInfo[4];
+
+        const int CPUID_EAX = 0;
+        const int CPUID_EBX = 1;
+        const int CPUID_ECX = 2;
+        const int CPUID_EDX = 3;
+
+#ifdef _DEBUG
+        // We should only be calling this function if we know the extended feature exists
+
+        __cpuid(cpuidInfo, 0x00000000);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
+
+        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
+        _ASSERTE((cpuidInfo[CPUID_EAX] & (1 << featureIndex)) != 0);
+#endif // _DEBUG
+
+        __cpuidex(cpuidInfo, 0x0000000D, static_cast<int32_t>(featureIndex));
+
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) > 0);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EBX]) >= FPREG_Xstate_ExtendedStateArea_Offset);
+
+        extendedFeature->size   = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
+        extendedFeature->offset = static_cast<uint32_t>(cpuidInfo[CPUID_EBX] - FPREG_Xstate_ExtendedStateArea_Offset);
+
+        extendedFeature->initialized = true;
+    }
+
+    *featureSize = extendedFeature->size;
+    return (FPREG_Xstate_ExtendedStateArea(uc) + extendedFeature->offset);
+}
+
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX);
+}
+
+inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
+{
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
+
+    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_AVX512) != XFEATURE_MASK_AVX512)
+    {
+        return false;
+    }
+
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    return Xstate_IsAvx512Supported();
+}
+
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_KMASK);
+}
+
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM_H);
+}
+
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
+}
 #endif // XSTATE_SUPPORTED
 
 /////////////////////
@@ -706,11 +830,48 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 }
 
 static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
+
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
+    _ASSERTE(FPREG_HasYmmRegisters(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_XMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX_STATE64&)FPSTATE(uc)).__fpu_ymmh0);
 }
 
+inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
+{
+    _ASSERTE((uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64)));
+    return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
+}
+
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_OPMASK_REG) * 8;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_k0);
+}
+
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_YMM_REG) * 16;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmmh0);
+}
+
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasAvx512Registers(uc));
+    _ASSERTE(featureSize != nullptr);
+
+    *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
+    return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
+}
 #else //TARGET_OSX
 
     // For FreeBSD, as found in x86/ucontext.h
@@ -1130,8 +1291,6 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
-#elif defined(HOST_RISCV64)
-    return pContext->S0;
 #else
     return pContext->Fp;
 #endif
