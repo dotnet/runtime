@@ -91,6 +91,7 @@ CompPhaseNameMacro(PHASE_IF_CONVERSION,              "If conversion",           
 CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store removal",    false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,      "Compute edge weights (2, false)",false, -1, false)
+CompPhaseNameMacro(PHASE_RATIONALIZE_ASSIGNMENTS,    "Rationalize assignments",        false, -1, false)
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
 CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",         false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_STATIC_INIT,         "Expand static init",             false, -1, true)

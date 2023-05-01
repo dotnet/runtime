@@ -493,7 +493,7 @@ void Compiler::gsParamsToShadows()
         {
             GenTree* tree = *use;
 
-            if (tree->OperIsLocal() || tree->OperIs(GT_LCL_ADDR))
+            if (tree->OperIsAnyLocal())
             {
                 unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
                 unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;

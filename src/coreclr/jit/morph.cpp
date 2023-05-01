@@ -3180,7 +3180,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && varTypeIsStruct(argObj) && !argObj->OperIs(GT_ASG, GT_MKREFANY, GT_FIELD_LIST))
+        if (isStructArg && !reMorphing && !argObj->OperIs(GT_MKREFANY))
         {
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
@@ -3193,6 +3193,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 originalSize = genTypeSize(argx);
             }
 
+            assert(argx->TypeGet() == arg.GetSignatureType());
             assert(originalSize == info.compCompHnd->getClassSize(arg.GetSignatureClassHandle()));
 
             // First, handle the case where the argument is passed by reference.
