@@ -11,6 +11,8 @@ namespace Internal.TypeSystem
 
         public readonly TypeDesc ReturnType;
 
+        private readonly EmbeddedSignatureData[] _embeddedSignatureData;
+
         [System.Runtime.CompilerServices.IndexerName("Parameter")]
         public TypeDesc this[int index]
         {
@@ -28,11 +30,20 @@ namespace Internal.TypeSystem
             }
         }
 
-        public PropertySignature(bool isStatic, TypeDesc[] parameters, TypeDesc returnType)
+        public bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                return _embeddedSignatureData != null;
+            }
+        }
+
+        public PropertySignature(bool isStatic, TypeDesc[] parameters, TypeDesc returnType, EmbeddedSignatureData[] embeddedSignatureData)
         {
             IsStatic = isStatic;
             _parameters = parameters;
             ReturnType = returnType;
+            _embeddedSignatureData = embeddedSignatureData;
         }
     }
 }

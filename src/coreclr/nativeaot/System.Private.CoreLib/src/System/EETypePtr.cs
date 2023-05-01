@@ -60,12 +60,7 @@ namespace System
 
         public static bool operator ==(EETypePtr value1, EETypePtr value2)
         {
-            if (value1.IsNull)
-                return value2.IsNull;
-            else if (value2.IsNull)
-                return false;
-            else
-                return RuntimeImports.AreTypesEquivalent(value1, value2);
+            return value1._value == value2._value;
         }
 
         public static bool operator !=(EETypePtr value1, EETypePtr value2)

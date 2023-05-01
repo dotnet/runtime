@@ -5407,7 +5407,7 @@ namespace System.Xml.Xsl.IlGen
                     else if (typTarget == XmlQueryTypeFactory.IntegerX)
                         return this.f.LiteralInt64(value.ValueAsLong);
                     else if (typTarget == XmlQueryTypeFactory.DecimalX)
-                        return this.f.LiteralDecimal((decimal)value.ValueAs(XsltConvert.DecimalType));
+                        return this.f.LiteralDecimal((decimal)value.ValueAs(typeof(decimal)));
                     else if (typTarget == XmlQueryTypeFactory.DoubleX)
                         return this.f.LiteralDouble(value.ValueAsDouble);
                     else if (typTarget == XmlQueryTypeFactory.BooleanX)

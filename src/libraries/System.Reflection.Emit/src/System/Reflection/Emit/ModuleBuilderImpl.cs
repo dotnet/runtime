@@ -132,6 +132,25 @@ namespace System.Reflection.Emit
                 Debug.Assert(typeBuilder._handle.Equals(typeDefinitionHandle));
                 WriteCustomAttributes(typeBuilder._customAttributes, typeDefinitionHandle);
 
+                if ((typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                {
+                    _metadataBuilder.AddTypeLayout(typeDefinitionHandle, (ushort)typeBuilder.PackingSize, (uint)typeBuilder.Size);
+                }
+
+                if (typeBuilder._interfaces != null)
+                {
+                    foreach(Type iface in typeBuilder._interfaces)
+                    {
+                        _metadataBuilder.AddInterfaceImplementation(typeDefinitionHandle, GetTypeHandle(iface));
+                        // TODO: need to add interface mapping between interface method and implemented method
+                    }
+                }
+
+                if (typeBuilder.DeclaringType != null)
+                {
+                    _metadataBuilder.AddNestedType(typeDefinitionHandle, (TypeDefinitionHandle)GetTypeHandle(typeBuilder.DeclaringType));
+                }
+
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
                 {
                     MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
@@ -331,6 +350,14 @@ namespace System.Reflection.Emit
 
             return GetTypeReference(type);
         }
+        internal TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent,
+            Type[]? interfaces, PackingSize packingSize, int typesize, TypeBuilderImpl? enclosingType)
+        {
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, enclosingType);
+            _typeDefinitions.Add(_type);
+            return _type;
+        }
 
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
         public override string Name => "<In Memory Module>";
@@ -347,10 +374,11 @@ namespace System.Reflection.Emit
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
-        protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
+        protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, packingSize, typesize);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, null);
             _typeDefinitions.Add(_type);
             return _type;
         }
