@@ -290,6 +290,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_offset;
         }
 
+        void ChangeLocal(unsigned newLclNum, unsigned newOffset)
+        {
+            assert(IsLocation() || IsAddress());
+            m_lclNum = newLclNum;
+            m_offset = newOffset;
+        }
+
         //------------------------------------------------------------------------
         // Location: Produce a location value.
         //
@@ -999,6 +1006,14 @@ private:
                 }
             }
 
+            bool updateRefCount = false;
+            if (isWide && varDsc->lvIsStructField && RephraseFieldAccess(val, varDsc, indirSize, node))
+            {
+                ClrSafeInt<unsigned> endOffset = ClrSafeInt<unsigned>(val.Offset()) + ClrSafeInt<unsigned>(indirSize);
+                isWide = endOffset.IsOverflow() || (endOffset.Value() > m_compiler->lvaLclExactSize(val.LclNum()));
+                updateRefCount = true;
+            }
+
             if (isWide)
             {
                 m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
@@ -1010,9 +1025,49 @@ private:
             {
                 MorphLocalIndir(val, user);
             }
+
+            if (updateRefCount)
+            {
+                UpdateEarlyRefCount(val.LclNum());
+            }
         }
 
         INDEBUG(val.Consume();)
+    }
+
+    bool RephraseFieldAccess(Value& val, LclVarDsc* varDsc, unsigned indirSize, GenTree* indir)
+    {
+        // See if we can rephrase an access of a field in terms of a sibling
+        // field or the parent with better chance of profitable codegen.
+        unsigned parentLclNum = varDsc->lvParentLcl;
+        unsigned int siblingFieldLcl;
+        unsigned newOffset = 0;
+
+        if (val.Offset() > 0)
+        {
+            ClrSafeInt<unsigned> newOffsetSafe = ClrSafeInt<unsigned>(val.Offset()) + ClrSafeInt<unsigned>(varDsc->lvFldOffset);
+            if (newOffsetSafe.IsOverflow())
+            {
+                return false;
+            }
+
+            newOffset = newOffsetSafe.Value();
+            LclVarDsc* parentVarDsc = m_compiler->lvaGetDesc(parentLclNum);
+            siblingFieldLcl = m_compiler->lvaGetFieldLocal(parentVarDsc, newOffset);
+
+            if (siblingFieldLcl != BAD_VAR_NUM)
+            {
+                LclVarDsc* siblingVarDsc = m_compiler->lvaGetDesc(siblingFieldLcl);
+                if (indirSize == genTypeSize(siblingVarDsc))
+                {
+                    val.ChangeLocal(siblingFieldLcl, 0);
+                    return true;
+                }
+            }
+        }
+
+        val.ChangeLocal(parentLclNum, newOffset);
+        return true;
     }
 
     //------------------------------------------------------------------------
