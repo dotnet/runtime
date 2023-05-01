@@ -12,10 +12,9 @@ using GenericVariance = Internal.Runtime.GenericVariance;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Describes how a generic type instance is composed - the number of generic arguments, their types,
-    /// and variance information.
+    /// Describes how a generic type instance is composed: types of arguments and variance information.
     /// </summary>
-    public class GenericCompositionNode : DehydratableObjectNode, ISymbolDefinitionNode
+    public class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
     {
         private GenericCompositionDetails _details;
 
@@ -57,7 +56,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
             if (factory.Target.IsWindows)
                 return ObjectNodeSection.FoldableReadOnlyDataSection;
@@ -69,30 +68,35 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             bool hasVariance = _details.Variance != null;
 
             var builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
-            builder.RequireInitialPointerAlignment();
-
-            builder.EmitShort((short)checked((ushort)_details.Instantiation.Length));
-
-            builder.EmitByte((byte)(hasVariance ? 1 : 0));
-
-            // TODO: general purpose padding
-            builder.EmitByte(0);
-            if (factory.Target.PointerSize == 8)
-                builder.EmitInt(0);
+            bool useRelativePointers = factory.Target.SupportsRelativePointers;
+            if (useRelativePointers)
+                builder.RequireInitialAlignment(4);
+            else
+                builder.RequireInitialPointerAlignment();
 
             foreach (var typeArg in _details.Instantiation)
             {
                 if (typeArg == null)
-                    builder.EmitZeroPointer();
+                {
+                    if (useRelativePointers)
+                        builder.EmitInt(0);
+                    else
+                        builder.EmitZeroPointer();
+                }
                 else
-                    builder.EmitPointerRelocOrIndirectionReference(factory.NecessaryTypeSymbol(typeArg));
+                {
+                    if (useRelativePointers)
+                        builder.EmitReloc(factory.NecessaryTypeSymbol(typeArg), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
+                }
             }
 
             if (hasVariance)

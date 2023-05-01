@@ -794,7 +794,6 @@ namespace Internal.Runtime.TypeLoader
 
                     state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
                     Instantiation instantiation = typeAsDefType.Instantiation;
-                    state.HalfBakedRuntimeTypeHandle.SetGenericArity((uint)instantiation.Length);
                     for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
                     {
                         state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));

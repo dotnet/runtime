@@ -278,7 +278,7 @@ namespace System.Runtime
             {
                 // Grab details about the instantiation of the target generic interface.
                 MethodTable* pTargetGenericType = pTargetType->GenericDefinition;
-                EETypeRef* pTargetInstantiation = pTargetType->GenericArguments;
+                MethodTableList targetInstantiation = pTargetType->GenericArguments;
                 int targetArity = (int)pTargetType->GenericArity;
                 GenericVariance* pTargetVarianceInfo = pTargetType->GenericVariance;
 
@@ -303,7 +303,7 @@ namespace System.Runtime
                             continue;
 
                         // Grab instantiation details for the candidate interface.
-                        EETypeRef* pInterfaceInstantiation = pInterfaceType->GenericArguments;
+                        MethodTableList interfaceInstantiation = pInterfaceType->GenericArguments;
                         int interfaceArity = (int)pInterfaceType->GenericArity;
                         GenericVariance* pInterfaceVarianceInfo = pInterfaceType->GenericVariance;
 
@@ -315,8 +315,8 @@ namespace System.Runtime
 
                         // Compare the instantiations to see if they're compatible taking variance into account.
                         if (TypeParametersAreCompatible(targetArity,
-                                                        pInterfaceInstantiation,
-                                                        pTargetInstantiation,
+                                                        interfaceInstantiation,
+                                                        targetInstantiation,
                                                         pTargetVarianceInfo,
                                                         fArrayCovariance,
                                                         pVisited))
@@ -339,13 +339,13 @@ namespace System.Runtime
             {
                 // Get generic instantiation metadata for both types.
 
-                EETypeRef* pTargetInstantiation = pTargetType->GenericArguments;
+                MethodTableList targetInstantiation = pTargetType->GenericArguments;
                 int targetArity = (int)pTargetType->GenericArity;
                 GenericVariance* pTargetVarianceInfo = pTargetType->GenericVariance;
 
                 Debug.Assert(pTargetVarianceInfo != null, "did not expect empty variance info");
 
-                EETypeRef* pSourceInstantiation = pSourceType->GenericArguments;
+                MethodTableList sourceInstantiation = pSourceType->GenericArguments;
                 int sourceArity = (int)pSourceType->GenericArity;
                 GenericVariance* pSourceVarianceInfo = pSourceType->GenericVariance;
 
@@ -357,8 +357,8 @@ namespace System.Runtime
 
                 // Compare the instantiations to see if they're compatible taking variance into account.
                 if (TypeParametersAreCompatible(targetArity,
-                                                pSourceInstantiation,
-                                                pTargetInstantiation,
+                                                sourceInstantiation,
+                                                targetInstantiation,
                                                 pTargetVarianceInfo,
                                                 false,
                                                 pVisited))
@@ -376,8 +376,8 @@ namespace System.Runtime
         // override the defined variance of each parameter and instead assume it is covariant. This is used to
         // implement covariant array interfaces.
         internal static unsafe bool TypeParametersAreCompatible(int arity,
-                                                               EETypeRef* pSourceInstantiation,
-                                                               EETypeRef* pTargetInstantiation,
+                                                               MethodTableList sourceInstantiation,
+                                                               MethodTableList targetInstantiation,
                                                                GenericVariance* pVarianceInfo,
                                                                bool fForceCovariance,
                                                                EETypePairList* pVisited)
@@ -386,8 +386,8 @@ namespace System.Runtime
             // of type args.
             for (int i = 0; i < arity; i++)
             {
-                MethodTable* pTargetArgType = pTargetInstantiation[i].Value;
-                MethodTable* pSourceArgType = pSourceInstantiation[i].Value;
+                MethodTable* pTargetArgType = targetInstantiation[i];
+                MethodTable* pSourceArgType = sourceInstantiation[i];
 
                 GenericVariance varType;
                 if (fForceCovariance)

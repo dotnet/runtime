@@ -66,14 +66,10 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->GenericVariance[argumentIndex] = variance;
         }
 
-        public static unsafe void SetGenericArity(this RuntimeTypeHandle rtth, uint arity)
-        {
-            rtth.ToEETypePtr()->GenericArity = arity;
-        }
-
         public static unsafe void SetGenericArgument(this RuntimeTypeHandle rtth, int argumentIndex, RuntimeTypeHandle argumentType)
         {
-            rtth.ToEETypePtr()->GenericArguments[argumentIndex].Value = argumentType.ToEETypePtr();
+            MethodTableList argumentList = rtth.ToEETypePtr()->GenericArguments;
+            argumentList[argumentIndex] = argumentType.ToEETypePtr();
         }
 
         public static unsafe void SetRelatedParameterType(this RuntimeTypeHandle rtth, RuntimeTypeHandle relatedTypeHandle)

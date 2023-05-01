@@ -262,7 +262,7 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal ushort GenericArgumentCount
+        internal ushort GenericParameterCount
         {
             get
             {
@@ -523,35 +523,10 @@ namespace Internal.Runtime
 #endif
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private readonly struct GenericComposition
-        {
-            public readonly ushort Arity;
-
-            private readonly EETypeRef _genericArgument1;
-            public EETypeRef* GenericArguments
-            {
-                get
-                {
-                    return (EETypeRef*)Unsafe.AsPointer(ref Unsafe.AsRef(in _genericArgument1));
-                }
-            }
-
-            public GenericVariance* GenericVariance
-            {
-                get
-                {
-                    // Generic variance directly follows the last generic argument
-                    return (GenericVariance*)(GenericArguments + Arity);
-                }
-            }
-        }
-
 #if TYPE_LOADER_IMPLEMENTATION
         internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
         {
-            return IntPtr.Size
-                + numArguments * IntPtr.Size
+            return numArguments * IntPtr.Size
                 + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
         }
 
@@ -571,31 +546,27 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
-
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
+                return GenericDefinition->GenericParameterCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsDynamicType);
-                // GenericComposition is a readonly struct, so we just blit the bytes over. Asserts guard changes to the layout.
-                *((ushort*)GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value) = checked((ushort)value);
-                Debug.Assert(GenericArity == (ushort)value);
-            }
-#endif
         }
 
-        internal EETypeRef* GenericArguments
+        internal MethodTableList GenericArguments
         {
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
+                void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
+                if (IsDynamicType || !SupportsRelativePointers)
+                {
+                    // This is a full pointer that points to a list of full pointers
+                    return new MethodTableList(*(MethodTable**)pField);
+                }
+                else
+                {
+                    // This is a relative pointer that points to a list of relative pointers
+                    return new MethodTableList((RelativePointer<MethodTable>*)((RelativePointer*)pField)->Value);
+                }
             }
         }
 
@@ -608,10 +579,21 @@ namespace Internal.Runtime
                 if (!HasGenericVariance)
                     return null;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                int paramCount = IsGeneric ? (int)GenericArity : GenericParameterCount;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
+                if (IsDynamicType || !SupportsRelativePointers)
+                {
+                    // Composition is a full pointer that points to a list of full pointers of constituent
+                    // MethodTables, followed by variance information
+                    return (GenericVariance*)(*(MethodTable***)pField + paramCount);
+                }
+                else
+                {
+                    // Composition is a relative pointer that points to a list of relative pointers of constituent
+                    // MethodTables, followed by variance information
+                    return (GenericVariance*)((RelativePointer*)(((RelativePointer*)pField)->Value) + paramCount);
+                }
             }
         }
 
@@ -996,7 +978,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsNullable);
                 Debug.Assert(GenericArity == 1);
-                return GenericArguments[0].Value;
+                return GenericArguments[0];
             }
         }
 
@@ -1495,29 +1477,6 @@ namespace Internal.Runtime
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
         }
 #endif
-    }
-
-    // Wrapper around MethodTable pointers that may be indirected through the IAT if their low bit is set.
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EETypeRef
-    {
-        private byte* _value;
-
-        public MethodTable* Value
-        {
-            get
-            {
-                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                    return (MethodTable*)_value;
-                return *(MethodTable**)(_value - IndirectionConstants.IndirectionCellPointer);
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _value = (byte*)value;
-            }
-#endif
-        }
     }
 
     // Wrapper around pointers
