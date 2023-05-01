@@ -6824,39 +6824,31 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
 
             ValueNum packed     = EvaluateBinarySimd(vns, GT_EQ, scalar, vn1Type, baseType, arg0VN, arg1VN);
             bool     allBitsSet = false;
-            switch (vn1Type)
+            if (vn1Type == TYP_SIMD8)
             {
-                case TYP_SIMD8:
-                {
-                    allBitsSet = GetConstantSimd8(vns, baseType, packed).IsAllBitsSet();
-                    break;
-                }
-                case TYP_SIMD12:
-                {
-                    allBitsSet = GetConstantSimd12(vns, baseType, packed).IsAllBitsSet();
-                    break;
-                }
-                case TYP_SIMD16:
-                {
-                    allBitsSet = GetConstantSimd16(vns, baseType, packed).IsAllBitsSet();
-                    break;
-                }
+                allBitsSet = GetConstantSimd8(vns, baseType, packed).IsAllBitsSet();
+            }
+            else if (vn1Type == TYP_SIMD12)
+            {
+                allBitsSet = GetConstantSimd12(vns, baseType, packed).IsAllBitsSet();
+            }
+            else if (vn1Type == TYP_SIMD16)
+            {
+                allBitsSet = GetConstantSimd16(vns, baseType, packed).IsAllBitsSet();
+            }
 #if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                {
-                    allBitsSet = GetConstantSimd32(vns, baseType, packed).IsAllBitsSet();
-                    break;
-                }
-                case TYP_SIMD64:
-                {
-                    allBitsSet = GetConstantSimd64(vns, baseType, packed).IsAllBitsSet();
-                    break;
-                }
+            else if (vn1Type == TYP_SIMD32)
+            {
+                allBitsSet = GetConstantSimd32(vns, baseType, packed).IsAllBitsSet();
+            }
+            else if (vn1Type == TYP_SIMD64)
+            {
+                allBitsSet = GetConstantSimd64(vns, baseType, packed).IsAllBitsSet();
+            }
 #endif
-                default:
-                {
-                    unreached();
-                }
+            else
+            {
+                unreached();
             }
             return vns->VNForIntCon(oper == GT_EQ ? allBitsSet : !allBitsSet);
         }
