@@ -10935,7 +10935,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             CorInfoType  simdBaseJitType = node->GetSimdBaseJitType();
             unsigned int simdSize        = node->GetSimdSize();
 
-            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize, true);
+            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, simdType, lhs, rhs, simdBaseJitType, simdSize);
 
             DEBUG_DESTROY_NODE(node);
             INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);

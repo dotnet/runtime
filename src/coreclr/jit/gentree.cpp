@@ -25139,6 +25139,9 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
     }
 }
 
+//------------------------------------------------------------------------------
+// HWOperGet : Returns Oper based on the HWIntrinsicId
+//
 genTreeOps GenTreeHWIntrinsic::HWOperGet()
 {
     switch (GetHWIntrinsicId())
