@@ -312,7 +312,7 @@ namespace System.Xml.Xsl.Runtime
             objRet = extFunc.Invoke(instance, objActualArgs);
 
             // 2. Convert to IList<XPathItem>
-            if (objRet == null && extFunc.ClrReturnType == XsltConvert.VoidType)
+            if (objRet == null && extFunc.ClrReturnType == typeof(void))
                 return XmlQueryNodeSequence.Empty;
 
             return (IList<XPathItem>)_runtime.ChangeTypeXsltResult(XmlQueryTypeFactory.ItemS, objRet);
