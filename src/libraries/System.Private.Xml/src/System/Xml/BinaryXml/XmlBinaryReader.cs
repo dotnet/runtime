@@ -3305,13 +3305,14 @@ namespace System.Xml
             map[(int)BinXmlToken.SQL_UDT] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BINHEX] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BASE64] = TypeOfByteArray;
-            map[(int)BinXmlToken.SQL_CHAR] = typeof(string);
-            map[(int)BinXmlToken.SQL_VARCHAR] = typeof(string);
-            map[(int)BinXmlToken.SQL_TEXT] = typeof(string);
-            map[(int)BinXmlToken.SQL_NCHAR] = typeof(string);
-            map[(int)BinXmlToken.SQL_NVARCHAR] = typeof(string);
-            map[(int)BinXmlToken.SQL_NTEXT] = typeof(string);
-            map[(int)BinXmlToken.SQL_UUID] = typeof(string);
+            Type TypeOfString = typeof(string);
+            map[(int)BinXmlToken.SQL_CHAR] = TypeOfString;
+            map[(int)BinXmlToken.SQL_VARCHAR] = TypeOfString;
+            map[(int)BinXmlToken.SQL_TEXT] = TypeOfString;
+            map[(int)BinXmlToken.SQL_NCHAR] = TypeOfString;
+            map[(int)BinXmlToken.SQL_NVARCHAR] = TypeOfString;
+            map[(int)BinXmlToken.SQL_NTEXT] = TypeOfString;
+            map[(int)BinXmlToken.SQL_UUID] = TypeOfString;
             return map;
         }
 
