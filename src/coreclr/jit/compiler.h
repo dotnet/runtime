@@ -4616,7 +4616,6 @@ public:
 
     bool fgRemoveRestOfBlock; // true if we know that we will throw
     bool fgStmtRemoved;       // true if we remove statements -> need new DFA
-    bool fgRemarkGlobalUses;  // true if morph should remark global uses after processing a statement
 
     enum FlowGraphOrder
     {
@@ -5917,7 +5916,6 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
 
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
-    void fgMarkGlobalUses(Statement* stmt);
 
     GenTree* fgMorphLeafLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
@@ -6129,6 +6127,9 @@ private:
 
     // Reset the refCount for implicit byrefs.
     void fgResetImplicitByRefRefCount();
+
+    // Identify all candidates for last-use copy omission.
+    PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates();
 
     // Change implicit byrefs' types from struct to pointer, and for any that were
     // promoted, create new promoted struct temps.
