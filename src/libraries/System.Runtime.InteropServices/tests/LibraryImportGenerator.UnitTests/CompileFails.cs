@@ -116,6 +116,9 @@ namespace LibraryImportGenerator.UnitTests
             // SafeHandle array
             yield return new object[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle"), 5, 0 };
 
+            // SafeHandle with private constructor by ref or out
+            yield return new object[] { ID(), CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true), 3, 0 };
+
             // Collection with constant and element size parameter
             yield return new object[] { ID(), CodeSnippets.MarshalUsingCollectionWithConstantAndElementCount, 2, 0 };
 

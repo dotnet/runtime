@@ -174,7 +174,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
             yield return new[] { ID(), CodeSnippets.BasicParameterByValue("System.Runtime.InteropServices.SafeHandle") };
             yield return new[] { ID(), CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: false) };
-            yield return new[] { ID(), CodeSnippets.SafeHandleWithCustomDefaultConstructorAccessibility(privateCtor: true) };
 
             // Custom type marshalling
             CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets());

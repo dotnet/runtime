@@ -50,7 +50,6 @@ namespace System.Runtime.InteropServices.Marshalling
             }
         }
 
-
         /// <summary>
         /// Custom marshaller to marshal a <see cref="SafeHandle"/> as its underlying handle value.
         /// </summary>
