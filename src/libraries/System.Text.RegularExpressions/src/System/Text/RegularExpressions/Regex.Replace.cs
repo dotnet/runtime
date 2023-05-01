@@ -3,6 +3,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+#pragma warning disable CS8500 // takes address of managed type
+
 namespace System.Text.RegularExpressions
 {
     // Callback class
@@ -172,11 +174,11 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (segments: SegmentStringBuilder.Create(), evaluator, prevat: 0, input, count);
+            var state = (segments: new StructListBuilder<ReadOnlyMemory<char>>(), evaluator, prevat: 0, input, count);
 
             if (!regex.RightToLeft)
             {
-                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (StructListBuilder<ReadOnlyMemory<char>> segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
@@ -195,7 +197,7 @@ namespace System.Text.RegularExpressions
             {
                 state.prevat = input.Length;
 
-                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (SegmentStringBuilder segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, static (ref (StructListBuilder<ReadOnlyMemory<char>> segments, MatchEvaluator evaluator, int prevat, string input, int count) state, Match match) =>
                 {
                     state.segments.Add(state.input.AsMemory(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
@@ -212,7 +214,35 @@ namespace System.Text.RegularExpressions
                 state.segments.AsSpan().Reverse();
             }
 
-            return state.segments.ToString();
+            return SegmentsToStringAndDispose(ref state.segments);
+        }
+
+        /// <summary>Creates a string from all the segments in the builder and then disposes of the builder.</summary>
+        internal static unsafe string SegmentsToStringAndDispose(ref StructListBuilder<ReadOnlyMemory<char>> segments)
+        {
+            Span<ReadOnlyMemory<char>> span = segments.AsSpan();
+
+            int length = 0;
+            for (int i = 0; i < span.Length; i++)
+            {
+                length += span[i].Length;
+            }
+
+            ReadOnlySpan<ReadOnlyMemory<char>> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+            string result = string.Create(length, (IntPtr)(&tmpSpan), static (dest, spanPtr) =>
+            {
+                Span<ReadOnlyMemory<char>> span = *(Span<ReadOnlyMemory<char>>*)spanPtr;
+                for (int i = 0; i < span.Length; i++)
+                {
+                    ReadOnlySpan<char> segment = span[i].Span;
+                    segment.CopyTo(dest);
+                    dest = dest.Slice(segment.Length);
+                }
+            });
+
+            segments.Dispose();
+
+            return result;
         }
     }
 }

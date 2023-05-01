@@ -22,12 +22,16 @@ parameters:
   helixProjectArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
+  nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
   runtimeFlavor: 'CoreCLR'
   runtimeVariant: ''
   shouldContinueOnError: false
   SuperPmiCollect: ''
+  SuperPmiDiffType: ''
+  SuperPmiBaseJitOptions: ''
+  SuperPmiDiffJitOptions: ''
 
 
 steps:
@@ -51,6 +55,7 @@ steps:
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _TieringTest: ${{ parameters.tieringTest }}
+      _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
@@ -60,6 +65,9 @@ steps:
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiDiffType: ${{ parameters.SuperPmiDiffType }}
+      _SuperPmiBaseJitOptions: ${{ parameters.SuperPmiBaseJitOptions }}
+      _SuperPmiDiffJitOptions: ${{ parameters.SuperPmiDiffJitOptions }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

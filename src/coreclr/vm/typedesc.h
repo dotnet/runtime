@@ -3,10 +3,7 @@
 //
 // File: typedesc.h
 //
-
-
 //
-
 //
 // ============================================================================
 
@@ -25,7 +22,7 @@ class TypeHandleList;
 
 
    ParamTypeDescs only include byref, array and pointer types.  They do NOT
-   include instantaitions of generic types, which are represented by MethodTables.
+   include instantiations of generic types, which are represented by MethodTables.
 */
 
 
@@ -43,7 +40,7 @@ public:
 #endif
 
     // This is the ELEMENT_TYPE* that would be used in the type sig for this type
-    // For enums this is the uderlying type
+    // For enums this is the underlying type
     inline CorElementType GetInternalCorElementType() {
         LIMITED_METHOD_DAC_CONTRACT;
 
@@ -183,6 +180,8 @@ public:
 
         return GetLoaderModule()->GetLoaderAllocator();
     }
+
+    BOOL IsSharedByGenericInstantiations();
 
  protected:
     // See methodtable.h for details of the flags with the same name there
@@ -527,6 +526,8 @@ public:
         return PTR_TypeHandle(m_RetAndArgTypes);
     }
 
+    BOOL IsSharedByGenericInstantiations();
+
 #ifndef DACCESS_COMPILE
     // Returns TRUE if all return and argument types are externally visible.
     BOOL IsExternallyVisible() const;
@@ -543,7 +544,51 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif //DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+    OBJECTREF GetManagedClassObject();
+
+    OBJECTREF GetManagedClassObjectIfExists()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
+        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
+
+        OBJECTREF retVal;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
+            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+        {
+            return NULL;
+        }
+
+        COMPILER_ASSUME(retVal != NULL);
+        return retVal;
+    }
+
+    OBJECTREF GetManagedClassObjectFast()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        OBJECTREF objRef;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
+        {
+            return FALSE;
+        }
+        COMPILER_ASSUME(objRef != NULL);
+        return objRef;
+    }
+#endif
+
 protected:
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
+
     // Number of arguments
     DWORD m_NumArgs;
 

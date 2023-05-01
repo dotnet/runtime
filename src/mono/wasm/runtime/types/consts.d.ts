@@ -17,3 +17,5 @@ declare module "consts:monoDiagnosticsMock" {
     const constant: boolean;
     export default constant;
 }
+
+declare function createEmscripten(module: any): Promise<void>;

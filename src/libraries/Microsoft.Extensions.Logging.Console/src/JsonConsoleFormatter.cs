@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal sealed class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
 
         public JsonConsoleFormatter(IOptionsMonitor<JsonConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Json)
@@ -55,12 +55,7 @@ namespace Microsoft.Extensions.Logging.Console
 
                     if (exception != null)
                     {
-                        string exceptionMessage = exception.ToString();
-                        if (!FormatterOptions.JsonWriterOptions.Indented)
-                        {
-                            exceptionMessage = exceptionMessage.Replace(Environment.NewLine, " ");
-                        }
-                        writer.WriteString(nameof(Exception), exceptionMessage);
+                        writer.WriteString(nameof(Exception), exception.ToString());
                     }
 
                     if (logEntry.State != null)

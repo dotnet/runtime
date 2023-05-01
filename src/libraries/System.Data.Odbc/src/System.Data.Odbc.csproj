@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)-freebsd;$(NetCoreAppPrevious)-illumos;$(NetCoreAppPrevious)-solaris;$(NetCoreAppPrevious)-linux;$(NetCoreAppPrevious)-osx;$(NetCoreAppPrevious)-ios;$(NetCoreAppPrevious)-tvos;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum)-freebsd;$(NetCoreAppMinimum)-linux;$(NetCoreAppMinimum)-osx;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA2249;CA1838</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides a collection of classes used to access an ODBC data source in the managed space
 
@@ -117,6 +118,8 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="System\Data\Odbc\OdbcUtils.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
              Link="Common\System\Data\Common\MultipartIdentifier.cs" />
@@ -133,6 +136,9 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\HandleRefMarshaller.cs"
              Link="Common\System\Runtime\InteropServices\HandleRefMarshaller.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <ProjectReference Include="..\..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
                   SetTargetFramework="TargetFramework=netstandard2.0"
                   OutputItemType="Analyzer"

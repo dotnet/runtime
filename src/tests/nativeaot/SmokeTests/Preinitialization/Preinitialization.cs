@@ -36,6 +36,7 @@ internal class Program
         TestBadClass.Run();
         TestRefs.Run();
         TestDelegate.Run();
+        TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
@@ -48,6 +49,7 @@ internal class Program
         TestInstanceDelegate.Run();
         TestStringFields.Run();
         TestSharedCode.Run();
+        TestReadOnlySpan.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -609,6 +611,19 @@ class TestDelegate
     }
 }
 
+class TestDelegateReflectionVisible
+{
+    static readonly Action s_a = DelegateTarget;
+
+    static void DelegateTarget() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegateReflectionVisible));
+        Assert.AreEqual(nameof(DelegateTarget), s_a.Method.Name);
+    }
+}
+
 class TestInitFromOtherClass
 {
     class OtherClass
@@ -985,9 +1000,9 @@ class TestSharedCode
         }
 
         {
-            // Expecting this to be a frozen array, and reported as Gen2 by the GC
+            // Expecting this to be a frozen array, and reported as int.MaxValue by the GC
             object val = AccessArray<C1>();
-            Assert.AreEqual(2, GC.GetGeneration(val));
+            Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
 
             val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
             Assert.AreEqual(0, GC.GetGeneration(val));
@@ -997,6 +1012,60 @@ class TestSharedCode
             Assert.AreEqual(0, GC.GetGeneration(val));
             Assert.AreEqual(nameof(C5), val.GetType().GetElementType().Name);
         }
+    }
+}
+
+class TestReadOnlySpan
+{
+    class SimpleReadOnlySpanAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public /* not readonly on purpose */ static int Sum;
+
+        static SimpleReadOnlySpanAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[0] + val[1] + val[2] + val[3];
+        }
+    }
+
+    class OutOfRangeAccess
+    {
+        private static ReadOnlySpan<int> Ints => new int[] { 5, 6, 7, 8 };
+
+        public readonly static int Sum;
+
+        static OutOfRangeAccess()
+        {
+            ReadOnlySpan<int> val = Ints;
+            Sum = val[4];
+        }
+    }
+
+    class DefaultInstanceAccess
+    {
+        public readonly static int Sum;
+
+        static DefaultInstanceAccess()
+        {
+            ReadOnlySpan<int> val = default;
+            Sum = val[0];
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(SimpleReadOnlySpanAccess));
+        Assert.AreEqual(26, SimpleReadOnlySpanAccess.Sum);
+
+        Assert.IsLazyInitialized(typeof(OutOfRangeAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            OutOfRangeAccess.Sum.ToString(); // make sure cctor is looked at
+
+        Assert.IsLazyInitialized(typeof(DefaultInstanceAccess));
+        if (SimpleReadOnlySpanAccess.Sum == 1000) // never true
+            DefaultInstanceAccess.Sum.ToString(); // make sure cctor is looked at
     }
 }
 

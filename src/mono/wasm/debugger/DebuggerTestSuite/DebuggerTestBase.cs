@@ -24,8 +24,8 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
-        public DebuggerTests(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
-                : base(testOutput, driver)
+        public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
+                : base(testOutput, locale, driver)
         {}
     }
 
@@ -37,6 +37,11 @@ namespace DebuggerTests
 #else
             => WasmHost.Firefox;
 #endif
+
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+
+        public static bool WasmSingleThreaded => !WasmMultiThreaded;
+
         public static bool RunningOnChrome => RunningOn == WasmHost.Chrome;
 
         public static bool RunningOnChromeAndLinux => RunningOn == WasmHost.Chrome && PlatformDetection.IsLinux;
@@ -59,8 +64,9 @@ namespace DebuggerTests
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
-        public int Id { get; init; }
-
+        public int Id { get; set; }
+        public string driver;
+        
         public static string DebuggerTestAppPath
         {
             get
@@ -125,39 +131,57 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string _driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
             Id = Interlocked.Increment(ref s_idCounter);
             // the debugger is working in locale of the debugged application. For example Datetime.ToString()
             // we want the test to mach it. We are also starting chrome with --lang=en-US
-            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(locale);
 
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
+            driver = _driver;
             scripts = SubscribeToScripts(insp);
-            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput);
+            startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput, locale);
         }
 
         public virtual async Task InitializeAsync()
         {
+            bool retry = true;
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
-                 Func<string, (string, Task<Result>)> getInitCmdFn = (cmd) => (cmd, client.SendCommand(cmd, null, token));
+                 Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
                  var init_cmds = new List<(string, Task<Result>)>
                  {
-                    getInitCmdFn("Profiler.enable"),
-                    getInitCmdFn("Runtime.enable"),
-                    getInitCmdFn("Debugger.enable"),
-                    getInitCmdFn("Runtime.runIfWaitingForDebugger")
+                    getInitCmdFn("Profiler.enable", null),
+                    getInitCmdFn("Runtime.enable", null),
+                    getInitCmdFn("Debugger.enable", null),
+                    getInitCmdFn("Runtime.runIfWaitingForDebugger", null),
+                    getInitCmdFn("Debugger.setAsyncCallStackDepth", JObject.FromObject(new { maxDepth = 32 })),
+                    getInitCmdFn("Target.setAutoAttach", JObject.FromObject(new { autoAttach = true, waitForDebuggerOnStart = true, flatten = true }))
+                    //getInitCmdFn("ServiceWorker.enable", null)
                  };
-
                  return init_cmds;
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            try {
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
+            catch (TaskCanceledException exc) //if timed out for some reason let's try again
+            {
+                if (!retry)
+                    throw exc;
+                retry = false;
+                _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
+                Id = Interlocked.Increment(ref s_idCounter);
+                insp = new Inspector(Id, _testOutput);
+                cli = insp.Client;
+                scripts = SubscribeToScripts(insp);
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
         }
 
         public virtual async Task DisposeAsync()
@@ -182,6 +206,7 @@ namespace DebuggerTests
         {
             var script_id = args?["scriptId"]?.Value<string>();
             var url = args["url"]?.Value<string>();
+            script_id += args["sessionId"]?.Value<string>();
             if (script_id.StartsWith("dotnet://"))
             {
                 var dbgUrl = args["dotNetUrl"]?.Value<string>();
@@ -244,7 +269,38 @@ namespace DebuggerTests
         {
             return await insp.WaitFor(what);
         }
+        public async Task WaitForConsoleMessage(string message)
+        {
+            object llock = new();
+            var tcs = new TaskCompletionSource();
+            insp.On("Runtime.consoleAPICalled", async (args, c) =>
+            {
+                (string line, string type) = insp.FormatConsoleAPICalled(args);
+                if (string.IsNullOrEmpty(line))
+                    return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
 
+                lock (llock)
+                {
+                    try
+                    {
+                        if (line == message)
+                        {
+                            tcs.SetResult();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
+                }
+
+                return tcs.Task.IsCompleted
+                            ? await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler)
+                            : await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
+            });
+
+            await tcs.Task;
+        }
         public async Task WaitForScriptParsedEventsAsync(params string[] paths)
         {
             object llock = new();
@@ -322,7 +378,7 @@ namespace DebuggerTests
 
         internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
         {
-            var loc_str = $"{ scripts[location["scriptId"].Value<string>()] }" +
+            var loc_str = $"{ scripts[location["scriptId"].Value<string>()+cli.CurrentSessionId.sessionId] }" +
                 $"#{ location["lineNumber"].Value<int>() }" +
                 $"#{ location["columnNumber"].Value<int>() }";
 

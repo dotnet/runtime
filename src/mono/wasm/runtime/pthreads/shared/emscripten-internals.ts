@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
+import { Module } from "../../globals";
 import { pthread_ptr } from "./types";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
@@ -16,7 +16,7 @@ interface PThreadLibrary {
     unusedWorkers: Worker[];
     pthreads: PThreadInfoMap;
     allocateUnusedWorker: () => void;
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading?: (worker: Worker) => void) => void;
+    loadWasmModuleToWorker: (worker: Worker) => Promise<Worker>;
 }
 
 interface EmscriptenPThreadInfo {
@@ -67,8 +67,8 @@ const Internals = {
     getUnusedWorkerPool: (): Worker[] => {
         return Internals.modulePThread.unusedWorkers;
     },
-    loadWasmModuleToWorker: (worker: Worker, onFinishedLoading: () => void): void => {
-        Internals.modulePThread.loadWasmModuleToWorker(worker, onFinishedLoading);
+    loadWasmModuleToWorker: (worker: Worker): Promise<Worker> => {
+        return Internals.modulePThread.loadWasmModuleToWorker(worker);
     }
 };
 

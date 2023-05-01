@@ -14,7 +14,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// Return value from a method
 	/// </summary>
-	partial record MethodReturnValue : IValueWithStaticType
+	internal partial record MethodReturnValue : IValueWithStaticType
 	{
 		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{

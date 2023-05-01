@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         private JsonSerializerOptions? _options;
 
@@ -37,16 +37,32 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        internal void AssociateWithOptions(JsonSerializerOptions options)
+        {
+            Debug.Assert(!options.IsReadOnly);
+            options.TypeInfoResolver = this;
+            options.MakeReadOnly();
+            _options = options;
+        }
+
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
         /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        internal bool CanUseFastPathSerializationLogic(JsonSerializerOptions options)
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
-            Debug.Assert(options.TypeInfoResolver == this);
+            Debug.Assert(options != null);
+
+            JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
+
+            if (ReferenceEquals(options, generatedSerializerOptions))
+            {
+                // Fast path for the 99% case
+                return true;
+            }
 
             return
-                GeneratedSerializerOptions is not null &&
+                generatedSerializerOptions is not null &&
                 // Guard against unsupported features
                 options.Converters.Count == 0 &&
                 options.Encoder == null &&
@@ -59,13 +75,13 @@ namespace System.Text.Json.Serialization
 #pragma warning restore SYSLIB0020
 
                 // Ensure options values are consistent with expected defaults.
-                options.DefaultIgnoreCondition == GeneratedSerializerOptions.DefaultIgnoreCondition &&
-                options.IgnoreReadOnlyFields == GeneratedSerializerOptions.IgnoreReadOnlyFields &&
-                options.IgnoreReadOnlyProperties == GeneratedSerializerOptions.IgnoreReadOnlyProperties &&
-                options.IncludeFields == GeneratedSerializerOptions.IncludeFields &&
-                options.PropertyNamingPolicy == GeneratedSerializerOptions.PropertyNamingPolicy &&
-                options.DictionaryKeyPolicy == GeneratedSerializerOptions.DictionaryKeyPolicy &&
-                options.WriteIndented == GeneratedSerializerOptions.WriteIndented;
+                options.DefaultIgnoreCondition == generatedSerializerOptions.DefaultIgnoreCondition &&
+                options.IgnoreReadOnlyFields == generatedSerializerOptions.IgnoreReadOnlyFields &&
+                options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
+                options.IncludeFields == generatedSerializerOptions.IncludeFields &&
+                options.PropertyNamingPolicy == generatedSerializerOptions.PropertyNamingPolicy &&
+                options.DictionaryKeyPolicy == generatedSerializerOptions.DictionaryKeyPolicy &&
+                options.WriteIndented == generatedSerializerOptions.WriteIndented;
         }
 
         /// <summary>
@@ -86,9 +102,7 @@ namespace System.Text.Json.Serialization
             if (options != null)
             {
                 options.VerifyMutable();
-                options.TypeInfoResolver = this;
-                options.MakeReadOnly();
-                _options = options;
+                AssociateWithOptions(options);
             }
         }
 

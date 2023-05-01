@@ -947,7 +947,7 @@ namespace System.Text.Unicode
                         Vector128<short> utf16Data;
                         for (i = 0; (uint)i < maxIters; i++)
                         {
-                            // The linker won't trim out nonAsciiUtf16DataMask unless this is in the loop.
+                            // The trimmer won't trim out nonAsciiUtf16DataMask unless this is in the loop.
                             // Luckily, this is a nop and will be elided by the JIT
                             Unsafe.SkipInit(out nonAsciiUtf16DataMask);
 

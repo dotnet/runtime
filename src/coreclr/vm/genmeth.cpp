@@ -118,11 +118,17 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         pMD->SetIsIntrinsic();
     }
 
+#ifdef EnC_SUPPORTED
+    if (pTemplateMD->IsEnCAddedMethod())
+    {
+        pMD->SetIsEnCAddedMethod();
+    }
+#endif // EnC_SUPPORTED
+
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = pTemplateMD->m_pszDebugMethodName;
     //<NICE> more info here</NICE>
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
@@ -1350,20 +1356,22 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
                                                         allowCreate));
 }
 
-//@GENERICSVER: Set the typical (ie. formal) instantiation
-void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIMDII,
+//@GENERICSVER: Set up the typical instance (i.e., non-instantiated)
+void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIMDII,
                                                           LoaderAllocator* pAllocator,
-                                                          AllocMemTracker *pamTracker,
-                                                          Module *pModule,
+                                                          AllocMemTracker* pamTracker,
+                                                          Module* pModule,
                                                           mdMethodDef tok)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pIMDII));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pamTracker));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 
@@ -1372,7 +1380,7 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
 
     //@GENERICSVER: allocate space for and initialize the typical instantiation
     //we share the typical instantiation among all instantiations by placing it in the generic method desc
-    LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initializing typical method instantiation with type handles\n"));
+    LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initializing typical MethodDesc this:%p\n", this));
     mdGenericParam    tkTyPar;
     HENUMInternalHolder hEnumTyPars(pIMDII);
     hEnumTyPars.EnumInit(mdtGenericParam, tok);
@@ -1423,7 +1431,8 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
             pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
         }
     }
-    LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initialized typical  method instantiation with %d type handles\n",numTyPars));
+    LOG((LF_JIT, LL_INFO10000, "IMD::SGMD: Initialized typical MethodDesc. type handles: %u\n",
+        numTyPars));
 }
 
 void InstantiatedMethodDesc::SetupWrapperStubWithInstantiations(MethodDesc* wrappedMD,DWORD numGenericArgs, TypeHandle *pInst)

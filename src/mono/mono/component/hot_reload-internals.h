@@ -32,6 +32,8 @@ struct _MonoClassMetadataUpdateInfo {
 	GSList *added_events; /* a set of MonoClassMetadataUpdateEvent* values */
 
 	MonoClassRuntimeMetadataUpdateInfo runtime;
+
+	uint32_t generation; /* must be updated when a GTD gets added props, events or fields; must be updated when a GINST copies updated info from the parent */
 };
 
 /*

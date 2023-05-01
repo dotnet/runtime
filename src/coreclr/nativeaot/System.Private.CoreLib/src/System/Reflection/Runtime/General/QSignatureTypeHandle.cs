@@ -61,5 +61,10 @@ namespace System.Reflection.Runtime.General
             return _handle.GetCustomModifiers((global::Internal.Metadata.NativeFormat.MetadataReader)Reader, typeContext, optional);
 #endif
         }
+
+        internal Type GetModifiedType(TypeContext typeContext)
+        {
+            return ModifiedType.Create(Resolve(typeContext), (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
+        }
     }
 }

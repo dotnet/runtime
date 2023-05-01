@@ -130,7 +130,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test (BindingFlags bindingFlags)
 			{
-				// Since the binding flags are not known linker should mark all nested types on the type
+				// Since the binding flags are not known trimming tools should mark all nested types on the type
 				_ = typeof (UnknownBindingFlags).GetNestedType (nameof (PublicNestedType), bindingFlags);
 			}
 		}
@@ -152,7 +152,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test (BindingFlags bindingFlags, string name)
 			{
-				// Since the binding flags and name are not known linker should mark all nested types on the type
+				// Since the binding flags and name are not known trimming tools should mark all nested types on the type
 				_ = typeof (UnknownBindingFlagsAndName).GetNestedType (name, bindingFlags);
 			}
 		}

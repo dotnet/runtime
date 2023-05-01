@@ -41,12 +41,12 @@ namespace System.Collections.Frozen
             HashCount = hashCount;
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                pair => GetHashCode(pair.Key),
-                (index, pair) =>
+                entries.Length,
+                index => GetHashCode(entries[index].Key),
+                (destIndex, srcIndex) =>
                 {
-                    _keys[index] = pair.Key;
-                    _values[index] = pair.Value;
+                    _keys[destIndex] = entries[srcIndex].Key;
+                    _values[destIndex] = entries[srcIndex].Value;
                 });
         }
 

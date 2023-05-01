@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Common\ref\System.Data.Common.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Odbc\ref\System.Data.Odbc.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.OleDb\ref\System.Data.OleDb.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+  </ItemGroup>
+
+</Project>

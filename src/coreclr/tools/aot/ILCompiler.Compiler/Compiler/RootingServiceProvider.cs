@@ -43,19 +43,26 @@ namespace ILCompiler
 
         public void AddReflectionRoot(TypeDesc type, string reason)
         {
+            _factory.TypeSystemContext.EnsureLoadableType(type);
             _rootAdder(_factory.ReflectedType(type), reason);
         }
 
         public void AddReflectionRoot(MethodDesc method, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
+            {
+                _factory.TypeSystemContext.EnsureLoadableMethod(method);
                 _rootAdder(_factory.ReflectedMethod(method), reason);
+            }
         }
 
         public void AddReflectionRoot(FieldDesc field, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(field.OwningType);
                 _rootAdder(_factory.ReflectedField(field), reason);
+            }
         }
 
         public void AddCompilationRoot(object o, string reason)

@@ -42,7 +42,7 @@ namespace Mono.Linker.Dataflow
 		}
 	}
 
-	abstract partial class MethodBodyScanner
+	internal abstract partial class MethodBodyScanner
 	{
 		protected readonly LinkContext _context;
 		protected readonly InterproceduralStateLattice InterproceduralStateLattice;
@@ -54,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			this.InterproceduralStateLattice = new InterproceduralStateLattice (default, default, context);
 		}
 
-		internal MultiValue ReturnValue { private set; get; }
+		internal MultiValue ReturnValue { get; private set; }
 
 		protected virtual void WarnAboutInvalidILInMethod (MethodBody method, int ilOffset)
 		{
@@ -189,7 +189,7 @@ namespace Mono.Linker.Dataflow
 					if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByReference) {
 						string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
-							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Linker dataflow tracking has failed.""",
+							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Dataflow tracking has failed.""",
 							(int) DiagnosticId.LinkerUnexpectedError,
 							origin: new MessageOrigin (method, ilOffset)));
 					}
@@ -256,7 +256,7 @@ namespace Mono.Linker.Dataflow
 				// Disabled asserts due to a bug
 				// Debug.Assert (interproceduralState.Count == 1 + calleeMethods.Count ());
 				// foreach (var method in calleeMethods)
-				// 	Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
+				//  Debug.Assert (interproceduralState.Any (kvp => kvp.Key.Method == method));
 			} else {
 				Debug.Assert (interproceduralState.MethodBodies.Count () == 1);
 			}
@@ -288,7 +288,7 @@ namespace Mono.Linker.Dataflow
 
 			BasicBlockIterator blockIterator = new BasicBlockIterator (methodIL);
 
-			ReturnValue = new ();
+			ReturnValue = default;
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
@@ -656,7 +656,7 @@ namespace Mono.Linker.Dataflow
 						if (hasReturnValue) {
 							StackSlot retValue = PopUnknown (currentStack, 1, methodBody, operation.Offset);
 							// If the return value is a reference, treat it as the value itself for now
-							//	We can handle ref return values better later
+							// We can handle ref return values better later
 							ReturnValue = MultiValueLattice.Meet (ReturnValue, DereferenceValue (retValue.Value, locals, ref interproceduralState));
 							ValidateNoReferenceToReference (locals, methodBody.Method, operation.Offset);
 						}
@@ -728,7 +728,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isByRef = code == Code.Ldarga || code == Code.Ldarga_S;
 			isByRef |= paramType.IsByRefOrPointer ();
-			isByRef |= param.IsImplicitThis == true && paramType.IsValueType;
+			isByRef |= param.IsImplicitThis && paramType.IsValueType;
 
 			StackSlot slot = new StackSlot (
 				isByRef
@@ -1140,7 +1140,7 @@ namespace Mono.Linker.Dataflow
 			ValueNodeList methodParams,
 			out MultiValue methodReturnValue);
 
-		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
+		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
 		private const int MaxTrackedArrayValues = 32;
 
 		private static void MarkArrayValuesAsUnknown (ArrayValue arrValue, int curBasicBlock)
@@ -1169,7 +1169,7 @@ namespace Mono.Linker.Dataflow
 						MarkArrayValuesAsUnknown (arrValue, curBasicBlock);
 					} else {
 						// When we know the index, we can record the value at that index.
-						StoreMethodLocalValue (arrValue.IndexValues, valueToStore.Value, indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
+						StoreMethodLocalValue (arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue (valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
 					}
 				}
 			}

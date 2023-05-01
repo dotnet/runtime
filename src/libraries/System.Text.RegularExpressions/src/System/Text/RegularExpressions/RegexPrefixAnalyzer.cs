@@ -155,6 +155,31 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Computes the leading ordinal case-insensitive substring in <paramref name="node"/>.</summary>
+        public static string? FindPrefixOrdinalCaseInsensitive(RegexNode node)
+        {
+            while (true)
+            {
+                // Search down the left side of the tree looking for a concatenation.  If we find one,
+                // ask it for any ordinal case-insensitive prefix it has.
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                        node = node.Child(0);
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString);
+                        return caseInsensitiveString;
+
+                    default:
+                        return null;
+                }
+            }
+        }
+
         /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
@@ -484,7 +509,7 @@ namespace System.Text.RegularExpressions
                             // and it is primarily meant for disambiguation of ASCII letters.
                             if (c < 128)
                             {
-                                sum += s_frequency[c];
+                                sum += Frequency[c];
                             }
                         }
                         return sum;
@@ -928,7 +953,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static readonly float[] s_frequency = new float[]
+        private static ReadOnlySpan<float> Frequency => new float[]
         {
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,
@@ -972,7 +997,7 @@ namespace System.Text.RegularExpressions
         // long total = counts.Sum(i => i.Value);
         //
         // Console.WriteLine("/// <summary>Percent occurrences in source text (100 * char count / total count).</summary>");
-        // Console.WriteLine("private static readonly float[] s_frequency = new float[]");
+        // Console.WriteLine("private static ReadOnlySpan<float> Frequency => new float[]");
         // Console.WriteLine("{");
         // int i = 0;
         // for (int row = 0; row < 16; row++)

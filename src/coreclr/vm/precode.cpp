@@ -594,10 +594,10 @@ void StubPrecode::StaticInitialize()
         case size: \
             StubPrecodeCode = StubPrecodeCode##size; \
             StubPrecodeCode_End = StubPrecodeCode##size##_End; \
-            _ASSERTE(((BYTE*)StubPrecodeCode##size##_End - (BYTE*)StubPrecodeCode##size) <= StubPrecode::CodeSize); \
+            _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode##size##_End - (BYTE*)StubPrecodeCode##size) <= StubPrecode::CodeSize); \
             break;
 
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
     switch (pageSize)
     {
         ENUM_PAGE_SIZES
@@ -606,20 +606,20 @@ void StubPrecode::StaticInitialize()
     }
     #undef ENUM_PAGE_SIZE
 #else
-    _ASSERTE(((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
+    _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
 #ifdef TARGET_LOONGARCH64
     _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
+#elif TARGET_RISCV64
+    _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
 #else
     _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
 #endif
 
 }
 
-void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
@@ -642,9 +642,9 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
     BYTE *pInstr = (BYTE*)PCODEToPINSTR(addr);
 #ifdef TARGET_X86
     return *pInstr == *(BYTE*)(StubPrecodeCode) &&
-            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(StubPrecodeData, MethodDesc)) &&
+            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, MethodDesc)) &&
             *(WORD*)(pInstr + 5) == *(WORD*)((BYTE*)StubPrecodeCode + 5) &&
-            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(StubPrecodeData, Target));
+            *(DWORD*)(pInstr + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(StubPrecodeData, Target));
 #else // TARGET_X86
     return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)StubPrecodeCode), (BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) == 0;
 #endif // TARGET_X86
@@ -705,10 +705,10 @@ void FixupPrecode::StaticInitialize()
         case size: \
             FixupPrecodeCode = FixupPrecodeCode##size; \
             FixupPrecodeCode_End = FixupPrecodeCode##size##_End; \
-            _ASSERTE(((BYTE*)FixupPrecodeCode##size##_End - (BYTE*)FixupPrecodeCode##size) <= FixupPrecode::CodeSize); \
+            _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode##size##_End - (BYTE*)FixupPrecodeCode##size) <= FixupPrecode::CodeSize); \
             break;
 
-    int pageSize = GetOsPageSize();
+    int pageSize = GetStubCodePageSize();
 
     switch (pageSize)
     {
@@ -718,19 +718,19 @@ void FixupPrecode::StaticInitialize()
     }
     #undef ENUM_PAGE_SIZE
 #else
-    _ASSERTE((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode <= FixupPrecode::CodeSize);
+    _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
 #ifdef TARGET_LOONGARCH64
     _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
+#elif TARGET_RISCV64
+    _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == FixupPrecode::Type);
 #else
     _ASSERTE(*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE) == FixupPrecode::Type);
 #endif
 }
 
-void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
+void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
-    int pageSize = GetOsPageSize();
-
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
 
@@ -757,11 +757,11 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
 #ifdef TARGET_X86
     return
         *(WORD*)(pInstr) == *(WORD*)(FixupPrecodeCode) &&
-        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(FixupPrecodeData, Target)) &&
+        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, Target)) &&
         *(pInstr + 6) == *((BYTE*)FixupPrecodeCode + 6) &&
-        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(FixupPrecodeData, MethodDesc)) &&
+        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, MethodDesc)) &&
         *(WORD*)(pInstr + 11) == *(WORD*)((BYTE*)FixupPrecodeCode + 11) &&
-        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) == (DWORD)(pInstr + GetOsPageSize() + offsetof(FixupPrecodeData, PrecodeFixupThunk));
+        *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, PrecodeFixupThunk));
 #else // TARGET_X86
     return memcmp(pInstr, (void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), (BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) == 0;
 #endif // TARGET_X86

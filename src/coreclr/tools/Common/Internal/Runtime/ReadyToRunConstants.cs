@@ -340,8 +340,6 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
-        AreTypesEquivalent,
-
         CheckCastClass,
         CheckInstanceClass,
         CheckCastArray,
@@ -351,6 +349,8 @@ namespace Internal.ReadyToRunConstants
 
         MonitorEnterStatic,
         MonitorExitStatic,
+
+        NewMultiDimArrRare,
 
         // GVM lookup helper
         GVMLookupForSlot,

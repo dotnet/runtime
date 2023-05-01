@@ -615,9 +615,7 @@ void MetaSig::Init(
         }
     }
 
-
     m_pStart = psig;
-
     m_flags = 0;
 
     // Reset the iterator fields
@@ -661,7 +659,7 @@ MetaSig::MetaSig(MethodDesc *pMD, Instantiation classInst, Instantiation methodI
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
 
-    Init(pSig, cbSigSize, pMD->GetModule(),&typeContext);
+    Init(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
@@ -682,7 +680,7 @@ MetaSig::MetaSig(MethodDesc *pMD, TypeHandle declaringType)
     DWORD cbSigSize;
     pMD->GetSig(&pSig, &cbSigSize);
 
-    Init(pSig, cbSigSize, pMD->GetModule(),&typeContext);
+    Init(pSig, cbSigSize, pMD->GetModule(), &typeContext);
 
     if (pMD->RequiresInstArg())
         SetHasParamTypeArg();
@@ -983,7 +981,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                  const Substitution *        pSubst/*=NULL*/,
                  // ZapSigContext is only set when decoding zapsigs
                  const ZapSig::Context *     pZapSigContext,
-                 MethodTable *               pMTInterfaceMapOwner) const
+                 MethodTable *               pMTInterfaceMapOwner,
+                 HandleRecursiveGenericsForFieldLayoutLoad *pRecursiveFieldGenericHandling) const
 {
     CONTRACT(TypeHandle)
     {
@@ -999,6 +998,25 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         SUPPORTS_DAC;
     }
     CONTRACT_END
+
+    _ASSERTE(!pRecursiveFieldGenericHandling || dropGenericArgumentLevel); // pRecursiveFieldGenericHandling can only be set if dropGenericArgumentLevel is set
+    if (pRecursiveFieldGenericHandling != NULL)
+    {
+        // if pRecursiveFieldGenericHandling is set, we must allow loading types
+        _ASSERTE(fLoadTypes == ClassLoader::LoadTypes);
+        // if pRecursiveFieldGenericHandling is set, then substitutions must not be enabled.
+        _ASSERTE(pSubst == NULL);
+        // FORBIDGC_LOADER_USE_ENABLED must not be enabled
+        _ASSERTE(!FORBIDGC_LOADER_USE_ENABLED());
+        // Zap sig context must be NULL, as this can only happen in the type loader itself
+        _ASSERTE(pZapSigContext == NULL);
+        // Similarly with the pMTInterfaceMapOwner logic
+        _ASSERTE(pMTInterfaceMapOwner == NULL);
+
+        // This may throw an exception using the FullModule
+        _ASSERTE(pModule->IsFullModule());
+    }
+    
 
     // We have an invariant that before we call a method, we must have loaded all of the valuetype parameters of that
     // method visible from the signature of the method. Normally we do this via type loading before the method is called
@@ -1331,110 +1349,224 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
             TypeHandle *thisinst = (TypeHandle*) _alloca(dwAllocaSize);
 
-            // Finally we gather up the type arguments themselves, loading at the level specified for generic arguments
-            for (unsigned i = 0; i < ntypars; i++)
+            bool handlingRecursiveGenericFieldScenario = false;
+            SigPointer     psigCopy = psig;
+
+            // For the recursive field handling system, we instantiate over __Canon first, then over Byte and if the
+            // types end up with the same GC layout, we can use the __Canon variant to replace instantiations over the specified type
+            for (int iRecursiveGenericFieldHandlingPass = 0; handlingRecursiveGenericFieldScenario || iRecursiveGenericFieldHandlingPass == 0 ; iRecursiveGenericFieldHandlingPass++)
             {
-                ClassLoadLevel argLevel = level;
-                TypeHandle typeHnd = TypeHandle();
-                BOOL argDrop = FALSE;
-
-                if (dropGenericArgumentLevel)
+                // Finally we gather up the type arguments themselves, loading at the level specified for generic arguments
+                for (unsigned i = 0; i < ntypars; i++)
                 {
-                    if (level == CLASS_LOAD_APPROXPARENTS)
+                    ClassLoadLevel argLevel = level;
+                    TypeHandle typeHnd = TypeHandle();
+                    BOOL argDrop = FALSE;
+
+                    if (dropGenericArgumentLevel)
                     {
-                        SigPointer tempsig = psig;
-
-                        CorElementType elemType = ELEMENT_TYPE_END;
-                        IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
-
-                        if (elemType == (CorElementType) ELEMENT_TYPE_MODULE_ZAPSIG)
+                        if (level == CLASS_LOAD_APPROXPARENTS)
                         {
-                            // Skip over the module index
-                            IfFailThrowBF(tempsig.GetData(NULL), BFA_BAD_SIGNATURE, pModule);
-                            // Read the next elemType
-                            IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pModule);
-                        }
+                            SigPointer tempsig = psig;
+                            bool checkTokenForRecursion = false;
 
-                        if (elemType == ELEMENT_TYPE_GENERICINST)
-                        {
-                            CorElementType tmpEType = ELEMENT_TYPE_END;
-                            IfFailThrowBF(tempsig.PeekElemType(&tmpEType), BFA_BAD_SIGNATURE, pOrigModule);
+                            CorElementType elemType = ELEMENT_TYPE_END;
+                            IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
 
-                            if (tmpEType == ELEMENT_TYPE_CLASS)
+                            if (elemType == (CorElementType) ELEMENT_TYPE_MODULE_ZAPSIG)
+                            {
+                                // Skip over the module index
+                                IfFailThrowBF(tempsig.GetData(NULL), BFA_BAD_SIGNATURE, pModule);
+                                // Read the next elemType
+                                IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pModule);
+                            }
+
+                            if (elemType == ELEMENT_TYPE_GENERICINST)
+                            {
+                                CorElementType tmpEType = ELEMENT_TYPE_END;
+                                IfFailThrowBF(tempsig.GetElemType(&tmpEType), BFA_BAD_SIGNATURE, pOrigModule);
+
+                                if (tmpEType == ELEMENT_TYPE_CLASS)
+                                    typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                                else if ((pRecursiveFieldGenericHandling != NULL) && (tmpEType == ELEMENT_TYPE_VALUETYPE))
+                                    checkTokenForRecursion = true;
+                            }
+                            else if ((elemType == (CorElementType)ELEMENT_TYPE_CANON_ZAPSIG) ||
+                                    (CorTypeInfo::GetGCType_NoThrow(elemType) == TYPE_GC_REF))
+                            {
                                 typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                            }
+                            else if ((elemType == ELEMENT_TYPE_VALUETYPE) && (pRecursiveFieldGenericHandling != NULL))
+                            {
+                                checkTokenForRecursion = true;
+                            }
+
+                            if (checkTokenForRecursion)
+                            {
+                                mdToken valueTypeToken = mdTypeDefNil;
+                                IfFailThrowBF(tempsig.GetToken(&valueTypeToken), BFA_BAD_SIGNATURE, pOrigModule);
+                                if (valueTypeToken == pRecursiveFieldGenericHandling->tkTypeDefToAvoidIfPossible && pOrigModule == pRecursiveFieldGenericHandling->pModuleWithTokenToAvoidIfPossible)
+                                {
+                                    bool exactSelfRecursionDetected = true;
+
+                                    if (elemType == ELEMENT_TYPE_GENERICINST)
+                                    {
+                                        // Check to ensure that the type variables in use are for an exact self-referential generic.
+                                        // Other cases are possible, but this logic is scoped to exactly self-referential generics.
+                                        uint32_t instantiationCount;
+                                        IfFailThrowBF(tempsig.GetData(&instantiationCount), BFA_BAD_SIGNATURE, pModule);
+                                        for (uint32_t iInstantiation = 0; iInstantiation < instantiationCount; iInstantiation++)
+                                        {
+                                            IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
+                                            if (elemType != ELEMENT_TYPE_VAR)
+                                            {
+                                                exactSelfRecursionDetected = false;
+                                                break;
+                                            }
+
+                                            uint32_t varIndex;
+                                            IfFailThrowBF(tempsig.GetData(&varIndex), BFA_BAD_SIGNATURE, pModule);
+                                            if (varIndex != iInstantiation)
+                                            {
+                                                exactSelfRecursionDetected = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (exactSelfRecursionDetected)
+                                    {
+                                        handlingRecursiveGenericFieldScenario = true;
+                                        if (iRecursiveGenericFieldHandlingPass == 0)
+                                        {
+                                            typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                                        }
+                                        else
+                                        {
+                                            typeHnd = TypeHandle(CoreLibBinder::GetClass(CLASS__BYTE));
+                                        }
+                                    }
+                                }
+                            }
+                            argDrop = TRUE;
                         }
-                        else if ((elemType == (CorElementType)ELEMENT_TYPE_CANON_ZAPSIG) ||
-                                 (CorTypeInfo::GetGCType_NoThrow(elemType) == TYPE_GC_REF))
+                        else
+                        // We need to make sure that typekey is always restored. Otherwise, we may run into unrestored typehandles while using
+                        // the typekey for lookups. It is safe to not drop the levels for initial NGen-specific loading levels since there cannot
+                        // be cycles in typekeys.
+                        if (level > CLASS_LOAD_APPROXPARENTS)
                         {
-                            typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                            argLevel = (ClassLoadLevel) (level-1);
                         }
-
-                        argDrop = TRUE;
                     }
-                    else
-                    // We need to make sure that typekey is always restored. Otherwise, we may run into unrestored typehandles while using
-                    // the typekey for lookups. It is safe to not drop the levels for initial NGen-specific loading levels since there cannot
-                    // be cycles in typekeys.
-                    if (level > CLASS_LOAD_APPROXPARENTS)
-                    {
-                        argLevel = (ClassLoadLevel) (level-1);
-                    }
-                }
 
-                if (typeHnd.IsNull())
-                {
-                    typeHnd = psig.GetTypeHandleThrowing(pOrigModule,
-                                                         pTypeContext,
-                                                         fLoadTypes,
-                                                         argLevel,
-                                                         argDrop,
-                                                         pSubst,
-                                                         pZapSigContext);
                     if (typeHnd.IsNull())
                     {
-                        // Indicate failure by setting thisinst to NULL
-                        thisinst = NULL;
+                        typeHnd = psig.GetTypeHandleThrowing(pOrigModule,
+                                                            pTypeContext,
+                                                            fLoadTypes,
+                                                            argLevel,
+                                                            argDrop,
+                                                            pSubst,
+                                                            pZapSigContext, 
+                                                            NULL,
+                                                            pRecursiveFieldGenericHandling);
+                        if (typeHnd.IsNull())
+                        {
+                            // Indicate failure by setting thisinst to NULL
+                            thisinst = NULL;
+                            break;
+                        }
+
+                        if (dropGenericArgumentLevel && level == CLASS_LOAD_APPROXPARENTS)
+                        {
+                            typeHnd = ClassLoader::CanonicalizeGenericArg(typeHnd);
+                        }
+                    }
+                    thisinst[i] = typeHnd;
+                    IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
+                }
+
+                // If we failed to get all of the instantiation type arguments then we return the null type handle
+                if (thisinst == NULL)
+                {
+                    thRet = TypeHandle();
+                    break;
+                }
+
+                Instantiation genericLoadInst(thisinst, ntypars);
+
+                if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
+                {
+                    thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
+                }
+                else
+                {
+                    // Group together the current signature type context and substitution chain, which
+                    // we may later use to instantiate constraints of type arguments that turn out to be
+                    // typespecs, i.e. generic types.
+                    InstantiationContext instContext(pTypeContext, pSubst);
+
+                    // Now make the instantiated type
+                    // The class loader will check the arity
+                    // When we know it was correctly computed at NGen time, we ask the class loader to skip that check.
+                    TypeHandle thFound = (ClassLoader::LoadGenericInstantiationThrowing(pGenericTypeModule,
+                                                                        tkGenericType,
+                                                                        genericLoadInst,
+                                                                        fLoadTypes, level,
+                                                                        &instContext,
+                                                                        pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
+
+                    if (!handlingRecursiveGenericFieldScenario)
+                    {
+                        thRet = thFound;
                         break;
                     }
-
-                    if (dropGenericArgumentLevel && level == CLASS_LOAD_APPROXPARENTS)
+                    else
                     {
-                        typeHnd = ClassLoader::CanonicalizeGenericArg(typeHnd);
+                        if (iRecursiveGenericFieldHandlingPass == 0)
+                        {
+                            // This is the instantiation over __Canon if we succeed with finding out if the recursion does not affect type layout, we will return this type.
+                            thRet = thFound;
+                            // Restart with the same sig as we had for the first pass
+                            psig = psigCopy;
+
+                        }
+                        else
+                        {
+                            // At this point thFound is the instantiation over Byte and thRet is set to the instantiation over __Canon.
+                            // If the two have the same GC layout, then the field layout is not affected by the type parameters, and the type load can continue 
+                            // with just using the __Canon variant.
+                            // To simplify the calculation, all we really need to compute is the number of GC pointers in the representation and the Base size.
+                            // For if the type parameter is used in field layout, there will be at least 1 more pointer in the __Canon instantiation as compared to the Byte instantiation.
+
+                            SIZE_T objectSizeCanonInstantiation = thRet.AsMethodTable()->GetBaseSize();
+                            SIZE_T objectSizeByteInstantion = thFound.AsMethodTable()->GetBaseSize();
+
+                            bool failedLayoutCompare = objectSizeCanonInstantiation != objectSizeByteInstantion;
+                            if (!failedLayoutCompare)
+                            {
+#ifndef DACCESS_COMPILE
+                                failedLayoutCompare = CGCDesc::GetNumPointers(thRet.AsMethodTable(), objectSizeCanonInstantiation, 0) !=
+                                                      CGCDesc::GetNumPointers(thFound.AsMethodTable(), objectSizeCanonInstantiation, 0);
+#else  
+                                DacNotImpl();
+#endif
+                            }
+
+                            if (failedLayoutCompare)
+                            {
+#ifndef DACCESS_COMPILE
+                                static_cast<Module*>(pOrigModule)->ThrowTypeLoadException(pOrigModule->GetMDImport(), pRecursiveFieldGenericHandling->tkTypeDefToAvoidIfPossible, IDS_INVALID_RECURSIVE_GENERIC_FIELD_LOAD);
+#else  
+                                DacNotImpl();
+#endif
+                            }
+
+                            // Runtime successfully found a type with the desired layout, return
+                            break;
+                        }
                     }
                 }
-                thisinst[i] = typeHnd;
-                IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
-            }
-
-            // If we failed to get all of the instantiation type arguments then we return the null type handle
-            if (thisinst == NULL)
-            {
-                thRet = TypeHandle();
-                break;
-            }
-
-            Instantiation genericLoadInst(thisinst, ntypars);
-
-            if (pMTInterfaceMapOwner != NULL && genericLoadInst.ContainsAllOneType(pMTInterfaceMapOwner))
-            {
-                thRet = ClassLoader::LoadTypeDefThrowing(pGenericTypeModule, tkGenericType, ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, level);
-            }
-            else
-            {
-                // Group together the current signature type context and substitution chain, which
-                // we may later use to instantiate constraints of type arguments that turn out to be
-                // typespecs, i.e. generic types.
-                InstantiationContext instContext(pTypeContext, pSubst);
-
-                // Now make the instantiated type
-                // The class loader will check the arity
-                // When we know it was correctly computed at NGen time, we ask the class loader to skip that check.
-                thRet = (ClassLoader::LoadGenericInstantiationThrowing(pGenericTypeModule,
-                                                                    tkGenericType,
-                                                                    genericLoadInst,
-                                                                    fLoadTypes, level,
-                                                                    &instContext,
-                                                                    pZapSigContext && pZapSigContext->externalTokens == ZapSig::NormalTokens));
             }
             break;
         }
@@ -1481,9 +1613,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             {
                 if (TypeFromToken(typeToken) == mdtTypeRef)
                 {
-                        loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
-                        thRet = loadedType;
-                        break;
+                    loadedType = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_VOID));
+                    thRet = loadedType;
+                    break;
                 }
             }
 
@@ -1535,8 +1667,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                              pZapSigContext);
             if (elemType.IsNull())
             {
-                    thRet = elemType;
-                    break;
+                thRet = elemType;
+                break;
             }
 
             uint32_t rank = 0;
@@ -1547,7 +1679,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                 _ASSERTE(0 < rank);
             }
             thRet = ClassLoader::LoadArrayTypeThrowing(elemType, typ, rank, fLoadTypes, level);
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_PINNED:
@@ -1559,7 +1691,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                dropGenericArgumentLevel,
                                                pSubst,
                                                pZapSigContext);
-                break;
+            break;
 
         case ELEMENT_TYPE_BYREF:
         case ELEMENT_TYPE_PTR:
@@ -1577,69 +1709,84 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             }
             else
             {
-                    thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
+                thRet = ClassLoader::LoadPointerOrByrefTypeThrowing(typ, baseType, fLoadTypes, level);
             }
-                break;
+            break;
         }
 
         case ELEMENT_TYPE_FNPTR:
-            {
+        {
 #ifndef DACCESS_COMPILE
-                uint32_t uCallConv = 0;
-                IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
+            uint32_t uCallConv = 0;
+            IfFailThrowBF(psig.GetData(&uCallConv), BFA_BAD_SIGNATURE, pOrigModule);
 
-                if ((uCallConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD)
-                    THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_A_FIELD, pOrigModule);
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD)
+                THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_A_FIELD, pOrigModule);
 
-                if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) > 0)
-                    THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_GENERIC, pOrigModule);
+            if ((uCallConv & IMAGE_CEE_CS_CALLCONV_GENERIC) > 0)
+                THROW_BAD_FORMAT(BFA_FNPTR_CANNOT_BE_GENERIC, pOrigModule);
 
-                // Get arg count;
-                uint32_t cArgs = 0;
-                IfFailThrowBF(psig.GetData(&cArgs), BFA_BAD_SIGNATURE, pOrigModule);
+            // Get the arg count.
+            uint32_t cArgs = 0;
+            IfFailThrowBF(psig.GetData(&cArgs), BFA_BAD_SIGNATURE, pOrigModule);
 
-                uint32_t cAllocaSize;
-                if (!ClrSafeInt<uint32_t>::addition(cArgs, 1, cAllocaSize) ||
-                    !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(TypeHandle), cAllocaSize))
+            uint32_t cAllocaSize;
+            if (!ClrSafeInt<uint32_t>::addition(cArgs, 1, cAllocaSize) ||
+                !ClrSafeInt<uint32_t>::multiply(cAllocaSize, sizeof(TypeHandle), cAllocaSize))
+            {
+                ThrowHR(COR_E_OVERFLOW);
+            }
+
+            TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
+            bool fReturnTypeOrParameterNotLoaded = false;
+
+            for (unsigned i = 0; i <= cArgs; i++)
+            {
+                // Lookup type handle.
+                retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
+                                                               pTypeContext,
+                                                               fLoadTypes,
+                                                               level,
+                                                               dropGenericArgumentLevel,
+                                                               pSubst,
+                                                               pZapSigContext);
+
+                if (retAndArgTypes[i].IsNull())
                 {
-                    ThrowHR(COR_E_OVERFLOW);
-                }
-
-                TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);
-                bool fReturnTypeOrParameterNotLoaded = false;
-
-                for (unsigned i = 0; i <= cArgs; i++)
-                {
-                    retAndArgTypes[i] = psig.GetTypeHandleThrowing(pOrigModule,
-                                                                   pTypeContext,
-                                                                   fLoadTypes,
-                                                                   level,
-                                                                   dropGenericArgumentLevel,
-                                                                   pSubst,
-                                                                   pZapSigContext);
-                    if (retAndArgTypes[i].IsNull())
-                    {
-                        thRet = TypeHandle();
-                        fReturnTypeOrParameterNotLoaded = true;
-                        break;
-                    }
-
-                    IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
-                }
-
-                if (fReturnTypeOrParameterNotLoaded)
-                {
+                    thRet = TypeHandle();
+                    fReturnTypeOrParameterNotLoaded = true;
                     break;
                 }
 
-                // Now make the function pointer type
-                thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);
+                IfFailThrowBF(psig.SkipExactlyOne(), BFA_BAD_SIGNATURE, pOrigModule);
+            }
+
+            if (fReturnTypeOrParameterNotLoaded)
+            {
+                break;
+            }
+
+            // Only have an unmanaged\managed status, and not the unmanaged CALLCONV_ value.
+            switch (uCallConv & IMAGE_CEE_CS_CALLCONV_MASK)
+            {
+                case IMAGE_CEE_CS_CALLCONV_C:
+                case IMAGE_CEE_CS_CALLCONV_STDCALL:
+                case IMAGE_CEE_CS_CALLCONV_THISCALL:
+                case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+                    // Strip the calling convention.
+                    uCallConv &= ~IMAGE_CEE_CS_CALLCONV_MASK;
+                    // Normalize to unmanaged.
+                    uCallConv |= IMAGE_CEE_CS_CALLCONV_UNMANAGED;
+            }
+
+            // Find an existing function pointer or make a new one
+            thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
 #else
-            DacNotImpl();
-                thRet = TypeHandle();
+            // Function pointers are interpreted as IntPtr to the debugger.
+            thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
 #endif
             break;
-            }
+        }
 
         case ELEMENT_TYPE_INTERNAL :
             {
@@ -4827,26 +4974,45 @@ public:
         WRAPPER_NO_CONTRACT;
     }
 
+    void Find(FieldDesc* pFD, SIZE_T baseOffset)
+    {
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->IsByRefLike())
+            {
+                Find(pFieldMT, baseOffset + pFD->GetOffset());
+            }
+        }
+        else if (pFD->IsByRef())
+        {
+            Report(baseOffset + pFD->GetOffset());
+        }
+    }
+
     void Find(PTR_MethodTable pMT, SIZE_T baseOffset)
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(pMT != nullptr);
         _ASSERTE(pMT->IsByRefLike());
 
+        bool isValArray = pMT->GetClass()->IsInlineArray();
         ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
         for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
         {
-            if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+            if (isValArray)
             {
-                PTR_MethodTable pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-                if (pFieldMT->IsByRefLike())
+                _ASSERTE(pFD->GetOffset() == 0);
+                DWORD elementSize = pFD->GetSize();
+                DWORD totalSize = pMT->GetNumInstanceFieldBytes();
+                for (DWORD offset = 0; offset < totalSize; offset += elementSize)
                 {
-                    Find(pFieldMT, baseOffset + pFD->GetOffset());
+                    Find(pFD, baseOffset + offset);
                 }
             }
-            else if (pFD->IsByRef())
+            else
             {
-                Report(baseOffset + pFD->GetOffset());
+                Find(pFD, baseOffset);
             }
         }
     }

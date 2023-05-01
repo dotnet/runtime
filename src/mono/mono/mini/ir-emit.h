@@ -307,6 +307,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class)
 
+#define NEW_RVACONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_RVA, (image), (token), NULL, STACK_MP, NULL)
+
 #define NEW_LDSTRLITCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_LDSTR_LIT, (val))
 
 #define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.runtimetype_class)
@@ -878,6 +880,13 @@ static int ccount = 0;
 
 /* Loads/Stores which can fault are handled correctly by the LLVM mono branch */
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
+	} while (0)
+
+#define MONO_EMIT_EXPLICIT_NULL_CHECK(cfg, reg) do { \
+		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
+		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
 	} while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */

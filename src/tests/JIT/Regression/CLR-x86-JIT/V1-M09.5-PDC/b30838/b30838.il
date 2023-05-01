@@ -5,6 +5,7 @@
 
 // MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -28,6 +29,9 @@
 .class public auto ansi Test_b30838 extends [mscorlib] System.Object {
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       19 (0x13)
   .maxstack  8

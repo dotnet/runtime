@@ -82,9 +82,7 @@ static gboolean reflection_setup_class_hierarchy (GHashTable *unparented, MonoEr
 
 static char*   type_get_qualified_name (MonoType *type, MonoAssembly *ass);
 static MonoReflectionTypeHandle mono_reflection_type_get_underlying_system_type (MonoReflectionTypeHandle t, MonoError *error);
-static gboolean is_sre_array (MonoClass *klass);
-static gboolean is_sre_byref (MonoClass *klass);
-static gboolean is_sre_pointer (MonoClass *klass);
+static gboolean is_sre_symboltype (MonoClass *klass);
 static gboolean is_sre_generic_instance (MonoClass *klass);
 static gboolean is_sre_type_builder (MonoClass *klass);
 static gboolean is_sre_gparam_builder (MonoClass *klass);
@@ -1445,21 +1443,9 @@ mono_type_array_get_and_resolve_with_modifiers (MonoArrayHandle types, MonoArray
 
 #ifndef DISABLE_REFLECTION_EMIT
 static gboolean
-is_sre_array (MonoClass *klass)
+is_sre_symboltype (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "ArrayType");
-}
-
-static gboolean
-is_sre_byref (MonoClass *klass)
-{
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "ByRefType");
-}
-
-static gboolean
-is_sre_pointer (MonoClass *klass)
-{
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "PointerType");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "SymbolType");
 }
 
 static gboolean
@@ -1525,13 +1511,13 @@ is_sre_enum_builder (MonoClass *klass)
 gboolean
 mono_is_sre_method_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "MethodOnTypeBuilderInstantiation");
 }
 
 gboolean
 mono_is_sre_ctor_on_tb_inst (MonoClass *klass)
 {
-	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorOnTypeBuilderInst");
+	check_corlib_type_cached (klass, "System.Reflection.Emit", "ConstructorOnTypeBuilderInstantiation");
 }
 
 static MonoReflectionTypeHandle
@@ -1709,41 +1695,38 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 	MonoClass *klass;
 	klass = mono_handle_class (ref);
 
-	if (is_sre_array (klass)) {
-		MonoReflectionArrayTypeHandle sre_array = MONO_HANDLE_CAST (MonoReflectionArrayType, ref);
-		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_array, element_type);
+	if (is_sre_symboltype (klass)) {
+		MonoReflectionSymbolTypeHandle sre_symbol = MONO_HANDLE_CAST (MonoReflectionSymbolType, ref);
+		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_symbol, element_type);
 		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
 		goto_if_nok (error, leave);
 		g_assert (base);
-		uint8_t rank = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_array, rank));
-		MonoClass *eclass = mono_class_from_mono_type_internal (base);
-		result = mono_image_new0 (eclass->image, MonoType, 1);
-		if (rank == 0)  {
-			result->type = MONO_TYPE_SZARRAY;
-			result->data.klass = eclass;
-		} else {
-			MonoArrayType *at = (MonoArrayType *)mono_image_alloc0 (eclass->image, sizeof (MonoArrayType));
-			result->type = MONO_TYPE_ARRAY;
-			result->data.array = at;
-			at->eklass = eclass;
-			at->rank = rank;
+		uint8_t type_kind = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, type_kind));
+		switch (type_kind)
+		{
+			case 1 : {
+				uint8_t rank = GINT32_TO_UINT8 (MONO_HANDLE_GETVAL (sre_symbol, rank));
+				MonoClass *eclass = mono_class_from_mono_type_internal (base);
+				result = mono_image_new0 (eclass->image, MonoType, 1);
+				if (rank == 0)  {
+					result->type = MONO_TYPE_SZARRAY;
+					result->data.klass = eclass;
+				} else {
+					MonoArrayType *at = (MonoArrayType *)mono_image_alloc0 (eclass->image, sizeof (MonoArrayType));
+					result->type = MONO_TYPE_ARRAY;
+					result->data.array = at;
+					at->eklass = eclass;
+					at->rank = rank;
+				}
+			}
+			break;
+			case 2 : result = m_class_get_byval_arg (mono_class_create_ptr (base));
+			break;
+			case 3 : result = &mono_class_from_mono_type_internal (base)->this_arg;
+			break;
+		default:
+			break;
 		}
-		MONO_HANDLE_SETVAL (ref, type, MonoType*, result);
-	} else if (is_sre_byref (klass)) {
-		MonoReflectionDerivedTypeHandle sre_byref = MONO_HANDLE_CAST (MonoReflectionDerivedType, ref);
-		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_byref, element_type);
-		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
-		goto_if_nok (error, leave);
-		g_assert (base);
-		result = &mono_class_from_mono_type_internal (base)->this_arg;
-		MONO_HANDLE_SETVAL (ref, type, MonoType*, result);
-	} else if (is_sre_pointer (klass)) {
-		MonoReflectionDerivedTypeHandle sre_pointer = MONO_HANDLE_CAST (MonoReflectionDerivedType, ref);
-		MonoReflectionTypeHandle ref_element = MONO_HANDLE_NEW_GET (MonoReflectionType, sre_pointer, element_type);
-		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
-		goto_if_nok (error, leave);
-		g_assert (base);
-		result = m_class_get_byval_arg (mono_class_create_ptr (base));
 		MONO_HANDLE_SETVAL (ref, type, MonoType*, result);
 	} else if (is_sre_generic_instance (klass)) {
 		result = reflection_instance_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionGenericClass, ref), error);
@@ -4306,12 +4289,10 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 			   mono_is_sre_field_builder (oklass) ||
 			   is_sre_gparam_builder (oklass) ||
 			   is_sre_generic_instance (oklass) ||
-			   is_sre_array (oklass) ||
-			   is_sre_byref (oklass) ||
-			   is_sre_pointer (oklass) ||
-			   !strcmp (oklass->name, "FieldOnTypeBuilderInst") ||
-			   !strcmp (oklass->name, "MethodOnTypeBuilderInst") ||
-			   !strcmp (oklass->name, "ConstructorOnTypeBuilderInst")) {
+			   is_sre_symboltype (oklass) ||
+			   !strcmp (oklass->name, "FieldOnTypeBuilderInstantiation") ||
+			   !strcmp (oklass->name, "MethodOnTypeBuilderInstantiation") ||
+			   !strcmp (oklass->name, "ConstructorOnTypeBuilderInstantiation")) {
 		static MonoMethod *resolve_method;
 		if (!resolve_method) {
 			MonoMethod *m = mono_class_get_method_from_name_checked (mono_class_get_module_builder_class (), "RuntimeResolve", 1, 0, error);

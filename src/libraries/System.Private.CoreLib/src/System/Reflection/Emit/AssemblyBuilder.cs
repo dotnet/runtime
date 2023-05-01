@@ -17,11 +17,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
-            }
-
             return DefineDynamicModuleCore(name);
         }
 
@@ -44,16 +39,14 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]

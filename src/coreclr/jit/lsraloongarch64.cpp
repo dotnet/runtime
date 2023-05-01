@@ -409,7 +409,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -929,6 +928,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+    // No args are placed in registers anymore.
+    placedArgRegs      = RBM_NONE;
+    numPlacedArgLocals = 0;
     return srcCount;
 }
 
@@ -973,13 +976,13 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
-            if (putArgChild->OperGet() == GT_OBJ)
+            if (putArgChild->OperGet() == GT_BLK)
             {
                 assert(putArgChild->isContained());
                 GenTree* objChild = putArgChild->gtGetOp1();
-                if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+                if (objChild->IsLclVarAddr())
                 {
-                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
+                    // We will generate all of the code for the GT_PUTARG_STK, the GT_BLK and the GT_LCL_ADDR<0>
                     // as one contained operation, and there are no source registers.
                     //
                     assert(objChild->isContained());
@@ -1073,15 +1076,15 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     else
     {
         assert(putArgChild->TypeGet() == TYP_STRUCT);
-        assert(putArgChild->OperGet() == GT_OBJ);
+        assert(putArgChild->OperGet() == GT_BLK);
 
         // We can use a ld/st sequence so we need an internal register
         buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
 
         GenTree* objChild = putArgChild->gtGetOp1();
-        if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+        if (objChild->IsLclVarAddr())
         {
-            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
+            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_BLK and the GT_LCL_ADDR<0>
             // as one contained operation
             //
             assert(objChild->isContained());
@@ -1139,7 +1142,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode);
                 }
 
-                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIs(GT_LCL_ADDR);
 
                 if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
                 {
@@ -1169,55 +1172,54 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             srcAddrOrFill = src->AsIndir()->Addr();
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        switch (blkNode->gtBlkOpKind)
         {
-            // We don't need to materialize the struct size but we still need
-            // a temporary register to perform the sequence of loads and stores.
-            // We can't use the special Write Barrier registers, so exclude them from the mask
-            regMaskTP internalIntCandidates =
-                allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
-            buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-
-            if (size >= 2 * REGSIZE_BYTES)
+            case GenTreeBlk::BlkOpKindCpObjUnroll:
             {
-                // TODO-LoongArch64: We will use ld/st paired to reduce code size and improve performance
-                // so we need to reserve an extra internal register.
+                // We don't need to materialize the struct size but we still need
+                // a temporary register to perform the sequence of loads and stores.
+                // We can't use the special Write Barrier registers, so exclude them from the mask
+                regMaskTP internalIntCandidates =
+                    allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+
+                if (size >= 2 * REGSIZE_BYTES)
+                {
+                    // TODO-LoongArch64: We will use ld/st paired to reduce code size and improve performance
+                    // so we need to reserve an extra internal register.
+                    buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+                }
+
+                // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
+                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
+
+                // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
+                // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
+                // which is killed by a StoreObj (and thus needn't be reserved).
+                if (srcAddrOrFill != nullptr)
+                {
+                    assert(!srcAddrOrFill->isContained());
+                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
+                }
             }
+            break;
 
-            // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-            dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
+            case GenTreeBlk::BlkOpKindUnroll:
+                buildInternalIntRegisterDefForNode(blkNode);
+                break;
 
-            // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
-            // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
-            // which is killed by a StoreObj (and thus needn't be reserved).
-            if (srcAddrOrFill != nullptr)
-            {
-                assert(!srcAddrOrFill->isContained());
-                srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
-            }
-        }
-        else
-        {
-            switch (blkNode->gtBlkOpKind)
-            {
-                case GenTreeBlk::BlkOpKindUnroll:
-                    buildInternalIntRegisterDefForNode(blkNode);
-                    break;
+            case GenTreeBlk::BlkOpKindHelper:
+                dstAddrRegMask = RBM_ARG_0;
+                if (srcAddrOrFill != nullptr)
+                {
+                    assert(!srcAddrOrFill->isContained());
+                    srcRegMask = RBM_ARG_1;
+                }
+                sizeRegMask = RBM_ARG_2;
+                break;
 
-                case GenTreeBlk::BlkOpKindHelper:
-                    dstAddrRegMask = RBM_ARG_0;
-                    if (srcAddrOrFill != nullptr)
-                    {
-                        assert(!srcAddrOrFill->isContained());
-                        srcRegMask = RBM_ARG_1;
-                    }
-                    sizeRegMask = RBM_ARG_2;
-                    break;
-
-                default:
-                    unreached();
-            }
+            default:
+                unreached();
         }
     }
 

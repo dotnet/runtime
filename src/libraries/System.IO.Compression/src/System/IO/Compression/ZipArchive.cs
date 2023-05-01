@@ -16,18 +16,18 @@ namespace System.IO.Compression
     {
         private readonly Stream _archiveStream;
         private ZipArchiveEntry? _archiveStreamOwner;
-        private BinaryReader? _archiveReader;
-        private ZipArchiveMode _mode;
-        private List<ZipArchiveEntry> _entries;
-        private ReadOnlyCollection<ZipArchiveEntry> _entriesCollection;
-        private Dictionary<string, ZipArchiveEntry> _entriesDictionary;
+        private readonly BinaryReader? _archiveReader;
+        private readonly ZipArchiveMode _mode;
+        private readonly List<ZipArchiveEntry> _entries;
+        private readonly ReadOnlyCollection<ZipArchiveEntry> _entriesCollection;
+        private readonly Dictionary<string, ZipArchiveEntry> _entriesDictionary;
         private bool _readEntries;
-        private bool _leaveOpen;
+        private readonly bool _leaveOpen;
         private long _centralDirectoryStart; //only valid after ReadCentralDirectory
         private bool _isDisposed;
         private uint _numberOfThisDisk; //only valid after ReadCentralDirectory
         private long _expectedNumberOfEntries;
-        private Stream? _backingStream;
+        private readonly Stream? _backingStream;
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
 

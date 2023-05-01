@@ -374,9 +374,9 @@ namespace System.Threading.Tasks.Dataflow
             private readonly TOutput _messageValue;
 
             /// <summary>CancellationToken used to cancel the send.</summary>
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
             /// <summary>Registration with the cancellation token.</summary>
-            private CancellationTokenRegistration _cancellationRegistration;
+            private readonly CancellationTokenRegistration _cancellationRegistration;
             /// <summary>The cancellation/completion state of the source.</summary>
             private int _cancellationState; // one of the CANCELLATION_STATE_* constant values, defaulting to NONE
 
@@ -2318,7 +2318,7 @@ namespace System.Threading.Tasks.Dataflow
             /// <summary>Gets an observable to represent the source block.</summary>
             /// <param name="source">The source.</param>
             /// <returns>The observable.</returns>
-            internal static IObservable<TOutput> From(ISourceBlock<TOutput> source)
+            internal static SourceObservable<TOutput> From(ISourceBlock<TOutput> source)
             {
                 Debug.Assert(source != null, "Requires a source for which to retrieve the observable.");
                 return _table.GetValue(source, static s => new SourceObservable<TOutput>(s));

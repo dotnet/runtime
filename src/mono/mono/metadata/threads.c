@@ -91,6 +91,11 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #include <errno.h>
 #endif
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <mono/utils/mono-threads-wasm.h>
+#include <emscripten/eventloop.h>
+#endif
+
 #include "icall-decl.h"
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
@@ -1083,6 +1088,7 @@ typedef struct {
 	MonoThreadStart start_func;
 	gpointer start_func_arg;
 	gboolean force_attach;
+	gboolean external_eventloop;
 	gboolean failed;
 	MonoCoopSem registered;
 } StartInfo;
@@ -1109,6 +1115,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		(gpointer)(gsize) tid,
 		"Handle Stack"));
 }
+
 
 static guint32 WINAPI
 start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
@@ -1166,6 +1173,8 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	/* Let the thread that called Start() know we're ready */
 	mono_coop_sem_post (&start_info->registered);
+
+	gboolean external_eventloop = start_info->external_eventloop;
 
 	if (mono_atomic_dec_i32 (&start_info->ref) == 0) {
 		mono_coop_sem_destroy (&start_info->registered);
@@ -1234,6 +1243,12 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
 
+	if (G_UNLIKELY (external_eventloop)) {
+		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
+		if (mono_thread_platform_external_eventloop_keepalive_check ())
+			return 0;
+	}
+
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in mono_thread_detach_internal since
 	 * mono_thread_detach_internal could be  called for a
@@ -1260,8 +1275,18 @@ start_wrapper (gpointer data)
 	info = mono_thread_info_attach ();
 	info->runtime_thread = TRUE;
 
+	gboolean external_eventloop = start_info->external_eventloop;
 	/* Run the actual main function of the thread */
 	res = start_wrapper_internal (start_info, (gsize*)info->stack_end);
+
+	if (G_UNLIKELY (external_eventloop)) {
+		/* if the thread wants to stay alive, don't clean up after it */
+		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
+			/* while we wait in the external eventloop, we're GC safe */
+			MONO_REQ_GC_SAFE_MODE;
+			return 0;
+		}
+	}
 
 	mono_thread_info_exit (res);
 
@@ -1349,6 +1374,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	start_info->start_func_arg = start_func_arg;
 	start_info->force_attach = flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE;
 	start_info->failed = FALSE;
+	start_info->external_eventloop = (flags & MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP) != 0;
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
@@ -4907,7 +4933,11 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 		return;
 	}
 
-	res = create_thread (internal, internal, NULL, NULL, stack_size, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	MonoThreadCreateFlags create_flags = MONO_THREAD_CREATE_FLAGS_NONE;
+	if (G_UNLIKELY (internal->external_eventloop))
+		create_flags |= MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP;
+
+	res = create_thread (internal, internal, NULL, NULL, stack_size, create_flags, error);
 	if (!res) {
 		UNLOCK_THREAD (internal);
 		return;
@@ -4946,20 +4976,115 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_delete ((LifoSemaphoreAsyncWait*)sem);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_release ((LifoSemaphoreAsyncWait*)sem, count);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
+{
+	return (gpointer)mono_lifo_semaphore_asyncwait_init ();
+}
+
+void
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
+	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	emscripten_runtime_keepalive_push();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	emscripten_runtime_keepalive_pop();
+}
+
+extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
+}
+
+#endif /* HOST_BROWSER && !DISABLE_THREADS */
+
+/* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
+ * need to be defined */
+#if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
+{
+	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	g_assert_not_reached();
+}
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	g_assert_not_reached();
+}
+#endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
+

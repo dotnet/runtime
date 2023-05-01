@@ -82,7 +82,7 @@ internal sealed class WebServerStartup
         provider.Mappings[".cjs"] = "text/javascript";
         provider.Mappings[".mjs"] = "text/javascript";
 
-        foreach (string extn in new string[] { ".dll", ".pdb", ".dat", ".blat", ".webcil" })
+        foreach (string extn in new string[] { ".dll", ".pdb", ".dat", ".webcil" })
         {
             provider.Mappings[extn] = "application/octet-stream";
         }
@@ -167,7 +167,6 @@ internal sealed class WebServerStartup
                 return Task.CompletedTask;
             });
         });
-
 
         applicationLifetime.ApplicationStarted.Register(() =>
         {

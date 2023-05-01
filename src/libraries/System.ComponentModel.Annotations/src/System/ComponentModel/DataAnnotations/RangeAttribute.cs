@@ -19,11 +19,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="minimum">The minimum value, inclusive</param>
         /// <param name="maximum">The maximum value, inclusive</param>
         public RangeAttribute(int minimum, int maximum)
-            : base(() => SR.RangeAttribute_ValidationError)
+            : base(populateErrorMessageResourceAccessor: false)
         {
             Minimum = minimum;
             Maximum = maximum;
             OperandType = typeof(int);
+            ErrorMessageResourceAccessor = GetValidationErrorMessage;
         }
 
         /// <summary>
@@ -32,11 +33,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="minimum">The minimum value, inclusive</param>
         /// <param name="maximum">The maximum value, inclusive</param>
         public RangeAttribute(double minimum, double maximum)
-            : base(() => SR.RangeAttribute_ValidationError)
+            : base(populateErrorMessageResourceAccessor: false)
         {
             Minimum = minimum;
             Maximum = maximum;
             OperandType = typeof(double);
+            ErrorMessageResourceAccessor = GetValidationErrorMessage;
         }
 
         /// <summary>
@@ -51,11 +53,12 @@ namespace System.ComponentModel.DataAnnotations
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             string minimum,
             string maximum)
-            : base(() => SR.RangeAttribute_ValidationError)
+            : base(populateErrorMessageResourceAccessor: false)
         {
             OperandType = type;
             Minimum = minimum;
             Maximum = maximum;
+            ErrorMessageResourceAccessor = GetValidationErrorMessage;
         }
 
         /// <summary>
@@ -67,6 +70,16 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the maximum value for the range
         /// </summary>
         public object Maximum { get; private set; }
+
+        /// <summary>
+        ///     Specifies whether validation should fail for values that are equal to <see cref="Minimum"/>.
+        /// </summary>
+        public bool MinimumIsExclusive { get; set; }
+
+        /// <summary>
+        ///     Specifies whether validation should fail for values that are equal to <see cref="Maximum"/>.
+        /// </summary>
+        public bool MaximumIsExclusive { get; set; }
 
         /// <summary>
         ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
@@ -94,9 +107,14 @@ namespace System.ComponentModel.DataAnnotations
 
         private void Initialize(IComparable minimum, IComparable maximum, Func<object, object?> conversion)
         {
-            if (minimum.CompareTo(maximum) > 0)
+            int cmp = minimum.CompareTo(maximum);
+            if (cmp > 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.RangeAttribute_MinGreaterThanMax, maximum, minimum));
+            }
+            else if (cmp == 0 && (MinimumIsExclusive || MaximumIsExclusive))
+            {
+                throw new InvalidOperationException(SR.RangeAttribute_CannotUseExclusiveBoundsWhenTheyAreEqual);
             }
 
             Minimum = minimum;
@@ -116,7 +134,7 @@ namespace System.ComponentModel.DataAnnotations
             SetupConversion();
 
             // Automatically pass if value is null or empty. RequiredAttribute should be used to assert a value is not empty.
-            if (value == null || (value as string)?.Length == 0)
+            if (value is null or string { Length: 0 })
             {
                 return true;
             }
@@ -142,7 +160,9 @@ namespace System.ComponentModel.DataAnnotations
 
             var min = (IComparable)Minimum;
             var max = (IComparable)Maximum;
-            return min.CompareTo(convertedValue) <= 0 && max.CompareTo(convertedValue) >= 0;
+            return
+                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
+                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
         }
 
         /// <summary>
@@ -234,5 +254,16 @@ namespace System.ComponentModel.DataAnnotations
             Justification = "The ctor that allows this code to be called is marked with RequiresUnreferencedCode.")]
         private TypeConverter GetOperandTypeConverter() =>
             TypeDescriptor.GetConverter(OperandType);
+
+        private string GetValidationErrorMessage()
+        {
+            return (MinimumIsExclusive, MaximumIsExclusive) switch
+            {
+                (false, false) => SR.RangeAttribute_ValidationError,
+                (true, false) => SR.RangeAttribute_ValidationError_MinExclusive,
+                (false, true) => SR.RangeAttribute_ValidationError_MaxExclusive,
+                (true, true) => SR.RangeAttribute_ValidationError_MinExclusive_MaxExclusive,
+            };
+        }
     }
 }

@@ -13,7 +13,7 @@ Whether or not a method implementing an interface method is required due to the 
 - Implementing type is marked as instantiated or not
 - Interface Implementation is marked or not
 
-Note that in library mode, interface methods that can be accessed by COM or native code are marked by the linker.
+Note that in library mode, interface methods that can be accessed by COM or native code are marked by the ILLink.
 
 ### If the interface implementation is not marked, do not mark the implementation method
 A type that doesn't implement the interface isn't required to have methods that implement the interface. However, a base type may have a public method that implements an interface on a derived type. If the interface implementation on the derived type is marked, then the method may be needed and we should go onto the next step.

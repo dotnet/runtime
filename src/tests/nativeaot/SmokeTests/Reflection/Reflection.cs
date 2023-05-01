@@ -37,10 +37,7 @@ internal static class ReflectionTest
 #if !OPTIMIZED_MODE_WITHOUT_SCANNER
         TestContainment.Run();
         TestInterfaceMethod.Run();
-        // Need to implement RhGetCodeTarget for CppCodeGen
-#if !CODEGEN_CPP
         TestByRefLikeTypeMethod.Run();
-#endif
 #endif
         TestILScanner.Run();
         TestUnreferencedEnum.Run();
@@ -65,6 +62,8 @@ internal static class ReflectionTest
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
+        TestMdArrayLoad.Run();
+        TestByRefTypeLoad.Run();
 
         //
         // Mostly functionality tests
@@ -76,14 +75,13 @@ internal static class ReflectionTest
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
-#if !CODEGEN_CPP
         TypeConstructionTest.Run();
         TestThreadStaticFields.Run();
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
-#endif
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
+
         return 100;
     }
 
@@ -249,7 +247,6 @@ internal static class ReflectionTest
                     throw new Exception();
             }
 
-#if !CODEGEN_CPP
             {
                 MethodInfo helloMethod = typeof(InvokeTestsGeneric<string>).GetTypeInfo().GetDeclaredMethod("GetHello");
                 string result = (string)helloMethod.Invoke(new InvokeTestsGeneric<string>(), new object[] { "world" });
@@ -277,7 +274,6 @@ internal static class ReflectionTest
                 if (result != "Hello 1 System.Double")
                     throw new Exception();
             }
-#endif
         }
     }
 
@@ -1106,12 +1102,9 @@ internal static class ReflectionTest
             if (!HasTypeHandle(usedNestedType))
                 throw new Exception($"{nameof(NeverUsedContainerType.UsedNestedType)} should have an EEType");
 
-            // Need to implement exceptions for CppCodeGen
-#if !CODEGEN_CPP
             // But the containing type doesn't need an EEType
             if (HasTypeHandle(neverUsedContainerType))
                 throw new Exception($"{nameof(NeverUsedContainerType)} should not have an EEType");
-#endif
         }
     }
 
@@ -1408,7 +1401,6 @@ internal static class ReflectionTest
                     throw new Exception("PartialCanon");
             }
 
-#if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
             Console.WriteLine("Search in system assembly");
             {
                 Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
@@ -1430,7 +1422,6 @@ internal static class ReflectionTest
                 if (t == null)
                     throw new Exception("CompilerGlobalScopeAttribute");
             }
-#endif
 #endif
 
             Console.WriteLine("Enum.GetValues");
@@ -2190,6 +2181,34 @@ internal static class ReflectionTest
         }
 
         class G<T> where T : struct { }
+    }
+
+    class TestMdArrayLoad
+    {
+        class Atom { }
+
+        public static Type MakeMdArray<T>() => typeof(T[,,]);
+
+        public static void Run()
+        {
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
+                throw new Exception();
+        }
+    }
+
+    class TestByRefTypeLoad
+    {
+        class Atom { }
+
+        public static Type MakeFnPtrType<T>() => typeof(delegate*<ref T>);
+
+        public static void Run()
+        {
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
+                throw new Exception();
+        }
     }
 
     class TestEntryPoint

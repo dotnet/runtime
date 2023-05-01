@@ -36,28 +36,28 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
-                INamedTypeSymbol loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
+                INamedTypeSymbol? loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
+                INamedTypeSymbol? loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
+                INamedTypeSymbol? logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
                 if (logLevelSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
+                INamedTypeSymbol? exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
                 if (exceptionSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");
@@ -72,9 +72,11 @@ namespace Microsoft.Extensions.Logging.Generators
                 var eventNames = new HashSet<string>();
 
                 // we enumerate by syntax tree, to minimize the need to instantiate semantic models (since they're expensive)
-                foreach (var group in classes.GroupBy(x => x.SyntaxTree))
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classes.GroupBy(x => x.SyntaxTree))
                 {
-                    SemanticModel? sm = null;
+                    SyntaxTree syntaxTree = group.Key;
+                    SemanticModel sm = _compilation.GetSemanticModel(syntaxTree);
+
                     foreach (ClassDeclarationSyntax classDec in group)
                     {
                         // stop if we're asked to
@@ -98,8 +100,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                 continue;
                             }
 
-                            sm ??= _compilation.GetSemanticModel(classDec.SyntaxTree);
-                            IMethodSymbol? logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken);
+                            IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
 
@@ -115,9 +116,9 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool hasMisconfiguredInput = false;
-                                    ImmutableArray<AttributeData>? boundAttributes = logMethodSymbol?.GetAttributes();
+                                    ImmutableArray<AttributeData> boundAttributes = logMethodSymbol.GetAttributes();
 
-                                    if (boundAttributes == null || boundAttributes!.Value.Length == 0)
+                                    if (boundAttributes.Length == 0)
                                     {
                                         continue;
                                     }
@@ -138,6 +139,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 if (typedConstant.Kind == TypedConstantKind.Error)
                                                 {
                                                     hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
                                                 }
                                             }
 
@@ -146,7 +148,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
                                             eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
                                             level = items[1].IsNull ? null : (int?)GetItem(items[1]);
-                                            message = items[2].IsNull ? "" : (string)GetItem(items[2]);
+                                            message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
                                         }
 
                                         // argument syntax takes parameters. e.g. EventId = 0
@@ -159,6 +161,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                 if (typedConstant.Kind == TypedConstantKind.Error)
                                                 {
                                                     hasMisconfiguredInput = true;
+                                                    break; // if a compilation error was found, no need to keep evaluating other args
                                                 }
                                                 else
                                                 {
@@ -178,7 +181,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                             eventName = (string?)GetItem(value);
                                                             break;
                                                         case "Message":
-                                                            message = value.IsNull ? "" : (string)GetItem(value);
+                                                            message = value.IsNull ? string.Empty : (string)GetItem(value);
                                                             break;
                                                     }
                                                 }
@@ -204,9 +207,15 @@ namespace Microsoft.Extensions.Logging.Generators
                                         SkipEnabledCheck = skipEnabledCheck
                                     };
 
-                                    ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
-
                                     bool keepMethod = true;   // whether or not we want to keep the method definition or if it's got errors making it so we should discard it instead
+
+                                    bool success = ExtractTemplates(message, lm.TemplateMap, lm.TemplateList);
+                                    if (!success)
+                                    {
+                                        Diag(DiagnosticDescriptors.MalformedFormatStrings, method.Identifier.GetLocation(), method.Identifier.ToString());
+                                        keepMethod = false;
+                                    }
+
                                     if (lm.Name[0] == '_')
                                     {
                                         // can't have logging method names that start with _ since that can lead to conflicting symbol names
@@ -301,7 +310,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             break;
                                         }
 
-                                        ITypeSymbol paramTypeSymbol = paramSymbol!.Type;
+                                        ITypeSymbol paramTypeSymbol = paramSymbol.Type;
                                         if (paramTypeSymbol is IErrorTypeSymbol)
                                         {
                                             // semantic problem, just bail quietly
@@ -335,10 +344,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             Type = typeName,
                                             Qualifier = qualifier,
                                             CodeName = needsAtSign ? "@" + paramName : paramName,
-                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol!, loggerSymbol),
-                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol!, exceptionSymbol),
-                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol!, logLevelSymbol),
-                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol!, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol!, stringSymbol),
+                                            IsLogger = !foundLogger && IsBaseOrIdentity(paramTypeSymbol, loggerSymbol),
+                                            IsException = !foundException && IsBaseOrIdentity(paramTypeSymbol, exceptionSymbol),
+                                            IsLogLevel = !foundLogLevel && IsBaseOrIdentity(paramTypeSymbol, logLevelSymbol),
+                                            IsEnumerable = IsBaseOrIdentity(paramTypeSymbol, enumerableSymbol) && !IsBaseOrIdentity(paramTypeSymbol, stringSymbol),
                                         };
 
                                         foundLogger |= lp.IsLogger;
@@ -595,81 +604,112 @@ namespace Microsoft.Extensions.Logging.Generators
             /// <summary>
             /// Finds the template arguments contained in the message string.
             /// </summary>
-            private static void ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            /// <returns>A value indicating whether the extraction was successful.</returns>
+            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
-                    return;
+                    return true;
                 }
 
                 int scanIndex = 0;
-                int endIndex = message!.Length;
+                int endIndex = message.Length;
 
+                bool success = true;
                 while (scanIndex < endIndex)
                 {
                     int openBraceIndex = FindBraceIndex(message, '{', scanIndex, endIndex);
-                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex, endIndex);
 
-                    if (closeBraceIndex == endIndex)
+                    if (openBraceIndex == -2) // found '}' instead of '{'
                     {
-                        scanIndex = endIndex;
+                        success = false;
+                        break;
                     }
-                    else
+                    else if (openBraceIndex == -1) // scanned the string and didn't find any remaining '{' or '}'
                     {
-                        // Format item syntax : { index[,alignment][ :formatString] }.
-                        int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                        break;
+                    }
 
-                        string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
-                        templateMap[templateName] = templateName;
-                        templateList.Add(templateName);
-                        scanIndex = closeBraceIndex + 1;
+                    int closeBraceIndex = FindBraceIndex(message, '}', openBraceIndex + 1, endIndex);
+
+                    if (closeBraceIndex <= -1) // unclosed '{'
+                    {
+                        success = false;
+                        break;
                     }
+
+                    // Format item syntax : { index[,alignment][ :formatString] }.
+                    int formatDelimiterIndex = FindIndexOfAny(message, _formatDelimiters, openBraceIndex, closeBraceIndex);
+                    string templateName = message.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1);
+
+                    if (string.IsNullOrWhiteSpace(templateName)) // braces with no named argument, such as {} and { }
+                    {
+                        success = false;
+                        break;
+                    }
+
+                    templateMap[templateName] = templateName;
+                    templateList.Add(templateName);
+
+                    scanIndex = closeBraceIndex + 1;
                 }
+
+                return success;
             }
 
-            private static int FindBraceIndex(string message, char brace, int startIndex, int endIndex)
+            /// <summary>
+            /// Searches for the next brace index in the message.
+            /// </summary>
+            /// <remarks> The search skips any sequences of {{ or }}.</remarks>
+            /// <example>{{prefix{{{Argument}}}suffix}}</example>
+            /// <returns>The zero-based index position of the first occurrence of the searched brace; -1 if the searched brace was not found; -2 if the wrong brace was found.</returns>
+            private static int FindBraceIndex(string message, char searchedBrace, int startIndex, int endIndex)
             {
-                // Example: {{prefix{{{Argument}}}suffix}}.
-                int braceIndex = endIndex;
+                Debug.Assert(searchedBrace is '{' or '}');
+
+                int braceIndex = -1;
                 int scanIndex = startIndex;
-                int braceOccurrenceCount = 0;
 
                 while (scanIndex < endIndex)
                 {
-                    if (braceOccurrenceCount > 0 && message[scanIndex] != brace)
+                    char current = message[scanIndex];
+
+                    if (current is '{' or '}')
                     {
-                        if (braceOccurrenceCount % 2 == 0)
+                        char currentBrace = current;
+
+                        int scanIndexBeforeSkip = scanIndex;
+                        while (current == currentBrace && ++scanIndex < endIndex)
                         {
-                            // Even number of '{' or '}' found. Proceed search with next occurrence of '{' or '}'.
-                            braceOccurrenceCount = 0;
-                            braceIndex = endIndex;
+                            current = message[scanIndex];
                         }
-                        else
+
+                        int bracesCount = scanIndex - scanIndexBeforeSkip;
+                        if (bracesCount % 2 != 0) // if it is an even number of braces, just skip them, otherwise, we found an unescaped brace
                         {
-                            // An unescaped '{' or '}' found.
+                            if (currentBrace == searchedBrace)
+                            {
+                                if (currentBrace == '{')
+                                {
+                                    braceIndex = scanIndex - 1; // For '{' pick the last occurrence.
+                                }
+                                else
+                                {
+                                    braceIndex = scanIndexBeforeSkip; // For '}' pick the first occurrence.
+                                }
+                            }
+                            else
+                            {
+                                braceIndex = -2; // wrong brace found
+                            }
+
                             break;
                         }
                     }
-                    else if (message[scanIndex] == brace)
+                    else
                     {
-                        if (brace == '}')
-                        {
-                            if (braceOccurrenceCount == 0)
-                            {
-                                // For '}' pick the first occurrence.
-                                braceIndex = scanIndex;
-                            }
-                        }
-                        else
-                        {
-                            // For '{' pick the last occurrence.
-                            braceIndex = scanIndex;
-                        }
-
-                        braceOccurrenceCount++;
+                        scanIndex++;
                     }
-
-                    scanIndex++;
                 }
 
                 return braceIndex;

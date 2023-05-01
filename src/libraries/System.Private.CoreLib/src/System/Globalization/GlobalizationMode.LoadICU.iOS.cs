@@ -7,8 +7,7 @@ namespace System.Globalization
     {
         private static int LoadICU()
         {
-            object? datPath = AppContext.GetData("ICU_DAT_FILE_PATH");
-            return (datPath != null) ? Interop.Globalization.LoadICUData(datPath!.ToString()!) : Interop.Globalization.LoadICU();
+            return Interop.Globalization.LoadICUData((string?)AppContext.GetData("ICU_DAT_FILE_PATH")); // we handle a null path in the native code
         }
     }
 }

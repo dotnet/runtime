@@ -34,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -91,9 +92,10 @@ namespace System.Reflection.Emit
                 this.call_conv |= CallingConventions.HasThis;
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -316,7 +318,7 @@ namespace System.Reflection.Emit
                  MethodImplAttributes.IL) ||
                 ((iattrs & MethodImplAttributes.ManagedMask) !=
                  MethodImplAttributes.Managed))
-                throw new InvalidOperationException("Method body should not exist.");
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             if (ilgen != null)
                 return ilgen;
             ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), size);
@@ -333,7 +335,7 @@ namespace System.Reflection.Emit
             if ((position < 0) || parameters == null || (position > parameters.Length))
                 throw new ArgumentOutOfRangeException(nameof(position));
 
-            ParameterBuilder pb = new ParameterBuilder(this, position, attributes, strParamName);
+            ParameterBuilder pb = new RuntimeParameterBuilder(this, position, attributes, strParamName);
             pinfo ??= new ParameterBuilder[parameters.Length + 1];
             pinfo[position] = pb;
             return pb;
@@ -346,7 +348,7 @@ namespace System.Reflection.Emit
                 foreach (MethodInfo m in override_methods)
                 {
                     if (m.IsVirtual && !IsVirtual)
-                        throw new TypeLoadException(string.Format("Method '{0}' override '{1}' but it is not virtual", name, m));
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MethodOverrideNotVirtual, name, m));
                 }
             }
         }
@@ -357,9 +359,7 @@ namespace System.Reflection.Emit
             {
                 // do not allow zero length method body on MS.NET 2.0 (and higher)
                 if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
-                    throw new InvalidOperationException(
-                                         string.Format("Method '{0}.{1}' does not have a method body.",
-                                                DeclaringType!.FullName, Name));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
             }
             ilgen?.label_fixup(this);
         }
@@ -382,20 +382,17 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            switch (customBuilder.Ctor.ReflectedType!.FullName)
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    byte[] data = customBuilder.Data;
-                    int impla; // the (stupid) ctor takes a short or an int ...
-                    impla = (int)data[2];
-                    impla |= ((int)data[3]) << 8;
+                    int impla = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     iattrs |= (MethodImplAttributes)impla;
                     return;
 
                 case "System.Runtime.InteropServices.DllImportAttribute":
-                    CustomAttributeBuilder.CustomAttributeInfo attr = CustomAttributeBuilder.decode_cattr(customBuilder);
+                    CustomAttributeBuilder.CustomAttributeInfo attr = CustomAttributeBuilder.decode_cattr(con, binaryAttribute);
                     bool preserveSig = true;
 
                     /*
@@ -411,7 +408,7 @@ namespace System.Reflection.Emit
 
                     pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException("DllName cannot be empty");
+                        throw new ArgumentException(SR.Arg_DllNameCannotBeEmpty);
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
 
@@ -454,6 +451,7 @@ namespace System.Reflection.Emit
                     break;
             }
 
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -466,11 +464,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
@@ -536,14 +529,14 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException("Method is not a generic method definition");
+                throw new InvalidOperationException(SR.Argument_NeedGenericMethodDefinition);
             ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {
                 ArgumentNullException.ThrowIfNull(type, nameof(typeArguments));
             }
 
-            return new MethodOnTypeBuilderInst(this, typeArguments);
+            return new MethodOnTypeBuilderInstantiation(this, typeArguments);
         }
 
         public override bool IsGenericMethodDefinition
@@ -601,9 +594,10 @@ namespace System.Reflection.Emit
         {
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentNullException(nameof(parameterTypes), "Elements of the parameterTypes array cannot be null");
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);

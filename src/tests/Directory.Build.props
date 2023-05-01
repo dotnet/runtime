@@ -74,12 +74,14 @@
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">coreclr</RuntimeFlavor>
 
     <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
-    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
 
     <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
 
     <RunWithAndroid>false</RunWithAndroid>
     <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
+
+    <RunWithiOS>false</RunWithiOS>
+    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</RunWithiOS>
 
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
@@ -142,6 +144,7 @@
     <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='loongarch64'">64</TargetBits>
+    <TargetBits Condition="'$(TargetArchitecture)'=='riscv64'">64</TargetBits>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -196,6 +199,16 @@
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
     <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
     <TestFramework>GeneratedRunner</TestFramework>
+
+    <!-- Prevent project-specific NuGet props/targets from clashing with the ones we manually import below. -->
+    <ImportProjectExtensionProps>false</ImportProjectExtensionProps>
+    <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'tvos'">
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
+    <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

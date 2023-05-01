@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Logging.Generators
             title: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.ShouldntReuseEventIdsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
-            DiagnosticSeverity.Warning,
+            DiagnosticSeverity.Info,
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor LoggingMethodMustReturnVoid { get; } = new DiagnosticDescriptor(
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Logging.Generators
 
         public static DiagnosticDescriptor MalformedFormatStrings { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1022",
-            title: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
+            title: new LocalizableResourceString(nameof(SR.MalformedFormatStringsTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.MalformedFormatStringsMessage), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Logging.Generators.SR)),
             category: "LoggingGenerator",
             DiagnosticSeverity.Error,

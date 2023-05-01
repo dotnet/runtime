@@ -5,7 +5,7 @@ import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
 import { PromiseController, createPromiseController } from "./promise-controller";
 import { mono_assert } from "./types";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import { setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 

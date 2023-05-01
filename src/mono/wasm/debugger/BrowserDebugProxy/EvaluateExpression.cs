@@ -482,7 +482,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -506,8 +505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

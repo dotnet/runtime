@@ -37,7 +37,7 @@ namespace System.Reflection
                 }
                 else
                 {
-                    if (RuntimeFeature.IsDynamicCodeCompiled)
+                    if (RuntimeFeature.IsDynamicCodeSupported)
                     {
                         _invokeFunc = InvokerEmitUtil.CreateInvokeDelegate(_method);
                     }

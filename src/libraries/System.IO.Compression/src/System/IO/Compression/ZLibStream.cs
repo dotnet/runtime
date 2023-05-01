@@ -279,15 +279,7 @@ namespace System.IO.Compression
         /// <summary>Throws an <see cref="ObjectDisposedException"/> if the stream is closed.</summary>
         private void ThrowIfClosed()
         {
-            if (_deflateStream is null)
-            {
-                ThrowClosedException();
-            }
+            ObjectDisposedException.ThrowIf(_deflateStream is null, this);
         }
-
-        /// <summary>Throws an <see cref="ObjectDisposedException"/>.</summary>
-        [DoesNotReturn]
-        private static void ThrowClosedException() =>
-            throw new ObjectDisposedException(nameof(ZLibStream), SR.ObjectDisposed_StreamClosed);
     }
 }

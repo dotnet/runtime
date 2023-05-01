@@ -18,9 +18,6 @@ namespace System.Runtime
             // Start at the current type and work up the inheritance chain
             MethodTable* pCur = pTgtType;
 
-            if (pItfType->IsCloned)
-                pItfType = pItfType->CanonicalEEType;
-
             // We first look at non-default implementation. Default implementations are only considered
             // if the "old algorithm" didn't come up with an answer.
             bool fDoDefaultImplementationLookup = false;
@@ -185,10 +182,7 @@ namespace System.Runtime
                 if (i->_usInterfaceMethodSlot == itfSlotNumber)
                 {
                     MethodTable* pCurEntryType =
-                        pTgtType->InterfaceMap[i->_usInterfaceIndex].InterfaceType;
-
-                    if (pCurEntryType->IsCloned)
-                        pCurEntryType = pCurEntryType->CanonicalEEType;
+                        pTgtType->InterfaceMap[i->_usInterfaceIndex];
 
                     if (pCurEntryType == pItfType)
                     {
@@ -256,7 +250,7 @@ namespace System.Runtime
             {
                 StaticVirtualMethodContextSource.None => null,
                 StaticVirtualMethodContextSource.ContextFromThisClass => pTgtType,
-                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface].InterfaceType
+                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface]
             };
         }
     }

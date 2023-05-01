@@ -62,11 +62,14 @@ class Module;
 class SString;
 class Pending;
 class MethodTable;
-class AppDomain;
 class DynamicMethodTable;
 class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
+
+#ifdef EnC_SUPPORTED
+class EnCEEClassData;
+#endif // EnC_SUPPORTED
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -87,6 +90,8 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #elif defined(HOST_LOONGARCH64)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
+#elif defined(HOST_RISCV64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
 #endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
@@ -701,7 +706,6 @@ private:
     VASigCookieBlock        *m_pVASigCookieBlock;
 
     PTR_Assembly            m_pAssembly;
-    mdFile                  m_moduleRef;
 
     CrstExplicitInit        m_Crst;
     CrstExplicitInit        m_FixupCrst;
@@ -739,9 +743,6 @@ private:
 
     #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
 
-    #define FILE_REF_MAP_ALL_FLAGS                    NO_MAP_FLAGS
-        // For file ref map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
 
@@ -766,9 +767,6 @@ private:
     // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
     // a compressed format for NGen that makes up for it.
     LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from File token to Module *
-    LookupMap<PTR_Module>           m_FileReferencesMap;
 
     // Mapping from MethodDef token to pointer-sized value encoding property information
     LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
@@ -887,10 +885,10 @@ protected:
 #endif // _DEBUG
 
  public:
-    static Module *Create(Assembly *pAssembly, mdFile kFile, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
+    static Module *Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
 
  protected:
-    Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *file);
+    Module(Assembly *pAssembly, PEAssembly *file);
 
 
  public:
@@ -924,13 +922,6 @@ protected:
 
     PTR_Assembly GetAssembly() const;
 
-    int GetClassLoaderIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return RidFromToken(m_moduleRef);
-    }
-
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
@@ -946,17 +937,13 @@ protected:
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    mdFile GetModuleRef()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_moduleRef;
-    }
-
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
+
+    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
     BOOL IsEditAndContinueEnabled()
     {
@@ -966,21 +953,22 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
+#ifdef EnC_SUPPORTED
+    // Holds a table of EnCEEClassData object for classes in this module that have been modified
+    CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
+#endif // EnC_SUPPORTED
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
-
-    static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *file);
-
+private:
     void EnableEditAndContinue()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(IsEditAndContinueCapable());
-        LOG((LF_ENC, LL_INFO100, "EnableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
+        LOG((LF_ENC, LL_INFO100, "M:EnableEditAndContinue: this:%p, %s\n", this, GetDebugName()));
         m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
     }
 
+public:
     BOOL IsTenured()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1359,55 +1347,10 @@ public:
         SUPPORTS_DAC;
 
         _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.GetElement(RidFromToken(token));
+
+        // We don't support multi-module, so just check if we are looking for this module
+        return token == mdFileNil ? dac_cast<PTR_Module>(this) : NULL;
     }
-
-
-#ifndef DACCESS_COMPILE
-    void EnsureFileCanBeStored(mdFile token)
-    {
-        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.EnsureElementCanBeStored(this, RidFromToken(token));
-    }
-
-    void EnsuredStoreFile(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT
-
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.SetElement(RidFromToken(token), value);
-    }
-
-
-    void StoreFileThrowing(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        m_FileReferencesMap.AddElement(this, RidFromToken(token), value);
-    }
-
-    BOOL StoreFileNoThrow(mdFile token, Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(TypeFromToken(token) == mdtFile);
-        return m_FileReferencesMap.TrySetElement(RidFromToken(token), value);
-    }
-
-    mdAssemblyRef FindManifestModule(Module *value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_ManifestModuleReferencesMap.Find(value) | mdtAssembly;
-    }
-#endif // !DACCESS_COMPILE
-
-    DWORD GetFileMax() { LIMITED_METHOD_DAC_CONTRACT;  return m_FileReferencesMap.GetSize(); }
 
 #ifndef DACCESS_COMPILE
     //
@@ -1879,7 +1822,7 @@ private:
     PTR_SBuffer m_pDynamicMetadata;
 
 #if !defined DACCESS_COMPILE
-    ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);
+    ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
 
 public:

@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'ldlen'{}
 
 .class public _ldlen {
@@ -18,6 +19,9 @@
 }
 
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 	call	void _ldlen::initialize()

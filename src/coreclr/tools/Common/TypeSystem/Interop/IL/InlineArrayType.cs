@@ -248,6 +248,12 @@ namespace Internal.TypeSystem.Interop
             return flags;
         }
 
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
+
         private void InitializeMethods()
         {
             MethodDesc[] methods = new MethodDesc[] {
@@ -439,6 +445,8 @@ namespace Internal.TypeSystem.Interop
                 }
             }
             public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+
+            public override bool HasEmbeddedSignatureData => false;
 
             public override bool HasRva
             {

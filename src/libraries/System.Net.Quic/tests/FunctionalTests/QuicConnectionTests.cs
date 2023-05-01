@@ -22,7 +22,8 @@ namespace System.Net.Quic.Tests
         {
             await using QuicListener listener = await CreateQuicListener();
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            var options = CreateQuicClientOptions(listener.LocalEndPoint);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(options);
             ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync();
 
             await new Task[] { connectTask.AsTask(), acceptTask.AsTask() }.WhenAllOrAnyFailed(PassingTestTimeoutMilliseconds);
@@ -34,6 +35,8 @@ namespace System.Net.Quic.Tests
             Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
+            Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)

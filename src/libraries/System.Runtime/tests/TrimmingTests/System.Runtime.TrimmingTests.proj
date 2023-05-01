@@ -32,7 +32,7 @@
       <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="VerifyResourcesGetTrimmedTest.cs">
-      <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the linker
+      <!-- Setting the Trimming feature switch to make sure that the Resources get trimmed by the trimmer
       as this test will ensure exceptions are using Resource keys -->
       <EnabledFeatureSwitches>System.Resources.UseSystemResourceKeys</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
