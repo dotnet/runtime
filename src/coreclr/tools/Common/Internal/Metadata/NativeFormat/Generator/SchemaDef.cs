@@ -686,7 +686,7 @@ class SchemaDef
         new RecordDef(
             name: "ArraySignature",
             members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
                 new MemberDef("Rank", "int"),
                 new MemberDef("Sizes", "Int32", MemberDefFlags.Array),
                 new MemberDef("LowerBounds", "Int32", MemberDefFlags.Array),

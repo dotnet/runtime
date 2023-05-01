@@ -77,7 +77,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(ElementType == null ||
                 ElementType.HandleType == HandleType.TypeDefinition ||
                 ElementType.HandleType == HandleType.TypeReference ||
-                ElementType.HandleType == HandleType.TypeSpecification);
+                ElementType.HandleType == HandleType.TypeSpecification ||
+                ElementType.HandleType == HandleType.ModifiedType);
             writer.Write(ElementType);
             writer.Write(Rank);
             writer.Write(Sizes);
