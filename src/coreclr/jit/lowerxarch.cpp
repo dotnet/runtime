@@ -2468,6 +2468,29 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
 
+            // if AVX512 is supported, seek for optimization opportunities using embedded broadcast.
+            // contain the broadcast intrinsics in the embeddebd broadcast compatible intrinsics
+            // at codegen phase, directly emit the operend on "Create" node instead of a series of broadcast.
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+            {
+                LIR::Use use;
+                bool     foundUse   = BlockRange().TryGetUse(node, &use);
+                GenTree* CreateUser = nullptr;
+                if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
+                    use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                {
+                    CreateUser = use.User();
+                }
+                if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                {
+                    // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
+                    // issue.
+                    if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                    {
+                        std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                    }
+                }
+            }
             return LowerNode(node);
         }
 
@@ -7526,6 +7549,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         }
 
         case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector128:
         {
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastHWIntrinsic())

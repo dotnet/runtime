@@ -801,6 +801,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
             switch (intrinsicId)
             {
                 case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX2_BroadcastScalarToVector128:
                 {
                     if (op->isContained())
                     {
