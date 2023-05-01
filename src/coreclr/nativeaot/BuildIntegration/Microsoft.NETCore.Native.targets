@@ -89,7 +89,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <SharedLibrary Condition="'$(_targetOS)' == 'win'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
     <SharedLibrary Condition="'$(_targetOS)' != 'win'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
-    <IlcDynamicBuildPropertyDependencies Condition="'$(IlcCalledViaPackage)' == 'true'">SetupProperties</IlcDynamicBuildPropertyDependencies>
+    <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
