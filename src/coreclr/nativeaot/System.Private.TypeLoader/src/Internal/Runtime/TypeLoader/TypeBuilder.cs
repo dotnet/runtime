@@ -1304,6 +1304,30 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
+        public static bool TryBuildFunctionPointerType(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            var key = new TypeSystemContext.FunctionPointerTypeKey(returnTypeHandle, parameterHandles, isUnmanaged);
+            if (!TypeSystemContext.FunctionPointerTypesCache.TryGetValue(key, out runtimeTypeHandle))
+            {
+                TypeSystemContext context = TypeSystemContextFactory.Create();
+                FunctionPointerType functionPointerType = context.GetFunctionPointerType(new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    context.ResolveRuntimeTypeHandle(returnTypeHandle),
+                    context.ResolveRuntimeTypeHandlesInternal(parameterHandles)));
+                runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
+                unsafe
+                {
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                }
+                TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
+
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
+                TypeSystemContextFactory.Recycle(context);
+            }
+            return true;
+        }
+
         internal static bool TryBuildGenericMethod(InstantiatedMethod methodBeingLoaded, out IntPtr methodDictionary)
         {
             try

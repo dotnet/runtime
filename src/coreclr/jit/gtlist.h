@@ -23,8 +23,8 @@ GTNODE(PHI              , GenTreePhi         ,0,GTK_SPECIAL)          // phi nod
 GTNODE(PHI_ARG          , GenTreePhiArg      ,0,GTK_LEAF)             // phi(phiarg, phiarg, phiarg)
 GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)             // local variable
 GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)             // field in a non-primitive variable
-GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_NOVALUE) // store to local variable
-GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_NOVALUE) // store to a part of the variable
+GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to local variable
+GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to a part of the variable
 GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,GTK_LEAF)             // local address
 
 //-----------------------------------------------------------------------------
@@ -57,6 +57,7 @@ GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,GTK_BINOP|GTK_EXOP)
 
+GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LOCKADD          , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 GTNODE(XAND             , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(XORR             , GenTreeOp          ,0,GTK_BINOP)
@@ -78,12 +79,12 @@ GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloc
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
-GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection
-GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_NOVALUE)          // Store indirection
-GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Struct load
-GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Struct store
-GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store, with native uint size
-GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
+GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                                 // Load indirection
+GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Store indirection
+GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)                        // Struct load
+GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // Struct store
+GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)                  // Dynamically sized block store, with native uint size
+GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)                     // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
 GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
@@ -124,7 +125,6 @@ GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
 
-GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP)

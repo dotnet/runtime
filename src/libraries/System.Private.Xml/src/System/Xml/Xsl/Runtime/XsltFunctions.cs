@@ -327,17 +327,17 @@ namespace System.Xml.Xsl.Runtime
             else
             {
                 Type itemType = item.ValueType;
-                if (itemType == XsltConvert.StringType)
+                if (itemType == typeof(string))
                 {
                     stringValue = item.Value;
                 }
-                else if (itemType == XsltConvert.DoubleType)
+                else if (itemType == typeof(double))
                 {
                     return item.ValueAsDouble;
                 }
                 else
                 {
-                    Debug.Assert(itemType == XsltConvert.BooleanType, $"Unexpected type of atomic value {itemType}");
+                    Debug.Assert(itemType == typeof(bool), $"Unexpected type of atomic value {itemType}");
                     return item.ValueAsBoolean ? 1d : 0d;
                 }
             }

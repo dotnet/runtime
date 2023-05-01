@@ -162,7 +162,7 @@ namespace Internal.TypeSystem
         internal static FunctionPointerRuntimeTypeHandleHashtable FunctionPointerTypesCache { get; }
             = new FunctionPointerRuntimeTypeHandleHashtable();
 
-        private TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
+        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)

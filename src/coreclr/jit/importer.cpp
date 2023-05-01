@@ -1862,14 +1862,18 @@ bool Compiler::impSpillStackEntry(unsigned level,
     /* Assign the spilled entry to the temp */
     impAssignTempGen(tnum, tree, verCurrentState.esStack[level].seTypeInfo.GetClassHandle(), level);
 
-    // If temp is newly introduced and a ref type, grab what type info we can.
-    if (isNewTemp && (lvaTable[tnum].lvType == TYP_REF))
+    if (isNewTemp)
     {
         assert(lvaTable[tnum].lvSingleDef == 0);
         lvaTable[tnum].lvSingleDef = 1;
         JITDUMP("Marked V%02u as a single def temp\n", tnum);
-        CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
-        lvaSetClass(tnum, tree, stkHnd);
+
+        // If temp is newly introduced and a ref type, grab what type info we can.
+        if (lvaTable[tnum].lvType == TYP_REF)
+        {
+            CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
+            lvaSetClass(tnum, tree, stkHnd);
+        }
 
         // If we're assigning a GT_RET_EXPR, note the temp over on the call,
         // so the inliner can use it in case it needs a return spill temp.
@@ -8373,12 +8377,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), CHECK_SPILL_ALL);
                         var_types type = genActualType(lvaTable[tmpNum].TypeGet());
 
+                        assert(lvaTable[tmpNum].lvSingleDef == 0);
+                        lvaTable[tmpNum].lvSingleDef = 1;
+                        JITDUMP("Marked V%02u as a single def local\n", tmpNum);
                         // Propagate type info to the temp from the stack and the original tree
                         if (type == TYP_REF)
                         {
-                            assert(lvaTable[tmpNum].lvSingleDef == 0);
-                            lvaTable[tmpNum].lvSingleDef = 1;
-                            JITDUMP("Marked V%02u as a single def local\n", tmpNum);
                             lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
                         }
 
@@ -13582,19 +13586,19 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
         lvaTable[tmpNum].lvHasILStoreOp         = inlineeLocal.lclHasStlocOp;
         lvaTable[tmpNum].lvHasMultipleILStoreOp = inlineeLocal.lclHasMultipleStlocOp;
 
+        assert(lvaTable[tmpNum].lvSingleDef == 0);
+
+        lvaTable[tmpNum].lvSingleDef = !inlineeLocal.lclHasMultipleStlocOp && !inlineeLocal.lclHasLdlocaOp;
+        if (lvaTable[tmpNum].lvSingleDef)
+        {
+            JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+        }
+
         // Copy over class handle for ref types. Note this may be a
         // shared type -- someday perhaps we can get the exact
         // signature and pass in a more precise type.
         if (lclTyp == TYP_REF)
         {
-            assert(lvaTable[tmpNum].lvSingleDef == 0);
-
-            lvaTable[tmpNum].lvSingleDef = !inlineeLocal.lclHasMultipleStlocOp && !inlineeLocal.lclHasLdlocaOp;
-            if (lvaTable[tmpNum].lvSingleDef)
-            {
-                JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
-            }
-
             lvaSetClass(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandleForObjRef());
         }
 
@@ -13779,20 +13783,21 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
 
             lvaTable[tmpNum].lvType = lclTyp;
 
-            // For ref types, determine the type of the temp.
-            if (lclTyp == TYP_REF)
+            // If arg can't be modified, mark it as single def.
+            // For ref types, determine the class of the arg temp.
+            if (!argCanBeModified)
             {
-                if (!argCanBeModified)
+                assert(lvaTable[tmpNum].lvSingleDef == 0);
+                lvaTable[tmpNum].lvSingleDef = 1;
+                JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+                if (lclTyp == TYP_REF)
                 {
-                    // If the arg can't be modified in the method
-                    // body, use the type of the value, if
-                    // known. Otherwise, use the declared type.
-                    assert(lvaTable[tmpNum].lvSingleDef == 0);
-                    lvaTable[tmpNum].lvSingleDef = 1;
-                    JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
                     lvaSetClass(tmpNum, argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
                 }
-                else
+            }
+            else
+            {
+                if (lclTyp == TYP_REF)
                 {
                     // Arg might be modified, use the declared type of
                     // the argument.

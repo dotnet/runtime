@@ -117,9 +117,6 @@ namespace System.ComponentModel
         private static readonly int s_RESET_ON_LITERALS = BitVector32.CreateMask(s_RESET_ON_PROMPT);
         private static readonly int s_SKIP_SPACE = BitVector32.CreateMask(s_RESET_ON_LITERALS);
 
-        // Type cached to speed up cloning of this object.
-        private static readonly Type s_maskTextProviderType = typeof(MaskedTextProvider);
-
         //// Instance data.
 
         // Bit vector to represent bool variables.
@@ -460,9 +457,8 @@ namespace System.ComponentModel
         public object Clone()
         {
             MaskedTextProvider clonedProvider;
-            Type providerType = GetType();
 
-            if (providerType == s_maskTextProviderType)
+            if (GetType() == typeof(MaskedTextProvider))
             {
                 clonedProvider = new MaskedTextProvider(
                                                         Mask,
@@ -484,7 +480,7 @@ namespace System.ComponentModel
                     AsciiOnly
                 };
 
-                clonedProvider = (Activator.CreateInstance(providerType, parameters) as MaskedTextProvider)!;
+                clonedProvider = (Activator.CreateInstance(GetType(), parameters) as MaskedTextProvider)!;
             }
 
             clonedProvider.ResetOnPrompt = false;

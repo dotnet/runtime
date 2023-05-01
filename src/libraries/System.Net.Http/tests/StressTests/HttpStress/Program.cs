@@ -162,7 +162,7 @@ namespace HttpStress
 
             string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
-            Type msQuicApiType = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
+            Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
             string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
 
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));

@@ -16327,9 +16327,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeRM(ins);
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputAM(dst, id, code, &cnsVal);
             }
             else
@@ -16349,9 +16350,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
-            code = insCodeMR(ins);
-            dst  = emitOutputAM(dst, id, code, &cnsVal);
-            sz   = emitSizeOfInsDsc_AMD(id);
+            dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
+            sz  = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16364,8 +16364,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RWR_ARD:
         {
             code = insCodeRM(ins);
+
             if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputAM(dst, id, code);
             }
             else
@@ -16374,6 +16377,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
+
             sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
@@ -16383,9 +16387,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRW_ARD_RRD:
         {
             assert(IsAVX2GatherInstruction(ins));
-            code = insCodeRM(ins);
-            dst  = emitOutputAM(dst, id, code);
-            sz   = emitSizeOfInsDsc_AMD(id);
+            dst = emitOutputAM(dst, id, insCodeRM(ins));
+            sz  = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16395,8 +16398,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeRM(ins);
+
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputAM(dst, id, code, &cnsVal);
             }
             else
@@ -16405,6 +16411,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
+
             sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
@@ -16413,11 +16420,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_AWR_RRD:
         case IF_ARW_RRD:
         {
-            code    = insCodeMR(ins);
-            code    = AddSimdPrefixIfNeeded(id, code, size);
-            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputAM(dst, id, code | regcode);
-            sz      = emitSizeOfInsDsc_AMD(id);
+            code = insCodeMR(ins);
+
+            if (EncodedBySSE38orSSE3A(ins))
+            {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
+                dst = emitOutputAM(dst, id, code);
+            }
+            else
+            {
+                code    = AddSimdPrefixIfNeeded(id, code, size);
+                regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputAM(dst, id, code | regcode);
+            }
+
+            sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16506,9 +16524,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
-            code = insCodeMR(ins);
-            dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
-            sz   = emitSizeOfInsDsc_CNS(id);
+            dst = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
+            sz  = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16520,9 +16537,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsCns(id, &cnsVal);
             code = insCodeRM(ins);
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputSV(dst, id, code, &cnsVal);
             }
             else
@@ -16555,10 +16573,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            // 4-byte AVX instructions are special cased inside emitOutputSV
-            // since they do not have space to encode ModRM byte.
             if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputSV(dst, id, code);
             }
             else
@@ -16590,10 +16608,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
-            // 4-byte AVX instructions are special cased inside emitOutputSV
-            // since they do not have space to encode ModRM byte.
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputSV(dst, id, code);
             }
             else
@@ -16617,10 +16635,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
-            // 4-byte AVX instructions are special cased inside emitOutputSV
-            // since they do not have space to encode ModRM byte.
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputSV(dst, id, code, &cnsVal);
             }
             else
@@ -16637,23 +16655,34 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SRW_RRD:
         {
             code = insCodeMR(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
 
-            // In case of AVX instructions that take 3 operands, encode reg1 as first source.
-            // Note that reg1 is both a source and a destination.
-            //
-            // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
-            // now we use the single source as source1 and source2.
-            // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-            if (IsDstDstSrcAVXInstruction(ins))
+            if (EncodedBySSE38orSSE3A(ins))
             {
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
+                dst = emitOutputSV(dst, id, code);
+            }
+            else
+            {
+                code = AddSimdPrefixIfNeeded(id, code, size);
+
+                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
+                // Note that reg1 is both a source and a destination.
+                //
+                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
+                // now we use the single source as source1 and source2.
+                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
+                if (IsDstDstSrcAVXInstruction(ins))
+                {
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
+                    code = insEncodeReg3456(id, id->idReg1(), size, code);
+                }
+
+                regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputSV(dst, id, code | regcode);
             }
 
-            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputSV(dst, id, code | regcode);
-            sz      = sizeof(instrDesc);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16706,9 +16735,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsDcmCns(id, &cnsVal);
             code = insCodeRM(ins);
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputCV(dst, id, code, &cnsVal);
             }
             else
@@ -16744,9 +16774,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                    (ins == INS_vextracti64x2) || (ins == INS_vextracti64x4));
             assert(UseSimdEncoding());
             emitGetInsDcmCns(id, &cnsVal);
-            code = insCodeMR(ins);
             // we do not need VEX.vvvv to encode the register operand
-            dst = emitOutputCV(dst, id, code, &cnsVal);
+            dst = emitOutputCV(dst, id, insCodeMR(ins), &cnsVal);
             sz  = emitSizeOfInsDsc_DSP(id);
             break;
         }
@@ -16757,15 +16786,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputCV(dst, id, code);
             }
             else
             {
                 code = AddSimdPrefixIfNeeded(id, code, size);
 
+                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
+                // Note that reg1 is both a source and a destination.
+                //
+                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
+                // now we use the single source as source1 and source2.
+                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
                     // encode source operand reg in 'vvvv' bits in 1's complement form
@@ -16774,6 +16810,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                 regcode                   = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 CORINFO_FIELD_HANDLE fldh = id->idAddr()->iiaFieldHnd;
+
                 if (fldh == FLD_GLOBAL_GS)
                 {
                     dst = emitOutputCV(dst, id, code | regcode | 0x0400);
@@ -16801,9 +16838,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputCV(dst, id, code);
             }
             else
@@ -16827,9 +16865,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
-            // Special case 4-byte AVX instructions
             if (EncodedBySSE38orSSE3A(ins))
             {
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
                 dst = emitOutputCV(dst, id, code, &cnsVal);
             }
             else
@@ -16860,7 +16899,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regcode = insEncodeReg012(id, id->idReg1(), size, &code);
             dst     = emitOutputCV(dst, id, code | 0x30 | regcode);
-            sz      = emitSizeOfInsDsc_DSP(id);
+
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16869,23 +16909,34 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MRW_RRD:
         {
             code = insCodeMR(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
 
-            // In case of AVX instructions that take 3 operands, encode reg1 as first source.
-            // Note that reg1 is both a source and a destination.
-            //
-            // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
-            // now we use the single source as source1 and source2.
-            // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-            if (IsDstDstSrcAVXInstruction(ins))
+            if (EncodedBySSE38orSSE3A(ins))
             {
-                // encode source operand reg in 'vvvv' bits in 1's complement form
-                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                // Special case 4-byte AVX instructions as the
+                // regcode position conflicts with the opcode byte
+                dst = emitOutputCV(dst, id, code);
+            }
+            else
+            {
+                code = AddSimdPrefixIfNeeded(id, code, size);
+
+                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
+                // Note that reg1 is both a source and a destination.
+                //
+                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
+                // now we use the single source as source1 and source2.
+                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
+                if (IsDstDstSrcAVXInstruction(ins))
+                {
+                    // encode source operand reg in 'vvvv' bits in 1's complement form
+                    code = insEncodeReg3456(id, id->idReg1(), size, code);
+                }
+
+                regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+                dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
 
-            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
-            sz      = emitSizeOfInsDsc_DSP(id);
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
