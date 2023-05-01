@@ -436,18 +436,31 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryGetByRefTypeForTargetType(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle byRefTypeHandle)
         {
-            // There are no lookups for ByRefs in static modules. All ByRef EETypes will be created at this level.
-            // It's possible to have multiple ByRef EETypes representing the same ByRef type with the same element type
-            // The caching of ByRef types is done at the reflection layer (in the RuntimeTypeUnifier) and
-            // here in the TypeSystemContext layer
-
-            if (TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
+            if (TryGetByRefTypeForTargetType_LookupOnly(pointeeTypeHandle, out byRefTypeHandle))
                 return true;
 
             using (LockHolder.Hold(_typeLoaderLock))
             {
+                if (TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out byRefTypeHandle))
+                    return true;
+
                 return TypeBuilder.TryBuildByRefType(pointeeTypeHandle, out byRefTypeHandle);
             }
+        }
+
+        public static bool TryGetByRefTypeForTargetType_LookupOnly(RuntimeTypeHandle pointeeTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            if (TypeSystemContext.ByRefTypesCache.TryGetValue(pointeeTypeHandle, out pointerTypeHandle))
+                return true;
+
+            if (!RuntimeAugments.IsDynamicType(pointeeTypeHandle) &&
+                TryGetByRefTypeForNonDynamicElementType(pointeeTypeHandle, out pointerTypeHandle))
+            {
+                TypeSystemContext.ByRefTypesCache.AddOrGetExisting(pointerTypeHandle);
+                return true;
+            }
+
+            return false;
         }
 
         public int GetCanonicalHashCode(RuntimeTypeHandle typeHandle, CanonicalFormKind kind)

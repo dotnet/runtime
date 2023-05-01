@@ -117,7 +117,7 @@ namespace Internal.TypeSystem
                            ||
                         (type is PointerType && TypeLoaderEnvironment.TryGetPointerTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth))
                            ||
-                        (type is ByRefType && TypeSystemContext.ByRefTypesCache.TryGetValue(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
+                        (type is ByRefType && TypeLoaderEnvironment.TryGetByRefTypeForTargetType_LookupOnly(typeAsParameterType.ParameterType.RuntimeTypeHandle, out rtth)))
                     {
                         typeAsParameterType.SetRuntimeTypeHandleUnsafe(rtth);
                         return true;

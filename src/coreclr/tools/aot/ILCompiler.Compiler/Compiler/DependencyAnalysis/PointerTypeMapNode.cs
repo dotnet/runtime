@@ -11,12 +11,12 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hash table of pointer types generated into the image.
     /// </summary>
-    internal sealed class PointerMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class PointerTypeMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private readonly ObjectAndOffsetSymbolNode _endSymbol;
         private readonly ExternalReferencesTableNode _externalReferences;
 
-        public PointerMapNode(ExternalReferencesTableNode externalReferences)
+        public PointerTypeMapNode(ExternalReferencesTableNode externalReferences)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__ptr_type_map_End", true);
             _externalReferences = externalReferences;

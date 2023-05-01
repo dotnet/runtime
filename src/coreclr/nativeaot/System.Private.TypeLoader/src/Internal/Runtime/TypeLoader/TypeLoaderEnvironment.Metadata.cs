@@ -410,40 +410,47 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
+        public static unsafe bool TryGetByRefTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int byRefHashcode = TypeHashingAlgorithms.ComputeByrefTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, byRefHashcode, ReflectionMapBlob.ByRefTypeMap, out pointerTypeHandle);
+        }
+
         public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
             int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, pointerHashcode, ReflectionMapBlob.PointerTypeMap, out pointerTypeHandle);
+        }
 
-            // Note: ReflectionMapBlob.PointerTypeMap may not exist in the module that contains the element type.
-            // So we must enumerate all loaded modules in order to find PointerTypeMap and the pointer type for
-            // the given element.
+        private static unsafe bool TryGetParameterizedTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, int hashCode, ReflectionMapBlob blob, out RuntimeTypeHandle parameterizedTypeHandle)
+        {
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                NativeReader pointerMapReader;
-                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.PointerTypeMap, out pointerMapReader))
+                NativeReader mapReader;
+                if (TryGetNativeReaderForBlob(module, blob, out mapReader))
                 {
-                    NativeParser pointerMapParser = new NativeParser(pointerMapReader, 0);
-                    NativeHashtable pointerHashtable = new NativeHashtable(pointerMapParser);
+                    NativeParser mapParser = new NativeParser(mapReader, 0);
+                    NativeHashtable hashtable = new NativeHashtable(mapParser);
 
                     ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
                     externalReferences.InitializeCommonFixupsTable(module);
 
-                    var lookup = pointerHashtable.Lookup(pointerHashcode);
+                    var lookup = hashtable.Lookup(hashCode);
                     NativeParser entryParser;
                     while (!(entryParser = lookup.GetNext()).IsNull)
                     {
-                        RuntimeTypeHandle foundPointerType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        RuntimeTypeHandle foundPointerElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundPointerType);
-                        if (foundPointerElementType.Equals(elementTypeHandle))
+                        RuntimeTypeHandle foundParameterizedType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        RuntimeTypeHandle foundElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundParameterizedType);
+                        if (foundElementType.Equals(elementTypeHandle))
                         {
-                            pointerTypeHandle = foundPointerType;
+                            parameterizedTypeHandle = foundParameterizedType;
                             return true;
                         }
                     }
                 }
             }
 
-            pointerTypeHandle = default;
+            parameterizedTypeHandle = default;
             return false;
         }
 

@@ -15,7 +15,7 @@ namespace Internal.Runtime
         CommonFixupsTable                           = 8,
         FieldAccessMap                              = 9,
         CCtorContextMap                             = 10,
-        // unused                                   = 11,
+        ByRefTypeMap                                = 11,
         // unused                                   = 12,
         EmbeddedMetadata                            = 13,
         DefaultConstructorMap                       = 14,
