@@ -489,21 +489,38 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     assert(!"Unsupported scenario of optimizing TLS access on Arm32");
 #endif
 
+    JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+    bool isGCThreadStatic =
+        eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
-    JITDUMP("getThreadLocalStaticBlocksInfo\n:");
+
+    uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
+    uint32_t offsetOfThreadStaticBlocksVal    = 0;
+    if (isGCThreadStatic)
+    {
+        JITDUMP("getThreadLocalStaticBlocksInfo (GC)\n:");
+        offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfGCMaxThreadStaticBlocks;
+        offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfGCThreadStaticBlocks;
+    }
+    else
+    {
+        JITDUMP("getThreadLocalStaticBlocksInfo (NonGC)\n:");
+        offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfNonGCMaxThreadStaticBlocks;
+        offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfNonGCThreadStaticBlocks;
+    }
+
     JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
-    JITDUMP("offsetOfNonGCMaxThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfNonGCMaxThreadStaticBlocks);
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
-    JITDUMP("offsetOfNonGCThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfNonGCThreadStaticBlocks);
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
 
     assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
            (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
-
-    JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
-    DISPTREE(call);
-    JITDUMP("\n");
 
     call->ClearExpTLSFieldAccess();
     assert(call->gtArgs.CountArgs() == 1);
@@ -571,9 +588,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     GenTree* useTlsLclValue    = gtCloneExpr(defTlsLclValue); // Create a use for tlsLclValue
     GenTree* asgTlsValue       = gtNewAssignNode(defTlsLclValue, tlsValue);
 
-    // Create tree for "maxThreadStaticBlocks = tls[offsetOfNonGCMaxThreadStaticBlocks]"
-    GenTree* offsetOfMaxThreadStaticBlocks =
-        gtNewIconNode(threadStaticBlocksInfo.offsetOfNonGCMaxThreadStaticBlocks, TYP_I_IMPL);
+    // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
+    GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
@@ -584,8 +600,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
 
-    // Create tree for "threadStaticBlockBase = tls[offsetOfNonGCThreadStaticBlocks]"
-    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadStaticBlocksInfo.offsetOfNonGCThreadStaticBlocks, TYP_I_IMPL);
+    // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
+    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfThreadStaticBlocks);
     GenTree* threadStaticBlocksValue =
@@ -602,7 +618,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         // Need to add extra indirection to access the data pointer.
         // TODO: Get the offsetOfDataPtr() from runtime.
-        
+
         typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockValue, GTF_IND_NONFAULTING);
         typeThreadStaticBlockValue =
             gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValue, gtNewIconNode(16, TYP_I_IMPL));

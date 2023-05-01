@@ -1223,9 +1223,8 @@ private:
 
 #ifdef HOST_WINDOWS
     // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
-    // During execution corresponding thread static data blocks are stored in `t_threadStaticBlocks`
-    // array at the `typeIndex`.
     // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
+    // and `t_GCThreadStaticBlocks` array at the `typeIndex`.
     TypeIDMap m_threadStaticBlockTypeIDMap;
 
 #endif // HOST_WINDOWS

@@ -71,7 +71,10 @@ EXTERN_C uint32_t _tls_index;
 
 #ifdef _MSC_VER
 __declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
+
 __declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
 #else
 EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
 EXTERN_C __thread void** t_threadStaticBlocks;
@@ -1816,7 +1819,9 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     pInfo->offsetOfNonGCThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
+    pInfo->offsetOfGCThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
     pInfo->offsetOfNonGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
+    pInfo->offsetOfGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
