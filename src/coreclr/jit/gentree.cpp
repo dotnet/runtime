@@ -3328,6 +3328,14 @@ AGAIN:
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_STOREIND:
+                    hash = genTreeHashAdd(hash, tree->AsStoreInd()->GetRMWStatus());
+                    break;
+
+                case GT_STORE_BLK:
+                    hash = genTreeHashAdd(hash, tree->AsBlk()->GetLayout());
+                    break;
+
                 case GT_INTRINSIC:
                     hash += tree->AsIntrinsic()->gtIntrinsicName;
                     break;
@@ -3337,10 +3345,6 @@ AGAIN:
 
                 case GT_BOUNDS_CHECK:
                     hash = genTreeHashAdd(hash, tree->AsBoundsChk()->gtThrowKind);
-                    break;
-
-                case GT_STORE_BLK:
-                    hash ^= PtrToUlong(tree->AsBlk()->GetLayout());
                     break;
 
                 // For the ones below no extra argument matters for comparison.
@@ -7770,8 +7774,6 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
 
 GenTreeLclFld* Compiler::gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
 {
-    assert((genActualType(type) == genActualType(data)) || ((type == TYP_STRUCT) && data->TypeIs(TYP_INT)));
-
     ClassLayout*   layout = (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr;
     GenTreeLclFld* store  = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
@@ -14468,21 +14470,21 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     assert(op->IsBoxedValue());
 
     // grab related parts for the optimization
-    GenTreeBox* box      = op->AsBox();
-    Statement*  asgStmt  = box->gtAsgStmtWhenInlinedBoxValue;
-    Statement*  copyStmt = box->gtCopyStmtWhenInlinedBoxValue;
+    GenTreeBox* box       = op->AsBox();
+    Statement*  allocStmt = box->gtAsgStmtWhenInlinedBoxValue;
+    Statement*  copyStmt  = box->gtCopyStmtWhenInlinedBoxValue;
 
     JITDUMP("gtTryRemoveBoxUpstreamEffects: %s to %s of BOX (valuetype)"
             " [%06u] (assign/newobj " FMT_STMT " copy " FMT_STMT "\n",
             (options == BR_DONT_REMOVE) ? "checking if it is possible" : "attempting",
             (options == BR_MAKE_LOCAL_COPY) ? "make local unboxed version" : "remove side effects", dspTreeID(op),
-            asgStmt->GetID(), copyStmt->GetID());
+            allocStmt->GetID(), copyStmt->GetID());
 
-    // If we don't recognize the form of the assign, bail.
-    GenTree* asg = asgStmt->GetRootNode();
-    if (asg->gtOper != GT_ASG)
+    // If we don't recognize the form of the store, bail.
+    GenTree* boxLclDef = allocStmt->GetRootNode();
+    if (!boxLclDef->OperIsStoreLclVar())
     {
-        JITDUMP(" bailing; unexpected assignment op %s\n", GenTree::OpName(asg->gtOper));
+        JITDUMP(" bailing; unexpected alloc def op %s\n", GenTree::OpName(boxLclDef->OperGet()));
         return nullptr;
     }
 
@@ -14497,20 +14499,20 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     GenTree* boxTypeHandle = nullptr;
     if ((options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE) || (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE))
     {
-        GenTree*   asgSrc     = asg->AsOp()->gtOp2;
-        genTreeOps asgSrcOper = asgSrc->OperGet();
+        GenTree*   defSrc     = boxLclDef->Data();
+        genTreeOps defSrcOper = defSrc->OperGet();
 
         // Allocation may be via AllocObj or via helper call, depending
         // on when this is invoked and whether the jit is using AllocObj
         // for R2R allocations.
-        if (asgSrcOper == GT_ALLOCOBJ)
+        if (defSrcOper == GT_ALLOCOBJ)
         {
-            GenTreeAllocObj* allocObj = asgSrc->AsAllocObj();
+            GenTreeAllocObj* allocObj = defSrc->AsAllocObj();
             boxTypeHandle             = allocObj->AsOp()->gtOp1;
         }
-        else if (asgSrcOper == GT_CALL)
+        else if (defSrcOper == GT_CALL)
         {
-            GenTreeCall* newobjCall = asgSrc->AsCall();
+            GenTreeCall* newobjCall = defSrc->AsCall();
 
             // In R2R expansions the handle may not be an explicit operand to the helper,
             // so we can't remove the box.
@@ -14533,7 +14535,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // If we don't recognize the form of the copy, bail.
     GenTree* copy = copyStmt->GetRootNode();
-    if (copy->gtOper != GT_ASG)
+    if (!copy->OperIs(GT_ASG, GT_STOREIND, GT_STORE_BLK))
     {
         // GT_RET_EXPR is a tolerable temporary failure.
         // The jit will revisit this optimization after
@@ -14544,10 +14546,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
         else
         {
-            // Anything else is a missed case we should
-            // figure out how to handle.  One known case
-            // is GT_COMMAs enclosing the GT_ASG we are
-            // looking for.
+            // Anything else is a missed case we should figure out how to handle.
+            // One known case is GT_COMMAs enclosing the store we are looking for.
             JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
         }
         return nullptr;
@@ -14569,9 +14569,10 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         //
         // The shape here is constrained to the patterns we produce
         // over in impImportAndPushBox for the inlined box case.
-        GenTree* copyDst = copy->AsOp()->gtOp1;
+        bool     copyIsAsg = copy->OperIs(GT_ASG);
+        GenTree* copyDst   = copyIsAsg ? copy->AsOp()->gtOp1 : copy;
 
-        if (!copyDst->OperIs(GT_BLK, GT_IND))
+        if (copyIsAsg && !copyDst->OperIs(GT_BLK, GT_IND))
         {
             JITDUMP("Unexpected copy dest operator %s\n", GenTree::OpName(copyDst->gtOper));
             return nullptr;
@@ -14607,8 +14608,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         lvaSetStruct(boxTempLcl, boxClass, isUnsafeValueClass);
 
         // Remove the newobj and assignment to box temp
-        JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
-        asg->gtBashToNOP();
+        JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
+        boxLclDef->gtBashToNOP();
 
         // Update the copy from the value to be boxed to the box temp
         copyDst->AsOp()->gtOp1 = gtNewLclVarAddrNode(boxTempLcl, TYP_BYREF);
@@ -14619,9 +14620,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         return retValue;
     }
 
-    // If the copy is a struct copy, make sure we know how to isolate
-    // any source side effects.
-    GenTree* copySrc = copy->AsOp()->gtOp2;
+    // If the copy is a struct copy, make sure we know how to isolate any source side effects.
+    GenTree* copySrc = copy->Data();
 
     // If the copy source is from a pending inline, wait for it to resolve.
     if (copySrc->gtOper == GT_RET_EXPR)
@@ -14637,7 +14637,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     {
         hasSrcSideEffect = true;
 
-        if (varTypeIsStruct(copySrc->gtType))
+        if (varTypeIsStruct(copySrc))
         {
             isStructCopy = true;
 
@@ -14665,8 +14665,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     // Otherwise, proceed with the optimization.
     //
     // Change the assignment expression to a NOP.
-    JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
-    asg->gtBashToNOP();
+    JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
+    boxLclDef->gtBashToNOP();
 
     // Change the copy expression so it preserves key
     // source side effects.
@@ -14709,7 +14709,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     if (fgNodeThreading == NodeThreading::AllTrees)
     {
-        fgSetStmtSeq(asgStmt);
+        fgSetStmtSeq(allocStmt);
         fgSetStmtSeq(copyStmt);
     }
 
@@ -16168,6 +16168,14 @@ GenTree* Compiler::gtNewTempAssign(
     if (compAssignmentRationalized)
     {
         store = gtNewStoreLclVarNode(tmp, val);
+
+#ifdef UNIX_AMD64_ABI
+        if (val->IsCall())
+        {
+            // TODO-ASG: delete this zero-diff quirk.
+            varDsc->lvIsMultiRegRet = true;
+        }
+#endif // UNIX_AMD64_ABI
     }
     else if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
@@ -17503,49 +17511,7 @@ bool GenTree::DefinesLocal(
 
         return true;
     }
-    if (OperIs(GT_ASG))
-    {
-        GenTree* lhs = AsOp()->gtGetOp1();
-
-        if (lhs->OperIs(GT_LCL_VAR))
-        {
-            *pLclVarTree = lhs->AsLclVarCommon();
-            if (pIsEntire != nullptr)
-            {
-                *pIsEntire = true;
-            }
-            if (pOffset != nullptr)
-            {
-                *pOffset = 0;
-            }
-            if (pSize != nullptr)
-            {
-                *pSize = comp->lvaLclExactSize(lhs->AsLclVarCommon()->GetLclNum());
-            }
-
-            return true;
-        }
-
-        if (lhs->OperIs(GT_LCL_FLD))
-        {
-            *pLclVarTree = lhs->AsLclVarCommon();
-            if (pIsEntire != nullptr)
-            {
-                *pIsEntire = !lhs->AsLclFld()->IsPartialLclFld(comp);
-            }
-            if (pOffset != nullptr)
-            {
-                *pOffset = lhs->AsLclFld()->GetLclOffs();
-            }
-            if (pSize != nullptr)
-            {
-                *pSize = lhs->AsLclFld()->GetSize();
-            }
-
-            return true;
-        }
-    }
-    else if (OperIs(GT_CALL))
+    if (OperIs(GT_CALL))
     {
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
         if (lclAddr == nullptr)

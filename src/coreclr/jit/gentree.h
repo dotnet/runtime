@@ -426,14 +426,13 @@ enum GenTreeFlags : unsigned int
 //  well to make sure it's the right operator for the particular flag.
 //---------------------------------------------------------------------
 
-// These flags are also used by GT_LCL_FLD, and the last-use (DEATH) flags are also used by GenTreeCopyOrReload.
+    GTF_VAR_DEF             = 0x80000000, // GT_STORE_LCL_VAR/GT_STORE_LCL_FLD/GT_LCL_ADDR -- this is a definition
+    GTF_VAR_USEASG          = 0x40000000, // GT_STORE_LCL_FLD/GT_STORE_LCL_FLD/GT_LCL_ADDR -- this is a partial definition, a use of
+                                          // the previous definition is implied. A partial definition usually occurs when a struct
+                                          // field is assigned to (s.f = ...) or when a scalar typed variable is assigned to via a
+                                          // narrow store (*((byte*)&i) = ...).
 
-    GTF_VAR_DEF             = 0x80000000, // GT_LCL_VAR -- this is a definition
-    GTF_VAR_USEASG          = 0x40000000, // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
-                                          // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
-                                          // when a scalar typed variable is assigned to via a narrow store (*((byte*)&i) = ...).
-
-// Last-use bits.
+// Last-use bits. Also used by GenTreeCopyOrReload.
 // Note that a node marked GTF_VAR_MULTIREG can only be a pure definition of all the fields, or a pure use of all the fields,
 // so we don't need the equivalent of GTF_VAR_USEASG.
 
@@ -1635,7 +1634,7 @@ public:
 
     bool OperIsSsaDef() const
     {
-        return OperIs(GT_ASG, GT_CALL) || OperIsLocalStore();
+        return OperIs(GT_CALL) || OperIsLocalStore();
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
@@ -1689,7 +1688,7 @@ public:
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
-    bool OperIsStoreLclVar(unsigned* pLclNum);
+    bool OperIsStoreLclVar(unsigned* pLclNum = nullptr);
     bool OperIsStoreLcl(unsigned* pLclNum);
 
 #ifdef DEBUG
@@ -1784,8 +1783,6 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
-
-    inline GenTree* GetStoreDestination();
 
     inline GenTree*& Data();
 
@@ -8849,12 +8846,18 @@ inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        *pLclNum = AsLclVar()->GetLclNum();
+        if (pLclNum != nullptr)
+        {
+            *pLclNum = AsLclVar()->GetLclNum();
+        }
         return true;
     }
     if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
     {
-        *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        if (pLclNum != nullptr)
+        {
+            *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        }
         return true;
     }
 
@@ -9258,12 +9261,6 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;
-}
-
-inline GenTree* GenTree::GetStoreDestination() // TODO-ASG: delete.
-{
-    assert(OperIs(GT_ASG) || OperIsStore());
-    return OperIs(GT_ASG) ? gtGetOp1() : this;
 }
 
 inline GenTree*& GenTree::Data()
