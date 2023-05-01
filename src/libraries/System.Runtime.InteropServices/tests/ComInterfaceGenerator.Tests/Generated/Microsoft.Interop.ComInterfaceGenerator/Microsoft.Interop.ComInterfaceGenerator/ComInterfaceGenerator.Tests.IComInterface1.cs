@@ -116,3 +116,10 @@ namespace ComInterfaceGenerator.Tests
     {
     }
 }
+
+namespace ComInterfaceGenerator.Tests
+{
+    public partial interface IComInterface1
+    {
+    }
+}

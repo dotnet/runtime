@@ -50,17 +50,20 @@ namespace Microsoft.Interop
                 // {
                 //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
                 // }
-                return MethodInfo.Syntax.WithBody(
+                return MethodInfo.Syntax
+                    .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
+                    .WithBody(
                     Block(
                         ReturnStatement(
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    CastExpression(DeclaringInterface.Info.Type.Syntax, IdentifierName(Token(SyntaxKind.ThisKeyword))),
+                                    CastExpression(DeclaringInterface.Info.Type.Syntax, IdentifierName("this")), // Token(SyntaxKind.ThisKeyword))),
                                     IdentifierName(MethodInfo.MethodName)),
                                 ArgumentList(
                                     // TODO: RefKind keywords
-                                    SeparatedList(MethodInfo.Parameters.Select(p => Argument(IdentifierName(p.Name)))))))));
+                                    SeparatedList(MethodInfo.Parameters.Select(p =>
+                                    Argument(IdentifierName(p.Name)))))))));
             }
         }
     }

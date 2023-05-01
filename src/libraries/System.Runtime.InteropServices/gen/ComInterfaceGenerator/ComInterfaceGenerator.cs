@@ -163,6 +163,19 @@ namespace Microsoft.Interop
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
+            var shadowingMethods = interfacesWithMethodsAndItsMethods
+                .Select((data, ct) =>
+                {
+                    var context = data.Interface.Info;
+                    var methods = data.ShadowingMethods.Select(m => (MemberDeclarationSyntax)m.GenerateShadow());
+                    var asdf = TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
+                        .WithModifiers(context.ContainingSyntax.Modifiers)
+                        .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
+                        .WithMembers(List(methods));
+                    return data.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(asdf);
+                })
+                .SelectNormalized();
+
             // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
             // that allocates and fills in the memory for the vtable.
             var nativeToManagedVtables = interfacesWithMethodsAndItsMethods
@@ -184,9 +197,10 @@ namespace Microsoft.Interop
                 .Zip(nativeToManagedVtableMethods)
                 .Zip(nativeToManagedVtables)
                 .Zip(iUnknownDerivedAttributeApplication)
+                .Zip(shadowingMethods)
                 .Select(static (data, ct) =>
                 {
-                    var (((((interfaceContext, interfaceInfo), managedToNativeStubs), nativeToManagedStubs), nativeToManagedVtable), iUnknownDerivedAttribute) = data;
+                    var ((((((interfaceContext, interfaceInfo), managedToNativeStubs), nativeToManagedStubs), nativeToManagedVtable), iUnknownDerivedAttribute), shadowingMethod) = data;
 
                     using StringWriter source = new();
                     interfaceInfo.WriteTo(source);
@@ -204,6 +218,9 @@ namespace Microsoft.Interop
                     source.WriteLine();
                     source.WriteLine();
                     iUnknownDerivedAttribute.WriteTo(source);
+                    source.WriteLine();
+                    source.WriteLine();
+                    shadowingMethod.WriteTo(source);
                     return new { TypeName = interfaceContext.Info.Type.FullTypeName, Source = source.ToString() };
                 });
 
@@ -377,13 +394,13 @@ namespace Microsoft.Interop
             var definingType = interfaceGroup.Interface.Info.Type;
             return ImplementationInterfaceTemplate
                 .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
-                .WithMembers(List<MemberDeclarationSyntax>(interfaceGroup.DeclaredMethods.Select(m => m.ManagedToUnmanagedStub).OfType<GeneratedStubCodeContext>().Select(ctx => ctx.Stub.Node)))
+                .WithMembers(List<MemberDeclarationSyntax>(interfaceGroup.Methods.Select(m => m.ManagedToUnmanagedStub).OfType<GeneratedStubCodeContext>().Select(ctx => ctx.Stub.Node)))
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
         private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
         {
             return ImplementationInterfaceTemplate
-                .WithMembers(List<MemberDeclarationSyntax>(comInterfaceAndMethods.DeclaredMethods.Select(m => m.NativeToManagedStub).OfType<GeneratedStubCodeContext>().Select(context => context.Stub.Node)));
+                .WithMembers(List<MemberDeclarationSyntax>(comInterfaceAndMethods.Methods.Select(m => m.NativeToManagedStub).OfType<GeneratedStubCodeContext>().Select(context => context.Stub.Node)));
         }
 
         private static readonly TypeSyntax VoidStarStarSyntax = PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))));

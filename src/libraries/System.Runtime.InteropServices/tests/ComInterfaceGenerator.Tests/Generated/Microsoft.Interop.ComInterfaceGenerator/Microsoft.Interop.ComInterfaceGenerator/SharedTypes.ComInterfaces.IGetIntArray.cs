@@ -106,3 +106,10 @@ namespace SharedTypes.ComInterfaces
     {
     }
 }
+
+namespace SharedTypes.ComInterfaces
+{
+    partial interface IGetIntArray
+    {
+    }
+}

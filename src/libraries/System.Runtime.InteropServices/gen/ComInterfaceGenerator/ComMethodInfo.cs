@@ -14,6 +14,7 @@ namespace Microsoft.Interop
 {
     public sealed partial class ComInterfaceGenerator
     {
+
         /// <summary>
         /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
         /// </summary>
@@ -21,7 +22,7 @@ namespace Microsoft.Interop
             [property: Obsolete] IMethodSymbol Symbol,
             MethodDeclarationSyntax Syntax,
             string MethodName,
-            SequenceEqualImmutableArray<(ManagedTypeInfo Type, string Name, RefKind RefKind)> Parameters,
+            SequenceEqualImmutableArray<ParameterInfo> Parameters,
             Diagnostic? Diagnostic)
         {
             private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
@@ -87,10 +88,10 @@ namespace Microsoft.Interop
                     if (comMethodDeclaringSyntax is null)
                         throw new NotImplementedException("Found a method that was declared in the attributed interface declaration, but couldn't find the syntax for it.");
 
-                    List<(ManagedTypeInfo ParameterType, string Name, RefKind RefKind)> parameters = new();
+                    List<ParameterInfo> parameters = new();
                     foreach (var parameter in ((IMethodSymbol)member).Parameters)
                     {
-                        parameters.Add((ManagedTypeInfo.CreateTypeInfoForTypeSymbol(parameter.Type), parameter.Name, parameter.RefKind));
+                        parameters.Add(ParameterInfo.From(parameter));
                     }
 
                     diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, (IMethodSymbol)member);
@@ -100,6 +101,19 @@ namespace Microsoft.Interop
                 }
                 return false;
             }
+        }
+    }
+
+    internal record struct ParameterInfo(ManagedTypeInfo Type, string Name, RefKind RefKind, SequenceEqualImmutableArray<AttributeInfo> Attributes)
+    {
+        public static ParameterInfo From(IParameterSymbol parameter)
+        {
+            var attributes = new List<AttributeInfo>();
+            foreach (var attribute in parameter.GetAttributes())
+            {
+                attributes.Add(AttributeInfo.From(attribute));
+            }
+            return new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(parameter.Type), parameter.Name, parameter.RefKind, attributes.ToSequenceEqualImmutableArray());
         }
     }
 }
