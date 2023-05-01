@@ -9753,7 +9753,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Check next two opcodes (have to be STSFLD and RET)
                     const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
                     const BYTE* nextOpcode2 = nextOpcode1 + sizeof(mdToken) + 1;
-                    if (nextOpcode2 <= codeEndp && getU1LittleEndian(nextOpcode1) == CEE_STSFLD)
+                    if ((nextOpcode2 < codeEndp) && (getU1LittleEndian(nextOpcode1) == CEE_STSFLD))
                     {
                         if (getU1LittleEndian(nextOpcode2) == CEE_RET)
                         {
