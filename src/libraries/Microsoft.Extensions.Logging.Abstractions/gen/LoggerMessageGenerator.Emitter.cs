@@ -254,11 +254,8 @@ namespace {lc.Namespace}
                 {
                     // this is related to https://github.com/serilog/serilog-extensions-logging/issues/197
                     string name = p.CodeName;
-                    if (lm.TemplateMap.ContainsKey(name))
-                    {
-                        // take the letter casing from the template
-                        name = lm.TemplateMap[name];
-                    }
+                    // take the letter casing from the template
+                    lm.TemplateMap.TryGetValue(name, out name);
 
                     _builder.AppendLine($"                    {nestedIndentation}{index++} => new global::System.Collections.Generic.KeyValuePair<string, object?>(\"{name}\", this.{NormalizeSpecialSymbol(p.CodeName)}),");
                 }
