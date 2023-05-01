@@ -5240,7 +5240,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_LCL_FLD:
-                level  = 1;
+                level = 1;
                 gtGetLclFldNodeCost(tree->AsLclFld(), &costEx, &costSz);
                 break;
 
@@ -5597,8 +5597,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += 3;
         }
 #endif
-        level          = gtSetEvalOrder(op1);
-        unsigned lvl2  = gtSetEvalOrder(op2);
+        level         = gtSetEvalOrder(op1);
+        unsigned lvl2 = gtSetEvalOrder(op2);
 
         switch (oper)
         {

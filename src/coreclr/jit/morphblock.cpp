@@ -1552,7 +1552,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (addrSpillStore != nullptr)
         {
-            result       = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, addrSpillStore, storeOneFld);
+            result         = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, addrSpillStore, storeOneFld);
             addrSpillStore = nullptr;
         }
         else if (result != nullptr)

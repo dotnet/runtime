@@ -3445,7 +3445,7 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
     while (count < limit)
     {
         count++;
-        unsigned storeLclNum;
+        unsigned       storeLclNum;
         GenTree* const tree = stmt->GetRootNode();
         if (tree->OperIsStoreLcl(&storeLclNum) && (storeLclNum == lclNum) && !tree->OperIsBlkOp())
         {
@@ -3606,7 +3606,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // Otherwise check the first stmt.
     // Verify the branch is just a simple local compare.
     //
-    unsigned storeLclNum;
+    unsigned       storeLclNum;
     GenTree* const firstTree = firstStmt->GetRootNode();
     if (!firstTree->OperIsStoreLclVar(&storeLclNum))
     {
