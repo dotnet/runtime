@@ -15,7 +15,7 @@
     IL_0000:  ldftn      int32 Cl::B()
     IL_0006:  calli      int32()
     IL_000b:  ret
-  } // end of method ILTests::A
+  } // end of method ILTests::StaticClass
 
   .method public hidebysig static int32  InstanceClass() cil managed noinlining aggressiveoptimization
   {
@@ -26,7 +26,7 @@
     IL_0005:  ldftn      instance int32 Cl::A()
     IL_000b:  calli      instance int32()
     IL_0010:  ret
-  } // end of method ILTests::B
+  } // end of method ILTests::InstanceClass
 
   .method public hidebysig static int32  InstanceExplicitClass() cil managed noinlining aggressiveoptimization
   {
@@ -37,7 +37,7 @@
     IL_0005:  ldftn      instance int32 Cl::A()
     IL_000b:  calli      explicit instance int32(class Cl)
     IL_0010:  ret
-  } // end of method ILTests::C
+  } // end of method ILTests::InstanceExplicitClass
 
   .method public hidebysig static int32  StaticClassParam() cil managed noinlining aggressiveoptimization
   {
@@ -50,7 +50,7 @@
     IL_0008:  ldloc.0
     IL_0009:  calli      int32(int32)
     IL_000e:  ret
-  } // end of method ILTests::D
+  } // end of method ILTests::StaticClassParam
 
   .method public hidebysig static int32  InstanceClassParam() cil managed noinlining aggressiveoptimization
   {
@@ -67,7 +67,7 @@
     IL_000f:  ldloc.1
     IL_0010:  calli      instance int32(int32)
     IL_0015:  ret
-  } // end of method ILTests::E
+  } // end of method ILTests::InstanceClassParam
 
   .method public hidebysig static int32  InstanceExplicitClassParam() cil managed noinlining aggressiveoptimization
   {
@@ -84,7 +84,7 @@
     IL_000f:  ldloc.1
     IL_0010:  calli      explicit instance int32(class Cl,int32)
     IL_0015:  ret
-  } // end of method ILTests::F
+  } // end of method ILTests::InstanceExplicitClassParam
 
   .method public hidebysig static int32  StaticStruct() cil managed noinlining aggressiveoptimization
   {
@@ -93,7 +93,7 @@
     IL_0000:  ldftn      int32 St::B()
     IL_0006:  calli      int32()
     IL_000b:  ret
-  } // end of method ILTests::G
+  } // end of method ILTests::StaticStruct
 
   .method public hidebysig static int32  InstanceStruct() cil managed noinlining aggressiveoptimization
   {
@@ -106,7 +106,7 @@
     IL_000a:  ldftn      instance int32 St::A()
     IL_0010:  calli      instance int32()
     IL_0015:  ret
-  } // end of method ILTests::H
+  } // end of method ILTests::InstanceStruct
 
   .method public hidebysig static int32  InstanceExplicitStruct() cil managed noinlining aggressiveoptimization
   {
@@ -119,7 +119,7 @@
     IL_000a:  ldftn      instance int32 St::A()
     IL_0010:  calli      explicit instance int32(valuetype St&)
     IL_0015:  ret
-  } // end of method ILTests::I
+  } // end of method ILTests::InstanceExplicitStruct
 
   .method public hidebysig static int32  StaticStructParam() cil managed noinlining aggressiveoptimization
   {
@@ -132,7 +132,7 @@
     IL_0008:  ldloc.0
     IL_0009:  calli      int32(int32)
     IL_000e:  ret
-  } // end of method ILTests::J
+  } // end of method ILTests::StaticStructParam
 
   .method public hidebysig static int32  InstanceStructParam() cil managed noinlining aggressiveoptimization
   {
@@ -149,7 +149,7 @@
     IL_0012:  ldloc.1
     IL_0013:  calli      instance int32(int32)
     IL_0018:  ret
-  } // end of method ILTests::K
+  } // end of method ILTests::InstanceStructParam
 
   .method public hidebysig static int32  InstanceExplicitStructParam() cil managed noinlining aggressiveoptimization
   {
@@ -166,8 +166,48 @@
     IL_0012:  ldloc.1
     IL_0013:  calli      explicit instance int32(valuetype St&,int32)
     IL_0018:  ret
-  } // end of method ILTests::L
+  } // end of method ILTests::InstanceExplicitStructParam
 
+    .method public hidebysig static
+        int32 BranchAssign (
+            bool b
+        ) cil managed
+    {
+        // Method begins at RVA 0x2050
+        // Code size 24 (0x18)
+        .maxstack 1
+        .locals init (
+            [0] method int32 *()
+        )
+
+        IL_0000: ldarg.0
+        IL_0001: brfalse.s IL_0011
+
+        IL_0003: ldftn      int32 Cl::B()
+        IL_0009: stloc.0
+        IL_000a: ldloc.0
+        IL_000b: calli int32()
+        IL_0010: ret
+
+        IL_0011: ldloc.0
+        IL_0012: calli int32()
+        IL_0017: ret
+    } // end of method ILTests::BranchAssign
+
+    .method public hidebysig static
+        int32 NoAssign () cil managed
+    {
+        // Method begins at RVA 0x2050
+        // Code size 7 (0x7)
+        .maxstack 1
+        .locals init (
+            [0] method int32 *()
+        )
+
+        IL_0000: ldloc.0
+        IL_0001: calli int32()
+        IL_0006: ret
+    } // end of method ILTests::NoAssign
 } // end of class ILTests
 
 .class public auto ansi sealed beforefieldinit Cl

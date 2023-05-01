@@ -40,6 +40,7 @@ public static unsafe class Test
     private static int A(int a, int b) => a + b + 1;
     private static int B(int a, int b) => a + b + 2;
     private static void C() { }
+    private static void C(int a, int b) { }
 
     private static int D() => 3;
     [UnmanagedCallersOnly]
@@ -57,6 +58,13 @@ public static unsafe class Test
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     private static int UnmanagedStdcall(int a, int b) => D(a, b);
 
+    [DllImport("IndirectNative", EntryPoint = "E")]
+    private static extern int E();
+    [DllImport("IndirectNative", EntryPoint = "EParam")]
+    private static extern int E(int a, int b);
+    [DllImport("IndirectNative", EntryPoint = "EPtrs")]
+    private static extern int E(ref int a, ref int b);
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static delegate*<int> ExecuteCctor() => Ptr;
 
@@ -68,15 +76,35 @@ public static unsafe class Test
 
         AreSame(A(), Invoke(() => ((delegate*<int>)&A)()));
         AreSame(B(), Invoke(() => ((delegate*<int>)&B)()));
+        AreSame(A(), Invoke(() => {
+            ((delegate*<void>)&C)();
+            return A();
+        }));
+
         AreSame(D(), Invoke(() => ((delegate* unmanaged<int>)&UnmanagedDefault)()));
         AreSame(D(), Invoke(() => ((delegate* unmanaged[Cdecl]<int>)&UnmanagedCdecl)()));
         AreSame(D(), Invoke(() => ((delegate* unmanaged[Stdcall]<int>)&UnmanagedStdcall)()));
 
+        AreSame(E(), Invoke(() => ((delegate*<int>)&E)()));
+
         AreSame(A(8, 9), Invoke(() => ((delegate*<int, int, int>)&A)(8, 9)));
         AreSame(B(8, 9), Invoke(() => ((delegate*<int, int, int>)&B)(8, 9)));
+        AreSame(A(8, 9), Invoke(() => {
+            ((delegate*<int, int, void>)&C)(8, 9);
+            return A(8, 9);
+        }));
+
         AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged<int, int, int>)&UnmanagedDefault)(8, 9)));
         AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged[Cdecl]<int, int, int>)&UnmanagedCdecl)(8, 9)));
         AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged[Stdcall]<int, int, int>)&UnmanagedStdcall)(8, 9)));
+
+        AreSame(E(8, 9), Invoke(() => ((delegate*<int, int, int>)&E)(8, 9)));
+
+        AreSame(E(8, 9), Invoke(() => {
+            int a = 8;
+            int b = 9;
+            return ((delegate*<ref int, ref int, int>)&E)(ref a, ref b);
+        }));
 
         AreSame(A(), Invoke(() => Ptr()));
 
@@ -237,6 +265,13 @@ public static unsafe class Test
         AreSame(4, IndirectIL.StaticStructParam());
         AreSame(3, IndirectIL.InstanceStructParam());
         AreSame(3, IndirectIL.InstanceExplicitStructParam());
+
+        AreSame(2, Invoke(() => IndirectIL.BranchAssign(true)));
+        AreSame(2, Invoke((a) => IndirectIL.BranchAssign(a), true));
+        AssertThrowsNullReferenceException(() => IndirectIL.BranchAssign(false));
+        AssertThrowsNullReferenceException((a) => IndirectIL.BranchAssign(a), false);
+
+        AssertThrowsNullReferenceException(() => IndirectIL.NoAssign());
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -261,6 +296,21 @@ public static unsafe class Test
         try
         {
             _ = a();
+        }
+        catch (NullReferenceException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"Expected NullReferenceException at line {line}");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void AssertThrowsNullReferenceException<TArg, T>(Func<TArg, T> a, TArg arg, [CallerLineNumber] int line = 0)
+    {
+        try
+        {
+            _ = a(arg);
         }
         catch (NullReferenceException)
         {
