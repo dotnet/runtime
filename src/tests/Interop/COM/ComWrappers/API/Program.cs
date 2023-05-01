@@ -123,6 +123,7 @@ namespace ComWrappersTests
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateComInterfaceCreation()
         {
             Console.WriteLine($"Running {nameof(ValidateComInterfaceCreation)}...");
@@ -156,6 +157,7 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateComInterfaceCreationRoundTrip()
         {
             Console.WriteLine($"Running {nameof(ValidateComInterfaceCreationRoundTrip)}...");
@@ -212,6 +214,7 @@ namespace ComWrappersTests
         // Just because one use of a COM interface returned from GetOrCreateComInterfaceForObject
         // hits zero ref count does not mean future calls to GetOrCreateComInterfaceForObject
         // should return an unusable object.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree()
         {
             Console.WriteLine($"Running {nameof(ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree)}...");
@@ -247,6 +250,7 @@ namespace ComWrappersTests
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateFallbackQueryInterface()
         {
             Console.WriteLine($"Running {nameof(ValidateFallbackQueryInterface)}...");
@@ -311,25 +315,26 @@ namespace ComWrappersTests
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
             // Create the first native object wrapper and run the GC.
-            CreateObject();
-            GC.Collect();
+            CreateObject(cw, trackerObjRaw);
+            ForceGC();
 
             // Try to create another wrapper for the same object. The above GC
             // may have collected parts of the ComWrapper cache, but this should
             // still work.
-            CreateObject();
+            CreateObject(cw, trackerObjRaw);
             ForceGC();
 
             Marshal.Release(trackerObjRaw);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            void CreateObject()
+            static void CreateObject(ComWrappers cw, IntPtr trackerObj)
             {
-                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+                var obj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObj, CreateObjectFlags.None);
                 Assert.NotNull(obj);
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateMappingAPIs()
         {
             Console.WriteLine($"Running {nameof(ValidateMappingAPIs)}...");
@@ -383,6 +388,7 @@ namespace ComWrappersTests
             Marshal.Release(unmanagedObjIUnknown);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void ValidateWrappersInstanceIsolation()
         {
             Console.WriteLine($"Running {nameof(ValidateWrappersInstanceIsolation)}...");
