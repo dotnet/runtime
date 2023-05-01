@@ -2447,11 +2447,15 @@ namespace Internal.JitInterface
 
         private FlattenTypeResult flattenType(CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, UIntPtr* numFields, ref bool significantPadding)
         {
-            MetadataType type = (MetadataType)HandleToObject(clsHnd);
+            TypeDesc type = HandleToObject(clsHnd);
+
+            if (type is not MetadataType metadataType || !type.IsValueType)
+                return FlattenTypeResult.Failure;
+
             significantPadding = false;
             nuint maxFields = *numFields;
             *numFields = 0;
-            FlattenTypeResult result = FlattenTypeHelper(type, 0, fields, maxFields, numFields, ref significantPadding);
+            FlattenTypeResult result = FlattenTypeHelper(metadataType, 0, fields, maxFields, numFields, ref significantPadding);
 
 #if READYTORUN
             // TODO: Do we need a version bubble check here if we're going to

@@ -2231,8 +2231,8 @@ static FlattenTypeResult FlattenTypeHelper(
     {
         // Historically on the JIT side we did not consider types with GC
         // pointers to have significant padding, even when they have explicit
-        // layout attributes. This retains the more liberal treatment and lets
-        // the JIT still optimize these cases.
+        // layout attributes. This retains the more liberal treatment and
+        // lets the JIT still optimize these cases.
         if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
         {
             *significantPadding = true;
@@ -2326,14 +2326,23 @@ FlattenTypeResult CEEInfo::flattenType(
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    TypeHandle VMClsHnd(clsHnd);
+    TypeHandle typeHnd(clsHnd);
 
-    MethodTable* pMT = VMClsHnd.AsMethodTable();
+    if (typeHnd.IsNativeValueType())
+    {
+        *numFields = 0;
+        *significantPadding = true;
+        result = FlattenTypeResult::Success;
+    }
+    else if (typeHnd.IsValueType())
+    {
+        MethodTable* pMT = typeHnd.AsMethodTable();
 
-    size_t maxFields = *numFields;
-    *numFields = 0;
-    *significantPadding = false;
-    result = FlattenTypeHelper(pMT, 0, fields, maxFields, numFields, significantPadding);
+        size_t maxFields = *numFields;
+        *numFields = 0;
+        *significantPadding = false;
+        result = FlattenTypeHelper(pMT, 0, fields, maxFields, numFields, significantPadding);
+    }
 
     EE_TO_JIT_TRANSITION_LEAF();
 
