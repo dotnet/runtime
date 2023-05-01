@@ -10357,14 +10357,35 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
     VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
+    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp))
     {
-        FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        if (funcApp.m_func == VNF_PtrToStatic)
         {
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
-            *pFseq      = fseq;
-            return true;
+            FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+            if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+            {
+                *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
+                *pFseq      = fseq;
+                return true;
+            }
+        }
+        else if (funcApp.m_func == VNFunc(GT_ADD))
+        {
+            // Handle ADD(STATIC_HDL, OFFSET) via VN (the logic in this method mostly works with plain tree nodes)
+            if (vnStore->IsVNHandle(funcApp.m_args[0]) &&
+                (vnStore->GetHandleFlags(funcApp.m_args[0]) == GTF_ICON_STATIC_HDL) &&
+                vnStore->IsVNConstant(funcApp.m_args[1]) && !vnStore->IsVNHandle(funcApp.m_args[1]))
+            {
+                FieldSeq* fldSeq = vnStore->GetFieldSeqFromAddress(funcApp.m_args[0]);
+                if (fldSeq != nullptr)
+                {
+                    assert(fldSeq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+                    *pFseq      = fldSeq;
+                    *byteOffset = vnStore->CoercedConstantValue<ssize_t>(funcApp.m_args[0]) - fldSeq->GetOffset() +
+                                  vnStore->CoercedConstantValue<ssize_t>(funcApp.m_args[1]);
+                    return true;
+                }
+            }
         }
     }
     ssize_t val = 0;
