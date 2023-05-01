@@ -124,7 +124,7 @@ namespace System.Runtime
             // walk the type hierarchy looking for a match
             while (true)
             {
-                pObjType = pObjType->NonClonedNonArrayBaseType;
+                pObjType = pObjType->NonArrayBaseType;
                 if (pObjType == null)
                 {
                     return null;
@@ -400,7 +400,7 @@ namespace System.Runtime
                     case GenericVariance.NonVariant:
                         // Non-variant type params need to be identical.
 
-                        if (!AreTypesEquivalent(pSourceArgType, pTargetArgType))
+                        if (pSourceArgType != pTargetArgType)
                             return false;
 
                         break;
@@ -484,7 +484,7 @@ namespace System.Runtime
             {
                 MethodTable* pNullableType = pTargetType->NullableType;
 
-                return AreTypesEquivalent(pSourceType, pNullableType);
+                return pSourceType == pNullableType;
             }
 
             return AreTypesAssignableInternal(pSourceType, pTargetType, AssignmentVariation.BoxedSource, null);
@@ -503,7 +503,7 @@ namespace System.Runtime
             //
             // Are the types identical?
             //
-            if (AreTypesEquivalent(pSourceType, pTargetType))
+            if (pSourceType == pTargetType)
                 return true;
 
             //
@@ -543,7 +543,7 @@ namespace System.Runtime
                     if (pSourceRelatedParameterType->IsPointerType)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
-                        // As we've already called AreTypesEquivalent at the start of this function,
+                        // As we've already compared equality at the start of this function,
                         // return false as the exact match case has already been handled.
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
@@ -558,7 +558,7 @@ namespace System.Runtime
                     else if (pSourceRelatedParameterType->IsFunctionPointerType)
                     {
                         // If the parameter types are function pointers, then only exact matches are correct.
-                        // As we've already called AreTypesEquivalent at the start of this function,
+                        // As we've already compared equality at the start of this function,
                         // return false as the exact match case has already been handled.
                         return false;
                     }
@@ -697,36 +697,6 @@ namespace System.Runtime
             throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
         }
 
-        [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
-        public static unsafe void CheckVectorElemAddr(MethodTable* elemType, object array)
-        {
-            if (array == null)
-            {
-                return;
-            }
-
-            Debug.Assert(array.GetMethodTable()->IsArray, "second argument must be an array");
-
-            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-
-            if (!AreTypesEquivalent(elemType, arrayElemType)
-            // In addition to the exactness check, add another check to allow non-exact matches through
-            // if the element type is a ValueType. The issue here is Universal Generics. The Universal
-            // Generic codegen will generate a call to this helper for all ldelema opcodes if the exact
-            // type is not known, and this can include ValueTypes. For ValueTypes, the exact check is not
-            // desirable as enum's are allowed to pass through this code if they are size matched.
-            // While this check is overly broad and allows non-enum valuetypes to also skip the check
-            // that is OK, because in the non-enum case the casting operations are sufficient to ensure
-            // type safety.
-                && !elemType->IsValueType)
-            {
-                // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-                // to find the correct classlib.
-
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-            }
-        }
-
         internal struct ArrayElement
         {
             public object Value;
@@ -838,7 +808,7 @@ namespace System.Runtime
             MethodTable* elemType = (MethodTable*)elementType;
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
 
-            if (AreTypesEquivalent(elemType, arrayElemType))
+            if (elemType == arrayElemType)
             {
                 return ref element;
             }
@@ -859,35 +829,16 @@ namespace System.Runtime
             Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
             // If a generic type definition reaches this function, then the function should return false unless the types are equivalent.
-            // This works as the NonClonedNonArrayBaseType of a GenericTypeDefinition is always null.
+            // This works as the NonArrayBaseType of a GenericTypeDefinition is always null.
 
             do
             {
                 if (pDerivedType == pBaseType)
                     return true;
 
-                pDerivedType = pDerivedType->NonClonedNonArrayBaseType;
+                pDerivedType = pDerivedType->NonArrayBaseType;
             }
             while (pDerivedType != null);
-
-            return false;
-        }
-
-        // Method to compare two types pointers for type equality
-        // We cannot just compare the pointers as there can be duplicate type instances
-        // for cloned and constructed types.
-        // There are three separate cases here
-        //   1. The pointers are Equal => true
-        //   2. Either one or both the types are CLONED, follow to the canonical MethodTable and check
-        //   3. For Arrays/Pointers, we have to further check for rank and element type equality
-        [RuntimeExport("RhTypeCast_AreTypesEquivalent")]
-        public static unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2)
-        {
-            if (pType1 == pType2)
-                return true;
-
-            if (pType1->IsParameterizedType && pType2->IsParameterizedType)
-                return AreTypesEquivalent(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
 
             return false;
         }
@@ -927,7 +878,7 @@ namespace System.Runtime
 
             while (true)
             {
-                pObjType = pObjType->NonClonedNonArrayBaseType;
+                pObjType = pObjType->NonArrayBaseType;
                 if (pObjType == null)
                     return false;
 

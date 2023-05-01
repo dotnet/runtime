@@ -170,6 +170,7 @@ CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Intern
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
                                                                                  // block. Skips functions with EH
                                                                                  // for simplicity.
+CONFIG_INTEGER(JitStressMorphStores, W("JitStressMorphStores"), 0) // Morph trees after assignment rationalization
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 

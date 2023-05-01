@@ -74,50 +74,8 @@ namespace System
 
     public static partial class Convert
     {
-        // A typeof operation is fairly expensive (does a system call), so we'll cache these here
-        // statically.  These are exactly lined up with the TypeCode, eg. ConvertType[TypeCode.Int16]
-        // will give you the type of an short.
-        internal static readonly Type[] ConvertTypes = {
-            typeof(System.Empty),
-            typeof(object),
-            typeof(System.DBNull),
-            typeof(bool),
-            typeof(char),
-            typeof(sbyte),
-            typeof(byte),
-            typeof(short),
-            typeof(ushort),
-            typeof(int),
-            typeof(uint),
-            typeof(long),
-            typeof(ulong),
-            typeof(float),
-            typeof(double),
-            typeof(decimal),
-            typeof(DateTime),
-            typeof(object), // TypeCode is discontinuous so we need a placeholder.
-            typeof(string)
-        };
-
-        // Need to special case Enum because typecode will be underlying type, e.g. Int32
-        private static readonly Type EnumType = typeof(Enum);
-
         private const int Base64LineBreakPosition = 76;
         private const int Base64VectorizationLengthThreshold = 16;
-
-#if DEBUG
-        static Convert()
-        {
-            Debug.Assert(ConvertTypes != null, "[Convert.cctor]ConvertTypes!=null");
-            Debug.Assert(ConvertTypes.Length == ((int)TypeCode.String + 1), "[Convert.cctor]ConvertTypes.Length == ((int)TypeCode.String + 1)");
-            Debug.Assert(ConvertTypes[(int)TypeCode.Empty] == typeof(System.Empty),
-                            "[Convert.cctor]ConvertTypes[(int)TypeCode.Empty]==typeof(System.Empty)");
-            Debug.Assert(ConvertTypes[(int)TypeCode.String] == typeof(string),
-                            "[Convert.cctor]ConvertTypes[(int)TypeCode.String]==typeof(System.String)");
-            Debug.Assert(ConvertTypes[(int)TypeCode.Int32] == typeof(int),
-                            "[Convert.cctor]ConvertTypes[(int)TypeCode.Int32]==typeof(int)");
-        }
-#endif
 
         // Constant representing the database null value. This value is used in
         // database applications to indicate the absence of a known value. Note
@@ -223,44 +181,44 @@ namespace System
                 return value;
             }
 
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Boolean]))
+            if (ReferenceEquals(targetType, typeof(bool)))
                 return value.ToBoolean(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Char]))
+            if (ReferenceEquals(targetType, typeof(char)))
                 return value.ToChar(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.SByte]))
+            if (ReferenceEquals(targetType, typeof(sbyte)))
                 return value.ToSByte(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Byte]))
+            if (ReferenceEquals(targetType, typeof(byte)))
                 return value.ToByte(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int16]))
+            if (ReferenceEquals(targetType, typeof(short)))
                 return value.ToInt16(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt16]))
+            if (ReferenceEquals(targetType, typeof(ushort)))
                 return value.ToUInt16(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int32]))
+            if (ReferenceEquals(targetType, typeof(int)))
                 return value.ToInt32(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt32]))
+            if (ReferenceEquals(targetType, typeof(uint)))
                 return value.ToUInt32(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int64]))
+            if (ReferenceEquals(targetType, typeof(long)))
                 return value.ToInt64(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt64]))
+            if (ReferenceEquals(targetType, typeof(ulong)))
                 return value.ToUInt64(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Single]))
+            if (ReferenceEquals(targetType, typeof(float)))
                 return value.ToSingle(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Double]))
+            if (ReferenceEquals(targetType, typeof(double)))
                 return value.ToDouble(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Decimal]))
+            if (ReferenceEquals(targetType, typeof(decimal)))
                 return value.ToDecimal(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.DateTime]))
+            if (ReferenceEquals(targetType, typeof(DateTime)))
                 return value.ToDateTime(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.String]))
+            if (ReferenceEquals(targetType, typeof(string)))
                 return value.ToString(provider);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Object]))
+            if (ReferenceEquals(targetType, typeof(object)))
                 return (object)value;
             // Need to special case Enum because typecode will be underlying type, e.g. Int32
-            if (ReferenceEquals(targetType, EnumType))
+            if (ReferenceEquals(targetType, typeof(Enum)))
                 return (Enum)value;
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.DBNull]))
+            if (ReferenceEquals(targetType, typeof(DBNull)))
                 throw new InvalidCastException(SR.InvalidCast_DBNull);
-            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Empty]))
+            if (ReferenceEquals(targetType, typeof(Empty)))
                 throw new InvalidCastException(SR.InvalidCast_Empty);
 
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, value.GetType().FullName, targetType.FullName));
@@ -295,37 +253,37 @@ namespace System
                 throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
 
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Boolean]))
+            if (ReferenceEquals(conversionType, typeof(bool)))
                 return ic.ToBoolean(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Char]))
+            if (ReferenceEquals(conversionType, typeof(char)))
                 return ic.ToChar(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.SByte]))
+            if (ReferenceEquals(conversionType, typeof(sbyte)))
                 return ic.ToSByte(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Byte]))
+            if (ReferenceEquals(conversionType, typeof(byte)))
                 return ic.ToByte(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int16]))
+            if (ReferenceEquals(conversionType, typeof(short)))
                 return ic.ToInt16(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt16]))
+            if (ReferenceEquals(conversionType, typeof(ushort)))
                 return ic.ToUInt16(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int32]))
+            if (ReferenceEquals(conversionType, typeof(int)))
                 return ic.ToInt32(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt32]))
+            if (ReferenceEquals(conversionType, typeof(uint)))
                 return ic.ToUInt32(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int64]))
+            if (ReferenceEquals(conversionType, typeof(long)))
                 return ic.ToInt64(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt64]))
+            if (ReferenceEquals(conversionType, typeof(ulong)))
                 return ic.ToUInt64(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Single]))
+            if (ReferenceEquals(conversionType, typeof(float)))
                 return ic.ToSingle(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Double]))
+            if (ReferenceEquals(conversionType, typeof(double)))
                 return ic.ToDouble(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Decimal]))
+            if (ReferenceEquals(conversionType, typeof(decimal)))
                 return ic.ToDecimal(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.DateTime]))
+            if (ReferenceEquals(conversionType, typeof(DateTime)))
                 return ic.ToDateTime(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.String]))
+            if (ReferenceEquals(conversionType, typeof(string)))
                 return ic.ToString(provider);
-            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Object]))
+            if (ReferenceEquals(conversionType, typeof(object)))
                 return (object)value;
 
             return ic.ToType(conversionType, provider);

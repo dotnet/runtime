@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -120,6 +121,36 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal("TestMethod", method.Name);
                 Assert.Empty(method.GetParameters());
                 Assert.Equal("System.Void", method.ReturnType.FullName);
+            }
+        }
+
+        [Fact]
+        public void AddInterfaceImplementationTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                    s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
+
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract, null, new Type[] { typeof(IOneMethod)});
+                tb.AddInterfaceImplementation(typeof(INoMethod));
+                tb.DefineNestedType("NestedType", TypeAttributes.Interface | TypeAttributes.Abstract);
+                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
+                Type[] interfaces = testType.GetInterfaces(); 
+
+                Assert.Equal("TestInterface", testType.Name);
+                Assert.Equal(2, interfaces.Length);
+
+                Type iOneMethod = testType.GetInterface("IOneMethod");
+                Type iNoMethod = testType.GetInterface("INoMethod");
+                Type[] nt = testType.GetNestedTypes();
+                Assert.Equal(1, iOneMethod.GetMethods().Length);
+                Assert.Empty(iNoMethod.GetMethods());
+                Assert.NotNull(testType.GetNestedType("NestedType", BindingFlags.NonPublic));
             }
         }
     }

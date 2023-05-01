@@ -62,6 +62,8 @@ internal static class ReflectionTest
         TestInterfaceLists.Run();
         TestMethodConsistency.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
+        TestMdArrayLoad.Run();
+        TestByRefTypeLoad.Run();
 
         //
         // Mostly functionality tests
@@ -2179,6 +2181,34 @@ internal static class ReflectionTest
         }
 
         class G<T> where T : struct { }
+    }
+
+    class TestMdArrayLoad
+    {
+        class Atom { }
+
+        public static Type MakeMdArray<T>() => typeof(T[,,]);
+
+        public static void Run()
+        {
+            var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(typeof(Atom));
+            if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
+                throw new Exception();
+        }
+    }
+
+    class TestByRefTypeLoad
+    {
+        class Atom { }
+
+        public static Type MakeFnPtrType<T>() => typeof(delegate*<ref T>);
+
+        public static void Run()
+        {
+            var mi = typeof(TestByRefTypeLoad).GetMethod(nameof(MakeFnPtrType)).MakeGenericMethod(typeof(Atom));
+            if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(delegate*<ref Atom>))
+                throw new Exception();
+        }
     }
 
     class TestEntryPoint

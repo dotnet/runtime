@@ -401,6 +401,12 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(elementType);
         }
 
+        public static unsafe int GetArrayRankOrMinusOneForSzArray(RuntimeTypeHandle arrayHandle)
+        {
+            Debug.Assert(IsArrayType(arrayHandle));
+            return arrayHandle.ToMethodTable()->IsSzArray ? -1 : arrayHandle.ToMethodTable()->ArrayRank;
+        }
+
         public static bool IsValueType(RuntimeTypeHandle type)
         {
             return type.ToEETypePtr().IsValueType;

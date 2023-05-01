@@ -551,7 +551,8 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
-// AddPhiArg: Add a new GT_PHI_ARG node to an existing GT_PHI node.
+// AddPhiArg: Ensure an existing GT_PHI node contains an appropriate PhiArg
+//    for an ssa def arriving via pred
 //
 // Arguments:
 //    block  - The block that contains the statement
@@ -563,14 +564,32 @@ void SsaBuilder::InsertPhi(BasicBlock* block, unsigned lclNum)
 void SsaBuilder::AddPhiArg(
     BasicBlock* block, Statement* stmt, GenTreePhi* phi, unsigned lclNum, unsigned ssaNum, BasicBlock* pred)
 {
-#ifdef DEBUG
-    // Make sure it isn't already present: we should only add each definition once.
+    // If there's already a phi arg for this pred, it had better have
+    // matching ssaNum, unless this block is a handler entry.
+    //
+    const bool isHandlerEntry = m_pCompiler->bbIsHandlerBeg(block);
+
     for (GenTreePhi::Use& use : phi->Uses())
     {
-        assert(use.GetNode()->AsPhiArg()->GetSsaNum() != ssaNum);
-    }
-#endif // DEBUG
+        GenTreePhiArg* const phiArg = use.GetNode()->AsPhiArg();
 
+        if (phiArg->gtPredBB == pred)
+        {
+            if (phiArg->GetSsaNum() == ssaNum)
+            {
+                // We already have this (pred, ssaNum) phiArg
+                return;
+            }
+
+            // Add another ssaNum for this pred?
+            // Should only be possible at handler entries.
+            //
+            noway_assert(isHandlerEntry);
+        }
+    }
+
+    // Didn't find a match, add a new phi arg
+    //
     var_types type = m_pCompiler->lvaGetDesc(lclNum)->TypeGet();
 
     GenTree* phiArg = new (m_pCompiler, GT_PHI_ARG) GenTreePhiArg(type, lclNum, ssaNum, pred);
@@ -1186,29 +1205,12 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                 break;
             }
 
-            GenTree*    tree = stmt->GetRootNode();
-            GenTreePhi* phi  = tree->gtGetOp2()->AsPhi();
+            GenTree*    tree   = stmt->GetRootNode();
+            GenTreePhi* phi    = tree->gtGetOp2()->AsPhi();
+            unsigned    lclNum = tree->AsOp()->gtOp1->AsLclVar()->GetLclNum();
+            unsigned    ssaNum = m_renameStack.Top(lclNum);
 
-            unsigned lclNum = tree->AsOp()->gtOp1->AsLclVar()->GetLclNum();
-            unsigned ssaNum = m_renameStack.Top(lclNum);
-            // Search the arglist for an existing definition for ssaNum.
-            // (Can we assert that its the head of the list?  This should only happen when we add
-            // during renaming for a definition that occurs within a try, and then that's the last
-            // value of the var within that basic block.)
-
-            bool found = false;
-            for (GenTreePhi::Use& use : phi->Uses())
-            {
-                if (use.GetNode()->AsPhiArg()->GetSsaNum() == ssaNum)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-            {
-                AddPhiArg(succ, stmt, phi, lclNum, ssaNum, block);
-            }
+            AddPhiArg(succ, stmt, phi, lclNum, ssaNum, block);
         }
 
         // Now handle memory.
@@ -1333,24 +1335,10 @@ void SsaBuilder::AddPhiArgsToSuccessors(BasicBlock* block)
                         continue;
                     }
 
-                    GenTreePhi* phi = tree->gtGetOp2()->AsPhi();
+                    GenTreePhi* phi    = tree->gtGetOp2()->AsPhi();
+                    unsigned    ssaNum = m_renameStack.Top(lclNum);
 
-                    unsigned ssaNum = m_renameStack.Top(lclNum);
-
-                    // See if this ssaNum is already an arg to the phi.
-                    bool alreadyArg = false;
-                    for (GenTreePhi::Use& use : phi->Uses())
-                    {
-                        if (use.GetNode()->AsPhiArg()->GetSsaNum() == ssaNum)
-                        {
-                            alreadyArg = true;
-                            break;
-                        }
-                    }
-                    if (!alreadyArg)
-                    {
-                        AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, block);
-                    }
+                    AddPhiArg(handlerStart, stmt, phi, lclNum, ssaNum, block);
                 }
 
                 // Now handle memory.

@@ -2536,7 +2536,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         {
             LclVarDsc* lclDsc = lvaGetDesc(lclNum);
             assert(lclDsc->lvSingleDef == 0);
-            // could restrict this to TYP_REF
             lclDsc->lvSingleDef = !lclDsc->lvHasMultipleILStoreOp && !lclDsc->lvHasLdAddrOp;
 
             if (lclDsc->lvSingleDef)
@@ -3494,19 +3493,20 @@ void Compiler::fgFindBasicBlocks()
                 // This temp should already have the type of the return value.
                 JITDUMP("\nInliner: re-using pre-existing spill temp V%02u\n", lvaInlineeReturnSpillTemp);
 
-                if (info.compRetType == TYP_REF)
+                // We may have co-opted an existing temp for the return spill.
+                // We likely assumed it was single-def at the time, but now
+                // we can see it has multiple definitions.
+                if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
                 {
-                    // We may have co-opted an existing temp for the return spill.
-                    // We likely assumed it was single-def at the time, but now
-                    // we can see it has multiple definitions.
-                    if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    // Make sure it is no longer marked single def. This is only safe
+                    // to do if we haven't ever updated the type.
+                    if (info.compRetType == TYP_REF)
                     {
-                        // Make sure it is no longer marked single def. This is only safe
-                        // to do if we haven't ever updated the type.
                         assert(!lvaTable[lvaInlineeReturnSpillTemp].lvClassInfoUpdated);
-                        JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
-                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
                     }
+
+                    JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
+                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
                 }
             }
             else
@@ -3515,18 +3515,18 @@ void Compiler::fgFindBasicBlocks()
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
                 lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
 
+                // The return spill temp is single def only if the method has a single return block.
+                if (fgReturnCount == 1)
+                {
+                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
+                    JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
+                }
+
                 // If the method returns a ref class, set the class of the spill temp
                 // to the method's return value. We may update this later if it turns
                 // out we can prove the method returns a more specific type.
                 if (info.compRetType == TYP_REF)
                 {
-                    // The return spill temp is single def only if the method has a single return block.
-                    if (fgReturnCount == 1)
-                    {
-                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
-                        JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
-                    }
-
                     CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
                     if (retClassHnd != nullptr)
                     {

@@ -370,13 +370,12 @@ namespace Internal.Runtime.TypeLoader
         /// Preconditions:
         ///     elementTypeHandle is a valid RuntimeTypeHandle.
         /// </summary>
-        /// <param name="elementTypeHandle">MethodTable of the array element type</param>
-        /// <param name="arrayTypeHandle">Resolved MethodTable of the array type</param>
-        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             arrayTypeHandle = new RuntimeTypeHandle();
 
-            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), -1);
+            Debug.Assert(isMdArray || rank == -1);
+            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
 
             // Note: ReflectionMapBlob.ArrayMap may not exist in the module that contains the element type.
             // So we must enumerate all loaded modules in order to find ArrayMap and the array type for
@@ -398,7 +397,8 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle foundArrayType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         RuntimeTypeHandle foundArrayElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundArrayType);
-                        if (foundArrayElementType.Equals(elementTypeHandle))
+                        if (foundArrayElementType.Equals(elementTypeHandle)
+                            && rank == RuntimeAugments.GetArrayRankOrMinusOneForSzArray(foundArrayType))
                         {
                             arrayTypeHandle = foundArrayType;
                             return true;
@@ -407,6 +407,50 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
+            return false;
+        }
+
+        public static unsafe bool TryGetByRefTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int byRefHashcode = TypeHashingAlgorithms.ComputeByrefTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, byRefHashcode, ReflectionMapBlob.ByRefTypeMap, out pointerTypeHandle);
+        }
+
+        public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, pointerHashcode, ReflectionMapBlob.PointerTypeMap, out pointerTypeHandle);
+        }
+
+        private static unsafe bool TryGetParameterizedTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, int hashCode, ReflectionMapBlob blob, out RuntimeTypeHandle parameterizedTypeHandle)
+        {
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                NativeReader mapReader;
+                if (TryGetNativeReaderForBlob(module, blob, out mapReader))
+                {
+                    NativeParser mapParser = new NativeParser(mapReader, 0);
+                    NativeHashtable hashtable = new NativeHashtable(mapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = hashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        RuntimeTypeHandle foundParameterizedType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        RuntimeTypeHandle foundElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundParameterizedType);
+                        if (foundElementType.Equals(elementTypeHandle))
+                        {
+                            parameterizedTypeHandle = foundParameterizedType;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            parameterizedTypeHandle = default;
             return false;
         }
 
