@@ -304,10 +304,11 @@ namespace ComWrappersTests
             Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
-        // Make sure that if one wrapper is GCed, another can be created.
-        static void ValidateCreateObjectGcBehavior()
+        // Verify that if a GC nulls the contents of a weak GCHandle but has not yet
+        // run finializers to remove that GCHandle from the cache, the state of the system is valid.
+        static void ValidateCreateObjectWeakHandleCacheCleanUp()
         {
-            Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectWeakHandleCacheCleanUp)}...");
 
             var cw = new TestComWrappers();
 
@@ -316,11 +317,15 @@ namespace ComWrappersTests
 
             // Create the first native object wrapper and run the GC.
             CreateObject(cw, trackerObjRaw);
-            ForceGC();
+
+            // Only attempt to run the GC, don't wait for the finalizer. We do this
+            // because of the multiple phase clean-up for ComWrappers caches.
+            // See weak GC handles in the NativeAOT scenario.
+            GC.Collect();
 
             // Try to create another wrapper for the same object. The above GC
-            // may have collected parts of the ComWrapper cache, but this should
-            // still work.
+            // may have collected parts of the ComWrapper cache, but not fully
+            // cleared the contents of the cache.
             CreateObject(cw, trackerObjRaw);
             ForceGC();
 
@@ -814,7 +819,7 @@ namespace ComWrappersTests
                 ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
-                ValidateCreateObjectGcBehavior();
+                ValidateCreateObjectWeakHandleCacheCleanUp();
                 ValidateMappingAPIs();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
