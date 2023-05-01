@@ -4725,16 +4725,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
-
     // Promote struct locals based on primitive access patterns
     //
-    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);    
 
     // Run a simple forward substitution pass.
     //
