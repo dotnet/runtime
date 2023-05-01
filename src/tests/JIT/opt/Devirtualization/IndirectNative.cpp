@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
-#include <xplatform.h>
 #include <platformdefines.h>
 
 extern "C" DLL_EXPORT int32_t STDMETHODCALLTYPE E()
