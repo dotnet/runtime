@@ -87,5 +87,5 @@ extern "C" const char* __stdcall __asan_default_options()
 {
     // NativeAOT is not designed to be unloadable, so we'll leak a few allocations from the shared library.
     // Disable leak detection as we don't care about these leaks as of now.
-    return "detect_leaks=0;use_sigaltstack=0";
+    return "detect_leaks=0 use_sigaltstack=0";
 }
