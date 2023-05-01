@@ -1204,9 +1204,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.2/ddb/b429039/b429039/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19444/GitHub_19444/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/197</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_22583/GitHub_22583/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
         </ExcludeList>
