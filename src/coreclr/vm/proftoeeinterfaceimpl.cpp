@@ -7673,11 +7673,17 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
             ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
         }
 
-        *pcObjectRanges = segmentsToInspect;
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = segmentsToInspect;
+        }
     }
     else
     {
-        *pcObjectRanges = 0;
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = 0;
+        }
     }
     return S_OK;
 }
