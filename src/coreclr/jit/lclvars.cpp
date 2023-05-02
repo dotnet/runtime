@@ -1782,7 +1782,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
                 return false;
             }
 
-            promField.fldType = fldType;
+            promField.fldType    = fldType;
             promField.fldTypeHnd = field.intrinsicValueClassHnd;
         }
         else
@@ -1867,8 +1867,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteIntrinsicTypeAsPrimitive(CO
     if (compiler->usesSIMDTypes() && compiler->isSIMDorHWSIMDClass(typeHnd))
     {
         unsigned    simdSize;
-        CorInfoType simdBaseJitType =
-            compiler->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+        CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
         // We will only promote fields of SIMD types that fit into a SIMD register.
         if (simdBaseJitType != CORINFO_TYPE_UNDEF)
         {

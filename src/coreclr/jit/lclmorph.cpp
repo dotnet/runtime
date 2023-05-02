@@ -969,11 +969,11 @@ private:
             // *(long*)&int32Var has undefined behavior and it's practically useless but reading,
             // say, 2 consecutive Int32 struct fields as Int64 has more practical value.
 
-            unsigned   lclNum    = val.LclNum();
-            LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
+            unsigned   lclNum = val.LclNum();
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-            unsigned   indirSize = GetIndirSize(node);
-            bool       isWide;
+            unsigned indirSize = GetIndirSize(node);
+            bool     isWide;
 
             if ((indirSize == 0) || ((val.Offset() + indirSize) > UINT16_MAX))
             {
@@ -1006,7 +1006,7 @@ private:
             }
 
             bool updateRefCount = false;
-            if (isWide && varDsc->lvIsStructField && RephraseFieldAccess(val, varDsc, indirSize, node))
+            if (isWide && varDsc->lvIsStructField && RephraseFieldAccess(val, varDsc, indirSize))
             {
                 ClrSafeInt<unsigned> endOffset = ClrSafeInt<unsigned>(val.Offset()) + ClrSafeInt<unsigned>(indirSize);
                 isWide = endOffset.IsOverflow() || (endOffset.Value() > m_compiler->lvaLclExactSize(val.LclNum()));
@@ -1034,32 +1034,46 @@ private:
         INDEBUG(val.Consume();)
     }
 
-    bool RephraseFieldAccess(Value& val, LclVarDsc* varDsc, unsigned indirSize, GenTree* indir)
+    //------------------------------------------------------------------------
+    // RephraseFieldAccess: Try to rephrase an access of a promoted field as an
+    // access of a sibling field or of the parent struct.
+    //
+    // Arguments:
+    //    val       - The value
+    //    varDsc    - Field local variable descriptor
+    //    indirSize - Size of indirection being read
+    //
+    // Returns:
+    //    True if the field access was rephrased.
+    //
+    bool RephraseFieldAccess(Value& val, LclVarDsc* varDsc, unsigned indirSize)
     {
         // See if we can rephrase an access of a field in terms of a sibling
         // field or the parent with better chance of profitable codegen.
-        unsigned parentLclNum = varDsc->lvParentLcl;
+        unsigned     parentLclNum = varDsc->lvParentLcl;
         unsigned int siblingFieldLcl;
-        unsigned newOffset = 0;
+        unsigned     newOffset = 0;
 
         if (val.Offset() > 0)
         {
-            ClrSafeInt<unsigned> newOffsetSafe = ClrSafeInt<unsigned>(val.Offset()) + ClrSafeInt<unsigned>(varDsc->lvFldOffset);
+            ClrSafeInt<unsigned> newOffsetSafe =
+                ClrSafeInt<unsigned>(val.Offset()) + ClrSafeInt<unsigned>(varDsc->lvFldOffset);
             if (newOffsetSafe.IsOverflow())
             {
                 return false;
             }
 
-            newOffset = newOffsetSafe.Value();
+            newOffset               = newOffsetSafe.Value();
             LclVarDsc* parentVarDsc = m_compiler->lvaGetDesc(parentLclNum);
-            siblingFieldLcl = m_compiler->lvaGetFieldLocal(parentVarDsc, newOffset);
+            siblingFieldLcl         = m_compiler->lvaGetFieldLocal(parentVarDsc, newOffset);
 
             if (siblingFieldLcl != BAD_VAR_NUM)
             {
                 LclVarDsc* siblingVarDsc = m_compiler->lvaGetDesc(siblingFieldLcl);
                 if (indirSize == genTypeSize(siblingVarDsc))
                 {
-                    JITDUMP("Rephrasing access of V%02u [+%u] (%s) to sibling V%02u (%s)\n", val.LclNum(), val.Offset(), varDsc->lvReason, siblingFieldLcl, siblingVarDsc->lvReason);
+                    JITDUMP("Rephrasing access of V%02u [+%u] (%s) to sibling V%02u (%s)\n", val.LclNum(), val.Offset(),
+                            varDsc->lvReason, siblingFieldLcl, siblingVarDsc->lvReason);
                     val.ChangeLocal(siblingFieldLcl, 0);
                     return true;
                 }
@@ -1070,7 +1084,8 @@ private:
             newOffset = varDsc->lvFldOffset;
         }
 
-        JITDUMP("Rephrasing access of V%02u [+%u] (%s) to parent V%02u [+%u]\n", val.LclNum(), val.Offset(), varDsc->lvReason, parentLclNum, newOffset);
+        JITDUMP("Rephrasing access of V%02u [+%u] (%s) to parent V%02u [+%u]\n", val.LclNum(), val.Offset(),
+                varDsc->lvReason, parentLclNum, newOffset);
         val.ChangeLocal(parentLclNum, newOffset);
         return true;
     }
