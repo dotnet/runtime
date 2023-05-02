@@ -2333,11 +2333,34 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 case TYP_UINT:
                 case TYP_LONG:
                 case TYP_ULONG:
-                case TYP_FLOAT:
                 case TYP_DOUBLE:
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
+                    LIR::Use use;
+                    bool     foundUse   = BlockRange().TryGetUse(node, &use);
+                    GenTree* CreateUser = nullptr;
+                    if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
+                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                    {
+                        CreateUser = use.User();
+                    }
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                    {
+                        // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
+                        // issue.
+                        if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                        {
+                            std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                        }
+                    }
                     break;
                 }
                 default:
@@ -7550,6 +7573,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX512F_BroadcastScalarToVector512:
         {
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastHWIntrinsic())
