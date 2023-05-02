@@ -8846,7 +8846,10 @@ set_value:
 	}
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
-		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
+		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)))
+            buffer_add_int (buf, MONO_TYPE_VALUETYPE);
+        else    
+            buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 
