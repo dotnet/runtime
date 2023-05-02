@@ -17,9 +17,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public class UseWindowsServiceTests
     {
-        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && AdminHelpers.IsProcessElevated;
-
-        private static MethodInfo? _addWindowsServiceLifetimeMethod = null;
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && AdminHelpers.IsProcessElevated();
 
         [Fact]
         public void DefaultsToOffOutsideOfService()

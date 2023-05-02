@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Hosting
                     serviceName,
                     $"{nameof(WindowsServiceTester)} {serviceName} test service",
                     Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL,
-                    Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS,
+                    Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS,
                     (int)ServiceStartMode.Manual,
                     Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
                     commandLine,

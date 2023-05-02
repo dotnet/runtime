@@ -506,7 +506,7 @@ namespace System.ServiceProcess
         // This is a problem when multiple services are hosted in a single process.
         private unsafe void DeferredStop()
         {
-            lock(_stopLock)
+            lock (_stopLock)
             {
                 // never call SetServiceStatus again after STATE_STOPPED is set.
                 if (_status.currentState != ServiceControlStatus.STATE_STOPPED)
@@ -545,7 +545,7 @@ namespace System.ServiceProcess
                 OnShutdown();
                 WriteLogEntry(SR.ShutdownOK);
 
-                lock(_stopLock)
+                lock (_stopLock)
                 {
                     if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
                     {
