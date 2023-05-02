@@ -1850,8 +1850,10 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.addr = (UINT8*)0;
 
     pInfo->offsetOfThreadLocalStoragePointer = 0;
-    pInfo->offsetOfThreadStaticBlocks = 0;
-    pInfo->offsetOfMaxThreadStaticBlocks = 0;
+    pInfo->offsetOfNonGCThreadStaticBlocks = 0;
+    pInfo->offsetOfGCThreadStaticBlocks = 0;
+    pInfo->offsetOfNonGCMaxThreadStaticBlocks = 0;
+    pInfo->offsetOfGCMaxThreadStaticBlocks = 0;
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
