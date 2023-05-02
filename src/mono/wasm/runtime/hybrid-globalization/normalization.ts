@@ -8,6 +8,8 @@ import { MonoString, MonoStringRef } from "../types";
 import { Int32Ptr } from "../types/emscripten";
 import { pass_exception_details } from "./common";
 
+const NORMALIZATION_FORM_MAP = [undefined, "NFC", "NFD", undefined, undefined, "NFKC", "NFKD"];
+
 export function mono_wasm_is_normalized(exceptionMessage: Int32Ptr, normalizationForm: number, inputStr: MonoStringRef) : number{
     const inputRoot = mono_wasm_new_external_root<MonoString>(inputStr);
     try{
@@ -51,9 +53,5 @@ export function mono_wasm_normalize_string(exceptionMessage: Int32Ptr, normaliza
     }
 }
 
-function normalization_to_string(normalizationForm: number) : string
-{
-    const map = [undefined, "NFC", "NFD", undefined, undefined, "NFKC", "NFKD"];
-    return map[normalizationForm] ?? "NFC";
-}
+const normalization_to_string = (normalizationForm: number): string => NORMALIZATION_FORM_MAP[normalizationForm] ?? "NFC";
 
