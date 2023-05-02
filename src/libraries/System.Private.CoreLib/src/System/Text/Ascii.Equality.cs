@@ -151,53 +151,220 @@ namespace System.Text
         /// <remarks>If both buffers contain equal, but non-ASCII characters, the method returns <see langword="false" />.</remarks>
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
             => left.Length == right.Length
-            && EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), (uint)left.Length);
+            && EqualsIgnoreCase<byte, byte, PlainLoader<byte>>(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), (uint)right.Length);
+
+        /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length
+            && EqualsIgnoreCase<byte, ushort, WideningLoader>(ref MemoryMarshal.GetReference(left), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
             => EqualsIgnoreCase(right, left);
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
-        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length
-            && EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)left.Length);
-
-        /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
             => left.Length == right.Length
-            && EqualsIgnoreCase(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(left)), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)left.Length);
+            && EqualsIgnoreCase<ushort, ushort, PlainLoader<ushort>>(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(left)), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)right.Length);
 
-        private static bool EqualsIgnoreCase<TLeft, TRight>(ref TLeft left, ref TRight right, nuint length)
+        private static bool EqualsIgnoreCase<TLeft, TRight, TLoader>(ref TLeft left, ref TRight right, nuint length)
             where TLeft : unmanaged, INumberBase<TLeft>
             where TRight : unmanaged, INumberBase<TRight>
+            where TLoader : ILoader<TLeft, TRight>
         {
-            Debug.Assert(typeof(TLeft) == typeof(byte) || typeof(TLeft) == typeof(ushort));
-            Debug.Assert(typeof(TRight) == typeof(byte) || typeof(TRight) == typeof(ushort));
+            Debug.Assert(
+                (typeof(TLeft) == typeof(byte) && typeof(TRight) == typeof(byte))
+             || (typeof(TLeft) == typeof(byte) && typeof(TRight) == typeof(ushort))
+             || (typeof(TLeft) == typeof(ushort) && typeof(TRight) == typeof(ushort)));
 
-            for (nuint i = 0; i < length; ++i)
+            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<TRight>.Count)
             {
-                uint valueA = uint.CreateTruncating(Unsafe.Add(ref left, i));
-                uint valueB = uint.CreateTruncating(Unsafe.Add(ref right, i));
-
-                if (!UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
+                for (nuint i = 0; i < length; ++i)
                 {
-                    return false;
+                    uint valueA = uint.CreateTruncating(Unsafe.Add(ref left, i));
+                    uint valueB = uint.CreateTruncating(Unsafe.Add(ref right, i));
+
+                    if (!UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
+                    {
+                        return false;
+                    }
+
+                    if (valueA == valueB)
+                    {
+                        continue; // exact match
+                    }
+
+                    valueA |= 0x20u;
+                    if (valueA - 'a' > 'z' - 'a')
+                    {
+                        return false; // not exact match, and first input isn't in [A-Za-z]
+                    }
+
+                    if (valueA != (valueB | 0x20u))
+                    {
+                        return false;
+                    }
                 }
+            }
+            else if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<TRight>.Count)
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count128);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector128<TRight>.Count);
 
-                if (valueA == valueB)
+                Vector128<TRight> leftValues;
+                Vector128<TRight> rightValues;
+
+                Vector128<TRight> loweringMask = typeof(TRight) == typeof(byte)
+                    ? Vector128.Create((byte)0x20).As<byte, TRight>()
+                    : Vector128.Create((ushort)0x20).As<ushort, TRight>();
+
+                Vector128<TRight> vecA = typeof(TRight) == typeof(byte)
+                    ? Vector128.Create((byte)'a').As<byte, TRight>()
+                    : Vector128.Create((ushort)'a').As<ushort, TRight>();
+
+                Vector128<TRight> vecZMinusA = typeof(TRight) == typeof(byte)
+                    ? Vector128.Create((byte)('z' - 'a')).As<byte, TRight>()
+                    : Vector128.Create((ushort)('z' - 'a')).As<ushort, TRight>();
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
                 {
-                    continue; // exact match
+                    // it's OK to widen the bytes, it's NOT OK to narrow the chars (we could loose some information)
+                    leftValues = TLoader.Load128(ref currentLeftSearchSpace);
+                    rightValues = Vector128.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector128<TRight> notEquals = ~Vector128.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector128<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector128.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector128<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count128);
                 }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
 
-                valueA |= 0x20u;
-                if (valueA - 'a' > 'z' - 'a')
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector128<TRight>.Count != 0)
                 {
-                    return false; // not exact match, and first input isn't in [A-Za-z]
+                    leftValues = TLoader.Load128(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector128<TRight> notEquals = ~Vector128.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector128<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector128.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
                 }
+            }
+            else
+            {
+                ref TLeft currentLeftSearchSpace = ref left;
+                ref TLeft oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, length - TLoader.Count256);
+                ref TRight currentRightSearchSpace = ref right;
+                ref TRight oneVectorAwayFromRightEnd = ref Unsafe.Add(ref currentRightSearchSpace, length - (uint)Vector256<TRight>.Count);
 
-                if (valueA != (valueB | 0x20u))
+                Vector256<TRight> leftValues;
+                Vector256<TRight> rightValues;
+
+                Vector256<TRight> loweringMask = typeof(TRight) == typeof(byte)
+                    ? Vector256.Create((byte)0x20).As<byte, TRight>()
+                    : Vector256.Create((ushort)0x20).As<ushort, TRight>();
+
+                Vector256<TRight> vecA = typeof(TRight) == typeof(byte)
+                    ? Vector256.Create((byte)'a').As<byte, TRight>()
+                    : Vector256.Create((ushort)'a').As<ushort, TRight>();
+
+                Vector256<TRight> vecZMinusA = typeof(TRight) == typeof(byte)
+                    ? Vector256.Create((byte)('z' - 'a')).As<byte, TRight>()
+                    : Vector256.Create((ushort)('z' - 'a')).As<ushort, TRight>();
+
+                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
+                do
                 {
-                    return false;
+                    leftValues = TLoader.Load256(ref currentLeftSearchSpace);
+                    rightValues = Vector256.LoadUnsafe(ref currentRightSearchSpace);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector256<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
+
+                    currentRightSearchSpace = ref Unsafe.Add(ref currentRightSearchSpace, (uint)Vector256<TRight>.Count);
+                    currentLeftSearchSpace = ref Unsafe.Add(ref currentLeftSearchSpace, TLoader.Count256);
+                }
+                while (!Unsafe.IsAddressGreaterThan(ref currentRightSearchSpace, ref oneVectorAwayFromRightEnd));
+
+                // If any elements remain, process the last vector in the search space.
+                if (length % (uint)Vector256<TRight>.Count != 0)
+                {
+                    leftValues = TLoader.Load256(ref oneVectorAwayFromLeftEnd);
+                    rightValues = Vector256.LoadUnsafe(ref oneVectorAwayFromRightEnd);
+
+                    if (!AllCharsInVectorAreAscii(leftValues | rightValues))
+                    {
+                        return false;
+                    }
+
+                    Vector256<TRight> notEquals = ~Vector256.Equals(leftValues, rightValues);
+
+                    if (notEquals != Vector256<TRight>.Zero)
+                    {
+                        // not exact match
+
+                        leftValues |= loweringMask;
+                        rightValues |= loweringMask;
+
+                        if (Vector256.GreaterThanAny((leftValues - vecA) & notEquals, vecZMinusA) || leftValues != rightValues)
+                        {
+                            return false; // first input isn't in [A-Za-z], and not exact match of lowered
+                        }
+                    }
                 }
             }
 
