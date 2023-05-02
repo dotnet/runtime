@@ -2892,20 +2892,6 @@ GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
     bool     isReverseOp = assignment->IsReverseOp();
     GenTree* location    = assignment->gtGetOp1();
     GenTree* value       = assignment->gtGetOp2();
-    if (location->OperIsLocal())
-    {
-        assert((location->gtFlags & GTF_VAR_DEF) != 0);
-    }
-    else if (value->OperIs(GT_LCL_VAR))
-    {
-        assert((value->gtFlags & GTF_VAR_DEF) == 0);
-    }
-
-    if (assignment->OperIsInitBlkOp())
-    {
-        // No SIMD types are allowed for InitBlks (including zero-inits).
-        assert(assignment->TypeIs(TYP_STRUCT) && location->TypeIs(TYP_STRUCT));
-    }
 
     genTreeOps storeOp;
     switch (location->OperGet())

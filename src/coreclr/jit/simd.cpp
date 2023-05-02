@@ -540,7 +540,7 @@ bool areFieldAddressesTheSame(GenTreeFieldAddr* op1, GenTreeFieldAddr* op2)
 //
 bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
 {
-    assert(op1->OperIs(GT_IND) && op2->OperIs(GT_IND));
+    assert(op1->isIndir() && op2->isIndir());
     // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
     assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
@@ -592,7 +592,7 @@ bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* sec
 //
 bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 {
-    assert(op1->OperIs(GT_IND) && op2->OperIs(GT_IND));
+    assert(op1->isIndir() && op2->isIndir());
     assert(!op1->TypeIs(TYP_STRUCT) && (op1->TypeGet() == op2->TypeGet()));
 
     GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
@@ -648,7 +648,7 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 
     assert(!op1->TypeIs(TYP_STRUCT));
 
-    if (op1->OperIs(GT_IND) && op2->OperIs(GT_IND))
+    if (op1->isIndir() && op2->isIndir())
     {
         GenTree* op1Addr = op1->AsIndir()->Addr();
         GenTree* op2Addr = op2->AsIndir()->Addr();
@@ -683,12 +683,12 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 //      return the address node.
 //
 // TODO-CQ:
-//      Currently just supports GT_IND(GT_INDEX_ADDR / GT_FIELD_ADDR), because we can only verify those nodes
-//      are located contiguously or not. In future we should support more cases.
+//      Currently just supports GT_IND/GT_STOREIND(GT_INDEX_ADDR / GT_FIELD_ADDR), because we can only verify
+//      those nodes are located contiguously or not. In future we should support more cases.
 //
 GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize)
 {
-    assert(tree->OperIs(GT_IND));
+    assert(tree->isIndir());
     GenTree* addr = tree->AsIndir()->Addr();
 
     if (addr->OperIs(GT_FIELD_ADDR))

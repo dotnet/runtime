@@ -3472,22 +3472,14 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
-                {
-                }
-                else if ((user != nullptr) && user->IsCall() &&
-                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                if ((user != nullptr) && user->IsCall() &&
+                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
                 {
                 }
                 else
                 {
                     m_locals.Push(node);
                 }
-            }
-
-            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
-            {
-                m_locals.Push(node->gtGetOp1());
             }
 
             if (node->IsCall())

@@ -5885,7 +5885,7 @@ private:
                                     unsigned* indexOut,
                                     unsigned* simdSizeOut,
                                     bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* stmt);
+    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
     void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
 
     // fgPreviousCandidateSIMDFieldAsgStmt is only used for tracking previous simd field assignment
