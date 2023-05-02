@@ -2333,7 +2333,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 case TYP_UINT:
                 case TYP_LONG:
                 case TYP_ULONG:
-                case TYP_DOUBLE:
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
@@ -2341,6 +2340,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 }
 
                 case TYP_FLOAT:
+                case TYP_DOUBLE:
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
@@ -2352,7 +2352,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
                         // issue.
@@ -2406,7 +2406,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
                         // issue.
@@ -2745,6 +2745,26 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   return Sse3.MoveAndDuplicate(tmp1);
 
                     node->ChangeHWIntrinsicId(NI_SSE3_MoveAndDuplicate, tmp1);
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                    {
+                        LIR::Use use;
+                        bool     foundUse   = BlockRange().TryGetUse(node, &use);
+                        GenTree* CreateUser = nullptr;
+                        if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
+                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                        {
+                            CreateUser = use.User();
+                        }
+                        if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_DOUBLE))
+                        {
+                            // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
+                            // issue.
+                            if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                            {
+                                std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                            }
+                        }
+                    }
                     break;
                 }
 
@@ -7574,7 +7594,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX2_BroadcastScalarToVector128:
         case NI_AVX512F_BroadcastScalarToVector512:
+        case NI_SSE3_MoveAndDuplicate:
         {
+            if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+            {
+                // NI_SSE3_MoveAndDuplicate is for Vector128<double> only.
+                assert(childNode->AsHWIntrinsic()->GetSimdBaseType() == TYP_DOUBLE);
+            }
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastHWIntrinsic())
             {
@@ -7584,7 +7610,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                 {
                     GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
-                    if (Scalar->OperIs(GT_LCL_VAR) && Scalar->TypeIs(TYP_FLOAT))
+                    if (Scalar->OperIs(GT_LCL_VAR) && (Scalar->TypeIs(TYP_FLOAT) || Scalar->TypeIs(TYP_DOUBLE)))
                     {
                         const unsigned opLclNum = Scalar->AsLclVar()->GetLclNum();
                         comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));

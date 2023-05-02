@@ -803,7 +803,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX512F_BroadcastScalarToVector512:
+                case NI_SSE3_MoveAndDuplicate:
                 {
+                    if(intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    {
+                        assert(simdBaseType == TYP_DOUBLE);
+                    }
                     if (op->isContained())
                     {
                         // if broadcast node is contained, should mean that we have some forms like

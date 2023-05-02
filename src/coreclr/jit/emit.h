@@ -3685,6 +3685,8 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
         {
             case 4:
                 return EA_4BYTE;
+            case 8:
+                return EA_8BYTE;
 
             default:
                 break;
