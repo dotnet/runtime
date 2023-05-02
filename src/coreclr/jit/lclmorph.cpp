@@ -1059,6 +1059,7 @@ private:
                 LclVarDsc* siblingVarDsc = m_compiler->lvaGetDesc(siblingFieldLcl);
                 if (indirSize == genTypeSize(siblingVarDsc))
                 {
+                    JITDUMP("Rephrasing access of V%02u [+%u] (%s) to sibling V%02u (%s)\n", val.LclNum(), val.Offset(), varDsc->lvReason, siblingFieldLcl, siblingVarDsc->lvReason);
                     val.ChangeLocal(siblingFieldLcl, 0);
                     return true;
                 }
@@ -1069,6 +1070,7 @@ private:
             newOffset = varDsc->lvFldOffset;
         }
 
+        JITDUMP("Rephrasing access of V%02u [+%u] (%s) to parent V%02u [+%u]\n", val.LclNum(), val.Offset(), varDsc->lvReason, parentLclNum, newOffset);
         val.ChangeLocal(parentLclNum, newOffset);
         return true;
     }
