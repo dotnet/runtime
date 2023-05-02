@@ -36,8 +36,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     }
 
     const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-    bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
-    const bool isUse = fgLocalVarLivenessPartialDefsAreUses ? !isFullDef : !isDef;
+    const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
 
     if (varDsc->lvTracked)
     {
@@ -61,7 +60,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
         }
 
-        if (fgLocalVarLivenessPartialDefsAreUses ? isDef : isFullDef)
+        if (isDef)
         {
             // This is a def, add it to the set of defs.
             VarSetOps::AddElemD(this, fgCurDefSet, varDsc->lvVarIndex);
@@ -107,7 +106,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
                 }
 
                 // For pure defs (i.e. not an "update" def which is also a use), add to the (all) def set.
-                if (isFullDef)
+                if (!isUse)
                 {
                     assert(isDef);
                     VarSetOps::UnionD(this, fgCurDefSet, bitMask);
@@ -123,7 +122,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 }
 
 /*****************************************************************************/
-void Compiler::fgLocalVarLiveness(bool partialDefsAreUses)
+void Compiler::fgLocalVarLiveness()
 {
 #ifdef DEBUG
     if (verbose)
@@ -136,8 +135,6 @@ void Compiler::fgLocalVarLiveness(bool partialDefsAreUses)
         }
     }
 #endif // DEBUG
-
-    fgLocalVarLivenessPartialDefsAreUses = partialDefsAreUses;
 
     // Init liveness data structures.
     fgLocalVarLivenessInit();
@@ -493,7 +490,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                         // qmark arms.
                         for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                         {
-                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0); // || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
+                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0) || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
                             // We can still handle the pure def at the top level.
                             bool conditional = lcl != dst;
                             if (isUse || !conditional)
@@ -1879,7 +1876,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
                     break;
                 }
 
-                if (fgLocalVarLivenessPartialDefsAreUses && isUse && !storeRemoved)
+                if (isUse && !storeRemoved)
                 {
                     // SSA and VN treat "partial definitions" as true uses, so for this
                     // front-end liveness pass we must add them to the live set in case
@@ -2737,7 +2734,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsAnyLocal());
-                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0); // && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
+                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
                         // (incorrectly) interfere with liveness in other
