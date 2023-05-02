@@ -3778,6 +3778,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	MonoJumpInfoToken *ji;
 	guint8 *p = buf;
 
+	printf("NAME = %s\n", method->name);
+
 	/*
 	 * The encoding for most methods is as follows:
 	 * - image index encoded as a leb128
@@ -3915,7 +3917,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (0, p, &p);
 				encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
 
-				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
+				if (wrapper_info && wrapper_info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)
 					encode_klass_ref (acfg, method->klass, p, &p);
 				else
 					encode_signature (acfg, sig, p, &p);
