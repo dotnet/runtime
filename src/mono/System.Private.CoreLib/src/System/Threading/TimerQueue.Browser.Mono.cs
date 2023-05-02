@@ -65,7 +65,7 @@ namespace System.Threading
         // shortest time of all TimerQueues
         private static void ReplaceNextSetTimeout(long shortestDueTimeMs, long currentTimeMs)
         {
-            if (shortestDueTimeMs == int.MaxValue)
+            if (shortestDueTimeMs == long.MaxValue)
             {
                 return;
             }
@@ -85,7 +85,7 @@ namespace System.Threading
         {
             if (s_scheduledTimers == null)
             {
-                return int.MaxValue;
+                return long.MaxValue;
             }
 
             long shortestDueTimeMs = long.MaxValue;
@@ -112,7 +112,7 @@ namespace System.Threading
             List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
             timers = s_scheduledTimers!;
-            long shortestDueTimeMs = int.MaxValue;
+            long shortestDueTimeMs = long.MaxValue;
             for (int i = timers.Count - 1; i >= 0; --i)
             {
                 TimerQueue timer = timers[i];
