@@ -272,7 +272,7 @@ jobs:
 
 
     # Generate test wrappers. This is the step that examines issues.targets to exclude tests.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) buildtestwrappersonly $(logRootNameArg)Wrappers $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) $(buildAsStandaloneArg)
       displayName: Generate test wrappers
 
 

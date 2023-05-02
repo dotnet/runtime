@@ -98,3 +98,10 @@ variables:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: priorityArg
         value: '-priority=1'
+
+  - name: buildAsStandaloneArg
+    value: ''
+
+  - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra')}}:
+    - name: buildAsStandaloneArg
+      value: '/p:BuildAsStandalone=true'
