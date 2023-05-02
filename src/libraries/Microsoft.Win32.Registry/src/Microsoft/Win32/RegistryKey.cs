@@ -334,31 +334,34 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
-            int ret = Interop.Advapi32.RegDeleteTree(_hkey, subkey);
+            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, false);
+            if (key != null)
+            {
+                using (key)
+                {
+                    // The access requirement of RegDeleteTree is different with old implementation.
+                    // Open a new handle to the subkey to restore old behavior.
+                    int ret = Interop.Advapi32.RegDeleteTree(key._hkey, string.Empty);
+                    if (ret != 0)
+                    {
+                        Win32Error(ret, null);
+                    }
 
-            if (ret == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    // RegDeleteTree only delete subkeys and values of the key
+                    // if subkey is null.
+                    // Also delete the key.
+                    ret = Interop.Advapi32.RegDeleteKeyEx(key._hkey, string.Empty, (int)_regView, 0);
+                    if (ret != 0)
+                    {
+                        Win32Error(ret, null);
+                    }
+                }
+            }
+            else
             {
                 if (throwOnMissingSubKey)
                 {
                     throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-                }
-            }
-            else if (ret != 0)
-            {
-                Win32Error(ret, null);
-            }
-
-            if (string.IsNullOrEmpty(subkey))
-            {
-                // If subkey is empty, the old implementation opens a new handle to current key
-                // and deletes current key.
-                // However, RegDeleteTree only delete subkeys and values of current key
-                // if subkey is null.
-                // Also delete current key to restore old behavior.
-                ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-                if (ret != 0)
-                {
-                    Win32Error(ret, null);
                 }
             }
         }
