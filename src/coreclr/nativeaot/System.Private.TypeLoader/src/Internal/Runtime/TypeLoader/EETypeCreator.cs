@@ -61,19 +61,10 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->GenericDefinition = genericDefinitionHandle.ToEETypePtr();
         }
 
-        public static unsafe void SetGenericVariance(this RuntimeTypeHandle rtth, int argumentIndex, GenericVariance variance)
-        {
-            rtth.ToEETypePtr()->GenericVariance[argumentIndex] = variance;
-        }
-
-        public static unsafe void SetGenericArity(this RuntimeTypeHandle rtth, uint arity)
-        {
-            rtth.ToEETypePtr()->GenericArity = arity;
-        }
-
         public static unsafe void SetGenericArgument(this RuntimeTypeHandle rtth, int argumentIndex, RuntimeTypeHandle argumentType)
         {
-            rtth.ToEETypePtr()->GenericArguments[argumentIndex].Value = argumentType.ToEETypePtr();
+            MethodTableList argumentList = rtth.ToEETypePtr()->GenericArguments;
+            argumentList[argumentIndex] = argumentType.ToEETypePtr();
         }
 
         public static unsafe void SetRelatedParameterType(this RuntimeTypeHandle rtth, RuntimeTypeHandle relatedTypeHandle)
@@ -342,8 +333,11 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGeneric)
                 {
-                    genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
-                    pEEType->SetGenericComposition(genericComposition);
+                    if (arity > 1)
+                    {
+                        genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
+                        pEEType->SetGenericComposition(genericComposition);
+                    }
 
                     if (allocatedNonGCDataSize > 0)
                     {

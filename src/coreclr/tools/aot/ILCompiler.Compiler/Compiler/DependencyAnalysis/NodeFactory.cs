@@ -396,9 +396,14 @@ namespace ILCompiler.DependencyAnalysis
                 return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
             });
 
-            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
+            });
+
+            _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
+            {
+                return new GenericVarianceNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -761,11 +766,18 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
-        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
+        private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
 
-        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
+
+        internal ISymbolNode GenericVariance(GenericVarianceDetails details)
+        {
+            return _genericVariances.GetOrAdd(details);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
