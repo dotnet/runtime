@@ -6,36 +6,36 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny1ByteValue : IndexOfAnyValues<byte>
+    internal sealed class Any2ByteSearchValues : SearchValues<byte>
     {
-        private readonly byte _e0;
+        private readonly byte _e0, _e1;
 
-        public IndexOfAny1ByteValue(ReadOnlySpan<byte> values)
+        public Any2ByteSearchValues(ReadOnlySpan<byte> values)
         {
-            Debug.Assert(values.Length == 1);
-            _e0 = values[0];
+            Debug.Assert(values.Length == 2);
+            (_e0, _e1) = (values[0], values[1]);
         }
 
-        internal override byte[] GetValues() => new[] { _e0 };
+        internal override byte[] GetValues() => new[] { _e0, _e1 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(byte value) =>
-            value == _e0;
+            value == _e0 || value == _e1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<byte> span) =>
-            span.IndexOf(_e0);
+            span.IndexOfAny(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
-            span.IndexOfAnyExcept(_e0);
+            span.IndexOfAnyExcept(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAny(ReadOnlySpan<byte> span) =>
-            span.LastIndexOf(_e0);
+            span.LastIndexOfAny(_e0, _e1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<byte> span) =>
-            span.LastIndexOfAnyExcept(_e0);
+            span.LastIndexOfAnyExcept(_e0, _e1);
     }
 }

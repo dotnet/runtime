@@ -3,11 +3,11 @@
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyValuesDebugView<T> where T : IEquatable<T>?
+    internal sealed class SearchValuesDebugView<T> where T : IEquatable<T>?
     {
-        private readonly IndexOfAnyValues<T> _values;
+        private readonly SearchValues<T> _values;
 
-        public IndexOfAnyValuesDebugView(IndexOfAnyValues<T> values)
+        public SearchValuesDebugView(SearchValues<T> values)
         {
             ArgumentNullException.ThrowIfNull(values);
             _values = values;

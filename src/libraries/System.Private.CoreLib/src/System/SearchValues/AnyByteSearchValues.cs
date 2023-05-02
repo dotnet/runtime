@@ -7,13 +7,14 @@ using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyAsciiByteValues : IndexOfAnyValues<byte>
+    internal sealed class AnyByteSearchValues : SearchValues<byte>
     {
-        private readonly Vector128<byte> _bitmap;
+        private readonly Vector128<byte> _bitmap0;
+        private readonly Vector128<byte> _bitmap1;
         private readonly BitVector256 _lookup;
 
-        public IndexOfAnyAsciiByteValues(ReadOnlySpan<byte> values) =>
-            IndexOfAnyAsciiSearcher.ComputeBitmap(values, out _bitmap, out _lookup);
+        public AnyByteSearchValues(ReadOnlySpan<byte> values) =>
+            IndexOfAnyAsciiSearcher.ComputeBitmap256(values, out _bitmap0, out _bitmap1, out _lookup);
 
         internal override byte[] GetValues() => _lookup.GetByteValues();
 
@@ -42,7 +43,7 @@ namespace System.Buffers
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= sizeof(ulong)
-                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, _bitmap)
+                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, _bitmap0, _bitmap1)
                 : IndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
         }
 
@@ -51,7 +52,7 @@ namespace System.Buffers
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= sizeof(ulong)
-                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, _bitmap)
+                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator>(ref searchSpace, searchSpaceLength, _bitmap0, _bitmap1)
                 : LastIndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
         }
 

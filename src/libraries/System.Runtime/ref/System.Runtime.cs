@@ -7284,15 +7284,15 @@ namespace System.Buffers
     {
         System.Memory<T> Memory { get; }
     }
-    public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
+    public class SearchValues<T> where T : System.IEquatable<T>?
     {
-        internal IndexOfAnyValues() { }
+        internal SearchValues() { }
         public bool Contains(T value) { throw null; }
     }
-    public static class IndexOfAnyValues
+    public static class SearchValues
     {
-        public static System.Buffers.IndexOfAnyValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
-        public static System.Buffers.IndexOfAnyValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
     }
     public partial interface IPinnable
     {
