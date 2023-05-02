@@ -32,7 +32,8 @@
   </PropertyGroup>
 
   <!-- Update the KnownILCompilerPack version to match the PackageReference, in case there's an explicit reference to a specific version. -->
-  <ItemGroup>
+  <!-- The _IlcReferencedAsPackage check is only there for using live ILCompiler targets (not a supported scenario outside of dotnet/runtime). -->
+  <ItemGroup Condition="'$(_IlcReferencedAsPackage)' != 'false'">
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
       <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
     </KnownILCompilerPack>
