@@ -168,5 +168,105 @@ namespace System.Threading
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
             ReportThreadStatusCore(isWorking);
         }
+
+        /// <summary>
+        /// Gets the number of thread pool threads that currently exist.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of threads, the count includes all types.
+        /// </remarks>
+        public static int ThreadCount
+        {
+            get
+            {
+                return PortableThreadPool.ThreadPoolInstance.ThreadCount;
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of work items that have been processed so far.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of work items, the count includes all types.
+        /// </remarks>
+        public static long CompletedWorkItemCount
+        {
+            get
+            {
+                return PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+            }
+        }
+
+        private static void InitializeForThreadPoolThreadPortableCore() { }
+
+        [SupportedOSPlatform("windows")]
+        private static unsafe bool UnsafeQueueNativeOverlappedPortableCore(NativeOverlapped* overlapped)
+        {
+            if (overlapped == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
+            }
+
+            // OS doesn't signal handle, so do it here
+            overlapped->InternalLow = IntPtr.Zero;
+
+            PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
+            return true;
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
+        private static bool BindHandlePortableCore(IntPtr osHandle)
+        {
+            PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
+            return true;
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static bool BindHandlePortableCore(SafeHandle osHandle)
+        {
+            ArgumentNullException.ThrowIfNull(osHandle);
+
+            bool mustReleaseSafeHandle = false;
+            try
+            {
+                osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
+
+                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
+                return true;
+            }
+            finally
+            {
+                if (mustReleaseSafeHandle)
+                    osHandle.DangerousRelease();
+            }
+        }
+
+        private static RegisteredWaitHandle RegisterWaitForSingleObject(
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
+             object? state,
+             uint millisecondsTimeOutInterval,
+             bool executeOnlyOnce,
+             bool flowExecutionContext)
+        {
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
+
+            RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
+                waitObject,
+                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                (int)millisecondsTimeOutInterval,
+                !executeOnlyOnce);
+
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+
+            return registeredWaitHandle;
+        }
+
+        private static void ReportThreadStatusCore(bool isWorking)
+        {
+            PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace System.Threading
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
-        
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying
         ///     a delegate that is invoked when each asynchronous I/O operation is complete, a user-provided
