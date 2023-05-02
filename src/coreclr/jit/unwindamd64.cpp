@@ -86,6 +86,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 //
 void Compiler::unwindBegProlog()
 {
+    compGeneratingUnwindProlog = true;
 #ifdef UNIX_AMD64_ABI
     if (generateCFIUnwindCodes())
     {
@@ -129,6 +130,7 @@ void Compiler::unwindBegPrologWindows()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 //------------------------------------------------------------------------
@@ -138,6 +140,7 @@ void Compiler::unwindEndProlog()
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    compGeneratingUnwindEpilog = true;
 }
 
 //------------------------------------------------------------------------
@@ -147,6 +150,7 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 //------------------------------------------------------------------------

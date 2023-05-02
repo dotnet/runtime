@@ -140,6 +140,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
+    compGeneratingUnwindProlog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -167,11 +168,13 @@ void Compiler::unwindBegProlog()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    compGeneratingUnwindEpilog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -186,6 +189,7 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 #if defined(TARGET_ARM)
