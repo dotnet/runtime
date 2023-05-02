@@ -2902,7 +2902,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
-    opts.varNames        = true;
+    opts.varNames        = false;
     opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
