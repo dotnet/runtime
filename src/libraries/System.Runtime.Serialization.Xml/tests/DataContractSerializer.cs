@@ -4041,6 +4041,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85690", TestPlatforms.Wasi)]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())
