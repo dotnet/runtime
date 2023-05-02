@@ -656,7 +656,7 @@ namespace Microsoft.Interop.Analyzers
                         }
                         else
                         {
-                            if (dllImportData.EntryPointName.LastOrDefault() != entryPointSuffix.Value)
+                            if (dllImportData.EntryPointName?.LastOrDefault() != entryPointSuffix.Value)
                             {
                                 argumentsToRemove.Add(attrArg);
                                 argumentsToAdd.Add(attrArg.WithExpression(
