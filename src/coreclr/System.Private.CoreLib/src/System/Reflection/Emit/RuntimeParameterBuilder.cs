@@ -5,10 +5,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Emit
 {
-    public class ParameterBuilder
+    internal sealed class RuntimeParameterBuilder : ParameterBuilder
     {
         // Set the default value of the parameter
-        public virtual void SetConstant(object? defaultValue)
+        public override void SetConstant(object? defaultValue)
         {
             RuntimeTypeBuilder.SetConstantValue(
                 _methodBuilder.GetModuleBuilder(),
@@ -17,12 +17,8 @@ namespace System.Reflection.Emit
                 defaultValue);
         }
 
-        // Use this function if client decides to form the custom attribute blob themselves
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
             RuntimeTypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
@@ -30,15 +26,7 @@ namespace System.Reflection.Emit
                 binaryAttribute);
         }
 
-        // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-        {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)(_methodBuilder.GetModule()), _token);
-        }
-
-        internal ParameterBuilder(
+        internal RuntimeParameterBuilder(
             RuntimeMethodBuilder methodBuilder,
             int sequence,
             ParameterAttributes attributes,
@@ -62,17 +50,11 @@ namespace System.Reflection.Emit
             return _token;
         }
 
-        public virtual string? Name => _name;
+        public override string? Name => _name;
 
-        public virtual int Position => _position;
+        public override int Position => _position;
 
-        public virtual int Attributes => (int)_attributes;
-
-        public bool IsIn => (_attributes & ParameterAttributes.In) != 0;
-
-        public bool IsOut => (_attributes & ParameterAttributes.Out) != 0;
-
-        public bool IsOptional => (_attributes & ParameterAttributes.Optional) != 0;
+        public override int Attributes => (int)_attributes;
 
         private readonly string? _name;
         private readonly int _position;

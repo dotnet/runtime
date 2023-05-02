@@ -3,14 +3,15 @@
 
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
 import { parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
 import { abort_startup, beforeOnRuntimeInitialized, memorySnapshotSkippedOrDone } from "./startup";
-import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
+import { AssetEntryInternal, mono_assert } from "./types";
+import { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "./types-api";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
 const allAssetsInMemory = createPromiseController<void>();
@@ -314,7 +315,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             const loadingResource = download_resource(asset);
             asset.pendingDownloadInternal = loadingResource;
             response = await loadingResource.response;
-            if (!response.ok) {
+            if (!response || !response.ok) {
                 continue;// next source
             }
             return response;
