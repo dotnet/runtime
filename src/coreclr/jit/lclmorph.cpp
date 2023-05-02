@@ -1027,7 +1027,7 @@ private:
 
             if (updateRefCount)
             {
-                UpdateEarlyRefCount(val.LclNum());
+                UpdateEarlyRefCount(val.LclNum(), node, user);
             }
         }
 
