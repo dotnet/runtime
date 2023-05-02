@@ -85,6 +85,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     negBitmaskDbl  = nullptr;
     absBitmaskFlt  = nullptr;
     absBitmaskDbl  = nullptr;
+    zroSimd12Elm3  = nullptr;
     u8ToDblBitmask = nullptr;
 #endif // defined(TARGET_XARCH)
 
