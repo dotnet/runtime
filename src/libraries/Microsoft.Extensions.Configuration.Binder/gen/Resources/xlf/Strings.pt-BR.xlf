@@ -2,6 +2,26 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="pt-BR" original="../Strings.resx">
     <body>
+      <trans-unit id="AbstractOrInterfaceNotSupported">
+        <source>Abstract or interface types are not supported: '{0}'.</source>
+        <target state="new">Abstract or interface types are not supported: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionNotSupported">
+        <source>The collection type is not supported: '{0}'.</source>
+        <target state="new">The collection type is not supported: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DictionaryKeyNotSupported">
+        <source>The dictionary key type is not supported: '{0}'.</source>
+        <target state="new">The dictionary key type is not supported: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypeNotSupported">
+        <source>The collection element type is not supported: '{0}'.</source>
+        <target state="new">The collection element type is not supported: '{0}'.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 11'.</source>
         <target state="translated">A versão do idioma do projeto deve ser no mínimo 'C# 11'.</target>
@@ -10,6 +30,21 @@
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 11</source>
         <target state="translated">A versão do idioma deve ser pelo menos C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultiDimArraysNotSupported">
+        <source>Multidimensional arrays are not supported: '{0}'.</source>
+        <target state="new">Multidimensional arrays are not supported: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NeedPublicParameterlessConstructor">
+        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
+        <target state="new">Only objects with public parameterless constructors are supported: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullableUnderlyingTypeNotSupported">
+        <source>Nullable underlying type is not supported: '{0}'.</source>
+        <target state="new">Nullable underlying type is not supported: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -22,9 +57,9 @@
         <target state="translated">Não gerou lógica de ligação para uma propriedade em um tipo</target>
         <note />
       </trans-unit>
-      <trans-unit id="TypeNotSupportedMessageFormat">
-        <source>Type '{0}' is not supported: {1}.</source>
-        <target state="translated">Não há suporte para o tipo '{0}': {1}.</target>
+      <trans-unit id="TypeNotSupported">
+        <source>The type is not supported: '{0}'.</source>
+        <target state="new">The type is not supported: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">

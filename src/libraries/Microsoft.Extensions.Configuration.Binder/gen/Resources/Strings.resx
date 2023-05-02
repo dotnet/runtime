@@ -117,11 +117,32 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AbstractOrInterfaceNotSupported" xml:space="preserve">
+    <value>Abstract or interface types are not supported: '{0}'.</value>
+  </data>
+  <data name="CollectionNotSupported" xml:space="preserve">
+    <value>The collection type is not supported: '{0}'.</value>
+  </data>
+  <data name="DictionaryKeyNotSupported" xml:space="preserve">
+    <value>The dictionary key type is not supported: '{0}'.</value>
+  </data>
+  <data name="ElementTypeNotSupported" xml:space="preserve">
+    <value>The collection element type is not supported: '{0}'.</value>
+  </data>
   <data name="Language VersionIsNotSupportedMessageFormat" xml:space="preserve">
     <value>The project's language version has to be at least 'C# 11'.</value>
   </data>
   <data name="LanguageVersionIsNotSupportedTitle" xml:space="preserve">
     <value>Language version is required to be at least C# 11</value>
+  </data>
+  <data name="MultiDimArraysNotSupported" xml:space="preserve">
+    <value>Multidimensional arrays are not supported: '{0}'.</value>
+  </data>
+  <data name="NeedPublicParameterlessConstructor" xml:space="preserve">
+    <value>Only objects with public parameterless constructors are supported: '{0}'.</value>
+  </data>
+  <data name="NullableUnderlyingTypeNotSupported" xml:space="preserve">
+    <value>Nullable underlying type is not supported: '{0}'.</value>
   </data>
   <data name="PropertyNotSupportedMessageFormat" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is not supported.</value>
@@ -129,8 +150,8 @@
   <data name="PropertyNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a property on a type</value>
   </data>
-  <data name="TypeNotSupportedMessageFormat" xml:space="preserve">
-    <value>Type '{0}' is not supported: {1}.</value>
+  <data name="TypeNotSupported" xml:space="preserve">
+    <value>The type is not supported: '{0}'.</value>
   </data>
   <data name="TypeNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a type</value>
