@@ -7706,7 +7706,7 @@ void emitter::emitDispInsHelp(
             break;
     }
 
-    if (id->idDebugOnlyInfo()->idVarRefOffs != BAD_IL_OFFSET)
+    if (id->idDebugOnlyInfo()->idVarRefOffs)
     {
         printf("\t// ");
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
