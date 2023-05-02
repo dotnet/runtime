@@ -656,12 +656,7 @@ namespace Microsoft.Interop.Analyzers
                         }
                         else
                         {
-                            string entryPointValue = methodSymbol.GetAttributes()
-                                .First(att => att.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute)?
-                                .NamedArguments.First(arg => arg.Key == nameof(DllImportAttribute.EntryPoint))
-                                .Value.Value as string;
-
-                            if (entryPointValue.LastOrDefault() != entryPointSuffix.Value)
+                            if (dllImportData.EntryPointName.LastOrDefault() != entryPointSuffix.Value)
                             {
                                 argumentsToRemove.Add(attrArg);
                                 argumentsToAdd.Add(attrArg.WithExpression(
