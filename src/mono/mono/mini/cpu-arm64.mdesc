@@ -524,6 +524,7 @@ extract_r4: dest:f src1:x len:4
 extract_r8: dest:f src1:x len:4
 arm64_xaddv: dest:x src1:x len:8
 xop_ovr_x_x: dest:x src1:x len:4
+xop_ovr_x_x_x: dest:x src1:x src2:x len:4
 expand_i1: dest:x src1:i len:4
 expand_i2: dest:x src1:i len:4
 expand_i4: dest:x src1:i len:4
