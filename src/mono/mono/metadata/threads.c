@@ -1088,6 +1088,7 @@ typedef struct {
 	MonoThreadStart start_func;
 	gpointer start_func_arg;
 	gboolean force_attach;
+	gboolean external_eventloop;
 	gboolean failed;
 	MonoCoopSem registered;
 } StartInfo;
@@ -1173,6 +1174,8 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	/* Let the thread that called Start() know we're ready */
 	mono_coop_sem_post (&start_info->registered);
 
+	gboolean external_eventloop = start_info->external_eventloop;
+
 	if (mono_atomic_dec_i32 (&start_info->ref) == 0) {
 		mono_coop_sem_destroy (&start_info->registered);
 		g_free (start_info);
@@ -1240,6 +1243,12 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
 
+	if (G_UNLIKELY (external_eventloop)) {
+		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
+		if (mono_thread_platform_external_eventloop_keepalive_check ())
+			return 0;
+	}
+
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in mono_thread_detach_internal since
 	 * mono_thread_detach_internal could be  called for a
@@ -1266,8 +1275,18 @@ start_wrapper (gpointer data)
 	info = mono_thread_info_attach ();
 	info->runtime_thread = TRUE;
 
+	gboolean external_eventloop = start_info->external_eventloop;
 	/* Run the actual main function of the thread */
 	res = start_wrapper_internal (start_info, (gsize*)info->stack_end);
+
+	if (G_UNLIKELY (external_eventloop)) {
+		/* if the thread wants to stay alive, don't clean up after it */
+		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
+			/* while we wait in the external eventloop, we're GC safe */
+			MONO_REQ_GC_SAFE_MODE;
+			return 0;
+		}
+	}
 
 	mono_thread_info_exit (res);
 
@@ -1355,6 +1374,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	start_info->start_func_arg = start_func_arg;
 	start_info->force_attach = flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE;
 	start_info->failed = FALSE;
+	start_info->external_eventloop = (flags & MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP) != 0;
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
@@ -4913,7 +4933,11 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 		return;
 	}
 
-	res = create_thread (internal, internal, NULL, NULL, stack_size, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	MonoThreadCreateFlags create_flags = MONO_THREAD_CREATE_FLAGS_NONE;
+	if (G_UNLIKELY (internal->external_eventloop))
+		create_flags |= MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP;
+
+	res = create_thread (internal, internal, NULL, NULL, stack_size, create_flags, error);
 	if (!res) {
 		UNLOCK_THREAD (internal);
 		return;

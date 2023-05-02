@@ -41,7 +41,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Reflection.Emit
 {
     [StructLayout(LayoutKind.Sequential)]
-    public partial class ParameterBuilder
+    internal sealed class RuntimeParameterBuilder : ParameterBuilder
     {
 #region Sync with MonoReflectionParamBuilder in object-internals.h
         private MethodBase methodb; /* MethodBuilder, ConstructorBuilder or DynamicMethod */
@@ -55,7 +55,7 @@ namespace System.Reflection.Emit
 #endregion
 
         [DynamicDependency(nameof(def_value))]  // Automatically keeps all previous fields too due to StructLayout
-        internal ParameterBuilder(MethodBase mb, int pos, ParameterAttributes attributes, string? strParamName)
+        internal RuntimeParameterBuilder(MethodBase mb, int pos, ParameterAttributes attributes, string? strParamName)
         {
             name = strParamName;
             position = pos;
@@ -67,32 +67,20 @@ namespace System.Reflection.Emit
                 table_idx = mb.get_next_table_index(0x08, 1);
         }
 
-        public virtual int Attributes
+        public override int Attributes
         {
             get { return (int)attrs; }
         }
-        public bool IsIn
-        {
-            get { return ((int)attrs & (int)ParameterAttributes.In) != 0; }
-        }
-        public bool IsOut
-        {
-            get { return ((int)attrs & (int)ParameterAttributes.Out) != 0; }
-        }
-        public bool IsOptional
-        {
-            get { return ((int)attrs & (int)ParameterAttributes.Optional) != 0; }
-        }
-        public virtual string? Name
+        public override string? Name
         {
             get { return name; }
         }
-        public virtual int Position
+        public override int Position
         {
             get { return position; }
         }
 
-        public virtual void SetConstant(object? defaultValue)
+        public override void SetConstant(object? defaultValue)
         {
             if (position > 0)
             {
@@ -104,9 +92,10 @@ namespace System.Reflection.Emit
             attrs |= ParameterAttributes.HasDefault;
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.InAttribute")
             {
                 attrs |= ParameterAttributes.In;
@@ -150,11 +139,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
     }
 }

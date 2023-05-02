@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -171,7 +173,7 @@ namespace System.Reflection.Emit
                 PrimitiveSerializationTypeCode.Single => typeof(float),
                 PrimitiveSerializationTypeCode.Double => typeof(double),
                 PrimitiveSerializationTypeCode.String => typeof(string),
-                _ => throw new ArgumentException(SR.Argument_InvalidTypeArgument, "binaryAttribute"),
+                _ => throw new ArgumentException(SR.Argument_InvalidTypeCodeForTypeArgument, "binaryAttribute"),
             };
     }
 }

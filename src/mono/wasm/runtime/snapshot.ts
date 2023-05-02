@@ -4,7 +4,7 @@
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, runtimeHelpers } from "./globals";
 
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 

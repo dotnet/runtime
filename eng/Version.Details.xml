@@ -276,17 +276,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>ab2b80d06dd4d997df5ffa72a3c4a99cb36ccbff</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.23212.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.23228.3">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>cc6611a8c5eee02e5095d9d14a8b0c509ac46e86</Sha>
+      <Sha>07c7709adf2a31095c5722c558d3a27f869bcc3e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.23212.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.23228.3">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>cc6611a8c5eee02e5095d9d14a8b0c509ac46e86</Sha>
+      <Sha>07c7709adf2a31095c5722c558d3a27f869bcc3e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.23212.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="1.0.0-prerelease.23228.3">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>cc6611a8c5eee02e5095d9d14a8b0c509ac46e86</Sha>
+      <Sha>07c7709adf2a31095c5722c558d3a27f869bcc3e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="8.0.0-beta.23224.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -316,17 +316,17 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>31a0b8401dc0b75d67cd8b70f8766bd5e7fdf1fc</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.7.0-1.23205.4">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.7.0-1.23226.15">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
+      <Sha>56393223b78d294bccec3101e79dc03e1b3cb683</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.7.0-1.23205.4">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.7.0-1.23226.15">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
+      <Sha>56393223b78d294bccec3101e79dc03e1b3cb683</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.7.0-1.23205.4">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.7.0-1.23226.15">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d7a4cad21c39e18f3d5e1f7fa7dd3f93668066b4</Sha>
+      <Sha>56393223b78d294bccec3101e79dc03e1b3cb683</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.5-beta1.23225.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>

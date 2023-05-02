@@ -262,7 +262,7 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal ushort GenericArgumentCount
+        internal ushort GenericParameterCount
         {
             get
             {
@@ -523,36 +523,10 @@ namespace Internal.Runtime
 #endif
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private readonly struct GenericComposition
-        {
-            public readonly ushort Arity;
-
-            private readonly EETypeRef _genericArgument1;
-            public EETypeRef* GenericArguments
-            {
-                get
-                {
-                    return (EETypeRef*)Unsafe.AsPointer(ref Unsafe.AsRef(in _genericArgument1));
-                }
-            }
-
-            public GenericVariance* GenericVariance
-            {
-                get
-                {
-                    // Generic variance directly follows the last generic argument
-                    return (GenericVariance*)(GenericArguments + Arity);
-                }
-            }
-        }
-
 #if TYPE_LOADER_IMPLEMENTATION
-        internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
+        internal static int GetGenericCompositionSize(int numArguments)
         {
-            return IntPtr.Size
-                + numArguments * IntPtr.Size
-                + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
+            return numArguments * IntPtr.Size;
         }
 
         internal void SetGenericComposition(IntPtr data)
@@ -571,31 +545,34 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
-
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
+                return GenericDefinition->GenericParameterCount;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsDynamicType);
-                // GenericComposition is a readonly struct, so we just blit the bytes over. Asserts guard changes to the layout.
-                *((ushort*)GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value) = checked((ushort)value);
-                Debug.Assert(GenericArity == (ushort)value);
-            }
-#endif
         }
 
-        internal EETypeRef* GenericArguments
+        internal MethodTableList GenericArguments
         {
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericArguments;
+                void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
+                uint arity = GenericArity;
+
+                // If arity is 1, the field value is the component. For arity > 1, components are stored out-of-line
+                // and are shared.
+                if (IsDynamicType || !SupportsRelativePointers)
+                {
+                    // This is a full pointer [that points to a list of full pointers]
+                    MethodTable* pListStart = arity == 1 ? (MethodTable*)pField : *(MethodTable**)pField;
+                    return new MethodTableList(pListStart);
+                }
+                else
+                {
+                    // This is a relative pointer [that points to a list of relative pointers]
+                    RelativePointer<MethodTable>* pListStart = arity == 1 ?
+                        (RelativePointer<MethodTable>*)pField : (RelativePointer<MethodTable>*)((RelativePointer*)pField)->Value;
+                    return new MethodTableList(pListStart);
+                }
             }
         }
 
@@ -608,10 +585,13 @@ namespace Internal.Runtime
                 if (!HasGenericVariance)
                     return null;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                if (IsGeneric)
+                    return GenericDefinition->GenericVariance;
 
-                return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->GenericVariance;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
+
+                return GetField<RelativePointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
             }
         }
 
@@ -973,19 +953,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(!IsArray, "array type not supported in BaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        // TODO rename?
-        internal MethodTable* NonClonedNonArrayBaseType
-        {
-            get
-            {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
+                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
+                Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
                 return _relatedType._pBaseType;
             }
         }
@@ -1006,7 +976,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsNullable);
                 Debug.Assert(GenericArity == 1);
-                return GenericArguments[0].Value;
+                return GenericArguments[0];
             }
         }
 
@@ -1507,29 +1477,6 @@ namespace Internal.Runtime
 #endif
     }
 
-    // Wrapper around MethodTable pointers that may be indirected through the IAT if their low bit is set.
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EETypeRef
-    {
-        private byte* _value;
-
-        public MethodTable* Value
-        {
-            get
-            {
-                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                    return (MethodTable*)_value;
-                return *(MethodTable**)(_value - IndirectionConstants.IndirectionCellPointer);
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _value = (byte*)value;
-            }
-#endif
-        }
-    }
-
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
     internal readonly struct Pointer
@@ -1659,7 +1606,7 @@ namespace Internal.Runtime
                 if (((nint)_pFirst & IsRelative) != 0)
                     return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
 
-                return *(MethodTable**)_pFirst + index;
+                return *((MethodTable**)_pFirst + index);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
