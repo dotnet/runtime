@@ -1218,7 +1218,7 @@ private:
                     indir->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
                 }
                 indir->ChangeOper(GT_LCL_VAR);
-                indir->AsLclVar()->SetLclNum(lclNum);                
+                indir->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->AsLclVarCommon();
                 INDEBUG(indir->AsLclVar()->ResetLclILoffs());
                 break;

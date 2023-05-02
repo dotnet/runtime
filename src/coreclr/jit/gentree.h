@@ -3680,13 +3680,11 @@ public:
         this->gtSpillFlags = from->gtSpillFlags;
     }
 
-    
 #ifdef DEBUG
     void ResetLclILoffs()
     {
         gtLclILoffs = BAD_IL_OFFSET;
     }
-
 #endif
 
     GenTreeLclVar(genTreeOps oper,

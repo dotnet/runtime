@@ -6524,7 +6524,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         varx1,
                                        int         varx2,
                                        int         offs1,
-                                       int offs2   DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
+                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -13935,7 +13935,8 @@ void emitter::emitDispInsHelp(
         {
             printf(", ");
             emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
-            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2, asmfm);
+            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2,
+                             asmfm);
         }
     }
 
@@ -16475,7 +16476,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     regNumber prevReg1 = emitLastIns->idReg1();
 #ifdef DEBUG
     unsigned prevVarRefsOffs = emitLastIns->idDebugOnlyInfo()->idVarRefOffs;
-    unsigned newVarRefsOffs = emitVarRefOffs;
+    unsigned newVarRefsOffs  = emitVarRefOffs;
 #endif
 
     ssize_t     prevImm = emitGetInsSC(emitLastIns);

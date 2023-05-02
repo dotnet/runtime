@@ -4825,7 +4825,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
 
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
-    lclNode->SetLclNum(newLclNum);    
+    lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
     INDEBUG(lclNode->AsLclVar()->ResetLclILoffs());
 
