@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
 
                             // Best effort to zero out the key material.
                             CryptographicOperations.ZeroMemory(hmac);
-                            hmac.Initialize();
+                            hash.Initialize();
                         }
                     }
                     finally
