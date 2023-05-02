@@ -1137,7 +1137,10 @@ namespace ILCompiler.DependencyAnalysis
                     else
                         objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
 
-                    ISymbolNode compositionNode = factory.GenericComposition(_type.Instantiation);
+                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
+                        ? factory.GenericComposition(_type.Instantiation)
+                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+
                     if (factory.Target.SupportsRelativePointers)
                         objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                     else

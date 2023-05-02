@@ -556,15 +556,22 @@ namespace Internal.Runtime
                 Debug.Assert(IsGeneric);
 
                 void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
+                uint arity = GenericArity;
+
+                // If arity is 1, the field value is the component. For arity > 1, components are stored out-of-line
+                // and are shared.
                 if (IsDynamicType || !SupportsRelativePointers)
                 {
-                    // This is a full pointer that points to a list of full pointers
-                    return new MethodTableList(*(MethodTable**)pField);
+                    // This is a full pointer [that points to a list of full pointers]
+                    MethodTable* pListStart = arity == 1 ? (MethodTable*)pField : *(MethodTable**)pField;
+                    return new MethodTableList(pListStart);
                 }
                 else
                 {
-                    // This is a relative pointer that points to a list of relative pointers
-                    return new MethodTableList((RelativePointer<MethodTable>*)((RelativePointer*)pField)->Value);
+                    // This is a relative pointer [that points to a list of relative pointers]
+                    RelativePointer<MethodTable>* pListStart = arity == 1 ?
+                        (RelativePointer<MethodTable>*)pField : (RelativePointer<MethodTable>*)((RelativePointer*)pField)->Value;
+                    return new MethodTableList(pListStart);
                 }
             }
         }

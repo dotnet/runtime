@@ -333,8 +333,11 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGeneric)
                 {
-                    genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
-                    pEEType->SetGenericComposition(genericComposition);
+                    if (arity > 1)
+                    {
+                        genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
+                        pEEType->SetGenericComposition(genericComposition);
+                    }
 
                     if (allocatedNonGCDataSize > 0)
                     {
