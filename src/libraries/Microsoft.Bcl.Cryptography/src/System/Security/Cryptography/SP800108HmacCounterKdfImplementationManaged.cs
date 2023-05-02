@@ -165,11 +165,21 @@ namespace System.Security.Cryptography
                         for (uint i = 1; !destination.IsEmpty; i++)
                         {
                             WriteUInt32BigEndian(i, rentedBuffer.AsSpan(IOffset, ILength));
-                            hash.TransformBlock(rentedBuffer, IOffset, ILength, null, 0);
-                            hash.TransformBlock(label, 0, labelLength, null, 0);
-                            hash.TransformBlock(rentedBuffer, ZeroOffset, ZeroLength, null, 0);
-                            hash.TransformBlock(context, 0, contextLength, null, 0);
-                            hash.TransformFinalBlock(rentedBuffer, LOffset, LLength);
+                            int written;
+                            written = hash.TransformBlock(rentedBuffer, IOffset, ILength, null, 0);
+                            Debug.Assert(written == ILength);
+                            written = hash.TransformBlock(label, 0, labelLength, null, 0);
+                            Debug.Assert(written == labelLength);
+                            written = hash.TransformBlock(rentedBuffer, ZeroOffset, ZeroLength, null, 0);
+                            Debug.Assert(written == ZeroLength);
+                            written = hash.TransformBlock(context, 0, contextLength, null, 0);
+                            Debug.Assert(written == contextLength);
+                            written = hash.TransformBlock(rentedBuffer, LOffset, LLength, null, 0);
+                            Debug.Assert(written == LLength);
+
+                            // Use an empty input for the final transform so that the returned value isn't something
+                            // we need to clear since the return value is the same as the input.
+                            hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
                             byte[] hmac = hash.Hash;
                             int needed = Math.Min(destination.Length, hmac.Length);
