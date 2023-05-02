@@ -162,6 +162,8 @@ jobs:
           disableComponentGovernance: false
         ${{ else }}:
           disableComponentGovernance: true
+      ${{ else }}:
+        disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
       componentGovernanceIgnoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
 
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:

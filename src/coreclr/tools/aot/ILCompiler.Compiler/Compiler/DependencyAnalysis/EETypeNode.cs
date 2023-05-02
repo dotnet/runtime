@@ -738,16 +738,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
             }
 
-            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
-
-            // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
-            // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
-            // that it should indirect through the import address table
-            if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
-            {
-                flags |= (uint)EETypeFlags.RelatedTypeViaIATFlag;
-            }
-
             if (HasOptionalFields)
             {
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
@@ -1074,7 +1064,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerRelocOrIndirectionReference(GetInterfaceTypeNode(factory, itf));
+                objData.EmitPointerReloc(GetInterfaceTypeNode(factory, itf));
             }
         }
 
@@ -1146,29 +1136,49 @@ namespace ILCompiler.DependencyAnalysis
                         objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
                     else
                         objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
-                }
 
-                GenericCompositionDetails details;
-                if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-                {
-                    // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
-                }
-                else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
-                {
-                    // Runtime casting logic relies on all interface types implemented on arrays
-                    // to have the variant flag set (even if all the arguments are non-variant).
-                    // This supports e.g. casting uint[] to ICollection<int>
-                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
+                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
+                        ? factory.GenericComposition(_type.Instantiation)
+                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(compositionNode);
                 }
                 else
-                    details = new GenericCompositionDetails(_type);
+                {
+                    GenericVarianceDetails details;
+                    if (_type == factory.ArrayOfTEnumeratorType)
+                    {
+                        // Generic array enumerators use special variance rules recognized by the runtime
+                        details = new GenericVarianceDetails(new[] { GenericVariance.ArrayCovariant });
+                    }
+                    else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                    {
+                        // Runtime casting logic relies on all interface types implemented on arrays
+                        // to have the variant flag set (even if all the arguments are non-variant).
+                        // This supports e.g. casting uint[] to ICollection<int>
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else if (_type.HasVariance)
+                    {
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else
+                    {
+                        details = default;
+                    }
 
-                ISymbolNode compositionNode = factory.GenericComposition(details);
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
-                else
-                    objData.EmitPointerReloc(compositionNode);
+                    if (!details.IsNull)
+                    {
+                        ISymbolNode varianceInfoNode = factory.GenericVariance(details);
+                        if (factory.Target.SupportsRelativePointers)
+                            objData.EmitReloc(varianceInfoNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        else
+                            objData.EmitPointerReloc(varianceInfoNode);
+                    }
+                }
             }
         }
 

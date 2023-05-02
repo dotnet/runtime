@@ -393,6 +393,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - linux_musl_x64
+          - linux_riscv64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono

@@ -231,6 +231,14 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <!-- 
+          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome. 
+          Below is same section for V8. There is also Xharness timeout override in the test project. 
+        -->
+        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -253,7 +261,13 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
+        <!-- These WASM tests are problematic and slow right now, in this section it's about V8. Above is same section for nodejs and chrome -->
+        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
+
     </ItemGroup>
   </Target>
 

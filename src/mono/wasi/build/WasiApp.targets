@@ -166,7 +166,7 @@
 
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
-          Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+          Condition="'$(IsWasiProject)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
 
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -221,7 +221,7 @@
   <Target Name="WasmBuildApp"
           AfterTargets="$(WasmBuildAppAfterThisTarget)"
           DependsOnTargets="$(WasmBuildAppDependsOn)"
-          Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
+          Condition="'$(IsWasiProject)' == 'true' and '$(WasmBuildingForNestedPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
 
   <Target Name="_InitializeCommonProperties">
     <Error Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == '' and ('%(ResolvedRuntimePack.PackageDirectory)' == '' or !Exists(%(ResolvedRuntimePack.PackageDirectory)))"
@@ -385,7 +385,7 @@
       <FileWrites Include="$(WasmRunWasmtimeScriptPath)" />
     </ItemGroup>
 
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunWasmtimeScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">

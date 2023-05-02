@@ -427,7 +427,6 @@
 
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
-                       runtime/es6/dotnet.es6.post.js;
                        runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
