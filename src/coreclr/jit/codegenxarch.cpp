@@ -3134,17 +3134,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     // INITBLK zeroes a struct that contains GC pointers and can be observed by
     // other threads (i.e. when dstAddr is not an address of a local).
     // For example, this can happen when initializing a struct field of an object.
-    const bool canUse16BytesSimdMov = !node->IsOnHeapAndContainsReferences();
-
-#ifdef TARGET_AMD64
-    // On Amd64 the JIT will not use SIMD stores for such structs and instead
-    // will always allocate a GP register for src node.
-    const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
-#else
-    // On X86 the JIT will use movq for structs that are larger than 16 bytes
-    // since it is more beneficial than using two mov-s from a GP register.
-    const bool willUseSimdMov = (size >= 16);
-#endif
+    const bool canUse16BytesSimdMov = !node->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
+    const bool willUseSimdMov       = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
 
     if (!src->isContained())
     {
@@ -3153,11 +3144,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     else
     {
         assert(willUseSimdMov);
-#ifdef TARGET_AMD64
         assert(size >= XMM_REGSIZE_BYTES);
-#else
-        assert(size % 8 == 0);
-#endif
     }
 
     emitter* emit = GetEmitter();
@@ -3182,41 +3169,18 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg, srcXmmReg);
         }
+#ifdef FEATURE_SIMD
         else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
         {
             // Populate a constant vector from the fill value and save it
             // to the data section so we can load it by address.
-            ssize_t              fill     = src->AsIntCon()->IconValue();
-            CORINFO_FIELD_HANDLE hnd      = nullptr;
-            var_types            loadType = TYP_UNDEF;
-            if (regSize == XMM_REGSIZE_BYTES)
-            {
-                simd16_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd16_t));
-                hnd      = emit->emitSimd16Const(constValue);
-                loadType = TYP_SIMD16;
-            }
-            else if (regSize == YMM_REGSIZE_BYTES)
-            {
-                simd32_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd32_t));
-                hnd      = emit->emitSimd32Const(constValue);
-                loadType = TYP_SIMD32;
-            }
-            else if (regSize == ZMM_REGSIZE_BYTES)
-            {
-                simd64_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd64_t));
-                hnd      = emit->emitSimd64Const(constValue);
-                loadType = TYP_SIMD64;
-            }
-            else
-            {
-                // Unexpected regSize
-                unreached();
-            }
-            emit->emitIns_R_C(ins_Load(loadType), EA_ATTR(regSize), srcXmmReg, hnd, 0);
+            assert(regSize <= ZMM_REGSIZE_BYTES);
+            simd64_t constValue;
+            memset(&constValue, (uint8_t)(src->AsIntCon()->IconValue() & 0xFF), sizeof(simd64_t));
+            var_types loadType = compiler->getSIMDTypeForSize(regSize);
+            genSetRegToConst(srcXmmReg, loadType, compiler->gtNewVconNode(loadType, &constValue));
         }
+#endif
         else
         {
             // TODO-AVX512-ARCH: Enable AVX-512 for non-zeroing initblk.
@@ -3267,15 +3231,9 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         while (bytesWritten < size)
         {
-#ifdef TARGET_X86
-            if (!canUse16BytesSimdMov || (bytesWritten + regSize > size))
-            {
-                simdMov = INS_movq;
-                regSize = 8;
-            }
-#endif
             if (bytesWritten + regSize > size)
             {
+                // We have a remainder that is smaller than regSize.
                 break;
             }
 

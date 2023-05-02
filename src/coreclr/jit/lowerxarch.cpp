@@ -327,7 +327,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             }
             else
             {
-
                 // The fill value of an initblk is interpreted to hold a
                 // value of (unsigned int8) however a constant of any size
                 // may practically reside on the evaluation stack. So extract
@@ -345,20 +344,23 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 }
 
                 bool willUseSimd = canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
-#ifndef TARGET_AMD64
-                // TODO-CQ: Current codegen logic relies on size being a multiple of 8
-                // to unroll for 32-bit targets (for INS_movq)
-                willUseSimd = willUseSimd && (size % 8) == 0;
-#endif
                 if (willUseSimd)
                 {
-                    // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register with a fill value
-                    // just to handle the remainder when we can do that with an overlapped SIMD load).
+// We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register with a fill value
+// just to handle the remainder when we can do that with an overlapped SIMD load).
+#ifdef FEATURE_SIMD
                     src->SetContained();
+#else
+                    if (fill == 0)
+                    {
+                        // When we don't have FEATURE_SIMD we can only handle zeroing
+                        src->SetContained();
+                    }
+#endif
                 }
                 else if (fill == 0)
                 {
-                    // Leave as is - zero doesn't shouldn't be contained when we don't use SIMD.
+                    // Leave as is - zero shouldn't be contained when we don't use SIMD.
                 }
 #ifdef TARGET_AMD64
                 else if (size >= REGSIZE_BYTES)
