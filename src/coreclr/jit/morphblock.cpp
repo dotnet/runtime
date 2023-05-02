@@ -554,7 +554,6 @@ void MorphInitBlockHelper::TryPrimitiveInit()
             m_dst->ChangeOper(GT_LCL_VAR);
             m_dst->AsLclVar()->SetLclNum(m_dstLclNum);
             m_dst->gtFlags |= GTF_VAR_DEF;
-        INDEBUG(m_dst->AsLclVar()->ResetLclILoffs());
 
             m_asg->ChangeType(m_dst->TypeGet());
             m_asg->AsOp()->gtOp1 = m_dst;
@@ -567,6 +566,7 @@ void MorphInitBlockHelper::TryPrimitiveInit()
             m_asg->AsLclVar()->SetLclNum(m_dstLclNum);
             m_asg->gtFlags |= GTF_VAR_DEF;
         }
+        INDEBUG(m_dst->AsLclVar()->ResetLclILoffs());
 
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::OneAsgBlock;
