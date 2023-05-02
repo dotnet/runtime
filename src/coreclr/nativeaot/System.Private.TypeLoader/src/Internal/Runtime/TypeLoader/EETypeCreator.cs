@@ -637,6 +637,24 @@ namespace Internal.Runtime.TypeLoader
             return numSeries;
         }
 
+        public static RuntimeTypeHandle CreateFunctionPointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, FunctionPointerType functionPointerType)
+        {
+            TypeBuilderState state = new TypeBuilderState(functionPointerType);
+
+            CreateEETypeWorker(typeof(delegate*<void>).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, state);
+            Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
+
+            TypeLoaderLogger.WriteLine("Allocated new FUNCTION POINTER type " + functionPointerType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with MethodTable = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
+
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->FunctionPointerReturnType = returnTypeHandle.ToEETypePtr();
+            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->NumFunctionPointerParameters == parameterHandles.Length);
+            MethodTableList paramList = state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->FunctionPointerParameters;
+            for (int i = 0; i < parameterHandles.Length; i++)
+                paramList[i] = parameterHandles[i].ToEETypePtr();
+
+            return state.HalfBakedRuntimeTypeHandle;
+        }
+
         public static RuntimeTypeHandle CreatePointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle pointeeTypeHandle, TypeDesc pointerType)
         {
             TypeBuilderState state = new TypeBuilderState(pointerType);

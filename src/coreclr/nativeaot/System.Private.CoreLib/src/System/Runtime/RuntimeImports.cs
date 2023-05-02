@@ -297,13 +297,6 @@ namespace System.Runtime
         //
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
-
-        internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
-            => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
         internal static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
