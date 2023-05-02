@@ -1064,6 +1064,10 @@ private:
                 }
             }
         }
+        else
+        {
+            newOffset = varDsc->lvFldOffset;
+        }
 
         val.ChangeLocal(parentLclNum, newOffset);
         return true;
