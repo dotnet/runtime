@@ -36,12 +36,12 @@
     <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
     <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
     <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
-    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+    <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</SysRoot>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
 
   <ItemGroup>
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(ROOTFS_DIR)' != ''" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,7 +62,7 @@
   </ItemGroup>
 
   <Target Name="LocateNativeCompiler"
-          Condition="'$(PublishAot)' == 'true' and '$(HostOS)' != 'windows'"
+          Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
           BeforeTargets="SetupOSSpecificProps">
     <PropertyGroup>
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
