@@ -2352,7 +2352,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) &&
+                        (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
                         // issue.
@@ -2406,7 +2407,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) &&
+                        (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
                         // issue.
@@ -2751,13 +2753,14 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                         bool     foundUse   = BlockRange().TryGetUse(node, &use);
                         GenTree* CreateUser = nullptr;
                         if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                            use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
                         {
                             CreateUser = use.User();
                         }
                         if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_DOUBLE))
                         {
-                            // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
+                            // swap the embedded broadcast candidate to 2nd operand, convenient to handle the
+                            // containment
                             // issue.
                             if (node == CreateUser->AsHWIntrinsic()->Op(1))
                             {

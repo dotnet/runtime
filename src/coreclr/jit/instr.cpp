@@ -807,7 +807,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512F_BroadcastScalarToVector512:
                 {
-                    if(intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
