@@ -304,7 +304,7 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            if (type.HasElementType || type.IsGenericParameter)
+            if (type.HasElementType || type.IsGenericParameter || type.IsFunctionPointer)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
             }
