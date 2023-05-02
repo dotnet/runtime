@@ -206,9 +206,7 @@ $ReturnAddressName
 __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
     EXTERN _tls_index
-
-    GBLS __SECTIONREL_tls_CurrentThread
-__SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
+    EXTERN tls_CurrentThread
 
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
@@ -223,7 +221,8 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         ldr         $TrashRegister32Bit, [$trashReg]
         ldr         $destReg, [xpr, #__tls_array]
         ldr         $destReg, [$destReg, $trashReg lsl #3]
-        ldr         $trashReg, =$__SECTIONREL_tls_CurrentThread
+        ldr         $trashReg, =tls_CurrentThread
+        RELOC       8, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL
         ldr         $trashReg, [$trashReg]
         add         $destReg, $destReg, $trashReg
     MEND
@@ -233,15 +232,6 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
     ;; to improve density, or to reduce distance between the constant pool and its use.
     MACRO
         INLINE_GETTHREAD_CONSTANT_POOL
-        EXTERN tls_CurrentThread
-
-    ;; Section relocs are 32 bits. Using an extra DCD initialized to zero for 8-byte alignment.
-$__SECTIONREL_tls_CurrentThread
-        DCD tls_CurrentThread
-        RELOC 8, tls_CurrentThread      ;; SECREL
-        DCD 0
-
-__SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 
     MEND
 
