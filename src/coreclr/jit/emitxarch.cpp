@@ -18038,9 +18038,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vgetmantps:
         case INS_vgetmantsd:
         case INS_vgetmantss:
+        case INS_vscalefpd:
+        case INS_vscalefps:
+        case INS_vscalefsd:
+        case INS_vscalefss:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;
             break;
+        }
 
         case INS_vpmovdb:
         case INS_vpmovdw:
@@ -18136,9 +18142,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_roundps:
         case INS_roundsd:
         case INS_roundss:
+        case INS_vrndscalepd:
+        case INS_vrndscaleps:
+        case INS_vrndscalesd:
+        case INS_vrndscaless:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_8C;
             break;
+        }
 
         case INS_cvttsd2si:
         case INS_cvtsd2si:

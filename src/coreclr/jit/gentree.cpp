@@ -20489,7 +20489,8 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        intrinsic = NI_AVX512F_Ceiling;
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToPositiveInfinity));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
     }
     else
     {
@@ -22060,7 +22061,8 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        intrinsic = NI_AVX512F_Floor;
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToNegativeInfinity));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
     }
     else
     {

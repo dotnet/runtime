@@ -7872,6 +7872,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AES_KeygenAssist:
                         case NI_AVX512F_GetMantissa:
                         case NI_AVX512F_VL_GetMantissa:
+                        case NI_AVX512F_RoundScale:
+                        case NI_AVX512F_VL_RoundScale:
                         {
                             if (!isContainedImm)
                             {
@@ -7912,6 +7914,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         case NI_AVX512F_GetMantissaScalar:
+                        case NI_AVX512F_RoundScaleScalar:
                         {
                             // These intrinsics have both 2 and 3-operand overloads.
                             //
@@ -8169,6 +8172,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_GetMantissaScalar:
                         case NI_AVX512F_InsertVector128:
                         case NI_AVX512F_InsertVector256:
+                        case NI_AVX512F_RoundScaleScalar:
                         case NI_AVX512F_Shuffle:
                         case NI_AVX512BW_AlignRight:
                         case NI_AVX512DQ_InsertVector128:

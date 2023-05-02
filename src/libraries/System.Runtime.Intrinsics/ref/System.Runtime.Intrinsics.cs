@@ -4907,6 +4907,16 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<double> upper, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<float> upper, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> RoundScale(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> RoundScale(System.Runtime.Intrinsics.Vector512<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> RoundScaleScalar(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> RoundScaleScalar(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> RoundScaleScalar(System.Runtime.Intrinsics.Vector128<double> upper, System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> RoundScaleScalar(System.Runtime.Intrinsics.Vector128<float> upper, System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Scale(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Scale(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ScaleScalar(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ScaleScalar(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector128<int> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
@@ -5104,6 +5114,14 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> RoundScale(System.Runtime.Intrinsics.Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> RoundScale(System.Runtime.Intrinsics.Vector128<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> RoundScale(System.Runtime.Intrinsics.Vector256<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> RoundScale(System.Runtime.Intrinsics.Vector256<float> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Scale(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Scale(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Scale(System.Runtime.Intrinsics.Vector256<double> left, System.Runtime.Intrinsics.Vector256<double> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Scale(System.Runtime.Intrinsics.Vector256<float> left, System.Runtime.Intrinsics.Vector256<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }

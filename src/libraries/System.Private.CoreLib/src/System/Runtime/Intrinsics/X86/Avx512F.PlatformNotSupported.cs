@@ -404,43 +404,43 @@ namespace System.Runtime.Intrinsics.X86
 
             /// <summary>
             /// __m128 _mm_getexp_ps (__m128 a)
-            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst{sae}
+            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst
             /// </summary>
             public static Vector128<float> GetExponent(Vector128<float> value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m128d _mm_getexp_pd (__m128d a)
-            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst{sae}
+            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst
             /// </summary>
             public static Vector128<double> GetExponent(Vector128<double> value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m256 _mm256_getexp_ps (__m256 a)
-            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst
             /// </summary>
             public static Vector256<float> GetExponent(Vector256<float> value) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m256d _mm256_getexp_pd (__m256d a)
-            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst{sae}
+            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst
             /// </summary>
             public static Vector256<double> GetExponent(Vector256<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128 _mm_getmant_ps (__m128 a)
-            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst{sae}
+            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst
             /// </summary>
             public static Vector128<float> GetMantissa(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m128d _mm_getmant_pd (__m128d a)
-            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst{sae}
+            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst
             /// </summary>
             public static Vector128<double> GetMantissa(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m256 _mm256_getmant_ps (__m256 a)
-            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst
             /// </summary>
             public static Vector256<float> GetMantissa(Vector256<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
             /// <summary>
             /// __m256d _mm256_getmant_pd (__m256d a)
-            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst{sae}
+            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst
             /// </summary>
             public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
 
@@ -543,6 +543,48 @@ namespace System.Runtime.Intrinsics.X86
             ///   VRSQRT14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
             /// </summary>
             public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_roundscale_ps (__m128 a, int imm)
+            ///   VRNDSCALEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> RoundScale(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_roundscale_pd (__m128d a, int imm)
+            ///   VRNDSCALEPD xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> RoundScale(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_roundscale_ps (__m256 a, int imm)
+            ///   VRNDSCALEPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> RoundScale(Vector256<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_roundscale_pd (__m256d a, int imm)
+            ///   VRNDSCALEPD ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> RoundScale(Vector256<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_scalef_ps (__m128 a, int imm)
+            ///   VSCALEFPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Scale(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_scalef_pd (__m128d a, int imm)
+            ///   VSCALEFPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Scale(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_scalef_ps (__m256 a, int imm)
+            ///   VSCALEFPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Scale(Vector256<float> left, Vector256<float> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_scalef_pd (__m256d a, int imm)
+            ///   VSCALEFPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Scale(Vector256<double> left, Vector256<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
@@ -1956,6 +1998,62 @@ namespace System.Runtime.Intrinsics.X86
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_roundscale_ps (__m512 a, int imm)
+        ///   VRNDSCALEPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> RoundScale(Vector512<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_roundscale_pd (__m512d a, int imm)
+        ///   VRNDSCALEPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> RoundScale(Vector512<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, __m128 b, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, __m128d b, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_scalef_ps (__m512 a, __m512 b)
+        ///   VSCALEFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Scale(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_scalef_pd (__m512d a, __m512d b)
+        ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_scalef_ss (__m128 a, __m128 b)
+        ///   VSCALEFSS xmm1 {k1}{z}, xmm2, xmm3/m32{er}
+        /// </summary>
+        public static Vector128<float> ScaleScalar(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_scalef_sd (__m128d a, __m128d b)
+        ///   VSCALEFSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
+        /// </summary>
+        public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
