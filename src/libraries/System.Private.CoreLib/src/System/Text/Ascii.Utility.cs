@@ -1400,11 +1400,9 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void StoreLower(Vector128<byte> byteVector, ref byte bytePtr, nuint elementOffset)
         {
-            // GetLower().StoreUnsafe is quite inneficient on x86, below code make sure that the store is a single instruction instead of ~10 and stack spills
-            if (Sse2.IsSupported)
-                Sse2.StoreScalar((long*)((byte*)Unsafe.AsPointer(ref bytePtr) + elementOffset), byteVector.AsInt64());
-            else
-                byteVector.GetLower().StoreUnsafe(ref bytePtr, elementOffset);
+            // Below code translates to a single write on x86 (for both 32 and 64 bit)
+            // - we use double instead of long so that the JIT writes directly to memory without intermediate (register or stack in case of 32 bit)
+            Unsafe.WriteUnaligned<double>(ref Unsafe.Add(ref bytePtr, elementOffset), byteVector.AsDouble().ToScalar());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
