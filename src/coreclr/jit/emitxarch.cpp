@@ -664,6 +664,30 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case INS_call:
             return true;
 
+        case INS_imul_AX:
+        case INS_imul_BP:
+        case INS_imul_BX:
+        case INS_imul_CX:
+        case INS_imul_DI:
+        case INS_imul_DX:
+        case INS_imul_SI:
+        case INS_imul_SP:
+#ifdef TARGET_AMD64
+        case INS_imul_08:
+        case INS_imul_09:
+        case INS_imul_10:
+        case INS_imul_11:
+        case INS_imul_12:
+        case INS_imul_13:
+        case INS_imul_14:
+        case INS_imul_15:
+#endif // TARGET_AMD64
+            if (reg == inst3opImulReg(ins))
+            {
+                return true;
+            }
+            break;
+
         // These always write to RAX and RDX.
         case INS_idiv:
         case INS_div:

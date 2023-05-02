@@ -2536,6 +2536,7 @@ public:
                                                   void*                   compileTimeHandle);
 
     GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclVarNode(unsigned lclNum, var_types type = TYP_UNDEF);
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
     GenTreeLclFld* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
@@ -2838,6 +2839,12 @@ public:
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTreeBlk* gtNewStoreBlkNode(
+        ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTreeStoreInd* gtNewStoreIndNode(
+        var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
     GenTree* gtNewLoadValueNode(
         var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
@@ -2849,6 +2856,14 @@ public:
     GenTree* gtNewLoadValueNode(var_types type, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
     {
         return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
+    }
+
+    GenTree* gtNewStoreValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewStoreValueNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
@@ -2962,6 +2977,9 @@ public:
 
     void gtPrepareCost(GenTree* tree);
     bool gtIsLikelyRegVar(GenTree* tree);
+    void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
+    void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
+    bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
