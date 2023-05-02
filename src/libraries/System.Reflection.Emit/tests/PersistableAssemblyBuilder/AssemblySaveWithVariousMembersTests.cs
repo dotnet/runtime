@@ -166,10 +166,9 @@ namespace System.Reflection.Emit.Tests
                 typeParams[1].SetCustomAttribute(new CustomAttributeBuilder(typeof(DynamicallyAccessedMembersAttribute).GetConstructor(
                     new Type[] { typeof(DynamicallyAccessedMemberTypes) }), new object[] { DynamicallyAccessedMemberTypes.PublicProperties }));
                 typeParams[2].SetBaseTypeConstraint(typeof(EmptyTestClass));
-                typeParams[2].SetGenericParameterAttributes(GenericParameterAttributes.ReferenceTypeConstraint);
+                typeParams[2].SetGenericParameterAttributes(GenericParameterAttributes.VarianceMask);
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
-                // internal interface TestInterface<TFirst, [DynamicallyAccessedMembers(/*Could not decode attribute arguments.*/)] TSecond, TThird>
-                // where TFirst : IAccess, INoMethod where TThird : class, EmptyTestClass
+
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
                 Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
                 Type[] genericTypeParams = testType.GetGenericArguments();
@@ -184,9 +183,11 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(typeof(IAccess).FullName, constraints[0].FullName);
                 Assert.Equal(typeof(INoMethod).FullName, constraints[1].FullName);
                 Assert.Empty(genericTypeParams[1].GetTypeInfo().GetGenericParameterConstraints());
-                Assert.Equal(typeof(EmptyTestClass).FullName, genericTypeParams[2].GetTypeInfo().GetGenericParameterConstraints()[0].FullName);
+                Type[] constraints2 = genericTypeParams[2].GetTypeInfo().GetGenericParameterConstraints();
+                Assert.Equal(1, constraints2.Length);
+                Assert.Equal(typeof(EmptyTestClass).FullName, constraints2[0].FullName);
                 Assert.Equal(GenericParameterAttributes.None, genericTypeParams[0].GenericParameterAttributes);
-                Assert.Equal(GenericParameterAttributes.ReferenceTypeConstraint, genericTypeParams[2].GenericParameterAttributes);
+                Assert.Equal(GenericParameterAttributes.VarianceMask, genericTypeParams[2].GenericParameterAttributes);
 
                 IList<CustomAttributeData> attributes = genericTypeParams[1].GetCustomAttributesData();
                 Assert.Equal(1, attributes.Count);
