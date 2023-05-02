@@ -223,7 +223,6 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         ldr         $destReg, [$destReg, $trashReg lsl #3]
         ldr         $trashReg, =tls_CurrentThread
         RELOC       8, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL
-        ldr         $trashReg, [$trashReg]
         add         $destReg, $destReg, $trashReg
     MEND
 
