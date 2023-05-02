@@ -4581,6 +4581,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // get this far if we are jitting the root method.
     noway_assert(!compIsForInlining());
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Prepare for the morph phases
     //
     DoPhase(this, PHASE_MORPH_INIT, &Compiler::fgMorphInit);
@@ -4591,8 +4593,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
