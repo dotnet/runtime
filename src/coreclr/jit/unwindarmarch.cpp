@@ -126,8 +126,6 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 }
 #endif // TARGET_ARM && FEATURE_CFI_SUPPORT
 
-#ifdef TARGET_ARMARCH
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -2583,5 +2581,3 @@ void DumpUnwindInfo(Compiler*         comp,
 #endif // DEBUG
 
 #endif // defined(TARGET_ARM)
-
-#endif // TARGET_ARMARCH
