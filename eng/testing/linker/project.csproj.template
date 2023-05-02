@@ -36,7 +36,6 @@
     <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
     <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
     <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
-    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
@@ -61,5 +60,29 @@
                       PrivateAssets="all"
                       IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <Target Name="LocateNativeCompiler"
+          Condition="'$(PublishAot)' == 'true' and '$(HostOS)' != 'windows'"
+          BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    </PropertyGroup>
+
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+    </Exec>
+
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="$(CppCompilerAndLinker.Contains('clang'))"
+          IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" StandardErrorImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_LLDCheckExitCode" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_LLDCheckExitCode)' == '0'">
+      <LinkerFlavor>lld</LinkerFlavor>
+    </PropertyGroup>
+  </Target>
 
 </Project>
