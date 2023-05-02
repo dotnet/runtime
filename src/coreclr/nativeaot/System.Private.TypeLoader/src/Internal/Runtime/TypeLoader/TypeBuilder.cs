@@ -438,14 +438,6 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.GenericVarianceInfo:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.GenericVarianceInfo");
-                        NativeParser varianceInfoParser = typeInfoParser.GetParserFromRelativeOffset();
-                        state.GenericVarianceFlags = new GenericVariance[varianceInfoParser.GetSequenceCount()];
-                        for (int i = 0; i < state.GenericVarianceFlags.Length; i++)
-                            state.GenericVarianceFlags[i] = checked((GenericVariance)varianceInfoParser.GetUnsigned());
-                        break;
-
                     case BagElementKind.FieldLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
@@ -797,11 +789,6 @@ namespace Internal.Runtime.TypeLoader
                     for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
                     {
                         state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
-                        if (state.GenericVarianceFlags != null)
-                        {
-                            Debug.Assert(state.GenericVarianceFlags.Length == instantiation.Length);
-                            state.HalfBakedRuntimeTypeHandle.SetGenericVariance(argIndex, state.GenericVarianceFlags[argIndex]);
-                        }
                     }
                 }
 

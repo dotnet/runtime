@@ -524,10 +524,9 @@ namespace Internal.Runtime
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
-        internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
+        internal static int GetGenericCompositionSize(int numArguments)
         {
-            return numArguments * IntPtr.Size
-                + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
+            return numArguments * IntPtr.Size;
         }
 
         internal void SetGenericComposition(IntPtr data)
@@ -579,21 +578,13 @@ namespace Internal.Runtime
                 if (!HasGenericVariance)
                     return null;
 
-                int paramCount = IsGeneric ? (int)GenericArity : GenericParameterCount;
+                if (IsGeneric)
+                    return GenericDefinition->GenericVariance;
 
-                void* pField = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_GenericComposition);
                 if (IsDynamicType || !SupportsRelativePointers)
-                {
-                    // Composition is a full pointer that points to a list of full pointers of constituent
-                    // MethodTables, followed by variance information
-                    return (GenericVariance*)(*(MethodTable***)pField + paramCount);
-                }
-                else
-                {
-                    // Composition is a relative pointer that points to a list of relative pointers of constituent
-                    // MethodTables, followed by variance information
-                    return (GenericVariance*)((RelativePointer*)(((RelativePointer*)pField)->Value) + paramCount);
-                }
+                    return GetField<Pointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
+
+                return GetField<RelativePointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
             }
         }
 
