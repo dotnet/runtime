@@ -34,9 +34,9 @@ namespace Internal.Runtime
         HasPointersFlag = 0x00200000,
 
         /// <summary>
-        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// This MethodTable has sealed vtable entries
         /// </summary>
-        IDynamicInterfaceCastableFlag = 0x00400000,
+        HasSealedVTableEntriesFlag = 0x00400000,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
@@ -81,6 +81,11 @@ namespace Internal.Runtime
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        /// <summary>
+        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// </summary>
+        IDynamicInterfaceCastableFlag = 0x0008,
     }
 
     internal enum EETypeKind : uint
@@ -140,10 +145,7 @@ namespace Internal.Runtime
         /// </summary>
         IsHFAFlag = 0x00000100,
 
-        /// <summary>
-        /// This MethodTable has sealed vtable entries
-        /// </summary>
-        HasSealedVTableEntriesFlag = 0x00000200,
+        // Unused = 0x00000200,
 
         /// <summary>
         /// This dynamically created types has gc statics
@@ -162,10 +164,7 @@ namespace Internal.Runtime
 
         // UNUSED = 0x00002000,
 
-        /// <summary>
-        /// This MethodTable is an abstract class (but not an interface).
-        /// </summary>
-        IsAbstractClassFlag = 0x00004000,
+        // UNUSED = 0x00004000,
 
         /// <summary>
         /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)

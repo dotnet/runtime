@@ -319,6 +319,11 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ManagedActivation);
             }
 
+            if (type.IsAbstract)
+            {
+                throw new MemberAccessException(SR.Acc_CreateAbst);
+            }
+
             MethodTable* mt = type.TypeHandle.ToMethodTable();
 
             if (mt->ElementType == Internal.Runtime.EETypeElementType.Void)
@@ -335,11 +340,6 @@ namespace System.Runtime.CompilerServices
             if (RuntimeImports.AreTypesAssignable(mt, MethodTable.Of<Delegate>()))
             {
                 throw new MemberAccessException();
-            }
-
-            if (mt->IsAbstract)
-            {
-                throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
             if (mt->IsByRefLike)
