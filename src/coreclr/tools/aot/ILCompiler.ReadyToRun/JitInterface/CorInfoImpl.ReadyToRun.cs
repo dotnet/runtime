@@ -899,7 +899,7 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.NewArray;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
-                    id = ReadyToRunHelper.NewMyabeFrozenArray;
+                    id = ReadyToRunHelper.NewMaybeFrozenArray;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST_MAYBEFROZEN:
                     id = ReadyToRunHelper.NewMaybeFrozenObject;

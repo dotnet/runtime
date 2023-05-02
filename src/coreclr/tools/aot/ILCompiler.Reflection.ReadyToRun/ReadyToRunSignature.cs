@@ -1774,7 +1774,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("NEW_ARRAY");
                     break;
 
-                case ReadyToRunHelper.NewMyabeFrozenArray:
+                case ReadyToRunHelper.NewMaybeFrozenArray:
                     builder.Append("NEW_MAYBEFROZEN_ARRAY");
                     break;
 
