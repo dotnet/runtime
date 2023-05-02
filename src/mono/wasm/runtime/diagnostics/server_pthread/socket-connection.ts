@@ -3,7 +3,7 @@
 
 import { assertNever } from "../../types";
 import { VoidPtr } from "../../types/emscripten";
-import { Module } from "../../imports";
+import { Module } from "../../globals";
 import type { CommonSocket } from "./common-socket";
 enum ListenerState {
     Sending,

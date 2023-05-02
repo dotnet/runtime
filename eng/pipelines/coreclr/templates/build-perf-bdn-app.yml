@@ -1,0 +1,179 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  runtimeFlavor: ''
+  helixQueues: ''
+  targetRid: ''
+  nameSuffix: ''
+  platform: ''
+  shouldContinueOnError: ''
+  rootFolder: ''
+  includeRootFolder: ''
+  displayName: ''
+  artifactName: ''
+  archiveExtension: ''
+  archiveType: ''
+  tarCompression: ''
+  framework: 'net8.0' # Framework version to get versions for and build for
+  perfRepo: 'main' # Perf repo to pull for the PerfLabExporter
+
+
+steps:
+  - task: DownloadPipelineArtifact@2
+    displayName: Download runtime packages
+    inputs:
+      artifact: 'IntermediateArtifacts'
+      path: $(Build.SourcesDirectory)/ArtifactPacks
+      patterns: |
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
+      
+  #    # Other artifacts to include once they are being built
+  #    # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+
+  - task: CopyFiles@2
+    displayName: Flatten packages
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/ArtifactPacks
+      contents: '*/Shipping/*.nupkg'
+      cleanTargetFolder: false
+      targetFolder: $(Build.SourcesDirectory)/ArtifactPacks
+      flattenFolders: true
+
+  - script: |
+     for file in *.nupkg
+       do
+         mv -v "$file" "${file%.nupkg}.zip"
+       done
+    displayName: Change nupkgs to zips
+    workingDirectory: $(Build.SourcesDirectory)/ArtifactPacks
+
+  - task: ExtractFiles@1
+    displayName: Extract android-arm64 runtime
+    inputs:
+      archiveFilePatterns: $(Build.SourcesDirectory)/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64.*.zip
+      destinationFolder: $(Build.SourcesDirectory)/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64
+      overwriteExistingFiles: true
+      cleanDestinationFolder: false
+  
+  - script: |
+      echo '{ }' > ./global.json 
+      curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
+      curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
+      curl -Lo maui-supported-sdk-version.json 'https://aka.ms/dotnet/sdk/maui/${{parameters.framework}}.json'
+      version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-supported-sdk-version.json)
+      chmod -R a+rx .
+      ./dotnet-install.sh --version $version --install-dir .
+      ./dotnet --info
+      ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/${{parameters.framework}}.json --configfile NuGet.config
+      ./dotnet workload install android --from-rollback-file https://aka.ms/dotnet/maui/${{parameters.framework}}.json --configfile NuGet.config
+    displayName: Install MAUI workload
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: $(Build.SourcesDirectory)/eng/testing/performance/create-provisioning-profile.sh
+    displayName: Create iOS code signing and provisioning profile
+
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/dotnet/maui.git --depth 1 -b ${{parameters.framework}} --single-branch
+    displayName:  Clone Maui
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - pwsh: |
+      $instrumentationFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\MainInstrumentation.cs
+      $perfLabExportLine = $instrumentationFileContent | Select-String -Pattern 'using BenchmarkDotNet.Toolchains.InProcess.Emit;'
+      $lineNumber = $perfLabExportLine.LineNumber
+      $instrumentationFileContent[$lineNumber-1] += "using BenchmarkDotNet.Extensions;"
+      
+      $perfLabExportLine = $instrumentationFileContent | Select-String -Pattern 'var config = ManualConfig'
+      $lineNumber = $perfLabExportLine.LineNumber
+      $instrumentationFileContent[$lineNumber-1] += ".AddExporter(new PerfLabExporter()).WithArtifactsPath(`"/storage/emulated/0/Android/data/com.microsoft.maui.benchmarks/files`")"
+      $instrumentationFileContent | Set-Content .\maui\src\Core\tests\Benchmarks.Droid\MainInstrumentation.cs
+
+      $benchmarksDroidConfigFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\Benchmarks.Droid.csproj
+     
+      $propertyGroupLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<PropertyGroup>'
+      $lineNumber = $propertyGroupLine.LineNumber
+      $benchmarksDroidConfigFileContent[$lineNumber-1] += "<DefineConstants>`$(DefineConstants);PERFLAB_INLAB</DefineConstants>"
+
+      $projectReferenceLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<ProjectReference Include="..\\..\\src\\Core.csproj" />'
+      $lineNumber = $projectReferenceLine.LineNumber
+      $benchmarksDroidConfigFileContent[$lineNumber-1] += "<ProjectReference Include=`"..\..\..\..\..\performance\src\harness\BenchmarkDotnet.Extensions\BenchmarkDotnet.Extensions.csproj`" />"
+      
+      $targetLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '</Target>'
+      $lineNumber = $targetLine.LineNumber
+      $benchmarksDroidConfigFileContent[$lineNumber-1] += "
+      <!-- Change AfterTargets back to 'UpdateTargetingAndRuntimePack' when reenabling pack injection -->
+      <Target Name=`"PrintRuntimePackLocation`" AfterTargets=`"UpdateTargetingAndRuntimePack`">
+        <Message Text=`"Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)`" Importance=`"high`" />
+      </Target>
+
+      <!--Use local targeting pack for NetCoreAppCurrent.-->
+      <Target Name=`"UpdateTargetingAndRuntimePack`"
+              AfterTargets=`"ResolveFrameworkReferences`">
+        <PropertyGroup>
+            <MicrosoftNetCoreAppRuntimePackDir>`$(Build.SourcesDirectory)/ArtifactPacks</MicrosoftNetCoreAppRuntimePackDir>
+        </PropertyGroup>
+        <ItemGroup>
+          <ResolvedRuntimePack PackageDirectory=`"`$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.android-arm64`"
+                                Condition=`"'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-arm64'`" />
+        </ItemGroup>
+      </Target>
+      "
+      
+      $benchmarksDroidConfigFileContent | Set-Content .\maui\src\Core\tests\Benchmarks.Droid\Benchmarks.Droid.csproj
+    displayName: Insert Target Replace, BDN config link, and PerfLabExporter
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      set -x
+      pwd
+      git clone https://github.com/dotnet/performance.git --depth 1 -b ${{parameters.perfRepo}} --single-branch
+    displayName:  Clone performance
+    workingDirectory: $(Build.SourcesDirectory)
+
+# Remove the embed assemblies from source
+  - script: |
+      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False
+      mv ./src/Core/tests/Benchmarks.Droid/bin/Release/${{parameters.framework}}-android/android-arm64/com.microsoft.maui.benchmarks-Signed.apk ./MonoBenchmarksDroid.apk
+    displayName:  Build BDN Android App
+    workingDirectory: $(Build.SourcesDirectory)/maui
+
+  - task: PublishBuildArtifacts@1
+    condition: succeededOrFailed()
+    displayName: 'Publish Benchmarks.Droid binlog'
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/maui/BenchmarksDroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      rootFolder: $(Build.SourcesDirectory)/maui/MonoBenchmarksDroid.apk
+      includeRootFolder: true
+      displayName: Android BDN Apk
+      artifactName: AndroidBDNApk
+      archiveExtension: '.tar.gz'
+      archiveType: tar
+      tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+      osGroup: ${{ parameters.osGroup }}
+      osSubgroup: ${{ parameters.osSubgroup }}
+      archType: ${{ parameters.archType }}
+      buildConfig: ${{ parameters.buildConfig }}
+      runtimeFlavor: ${{ parameters.runtimeFlavor }}
+      helixQueues: ${{ parameters.helixQueues }}
+      targetRid: ${{ parameters.targetRid }}
+      nameSuffix: ${{ parameters.nameSuffix }}
+      platform: ${{ parameters.platform }}
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      rootFolder:  ${{ parameters.rootFolder }}
+      includeRootFolder:  ${{ parameters.includeRootFolder }}
+      displayName:  ${{ parameters.displayName }}
+      artifactName:  ${{ parameters.artifactName }}
+      archiveExtension:  ${{ parameters.archiveExtension }}
+      archiveType:  ${{ parameters.archiveType }}
+      tarCompression:  ${{ parameters.tarCompression }}

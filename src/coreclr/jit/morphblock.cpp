@@ -917,14 +917,11 @@ void MorphCopyBlockHelper::MorphStructCases()
         // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
         // A simple heuristic when field by field copy is preferred:
         // - if fields can be enregistered;
-        // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
         // - if the struct has only one field.
         bool dstFldIsProfitable =
-            ((m_dstVarDsc != nullptr) &&
-             (!m_dstVarDsc->lvDoNotEnregister || m_dstVarDsc->HasGCPtr() || (m_dstVarDsc->lvFieldCnt == 1)));
+            ((m_dstVarDsc != nullptr) && (!m_dstVarDsc->lvDoNotEnregister || (m_dstVarDsc->lvFieldCnt == 1)));
         bool srcFldIsProfitable =
-            ((m_srcVarDsc != nullptr) &&
-             (!m_srcVarDsc->lvDoNotEnregister || m_srcVarDsc->HasGCPtr() || (m_srcVarDsc->lvFieldCnt == 1)));
+            ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister || (m_srcVarDsc->lvFieldCnt == 1)));
         // Are both dest and src promoted structs?
         if (m_dstDoFldAsg && m_srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
         {

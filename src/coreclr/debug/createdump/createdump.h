@@ -101,7 +101,7 @@ typedef struct
     int Pid;
     int CrashThread;
     int Signal;
-#if defined(HOST_UNIX) && !defined(HOST_OSX)
+#if defined(HOST_UNIX)
     int SignalCode;
     int SignalErrno;
     void* SignalAddress;

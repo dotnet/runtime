@@ -403,7 +403,7 @@ namespace System.Text.Json
 #if NETCOREAPP
             int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
 #else
-            int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.InvariantCulture);
+            int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);
 #endif
             if (iPos >= 0)
             {

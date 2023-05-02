@@ -316,7 +316,7 @@ namespace System.Reflection.Metadata
         public ImmutableArray<byte> ToImmutableArray(int start, int byteCount)
         {
             byte[]? array = ToArray(start, byteCount);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
+            return ImmutableCollectionsMarshal.AsImmutableArray(array);
         }
 
         internal bool TryGetSpan(out ReadOnlySpan<byte> buffer)
