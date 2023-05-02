@@ -403,6 +403,48 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) => ConvertToVector256UInt32WithTruncation(value);
 
             /// <summary>
+            /// __m128 _mm_getexp_ps (__m128 a)
+            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst{sae}
+            /// </summary>
+            public static Vector128<float> GetExponent(Vector128<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m128d _mm_getexp_pd (__m128d a)
+            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst{sae}
+            /// </summary>
+            public static Vector128<double> GetExponent(Vector128<double> value) => GetExponent(value);
+            /// <summary>
+            /// __m256 _mm256_getexp_ps (__m256 a)
+            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+            /// </summary>
+            public static Vector256<float> GetExponent(Vector256<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m256d _mm256_getexp_pd (__m256d a)
+            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst{sae}
+            /// </summary>
+            public static Vector256<double> GetExponent(Vector256<double> value) => GetExponent(value);
+
+            /// <summary>
+            /// __m128 _mm_getmant_ps (__m128 a)
+            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst{sae}
+            /// </summary>
+            public static Vector128<float> GetMantissa(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m128d _mm_getmant_pd (__m128d a)
+            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst{sae}
+            /// </summary>
+            public static Vector128<double> GetMantissa(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256 _mm256_getmant_ps (__m256 a)
+            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst{sae}
+            /// </summary>
+            public static Vector256<float> GetMantissa(Vector256<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256d _mm256_getmant_pd (__m256d a)
+            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst{sae}
+            /// </summary>
+            public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+            /// <summary>
             /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
             ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -1285,6 +1327,74 @@ namespace System.Runtime.Intrinsics.X86
         ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtractNegated(a, b, c);
+
+        /// <summary>
+        /// __m512 _mm512_getexp_ps (__m512 a)
+        ///   VGETEXPPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetExponent(Vector512<float> value) => GetExponent(value);
+        /// <summary>
+        /// __m512d _mm512_getexp_pd (__m512d a)
+        ///   VGETEXPPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetExponent(Vector512<double> value) => GetExponent(value);
+
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a, __m128 b)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> upper, Vector128<float> value) => GetExponentScalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a, __m128d b)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> upper, Vector128<double> value) => GetExponentScalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_getmant_ps (__m512 a)
+        ///   VGETMANTPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetMantissa(Vector512<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+        /// <summary>
+        /// __m512d _mm512_getmant_pd (__m512d a)
+        ///   VGETMANTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetMantissa(Vector512<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a, __m128 b)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a, __m128d b)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
 
         /// <summary>
         /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)

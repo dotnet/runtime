@@ -144,7 +144,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if ((ival != -1) && varTypeIsFloating(baseType))
                     {
                         assert((ival >= 0) && (ival <= 127));
-                        if ((category == HW_Category_SIMDScalar) && HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                        if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                         {
                             assert(!op1->isContained());
                             emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg,
@@ -155,8 +155,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             genHWIntrinsic_R_RM_I(node, ins, simdSize, static_cast<int8_t>(ival));
                         }
                     }
-                    else if ((category == HW_Category_SIMDScalar) && HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                    else if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                     {
+                        assert(!op1->isContained());
                         emit->emitIns_SIMD_R_R_R(ins, simdSize, targetReg, op1Reg, op1Reg);
                     }
                     else
@@ -232,7 +233,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 else if (HWIntrinsicInfo::isImmOp(intrinsicId, op2))
                 {
                     assert(ival == -1);
-                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_RM_I(node, ins, simdSize, i); };
+                    auto emitSwCase = [&](int8_t i) {
+                        if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
+                        {
+                            assert(!op1->isContained());
+                            emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, i);
+                        }
+                        else
+                        {
+                            genHWIntrinsic_R_RM_I(node, ins, simdSize, i);
+                        }
+                    };
 
                     if (op2->IsCnsIntOrI())
                     {
@@ -242,9 +253,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        // We emit a fallback case for the scenario when the imm-op is not a constant. This should
-                        // normally happen when the intrinsic is called indirectly, such as via Reflection. However, it
-                        // can also occur if the consumer calls it directly and just doesn't pass a constant value.
+                        // We emit a fallback case for the scenario when the imm-op is not a constant.
+                        // This should
+                        // normally happen when the intrinsic is called indirectly, such as via
+                        // Reflection. However, it
+                        // can also occur if the consumer calls it directly and just doesn't pass a
+                        // constant value.
                         regNumber baseReg = node->ExtractTempReg();
                         regNumber offsReg = node->GetSingleTempReg();
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);

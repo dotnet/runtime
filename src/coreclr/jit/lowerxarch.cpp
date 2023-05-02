@@ -7504,6 +7504,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_SSE41_RoundToNegativeInfinityScalar:
                     case NI_SSE41_RoundToPositiveInfinityScalar:
                     case NI_SSE41_RoundToZeroScalar:
+                    case NI_AVX512F_GetExponentScalar:
                     {
                         // These intrinsics have both 1 and 2-operand overloads.
                         //
@@ -7867,6 +7868,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         case NI_AES_KeygenAssist:
+                        case NI_AVX512F_GetMantissa:
+                        case NI_AVX512F_VL_GetMantissa:
                         {
                             if (!isContainedImm)
                             {
@@ -7904,6 +7907,17 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
 #endif
                             break;
+                        }
+
+                        case NI_AVX512F_GetMantissaScalar:
+                        {
+                            // These intrinsics have both 2 and 3-operand overloads.
+                            //
+                            // The 2-operand overload basically does `intrinsic(op1, op1, cns)`
+                            //
+                            // Because of this, the operand must be loaded into a register
+                            // and cannot be contained.
+                            return;
                         }
 
                         default:
@@ -8150,6 +8164,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_InsertVector128:
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
+                        case NI_AVX512F_GetMantissaScalar:
                         case NI_AVX512F_InsertVector128:
                         case NI_AVX512F_InsertVector256:
                         case NI_AVX512F_Shuffle:

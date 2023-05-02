@@ -300,7 +300,18 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX2_GatherVector256:
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
+        {
+            assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 8;
+        }
+
+        case NI_AVX512F_GetMantissa:
+        case NI_AVX512F_GetMantissaScalar:
+        case NI_AVX512F_VL_GetMantissa:
+        {
+            assert(!HWIntrinsicInfo::HasFullRangeImm(id));
+            return 15;
+        }
 
         default:
         {

@@ -18030,6 +18030,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvttpd2qq:
         case INS_vcvttpd2uqq:
         case INS_vcvtuqq2pd:
+        case INS_vgetexppd:
+        case INS_vgetexpps:
+        case INS_vgetexpsd:
+        case INS_vgetexpss:
+        case INS_vgetmantpd:
+        case INS_vgetmantps:
+        case INS_vgetmantsd:
+        case INS_vgetmantss:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;
             break;
