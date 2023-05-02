@@ -1465,6 +1465,7 @@ inline GenTreeLclVar* GenTree::BashToLclVar(Compiler* comp, unsigned lclNum)
     ChangeOper(GT_LCL_VAR);
     ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
     AsLclVar()->SetLclNum(lclNum);
+    INDEBUG(AsLclVar()->ResetLclILoffs());
 
     return AsLclVar();
 }

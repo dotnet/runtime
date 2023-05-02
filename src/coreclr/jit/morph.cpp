@@ -4825,8 +4825,9 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
 
     lclNode->ChangeType(TYP_BYREF);
     lclNode->ChangeOper(GT_LCL_VAR);
-    lclNode->SetLclNum(newLclNum);
+    lclNode->SetLclNum(newLclNum);    
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
+    INDEBUG(lclNode->AsLclVar()->ResetLclILoffs());
 
     if (isStillLastUse)
     {
@@ -14855,6 +14856,8 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
 
                 tree->ChangeOper(GT_LCL_VAR);
                 assert(tree->AsLclVarCommon()->GetLclNum() == fieldLclIndex);
+                INDEBUG(tree->AsLclVar()->ResetLclILoffs());
+
                 tree->gtType = fldVarDsc->TypeGet();
 
                 if ((parent->gtOper == GT_ASG) && (parent->AsOp()->gtOp1 == tree))
