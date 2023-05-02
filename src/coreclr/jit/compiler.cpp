@@ -4592,6 +4592,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Record "start" values for post-inlining cycles and elapsed time.
     RecordStateAtEndOfInlining();
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
@@ -4602,8 +4604,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 
     objectAllocator.Run();
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Add any internal blocks/trees we may need
     //
