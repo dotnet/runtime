@@ -13926,7 +13926,7 @@ void emitter::emitDispInsHelp(
             break;
     }
 
-    if (id->idDebugOnlyInfo()->idVarRefOffs)
+    if (id->idIsLclVar())
     {
         printf("\t// ");
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
@@ -13934,9 +13934,8 @@ void emitter::emitDispInsHelp(
         if (id->idIsLclVarPair())
         {
             printf(", ");
-
             emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
-            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2, asmfm);
         }
     }
 
