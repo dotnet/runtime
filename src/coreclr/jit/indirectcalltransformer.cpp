@@ -131,9 +131,9 @@ private:
     bool ContainsFatCalli(Statement* stmt)
     {
         GenTree* fatPointerCandidate = stmt->GetRootNode();
-        if (fatPointerCandidate->OperIs(GT_ASG))
+        if (fatPointerCandidate->OperIs(GT_STORE_LCL_VAR))
         {
-            fatPointerCandidate = fatPointerCandidate->gtGetOp2();
+            fatPointerCandidate = fatPointerCandidate->AsLclVar()->Data();
         }
         return fatPointerCandidate->IsCall() && fatPointerCandidate->AsCall()->IsFatPointerCandidate();
     }
@@ -293,7 +293,7 @@ private:
         FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
         {
-            doesReturnValue = stmt->GetRootNode()->OperIs(GT_ASG);
+            doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
             origCall        = GetCall(stmt);
             fptrAddress     = origCall->gtCallAddr;
             pointerType     = fptrAddress->TypeGet();
@@ -319,8 +319,8 @@ private:
             GenTreeCall* call = nullptr;
             if (doesReturnValue)
             {
-                assert(tree->OperIs(GT_ASG));
-                call = tree->gtGetOp2()->AsCall();
+                assert(tree->OperIs(GT_STORE_LCL_VAR));
+                call = tree->AsLclVar()->Data()->AsCall();
             }
             else
             {
