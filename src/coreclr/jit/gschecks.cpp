@@ -116,17 +116,16 @@ void Compiler::gsCopyShadowParams()
 struct MarkPtrsInfo
 {
     Compiler* comp;
-    unsigned  lvStoreDef;  // Which local variable is the tree being assigned to?
-    bool      isStoreSrc;  // Is this the source value for an assignment?
+    unsigned  lvStoreDef;   // Which local variable is the tree being assigned to?
+    bool      isStoreSrc;   // Is this the source value for an assignment?
     bool      isUnderIndir; // Is this a pointer value tree that is being dereferenced?
     bool      skipNextNode; // Skip a single node during the tree-walk
 
 #ifdef DEBUG
     void Print()
     {
-        printf(
-            "[MarkPtrsInfo] = {comp = %p, lvStoreDef = %d, isStoreSrc = %d, isUnderIndir = %d, skipNextNode = %d}\n",
-            comp, lvStoreDef, isStoreSrc, isUnderIndir, skipNextNode);
+        printf("[MarkPtrsInfo] = {comp = %p, lvStoreDef = %d, isStoreSrc = %d, isUnderIndir = %d, skipNextNode = %d}\n",
+               comp, lvStoreDef, isStoreSrc, isUnderIndir, skipNextNode);
     }
 #endif
 };
@@ -225,7 +224,7 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
                     // (shadowVarInfo[pState->lvAssignDef] == NULL && shadowVarInfo[lclNew] == NULL);
                     // Neither of them has an assign group yet.  Make a new one.
                     shadowVarInfo[pState->lvStoreDef].assignGroup = bv;
-                    shadowVarInfo[lclNum].assignGroup              = bv;
+                    shadowVarInfo[lclNum].assignGroup             = bv;
                     bv->bitVectSet(pState->lvStoreDef);
                     bv->bitVectSet(lclNum);
                 }
@@ -298,9 +297,9 @@ bool Compiler::gsFindVulnerableParams()
     MarkPtrsInfo info;
 
     info.comp         = this;
-    info.lvStoreDef  = (unsigned)-1;
+    info.lvStoreDef   = (unsigned)-1;
     info.isUnderIndir = false;
-    info.isStoreSrc  = false;
+    info.isStoreSrc   = false;
     info.skipNextNode = false;
 
     // Walk all the trees setting lvIsPtr and assignGroup.

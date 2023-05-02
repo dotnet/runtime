@@ -11767,7 +11767,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     break;
                 }
 
-
                 if (op2->gtOper == GT_CAST && !op2->gtOverflow())
                 {
                     var_types srct;

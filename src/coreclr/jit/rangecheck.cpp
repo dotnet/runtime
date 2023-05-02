@@ -488,8 +488,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     else if (expr->IsLocal())
     {
         LclSsaVarDsc* ssaDef = GetSsaDefAsg(expr->AsLclVarCommon());
-        return (ssaDef != nullptr) &&
-               IsMonotonicallyIncreasing(ssaDef->GetAssignment()->Data(), rejectNegativeConst);
+        return (ssaDef != nullptr) && IsMonotonicallyIncreasing(ssaDef->GetAssignment()->Data(), rejectNegativeConst);
     }
     else if (expr->OperIs(GT_ADD, GT_MUL, GT_LSH))
     {

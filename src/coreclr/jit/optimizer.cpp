@@ -8691,7 +8691,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     tree->gtVNPair = tree->AsOp()->gtOp2->gtVNPair;
                     break;
 
-                    // Is it an addr of an array index expression?
+                // Is it an addr of an array index expression?
                 case GT_ARR_ADDR:
                 {
                     CORINFO_CLASS_HANDLE elemTypeEq =
@@ -9382,7 +9382,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 
                     store->ChangeOper(GT_COMMA);
                     store->AsOp()->gtOp2 = nop;
-                    store->gtType = TYP_VOID;
+                    store->gtType        = TYP_VOID;
                     store->SetAllEffectsFlags(data);
                     gtUpdateTreeAncestorsSideEffects(store);
 

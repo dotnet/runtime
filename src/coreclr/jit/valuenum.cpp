@@ -10137,7 +10137,8 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* lcl = store->AsLclVarCommon();
-            fgValueNumberLocalStore(store, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), dataVNPair, /* normalize */ false);
+            fgValueNumberLocalStore(store, lcl, 0, lvaLclExactSize(lcl->GetLclNum()), dataVNPair,
+                                    /* normalize */ false);
         }
         break;
 
@@ -10614,9 +10615,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 if (lclFld->HasSsaName())
                 {
                     ValueNumPair lclVarValue = varDsc->GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
-                    lclFld->gtVNPair =
-                        vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum), lclFld->TypeGet(),
-                                               lclFld->GetLclOffs(), lclFld->GetSize());
+                    lclFld->gtVNPair = vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum), lclFld->TypeGet(),
+                                                              lclFld->GetLclOffs(), lclFld->GetSize());
                 }
                 else if (varDsc->IsAddressExposed())
                 {
