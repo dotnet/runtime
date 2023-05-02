@@ -33,7 +33,7 @@ namespace System.Text
 
             if (!Vector128.IsHardwareAccelerated || right.Length < Vector128<ushort>.Count)
             {
-                for (nuint i = 0; i < length; i++)
+                for (nuint i = 0; i < length; ++i)
                 {
                     byte b = Unsafe.Add(ref currentBytesSearchSpace, i);
                     ushort c = Unsafe.Add(ref currentCharsSearchSpace, i);
@@ -138,9 +138,11 @@ namespace System.Text
 
         private static bool Equals<T>(ref T left, ref T right, nuint length) where T : unmanaged, INumberBase<T>
         {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
             if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<T>.Count)
             {
-                for (nuint i = 0; i < length; i++)
+                for (nuint i = 0; i < length; ++i)
                 {
                     uint valueA = uint.CreateTruncating(Unsafe.Add(ref left, i));
                     uint valueB = uint.CreateTruncating(Unsafe.Add(ref right, i));
@@ -239,30 +241,34 @@ namespace System.Text
         /// <returns><see langword="true" /> if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal ignoring case considerations and ASCII. <see langword="false" /> otherwise.</returns>
         /// <remarks>If both buffers contain equal, but non-ASCII characters, the method returns <see langword="false" />.</remarks>
         public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
-            => left.Length == right.Length && SequenceEqualIgnoreCase(left, right);
-
-        /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
-        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length && SequenceEqualIgnoreCase(right, left);
+            => left.Length == right.Length
+            && EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref MemoryMarshal.GetReference(right), (uint)left.Length);
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
         public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<byte> right)
             => EqualsIgnoreCase(right, left);
 
         /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
-        public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
-            => left.Length == right.Length && SequenceEqualIgnoreCase(right, left);
+        public static bool EqualsIgnoreCase(ReadOnlySpan<byte> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length
+            && EqualsIgnoreCase(ref MemoryMarshal.GetReference(left), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)left.Length);
 
-        private static bool SequenceEqualIgnoreCase<TLeft, TRight>(ReadOnlySpan<TLeft> left, ReadOnlySpan<TRight> right)
+        /// <inheritdoc cref="EqualsIgnoreCase(ReadOnlySpan{byte}, ReadOnlySpan{byte})"/>
+        public static bool EqualsIgnoreCase(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
+            => left.Length == right.Length
+            && EqualsIgnoreCase(ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(left)), ref Unsafe.As<char, ushort>(ref MemoryMarshal.GetReference(right)), (uint)left.Length);
+
+        private static bool EqualsIgnoreCase<TLeft, TRight>(ref TLeft left, ref TRight right, nuint length)
             where TLeft : unmanaged, INumberBase<TLeft>
             where TRight : unmanaged, INumberBase<TRight>
         {
-            Debug.Assert(left.Length == right.Length);
+            Debug.Assert(typeof(TLeft) == typeof(byte) || typeof(TLeft) == typeof(ushort));
+            Debug.Assert(typeof(TRight) == typeof(byte) || typeof(TRight) == typeof(ushort));
 
-            for (int i = 0; i < left.Length; i++)
+            for (nuint i = 0; i < length; ++i)
             {
-                uint valueA = uint.CreateTruncating(left[i]);
-                uint valueB = uint.CreateTruncating(right[i]);
+                uint valueA = uint.CreateTruncating(Unsafe.Add(ref left, i));
+                uint valueB = uint.CreateTruncating(Unsafe.Add(ref right, i));
 
                 if (!UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
                 {
