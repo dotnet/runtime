@@ -6996,8 +6996,10 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::None;
 
         case GT_BOUNDS_CHECK:
-        case GT_INDEX_ADDR:
             return ExceptionSetFlags::IndexOutOfRangeException;
+
+        case GT_INDEX_ADDR:
+            return ExceptionSetFlags::NullReferenceException | ExceptionSetFlags::IndexOutOfRangeException;
 
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
