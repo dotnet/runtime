@@ -2979,6 +2979,7 @@ GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
     {
         store->SetReverseOp();
     }
+    store->CopyRawCosts(assignment);
 
     if (storeOp == GT_STOREIND)
     {

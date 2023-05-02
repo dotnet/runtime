@@ -1692,6 +1692,9 @@ public:
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
+    bool OperIsStoreLclVar(unsigned* pLclNum);
+    bool OperIsStoreLcl(unsigned* pLclNum);
+
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
 
@@ -1785,6 +1788,8 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
+
+    inline GenTree* GetStoreDestination();
 
     inline GenTree*& Data();
 
@@ -8841,6 +8846,40 @@ inline bool GenTree::OperIsCopyBlkOp()
     return OperIsBlkOp() && !OperIsInitBlkOp();
 }
 
+inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        *pLclNum = AsLclVar()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
+    {
+        *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
+}
+
+inline bool GenTree::OperIsStoreLcl(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIsLocalStore())
+    {
+        *pLclNum = AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIsLocal())
+    {
+        *pLclNum = gtGetOp1()->AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
+}
+
 //------------------------------------------------------------------------
 // IsIntegralConst: Checks whether this is a constant node with the given value
 //
@@ -9220,6 +9259,12 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     assert((op2 != nullptr) || !RequiresNonNullOp2(gtOper));
 
     return op2;
+}
+
+inline GenTree* GenTree::GetStoreDestination() // TODO-ASG: delete.
+{
+    assert(OperIs(GT_ASG) || OperIsStore());
+    return OperIs(GT_ASG) ? gtGetOp1() : this;
 }
 
 inline GenTree*& GenTree::Data()
