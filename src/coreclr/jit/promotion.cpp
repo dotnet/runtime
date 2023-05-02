@@ -366,6 +366,8 @@ public:
             return;
         }
 
+        JITDUMP("Picking promotions for V%02u\n", lclNum);
+
         assert(*replacements == nullptr);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
@@ -401,6 +403,8 @@ public:
 
             (*replacements)->push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
         }
+
+        JITDUMP("\n");
     }
 
     //------------------------------------------------------------------------
@@ -485,28 +489,28 @@ public:
             countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
-        JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("  Single write-back cost: " FMT_WT "\n", writeBackCost);
-        JITDUMP("  Write backs: " FMT_WT "\n", countWriteBacksWtd);
-        JITDUMP("  Read backs: " FMT_WT "\n", countReadBacksWtd);
-        JITDUMP("  Cost with: " FMT_WT "\n", costWith);
-        JITDUMP("  Cost without: " FMT_WT "\n", costWithout);
+        JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
+        JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
+        JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
+        JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
+        JITDUMP("    Cost with: " FMT_WT "\n", costWith);
+        JITDUMP("    Cost without: " FMT_WT "\n", costWithout);
 
         if (costWith < costWithout)
         {
-            JITDUMP("  Promoting replacement\n");
+            JITDUMP("  Promoting replacement\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n");
+            JITDUMP("  Promoting replacement due to stress\n\n");
             return true;
         }
 #endif
 
-        JITDUMP("  Disqualifying replacement\n");
+        JITDUMP("  Disqualifying replacement\n\n");
         return false;
     }
 
@@ -2851,7 +2855,7 @@ PhaseStatus Promotion::Run()
     }
 #endif
 
-    // Pick promotion based on the use information we just collected.
+    // Pick promotions based on the use information we just collected.
     bool                          anyReplacements = false;
     jitstd::vector<Replacement>** replacements =
         new (m_compiler, CMK_Promotion) jitstd::vector<Replacement>*[m_compiler->lvaCount]{};
