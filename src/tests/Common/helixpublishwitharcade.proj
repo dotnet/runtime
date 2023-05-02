@@ -424,6 +424,15 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- Print out the script that we are running -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="echo ====================================================== This script:" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="type %25~f0" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="echo ======================================================" />
+
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="echo '====================================================== This script:'" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="cat %24{BASH_SOURCE[0]}" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="echo '======================================================'" />
+
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
