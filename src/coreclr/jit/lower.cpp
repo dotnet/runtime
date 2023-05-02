@@ -6885,6 +6885,7 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
         {
             return nextNode;
         }
+        assert(nextNode == nullptr);
     }
     ContainCheckDivOrMod(node->AsOp());
 
