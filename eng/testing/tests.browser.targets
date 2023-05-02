@@ -30,6 +30,7 @@
 
     <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
+    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
   </PropertyGroup>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
@@ -39,6 +40,21 @@
   <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+    <!--
+      When building for BuildAOTTestsOnHelix=true, the WasmApp*targets are *not* imported, because
+      they get instead used by the AOT proxy project on helix.
+
+      On the build machine only the regular part of the build is run, which includes trimming. But if
+      WasmApp*targets modify any trimming arguments, then those will not get picked up by this build.
+      For example - linker substitution files used with simd builds.
+
+      So, set those parameters explicitly here.
+      -->
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
+  </PropertyGroup>
+
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
@@ -93,7 +109,7 @@
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_WasmBrowserPathForTests)' != ''" >$(_XHarnessArgs) &quot;--browser-path=$(_WasmBrowserPathForTests)&quot;</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <!-- There two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
@@ -104,8 +120,6 @@
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <_AOTBuildCommand Condition="'$(BrowserHost)' != 'windows'">_buildAOTFunc publish/ProxyProjectForAOTOnHelix.proj $XHARNESS_OUT/AOTBuild.binlog</_AOTBuildCommand>
     <_AOTBuildCommand Condition="'$(BrowserHost)' == 'windows'">dotnet msbuild publish/ProxyProjectForAOTOnHelix.proj /bl:%XHARNESS_OUT%/AOTBuild.binlog</_AOTBuildCommand>
-
-    <_AOTBuildCommand  Condition="'$(BrowserHost)' == 'windows'">$(_AOTBuildCommand) &quot;/p:WasmCachePath=%USERPROFILE%\.emscripten-cache&quot;</_AOTBuildCommand>
 
     <!-- running aot-helix tests locally, so we can test with the same project file as CI -->
     <_AOTBuildCommand Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(_AOTBuildCommand) /p:RuntimeSrcDir=$(RepoRoot) /p:RuntimeConfig=$(Configuration)</_AOTBuildCommand>
@@ -190,7 +204,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,-lto-O0</EmccLinkOptimizationFlag>
+      <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Oz -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
     <ItemGroup>
@@ -201,6 +215,7 @@
       <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
       <_WasmPropertyNames Include="WasmIncludeFullIcuData" />
       <_WasmPropertyNames Include="WasmIcuDataFileName" />
+      <_WasmPropertyNames Include="HybridGlobalization" />
     </ItemGroup>
   </Target>
 
@@ -272,6 +287,7 @@
 
     <ItemGroup>
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier).*$(PackageVersionForWorkloadManifests).nupkg" />
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.*.$(RuntimeIdentifier).*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
     </ItemGroup>
 

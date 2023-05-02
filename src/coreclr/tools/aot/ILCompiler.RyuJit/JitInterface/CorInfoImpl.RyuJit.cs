@@ -289,7 +289,6 @@ namespace Internal.JitInterface
                         lookup.runtimeLookup.offset1 = IntPtr.Zero;
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
-                    lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
                     lookup.runtimeLookup.indirectSecondOffset = false;
@@ -545,10 +544,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-                    id = ReadyToRunHelper.AreTypesEquivalent;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
                     id = ReadyToRunHelper.IsInstanceOfException;
                     break;
@@ -566,6 +561,9 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
                     id = ReadyToRunHelper.NewMultiDimArr;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
+                    id = ReadyToRunHelper.NewMultiDimArrRare;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;
@@ -2238,7 +2236,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+        private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
@@ -2301,6 +2299,33 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(objPtr != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize >= 0);
+            Debug.Assert(valueOffset >= 0);
+
+            object obj = HandleToObject(objPtr);
+            if (obj is FrozenStringNode frozenStr)
+            {
+                // Only support reading the string data
+                int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                {
+                    int offset = valueOffset - strDataOffset;
+                    fixed (char* pStr = frozenStr.Data)
+                    {
+                        new Span<byte>((byte*)pStr + offset, bufferSize).CopyTo(
+                            new Span<byte>(buffer, bufferSize));
+                        return true;
+                    }
+                }
+            }
+            // TODO: handle FrozenObjectNode
+            return false;
+        }
+
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
         {
             object obj = HandleToObject(objPtr);
@@ -2350,6 +2375,31 @@ namespace Internal.JitInterface
                 FrozenObjectNode frozenObj when frozenObj.ObjectType.IsArray => frozenObj.GetArrayLength(),
                 _ => -1
             };
+        }
+
+        private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
+        {
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+            addr.accessType = InfoAccessType.IAT_VALUE;
+            offset = -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            return true;
+        }
+
+        private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
+        {
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            if (isGc)
+            {
+                addr.accessType = InfoAccessType.IAT_PVALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
+            }
+            else
+            {
+                addr.accessType = InfoAccessType.IAT_VALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+            }
+            return true;
         }
     }
 }

@@ -16,6 +16,7 @@ function print_usage {
     echo '  android                          : Set build OS to Android.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
+    echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
     echo '  --enableEventLogging             : Enable event logging through LTTNG.'
     echo '  --sequential                     : Run tests sequentially (default is to run in parallel).'
     echo '  --runcrossgen2tests              : Runs the ReadyToRun tests compiled with Crossgen2'
@@ -55,6 +56,7 @@ buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
 testRootDir=
+coreRootDir=
 testEnv=
 gcsimulator=
 longgc=
@@ -135,6 +137,9 @@ do
         --testRootDir=*)
             testRootDir=${i#*=}
             ;;
+        --coreRootDir=*)
+            coreRootDir=${i#*=}
+            ;;
         --enableEventLogging)
             export DOTNET_EnableEventLog=1
             ;;
@@ -205,6 +210,11 @@ fi
 if [[ -n "$testRootDir" ]]; then
     runtestPyArguments+=("-test_location" "$testRootDir")
     echo "Test Location                 : ${testRootDir}"
+fi
+
+if [[ -n "$coreRootDir" ]]; then
+    runtestPyArguments+=("-core_root" "$coreRootDir")
+    echo "CORE_ROOT                     : ${coreRootDir}"
 fi
 
 if [[ -n "${testEnv}" ]]; then

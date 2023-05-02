@@ -1,10 +1,13 @@
 # Workflow Guide
 
-* [Build Requirements](#build-requirements)
-* [Getting Yourself Started](#getting-yourself-started)
-* [Configurations and Subsets](#configurations-and-subsets)
-  * [What does this mean for me?](#what-does-this-mean-for-me)
-* [Full Instructions on Building and Testing the Runtime Repo](#full-instructions-on-building-and-testing-the-runtime-repo)
+- [Build Requirements](#build-requirements)
+- [Getting Yourself Started](#getting-yourself-started)
+- [Configurations and Subsets](#configurations-and-subsets)
+  - [What does this mean for me?](#what-does-this-mean-for-me)
+- [Full Instructions on Building and Testing the Runtime Repo](#full-instructions-on-building-and-testing-the-runtime-repo)
+- [Warnings as Errors](#warnings-as-errors)
+- [Submitting a PR](#submitting-a-pr)
+- [Triaging errors in CI](#triaging-errors-in-ci)
 
 The repo can be built for the following platforms, using the provided setup and the following instructions. Before attempting to clone or build, please check the requirements that match your machine, and ensure you install and prepare all as necessary.
 
@@ -91,3 +94,11 @@ And how to measure performance:
 ## Warnings as Errors
 
 The repo build treats warnings as errors. Dealing with warnings when you're in the middle of making changes can be annoying (e.g. unused variable that you plan to use later). To disable treating warnings as errors, set the `TreatWarningsAsErrors` environment variable to `false` before building. This variable will be respected by both the `build.sh`/`build.cmd` root build scripts and builds done with `dotnet build` or Visual Studio. Some people may prefer setting this environment variable globally in their machine settings.
+
+## Submitting a PR
+
+Before submitting a PR, make sure to review the [contribution guidelines](../../CONTRIBUTING.md). After you get familiarized with them, please read the [PR guide](ci/pr-guide.md) to find more information about tips and conventions around creating a PR, getting it reviewed, and understanding the CI results.
+
+## Triaging errors in CI
+
+Given the size of the runtime repository, flaky tests are expected to some degree. There are a few mechanisms we use to help with the discoverability of widely impacting issues. We also have a regular procedure that ensures issues get properly tracked and prioritized. You can find more information on [triaging failures in CI](ci/failure-analysis.md).

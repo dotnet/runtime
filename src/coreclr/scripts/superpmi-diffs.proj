@@ -30,8 +30,6 @@
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
     <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
     <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -43,6 +41,20 @@
     <HelixSource>$(_HelixSource)</HelixSource>
     <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
     <HelixType>$(_HelixType)</HelixType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Default to asmdiffs -->
+    <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' == '' ">asmdiffs</SuperPmiDiffType>
+    <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' != '' ">$(_SuperPmiDiffType)</SuperPmiDiffType>
+
+    <SuperPmiBaseJitOptionsArg Condition="'$(_SuperPmiBaseJitOptions)' != ''">-base_jit_options &quot;$(_SuperPmiBaseJitOptions)&quot;</SuperPmiBaseJitOptionsArg>
+    <SuperPmiDiffJitOptionsArg Condition="'$(_SuperPmiDiffJitOptions)' != ''">-diff_jit_options &quot;$(_SuperPmiDiffJitOptions)&quot;</SuperPmiDiffJitOptionsArg>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
+    <WorkItemTimeout>2:00</WorkItemTimeout>
   </PropertyGroup>
 
   <ItemGroup>
@@ -68,7 +80,9 @@
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_diff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='asmdiffs' ">superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='tpdiff' "  >superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md</DownloadFilesFromResults>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiDiffType)'=='all' "     >superpmi_download_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_asmdiffs_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md;Asmdiffs_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).zip;superpmi_tpdiff_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).log;superpmi_tpdiff_summary_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture).md</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

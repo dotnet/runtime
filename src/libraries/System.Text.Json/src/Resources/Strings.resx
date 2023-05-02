@@ -2,16 +2,12 @@
 <root>
   <!--
     Microsoft ResX Schema
-
     Version 2.0
-
     The primary goals of this format is to allow a simple XML format
     that is mostly human readable. The generation and parsing of the
     various data types are done through the TypeConverter classes
     associated with the data types.
-
     Example:
-
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,34 +22,27 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
     There are any number of "resheader" rows that contain simple
     name/value pairs.
-
     Each data row contains a name, and value. The row also contains a
     type or mimetype. Type corresponds to a .NET class that support
     text/value conversion through the TypeConverter architecture.
     Classes that don't support this are serialized and stored with the
     mimetype set.
-
     The mimetype is used for serialized objects, and tells the
     ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-
     Note - application/x-microsoft.net.object.binary.base64 is the format
     that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-
     mimetype: application/x-microsoft.net.object.binary.base64
     value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
     mimetype: application/x-microsoft.net.object.soap.base64
     value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
-
     mimetype: application/x-microsoft.net.object.bytearray.base64
     value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
@@ -246,8 +235,11 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
-  <data name="TypeInfoResolverImmutable" xml:space="preserve">
+  <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
+  </data>
+  <data name="TypeInfoResolverChainImmutable" xml:space="preserve">
+    <value>The specified IJsonTypeInfoResolver chain cannot be modified.</value>
   </data>
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
@@ -338,6 +330,9 @@
   </data>
   <data name="SerializerOptionsReadOnly" xml:space="preserve">
     <value>This JsonSerializerOptions instance is read-only or has already been used in serialization or deserialization.</value>
+  </data>
+  <data name="SerializerOptions_InvalidChainedResolver" xml:space="preserve">
+    <value>Cannot insert the values of 'TypeInfoResolver' or 'TypeInfoResolverChain' to 'TypeInfoResolverChain'.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
     <value>Stream is not writable.</value>
@@ -588,7 +583,10 @@
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
   </data>
   <data name="NoMetadataForType" xml:space="preserve">
-    <value>Metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+    <value>JsonTypeInfo metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+  </data>
+  <data name="AmbiguousMetadataForType" xml:space="preserve">
+    <value>Ambiguous matches when resolving JsonTypeInfo metadata for type '{0}': '{1}', '{2}'. Consider either explicitly providing metadata for the type or removing one of its interface implementations.</value>
   </data>
   <data name="CollectionIsReadOnly" xml:space="preserve">
     <value>Collection is read-only.</value>
@@ -670,5 +668,23 @@
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
     <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+  </data>
+  <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyMustHaveAGetter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't have a getter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyValueTypeMustHaveASetter" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but is a value type that doesn't have a setter.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but its type allows polymorphic deserialization.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowReadOnlyMember" xml:space="preserve">
+    <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it is a read-only member and JsonSerializerOptions has IgnoreReadOnlyProperties or IgnoreReadOnlyFields set.</value>
+  </data>
+  <data name="ObjectCreationHandlingPropertyCannotAllowReferenceHandling" xml:space="preserve">
+    <value>JsonObjectCreationHandling.Populate is incompatible with reference handling.</value>
   </data>
 </root>

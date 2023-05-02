@@ -248,7 +248,6 @@
   <ItemGroup>
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.cs" />
-    <Compile Include="ParsersAndFormatters\Formatter\FormatterTests.Negative.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\TestData.Formatter.cs" />
     <Compile Include="ParsersAndFormatters\Formatter\ValidateFormatter.cs" />
     <Compile Include="ParsersAndFormatters\Parser\ParserTestData.cs" />

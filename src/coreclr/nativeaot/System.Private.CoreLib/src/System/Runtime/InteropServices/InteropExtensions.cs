@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
             // This is used as the approximate implementation of MethodTable::IsBlittable(). It  will err in the direction of declaring
             // things blittable since it is used for argument validation only.
             //
-            return !eeType.HasPointers;
+            return !eeType.ContainsGCPointers;
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)

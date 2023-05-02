@@ -70,3 +70,13 @@
         }
     }
 }
+
+.class public sequential sealed '.GlobalStructStartingWithDot'
+    extends [System.Runtime]System.ValueType
+{
+}
+
+.class public sequential sealed ' GlobalStructStartingWithSpace'
+    extends [System.Runtime]System.ValueType
+{
+}

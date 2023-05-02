@@ -629,6 +629,7 @@ void CodeGen::genCodeForBBlist()
 
                     case BBJ_RETURN:
                     case BBJ_EHFINALLYRET:
+                    case BBJ_EHFAULTRET:
                     case BBJ_EHFILTERRET:
                         // These are the "epilog follows" case, handled in the emitter.
 
@@ -715,6 +716,7 @@ void CodeGen::genCodeForBBlist()
                 FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 genReserveFuncletEpilog(block);
                 break;
@@ -726,6 +728,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 genEHFinallyOrFilterRet(block);
                 break;
@@ -1214,7 +1217,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // Load local variable from its home location.
             // Never allow truncating the locals here, otherwise a subsequent
             // use of the local with a wider type would see the truncated
@@ -1624,6 +1627,14 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+        else if (tree->OperIsFieldList())
+        {
+            for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+            {
+                GenTree* fieldNode = use.GetNode();
+                genConsumeRegs(fieldNode);
+            }
+        }
 #endif
         else if (tree->OperIsLocalRead())
         {
@@ -1735,7 +1746,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 // Notes:
 //    sizeReg can be REG_NA when this function is used to consume the dstReg and srcReg
 //    for copying on the stack a struct with references.
-//    The source address/offset is determined from the address on the GT_OBJ node, while
+//    The source address/offset is determined from the address on the GT_BLK node, while
 //    the destination address is the address contained in 'm_stkArgVarNum' plus the offset
 //    provided in the 'putArgNode'.
 //    m_stkArgVarNum must be set to  the varnum for the local used for placing the "by-value" args on the stack.
@@ -1752,7 +1763,7 @@ void CodeGen::genConsumePutStructArgStk(GenTreePutArgStk* putArgNode,
     GenTree*  src        = putArgNode->Data();
     regNumber srcAddrReg = REG_NA;
     assert(varTypeIsStruct(src));
-    assert(src->OperIs(GT_OBJ) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
+    assert(src->OperIs(GT_BLK) || src->OperIsLocalRead() || (src->OperIs(GT_IND) && varTypeIsSIMD(src)));
 
     assert(dstReg != REG_NA);
     assert(srcReg != REG_NA);
@@ -2477,7 +2488,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_checkKind = CHECK_NONE;
         }
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
         // the upper 32bits be sign-extended to 64 bits.
         m_extendKind = SIGN_EXTEND_INT;
@@ -2587,7 +2598,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 }
 #endif // !defined(TARGET_64BIT)
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 //------------------------------------------------------------------------
 // genCodeForJcc: Generate code for a GT_JCC node.
@@ -2645,4 +2656,4 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->GetRegNum());
     genProduceReg(setcc);
 }
-#endif // !TARGET_LOONGARCH64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64

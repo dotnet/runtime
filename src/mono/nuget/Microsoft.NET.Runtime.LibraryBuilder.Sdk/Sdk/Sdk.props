@@ -1,0 +1,10 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <PropertyGroup>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <OutputType>Exe</OutputType>
+    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <DevTeamProvisioning Condition="'$(TargetsAppleMobile)' == 'true' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+    <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
+  </PropertyGroup>
+</Project>

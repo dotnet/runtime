@@ -36,6 +36,7 @@ namespace System
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private IndexOutOfRangeException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

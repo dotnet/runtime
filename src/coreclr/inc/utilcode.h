@@ -872,8 +872,6 @@ inline int CountBits(int iNum)
     return (iBits);
 }
 
-#include "bitposition.h"
-
 // Convert the currency to a decimal and canonicalize.
 inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
 {

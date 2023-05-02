@@ -13,6 +13,7 @@ System.Formats.Cbor.CborWriter</PackageDescription>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReaderState.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.PeekState.cs" />
     <Compile Include="System\Formats\Cbor\Reader\CborReader.SkipValue.cs" />

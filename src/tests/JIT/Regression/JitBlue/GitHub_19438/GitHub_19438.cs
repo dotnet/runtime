@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Xunit;
 
 // This test executes the same computation on a wrapped Vector4 ('float4') and a
 // (not wrapped) Vector4. The code should be similar.
@@ -63,7 +64,8 @@ namespace GitHub_19438
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             const int iterationCount = 10;
             const int itemCount = 1000000;

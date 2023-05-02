@@ -352,13 +352,15 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
-DEFINE_METHOD(RT_TYPE_HANDLE,       GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_ArrType_IntPtr_int_RetType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
 DEFINE_METHOD(RT_TYPE_HANDLE,       GETVALUEINTERNAL,       GetValueInternal,           SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
+
+DEFINE_CLASS(TYPE_NAME_PARSER,      Reflection,             TypeNameParser)
+DEFINE_METHOD(TYPE_NAME_PARSER,     GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
 
 DEFINE_CLASS_U(Reflection,             RtFieldInfo,         NoClass)
 DEFINE_FIELD_U(m_fieldHandle,              ReflectFieldObject, m_pFD)
@@ -788,10 +790,6 @@ DEFINE_METHOD(SAFE_HANDLE,          RELEASE_HANDLE,         ReleaseHandle,      
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE,                Dispose,                    IM_RetVoid)
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
-
-DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
-DEFINE_METHOD(SAFE_TYPENAMEPARSER_HANDLE,   CTOR,   .ctor,  IM_RetVoid)
-
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
@@ -1194,8 +1192,10 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
+DEFINE_CLASS(CASTCACHE, CompilerServices, CastCache)
+DEFINE_FIELD(CASTCACHE, TABLE, s_table)
+
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
-DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFCLASS,IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFINTERFACE,  IsInstanceOfInterface, SM_PtrVoid_Obj_RetObj)

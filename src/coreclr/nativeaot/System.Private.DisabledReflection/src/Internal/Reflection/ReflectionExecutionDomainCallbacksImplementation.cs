@@ -22,7 +22,7 @@ namespace Internal.Reflection
         public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress) => null;
         public override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
-        public override Type GetType(string typeName, Func<AssemblyName, Assembly?> assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type) => type.TypeHandle;
         public override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle) => false;
         public override bool SupportsReflection(Type type) => false;

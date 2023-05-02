@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     using System;
-    class JITcrash
+    public class JITcrash
     {
-        public
-        static
-        int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             UInt32 x = (0xFFFFFFFF);
             Int64 y = x;

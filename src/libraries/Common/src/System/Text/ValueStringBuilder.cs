@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#nullable enable
+
 namespace System.Text
 {
     internal ref partial struct ValueStringBuilder

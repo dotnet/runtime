@@ -49,7 +49,12 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task AppendingUnrelatedSource_DoesNotRegenerateSource()
         {
-            string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
+            string source = $$"""
+                namespace NS
+                {
+                    {{CodeSnippets.BasicParametersAndModifiers<int>()}}
+                }
+                """;
 
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
 

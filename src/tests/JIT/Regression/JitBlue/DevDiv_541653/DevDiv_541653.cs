@@ -15,6 +15,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class DevDiv_541643
 {
@@ -65,7 +66,8 @@ public class DevDiv_541643
         Console.WriteLine("Result: " + result);
         return result;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = test(10);
         return Pass;

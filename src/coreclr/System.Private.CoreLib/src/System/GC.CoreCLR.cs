@@ -185,7 +185,8 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking)
         {
-            Collect(generation, mode, blocking, false);
+            bool aggressive = generation == MaxGeneration && mode == GCCollectionMode.Aggressive;
+            Collect(generation, mode, blocking, compacting: aggressive);
         }
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)
@@ -788,5 +789,44 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]
         internal static unsafe partial void _EnumerateConfigurationValues(void* configurationDictionary, delegate* unmanaged<void*, void*, void*, GCConfigurationType, long, void> callback);
+
+        private static int _RefreshMemoryLimit()
+        {
+            ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOH = (AppContext.GetData("GCHeapHardLimitSOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOH = (AppContext.GetData("GCHeapHardLimitLOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOH = (AppContext.GetData("GCHeapHardLimitPOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOHPercent = (AppContext.GetData("GCHeapHardLimitSOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOHPercent = (AppContext.GetData("GCHeapHardLimitLOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOHPercent = (AppContext.GetData("GCHeapHardLimitPOHPercent") as ulong?) ?? ulong.MaxValue;
+            GCHeapHardLimitInfo heapHardLimitInfo = new GCHeapHardLimitInfo
+            {
+                HeapHardLimit = heapHardLimit,
+                HeapHardLimitPercent = heapHardLimitPercent,
+                HeapHardLimitSOH = heapHardLimitSOH,
+                HeapHardLimitLOH = heapHardLimitLOH,
+                HeapHardLimitPOH = heapHardLimitPOH,
+                HeapHardLimitSOHPercent = heapHardLimitSOHPercent,
+                HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
+                HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
+            };
+            return RefreshMemoryLimit(heapHardLimitInfo);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_RefreshMemoryLimit")]
+        internal static partial int RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo);
+
+        internal struct GCHeapHardLimitInfo
+        {
+            internal ulong HeapHardLimit;
+            internal ulong HeapHardLimitPercent;
+            internal ulong HeapHardLimitSOH;
+            internal ulong HeapHardLimitLOH;
+            internal ulong HeapHardLimitPOH;
+            internal ulong HeapHardLimitSOHPercent;
+            internal ulong HeapHardLimitLOHPercent;
+            internal ulong HeapHardLimitPOHPercent;
+        }
     }
 }

@@ -20,6 +20,7 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTInProjectFile(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
@@ -41,6 +42,7 @@ public class NativeRefTests : BuildTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public void WithNativeReference_AOTOnCommandLine(string config)
     {
         string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";

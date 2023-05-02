@@ -32,8 +32,6 @@ namespace Internal.Reflection.Core
     [CLSCompliant(false)]
     public abstract class AssemblyBinder
     {
-        public const string DefaultAssemblyNameForGetType = "System.Private.CoreLib";
-
         public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
         public abstract bool Bind(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> rawSymbolStore, out AssemblyBindResult result, out Exception exception);

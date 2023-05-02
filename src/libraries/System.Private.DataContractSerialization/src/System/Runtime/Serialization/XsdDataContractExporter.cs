@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization
         private static void EnsureTypeNotGeneric(Type type)
         {
             if (type.ContainsGenericParameters)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNotExportable, type)));
+                throw new InvalidDataContractException(SR.Format(SR.GenericTypeNotExportable, type));
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace System.Runtime.Serialization
                 foreach (Assembly assembly in assemblies)
                 {
                     if (assembly == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies))));
+                        throw new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies)));
 
                     Type[] types = assembly.GetTypes();
                     for (int j = 0; j < types.Length; j++)
@@ -120,11 +120,8 @@ namespace System.Runtime.Serialization
 
                 Export();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -146,17 +143,14 @@ namespace System.Runtime.Serialization
                 foreach (Type type in types)
                 {
                     if (type == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types))));
+                        throw new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types)));
                     AddType(type);
                 }
 
                 Export();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -178,11 +172,8 @@ namespace System.Runtime.Serialization
                 AddType(type);
                 Export();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -299,7 +290,7 @@ namespace System.Runtime.Serialization
                     {
                         Type type = knownTypes[i];
                         if (type == null)
-                            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.CannotExportNullKnownType));
+                            throw new ArgumentException(SR.CannotExportNullKnownType);
                         AddType(type);
                     }
                 }
@@ -323,7 +314,7 @@ namespace System.Runtime.Serialization
                 foreach (Assembly assembly in assemblies)
                 {
                     if (assembly == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies))));
+                        throw new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies)));
 
                     Type[] types = assembly.GetTypes();
                     for (int j = 0; j < types.Length; j++)
@@ -337,11 +328,8 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -364,7 +352,7 @@ namespace System.Runtime.Serialization
                 foreach (Type type in types)
                 {
                     if (type == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types))));
+                        throw new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types)));
                     AddType(type);
                 }
                 AddKnownTypes();
@@ -375,11 +363,8 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }
@@ -408,11 +393,8 @@ namespace System.Runtime.Serialization
                 _dataContractSet = oldValue;
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
             {
-                if (Fx.IsFatal(ex))
-                    throw;
-
                 _dataContractSet = oldValue;
                 throw;
             }

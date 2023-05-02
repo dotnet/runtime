@@ -780,10 +780,24 @@ public:
 
 #ifdef EnC_SUPPORTED
     // Add a new method to an already loaded type for EnC
-    static HRESULT AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA, MethodDesc **ppMethod);
-
+    static HRESULT AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc** ppMethod);
+private:
+    static HRESULT AddMethodDesc(
+        MethodTable* pMT,
+        mdMethodDef methodDef,
+        DWORD dwImplFlags,
+        DWORD dwMemberAttrs,
+        MethodDesc** ppNewMD);
+public:
     // Add a new field to an already loaded type for EnC
-    static HRESULT AddField(MethodTable * pMT, mdFieldDef fieldDesc, EnCFieldDesc **pAddedField);
+    static HRESULT AddField(MethodTable* pMT, mdFieldDef fieldDesc, FieldDesc** pAddedField);
+private:
+    static HRESULT AddFieldDesc(
+        MethodTable* pMT,
+        mdMethodDef fieldDef,
+        DWORD dwFieldAttrs,
+        FieldDesc** ppNewFD);
+public:
     static VOID    FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdFieldDef fieldDef);
 #endif // EnC_SUPPORTED
 
@@ -1182,14 +1196,6 @@ public:
         return (m_VMFlags & VMFLAG_COVARIANTOVERRIDE);
     }
 
-#ifdef _DEBUG
-    inline DWORD IsDestroyed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wAuxFlags & AUXFLAG_DESTROYED);
-    }
-#endif
-
     inline DWORD IsUnsafeValueClass()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1237,13 +1243,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
     }
-#ifdef _DEBUG
-    inline void SetDestroyed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wAuxFlags |= AUXFLAG_DESTROYED;
-    }
-#endif
     inline void SetHasFixedAddressVTStatics()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1320,6 +1319,19 @@ public:
         m_VMFlags |= VMFLAG_DELEGATE;
     }
 
+#ifdef EnC_SUPPORTED
+    inline BOOL HasEnCStaticFields()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_VMFlags & VMFLAG_ENC_STATIC_FIELDS;
+    }
+    inline void SetHasEnCStaticFields()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_ENC_STATIC_FIELDS;
+    }
+#endif // EnC_SUPPORTED
+
     BOOL HasFixedAddressVTStatics()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1384,9 +1396,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_HAS_FIELDS_WHICH_MUST_BE_INITED;
     }
-    void SetCannotBeBlittedByObjectCloner()
+    DWORD IsInlineArray()
     {
-        /* no op */
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_INLINE_ARRAY);
+    }
+    void SetIsInlineArray()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
     DWORD HasNonPublicFields()
     {
@@ -1425,9 +1443,9 @@ public:
     BOOL HasExplicitSize();
 
     BOOL IsAutoLayoutOrHasAutoLayoutField();
-    
+
     // Only accurate on non-auto layout types
-    BOOL IsInt128OrHasInt128Fields(); 
+    BOOL IsInt128OrHasInt128Fields();
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
@@ -1658,13 +1676,6 @@ public:
         SigPointer sp,
         CorGenericParamAttr position);
 
-#if defined(_DEBUG)
-public:
-    enum{
-        AUXFLAG_DESTROYED = 0x00000008, // The Destruct() method has already been called on this class
-    };
-#endif // defined(_DEBUG)
-
     //-------------------------------------------------------------
     // CONCRETE DATA LAYOUT
     //
@@ -1685,7 +1696,6 @@ public:
     // sets of flags - a full field is used.  Please avoid adding such members if possible.
     //-------------------------------------------------------------
 
-    // @TODO: needed for asm code in cgenx86.cpp. Can this enum be private?
     //
     // Flags for m_VMFlags
     //
@@ -1697,7 +1707,11 @@ public:
 #endif
         VMFLAG_DELEGATE                        = 0x00000002,
 
-        // VMFLAG_UNUSED                       = 0x0000001c,
+#ifdef EnC_SUPPORTED
+        VMFLAG_ENC_STATIC_FIELDS               = 0x00000004,
+#endif // EnC_SUPPORTED
+
+        // VMFLAG_UNUSED                       = 0x00000018,
 
         VMFLAG_FIXED_ADDRESS_VT_STATICS        = 0x00000020, // Value type Statics in this class will be pinned
         VMFLAG_HASLAYOUT                       = 0x00000040,
@@ -1723,7 +1737,7 @@ public:
         VMFLAG_BESTFITMAPPING                  = 0x00004000, // BestFitMappingAttribute.Value
         VMFLAG_THROWONUNMAPPABLECHAR           = 0x00008000, // BestFitMappingAttribute.ThrowOnUnmappableChar
 
-        // unused                              = 0x00010000,
+        VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
         VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
@@ -2125,7 +2139,7 @@ inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
 
 inline BOOL EEClass::IsInt128OrHasInt128Fields()
 {
-    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on 
+    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on
     // auto layout types, but since we only need this for interop scenarios, it works out.
     LIMITED_METHOD_CONTRACT;
     // If this type is not auto
@@ -2174,13 +2188,6 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
 #define METH_NAME_CACHE_SIZE        5
 #define MAX_MISSES                  3
 
-#ifdef EnC_SUPPORTED
-
-struct EnCAddedFieldElement;
-
-#endif // EnC_SUPPORTED
-
-
 // --------------------------------------------------------------------------------------------
 // For generic instantiations the FieldDescs stored for instance
 // fields are approximate, not exact, i.e. they are representatives owned by
@@ -2223,6 +2230,11 @@ private:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         return m_totalFields - m_currField - 1;
+    }
+    int GetValueClassCacheIndex()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_currField;
     }
 };
 

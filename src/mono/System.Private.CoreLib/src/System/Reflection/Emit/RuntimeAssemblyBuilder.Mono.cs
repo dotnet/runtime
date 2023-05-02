@@ -234,8 +234,8 @@ namespace System.Reflection.Emit
             aname = (AssemblyName)n.Clone();
 
             if (!Enum.IsDefined(typeof(AssemblyBuilderAccess), access))
-                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture,
-                    "Argument value {0} is not valid.", (int)access),
+                throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
+                    SR.Arg_EnumIllegalVal, (int)access),
                     nameof(access));
 
             name = n.Name;
@@ -256,6 +256,8 @@ namespace System.Reflection.Emit
             // Netcore only allows one module per assembly
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new RuntimeModuleBuilder[] { manifest_module };
+
+            AssemblyLoadContext.InvokeAssemblyLoadEvent (this);
         }
 
         public override bool ReflectionOnly
@@ -265,6 +267,11 @@ namespace System.Reflection.Emit
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             if (manifest_module_used)
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             manifest_module_used = true;
@@ -292,8 +299,9 @@ namespace System.Reflection.Emit
 
         public override bool IsCollectible => access == (uint)AssemblyBuilderAccess.RunAndCollect;
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -308,11 +316,6 @@ namespace System.Reflection.Emit
             }
 
             UpdateNativeCustomAttributes(this);
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/

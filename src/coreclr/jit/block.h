@@ -59,7 +59,8 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 enum BBjumpKinds : BYTE
 {
-    BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally or fault)
+    BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally)
+    BBJ_EHFAULTRET,  // block ends with 'endfinally' (IL alias for 'endfault') (for fault)
     BBJ_EHFILTERRET, // block ends with 'endfilter'
     BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
     BBJ_THROW,       // block ends with 'throw'
@@ -73,6 +74,24 @@ enum BBjumpKinds : BYTE
 
     BBJ_COUNT
 };
+
+#ifdef DEBUG
+const char* const BBjumpKindNames[] = {
+    "BBJ_EHFINALLYRET",
+    "BBJ_EHFAULTRET",
+    "BBJ_EHFILTERRET",
+    "BBJ_EHCATCHRET",
+    "BBJ_THROW",
+    "BBJ_RETURN",
+    "BBJ_NONE",
+    "BBJ_ALWAYS",
+    "BBJ_LEAVE",
+    "BBJ_CALLFINALLY",
+    "BBJ_COND",
+    "BBJ_SWITCH",
+    "BBJ_COUNT"
+};
+#endif // DEBUG
 
 // clang-format on
 
@@ -541,7 +560,7 @@ enum BasicBlockFlags : unsigned __int64
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_PREHEADER,
 
     // Flags a block should not have had before it is split.
 
@@ -829,7 +848,7 @@ struct BasicBlock : private LIR::Range
     // GetSucc() without a Compiler*.
     //
     // The behavior of NumSucc()/GetSucc() is different when passed a Compiler* for blocks that end in:
-    // (1) BBJ_EHFINALLYRET (a return from a finally or fault block)
+    // (1) BBJ_EHFINALLYRET (a return from a finally block)
     // (2) BBJ_EHFILTERRET (a return from EH filter block)
     // (3) BBJ_SWITCH
     //
@@ -1211,7 +1230,7 @@ struct BasicBlock : private LIR::Range
 #endif // DEBUG
 
     unsigned bbStackDepthOnEntry() const;
-    void bbSetStack(void* stackBuffer);
+    void bbSetStack(StackEntry* stack);
     StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding
@@ -1656,6 +1675,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             // We don't need m_succs.
             m_begin = nullptr;
@@ -1865,6 +1885,12 @@ public:
         assert(likelihood <= 1.0);
         INDEBUG(m_likelihoodSet = true);
         m_likelihood = likelihood;
+    }
+
+    void clearLikelihood()
+    {
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
     }
 
 #ifdef DEBUG

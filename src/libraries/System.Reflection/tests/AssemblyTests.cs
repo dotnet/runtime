@@ -402,7 +402,7 @@ namespace System.Reflection.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "kernelbase.dll");
+            string path = Path.Combine(Environment.SystemDirectory, "kernelbase.dll");
             if (!File.Exists(path))
                 return;
 

@@ -16,7 +16,7 @@
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
-    <_XHarnessTestsTimeout>00:30:00</_XHarnessTestsTimeout>
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
   </PropertyGroup>
 

@@ -1,24 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
 {
-    readonly record struct TestResult
+    public readonly record struct TestResult
     {
-        readonly string Name;
-        readonly string ContainingTypeName;
-        readonly string MethodName;
-        readonly TimeSpan Duration;
-        readonly Exception? Exception;
-        readonly string? SkipReason;
-        readonly string? Output;
+        public readonly string Name;
+        public readonly string ContainingTypeName;
+        public readonly string MethodName;
+        public readonly TimeSpan Duration;
+        public readonly Exception? Exception;
+        public readonly string? SkipReason;
+        public readonly string? Output;
 
         public TestResult(string name,
                           string containingTypeName,
@@ -44,7 +44,7 @@ public class TestSummary
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{Output}]]></output>"
+                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
@@ -97,13 +97,23 @@ public class TestSummary
         }
     }
 
-    public int PassedTests { get; private set; } = 0;
-    public int FailedTests { get; private set; } = 0;
-    public int SkippedTests { get; private set; } = 0;
-    public int TotalTests { get; private set; } = 0;
+    public int PassedTests { get; private set; }
+    public int FailedTests { get; private set; }
+    public int SkippedTests { get; private set; }
+    public int TotalTests { get; private set; }
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;
+
+    public void WriteHeaderToTempLog(string assemblyName, StreamWriter tempLogSw)
+    {
+        // We are writing down both, date and time, in the same field here because
+        // it's much simpler to parse later on in the XUnitLogChecker.
+        tempLogSw.WriteLine("<assembly\n"
+                        + $"    name=\"{assemblyName}\"\n"
+                        + $"    test-framework=\"XUnitWrapperGenerator-generated-runner\"\n"
+                        + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
+    }
 
     public void ReportPassedTest(string name,
                                  string containingTypeName,
@@ -174,8 +184,8 @@ public class TestSummary
 <assembly
     name=""{assemblyName}""
     test-framework=""XUnitWrapperGenerator-generated-runner""
-    run-date=""{_testRunStart.ToString("yyy-mm-dd")}""
-    run-time=""{_testRunStart.ToString("hh:mm:ss")}""
+    run-date=""{_testRunStart.ToString("yyyy-MM-dd")}""
+    run-time=""{_testRunStart.ToString("HH:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""
     passed=""{PassedTests}""

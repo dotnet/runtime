@@ -203,7 +203,6 @@ namespace System.Net.Quic.Tests
         [InlineData(100, 101)]
         [InlineData(15, 100)]
         [InlineData(10, 1_000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82769", typeof(PlatformDetection), nameof(PlatformDetection.IsArmOrArm64Process))]
         [OuterLoop("Higher number of connections slow the test down.")]
         private Task Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Slow(int backlogLimit, int connectCount)
             => Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Core(backlogLimit, connectCount);
@@ -303,6 +302,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83012", TestPlatforms.OSX)]
         public async Task ListenOnAlreadyUsedPort_Throws_AddressInUse()
         {
             // bind a UDP socket to block a port

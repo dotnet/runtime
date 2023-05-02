@@ -99,9 +99,9 @@ struct _EventPipeBufferManager_Internal {
 	// its own data, while at the same time, ensuring that when a thread is destroyed,
 	// we keep the buffers around without having to perform any migration or
 	// book-keeping.
-	ep_rt_thread_session_state_list_t thread_session_state_list;
+	dn_list_t *thread_session_state_list;
 	// A queue of sequence points.
-	ep_rt_sequence_point_list_t sequence_points;
+	dn_list_t *sequence_points;
 	// Event for synchronizing real time reading.
 	ep_rt_wait_event_handle_t rt_wait_event;
 	// Lock to protect access to the per-thread buffer list and total allocation size.

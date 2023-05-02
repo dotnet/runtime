@@ -287,8 +287,14 @@ namespace System.Tests
                 yield return new object[] { (nint)4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
                 yield return new object[] { (nint)(-4567), "D99\09", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
+                yield return new object[] { (nint)0, "x", defaultFormat, "0" };
                 yield return new object[] { (nint)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (nint)(-0x2468), "x", defaultFormat, Is64Bit ? "ffffffffffffdb98" : "ffffdb98" };
+
+                yield return new object[] { (nint)0, "b", defaultFormat, "0" };
+                yield return new object[] { (nint)0x2468, "b", defaultFormat, "10010001101000" };
+                yield return new object[] { (nint)(-0x2468), "b", defaultFormat, Is64Bit ? "1111111111111111111111111111111111111111111111111101101110011000" : "11111111111111111101101110011000" };
+
                 yield return new object[] { (nint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -375,8 +381,8 @@ namespace System.Tests
             foreach (bool neg in new[] { false, true })
             {
                 string s = neg ? "-" : "";
-                int result = 0;
-                for (int i = 1; i <= 10; i++)
+                nint result = 0;
+                for (nint i = 1; i <= (IntPtr.Size == 8 ? 19 : 10); i++)
                 {
                     result = result * 10 + (i % 10);
                     s += (i % 10).ToString();
@@ -387,12 +393,24 @@ namespace System.Tests
             // All lengths hexadecimal
             {
                 string s = "";
-                int result = 0;
-                for (int i = 1; i <= 8; i++)
+                nint result = 0;
+                for (nint i = 1; i <= IntPtr.Size * 2; i++)
                 {
                     result = (result * 16) + (i % 16);
                     s += (i % 16).ToString("X");
                     yield return new object[] { s, NumberStyles.HexNumber, null, (nint)result };
+                }
+            }
+
+            // All lengths binary
+            {
+                string s = "";
+                nint result = 0;
+                for (nint i = 1; i <= IntPtr.Size * 8; i++)
+                {
+                    result = (result * 2) + (i % 2);
+                    s += (i % 2).ToString("B");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, (nint)result };
                 }
             }
 
@@ -401,8 +419,6 @@ namespace System.Tests
             yield return new object[] { "abc", NumberStyles.HexNumber, null, (nint)0xabc };
             yield return new object[] { "ABC", NumberStyles.HexNumber, null, (nint)0xabc };
             yield return new object[] { "12", NumberStyles.HexNumber, null, (nint)0x12 };
-
-
             if (Is64Bit)
             {
                 yield return new object[] { "8000000000000000", NumberStyles.HexNumber, null, nint.MinValue };
@@ -412,6 +428,21 @@ namespace System.Tests
             {
                 yield return new object[] { "80000000", NumberStyles.HexNumber, null, nint.MinValue };
                 yield return new object[] { "7FFFFFFF", NumberStyles.HexNumber, null, nint.MaxValue };
+            }
+
+            // BinaryNumber
+            yield return new object[] { "100100011", NumberStyles.BinaryNumber, null, (nint)0b100100011 };
+            yield return new object[] { "101010111100", NumberStyles.BinaryNumber, null, (nint)0b101010111100 };
+            yield return new object[] { "10010", NumberStyles.BinaryNumber, null, (nint)0b10010 };
+            if (Is64Bit)
+            {
+                yield return new object[] { "1000000000000000000000000000000000000000000000000000000000000000", NumberStyles.BinaryNumber, null, nint.MinValue };
+                yield return new object[] { "111111111111111111111111111111111111111111111111111111111111111", NumberStyles.BinaryNumber, null, nint.MaxValue };
+            }
+            else
+            {
+                yield return new object[] { "10000000000000000000000000000000", NumberStyles.BinaryNumber, null, nint.MinValue };
+                yield return new object[] { "1111111111111111111111111111111", NumberStyles.BinaryNumber, null, nint.MaxValue };
             }
 
             // Currency
@@ -569,7 +600,7 @@ namespace System.Tests
             yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
 
             // String contains is null, empty or enitrely whitespace.
-            foreach (NumberStyles style in new[] { NumberStyles.Integer, NumberStyles.HexNumber, NumberStyles.Any })
+            foreach (NumberStyles style in new[] { NumberStyles.Integer, NumberStyles.HexNumber, NumberStyles.BinaryNumber, NumberStyles.Any })
             {
                 yield return new object[] { null, style, null, typeof(ArgumentNullException) };
                 yield return new object[] { "", style, null, typeof(FormatException) };
@@ -585,7 +616,7 @@ namespace System.Tests
             }
 
             // String contains garbage
-            foreach (NumberStyles style in new[] { NumberStyles.Integer, NumberStyles.HexNumber, NumberStyles.Any })
+            foreach (NumberStyles style in new[] { NumberStyles.Integer, NumberStyles.HexNumber, NumberStyles.BinaryNumber, NumberStyles.Any })
             {
                 yield return new object[] { "Garbage", style, null, typeof(FormatException) };
                 yield return new object[] { "g", style, null, typeof(FormatException) };
@@ -622,6 +653,14 @@ namespace System.Tests
             yield return new object[] { "g1", NumberStyles.HexNumber, null, typeof(FormatException) };
             yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
             yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
+
+            // BinaryNumber
+            yield return new object[] { "0b101", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+            yield return new object[] { "abc", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+            yield return new object[] { "G1", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+            yield return new object[] { "g1", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+            yield return new object[] { "+10", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+            yield return new object[] { "-01", NumberStyles.BinaryNumber, null, typeof(FormatException) };
 
             // None doesn't allow hex or leading or trailing whitespace
             yield return new object[] { "abc", NumberStyles.None, null, typeof(FormatException) };
@@ -708,7 +747,7 @@ namespace System.Tests
             yield return new object[] { "123", NumberStyles.AllowLeadingSign, new NumberFormatInfo() { PositiveSign = "123" }, typeof(FormatException) };
             yield return new object[] { "123", NumberStyles.AllowLeadingSign, new NumberFormatInfo() { NegativeSign = "123" }, typeof(FormatException) };
 
-            // Decimals not in range of Int32
+            // Decimals not in range of IntPtr
             foreach (string s in new[]
             {
 
@@ -740,7 +779,7 @@ namespace System.Tests
                 }
             }
 
-            // Hexadecimals not in range of Int32
+            // Hexadecimals not in range of IntPtr
             foreach (string s in new[]
             {
                 "10000000000000000", // ulong.MaxValue + (nint)1
@@ -756,6 +795,24 @@ namespace System.Tests
                 yield return new object[] { s + "g", NumberStyles.HexNumber, null, typeof(FormatException) };
                 yield return new object[] { s + "\0g", NumberStyles.HexNumber, null, typeof(FormatException) };
                 yield return new object[] { s + " g", NumberStyles.HexNumber, null, typeof(FormatException) };
+            }
+
+            // Binary numbers not in range of IntPtr
+            foreach (string s in new[]
+            {
+                "10000000000000000000000000000000000000000000000000000000000000000", // ulong.MaxValue + (nint)1
+                "11111111111111111111111111111111111111111111111111111111111111110", // extra digit after ulong.MaxValue
+
+                "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000" // really big
+            })
+            {
+                yield return new object[] { s, NumberStyles.BinaryNumber, null, typeof(OverflowException) };
+                yield return new object[] { s + "   ", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
+                yield return new object[] { s + "   " + "\0\0", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
+
+                yield return new object[] { s + "g", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+                yield return new object[] { s + "\0g", NumberStyles.BinaryNumber, null, typeof(FormatException) };
+                yield return new object[] { s + " g", NumberStyles.BinaryNumber, null, typeof(FormatException) };
             }
 
             yield return new object[] { "9223372036854775809-", NumberStyles.AllowTrailingSign, null, typeof(OverflowException) };
@@ -802,16 +859,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             nint result = (nint)0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nint.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => nint.TryParse("1", style, null, out result));
             Assert.Equal(default(nint), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nint.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nint.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => nint.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => nint.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -840,6 +899,12 @@ namespace System.Tests
             yield return new object[] { "ABC", 1, 1, NumberStyles.HexNumber, null, (nint)0xB };
             yield return new object[] { "FFFFFFFF", 6, 2, NumberStyles.HexNumber, null, (nint)0xFF };
             yield return new object[] { "FFFFFFFF", 0, 1, NumberStyles.HexNumber, null, (nint)0xF };
+
+            // Binary
+            yield return new object[] { "1010", 0, 1, NumberStyles.BinaryNumber, null, (nint)0b1 };
+            yield return new object[] { "1010", 1, 1, NumberStyles.BinaryNumber, null, (nint)0b0 };
+            yield return new object[] { "11111111", 6, 2, NumberStyles.BinaryNumber, null, (nint)0b11 };
+            yield return new object[] { "11111111", 0, 1, NumberStyles.BinaryNumber, null, (nint)0b1 };
 
             // Currency
             yield return new object[] { "-$1000", 1, 5, NumberStyles.Currency, new NumberFormatInfo()
@@ -950,45 +1015,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(nint i, string format, IFormatProvider provider, string expected)
-        {
-            char[] actual;
-            int charsWritten;
-
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
-
-            // Too short
-            if (expected.Length > 0)
-            {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-                Assert.Equal(0, charsWritten);
-            }
-
-            if (format != null)
-            {
-                // Upper format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
-
-                // Lower format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
-            }
-        }
+        public static void TryFormat(nint i, string format, IFormatProvider provider, string expected) =>
+            NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
     }
 }

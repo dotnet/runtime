@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossBuild: false
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   disableClrTest: false
   isOfficialBuild: false
   osGroup: ''
@@ -36,6 +37,7 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
     disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}
 
@@ -86,17 +88,6 @@ jobs:
         value: '-gcc'
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
-    - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
-      - name: compilerArg
-        value: '-clang9'
-      # We need to use the stable version available on Alpine Linux
-      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
-        - name: compilerArg
-          value: ''
-      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - name: compilerArg
-          value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -207,7 +198,7 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if ne(parameters.archType, 'x64') }}:
+    - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
 
@@ -223,7 +214,7 @@ jobs:
 
     # Build CoreCLR Managed Components
     - ${{ if or(ne(parameters.osGroup, 'linux'), ne(parameters.archType, 'x86')) }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+clr.paltestlist $(crossArg) $(compilerArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
     - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci

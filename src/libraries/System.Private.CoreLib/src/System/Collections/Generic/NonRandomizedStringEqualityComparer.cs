@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 
@@ -31,6 +32,8 @@ namespace System.Collections.Generic
         }
 
         // This is used by the serialization engine.
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NonRandomizedStringEqualityComparer(SerializationInfo information, StreamingContext context)
             : this(EqualityComparer<string?>.Default)
         {

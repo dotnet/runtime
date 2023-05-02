@@ -45,3 +45,46 @@ jobs:
         creator: dotnet-bot
         interpreter: true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Build the whole product using Mono for iOSSimulator/tvOSSimulator and run runtime tests with iOS/tvOS simulators
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
+    platforms:
+      - iossimulator_x64
+      - tvossimulator_x64
+      - iossimulator_arm64
+    variables:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: pr/dotnet/runtime/$(Build.SourceBranch)
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+        - name: _HelixSource
+          value: ci/dotnet/runtime/$(Build.SourceBranch)
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      # extra steps, run tests
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
+      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        # FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254
+        testBuildArgs: tree tracing/eventpipe
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)

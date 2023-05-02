@@ -67,7 +67,7 @@ namespace System.Buffers
                 byte b = cur;
                 if (TNegator.NegateIfNeeded(_lookup.Contains(b)))
                 {
-                    return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur));
+                    return (int)Unsafe.ByteOffset(ref searchSpace, ref cur);
                 }
 
                 cur = ref Unsafe.Add(ref cur, 1);

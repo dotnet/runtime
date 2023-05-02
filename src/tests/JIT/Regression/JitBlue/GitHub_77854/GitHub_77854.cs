@@ -4,10 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Program().TestFunction();
         return 100;

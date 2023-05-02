@@ -1077,7 +1077,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => this;
+        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => this;
 
         /// <summary>Appends the specified interpolated string followed by the default line terminator to the end of the current StringBuilder object.</summary>
         /// <param name="handler">The interpolated string to append.</param>
@@ -1088,7 +1088,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => AppendLine();
+        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => AppendLine();
 
         #region AppendJoin
 
@@ -1439,7 +1439,7 @@ namespace System.Text
                     // This wasn't an escape, so it must be an opening brace.
                     if (brace != '{')
                     {
-                        ThrowHelper.ThrowFormatInvalidString();
+                        ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnexpectedClosingBrace);
                     }
 
                     // Proceed to parse the hole.
@@ -1462,7 +1462,7 @@ namespace System.Text
                 int index = ch - '0';
                 if ((uint)index >= 10u)
                 {
-                    ThrowHelper.ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                 }
 
                 // Common case is a single digit index followed by a closing brace.  If it's not a closing brace,
@@ -1509,7 +1509,7 @@ namespace System.Text
                         width = ch - '0';
                         if ((uint)width >= 10u)
                         {
-                            ThrowHelper.ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                         }
                         ch = MoveNext(format, ref pos);
                         while (char.IsAsciiDigit(ch) && width < WidthLimit)
@@ -1532,7 +1532,7 @@ namespace System.Text
                         if (ch != ':')
                         {
                             // Unexpected character
-                            ThrowHelper.ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                         }
 
                         // Search for the closing brace; everything in between is the format,
@@ -1551,7 +1551,7 @@ namespace System.Text
                             if (ch == '{')
                             {
                                 // Braces inside the argument hole are not supported
-                                ThrowHelper.ThrowFormatInvalidString();
+                                ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                             }
                         }
 
@@ -1652,7 +1652,7 @@ namespace System.Text
                 pos++;
                 if ((uint)pos >= (uint)format.Length)
                 {
-                    ThrowHelper.ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                 }
                 return format[pos];
             }

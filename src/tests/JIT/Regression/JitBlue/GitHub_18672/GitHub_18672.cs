@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S4
 {
@@ -32,7 +33,8 @@ struct S24W
 
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S4    s4   = new S4();
         S24   s24  = new S24(1, s4);

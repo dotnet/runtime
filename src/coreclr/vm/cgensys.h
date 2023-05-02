@@ -93,15 +93,8 @@ inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
 #endif // !TARGET_X86
 
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
-#ifdef TARGET_UNIX
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-
-extern "C" void __stdcall __cpuid(int cpuInfo[4], int function_id);
-extern "C" void __stdcall __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#endif // TARGET_UNIX
-extern "C" DWORD __stdcall xmmYmmStateSupport();
-extern "C" DWORD __stdcall avx512StateSupport();
+extern "C" DWORD xmmYmmStateSupport();
+extern "C" DWORD avx512StateSupport();
 #endif
 
 inline bool TargetHasAVXSupport()

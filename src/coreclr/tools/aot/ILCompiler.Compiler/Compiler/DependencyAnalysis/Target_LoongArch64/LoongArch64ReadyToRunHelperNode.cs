@@ -90,8 +90,8 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
 
-                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
                             encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
 
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
@@ -115,8 +115,8 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

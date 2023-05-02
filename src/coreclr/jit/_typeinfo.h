@@ -40,7 +40,7 @@ namespace
 {
 #endif //  _MSC_VER
 const ti_types g_jit_types_map[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) verType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) verType,
 #include "typelist.h"
 #undef DEF_TP
 };

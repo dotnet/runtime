@@ -165,7 +165,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
-            unsigned cSlots = GetHfaCount(argDsc->GetStructHnd());
+            unsigned cSlots = GetHfaCount(argDsc->GetLayout()->GetClassHandle());
             for (unsigned i = 1; i < cSlots; i++)
             {
                 assert(inArgReg + i <= LAST_FP_ARGREG);
@@ -319,13 +319,6 @@ void Compiler::raMarkStkVars()
             {
                 needSlot |= varDsc->IsAddressExposed();
             }
-
-#if FEATURE_FIXED_OUT_ARGS
-
-            /* Is this the dummy variable representing GT_LCLBLK ? */
-            needSlot |= (lclNum == lvaOutgoingArgSpaceVar);
-
-#endif // FEATURE_FIXED_OUT_ARGS
 
 #ifdef DEBUG
             /* For debugging, note that we have to reserve space even for

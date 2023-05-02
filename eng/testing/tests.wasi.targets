@@ -40,7 +40,7 @@
     <_XHarnessArgs Condition="'$(WasmSingleFileBundle)' != 'true'" >$(_XHarnessArgs) --engine-arg=--dir=.</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
     
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>

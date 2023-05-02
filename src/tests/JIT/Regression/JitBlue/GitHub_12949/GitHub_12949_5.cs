@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct R
 {
@@ -27,7 +28,8 @@ public class X<K>
 
 public class B
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         X<R> a = null;
         bool result = false;

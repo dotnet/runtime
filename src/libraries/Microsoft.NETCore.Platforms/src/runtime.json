@@ -2036,6 +2036,12 @@
         "linux-ppc64le"
       ]
     },
+    "linux-musl-riscv64": {
+      "#import": [
+        "linux-musl",
+        "linux-riscv64"
+      ]
+    },
     "linux-musl-s390x": {
       "#import": [
         "linux-musl",

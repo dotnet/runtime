@@ -1,19 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.TypeParsing;
 
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
@@ -104,6 +97,26 @@ namespace System.Reflection.Runtime.General
                         if (targetType == null)
                             return null;
                         return targetType.GetPointerType();
+                    }
+
+                case HandleType.FunctionPointerSignature:
+                    {
+                        FunctionPointerSignature sig = typeHandle.ToFunctionPointerSignatureHandle(reader).GetFunctionPointerSignature(reader);
+                        MethodSignature methodSig = sig.Signature.GetMethodSignature(reader);
+                        RuntimeTypeInfo? returnType = methodSig.ReturnType.TryResolve(reader, typeContext, ref exception);
+                        if (returnType == null)
+                            return null;
+                        var parameterTypes = new RuntimeTypeInfo[methodSig.Parameters.Count];
+                        int i = 0;
+                        foreach (Handle paramTypeHandle in methodSig.Parameters)
+                        {
+                            RuntimeTypeInfo? parameterType = paramTypeHandle.TryResolve(reader, typeContext, ref exception);
+                            if (parameterType == null)
+                                return null;
+                            parameterTypes[i++] = parameterType;
+                        }
+                        bool isUnmanaged = (methodSig.CallingConvention & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask) != 0;
+                        return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged);
                     }
 
                 case HandleType.SZArraySignature:
@@ -214,7 +227,7 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, ignoreCase: false);
+                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);

@@ -136,7 +136,7 @@ IF NOT "%CrossGen2SynthesizePgo"=="" (
 
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
-if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
+set CLRTestExpectedExitCode=$(CLRTestExitCode)
 ECHO BEGIN EXECUTION
       ]]>
       </BatchCLRTestExitCodePrep>
@@ -216,6 +216,14 @@ Exit /b 0
         ]]></Command>
         <Description>Set CORE_ROOT to the specified value before running the test.</Description>
       </BatchCLRTestExecutionScriptArgument>
+
+      <BatchCLRTestExecutionScriptArgument Include="usewatcher">
+        <HasParam>false</HasParam>
+        <Command><![CDATA[
+    set /A _RunWithWatcher=1
+        ]]></Command>
+        <Description>Run the tests using the test watcher.</Description>
+      </BatchCLRTestExecutionScriptArgument>
     </ItemGroup>
 
       <PropertyGroup>
@@ -260,17 +268,18 @@ IF defined DoLink (
       Exit /b 1
     )
 
-    REM Copy CORECLR native binaries to %LinkBin%, so that we can run the test based on that directory
+    REM Copy CORECLR native binaries and the test watcher to %LinkBin%, so that we can run the test based on that directory
     copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
     copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\watchdog.exe %LinkBin% > nul 2> nul
 
     REM Copy some files that may be arguments
     copy *.txt %LinkBin% > nul 2> nul
 
     set ExePath=%LinkBin%\$(InputAssemblyName)
-    set CORE_ROOT=%scriptPath%LinkBin%
+    set CORE_ROOT=%scriptPath%\%LinkBin%
 )
 ]]>
           </BatchLinkerTestLaunchCmds>
@@ -289,6 +298,8 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
+      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
+
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
 ECHO Copying '%CORE_ROOT%\CoreShim.dll'...
@@ -301,6 +312,8 @@ $(BatchCopyCoreShimLocalCmds)
 
 IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=call %CLRCustomTestLauncher% %scriptPath%
+) ELSE IF %_RunWithWatcher% EQU 1 (
+  set LAUNCHER=$(WatcherRunFile) $(CLRTestRunFile)
 ) ELSE (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
@@ -425,6 +438,20 @@ setlocal ENABLEDELAYEDEXPANSION
 set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
+set /A _RunWithWatcher=0
+set /A _WatcherTimeoutMins=10
+
+IF NOT "%__TestCollectionTimeoutMins%"=="" (
+    set /A _WatcherTimeoutMins=%__TestCollectionTimeoutMins%
+)
+
+REM The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+REM Because of this, we pass a smaller timeout than the test collection one.
+REM For simplicity purposes, we will assume there are no work items with just
+REM a one-minute max timeout.
+IF %_WatcherTimeoutMins% GTR 1 (
+    set /A _WatcherTimeoutMins-=1
+)
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)

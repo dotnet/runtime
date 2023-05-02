@@ -189,7 +189,7 @@ namespace System.Runtime.CompilerServices
         public static bool IsReferenceOrContainsReferences<T>()
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.HasPointers;
+            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
         }
 
         [Intrinsic]
@@ -242,10 +242,9 @@ namespace System.Runtime.CompilerServices
         // Returns true iff the object has a component size;
         // i.e., is variable length like System.String or Array.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool ObjectHasComponentSize(object obj)
+        internal static unsafe bool ObjectHasComponentSize(object obj)
         {
-            Debug.Assert(obj != null);
-            return obj.GetEETypePtr().ComponentSize != 0;
+            return GetMethodTable(obj)->HasComponentSize;
         }
 
         public static void PrepareMethod(RuntimeMethodHandle method)
@@ -275,7 +274,7 @@ namespace System.Runtime.CompilerServices
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
-            return (IntPtr)NativeMemory.Alloc((uint)size);
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         public static void PrepareDelegate(Delegate d)
@@ -286,7 +285,7 @@ namespace System.Runtime.CompilerServices
             Justification = "We keep class constructors of all types with an MethodTable")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Constructed MethodTable of a Nullable forces a constructed MethodTable of the element type")]
-        public static object GetUninitializedObject(
+        public static unsafe object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.
             // This obviously won't cover a type with no constructor. Reference types with no
@@ -320,37 +319,38 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException(SR.NotSupported_ManagedActivation);
             }
 
-            EETypePtr eeTypePtr = type.TypeHandle.ToEETypePtr();
+            MethodTable* mt = type.TypeHandle.ToMethodTable();
 
-            if (eeTypePtr.ElementType == Internal.Runtime.EETypeElementType.Void)
+            if (mt->ElementType == Internal.Runtime.EETypeElementType.Void)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
             }
 
             // Don't allow strings (we already checked for arrays above)
-            if (eeTypePtr.ComponentSize != 0)
+            if (mt->HasComponentSize)
             {
                 throw new ArgumentException(SR.Argument_NoUninitializedStrings);
             }
 
-            if (RuntimeImports.AreTypesAssignable(eeTypePtr, EETypePtr.EETypePtrOf<Delegate>()))
+            if (RuntimeImports.AreTypesAssignable(mt, MethodTable.Of<Delegate>()))
             {
                 throw new MemberAccessException();
             }
 
-            if (eeTypePtr.IsAbstract)
+            if (mt->IsAbstract)
             {
                 throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
-            if (eeTypePtr.IsByRefLike)
+            if (mt->IsByRefLike)
             {
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
-            if (eeTypePtr.IsNullable)
+            if (mt->IsNullable)
             {
-                return GetUninitializedObject(Type.GetTypeFromEETypePtr(eeTypePtr.NullableType));
+                mt = mt->NullableType;
+                return GetUninitializedObject(Type.GetTypeFromEETypePtr(new EETypePtr(mt)));
             }
 
             // Triggering the .cctor here is slightly different than desktop/CoreCLR, which
@@ -358,7 +358,7 @@ namespace System.Runtime.CompilerServices
             // in MethodTable just for this API to behave slightly differently.
             RunClassConstructor(type.TypeHandle);
 
-            return RuntimeImports.RhNewObject(eeTypePtr);
+            return RuntimeImports.RhNewObject(mt);
         }
     }
 

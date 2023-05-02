@@ -31,15 +31,6 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssemblyName)
-        {
-            LowLevelListWithIList<string> defaultAssemblies = new LowLevelListWithIList<string>();
-            if (defaultAssemblyName != null)
-                defaultAssemblies.Add(defaultAssemblyName);
-            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
-            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
-        }
-
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
         {
             return _executionEnvironment.IsReflectionBlocked(typeHandle);
@@ -67,6 +58,11 @@ namespace Internal.Reflection.Execution
         public sealed override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             return _executionDomain.GetPointerTypeForHandle(typeHandle);
+        }
+
+        public sealed override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetFunctionPointerTypeForHandle(typeHandle);
         }
 
         public sealed override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)

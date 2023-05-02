@@ -2,7 +2,17 @@
   <PropertyGroup>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!--
+      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
+      The specific combination below accomplishes this. Normal apps should *NOT* set this combination of switches and
+      should instead set the switches documented at:
+      https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/7.0/binaryformatter-apis-produce-errors#recommended-action
+    -->
+    <_ProjectTypeRequiresBinaryFormatter>true</_ProjectTypeRequiresBinaryFormatter>
+    <EnableUnsafeBinaryFormatterSerialization><!-- intentionally left blank --></EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
@@ -37,6 +47,7 @@
     <Compile Include="SerializationGuardTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Composition\src\System.ComponentModel.Composition.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\src\System.Configuration.ConfigurationManager.csproj" />
@@ -45,8 +56,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.AccountManagement\src\System.DirectoryServices.AccountManagement.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />

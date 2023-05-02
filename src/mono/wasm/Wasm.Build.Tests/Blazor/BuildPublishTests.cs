@@ -28,7 +28,7 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release")]
     public void DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         // Build
@@ -45,7 +45,11 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release")]
     public void DefaultTemplate_NoAOT_WithWorkload(string config)
     {
-        string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
+        // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
+        string id = config == "Release" ?
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -88,10 +92,11 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release", /*build*/true, /*publish*/false)]
     [InlineData("Release", /*build*/false, /*publish*/true)]
     [InlineData("Release", /*build*/true, /*publish*/true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}_";
+        string id = $"blz_dllimp_{config}_{s_unicodeChar}";
         if (build && publish)
             id += "build_then_publish";
         else if (build)
@@ -169,6 +174,7 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85354")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         string id = $"blz_razor_lib_top_{Path.GetRandomFileName()}";
@@ -192,7 +198,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
+        AddItemsPropertiesToProject(wasmProjectFile, extraItems: UseWebcil ? @"
+            <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.webcil"" />
+        " : @"
             <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
         ");
@@ -217,7 +226,7 @@ public class BuildPublishTests : BuildTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.Contains("RazorClassLibrary.webcil", lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

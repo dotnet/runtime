@@ -168,13 +168,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new ConstructedTypeSymbolHashtable(this);
 
-            _clonedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
-            {
-                // Only types that reside in other binaries should be cloned
-                Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                return new ClonedConstructedEETypeNode(this, type);
-            });
-
             _importedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
@@ -403,9 +396,14 @@ namespace ILCompiler.DependencyAnalysis
                 return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
             });
 
-            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
+            });
+
+            _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
+            {
+                return new GenericVarianceNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -439,17 +437,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, TypeGenericDictionaryNode>(type =>
             {
-                if (CompilationModuleGroup.ContainsTypeDictionary(type))
-                {
-                    Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type, this);
-                }
-                else
-                {
-                    return _importedNodeProvider.ImportedTypeDictionaryNode(this, type);
-                }
+                Debug.Assert(CompilationModuleGroup.ContainsTypeDictionary(type));
+                Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
+                return new TypeGenericDictionaryNode(type, this);
             });
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
@@ -619,20 +611,12 @@ namespace ILCompiler.DependencyAnalysis
             return _constructedTypeSymbols.GetOrCreateValue(type);
         }
 
-        private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
-
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
             if (ConstructedEETypeNode.CreationAllowed(type))
                 return ConstructedTypeSymbol(type);
             else
                 return NecessaryTypeSymbol(type);
-        }
-
-        public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
-        {
-            Debug.Assert(!TypeCannotHaveEEType(type));
-            return _clonedTypeSymbols.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
@@ -782,11 +766,18 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
-        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
+        private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
 
-        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
+
+        internal ISymbolNode GenericVariance(GenericVarianceDetails details)
+        {
+            return _genericVariances.GetOrAdd(details);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -847,8 +838,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, ISortableSymbolNode> _typeGenericDictionaries;
-        public ISortableSymbolNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, TypeGenericDictionaryNode> _typeGenericDictionaries;
+        public TypeGenericDictionaryNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
@@ -963,6 +954,9 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
+            // We track reflectability at canonical method body level
+            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
             return _reflectedMethods.GetOrAdd(method);
         }
 

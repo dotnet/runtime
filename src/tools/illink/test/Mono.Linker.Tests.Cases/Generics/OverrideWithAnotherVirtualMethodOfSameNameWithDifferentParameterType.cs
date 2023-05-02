@@ -4,7 +4,7 @@ namespace Mono.Linker.Tests.Cases.Generics
 {
 	class OverrideWithAnotherVirtualMethodOfSameNameWithDifferentParameterType
 	{
-		public static void Main (string[] args)
+		public static void Main ()
 		{
 			new Derived<double, int> ().Method (1.0);
 		}

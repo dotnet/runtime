@@ -1134,6 +1134,7 @@ namespace System.Threading
                 HResult = errorHResult;
             }
 
+            [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public ReaderWriterLockApplicationException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             {

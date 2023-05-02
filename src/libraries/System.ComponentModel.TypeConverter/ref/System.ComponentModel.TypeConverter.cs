@@ -721,12 +721,16 @@ namespace System.ComponentModel
     }
     public partial class LicenseException : System.SystemException
     {
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected LicenseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public LicenseException(System.Type? type) { }
         public LicenseException(System.Type? type, object? instance) { }
         public LicenseException(System.Type? type, object? instance, string? message) { }
         public LicenseException(System.Type? type, object? instance, string? message, System.Exception? innerException) { }
         public System.Type? LicensedType { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class LicenseManager
@@ -1581,6 +1585,8 @@ namespace System.ComponentModel
     public partial class WarningException : System.SystemException
     {
         public WarningException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected WarningException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public WarningException(string? message) { }
         public WarningException(string? message, System.Exception? innerException) { }
@@ -1588,6 +1594,8 @@ namespace System.ComponentModel
         public WarningException(string? message, string? helpUrl, string? helpTopic) { }
         public string? HelpTopic { get { throw null; } }
         public string? HelpUrl { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
@@ -1604,6 +1612,8 @@ namespace System.ComponentModel.Design
     {
         public static readonly System.ComponentModel.Design.CheckoutException Canceled;
         public CheckoutException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CheckoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CheckoutException(string? message) { }
         public CheckoutException(string? message, System.Exception? innerException) { }

@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -119,6 +119,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
+        [Fact]
+        public static async Task SupportsBoxedRootLevelValues()
+        {
+            PersonJsonContext context = PersonJsonContext.Default;
+            object person = new Person("John", "Smith");
+            string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
+            // Sanity check -- context does not specify object metadata
+            Assert.Null(context.GetTypeInfo(typeof(object)));
+
+            string json = JsonSerializer.Serialize(person, context.Options);
+            Assert.Equal(expectedJson, json);
+
+            var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, person, context.Options);
+            Assert.Equal(expectedJson, stream.AsString());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
@@ -209,6 +226,24 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonTypeInfo personInfo = combined.GetTypeInfo(typeof(Person), options);
             Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
             Assert.Same(options, personInfo.Options);
+        }
+
+        [Fact]
+        public static void ChainedContexts_ResolveJsonTypeInfo()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo messageInfo = options.GetTypeInfo(typeof(JsonMessage));
+            Assert.IsAssignableFrom<JsonTypeInfo<JsonMessage>>(messageInfo);
+            Assert.Same(options, messageInfo.Options);
+
+            JsonTypeInfo personInfo = options.GetTypeInfo(typeof(Person));
+            Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
+            Assert.Same(options, personInfo.Options);
+
+            NotSupportedException exn = Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(MyStruct)));
+            Assert.Contains(typeof(NestedContext).FullName, exn.Message);
+            Assert.Contains(typeof(PersonJsonContext).FullName, exn.Message);
         }
 
         [Fact]
@@ -500,6 +535,24 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializer.Deserialize<T>(json, options);
         }
 
+        [Theory]
+        [MemberData(nameof(GetCombiningContextsData))]
+        public static void ChainedContexts_Serialization<T>(T value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T))!;
+
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            JsonSerializer.Deserialize<T>(json, typeInfo);
+            JsonSerializer.Deserialize<T>(json, options);
+        }
+
         [Fact]
         public static void CombiningContextWithCustomResolver_ReplacePoco()
         {
@@ -614,7 +667,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void SupportsPropertiesWithCustomConverterFactory()
         {
-            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = Serialization.Tests.SampleEnum.MinZero };
+            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
             Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
         }

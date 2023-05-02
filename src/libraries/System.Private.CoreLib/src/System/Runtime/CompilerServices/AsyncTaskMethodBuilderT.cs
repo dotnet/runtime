@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -270,6 +269,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
+        [DebuggerDisplay("{DebuggerDisplay,nq}")]
         private class AsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
             Task<TResult>, IAsyncStateMachineBox
             where TStateMachine : IAsyncStateMachine
@@ -286,15 +286,57 @@ namespace System.Runtime.CompilerServices
                 Unsafe.As<AsyncStateMachineBox<TStateMachine>>(s).StateMachine!.MoveNext();
             }
 
-            /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
-            private Action? _moveNextAction;
             /// <summary>The state machine itself.</summary>
             public TStateMachine? StateMachine; // mutable struct; do not make this readonly. SOS DumpAsync command depends on this name.
-            /// <summary>Captured ExecutionContext with which to invoke <see cref="MoveNextAction"/>; may be null.</summary>
-            public ExecutionContext? Context;
+
+            public AsyncStateMachineBox()
+            {
+                // The async state machine uses the base Task's state object field to store the captured execution context.
+                // Ensure that state object isn't published out for others to see.
+                Debug.Assert((m_stateFlags & (int)InternalTaskOptions.PromiseTask) != 0, "Expected state flags to already be configured.");
+                Debug.Assert(m_stateObject is null, "Expected to be able to use the state object field for ExecutionContext.");
+                m_stateFlags |= (int)InternalTaskOptions.HiddenState;
+            }
+
+            /// <summary>Debugger-only display string for the async state machine.</summary>
+            private string DebuggerDisplay
+            {
+                get
+                {
+                    // Ideally we just use the type of the TStateMachine as the "method" name.  However, in certain use in the
+                    // debugger, TStateMachine might actually be a weakly-typed IAsyncStateMachine, in which case we can ToString
+                    // the state machine instance.  But in debug builds the state machine type could also be a class, in which case
+                    // the field could be null, so worst case we just fall back to using "IAsyncStateMachine".
+                    string stateMachineName = typeof(TStateMachine) != typeof(IAsyncStateMachine) ?
+                        typeof(TStateMachine).Name :
+                        StateMachine?.ToString() ??
+                        nameof(IAsyncStateMachine);
+
+                    // Keep the shape of this message in sync with that of the base Task<TResult>.
+                    return IsCompletedSuccessfully && typeof(TResult) != typeof(VoidTaskResult) ?
+                        $"Id = {Id}, Status = {Status}, Method = {stateMachineName}, Result = {m_result}" :
+                        $"Id = {Id}, Status = {Status}, Method = {stateMachineName}";
+                }
+            }
 
             /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
-            public Action MoveNextAction => _moveNextAction ??= new Action(MoveNext);
+            public Action MoveNextAction => (Action)(m_action ??= new Action(MoveNext));
+
+            /// <summary>Captured ExecutionContext with which to invoke <see cref="MoveNextAction"/>; may be null.</summary>
+            /// <remarks>
+            /// This uses the base Task.m_stateObject field to store the context, as that field is otherwise unused for state machine boxes.
+            /// This *must* not be set to anything other than null or an ExecutionContext, or it will result in a type safety hole.
+            /// We also don't want this ExecutionContext exposed out to consumers of the Task via Task.AsyncState, so
+            /// the ctor sets the HiddenState option to prevent this from leaking out.
+            /// </remarks>
+            public ref ExecutionContext? Context
+            {
+                get
+                {
+                    Debug.Assert(m_stateObject is null || m_stateObject is ExecutionContext, $"{nameof(m_stateObject)} must only be for ExecutionContext but contained {m_stateObject}.");
+                    return ref Unsafe.As<object?, ExecutionContext?>(ref m_stateObject);
+                }
+            }
 
             internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
 

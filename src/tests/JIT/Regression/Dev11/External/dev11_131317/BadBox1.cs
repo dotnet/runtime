@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BadBox1
 {
@@ -43,7 +44,8 @@ namespace BadBox1
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -3438,10 +3438,10 @@ AdjustContextForVirtualStub(
 
     PCODE f_IP = GetIP(pContext);
 
-    VirtualCallStubManager::StubKind sk;
+    StubCodeBlockKind sk;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(f_IP, &sk);
 
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         if (*PTR_WORD(f_IP) != X86_INSTR_CMP_IND_ECX_IMM32)
         {
@@ -3450,7 +3450,7 @@ AdjustContextForVirtualStub(
         }
     }
     else
-    if (sk == VirtualCallStubManager::SK_RESOLVE)
+    if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
         if (*PTR_WORD(f_IP) != X86_INSTR_MOV_EAX_ECX_IND)
         {
@@ -3486,7 +3486,7 @@ AdjustContextForVirtualStub(
     // set the ESP to what it would be after the call (remove pushed arguments)
 
     size_t stackArgumentsSize;
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 

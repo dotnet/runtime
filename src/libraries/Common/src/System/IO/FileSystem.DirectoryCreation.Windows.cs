@@ -80,7 +80,7 @@ namespace System.IO
                 Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
+                    lpSecurityDescriptor = pSecurityDescriptor
                 };
 
                 while (stackDir.Count > 0)

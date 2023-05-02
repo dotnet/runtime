@@ -228,6 +228,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
+
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected
@@ -304,6 +308,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected

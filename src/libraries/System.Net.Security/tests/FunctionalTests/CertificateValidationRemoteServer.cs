@@ -123,16 +123,9 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsDebian10))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
-            // Offline will only work if
-            // a) the revocation has been checked recently enough that it is cached, or
-            // b) the server stapled the response
-            //
-            // At high load, the server's background fetch might not have completed before
-            // this test runs.
+            // When using specific certificate, OCSP is disabled e.g. when SslStreamCertificateContext is passed in explicitly.
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
         }
 

@@ -51,7 +51,6 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave;
 bool g_fHasFastFxsave = false;
 
-CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
@@ -170,10 +169,7 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
-    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
-        return false;
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
         return false;
 
     return true;
@@ -303,6 +299,15 @@ bool DetectCPUFeatures()
                                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq_vl;
                                                         }
                                                     }
+
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        if (isAVX512_VLSupported)
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -377,7 +382,7 @@ bool InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment    
+    // The GS cookie is stored in a read only data segment
     if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
@@ -464,7 +469,7 @@ static void UninitDLL()
 #ifdef _WIN32
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
-// 
+//
 // On POSIX OSes a process typically lives as long as any of its threads are alive or until
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.

@@ -15,9 +15,8 @@ using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.TypeInfos.EcmaFormat;
 using System.Reflection.Runtime.MethodInfos.EcmaFormat;
 #endif
-using System.Reflection.Runtime.TypeParsing;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Runtime.CompilerServices;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 
@@ -34,91 +33,6 @@ namespace Internal.Reflection.Core.Execution
         {
             ExecutionEnvironment = executionEnvironment;
             ReflectionDomainSetup = executionDomainSetup;
-        }
-
-        //
-        // Retrieves a type by name. Helper to implement Type.GetType();
-        //
-        public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, IList<string> defaultAssemblyNames)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            if (typeName.Length == 0)
-            {
-                if (throwOnError)
-                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-                else
-                    return null;
-            }
-
-            TypeName parsedName = TypeParser.ParseAssemblyQualifiedTypeName(typeName, throwOnError: throwOnError);
-            if (parsedName == null)
-                return null;
-            CoreAssemblyResolver coreAssemblyResolver = CreateCoreAssemblyResolver(assemblyResolver);
-            CoreTypeResolver coreTypeResolver = CreateCoreTypeResolver(typeResolver, defaultAssemblyNames, throwOnError: throwOnError, ignoreCase: ignoreCase);
-            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-
-            return parsedName.ResolveType(null, getTypeOptions);
-        }
-
-        private static CoreAssemblyResolver CreateCoreAssemblyResolver(Func<AssemblyName, Assembly> assemblyResolver)
-        {
-            if (assemblyResolver == null)
-            {
-                return RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists;
-            }
-            else
-            {
-                return delegate (RuntimeAssemblyName runtimeAssemblyName)
-                {
-                    AssemblyName assemblyName = runtimeAssemblyName.ToAssemblyName();
-                    Assembly assembly = assemblyResolver(assemblyName);
-                    return assembly;
-                };
-            }
-        }
-
-        private static CoreTypeResolver CreateCoreTypeResolver(Func<Assembly, string, bool, Type> typeResolver, IList<string> defaultAssemblyNames, bool throwOnError, bool ignoreCase)
-        {
-            if (typeResolver == null)
-            {
-                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
-                {
-                    if (containingAssemblyIfAny != null)
-                    {
-                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                    }
-                    else
-                    {
-                        foreach (string defaultAssemblyName in defaultAssemblyNames)
-                        {
-                            RuntimeAssemblyName runtimeAssemblyName = RuntimeAssemblyName.Parse(defaultAssemblyName);
-                            RuntimeAssemblyInfo defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
-                            if (defaultAssembly == null)
-                                continue;
-                            Type resolvedType = defaultAssembly.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                            if (resolvedType != null)
-                                return resolvedType;
-                        }
-
-                        if (throwOnError && defaultAssemblyNames.Count > 0)
-                        {
-                            // Though we don't have to throw a TypeLoadException exception (that's our caller's job), we can throw a more specific exception than he would so just do it.
-                            throw Helpers.CreateTypeLoadException(coreTypeName, defaultAssemblyNames[0]);
-                        }
-                        return null;
-                    }
-                };
-            }
-            else
-            {
-                return delegate (Assembly containingAssemblyIfAny, string coreTypeName)
-                {
-                    string escapedName = coreTypeName.EscapeTypeNameIdentifier();
-                    Type type = typeResolver(containingAssemblyIfAny, escapedName, ignoreCase);
-                    return type;
-                };
-            }
         }
 
         //
@@ -238,6 +152,23 @@ namespace Internal.Reflection.Core.Execution
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
+        public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            ExecutionEnvironment.GetFunctionPointerTypeComponents(typeHandle, out RuntimeTypeHandle returnTypeHandle,
+                                                                              out RuntimeTypeHandle[] parameterHandles,
+                                                                              out bool isUnmanaged);
+
+            RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
+            int count = parameterHandles.Length;
+            RuntimeTypeInfo[] parameterTypes = new RuntimeTypeInfo[count];
+            for (int i = 0; i < count; i++)
+            {
+                parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
+            }
+
+            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
+        }
+
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle targetTypeHandle;
@@ -337,28 +268,17 @@ namespace Internal.Reflection.Core.Execution
             return true;
         }
 
+        public static bool IsPrimitiveType(Type type)
+            => type == typeof(bool) || type == typeof(char)
+                || type == typeof(sbyte) || type == typeof(byte)
+                || type == typeof(short) || type == typeof(ushort)
+                || type == typeof(int) || type == typeof(uint)
+                || type == typeof(long) || type == typeof(ulong)
+                || type == typeof(float) || type == typeof(double)
+                || type == typeof(nint) || type == typeof(nuint);
+
         internal ExecutionEnvironment ExecutionEnvironment { get; }
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
-
-        internal static IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
-
-        private static readonly Type[] s_primitiveTypes =
-        {
-                    typeof(bool),
-                    typeof(char),
-                    typeof(sbyte),
-                    typeof(byte),
-                    typeof(short),
-                    typeof(ushort),
-                    typeof(int),
-                    typeof(uint),
-                    typeof(long),
-                    typeof(ulong),
-                    typeof(float),
-                    typeof(double),
-                    typeof(IntPtr),
-                    typeof(UIntPtr),
-        };
     }
 }

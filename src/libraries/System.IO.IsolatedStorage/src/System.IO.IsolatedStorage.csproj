@@ -18,6 +18,8 @@
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs"
              Link="Common\System\Security\IdentityHelper.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\IO\IsolatedStorage\Helper.AnyMobile.cs" />

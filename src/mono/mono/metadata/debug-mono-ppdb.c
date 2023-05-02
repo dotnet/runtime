@@ -68,11 +68,12 @@ mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age
 	ImageDebugDirectory debug_dir;
 	gboolean guid_found = FALSE;
 	guint8 *data;
-
+	if (!image || !image->image_info)
+		return FALSE;
 	*ppdb_data = NULL;
 
 	debug_dir_entry = (MonoPEDirEntry *) &image->image_info->cli_header.datadir.pe_debug;
-	if (!debug_dir_entry->size)
+	if (!debug_dir_entry || !debug_dir_entry->size)
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);

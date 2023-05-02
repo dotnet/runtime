@@ -55,7 +55,7 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned           bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
@@ -81,7 +81,7 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned long long bits = 0x7FF8000000000000ull;
 #else
 #error Unsupported or unset target architecture
@@ -444,8 +444,10 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_simd8CnsMap(nullptr)
     , m_simd12CnsMap(nullptr)
     , m_simd16CnsMap(nullptr)
+#if defined(TARGET_XARCH)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
@@ -1874,6 +1876,113 @@ ValueNum ValueNumStore::VNForSimd64Con(simd64_t cnsVal)
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
+ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
+{
+    // For now we only support these primitives, we can extend this list to FP, SIMD and structs in future.
+    switch (typ)
+    {
+#define READ_VALUE(typ)                                                                                                \
+    typ val = {};                                                                                                      \
+    memcpy(&val, cnsVal, sizeof(typ));
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+        {
+            READ_VALUE(uint8_t);
+            return VNForIntCon(val);
+        }
+        case TYP_BYTE:
+        {
+            READ_VALUE(int8_t);
+            return VNForIntCon(val);
+        }
+        case TYP_SHORT:
+        {
+            READ_VALUE(int16_t);
+            return VNForIntCon(val);
+        }
+        case TYP_USHORT:
+        {
+            READ_VALUE(uint16_t);
+            return VNForIntCon(val);
+        }
+        case TYP_INT:
+        {
+            READ_VALUE(int32_t);
+            return VNForIntCon(val);
+        }
+        case TYP_UINT:
+        {
+            READ_VALUE(uint32_t);
+            return VNForIntCon(val);
+        }
+        case TYP_LONG:
+        {
+            READ_VALUE(int64_t);
+            return VNForLongCon(val);
+        }
+        case TYP_ULONG:
+        {
+            READ_VALUE(uint64_t);
+            return VNForLongCon(val);
+        }
+        case TYP_FLOAT:
+        {
+            READ_VALUE(float);
+            return VNForFloatCon(val);
+        }
+        case TYP_DOUBLE:
+        {
+            READ_VALUE(double);
+            return VNForDoubleCon(val);
+        }
+        case TYP_REF:
+        {
+            READ_VALUE(ssize_t);
+            if (val == 0)
+            {
+                return VNForNull();
+            }
+            else
+            {
+                return VNForHandle(val, GTF_ICON_OBJ_HDL);
+            }
+        }
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+        {
+            READ_VALUE(simd8_t);
+            return VNForSimd8Con(val);
+        }
+        case TYP_SIMD12:
+        {
+            READ_VALUE(simd12_t);
+            return VNForSimd12Con(val);
+        }
+        case TYP_SIMD16:
+        {
+            READ_VALUE(simd16_t);
+            return VNForSimd16Con(val);
+        }
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            READ_VALUE(simd32_t);
+            return VNForSimd32Con(val);
+        }
+        case TYP_SIMD64:
+        {
+            READ_VALUE(simd64_t);
+            return VNForSimd64Con(val);
+        }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+        default:
+            unreached();
+            break;
+    }
+}
+
 ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 {
     assert(castToType != TYP_STRUCT);
@@ -1957,28 +2066,28 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            return VNForSimd8Con({});
+            return VNForSimd8Con(simd8_t::Zero());
         }
 
         case TYP_SIMD12:
         {
-            return VNForSimd12Con({});
+            return VNForSimd12Con(simd12_t::Zero());
         }
 
         case TYP_SIMD16:
         {
-            return VNForSimd16Con({});
+            return VNForSimd16Con(simd16_t::Zero());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            return VNForSimd32Con({});
+            return VNForSimd32Con(simd32_t::Zero());
         }
 
         case TYP_SIMD64:
         {
-            return VNForSimd64Con({});
+            return VNForSimd64Con(simd64_t::Zero());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2048,53 +2157,28 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         {
-            simd8_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-
-            return VNForSimd8Con(cnsVal);
+            return VNForSimd8Con(simd8_t::AllBitsSet());
         }
 
         case TYP_SIMD12:
         {
-            simd12_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-
-            return VNForSimd12Con(cnsVal);
+            return VNForSimd12Con(simd12_t::AllBitsSet());
         }
 
         case TYP_SIMD16:
         {
-            simd16_t cnsVal;
-
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-            cnsVal.u32[3] = 0xFFFFFFFF;
-
-            return VNForSimd16Con(cnsVal);
+            return VNForSimd16Con(simd16_t::AllBitsSet());
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            simd32_t cnsVal;
+            return VNForSimd32Con(simd32_t::AllBitsSet());
+        }
 
-            cnsVal.u32[0] = 0xFFFFFFFF;
-            cnsVal.u32[1] = 0xFFFFFFFF;
-            cnsVal.u32[2] = 0xFFFFFFFF;
-            cnsVal.u32[3] = 0xFFFFFFFF;
-
-            cnsVal.u32[4] = 0xFFFFFFFF;
-            cnsVal.u32[5] = 0xFFFFFFFF;
-            cnsVal.u32[6] = 0xFFFFFFFF;
-            cnsVal.u32[7] = 0xFFFFFFFF;
-
-            return VNForSimd32Con(cnsVal);
+        case TYP_SIMD64:
+        {
+            return VNForSimd64Con(simd64_t::AllBitsSet());
         }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -2111,8 +2195,8 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
 {
     assert(varTypeIsSIMD(simdType));
 
-    simd32_t simd32Val = {};
-    int      simdSize  = genTypeSize(simdType);
+    simd_t simdVal  = {};
+    int    simdSize = genTypeSize(simdType);
 
     switch (simdBaseType)
     {
@@ -2121,7 +2205,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < simdSize; i++)
             {
-                simd32Val.u8[i] = 1;
+                simdVal.u8[i] = 1;
             }
             break;
         }
@@ -2131,7 +2215,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 2); i++)
             {
-                simd32Val.u16[i] = 1;
+                simdVal.u16[i] = 1;
             }
             break;
         }
@@ -2141,7 +2225,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 4); i++)
             {
-                simd32Val.u32[i] = 1;
+                simdVal.u32[i] = 1;
             }
             break;
         }
@@ -2151,7 +2235,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 8); i++)
             {
-                simd32Val.u64[i] = 1;
+                simdVal.u64[i] = 1;
             }
             break;
         }
@@ -2160,7 +2244,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 4); i++)
             {
-                simd32Val.f32[i] = 1.0f;
+                simdVal.f32[i] = 1.0f;
             }
             break;
         }
@@ -2169,7 +2253,7 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
         {
             for (int i = 0; i < (simdSize / 8); i++)
             {
-                simd32Val.f64[i] = 1.0;
+                simdVal.f64[i] = 1.0;
             }
             break;
         }
@@ -2184,27 +2268,38 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     {
         case TYP_SIMD8:
         {
-            return VNForSimd8Con(simd32Val.v64[0]);
+            simd8_t simd8Val;
+            memcpy(&simd8Val, &simdVal, sizeof(simd8_t));
+            return VNForSimd8Con(simd8Val);
         }
 
         case TYP_SIMD12:
         {
-            assert(simdBaseType == TYP_FLOAT);
-
             simd12_t simd12Val;
-            memcpy(&simd12Val, &simd32Val.f32, sizeof(simd12_t));
+            memcpy(&simd12Val, &simdVal, sizeof(simd12_t));
             return VNForSimd12Con(simd12Val);
         }
 
         case TYP_SIMD16:
         {
-            return VNForSimd16Con(simd32Val.v128[0]);
+            simd16_t simd16Val;
+            memcpy(&simd16Val, &simdVal, sizeof(simd16_t));
+            return VNForSimd16Con(simd16Val);
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
+            simd32_t simd32Val;
+            memcpy(&simd32Val, &simdVal, sizeof(simd32_t));
             return VNForSimd32Con(simd32Val);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t simd64Val;
+            memcpy(&simd64Val, &simdVal, sizeof(simd64_t));
+            return VNForSimd64Con(simd64Val);
         }
 #endif // TARGET_XARCH
 
@@ -2296,7 +2391,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
         {
             // Case 1: ARR_LENGTH(FROZEN_OBJ)
             ValueNum addressVN = VNNormalValue(arg0VN);
-            if (IsVNHandle(addressVN) && (GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
+            if (IsVNObjHandle(addressVN))
             {
                 size_t handle = CoercedConstantValue<size_t>(addressVN);
                 int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
@@ -2320,8 +2415,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         if (field != NULL)
                         {
                             uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
-                                                                                       TARGET_POINTER_SIZE, 0, false))
+                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
+                                                                                 false))
                             {
                                 // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
                                 // value holding 32bit handle with upper half zeroed (hence, "= NULL").
@@ -2337,6 +2432,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         }
                     }
                 }
+            }
+
+            // Case 3: ARR_LENGTH(new T[cns])
+            // TODO: Add support for MD arrays
+            int knownSize;
+            if ((resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
+            {
+                resultVN = VNForIntCon(knownSize);
             }
         }
 
@@ -4462,7 +4565,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForSubtraction = [=]() -> ValueNum {
+    auto identityForSubtraction = [=](bool ovf) -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -4473,6 +4576,39 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             else if (arg0VN == arg1VN)
             {
                 return ZeroVN;
+            }
+
+            if (!ovf)
+            {
+                // (x + a) - x == a
+                // (a + x) - x == a
+                VNFuncApp add;
+                if (GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                {
+                    if (add.m_args[0] == arg1VN)
+                        return add.m_args[1];
+                    if (add.m_args[1] == arg1VN)
+                        return add.m_args[0];
+
+                    // (x + a) - (x + b) == a - b
+                    // (a + x) - (x + b) == a - b
+                    // (x + a) - (b + x) == a - b
+                    // (a + x) - (b + x) == a - b
+                    VNFuncApp add2;
+                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == (VNFunc)GT_ADD))
+                    {
+                        for (int a = 0; a < 2; a++)
+                        {
+                            for (int b = 0; b < 2; b++)
+                            {
+                                if (add.m_args[a] == add2.m_args[b])
+                                {
+                                    return VNForFunc(typ, (VNFunc)GT_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -4527,7 +4663,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 break;
 
             case GT_SUB:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(/* ovf */ false);
                 break;
 
             case GT_MUL:
@@ -4726,6 +4862,26 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = VNOneForType(typ);
                 }
+                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if (genTreeOps(func) == GT_GE)
+                    {
+                        // (never negative) >= 0 == true
+                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                        {
+                            resultVN = VNOneForType(typ);
+                        }
+                    }
+                    else if (genTreeOps(func) == GT_LE)
+                    {
+                        // 0 <= (never negative) == true
+                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
+                        {
+                            resultVN = VNOneForType(typ);
+                        }
+                    }
+                }
                 break;
 
             case GT_NE:
@@ -4785,6 +4941,26 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = VNZeroForType(typ);
                 }
+                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if (genTreeOps(func) == GT_LT)
+                    {
+                        // (never negative) < 0 == false
+                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                        {
+                            resultVN = ZeroVN;
+                        }
+                    }
+                    else if (genTreeOps(func) == GT_GT)
+                    {
+                        // 0 > (never negative) == false
+                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
+                        {
+                            resultVN = ZeroVN;
+                        }
+                    }
+                }
                 break;
 
             default:
@@ -4802,7 +4978,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(/* ovf */ true);
                 break;
 
             case VNF_MUL_OVF:
@@ -5630,6 +5806,72 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
     return TypeOfVN(vn) == TYP_INT;
 }
 
+bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
+{
+    assert(varTypeIsIntegral(TypeOfVN(vn)));
+
+    if (IsVNConstant(vn))
+    {
+        var_types vnTy = TypeOfVN(vn);
+        if (vnTy == TYP_INT)
+        {
+            return GetConstantInt32(vn) >= 0;
+        }
+        else if (vnTy == TYP_LONG)
+        {
+            return GetConstantInt64(vn) >= 0;
+        }
+
+        return false;
+    }
+
+    // Array length can never be negative.
+    if (IsVNArrLen(vn))
+    {
+        return true;
+    }
+
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp))
+    {
+        switch (funcApp.m_func)
+        {
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+            case VNF_LE_UN:
+            case VNF_LT_UN:
+            case VNF_COUNT:
+            case VNF_ADD_UN_OVF:
+            case VNF_SUB_UN_OVF:
+            case VNF_MUL_UN_OVF:
+#ifdef FEATURE_HW_INTRINSICS
+#ifdef TARGET_XARCH
+            case VNF_HWI_POPCNT_PopCount:
+            case VNF_HWI_POPCNT_X64_PopCount:
+            case VNF_HWI_LZCNT_LeadingZeroCount:
+            case VNF_HWI_LZCNT_X64_LeadingZeroCount:
+            case VNF_HWI_BMI1_TrailingZeroCount:
+            case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                return true;
+#elif defined(TARGET_ARM64)
+            case VNF_HWI_AdvSimd_PopCount:
+            case VNF_HWI_AdvSimd_LeadingZeroCount:
+            case VNF_HWI_AdvSimd_LeadingSignCount:
+            case VNF_HWI_ArmBase_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
+                return true;
+#endif
+#endif // FEATURE_HW_INTRINSICS
+
+            default:
+                break;
+        }
+    }
+
+    return false;
+}
+
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
 {
     assert(IsVNHandle(vn));
@@ -5681,6 +5923,11 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     return c->m_attribs == CEA_Handle;
+}
+
+bool ValueNumStore::IsVNObjHandle(ValueNum vn)
+{
+    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
 }
 
 //------------------------------------------------------------------------
@@ -6252,18 +6499,24 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
 
 // TODO-MDArray: support array dimension length of a specific dimension for JitNewMdArr, with a GetNewMDArrSize()
 // function.
-int ValueNumStore::GetNewArrSize(ValueNum vn)
+bool ValueNumStore::TryGetNewArrSize(ValueNum vn, int* size)
 {
     VNFuncApp funcApp;
     if (IsVNNewArr(vn, &funcApp))
     {
         ValueNum arg1VN = funcApp.m_args[1];
-        if (IsVNConstant(arg1VN) && TypeOfVN(arg1VN) == TYP_INT)
+        if (IsVNConstant(arg1VN))
         {
-            return ConstantValue<int>(arg1VN);
+            ssize_t val = CoercedConstantValue<ssize_t>(arg1VN);
+            if ((size_t)val <= INT_MAX)
+            {
+                *size = (int)val;
+                return true;
+            }
         }
     }
-    return 0;
+    *size = 0;
+    return false;
 }
 
 bool ValueNumStore::IsVNArrLen(ValueNum vn)
@@ -6424,6 +6677,18 @@ simd32_t GetConstantSimd32(ValueNumStore* vns, var_types baseType, ValueNum argV
 
     return BroadcastConstantToSimd<simd32_t>(vns, baseType, argVN);
 }
+
+simd64_t GetConstantSimd64(ValueNumStore* vns, var_types baseType, ValueNum argVN)
+{
+    assert(vns->IsVNConstant(argVN));
+
+    if (vns->TypeOfVN(argVN) == TYP_SIMD64)
+    {
+        return vns->GetConstantSimd64(argVN);
+    }
+
+    return BroadcastConstantToSimd<simd64_t>(vns, baseType, argVN);
+}
 #endif // TARGET_XARCH
 
 ValueNum EvaluateUnarySimd(
@@ -6466,6 +6731,15 @@ ValueNum EvaluateUnarySimd(
             simd32_t result = {};
             EvaluateUnarySimd<simd32_t>(oper, scalar, baseType, &result, arg0);
             return vns->VNForSimd32Con(result);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t arg0 = GetConstantSimd64(vns, baseType, arg0VN);
+
+            simd64_t result = {};
+            EvaluateUnarySimd<simd64_t>(oper, scalar, baseType, &result, arg0);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -6525,6 +6799,16 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
             simd32_t result = {};
             EvaluateBinarySimd<simd32_t>(oper, scalar, baseType, &result, arg0, arg1);
             return vns->VNForSimd32Con(result);
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t arg0 = GetConstantSimd64(vns, baseType, arg0VN);
+            simd64_t arg1 = GetConstantSimd64(vns, baseType, arg1VN);
+
+            simd64_t result = {};
+            EvaluateBinarySimd<simd64_t>(oper, scalar, baseType, &result, arg0, arg1);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -6630,6 +6914,11 @@ ValueNum EvaluateSimdGetElement(ValueNumStore* vns, var_types type, var_types ba
         case TYP_SIMD32:
         {
             return EvaluateSimdGetElement<simd32_t>(vns, baseType, vns->GetConstantSimd32(arg0VN), arg1);
+        }
+
+        case TYP_SIMD64:
+        {
+            return EvaluateSimdGetElement<simd64_t>(vns, baseType, vns->GetConstantSimd64(arg0VN), arg1);
         }
 #endif // TARGET_XARCH
 
@@ -6886,6 +7175,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Add:
             case NI_AVX_Add:
             case NI_AVX2_Add:
+            case NI_AVX512F_Add:
+            case NI_AVX512BW_Add:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_ADD, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -6935,6 +7226,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE_Divide:
             case NI_SSE2_Divide:
             case NI_AVX_Divide:
+            case NI_AVX512F_Divide:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_DIV, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -6955,6 +7247,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_Vector64_GetElement:
 #else
             case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
 #endif
             {
                 return EvaluateSimdGetElement(this, type, baseType, arg0VN, GetConstantInt32(arg1VN));
@@ -7015,6 +7308,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #else
             case NI_SSE2_ShiftLeftLogical:
             case NI_AVX2_ShiftLeftLogical:
+            case NI_AVX512F_ShiftLeftLogical:
+            case NI_AVX512BW_ShiftLeftLogical:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_LSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7025,6 +7320,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #else
             case NI_SSE2_ShiftRightArithmetic:
             case NI_AVX2_ShiftRightArithmetic:
+            case NI_AVX512F_ShiftRightArithmetic:
+            case NI_AVX512F_VL_ShiftRightArithmetic:
+            case NI_AVX512BW_ShiftRightArithmetic:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_RSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7035,6 +7333,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #else
             case NI_SSE2_ShiftRightLogical:
             case NI_AVX2_ShiftRightLogical:
+            case NI_AVX512F_ShiftRightLogical:
+            case NI_AVX512BW_ShiftRightLogical:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_RSZ, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7065,6 +7365,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_SUB, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7108,6 +7410,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Add:
             case NI_AVX_Add:
             case NI_AVX2_Add:
+            case NI_AVX512F_Add:
+            case NI_AVX512BW_Add:
 #endif
             {
                 if (varTypeIsFloating(baseType))
@@ -7200,6 +7504,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE_Divide:
             case NI_SSE2_Divide:
             case NI_AVX_Divide:
+            case NI_AVX512F_Divide:
 #endif
             {
                 // Handle `x / 1 == x`.
@@ -7234,6 +7539,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE41_MultiplyLow:
             case NI_AVX_Multiply:
             case NI_AVX2_MultiplyLow:
+            case NI_AVX512F_Multiply:
+            case NI_AVX512F_MultiplyLow:
+            case NI_AVX512BW_MultiplyLow:
+            case NI_AVX512DQ_MultiplyLow:
+            case NI_AVX512DQ_VL_MultiplyLow:
 #endif
             {
                 if (!varTypeIsFloating(baseType))
@@ -7306,6 +7616,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_ShiftLeftLogical:
             case NI_AVX2_ShiftRightArithmetic:
             case NI_AVX2_ShiftRightLogical:
+            case NI_AVX512F_ShiftLeftLogical:
+            case NI_AVX512F_ShiftRightArithmetic:
+            case NI_AVX512F_ShiftRightLogical:
+            case NI_AVX512F_VL_ShiftRightArithmetic:
+            case NI_AVX512BW_ShiftLeftLogical:
+            case NI_AVX512BW_ShiftRightArithmetic:
+            case NI_AVX512BW_ShiftRightLogical:
 #endif
             {
                 // Handle `x <<  0 == x` and `0 <<  x == 0`
@@ -7328,6 +7645,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 if (varTypeIsFloating(baseType))
@@ -7420,6 +7739,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Subtract:
             case NI_AVX_Subtract:
             case NI_AVX2_Subtract:
+            case NI_AVX512F_Subtract:
+            case NI_AVX512BW_Subtract:
 #endif
             {
                 if (varTypeIsFloating(baseType))
@@ -8502,8 +8823,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_ARR_ADDR, GT_BOUNDS_CHECK,
-                                                 GT_OBJ,      // May reference heap memory.
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
                                                  GT_MDARR_LENGTH,
@@ -9038,43 +9358,15 @@ PhaseStatus Compiler::fgValueNumber()
             ValueNum  initVal  = ValueNumStore::NoVN; // We must assign a new value to initVal
             var_types typ      = varDsc->TypeGet();
 
-            switch (typ)
+            if (isZeroed)
             {
-                case TYP_LCLBLK: // The outgoing args area for arm and x64
-                case TYP_BLK:    // A blob of memory
-                    // TYP_BLK is used for the EHSlots LclVar on x86 (aka shadowSPslotsVar)
-                    // and for the lvaInlinedPInvokeFrameVar on x64, arm and x86
-                    // The stack associated with these LclVars are not zero initialized
-                    // thus we set 'initVN' to a new, unique VN.
-                    //
-                    initVal = vnStore->VNForExpr(fgFirstBB);
-                    break;
-
-                case TYP_BYREF:
-                    if (isZeroed)
-                    {
-                        // LclVars of TYP_BYREF can be zero-inited.
-                        initVal = vnStore->VNForByrefCon(0);
-                    }
-                    else
-                    {
-                        // Here we have uninitialized TYP_BYREF
-                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(lclNum));
-                    }
-                    break;
-
-                default:
-                    if (isZeroed)
-                    {
-                        // By default we will zero init these LclVars
-                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout())
-                                                      : vnStore->VNZeroForType(typ);
-                    }
-                    else
-                    {
-                        initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(lclNum));
-                    }
-                    break;
+                // By default we will zero init these LclVars
+                initVal =
+                    (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout()) : vnStore->VNZeroForType(typ);
+            }
+            else
+            {
+                initVal = vnStore->VNForFunc(typ, VNF_InitVal, vnStore->VNForIntCon(lclNum));
             }
 #ifdef TARGET_X86
             bool isVarargParam = (lclNum == lvaVarargsBaseOfStkArgs || lclNum == lvaVarargsHandleArg);
@@ -9689,22 +9981,50 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(tree->AsVecCon()->gtSimd8Val));
+        {
+            simd8_t simd8Val;
+            memcpy(&simd8Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd8_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(simd8Val));
             break;
+        }
 
         case TYP_SIMD12:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(tree->AsVecCon()->gtSimd12Val));
+        {
+            simd12_t simd12Val;
+            memcpy(&simd12Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd12_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
             break;
+        }
 
         case TYP_SIMD16:
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(tree->AsVecCon()->gtSimd16Val));
+        {
+            simd16_t simd16Val;
+            memcpy(&simd16Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd16_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(simd16Val));
             break;
+        }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
-        case TYP_SIMD64: // TODO-XArch-AVX512: Fix once GenTreeVecCon supports gtSimd64Val.
-            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(tree->AsVecCon()->gtSimd32Val));
+        {
+            simd32_t simd32Val;
+            memcpy(&simd32Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd32_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(simd32Val));
             break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t simd64Val;
+            memcpy(&simd64Val, &tree->AsVecCon()->gtSimdVal, sizeof(simd64_t));
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(simd64Val));
+            break;
+        }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -9791,12 +10111,11 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             ValueNum initObjVN;
             if (rhs->IsIntegralConst(0))
             {
-                initObjVN = lhs->TypeIs(TYP_STRUCT) ? vnStore->VNForZeroObj(lhs->GetLayout(this))
-                                                    : vnStore->VNZeroForType(lhs->TypeGet());
+                initObjVN = vnStore->VNForZeroObj(lhs->GetLayout(this));
             }
             else
             {
-                initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
+                initObjVN = vnStore->VNForExpr(compCurBB, TYP_STRUCT);
             }
 
             rhsVNPair.SetBoth(initObjVN);
@@ -9815,9 +10134,8 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
     }
 
-    // We have to handle the case where the LHS is a comma.  In that case, we don't evaluate the comma,
-    // and we're really just interested in the effective value.
-    lhs = lhs->gtEffectiveVal();
+    // Locations are not allowed to be COMMAs.
+    assert(!lhs->OperIs(GT_COMMA));
 
     // Now, record the new VN for an assignment (performing the indicated "state update").
     // It's safe to use gtEffectiveVal here, because the non-last elements of a comma list on the
@@ -9838,7 +10156,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
         break;
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
         {
@@ -9879,10 +10196,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             {
                 assert(fldSeq != nullptr);
                 fgValueNumberFieldStore(tree, baseAddr, fldSeq, offset, storeSize, rhsVNPair.GetLiberal());
-            }
-            else if (addr->DefinesLocalAddr(&lclVarTree, &offset))
-            {
-                fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
             }
             else
             {
@@ -9965,14 +10278,27 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
 //
 static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, ssize_t* byteOffset, FieldSeq** pFseq)
 {
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
+    {
+        FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        {
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
+            *pFseq      = fseq;
+            return true;
+        }
+    }
     ssize_t val = 0;
 
-    // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
-    // offset
-    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
+    // Special cases for NativeAOT:
+    //   ADD(ICON_STATIC, CNS_INT)                // nonGC-static base
+    //   ADD(IND(ICON_STATIC_ADDR_PTR), CNS_INT)  // GC-static base
+    // where CNS_INT has field sequence corresponding to field's offset
+    if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if (cns2->gtFieldSeq != nullptr)
+        if ((cns2->gtFieldSeq != nullptr) && (cns2->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
             *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
             *pFseq      = cns2->gtFieldSeq;
@@ -10024,6 +10350,61 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 }
 
 //----------------------------------------------------------------------------------
+// GetObjectHandleAndOffset: Try to obtain a constant object handle with an offset from
+//    the given tree.
+//
+// Arguments:
+//    vnStore    - ValueNumStore object
+//    tree       - tree node to inspect
+//    byteOffset - [Out] resulting byte offset
+//    pObj       - [Out] constant object handle
+//
+// Return Value:
+//    true if the given tree is a ObjHandle + CNS
+//
+static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
+                                     GenTree*               tree,
+                                     ssize_t*               byteOffset,
+                                     CORINFO_OBJECT_HANDLE* pObj)
+{
+
+    if (!tree->gtVNPair.BothEqual())
+    {
+        return false;
+    }
+
+    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    {
+        // [objHandle + offset]
+        if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
+        {
+            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
+            return true;
+        }
+
+        // [offset + objHandle]
+        // TODO: Introduce a general helper to accumulate offsets for
+        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
+        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        {
+            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
+            return true;
+        }
+    }
+    else if (vnStore->IsVNObjHandle(treeVN))
+    {
+        *pObj       = vnStore->ConstantObjHandle(treeVN);
+        *byteOffset = 0;
+        return true;
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
 //    and apply a constant VN representing given element at cns_index in that array.
 //
@@ -10046,119 +10427,45 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     //   sbyte GetVal() => RVA[1]; // fold to '100'
     //
-    ssize_t   byteOffset = 0;
-    FieldSeq* fieldSeq   = nullptr;
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    ssize_t               byteOffset     = 0;
+    FieldSeq*             fieldSeq       = nullptr;
+    CORINFO_OBJECT_HANDLE obj            = nullptr;
+    int                   size           = (int)genTypeSize(tree->TypeGet());
+    const int             maxElementSize = sizeof(simd_t);
+
+    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-        CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
-        int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = 32; // SIMD32
+        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
-                // For now we only support these primitives, we can extend this list to FP, SIMD and structs in future.
-                switch (tree->TypeGet())
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                if (vnStore->IsVNObjHandle(vn))
                 {
-#define READ_VALUE(typ)                                                                                                \
-    typ val = {};                                                                                                      \
-    memcpy(&val, buffer, sizeof(typ));
-
-                    case TYP_BOOL:
-                    case TYP_UBYTE:
-                    {
-                        READ_VALUE(uint8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_BYTE:
-                    {
-                        READ_VALUE(int8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_SHORT:
-                    {
-                        READ_VALUE(int16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_USHORT:
-                    {
-                        READ_VALUE(uint16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_INT:
-                    {
-                        READ_VALUE(int32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_UINT:
-                    {
-                        READ_VALUE(uint32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_LONG:
-                    {
-                        READ_VALUE(int64_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
-                        return true;
-                    }
-                    case TYP_ULONG:
-                    {
-                        READ_VALUE(uint64_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
-                        return true;
-                    }
-                    case TYP_FLOAT:
-                    {
-                        READ_VALUE(float);
-                        tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(val));
-                        return true;
-                    }
-                    case TYP_DOUBLE:
-                    {
-                        READ_VALUE(double);
-                        tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
-                        return true;
-                    }
-#if defined(FEATURE_SIMD)
-                    case TYP_SIMD8:
-                    {
-                        READ_VALUE(simd8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(val));
-                        return true;
-                    }
-                    case TYP_SIMD12:
-                    {
-                        READ_VALUE(simd12_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(val));
-                        return true;
-                    }
-                    case TYP_SIMD16:
-                    {
-                        READ_VALUE(simd16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(val));
-                        return true;
-                    }
-#if defined(TARGET_XARCH)
-                    case TYP_SIMD32:
-                    {
-                        READ_VALUE(simd32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
-                        return true;
-                    }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-                    default:
-                        assert(!varTypeIsSIMD(tree));
-                        break;
+                    setMethodHasFrozenObjects();
                 }
+                tree->gtVNPair.SetBoth(vn);
+                return true;
+            }
+        }
+    }
+    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+             GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
+    {
+        // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
+        assert(obj != nullptr);
+        if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
+        {
+            uint8_t buffer[maxElementSize] = {0};
+            if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
+            {
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                assert(!vnStore->IsVNObjHandle(vn));
+                tree->gtVNPair.SetBoth(vn);
+                return true;
             }
         }
     }
@@ -10178,10 +10485,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
     // Is given VN representing a frozen object handle
     auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
-        if (vnStore->IsVNHandle(vn) && (vnStore->GetHandleFlags(vn) == GTF_ICON_OBJ_HDL))
+        if (vnStore->IsVNObjHandle(vn))
         {
-            const size_t obj = vnStore->CoercedConstantValue<size_t>(vn);
-            *handle          = reinterpret_cast<CORINFO_OBJECT_HANDLE>(obj);
+            *handle = vnStore->ConstantObjHandle(vn);
             return true;
         }
         return false;
@@ -10272,11 +10578,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     {
         switch (oper)
         {
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
-                unsigned lclNum  = tree->AsLclVarCommon()->GetLclNum();
-                unsigned lclOffs = tree->AsLclVarCommon()->GetLclOffs();
+                unsigned lclNum  = tree->AsLclFld()->GetLclNum();
+                unsigned lclOffs = tree->AsLclFld()->GetLclOffs();
                 tree->gtVNPair.SetBoth(vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
                                                           vnStore->VNForIntPtrCon(lclOffs)));
                 assert(lvaGetDesc(lclNum)->IsAddressExposed() || lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
@@ -10406,39 +10711,68 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // a pointer to an object field or array element.  Other cases become uses of
             // the current ByrefExposed value and the pointer value, so that at least we
             // can recognize redundant loads with no stores between them.
-            GenTree*             addr       = tree->AsIndir()->Addr();
-            GenTreeLclVarCommon* lclVarTree = nullptr;
-            FieldSeq*            fldSeq     = nullptr;
-            GenTree*             baseAddr   = nullptr;
-            bool                 isVolatile = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
+            GenTree*  addr       = tree->AsIndir()->Addr();
+            FieldSeq* fldSeq     = nullptr;
+            GenTree*  baseAddr   = nullptr;
+            bool      isVolatile = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
 
             // See if the addr has any exceptional part.
             ValueNumPair addrNvnp;
             ValueNumPair addrXvnp;
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
+            // To be able to propagate exception sets, we give location nodes the "Void" VN.
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+            {
+                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
+            }
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
-            if (tree->gtFlags & GTF_IND_INVARIANT)
+            else if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                // Are we dereferencing the method table slot of some newly allocated object?
-                //
-                bool wasNewobj = false;
-                if ((oper == GT_IND) && (addr->TypeGet() == TYP_REF) && (tree->TypeGet() == TYP_I_IMPL))
+                bool returnsTypeHandle = false;
+                if ((oper == GT_IND) && addr->TypeIs(TYP_REF) && tree->TypeIs(TYP_I_IMPL))
                 {
-                    VNFuncApp  funcApp;
-                    const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
-
-                    if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
+                    // We try to access GC object's type, let's see if we know the exact type already
+                    // First, we're trying to do that via gtGetClassHandle.
+                    //
+                    bool                 isExact   = false;
+                    bool                 isNonNull = false;
+                    CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
+                    if (isExact && (handle != NO_CLASS_HANDLE))
                     {
-                        tree->gtVNPair =
-                            vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
-                        wasNewobj = true;
+                        JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
+                        // Filter out all shared generic instantiations
+                        if ((info.compCompHnd->getClassAttribs(handle) & CORINFO_FLG_SHAREDINST) == 0)
+                        {
+                            void* pEmbedClsHnd;
+                            void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
+                            if (pEmbedClsHnd == nullptr)
+                            {
+                                // Skip indirect handles for now since this path is mostly for PGO scenarios
+                                assert(embedClsHnd != nullptr);
+                                ValueNum handleVN = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
+                                tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+                                returnsTypeHandle = true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Then, let's see if we can find JitNew at least
+                        VNFuncApp  funcApp;
+                        const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
+                        if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
+                        {
+                            tree->gtVNPair =
+                                vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
+                            returnsTypeHandle = true;
+                        }
                     }
                 }
 
-                if (!wasNewobj)
+                if (!returnsTypeHandle)
                 {
                     // Indirections off of addresses for boxed statics represent bases for
                     // the address of the static itself. Here we will use "nullptr" for the
@@ -10493,9 +10827,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 ValueNum newUniq = vnStore->VNForExpr(compCurBB, tree->TypeGet());
                 tree->gtVNPair   = vnStore->VNPWithExc(ValueNumPair(newUniq, newUniq), addrXvnp);
             }
-            // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
-            // We will "evaluate" this as part of the assignment.
-            else if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+            else
             {
                 var_types loadType = tree->TypeGet();
                 ssize_t   offset   = 0;
@@ -10507,12 +10839,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
                 }
-                else if (addr->DefinesLocalAddr(&lclVarTree, &offset) && lclVarTree->HasSsaName())
+                else if (tree->OperIs(GT_IND, GT_BLK) && fgValueNumberConstLoad(tree->AsIndir()))
                 {
-                    ValueNumPair lclVNPair = lvaGetDesc(lclVarTree)->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
-                    unsigned     lclSize   = lvaLclExactSize(lclVarTree->GetLclNum());
-
-                    tree->gtVNPair = vnStore->VNPairForLoad(lclVNPair, lclSize, tree->TypeGet(), offset, loadSize);
+                    // VN is assigned inside fgValueNumberConstLoad
                 }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
                 {
@@ -10521,10 +10850,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     // Note VNF_PtrToStatic statics are currently always "simple".
                     fgValueNumberFieldLoad(tree, /* baseAddr */ nullptr, fldSeq, offset);
-                }
-                else if (tree->OperIs(GT_IND, GT_BLK, GT_OBJ) && fgValueNumberConstLoad(tree->AsIndir()))
-                {
-                    // VN is assigned inside fgValueNumberConstLoad
                 }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
@@ -10544,12 +10869,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
 
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
-            }
-
-            // To be able to propagate exception sets, we give location nodes the "Void" VN.
-            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
-            {
-                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
             }
         }
         else if (tree->OperGet() == GT_CAST)
@@ -11050,6 +11369,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
+#if defined(TARGET_XARCH)
+    else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+    {
+        // This is modeled the same as GT_MEMORYBARRIER
+        fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - Barrier"));
+    }
+#endif // TARGET_XARCH
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
@@ -11853,6 +12179,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEW_MDARR:
+        case CORINFO_HELP_NEW_MDARR_RARE:
             vnf = VNF_JitNewMdArr;
             break;
 
@@ -11919,6 +12246,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedNongcthreadstaticBaseNoctorOptimized;
             break;
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
             vnf = VNF_GetsharedGcthreadstaticBaseDynamicclass;
@@ -12621,7 +12951,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 
             case GT_IND:
             case GT_BLK:
-            case GT_OBJ:
             case GT_NULLCHECK:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIndir()->Addr());
                 break;

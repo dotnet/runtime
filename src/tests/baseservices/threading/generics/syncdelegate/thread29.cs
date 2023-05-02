@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 class Gen 
 {
@@ -39,7 +40,8 @@ public class Test_thread29
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen.DelegateTest<object>();
 		Gen.DelegateTest<string>();

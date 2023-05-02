@@ -1669,7 +1669,7 @@ namespace System.Diagnostics
             {
                 string mappingName = fileMappingName;
 
-                SafeLocalAllocHandle securityDescriptorPointer = null;
+                void* pSecurityDescriptor = null;
                 try
                 {
                     // The sddl string consists of these parts:
@@ -1681,12 +1681,17 @@ namespace System.Diagnostics
                     // ;S-1-5-33)   the same permission granted to AU is also granted to restricted services
                     string sddlString = "D:(A;OICI;FRFWGRGW;;;AU)(A;OICI;FRFWGRGW;;;S-1-5-33)";
 
-                    if (!Interop.Advapi32.ConvertStringSecurityDescriptorToSecurityDescriptor(sddlString, Interop.Kernel32.PerformanceCounterOptions.SDDL_REVISION_1,
-                                                                                                    out securityDescriptorPointer, IntPtr.Zero))
+                    if (!Interop.Advapi32.ConvertStringSecurityDescriptorToSecurityDescriptor(
+                        sddlString,
+                        Interop.Kernel32.PerformanceCounterOptions.SDDL_REVISION_1,
+                        out pSecurityDescriptor,
+                        null))
+                    {
                         throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
+                    }
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-                    securityAttributes.lpSecurityDescriptor = securityDescriptorPointer.DangerousGetHandle();
+                    securityAttributes.lpSecurityDescriptor = pSecurityDescriptor;
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
 
                     //
@@ -1756,7 +1761,7 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    securityDescriptorPointer?.Close();
+                    Marshal.FreeHGlobal((IntPtr)pSecurityDescriptor);
                 }
 
                 Interlocked.CompareExchange(ref *(int*)_fileViewAddress.DangerousGetHandle().ToPointer(), initialOffset, 0);

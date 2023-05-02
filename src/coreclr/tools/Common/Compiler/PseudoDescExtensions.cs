@@ -12,7 +12,7 @@ namespace ILCompiler
     {
         public static PropertyPseudoDesc GetPropertyForAccessor(this MethodDesc accessor)
         {
-            if (accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
+            if (!accessor.IsSpecialName || accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
                 return null;
 
             var type = (EcmaType)ecmaAccessor.OwningType;
@@ -32,7 +32,7 @@ namespace ILCompiler
 
         public static EventPseudoDesc GetEventForAccessor(this MethodDesc accessor)
         {
-            if (accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
+            if (!accessor.IsSpecialName || accessor.GetTypicalMethodDefinition() is not EcmaMethod ecmaAccessor)
                 return null;
 
             var type = (EcmaType)ecmaAccessor.OwningType;

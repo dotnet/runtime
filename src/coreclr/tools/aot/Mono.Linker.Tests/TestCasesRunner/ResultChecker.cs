@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, testResult);
 					PerformOutputSymbolChecks (original, testResult);
 
-					if (!HasAttribute (original.MainModule.GetType (testResult.TestCase.ReconstructedFullTypeName), nameof (SkipKeptItemsValidationAttribute))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute (original.MainModule.GetType (testResult.TestCase.ReconstructedFullTypeName))) {
 						CreateAssemblyChecker (original, testResult).Verify ();
 					}
 				}
@@ -88,6 +88,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AdditionalChecking (testResult, original);
 			} finally {
 				_originalsResolver.Dispose ();
+			}
+
+			bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+			{
+				if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute)) {
+					object? keptBy = attribute.GetPropertyValue (nameof (SkipKeptItemsValidationAttribute.By));
+					return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
+				}
+
+				return false;
 			}
 		}
 
@@ -316,8 +326,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											loggedMessages.Remove (loggedMessage);
 											break;
 										}
-										if (methodDesc.Name == ".ctor" &&
-											methodDesc.OwningType.ToString () == expectedMember.FullName) {
+										if (methodDesc.IsConstructor &&
+											new AssemblyQualifiedToken (methodDesc.OwningType).Equals(new AssemblyQualifiedToken (expectedMember))) {
 											expectedWarningFound = true;
 											loggedMessages.Remove (loggedMessage);
 											break;
@@ -400,10 +410,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Debug.Assert (origin != null);
 				if (origin?.MemberDefinition == null)
 					return false;
+				if (origin?.MemberDefinition is IAssemblyDesc asm)
+					return expectedOriginProvider is AssemblyDefinition expectedAsm && asm.GetName().Name == expectedAsm.Name.Name;
+
 				if (expectedOriginProvider is not IMemberDefinition expectedOriginMember)
 					return false;
 
-				var actualOriginToken = new AssemblyQualifiedToken (origin.Value.MemberDefinition);
+				var actualOriginToken = new AssemblyQualifiedToken (origin!.Value.MemberDefinition);
 				var expectedOriginToken = new AssemblyQualifiedToken (expectedOriginMember);
 				if (actualOriginToken.Equals (expectedOriginToken))
 					return true;

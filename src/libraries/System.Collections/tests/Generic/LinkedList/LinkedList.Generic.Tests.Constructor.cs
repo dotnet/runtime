@@ -9,7 +9,7 @@ namespace System.Collections.Tests
     public abstract partial class LinkedList_Generic_Tests<T> : ICollection_Generic_Tests<T>
     {
         [Fact]
-        public static void CtorTest()
+        public void CtorTest()
         {
             LinkedList_T_Tests<string> helper = new LinkedList_T_Tests<string>(new LinkedList<string>(), new string[0]);
             helper.InitialItems_Tests();
@@ -18,7 +18,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IEnumerableTest()
+        public void Ctor_IEnumerableTest()
         {
             int arraySize = 16;
             int[] intArray = new int[arraySize];
@@ -64,7 +64,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void Ctor_IEnumerableTest_Negative()
+        public void Ctor_IEnumerableTest_Negative()
         {
             Assert.Throws<ArgumentNullException>(() => new LinkedList<string>(null)); //"Err_982092 Expected ArgumentNullException to be thrown with null collection"
         }

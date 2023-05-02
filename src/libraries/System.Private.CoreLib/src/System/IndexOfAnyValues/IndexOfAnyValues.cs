@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable 8500 // address of managed types
@@ -113,8 +114,8 @@ namespace System.Buffers
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
 
-                return Ssse3.IsSupported && lookup.Contains(0)
-                    ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3HandleZeroInNeedle>(bitmap, lookup)
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && lookup.Contains(0)
+                    ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
                     : new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
             }
 

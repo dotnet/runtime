@@ -10,6 +10,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -62,12 +63,16 @@ namespace System
             HResult = HResults.COR_E_ARGUMENT;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ArgumentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             _paramName = info.GetString("ParamName");
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -105,7 +110,7 @@ namespace System
         /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
         /// <exception cref="ArgumentNullException"><paramref name="argument"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="argument"/> is empty.</exception>
-        public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression("argument")] string? paramName = null)
+        public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
             if (string.IsNullOrEmpty(argument))
             {

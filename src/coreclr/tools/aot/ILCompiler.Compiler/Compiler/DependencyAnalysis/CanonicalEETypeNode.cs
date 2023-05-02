@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");
 
             // Track generic virtual methods that will get added to the GVM tables
-            if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+            if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 

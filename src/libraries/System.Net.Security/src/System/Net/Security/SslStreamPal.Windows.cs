@@ -181,6 +181,8 @@ namespace System.Net.Security
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)
         {
+            SslStreamCertificateContext? certificateContext = sslAuthenticationOptions.CertificateContext;
+
             try
             {
                 EncryptionPolicy policy = sslAuthenticationOptions.EncryptionPolicy;
@@ -191,8 +193,6 @@ namespace System.Net.Security
                     AcquireCredentialsHandleSchannelCred(sslAuthenticationOptions) :
                     AcquireCredentialsHandleSchCredentials(sslAuthenticationOptions);
 #pragma warning restore SYSLIB0040
-
-                SslStreamCertificateContext? certificateContext = sslAuthenticationOptions.CertificateContext;
 
                 if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
                 {
@@ -206,10 +206,17 @@ namespace System.Net.Security
                 {
                     SafeFreeCredential_SECURITY handle = (SafeFreeCredential_SECURITY)cred;
                     // We need to create copy to avoid Disposal issue.
-                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.Certificate);
+                    handle.LocalCertificate = new X509Certificate2(sslAuthenticationOptions.CertificateContext.TargetCertificate);
                 }
 
                 return cred;
+            }
+            catch (Win32Exception e) when (e.NativeErrorCode == (int)Interop.SECURITY_STATUS.NoCredentials && certificateContext != null)
+            {
+                Debug.Assert(certificateContext.TargetCertificate.HasPrivateKey);
+                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificateContext.TargetCertificate.Handle);
+                // on Windows we do not support ephemeral keys.
+                throw new AuthenticationException(safeCertContextHandle.HasEphemeralPrivateKey ? SR.net_auth_ephemeral : SR.net_auth_SSPI, e);
             }
             catch (Win32Exception e)
             {
@@ -242,7 +249,7 @@ namespace System.Net.Security
         // It only supports TLS up to 1.2
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchannelCred(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCHANNEL_CRED.Flags flags;
@@ -304,7 +311,7 @@ namespace System.Net.Security
         // This function uses new crypto API to support TLS 1.3 and beyond.
         public static unsafe SafeFreeCredentials AcquireCredentialsHandleSchCredentials(SslAuthenticationOptions authOptions)
         {
-            X509Certificate2? certificate = authOptions.CertificateContext?.Certificate;
+            X509Certificate2? certificate = authOptions.CertificateContext?.TargetCertificate;
             bool isServer = authOptions.IsServer;
             int protocolFlags = GetProtocolFlagsFromSslProtocols(authOptions.EnabledSslProtocols, isServer);
             Interop.SspiCli.SCH_CREDENTIALS.Flags flags;

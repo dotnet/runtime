@@ -6,7 +6,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly 'Object-Pin'
+.assembly 'object-pin'
 {
 }
 
@@ -84,7 +84,7 @@ LOOP1:
 }
 
 
-.class auto ansi Pin1_Test
+.class public auto ansi Pin1_Test
 {
   .method public static pinvokeimpl("mirror" winapi) int32 Ret_Ptr(void *) il managed preservesig{ }
   .method public static pinvokeimpl("mirror" winapi) void Set_Val(void*,int32 c) il managed preservesig { }

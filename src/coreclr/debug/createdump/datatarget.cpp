@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <dbgtargetcontext.h>
 
 #if defined(HOST_ARM64)
 // Flag to check if atomics feature is available on
@@ -77,6 +78,8 @@ DumpDataTarget::GetMachineType(
     *machine = IMAGE_FILE_MACHINE_I386;
 #elif HOST_LOONGARCH64
     *machine = IMAGE_FILE_MACHINE_LOONGARCH64;
+#elif HOST_RISCV64
+    *machine = IMAGE_FILE_MACHINE_RISCV64;
 #else
 #error Unsupported architecture
 #endif
@@ -87,7 +90,7 @@ HRESULT STDMETHODCALLTYPE
 DumpDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
-#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     *size = 8;
 #elif defined(HOST_ARM) || defined(HOST_X86)
     *size = 4;
@@ -179,7 +182,7 @@ DumpDataTarget::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
-    if (contextSize < sizeof(CONTEXT))
+    if (contextSize < sizeof(DT_CONTEXT))
     {
         assert(false);
         return E_INVALIDARG;

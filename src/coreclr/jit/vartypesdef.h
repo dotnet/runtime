@@ -8,7 +8,7 @@
 
 enum var_types : BYTE
 {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) TYP_##tn,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) TYP_##tn,
 #include "typelist.h"
 #undef DEF_TP
     TYP_COUNT
