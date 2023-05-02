@@ -190,16 +190,7 @@ public:
     };
 
     ForwardSubVisitor(Compiler* compiler, unsigned lclNum, bool livenessBased)
-        : GenTreeVisitor(compiler)
-        , m_use(nullptr)
-        , m_node(nullptr)
-        , m_parentNode(nullptr)
-        , m_lclNum(lclNum)
-        , m_parentLclNum(BAD_VAR_NUM)
-        , m_useFlags(GTF_EMPTY)
-        , m_accumulatedFlags(GTF_EMPTY)
-        , m_treeSize(0)
-        , m_livenessBased(livenessBased)
+        : GenTreeVisitor(compiler), m_lclNum(lclNum), m_livenessBased(livenessBased)
     {
         LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
         if (dsc->lvIsStructField)
@@ -238,10 +229,11 @@ public:
 
                 if (!isDef && !isCallTarget && IsLastUse(node->AsLclVar()))
                 {
-                    m_node       = node;
-                    m_use        = use;
-                    m_useFlags   = m_accumulatedFlags;
-                    m_parentNode = parent;
+                    m_node          = node;
+                    m_use           = use;
+                    m_useFlags      = m_accumulatedFlags;
+                    m_useExceptions = m_accumulatedExceptions;
+                    m_parentNode    = parent;
                 }
             }
         }
@@ -274,6 +266,20 @@ public:
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
+        if ((node->gtFlags & GTF_CALL) != 0)
+        {
+            m_accumulatedExceptions = ExceptionSetFlags::All;
+        }
+        else if ((node->gtFlags & GTF_EXCEPT) != 0)
+        {
+            // We can never reorder in the face of different exception types,
+            // so stop calling 'OperExceptions' once we've seen more than one
+            // different exception type.
+            if (genCountBits(static_cast<uint32_t>(m_accumulatedExceptions)) <= 1)
+            {
+                m_accumulatedExceptions |= node->OperExceptions(m_compiler);
+            }
+        }
 
         return fgWalkResult::WALK_CONTINUE;
     }
@@ -303,6 +309,11 @@ public:
     GenTreeFlags GetFlags() const
     {
         return m_useFlags;
+    }
+
+    ExceptionSetFlags GetExceptions() const
+    {
+        return m_useExceptions;
     }
 
     bool IsCallArg() const
@@ -366,18 +377,20 @@ public:
     }
 
 private:
-    GenTree** m_use;
-    GenTree*  m_node;
-    GenTree*  m_parentNode;
+    GenTree** m_use        = nullptr;
+    GenTree*  m_node       = nullptr;
+    GenTree*  m_parentNode = nullptr;
     unsigned  m_lclNum;
-    unsigned  m_parentLclNum;
+    unsigned  m_parentLclNum = BAD_VAR_NUM;
 #ifdef DEBUG
     unsigned m_useCount = 0;
 #endif
-    GenTreeFlags m_useFlags;
-    GenTreeFlags m_accumulatedFlags;
-    unsigned     m_treeSize;
-    bool         m_livenessBased;
+    GenTreeFlags      m_useFlags              = GTF_EMPTY;
+    GenTreeFlags      m_accumulatedFlags      = GTF_EMPTY;
+    ExceptionSetFlags m_useExceptions         = ExceptionSetFlags::None;
+    ExceptionSetFlags m_accumulatedExceptions = ExceptionSetFlags::None;
+    unsigned          m_treeSize              = 0;
+    bool              m_livenessBased;
 };
 
 //------------------------------------------------------------------------
@@ -556,7 +569,8 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     bool found = false;
     for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
     {
-        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+        bool isUse = ((lcl->gtFlags) & GTF_VAR_DEF) == 0;
+        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum) && isUse)
         {
             if (fsv.IsLastUse(lcl->AsLclVar()))
             {
@@ -689,14 +703,47 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     // if the next tree can't change the value of fwdSubNode or be impacted by fwdSubNode effects
     //
-    const bool fwdSubNodeInvariant   = ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) == 0);
-    const bool nextTreeIsPureUpToUse = ((fsv.GetFlags() & (GTF_EXCEPT | GTF_GLOB_REF | GTF_CALL)) == 0);
-    if (!fwdSubNodeInvariant && !nextTreeIsPureUpToUse)
+    if (((fwdSubNode->gtFlags & GTF_CALL) != 0) && ((fsv.GetFlags() & GTF_ALL_EFFECT) != 0))
     {
-        // Fwd sub may impact global values and or reorder exceptions...
-        //
-        JITDUMP(" potentially interacting effects\n");
+        JITDUMP(" cannot reorder call with any side effect\n");
         return false;
+    }
+    if (((fwdSubNode->gtFlags & GTF_GLOB_REF) != 0) && ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+    {
+        JITDUMP(" cannot reorder global reference with persistent side effects\n");
+        return false;
+    }
+    if (((fwdSubNode->gtFlags & GTF_ORDER_SIDEEFF) != 0) &&
+        ((fsv.GetFlags() & (GTF_GLOB_REF | GTF_ORDER_SIDEEFF)) != 0))
+    {
+        JITDUMP(" cannot reorder ordering side effect with global reference/ordering side effect\n");
+        return false;
+    }
+    if ((fwdSubNode->gtFlags & GTF_EXCEPT) != 0)
+    {
+        if ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+        {
+            JITDUMP(" cannot reorder exception with persistent side effect\n");
+            return false;
+        }
+
+        if ((fsv.GetFlags() & GTF_EXCEPT) != 0)
+        {
+            assert(fsv.GetExceptions() != ExceptionSetFlags::None);
+            if (genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1)
+            {
+                JITDUMP(" cannot reorder different thrown exceptions\n");
+                return false;
+            }
+
+            ExceptionSetFlags fwdSubNodeExceptions = gtCollectExceptions(fwdSubNode);
+            assert(fwdSubNodeExceptions != ExceptionSetFlags::None);
+            if (fwdSubNodeExceptions != fsv.GetExceptions())
+            {
+                JITDUMP(" cannot reorder different thrown exceptions\n");
+                return false;
+            }
+        }
     }
 
     // If we're relying on purity of fwdSubNode for legality of forward sub,
@@ -705,7 +752,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // TODO: remove this once we can trust upstream phases and/or gtUpdateStmtSideEffects
     // to set GTF_GLOB_REF properly.
     //
-    if (fwdSubNodeInvariant && ((fsv.GetFlags() & (GTF_CALL | GTF_ASG)) != 0))
+    if ((fsv.GetFlags() & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
     {
         EffectsVisitor ev(this);
         ev.WalkTree(&fwdSubNode, nullptr);
@@ -874,7 +921,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         fgForwardSubUpdateLiveness(firstLcl, lhsNode->gtPrev);
     }
 
-    if (!fwdSubNodeInvariant)
+    if ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) != 0)
     {
         gtUpdateStmtSideEffects(nextStmt);
     }
