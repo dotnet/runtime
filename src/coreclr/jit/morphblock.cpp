@@ -919,11 +919,9 @@ void MorphCopyBlockHelper::MorphStructCases()
         // - if fields can be enregistered;
         // - if the struct has only one field.
         bool dstFldIsProfitable =
-            ((m_dstVarDsc != nullptr) &&
-             (!m_dstVarDsc->lvDoNotEnregister || (m_dstVarDsc->lvFieldCnt == 1)));
+            ((m_dstVarDsc != nullptr) && (!m_dstVarDsc->lvDoNotEnregister || (m_dstVarDsc->lvFieldCnt == 1)));
         bool srcFldIsProfitable =
-            ((m_srcVarDsc != nullptr) &&
-             (!m_srcVarDsc->lvDoNotEnregister || (m_srcVarDsc->lvFieldCnt == 1)));
+            ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister || (m_srcVarDsc->lvFieldCnt == 1)));
         // Are both dest and src promoted structs?
         if (m_dstDoFldAsg && m_srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
         {
