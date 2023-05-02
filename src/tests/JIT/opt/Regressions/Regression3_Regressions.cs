@@ -33,6 +33,7 @@ public class Program
         return 100;
     }
 
+#pragma warning disable xUnit1013
     public static void MainInner(IRuntime rt)
     {
         s_rt = rt;
@@ -41,12 +42,13 @@ public class Program
         bool vr10 = vr8.F2 == vr8.F2;
         M6(vr3, vr10);
     }
+#pragma warning restore xUnit1013
 
-    public static void M60(ref sbyte arg1, ref short[] arg2)
+    internal static void M60(ref sbyte arg1, ref short[] arg2)
     {
     }
 
-    public static void M6(C1 argThis, bool arg0)
+    internal static void M6(C1 argThis, bool arg0)
     {
         arg0 = s_25;
         M60(ref argThis.F1, ref s_42);

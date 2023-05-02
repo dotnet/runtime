@@ -16,7 +16,7 @@ public unsafe class StackallocTests
         int numberOftests = 0;
         foreach (var method in typeof(StackallocTests)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(t => t.Name.StartsWith("Test")))
+            .Where(t => t.Name.StartsWith("Test") && (t.Name != "TestEntryPoint")))
         {
             // Invoke the test and make sure both return value and out
             // parameters are empty guids
