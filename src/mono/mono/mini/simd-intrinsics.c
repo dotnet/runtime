@@ -3119,6 +3119,7 @@ static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingZeroCount},
 	{SN_MultiplyHigh},
 	{SN_ReverseElementBits},
+	{SN_Yield},
 	{SN_get_IsSupported},
 };
 
@@ -3562,7 +3563,7 @@ static const SimdIntrinsic dp_methods [] = {
 static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
-	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods) },
+	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods), TRUE },
 	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
 	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods) },
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
@@ -3598,6 +3599,14 @@ emit_arm64_intrinsics (
 				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
 				(is_64bit ? INTRINS_BITREVERSE_I64 : INTRINS_BITREVERSE_I32),
 				arg0_type, fsig, args);
+		case SN_Yield: {
+			MonoInst* ins;
+			MONO_INST_NEW (cfg, ins, OP_ARM64_HINT);
+			ins->inst_c0 = ARMHINT_YIELD;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		}
+			
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}
