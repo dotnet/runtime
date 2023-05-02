@@ -289,7 +289,7 @@ namespace System.Web.Tests
         {
             Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => null)));
             Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => string.Empty)));
-            Assert.Equal("42", HttpUtility.HtmlEncode(new ActionHtmlString(() => "42")));
+            Assert.Equal("<", HttpUtility.HtmlEncode(new ActionHtmlString(() => "<")));
             Assert.Throws<FormatException>(() => HttpUtility.HtmlEncode(new ActionHtmlString(() => throw new FormatException())));
         }
 
