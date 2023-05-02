@@ -7505,6 +7505,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     case NI_SSE41_RoundToPositiveInfinityScalar:
                     case NI_SSE41_RoundToZeroScalar:
                     case NI_AVX512F_GetExponentScalar:
+                    case NI_AVX512F_Reciprocal14Scalar:
+                    case NI_AVX512F_ReciprocalSqrt14Scalar:
                     {
                         // These intrinsics have both 1 and 2-operand overloads.
                         //

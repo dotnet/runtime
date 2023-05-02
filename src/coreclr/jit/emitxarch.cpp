@@ -18110,6 +18110,28 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_4C;
             break;
 
+        case INS_vrcp14pd:
+        case INS_vrcp14ps:
+        case INS_vrcp14sd:
+        case INS_vrcp14ss:
+        case INS_vrsqrt14pd:
+        case INS_vrsqrt14sd:
+        case INS_vrsqrt14ps:
+        case INS_vrsqrt14ss:
+        {
+            if (opSize == EA_64BYTE)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                result.insLatency += PERFSCORE_LATENCY_8C;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency += PERFSCORE_LATENCY_4C;
+            }
+            break;
+        }
+
         case INS_roundpd:
         case INS_roundps:
         case INS_roundsd:

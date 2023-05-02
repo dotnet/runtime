@@ -4895,6 +4895,18 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<int> PermuteVar16x32(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> PermuteVar16x32(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<int> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> PermuteVar16x32(System.Runtime.Intrinsics.Vector512<uint> left, System.Runtime.Intrinsics.Vector512<uint> control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Reciprocal14(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Reciprocal14(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Reciprocal14Scalar(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Reciprocal14Scalar(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Reciprocal14Scalar(System.Runtime.Intrinsics.Vector128<double> upper, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Reciprocal14Scalar(System.Runtime.Intrinsics.Vector128<float> upper, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<double> upper, System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14Scalar(System.Runtime.Intrinsics.Vector128<float> upper, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<int> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<int> value, System.Runtime.Intrinsics.Vector128<int> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftLeftLogical(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
@@ -5084,6 +5096,14 @@ namespace System.Runtime.Intrinsics.X86
             public static System.Runtime.Intrinsics.Vector256<long> PermuteVar4x64(System.Runtime.Intrinsics.Vector256<long> value, System.Runtime.Intrinsics.Vector256<long> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> PermuteVar4x64(System.Runtime.Intrinsics.Vector256<ulong> value, System.Runtime.Intrinsics.Vector256<ulong> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<double> PermuteVar4x64(System.Runtime.Intrinsics.Vector256<double> value, System.Runtime.Intrinsics.Vector256<long> control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> Reciprocal14(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> Reciprocal14(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> Reciprocal14(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> Reciprocal14(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> ReciprocalSqrt14(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> count) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte count) { throw null; }

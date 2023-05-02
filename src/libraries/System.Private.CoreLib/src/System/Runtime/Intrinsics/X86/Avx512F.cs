@@ -503,6 +503,48 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) => PermuteVar4x64(value, control);
 
             /// <summary>
+            /// __m128 _mm_rcp14_ps (__m128 a, __m128 b)
+            ///   VRCP14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Reciprocal14(Vector128<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m128d _mm_rcp14_pd (__m128d a, __m128d b)
+            ///   VRCP14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Reciprocal14(Vector128<double> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256 _mm256_rcp14_ps (__m256 a, __m256 b)
+            ///   VRCP14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Reciprocal14(Vector256<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256d _mm256_rcp14_pd (__m256d a, __m256d b)
+            ///   VRCP14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Reciprocal14(Vector256<double> value) => Reciprocal14(value);
+
+            /// <summary>
+            /// __m128 _mm_rsqrt14_ps (__m128 a, __m128 b)
+            ///   VRSQRT14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> ReciprocalSqrt14(Vector128<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m128d _mm_rsqrt14_pd (__m128d a, __m128d b)
+            ///   VRSQRT14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ReciprocalSqrt14(Vector128<double> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256 _mm256_rsqrt14_ps (__m256 a, __m256 b)
+            ///   VRSQRT14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> ReciprocalSqrt14(Vector256<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256d _mm256_rsqrt14_pd (__m256d a, __m256d b)
+            ///   VRSQRT14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) => ReciprocalSqrt14(value);
+
+            /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
             ///   VPSRAQ xmm1 {k1}{z}, xmm2, xmm3/m128
             /// </summary>
@@ -1847,6 +1889,74 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) => PermuteVar16x32(left, control);
+
+        /// <summary>
+        /// __m512 _mm512_rcp14_ps (__m512 a, __m512 b)
+        ///   VRCP14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> Reciprocal14(Vector512<float> value) => Reciprocal14(value);
+        /// <summary>
+        /// __m512d _mm512_rcp14_pd (__m512d a, __m512d b)
+        ///   VRCP14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> Reciprocal14(Vector512<double> value) => Reciprocal14(value);
+
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a, __m128 b)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> upper, Vector128<float> value) => Reciprocal14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a, __m128d b)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> upper, Vector128<double> value) => Reciprocal14Scalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_rsqrt14_ps (__m512 a, __m512 b)
+        ///   VRSQRT14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> ReciprocalSqrt14(Vector512<float> value) => ReciprocalSqrt14(value);
+        /// <summary>
+        /// __m512d _mm512_rsqrt14_pd (__m512d a, __m512d b)
+        ///   VRSQRT14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ReciprocalSqrt14(Vector512<double> value) => ReciprocalSqrt14(value);
+
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a, __m128 b)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> upper, Vector128<float> value) => ReciprocalSqrt14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a, __m128d b)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) => ReciprocalSqrt14Scalar(upper, value);
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)

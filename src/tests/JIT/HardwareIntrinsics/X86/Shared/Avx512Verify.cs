@@ -37,6 +37,46 @@ namespace JIT.HardwareIntrinsics.X86
             return 1.0 + (trailingSignificand / (1L << 52));
         }
 
+        public static bool ValidateReciprocal14(float actual, float value)
+        {
+            // Tests expect true on error
+
+            float expected = 1.0f / value;
+            float relativeError = RelativeError(expected, actual);
+
+            return relativeError >= (1.0f / 16384); // 2^-14
+        }
+
+        public static bool ValidateReciprocal14(double actual, double value)
+        {
+            // Tests expect true on error
+
+            double expected = 1.0 / value;
+            double relativeError = RelativeError(expected, actual);
+
+            return relativeError >= (1.0 / 16384); // 2^-14
+        }
+
+        public static bool ValidateReciprocalSqrt14(float actual, float value)
+        {
+            // Tests expect true on error
+
+            float expected = 1.0f / float.Sqrt(value);
+            float relativeError = RelativeError(expected, actual);
+
+            return relativeError >= (1.0f / 16384); // 2^-14
+        }
+
+        public static bool ValidateReciprocalSqrt14(double actual, double value)
+        {
+            // Tests expect true on error
+
+            double expected = 1.0 / double.Sqrt(value);
+            double relativeError = RelativeError(expected, actual);
+
+            return relativeError >= (1.0 / 16384); // 2^-14
+        }
+
         private static int GetBiasedExponent(float x)
         {
             int bits = BitConverter.SingleToInt32Bits(x);
@@ -59,6 +99,18 @@ namespace JIT.HardwareIntrinsics.X86
         {
             long bits = BitConverter.DoubleToInt64Bits(x);
             return bits & 0x000F_FFFF_FFFF_FFFF;
+        }
+
+        private static float RelativeError(float expected, float actual)
+        {
+            float absoluteError = float.Abs(expected - actual);
+            return absoluteError / expected;
+        }
+
+        private static double RelativeError(double expected, double actual)
+        {
+            double absoluteError = double.Abs(expected - actual);
+            return absoluteError / expected;
         }
     }
 }
