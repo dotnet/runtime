@@ -1,25 +1,24 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 
 using Internal.NativeFormat;
 using Internal.Text;
-using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a hash table of array types generated into the image.
+    /// Represents a hash table of pointer types generated into the image.
     /// </summary>
-    internal sealed class ArrayMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class PointerTypeMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        private ExternalReferencesTableNode _externalReferences;
+        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly ExternalReferencesTableNode _externalReferences;
 
-        public ArrayMapNode(ExternalReferencesTableNode externalReferences)
+        public PointerTypeMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__array_type_map_End", true);
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__ptr_type_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__array_type_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__ptr_type_map");
         }
         public int Offset => 0;
         public override bool IsShareable => false;
@@ -50,19 +49,14 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
+            foreach (var type in factory.MetadataManager.GetTypesWithEETypes())
             {
-                if (!type.IsArray)
+                if (!type.IsPointer)
                     continue;
 
-                var arrayType = (ArrayType)type;
+                Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(type)));
 
-                // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
-                IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);
-
-                Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(arrayTypeSymbol));
-
-                int hashCode = arrayType.GetHashCode();
+                int hashCode = type.GetHashCode();
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
@@ -74,6 +68,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
-        public override int ClassCode => (int)ObjectNodeOrder.ArrayMapNode;
+        public override int ClassCode => (int)ObjectNodeOrder.PointerMapNode;
     }
 }

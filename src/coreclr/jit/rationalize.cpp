@@ -6,28 +6,6 @@
 #pragma hdrstop
 #endif
 
-// return op that is the store equivalent of the given load opcode
-genTreeOps storeForm(genTreeOps loadForm)
-{
-    switch (loadForm)
-    {
-        case GT_LCL_VAR:
-            return GT_STORE_LCL_VAR;
-        case GT_LCL_FLD:
-            return GT_STORE_LCL_FLD;
-        default:
-            noway_assert(!"not a data load opcode\n");
-            unreached();
-    }
-}
-
-// copy the flags determined by mask from src to dst
-void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
-{
-    dst->gtFlags &= ~mask;
-    dst->gtFlags |= (src->gtFlags & mask);
-}
-
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
 //
 // Arguments:
@@ -211,30 +189,6 @@ void Rationalizer::SanityCheck()
         for (Statement* const stmt : block->Statements())
         {
             ValidateStatement(stmt, block);
-
-            for (GenTree* const tree : stmt->TreeList())
-            {
-                // QMARK nodes should have been removed before this phase.
-                assert(!tree->OperIs(GT_QMARK));
-
-                if (tree->OperGet() == GT_ASG)
-                {
-                    if (tree->gtGetOp1()->OperGet() == GT_LCL_VAR)
-                    {
-                        assert(tree->gtGetOp1()->gtFlags & GTF_VAR_DEF);
-                    }
-                    else if (tree->gtGetOp2()->OperGet() == GT_LCL_VAR)
-                    {
-                        assert(!(tree->gtGetOp2()->gtFlags & GTF_VAR_DEF));
-                    }
-
-                    if (tree->OperIsInitBlkOp())
-                    {
-                        // No SIMD types are allowed for InitBlks (including zero-inits).
-                        assert(tree->TypeIs(TYP_STRUCT) && tree->gtGetOp1()->TypeIs(TYP_STRUCT));
-                    }
-                }
-            }
         }
     }
 }
@@ -247,122 +201,6 @@ void Rationalizer::SanityCheckRational()
 }
 
 #endif // DEBUG
-
-static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
-                                              GenTree*   location,
-                                              GenTree*   value,
-                                              genTreeOps locationOp)
-{
-    assert(assignment != nullptr);
-    assert(assignment->OperGet() == GT_ASG);
-    assert(location != nullptr);
-    assert(value != nullptr);
-
-    genTreeOps storeOp = storeForm(locationOp);
-
-#ifdef DEBUG
-    JITDUMP("rewriting asg(%s, X) to %s(X)\n", GenTree::OpName(locationOp), GenTree::OpName(storeOp));
-#endif // DEBUG
-
-    assignment->SetOper(storeOp);
-    GenTreeLclVarCommon* store = assignment->AsLclVarCommon();
-
-    GenTreeLclVarCommon* var = location->AsLclVarCommon();
-    store->SetLclNum(var->GetLclNum());
-    store->SetSsaNum(var->GetSsaNum());
-
-    if (locationOp == GT_LCL_FLD)
-    {
-        store->AsLclFld()->SetLclOffs(var->AsLclFld()->GetLclOffs());
-        store->AsLclFld()->SetLayout(var->AsLclFld()->GetLayout());
-    }
-
-    copyFlags(store, var, (GTF_LIVENESS_MASK | GTF_VAR_MULTIREG));
-    store->gtFlags &= ~GTF_REVERSE_OPS;
-
-    store->gtType = var->TypeGet();
-    store->gtOp1  = value;
-
-    DISPNODE(store);
-    JITDUMP("\n");
-}
-
-void Rationalizer::RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment)
-{
-    assert(assignment != nullptr);
-    assert(assignment->OperGet() == GT_ASG);
-
-    GenTree* location = assignment->gtGetOp1();
-    GenTree* value    = assignment->gtGetOp2();
-
-    RewriteAssignmentIntoStoreLclCore(assignment, location, value, location->OperGet());
-}
-
-void Rationalizer::RewriteAssignment(LIR::Use& use)
-{
-    assert(use.IsInitialized());
-
-    GenTreeOp* assignment = use.Def()->AsOp();
-    assert(assignment->OperGet() == GT_ASG);
-
-    GenTree* location = assignment->gtGetOp1();
-    GenTree* value    = assignment->gtGetOp2();
-
-    genTreeOps locationOp = location->OperGet();
-
-    switch (locationOp)
-    {
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-            RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
-            BlockRange().Remove(location);
-            break;
-
-        case GT_IND:
-        {
-            GenTreeStoreInd* store =
-                new (comp, GT_STOREIND) GenTreeStoreInd(location->TypeGet(), location->gtGetOp1(), value);
-
-            copyFlags(store, assignment, GTF_ALL_EFFECT);
-            copyFlags(store, location, GTF_IND_FLAGS);
-
-            // TODO: JIT dump
-
-            // Remove the GT_IND node and replace the assignment node with the store
-            BlockRange().Remove(location);
-            BlockRange().InsertBefore(assignment, store);
-            use.ReplaceWith(store);
-            BlockRange().Remove(assignment);
-        }
-        break;
-
-        case GT_BLK:
-        {
-            assert(varTypeIsStruct(location));
-            JITDUMP("Rewriting GT_ASG(%s(X), Y) to STORE_BLK(X,Y):\n", GenTree::OpName(location->gtOper));
-
-            GenTreeBlk* storeBlk = location->AsBlk();
-            storeBlk->SetOperRaw(GT_STORE_BLK);
-            storeBlk->gtFlags &= ~GTF_DONT_CSE;
-            storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_DONT_CSE));
-            storeBlk->AsBlk()->Data() = value;
-
-            // Remove the block node from its current position and replace the assignment node with it
-            // (now in its store form).
-            BlockRange().Remove(storeBlk);
-            BlockRange().InsertBefore(assignment, storeBlk);
-            use.ReplaceWith(storeBlk);
-            BlockRange().Remove(assignment);
-            DISPTREERANGE(BlockRange(), use.Def());
-            JITDUMP("\n");
-        }
-        break;
-
-        default:
-            unreached();
-            break;
-    }
-}
 
 Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parentStack)
 {
@@ -387,10 +225,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     assert(node == use.Def());
     switch (node->OperGet())
     {
-        case GT_ASG:
-            RewriteAssignment(use);
-            break;
-
         case GT_CALL:
             // In linear order we no longer need to retain the stores in early
             // args as these have now been sequenced.
@@ -508,9 +342,9 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     }
     else
     {
-        if (!node->OperIsStore())
+        if (((node->gtFlags & GTF_ASG) != 0) && !node->OperRequiresAsgFlag())
         {
-            // Clear the GTF_ASG flag for all nodes but stores
+            // Clear the GTF_ASG flag for all nodes that do not require it
             node->gtFlags &= ~GTF_ASG;
         }
 

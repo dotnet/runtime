@@ -5337,6 +5337,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
 
+		/**** Arm.ArmBase ****/
+		case OP_LZCNT32:
+			arm_clzw (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT32:
+			arm_clsw (code, dreg, sreg1);
+			break;
+
+		case OP_LZCNT64:
+			arm_clzx (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT64:
+			arm_clsx (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_SMULH:
+			arm_smulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_ARM64_UMULH:
+			arm_umulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XOP_I8_I8:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I64);
+			arm_rbitx (code, dreg, sreg1);
+			break;
+
+		case OP_XOP_I4_I4:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
+			arm_rbitw (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
+			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
