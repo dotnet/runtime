@@ -308,6 +308,9 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX512F_GetMantissa:
         case NI_AVX512F_GetMantissaScalar:
         case NI_AVX512F_VL_GetMantissa:
+        case NI_AVX512DQ_Range:
+        case NI_AVX512DQ_RangeScalar:
+        case NI_AVX512DQ_VL_Range:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 15;

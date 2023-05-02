@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
@@ -13,6 +14,39 @@ namespace JIT.HardwareIntrinsics.X86
 
     public static class Avx512Verify
     {
+        public static double Fixup(double x, double y, long z)
+        {
+            return Fixup<double>(x, y, (int)(z));
+        }
+
+        public static TFloat Fixup<TFloat>(TFloat x, TFloat y, int z)
+            where TFloat : IFloatingPointIeee754<TFloat>, IMinMaxValue<TFloat>
+        {
+            int tokenType = GetTokenType(x);
+            int tokenResponse = GetTokenResponse(tokenType, z);
+
+            switch (tokenResponse)
+            {
+                case 0: return x;
+                case 1: return y;
+                case 2: return TFloat.NaN;
+                case 3: return TFloat.NaN;
+                case 4: return TFloat.NegativeInfinity;
+                case 5: return TFloat.PositiveInfinity;
+                case 6: return TFloat.CopySign(y, TFloat.PositiveInfinity);
+                case 7: return TFloat.NegativeZero;
+                case 8: return TFloat.Zero;
+                case 9: return -TFloat.One;
+                case 10: return TFloat.One;
+                case 11: return TFloat.CreateSaturating(0.5);
+                case 13: return TFloat.CreateSaturating(90);
+                case 14: return TFloat.Pi / TFloat.CreateSaturating(2);
+                case 15: return TFloat.MaxValue;
+                case 16: return TFloat.MinValue;
+                default: throw new Exception($"Unexpected tokenResponse ({tokenResponse}) for ({x}, {y}, {z})");
+            }
+        }
+
         public static float GetExponent(float x)
         {
             int biasedExponent = GetBiasedExponent(x);
@@ -37,44 +71,32 @@ namespace JIT.HardwareIntrinsics.X86
             return 1.0 + (trailingSignificand / (1L << 52));
         }
 
-        public static bool ValidateReciprocal14(float actual, float value)
+        public static TFloat Reduce<TFloat>(TFloat x, int m)
+            where TFloat : IFloatingPointIeee754<TFloat>
         {
-            // Tests expect true on error
-
-            float expected = 1.0f / value;
-            float relativeError = RelativeError(expected, actual);
-
-            return relativeError >= (1.0f / 16384); // 2^-14
+            return x - TFloat.Round(TFloat.ScaleB(TFloat.One, m) * x) * TFloat.ScaleB(TFloat.One, -m);
         }
 
-        public static bool ValidateReciprocal14(double actual, double value)
+        public static bool ValidateReciprocal14<TFloat>(TFloat actual, TFloat value)
+            where TFloat : IFloatingPointIeee754<TFloat>
         {
             // Tests expect true on error
 
-            double expected = 1.0 / value;
-            double relativeError = RelativeError(expected, actual);
+            TFloat expected = TFloat.One / value;
+            TFloat relativeError = RelativeError(expected, actual);
 
-            return relativeError >= (1.0 / 16384); // 2^-14
+            return relativeError >= (TFloat.One / TFloat.CreateSaturating(16384)); // 2^-14
         }
 
-        public static bool ValidateReciprocalSqrt14(float actual, float value)
+        public static bool ValidateReciprocalSqrt14<TFloat>(TFloat actual, TFloat value)
+            where TFloat : IFloatingPointIeee754<TFloat>
         {
             // Tests expect true on error
 
-            float expected = 1.0f / float.Sqrt(value);
-            float relativeError = RelativeError(expected, actual);
+            TFloat expected = TFloat.One/ TFloat.Sqrt(value);
+            TFloat relativeError = RelativeError(expected, actual);
 
-            return relativeError >= (1.0f / 16384); // 2^-14
-        }
-
-        public static bool ValidateReciprocalSqrt14(double actual, double value)
-        {
-            // Tests expect true on error
-
-            double expected = 1.0 / double.Sqrt(value);
-            double relativeError = RelativeError(expected, actual);
-
-            return relativeError >= (1.0 / 16384); // 2^-14
+            return relativeError >= (TFloat.One / TFloat.CreateSaturating(16384)); // 2^-14
         }
 
         private static int GetBiasedExponent(float x)
@@ -89,6 +111,36 @@ namespace JIT.HardwareIntrinsics.X86
             return (bits >>> 52) & 0x07FF;
         }
 
+        private static int GetTokenResponse(int tokenType, int z)
+        {
+            return (tokenType >> (4 * tokenType)) & 0xF;
+        }
+
+        private static int GetTokenType<TFloat>(TFloat x)
+            where TFloat : IFloatingPointIeee754<TFloat>
+        {
+            if (TFloat.IsNaN(x))
+            {
+                return 0;
+            }
+            else if (TFloat.IsZero(x))
+            {
+                return 2;
+            }
+            else if (x == TFloat.One)
+            {
+                return 3;
+            }
+            else if (TFloat.IsInfinity(x))
+            {
+                return TFloat.IsNegative(x) ? 4 : 5;
+            }
+            else
+            {
+                return TFloat.IsNegative(x) ? 6 : 7;
+            }
+        }
+
         private static int GetTrailingSignificand(float x)
         {
             int bits = BitConverter.SingleToInt32Bits(x);
@@ -101,15 +153,10 @@ namespace JIT.HardwareIntrinsics.X86
             return bits & 0x000F_FFFF_FFFF_FFFF;
         }
 
-        private static float RelativeError(float expected, float actual)
+        private static TFloat RelativeError<TFloat>(TFloat expected, TFloat actual)
+            where TFloat : IFloatingPointIeee754<TFloat>
         {
-            float absoluteError = float.Abs(expected - actual);
-            return absoluteError / expected;
-        }
-
-        private static double RelativeError(double expected, double actual)
-        {
-            double absoluteError = double.Abs(expected - actual);
+            TFloat absoluteError = TFloat.Abs(expected - actual);
             return absoluteError / expected;
         }
     }

@@ -19269,6 +19269,49 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             return true;
         }
 
+        case NI_AVX512F_Fixup:
+        case NI_AVX512F_FixupScalar:
+        case NI_AVX512F_VL_Fixup:
+        {
+            // We are actually only RMW in the case where the lookup table
+            // has any value that could result in `op1` being picked. So
+            // in the case `op3` is a constant and none of the nibbles are
+            // `0`, then we don't have to be RMW and can actually "drop" `op1`
+
+            GenTree* op3 = Op(3);
+
+            if (!op3->IsCnsVec())
+            {
+                return true;
+            }
+
+            GenTreeVecCon* vecCon = op3->AsVecCon();
+
+            var_types simdBaseType = GetSimdBaseType();
+            unsigned  simdSize     = GetSimdSize();
+            uint32_t  count        = simdSize / sizeof(uint32_t);
+            uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
+
+            for (uint32_t i = 0; i < count; i += incSize)
+            {
+                uint32_t tbl = vecCon->gtSimdVal.u32[i];
+
+                if (((test & 0x0000000F) == 0) ||
+                    ((test & 0x000000F0) == 0) ||
+                    ((test & 0x00000F00) == 0) ||
+                    ((test & 0x0000F000) == 0) ||
+                    ((test & 0x000F0000) == 0) ||
+                    ((test & 0x00F00000) == 0) ||
+                    ((test & 0x0F000000) == 0) ||
+                    ((test & 0xF0000000) == 0))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         default:
         {
             return false;

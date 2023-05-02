@@ -7473,6 +7473,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree* op1 = nullptr;
     GenTree* op2 = nullptr;
     GenTree* op3 = nullptr;
+    GenTree* op4 = nullptr;
 
     if (numArgs == 1)
     {
@@ -7874,6 +7875,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_VL_GetMantissa:
                         case NI_AVX512F_RoundScale:
                         case NI_AVX512F_VL_RoundScale:
+                        case NI_AVX512DQ_Reduce:
+                        case NI_AVX512DQ_VL_Reduce:
                         {
                             if (!isContainedImm)
                             {
@@ -7915,6 +7918,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVX512F_GetMantissaScalar:
                         case NI_AVX512F_RoundScaleScalar:
+                        case NI_AVX512DQ_ReduceScalar:
                         {
                             // These intrinsics have both 2 and 3-operand overloads.
                             //
@@ -8177,6 +8181,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512BW_AlignRight:
                         case NI_AVX512DQ_InsertVector128:
                         case NI_AVX512DQ_InsertVector256:
+                        case NI_AVX512DQ_Range:
+                        case NI_AVX512DQ_RangeScalar:
+                        case NI_AVX512DQ_VL_Range:
+                        case NI_AVX512DQ_ReduceScalar:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
                             if (!isContainedImm)
@@ -8281,6 +8289,61 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+        else if (numArgs == 4)
+        {
+            // four argument intrinsics should not be marked commutative
+            assert(!isCommutative);
+
+            op1 = node->Op(1);
+            op2 = node->Op(2);
+            op3 = node->Op(3);
+            op4 = node->Op(4);
+
+            switch (category)
+            {
+                case HW_Category_IMM:
+                {
+                    bool supportsRegOptional = false;
+
+                    switch (intrinsicId)
+                    {
+                        case NI_AVX512F_Fixup:
+                        case NI_AVX512F_FixupScalar:
+                        case NI_AVX512F_VL_Fixup:
+                        {
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
+                            if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op3);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                MakeSrcRegOptional(node, op3);
+                            }
+                            break;
+                        }
+
+                        default:
+                        {
+                            assert(!"Unhandled containment for quaternary hardware intrinsic with immediate operand");
+                            break;
+                        }
+                    }
                     break;
                 }
 

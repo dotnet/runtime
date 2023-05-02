@@ -8675,6 +8675,109 @@ void emitter::emitIns_SIMD_R_R_S_R(
         emitIns_R_S(ins, attr, targetReg, varx, offs);
     }
 }
+
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_A_I: emits the code for a SIMD instruction that takes two register operands, a GenTreeIndir
+//                         address, an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    indir     -- The GenTreeIndir used for the memory address
+//    ival      -- The immediate value
+//
+void emitter::emitIns_SIMD_R_R_R_A_I(instruction   ins,
+                                     emitAttr      attr,
+                                     regNumber     targetReg,
+                                     regNumber     op1Reg,
+                                     regNumber     op2Reg,
+                                     GenTreeIndir* indir,
+                                     int           ival)
+{
+    assert(UseSimdEncoding());
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+    emitIns_R_R_A_I(ins, attr, targetReg, op2Reg, indir, ival, IF_RWR_RRD_ARD_CNS);
+}
+
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_C_I: emits the code for a SIMD instruction that takes two register operands, a field handle +
+//                         offset, an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    fldHnd    -- The CORINFO_FIELD_HANDLE used for the memory address
+//    offs      -- The offset added to the memory address from fldHnd
+//    ival      -- The immediate value
+//
+void emitter::emitIns_SIMD_R_R_R_C_I(instruction          ins,
+                                     emitAttr             attr,
+                                     regNumber            targetReg,
+                                     regNumber            op1Reg,
+                                     regNumber            op2Reg,
+                                     CORINFO_FIELD_HANDLE fldHnd,
+                                     int                  offs,
+                                     int                  ival)
+{
+    assert(UseSimdEncoding());
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+    emitIns_R_R_C_I(ins, attr, targetReg, op2Reg, fldHnd, offs, ival);
+}
+
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_R_I: emits the code for a SIMD instruction that takes three register operands, an immediate
+//                         operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    op3Reg    -- The register of the third operand
+//    ival      -- The immediate value
+//
+void emitter::emitIns_SIMD_R_R_R_R_I(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, int ival)
+{
+    assert(UseSimdEncoding());
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+    emitIns_R_R_R_I(ins, attr, targetReg, op2Reg, op3Reg, ival);
+}
+
+//------------------------------------------------------------------------
+// emitIns_SIMD_R_R_R_S_I: emits the code for a SIMD instruction that takes two register operands, a variable index +
+//                         offset, an immediate operand, and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    targetReg -- The target register
+//    op1Reg    -- The register of the first operand
+//    op2Reg    -- The register of the second operand
+//    varx      -- The variable index used for the memory address
+//    offs      -- The offset added to the memory address from varx
+//    ival      -- The immediate value
+//
+void emitter::emitIns_SIMD_R_R_R_S_I(instruction ins,
+                                     emitAttr    attr,
+                                     regNumber   targetReg,
+                                     regNumber   op1Reg,
+                                     regNumber   op2Reg,
+                                     int         varx,
+                                     int         offs,
+                                     int         ival)
+{
+    assert(UseSimdEncoding());
+    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+    emitIns_R_R_S_I(ins, attr, targetReg, op2Reg, varx, offs, ival);
+}
 #endif // FEATURE_HW_INTRINSICS
 
 /*****************************************************************************
@@ -18030,6 +18133,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvttpd2qq:
         case INS_vcvttpd2uqq:
         case INS_vcvtuqq2pd:
+        case INS_vfixupimmpd:
+        case INS_vfixupimmps:
+        case INS_vfixupimmsd:
+        case INS_vfixupimmss:
         case INS_vgetexppd:
         case INS_vgetexpps:
         case INS_vgetexpsd:
@@ -18038,6 +18145,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vgetmantps:
         case INS_vgetmantsd:
         case INS_vgetmantss:
+        case INS_vrangepd:
+        case INS_vrangeps:
+        case INS_vrangesd:
+        case INS_vrangess:
+        case INS_vreducepd:
+        case INS_vreduceps:
+        case INS_vreducesd:
+        case INS_vreducess:
         case INS_vscalefpd:
         case INS_vscalefps:
         case INS_vscalefsd:

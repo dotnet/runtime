@@ -403,6 +403,27 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Fixup(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_fixupimm_pd(__m128d a, __m128d b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Fixup(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_fixupimm_ps(__m256 a, __m256 b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Fixup(Vector256<float> left, Vector256<float> right, Vector256<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_fixupimm_pd(__m256d a, __m256d b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Fixup(Vector256<double> left, Vector256<double> right, Vector256<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128 _mm_getexp_ps (__m128 a)
             ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst
             /// </summary>
@@ -1344,6 +1365,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VEXTRACTF64x4 ymm1/m256 {k1}{z}, zmm2, imm8
         /// </summary>
         public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_fixupimm_ps(__m512 a, __m512 b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Fixup(Vector512<float> left, Vector512<float> right, Vector512<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_fixupimm_pd(__m512d a, __m512d b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Fixup(Vector512<double> left, Vector512<double> right, Vector512<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_fixupimm_ss(__m128 a, __m128 b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> FixupScalar(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_fixupimm_sd(__m128d a, __m128d b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> FixupScalar(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_fmadd_ps (__m512 a, __m512 b, __m512 c)
