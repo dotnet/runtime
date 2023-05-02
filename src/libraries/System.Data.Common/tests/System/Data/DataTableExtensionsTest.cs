@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Data.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not supported on Browser/Wasi.")]
     public class DataTableExtensionsTest
     {
         private DataTable _dt;
