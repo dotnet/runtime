@@ -1698,6 +1698,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
     {
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
 
         default:
@@ -1718,10 +1719,10 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
 // create:
 //
 // tmp_simd_var = simd_var
-// tmp_index = index
-// loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2)
-// hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index * 2 + 1)
-// return: GT_LONG(loResult, hiResult)
+// tmp_index_times_two = index * 2
+// lo_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
+// hi_result = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two + 1)
+// return: GT_LONG(lo_result, hi_result)
 //
 // This isn't optimal codegen, since NI_Vector*_GetElement sometimes requires
 // temps that could be shared, for example.
@@ -1738,7 +1739,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     assert(node == use.Def());
     assert(varTypeIsLong(node));
     assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector256_GetElement));
+           (node->GetHWIntrinsicId() == NI_Vector256_GetElement) ||
+           (node->GetHWIntrinsicId() == NI_Vector512_GetElement));
 
     GenTree*  op1          = node->Op(1);
     GenTree*  op2          = node->Op(2);
@@ -1749,89 +1751,72 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     assert(varTypeIsSIMD(op1->TypeGet()));
     assert(op2->TypeIs(TYP_INT));
 
-    bool    indexIsConst = op2->OperIsConst();
-    ssize_t index        = 0;
-
-    if (indexIsConst)
-    {
-        index = op2->AsIntCon()->IconValue();
-    }
-
     GenTree* simdTmpVar    = RepresentOpAsLocalVar(op1, node, &node->Op(1));
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->GetLclNum();
     JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
     Range().Remove(simdTmpVar);
-    op1 = node->Op(1);
 
-    GenTree* indexTmpVar    = nullptr;
-    unsigned indexTmpVarNum = 0;
-
-    if (!indexIsConst)
-    {
-        indexTmpVar    = RepresentOpAsLocalVar(op2, node, &node->Op(2));
-        indexTmpVarNum = indexTmpVar->AsLclVarCommon()->GetLclNum();
-        JITDUMP("[DecomposeHWIntrinsicGetElement]: Saving op2 tree to a temp var:\n");
-        DISPTREERANGE(Range(), indexTmpVar);
-        Range().Remove(indexTmpVar);
-        op2 = node->Op(2);
-    }
-
-    // Create:
-    //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, index * 2)
-
-    GenTree* simdTmpVar1 = simdTmpVar;
-    GenTree* indexTimesTwo1;
+    GenTree* indexTimesTwo;
+    bool     indexIsConst = op2->OperIsConst();
 
     if (indexIsConst)
     {
         // Reuse the existing index constant node.
-        indexTimesTwo1 = op2;
-        Range().Remove(indexTimesTwo1);
-        indexTimesTwo1->AsIntCon()->SetIconValue(index * 2);
 
-        Range().InsertBefore(node, simdTmpVar1, indexTimesTwo1);
+        indexTimesTwo = op2;
+        Range().Remove(op2);
+
+        indexTimesTwo->AsIntCon()->SetIconValue(op2->AsIntCon()->IconValue() * 2);
+        Range().InsertBefore(node, simdTmpVar, indexTimesTwo);
     }
     else
     {
-        GenTree* indexTmpVar1 = indexTmpVar;
-        GenTree* two1         = m_compiler->gtNewIconNode(2, TYP_INT);
-        indexTimesTwo1        = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar1, two1);
-        Range().InsertBefore(node, simdTmpVar1, indexTmpVar1, two1, indexTimesTwo1);
+        GenTree* one  = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwo = m_compiler->gtNewOperNode(GT_LSH, TYP_INT, op2, one);
+        Range().InsertBefore(node, simdTmpVar, one, indexTimesTwo);
     }
 
-    GenTree* loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar1, indexTimesTwo1,
-                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    // Create:
+    //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
+
+    GenTreeHWIntrinsic* loResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, loResult);
 
-    // Create:
-    //      hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, index * 2 + 1)
+    simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
+    Range().InsertBefore(node, simdTmpVar);
 
-    GenTree* simdTmpVar2 = m_compiler->gtNewLclLNode(simdTmpVarNum, op1->TypeGet());
+    // Create:
+    //      hiResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two + 1)
+
     GenTree* indexTimesTwoPlusOne;
 
     if (indexIsConst)
     {
-        indexTimesTwoPlusOne = m_compiler->gtNewIconNode(index * 2 + 1, TYP_INT);
-        Range().InsertBefore(node, simdTmpVar2, indexTimesTwoPlusOne);
+        indexTimesTwoPlusOne = m_compiler->gtNewIconNode(indexTimesTwo->AsIntCon()->IconValue() + 1, TYP_INT);
+        Range().InsertBefore(node, indexTimesTwoPlusOne);
     }
     else
     {
-        GenTree* indexTmpVar2   = m_compiler->gtNewLclLNode(indexTmpVarNum, TYP_INT);
-        GenTree* two2           = m_compiler->gtNewIconNode(2, TYP_INT);
-        GenTree* indexTimesTwo2 = m_compiler->gtNewOperNode(GT_MUL, TYP_INT, indexTmpVar2, two2);
-        GenTree* one            = m_compiler->gtNewIconNode(1, TYP_INT);
-        indexTimesTwoPlusOne    = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo2, one);
-        Range().InsertBefore(node, simdTmpVar2, indexTmpVar2, two2, indexTimesTwo2);
-        Range().InsertBefore(node, one, indexTimesTwoPlusOne);
+        indexTimesTwo                = RepresentOpAsLocalVar(indexTimesTwo, loResult, &loResult->Op(2));
+        unsigned indexTimesTwoVarNum = indexTimesTwo->AsLclVarCommon()->GetLclNum();
+        JITDUMP("[DecomposeHWIntrinsicWithElement]: Saving indexTimesTwo tree to a temp var:\n");
+        DISPTREERANGE(Range(), indexTimesTwo);
+
+        indexTimesTwo        = m_compiler->gtNewLclLNode(indexTimesTwoVarNum, indexTimesTwo->TypeGet());
+        GenTree* one         = m_compiler->gtNewIconNode(1, TYP_INT);
+        indexTimesTwoPlusOne = m_compiler->gtNewOperNode(GT_ADD, TYP_INT, indexTimesTwo, one);
+        Range().InsertBefore(node, indexTimesTwo, one, indexTimesTwoPlusOne);
     }
 
-    GenTree* hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar2, indexTimesTwoPlusOne,
-                                                             node->GetHWIntrinsicId(), CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* hiResult =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne, node->GetHWIntrinsicId(),
+                                             CORINFO_TYPE_INT, simdSize);
     Range().InsertBefore(node, hiResult);
 
     // Done with the original tree; remove it.
-
     Range().Remove(node);
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);

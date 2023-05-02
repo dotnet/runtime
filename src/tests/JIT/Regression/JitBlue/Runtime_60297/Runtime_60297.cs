@@ -6,10 +6,12 @@
 // Seed: 4133580165890247722
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
-    public static int Main() => Test(31) == -65538 ? 100 : 0;
+    [Fact]
+    public static int TestEntryPoint() => Test(31) == -65538 ? 100 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test(int x) => -(1 << x) / 32767;

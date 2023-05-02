@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class GitHub_10714
 {
@@ -16,7 +17,8 @@ public class GitHub_10714
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test() => Interlocked.Exchange(ref intToExchange, innerShort);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int oldValue = Test();
         return (oldValue == -1 && intToExchange == 2) ? Passed : Failed;

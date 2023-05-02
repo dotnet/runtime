@@ -202,5 +202,7 @@ System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</Packa
              Link="Common\System\Composition\Diagnostics\DebuggerTraceWriter.cs" />
     <Compile Include="$(CommonPath)System\Composition\Diagnostics\TraceWriter.cs"
              Link="Common\System\Composition\Diagnostics\TraceWriter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 </Project>

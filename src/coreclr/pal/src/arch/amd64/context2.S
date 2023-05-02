@@ -81,6 +81,7 @@ LEAF_END CONTEXT_CaptureContext, _TEXT
 
 LEAF_ENTRY RtlCaptureContext, _TEXT
     mov     DWORD PTR [rdi + CONTEXT_ContextFlags], (CONTEXT_AMD64 | CONTEXT_FULL | CONTEXT_SEGMENTS)
+    mov     QWORD PTR [rdi + CONTEXT_XStateFeaturesMask], 0
     jmp     C_FUNC(CONTEXT_CaptureContext)
 LEAF_END RtlCaptureContext, _TEXT
 

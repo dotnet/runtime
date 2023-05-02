@@ -1,6 +1,11 @@
 # How to service a library
 
-This document provides the steps necessary after modifying a library in a servicing branch (where "servicing branch" refers to any branch whose name begins with `release/`).
+This document provides the steps necessary after modifying a library in a servicing branch.
+
+Servicing branches represent shipped versions of .NET, and their name is in the format `release/X.0-staging`. Examples:
+
+- `release/7.0-staging`
+- `release/6.0-staging`
 
 ## Check if a package is generated
 
@@ -23,4 +28,16 @@ All that's left is to ensure that your changes have worked as expected. To do so
 
 ## Approval Process
 
-All the servicing change must go through an approval process. Please create your PR using [this template](https://raw.githubusercontent.com/dotnet/runtime/main/.github/PULL_REQUEST_TEMPLATE/servicing_pull_request_template.md). You should also add `servicing-consider` label to the pull request and bring it to the attention of the engineering lead responsible for the area.
+All the servicing change must go through an approval process. You have two ways to submit your PR:
+
+- By manually creating your PR using [this template](https://raw.githubusercontent.com/dotnet/runtime/main/.github/PULL_REQUEST_TEMPLATE/servicing_pull_request_template.md).
+- Or by asking the bot to automatically create the servicing PR for you using a merged `main` PR as source. This method requires typing an AzDO backport command as a comment of your merged PR using the format `/backport to release/X.0-staging`. Examples:
+-
+  - `/backport to release/7.0-staging`
+  - `/backport to release/6.0-staging`
+
+For both cases, you must:
+
+- Fill out the template of the PR description.
+- Add the `servicing-consider` label.
+- Bring it to the attention of the engineering lead responsible for the area, so they consider the fix for servicing.

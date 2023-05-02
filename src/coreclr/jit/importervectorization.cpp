@@ -6,8 +6,8 @@
 #pragma hdrstop
 #endif
 
-// For now the max possible size is Vector256<ushort>.Count * 2
-#define MaxPossibleUnrollSize 32
+// For now the max possible size is Vector512<ushort>.Count * 2
+#define MaxPossibleUnrollSize 64
 
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
@@ -70,50 +70,8 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 
 #if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// CreateConstVector: a helper to create Vector128/256/512.Create(<cns>) node
-//
-// Arguments:
-//    comp     - Compiler object
-//    simdType - Vector type, TYP_SIMD64 (xarch only), TYP_SIMD32 (xarch only) or TYP_SIMD16
-//    cns      - Constant data
-//
-// Return Value:
-//    GenTreeVecCon node representing Vector128/256/512.Create(<cns>)
-//
-static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
-{
-#ifdef TARGET_XARCH
-    if (simdType == TYP_SIMD64)
-    {
-        simd64_t       simd64Val = {};
-        GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
-
-        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd64_t));
-        return vecCon;
-    }
-
-    if (simdType == TYP_SIMD32)
-    {
-        simd32_t       simd32Val = {};
-        GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
-
-        memcpy(&vecCon->gtSimdVal, cns, sizeof(simd32_t));
-        return vecCon;
-    }
-#endif // TARGET_XARCH
-
-    assert(simdType == TYP_SIMD16);
-
-    simd16_t       simd16Val = {};
-    GenTreeVecCon* vecCon    = comp->gtNewVconNode(simdType);
-
-    memcpy(&vecCon->gtSimdVal, cns, sizeof(simd16_t));
-    return vecCon;
-}
-
-//------------------------------------------------------------------------
 // impExpandHalfConstEqualsSIMD: Attempts to unroll and vectorize
-//    Equals against a constant WCHAR data for Length in [8..32] range
+//    Equals against a constant WCHAR data for Length in [8..64] range
 //    using SIMD instructions. C# equivalent of what this function emits:
 //
 //    bool IsTestString(ReadOnlySpan<char> span)
@@ -150,31 +108,27 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
 {
     assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
-    if (!IsBaselineSimdIsaSupported())
+    const int byteLen  = len * sizeof(WCHAR);
+    int       simdSize = (int)roundDownSIMDSize(byteLen);
+#ifdef TARGET_XARCH
+    if ((simdSize == YMM_REGSIZE_BYTES) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        // We need baseline SIMD support at least
+        // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+        simdSize = XMM_REGSIZE_BYTES;
+    }
+#endif
+    if (byteLen > (simdSize * 2))
+    {
+        // Data is too big to be processed via two SIMD loads
+        // or baseline has no SIMD support
         return nullptr;
     }
-
-    CorInfoType baseType = CORINFO_TYPE_NATIVEUINT;
-
-    int       simdSize;
-    var_types simdType;
-
-    NamedIntrinsic niEquals;
-
-    GenTreeVecCon* cnsVec1     = nullptr;
-    GenTreeVecCon* cnsVec2     = nullptr;
-    GenTree*       toLowerVec1 = nullptr;
-    GenTree*       toLowerVec2 = nullptr;
-
-    // Optimization: don't use two vectors for Length == 8 or 16
-    bool useSingleVector = false;
+    assert((byteLen >= simdSize) && (simdSize >= 16));
 
     WCHAR cnsValue[MaxPossibleUnrollSize]    = {};
     WCHAR toLowerMask[MaxPossibleUnrollSize] = {};
 
-    memcpy((UINT8*)cnsValue, (UINT8*)cns, len * sizeof(WCHAR));
+    memcpy(cnsValue, cns, byteLen);
 
     if ((cmpMode == OrdinalIgnoreCase) && !ConvertToLowerCase(cnsValue, toLowerMask, len))
     {
@@ -182,98 +136,50 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-#if defined(TARGET_XARCH)
-    if (compOpportunisticallyDependsOn(InstructionSet_Vector256) && len >= 16)
-    {
-        // Handle [16..32] inputs via two Vector256
-        assert(len >= 16 && len <= 32);
+    const var_types   simdType = getSIMDTypeForSize(simdSize);
+    const CorInfoType baseType = CORINFO_TYPE_NATIVEUINT;
 
-        simdSize = 32;
-        simdType = TYP_SIMD32;
+    GenTreeVecCon* cnsVec1 = gtNewVconNode(simdType, cnsValue);
+    GenTreeVecCon* cnsVec2 = gtNewVconNode(simdType, (BYTE*)cnsValue + byteLen - simdSize);
 
-        niEquals = NI_Vector256_op_Equality;
-
-        // Special case: use a single vector for Length == 16
-        useSingleVector = len == 16;
-
-        cnsVec1 = CreateConstVector(this, simdType, cnsValue);
-        cnsVec2 = CreateConstVector(this, simdType, cnsValue + len - 16);
-
-        if (cmpMode == OrdinalIgnoreCase)
-        {
-            toLowerVec1 = CreateConstVector(this, simdType, toLowerMask);
-            toLowerVec2 = CreateConstVector(this, simdType, toLowerMask + len - 16);
-        }
-    }
-    else
-#endif // TARGET_XARCH
-        if (len <= 16)
-    {
-        // Handle [8..16] inputs via two Vector128
-        assert(len >= 8 && len <= 16);
-
-        simdSize = 16;
-        simdType = TYP_SIMD16;
-
-        niEquals = NI_Vector128_op_Equality;
-
-        // Special case: use a single vector for Length == 8
-        useSingleVector = len == 8;
-
-        cnsVec1 = CreateConstVector(this, simdType, cnsValue);
-        cnsVec2 = CreateConstVector(this, simdType, cnsValue + len - 8);
-
-        if (cmpMode == OrdinalIgnoreCase)
-        {
-            toLowerVec1 = CreateConstVector(this, simdType, toLowerMask);
-            toLowerVec2 = CreateConstVector(this, simdType, toLowerMask + len - 8);
-        }
-    }
-    else
-    {
-        JITDUMP("impExpandHalfConstEqualsSIMD: No V256 support and data is too big for V128\n");
-        // NOTE: We might consider using four V128 for ARM64
-        return nullptr;
-    }
-
-    GenTree* zero = gtNewZeroConNode(simdType);
-
-    GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
-    GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);
-    GenTree* dataPtr1 = gtNewOperNode(GT_ADD, TYP_BYREF, data, offset1);
-    GenTree* dataPtr2 = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2);
-
-    GenTree* vec1 = gtNewIndir(simdType, dataPtr1);
-    GenTree* vec2 = gtNewIndir(simdType, dataPtr2);
-
-    // TODO-Unroll-CQ: Spill vec1 and vec2 for better pipelining, currently we end up emitting:
-    //
-    //   vmovdqu  xmm0, xmmword ptr [rcx+12]
-    //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
-    //   vmovdqu  xmm1, xmmword ptr [rcx+20]
-    //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
-    //
-    // While we should re-order them to be:
-    //
-    //   vmovdqu  xmm0, xmmword ptr [rcx+12]
-    //   vmovdqu  xmm1, xmmword ptr [rcx+20]
-    //   vpxor    xmm0, xmm0, xmmword ptr[reloc @RWD00]
-    //   vpxor    xmm1, xmm1, xmmword ptr[reloc @RWD16]
-    //
+    GenTree* offset1 = gtNewIconNode(dataOffset, TYP_I_IMPL);
+    GenTree* offset2 = gtNewIconNode(dataOffset + byteLen - simdSize, TYP_I_IMPL);
+    GenTree* vec1    = gtNewIndir(simdType, gtNewOperNode(GT_ADD, TYP_BYREF, data, offset1));
+    GenTree* vec2    = gtNewIndir(simdType, gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2));
 
     if (cmpMode == OrdinalIgnoreCase)
     {
         // Apply ASCII-only ToLowerCase mask (bitwise OR 0x20 for all a-Z chars)
-        assert((toLowerVec1 != nullptr) && (toLowerVec2 != nullptr));
-        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize, false);
-        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize, false);
+        GenTreeVecCon* toLowerVec1 = gtNewVconNode(simdType, toLowerMask);
+        GenTreeVecCon* toLowerVec2 = gtNewVconNode(simdType, (BYTE*)toLowerMask + byteLen - simdSize);
+
+        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
+        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
     }
 
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize, false);
-    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize, false);
-    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize, false);
-    return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, baseType, simdSize);
+    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
+    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
+    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
+
+    // Optimization: use a single load when byteLen equals simdSize.
+    // For code simplicity we always create nodes for two vectors case.
+    const bool useSingleVector = simdSize == byteLen;
+    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_BOOL, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
+                                 simdSize);
+
+    // Codegen example for byteLen=40 and OrdinalIgnoreCase mode with AVX:
+    //
+    //  vmovups  ymm0, ymmword ptr [rcx+0CH]
+    //  vpor     ymm0, ymm0, ymmword ptr [reloc @RWD00]
+    //  vpxor    ymm0, ymm0, ymmword ptr [reloc @RWD32]
+    //  vmovups  ymm1, ymmword ptr [rcx+28H]
+    //  vpor     ymm1, ymm1, ymmword ptr [reloc @RWD64]
+    //  vpxor    ymm1, ymm1, ymmword ptr [reloc @RWD96]
+    //  vpor     ymm0, ymm0, ymm1
+    //  vptest   ymm0, ymm0
+    //  sete     al
+    //  movzx    rax, al
 }
 #endif // defined(FEATURE_HW_INTRINSICS)
 
@@ -533,7 +439,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
             indirCmp = impExpandHalfConstEqualsSWAR(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
 #if defined(FEATURE_HW_INTRINSICS)
-        else if (len <= 32)
+        else if (IsBaselineSimdIsaSupported())
         {
             indirCmp = impExpandHalfConstEqualsSIMD(gtClone(data)->AsLclVar(), cnsData, len, dataOffset, cmpMode);
         }
@@ -865,7 +771,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
-    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
+    CORINFO_CLASS_HANDLE spanCls;
+    info.compCompHnd->getArgType(sig, sig->args, &spanCls);
     CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);

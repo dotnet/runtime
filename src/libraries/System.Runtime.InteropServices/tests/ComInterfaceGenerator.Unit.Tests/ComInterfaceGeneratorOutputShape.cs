@@ -108,6 +108,39 @@ namespace ComInterfaceGenerator.Unit.Tests
             Assert.Equal(comp.SyntaxTrees.Count() + 3, newComp.SyntaxTrees.Count());
 
             VerifyShape(newComp, "I");
+            VerifyShape(newComp, "Empty");
+            VerifyShape(newComp, "J");
+        }
+
+        [Fact]
+        public async Task InheritingComInterfaces()
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface]
+                partial interface I
+                {
+                    void Method();
+                    void Method2();
+                }
+                [GeneratedComInterface]
+                partial interface J : I
+                {
+                    void MethodA();
+                    void MethodB();
+                }
+                """;
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComInterfaceGenerator());
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            // We'll create one syntax tree per user-defined interface.
+            Assert.Equal(comp.SyntaxTrees.Count() + 2, newComp.SyntaxTrees.Count());
+
+            VerifyShape(newComp, "I");
             VerifyShape(newComp, "J");
         }
 

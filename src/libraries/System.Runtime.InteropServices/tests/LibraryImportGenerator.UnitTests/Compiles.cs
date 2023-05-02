@@ -647,10 +647,10 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
         {
-            string source = @"
-using System.Runtime.InteropServices;
-public class Basic { }
-";
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
             yield return new object[] { ID(), source, TestTargetFramework.Standard };
             yield return new object[] { ID(), source, TestTargetFramework.Framework };
             yield return new object[] { ID(), source, TestTargetFramework.Net };

@@ -1,0 +1,22 @@
+name: check-service-labels
+
+permissions:
+  pull-requests: read
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, labeled, unlabeled, synchronize]
+    branches:
+      - 'release/**'
+
+jobs:
+  check-labels:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check servicing labels
+      run: |
+        if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
+          exit 0
+        else
+          exit 1
+        fi

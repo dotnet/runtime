@@ -233,7 +233,6 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("c == 15", 79, 3, 79, 11)]
         [InlineData("c == 17", 79, 3, 80, 11)]
-        [InlineData("g == 17", 79, 3, 80, 11)]
         [InlineData("true", 79, 3, 79, 11)]
         [InlineData("\"false\"", 79, 3, 79, 11)]
         [InlineData("\"true\"", 79, 3, 79, 11)]

@@ -93,7 +93,7 @@ namespace System.Net.Http
         private bool _http2Enabled;
         private byte[]? _http2AltSvcOriginUri;
         internal readonly byte[]? _http2EncodedAuthorityHostHeader;
-        private readonly bool _http3Enabled;
+        private bool _http3Enabled;
         private Http3Connection? _http3Connection;
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
@@ -113,7 +113,7 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
-        private readonly SslClientAuthenticationOptions? _sslOptionsHttp3;
+        private SslClientAuthenticationOptions? _sslOptionsHttp3;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -146,7 +146,7 @@ namespace System.Net.Http
 
             if (IsHttp3Supported())
             {
-                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30 && QuicConnection.IsSupported;
+                _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
             }
 
             switch (kind)
@@ -287,15 +287,6 @@ namespace System.Net.Http
                     Debug.Assert(hostHeader != null);
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
-                }
-
-                if (IsHttp3Supported())
-                {
-                    if (_http3Enabled)
-                    {
-                        _sslOptionsHttp3 = ConstructSslOptions(poolManager, sslHostName);
-                        _sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
-                    }
                 }
             }
 
@@ -1047,7 +1038,23 @@ namespace System.Net.Http
                         !request.IsExtendedConnectRequest)
                     {
                         Debug.Assert(async);
-                        response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
+                        if (QuicConnection.IsSupported)
+                        {
+                            if (_sslOptionsHttp3 == null)
+                            {
+                                // deferred creation. We use atomic exchange to be sure all threads point to single object to mimic ctor behavior.
+                                SslClientAuthenticationOptions sslOptionsHttp3 = ConstructSslOptions(_poolManager, _sslOptionsHttp11!.TargetHost!);
+                                sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
+                                Interlocked.CompareExchange(ref _sslOptionsHttp3, sslOptionsHttp3, null);
+                            }
+
+                            response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            _altSvcEnabled = false;
+                            _http3Enabled = false;
+                        }
                     }
 
                     if (response is null)

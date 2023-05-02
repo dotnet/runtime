@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_73951
 {
@@ -14,7 +15,8 @@ public class Runtime_73951
 
     public static ushort s_result;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Problem(new Runtime());
 
@@ -22,7 +24,7 @@ public class Runtime_73951
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Problem(IRuntime rt)
+    internal static void Problem(IRuntime rt)
     {
         s_rt = rt;
         S0 vr21 = s_17.F1;

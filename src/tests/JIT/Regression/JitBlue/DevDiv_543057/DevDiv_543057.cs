@@ -10,6 +10,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Struct with 4 fields
 public struct MyStruct
@@ -88,7 +89,8 @@ public class TestClass
 
 public class DevDiv_543057
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retVal = TestClass.Pass;
         TestClass c = new TestClass();

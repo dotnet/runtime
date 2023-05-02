@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 public class a
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

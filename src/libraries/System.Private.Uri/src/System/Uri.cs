@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -450,6 +451,8 @@ namespace System
         //
         // ISerializable constructor
         //
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Uri(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             string? uriString = serializationInfo.GetString("AbsoluteUri"); // Do not rename (binary serialization)

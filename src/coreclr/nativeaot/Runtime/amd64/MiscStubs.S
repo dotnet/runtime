@@ -62,19 +62,25 @@ NESTED_ENTRY RhpGetThreadStaticBaseForType, _TEXT, NoHandler
         INLINE_GETTHREAD
 
         mov     r8d, [rbx + 8]         // Get ModuleIndex out of the TypeManagerSlot
-        cmp     r8d, [rax + OFFSETOF__Thread__m_numThreadLocalModuleStatics]
-        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
 
-        mov     r9, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-        mov     rax, [r9 + r8 * 8]     // Index into the array of modules
+        // get per-thread storage
+        mov     rax, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
+
+        // get per-module storage
         test    rax, rax
         jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-
-        mov     r8, [rax]              // Get the managed array from the handle
-        cmp     r12d, [r8 + OFFSETOF__Array__m_Length]
+        cmp     r8d, [rax + OFFSETOF__Array__m_Length]
         jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
-        mov     rax, [r8 + r12 * 8 + 0x10]
+        mov     rax, [rax + r8 * 8 + 0x10]
 
+        // get the actual per-type storage
+        test    rax, rax
+        jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
+        cmp     r12d, [rax + OFFSETOF__Array__m_Length]
+        jae     LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
+        mov     rax, [rax + r12 * 8 + 0x10]
+
+        // if have storage, return it
         test    rax, rax
         jz      LOCAL_LABEL(RhpGetThreadStaticBaseForType_RarePath)
 

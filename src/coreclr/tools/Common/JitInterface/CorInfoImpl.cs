@@ -2658,46 +2658,15 @@ namespace Internal.JitInterface
 
         private TypeCompareState compareTypesForEquality(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
         {
-            TypeCompareState result = TypeCompareState.May;
-
             TypeDesc type1 = HandleToObject(cls1);
             TypeDesc type2 = HandleToObject(cls2);
 
-            // If neither type is a canonical subtype, type handle comparison suffices
-            if (!type1.IsCanonicalSubtype(CanonicalFormKind.Any) && !type2.IsCanonicalSubtype(CanonicalFormKind.Any))
+            return TypeExtensions.CompareTypesForEquality(type1, type2) switch
             {
-                result = (type1 == type2 ? TypeCompareState.Must : TypeCompareState.MustNot);
-            }
-            // If either or both types are canonical subtypes, we can sometimes prove inequality.
-            else
-            {
-                // If either is a value type then the types cannot
-                // be equal unless the type defs are the same.
-                if (type1.IsValueType || type2.IsValueType)
-                {
-                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Universal) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Universal))
-                    {
-                        if (!type1.HasSameTypeDefinition(type2))
-                        {
-                            result = TypeCompareState.MustNot;
-                        }
-                    }
-                }
-                // If we have two ref types that are not __Canon, then the
-                // types cannot be equal unless the type defs are the same.
-                else
-                {
-                    if (!type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                    {
-                        if (!type1.HasSameTypeDefinition(type2))
-                        {
-                            result = TypeCompareState.MustNot;
-                        }
-                    }
-                }
-            }
-
-            return result;
+                true => TypeCompareState.Must,
+                false => TypeCompareState.MustNot,
+                _ => TypeCompareState.May,
+            };
         }
 
         private CORINFO_CLASS_STRUCT_* mergeClasses(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
@@ -2889,6 +2858,22 @@ namespace Internal.JitInterface
         {
             FieldDesc field = HandleToObject(fld);
             return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // Implemented for JIT only for now.
+
+            return 0;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // Implemented for JIT only for now.
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)
@@ -3272,6 +3257,12 @@ namespace Internal.JitInterface
         {
             TypeDesc typeDesc = HandleToObject(cls);
             return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
+        }
+
+        private uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc typeDesc = HandleToObject(cls);
+            return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

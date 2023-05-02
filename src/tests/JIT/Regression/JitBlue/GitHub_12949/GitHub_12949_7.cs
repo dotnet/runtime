@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public struct V
 {
@@ -42,7 +43,8 @@ public class M
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Ensure we get right order of side effects from boxes
         // now that we are splitting them into multiple statements.

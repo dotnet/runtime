@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoMethod } from "./types";
 import { NativePointer } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import {
     getU16, getU32_unaligned
 } from "./memory";
@@ -18,7 +18,7 @@ import {
     BailoutReasonNames, BailoutReason
 } from "./jiterpreter-support";
 import {
-    generate_wasm_body
+    generateWasmBody
 } from "./jiterpreter-trace-generator";
 
 // Controls miscellaneous diagnostic output.
@@ -56,12 +56,20 @@ export const
     // Print diagnostic information to the console when performing null check optimizations
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
-    traceBackBranches = false,
+    // 1 = failures only, 2 = full detail
+    traceBackBranches = 0,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     // Unproductive if we have backward branches enabled because it can stop us from jitting
     //  nested loops
     abortAtJittedLoopBodies = true,
+    // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
+    //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
+    //  return addresses than this we will not emit code for the ENDFINALLY opcode
+    maxCallHandlerReturnAddresses = 3,
+    // Controls how many individual items (traces, bailouts, etc) are shown in the breakdown
+    //  at the end of a run when stats are enabled. The N highest ranking items will be shown.
+    summaryStatCount = 30,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
@@ -73,21 +81,21 @@ export const
     // Web browsers limit synchronous module compiles to 4KB
     maxModuleSize = 4080;
 
-export const callTargetCounts : { [method: number] : number } = {};
+export const callTargetCounts: { [method: number]: number } = {};
 
-export let mostRecentTrace : InstrumentedTraceState | undefined;
-export let mostRecentOptions : JiterpreterOptions | undefined = undefined;
+export let mostRecentTrace: InstrumentedTraceState | undefined;
+export let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 
 // You can disable an opcode for debugging purposes by adding it to this list,
 //  instead of aborting the trace it will insert a bailout instead. This means that you will
 //  have trace code generated as if the opcode were otherwise enabled
-export const disabledOpcodes : Array<MintOpcode> = [
+export const disabledOpcodes: Array<MintOpcode> = [
 ];
 
 // Detailed output and/or instrumentation will happen when a trace is jitted if the method fullname has a match
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
-export const instrumentedMethodNames : Array<string> = [
+export const instrumentedMethodNames: Array<string> = [
 ];
 
 export class InstrumentedTraceState {
@@ -96,7 +104,7 @@ export class InstrumentedTraceState {
     operand1: number | undefined;
     operand2: number | undefined;
 
-    constructor (name: string) {
+    constructor(name: string) {
         this.name = name;
         this.eip = <any>0;
     }
@@ -108,24 +116,24 @@ export class TraceInfo {
     name: string | undefined;
     abortReason: string | undefined;
     fnPtr: number | undefined;
-    bailoutCounts: { [code: number] : number } | undefined;
+    bailoutCounts: { [code: number]: number } | undefined;
     bailoutCount: number | undefined;
 
-    constructor (ip: MintOpcodePtr, index: number) {
+    constructor(ip: MintOpcodePtr, index: number) {
         this.ip = ip;
         this.index = index;
     }
 
-    get hitCount () {
+    get hitCount() {
         return cwraps.mono_jiterp_get_trace_hit_count(this.index);
     }
 }
 
-export const instrumentedTraces : { [key: number]: InstrumentedTraceState } = {};
+export const instrumentedTraces: { [key: number]: InstrumentedTraceState } = {};
 export let nextInstrumentedTraceId = 1;
 export let countLimitedPrintCounter = 10;
-export const abortCounts : { [key: string] : number } = {};
-export const traceInfo : { [key: string] : TraceInfo } = {};
+export const abortCounts: { [key: string]: number } = {};
+export const traceInfo: { [key: string]: TraceInfo } = {};
 
 export const
     sizeOfDataItem = 4,
@@ -136,25 +144,25 @@ export const
 
 /*
 struct MonoVTable {
-	MonoClass  *klass; // 0
-	MonoGCDescriptor gc_descr; // 4
-	MonoDomain *domain; // 8
-	gpointer    type; // 12
-	guint8     *interface_bitmap; // 16
-	guint32     max_interface_id; // 20
-	guint8      rank; // 21
-	guint8      initialized; // 22
-	guint8      flags;
+    MonoClass  *klass; // 0
+    MonoGCDescriptor gc_descr; // 4
+    MonoDomain *domain; // 8
+    gpointer    type; // 12
+    guint8     *interface_bitmap; // 16
+    guint32     max_interface_id; // 20
+    guint8      rank; // 21
+    guint8      initialized; // 22
+    guint8      flags;
 */
 
 /*
 struct InterpFrame {
-	InterpFrame    *parent; // 0
-	InterpMethod   *imethod; // 4
-	stackval       *retval; // 8
-	stackval       *stack; // 12
-	InterpFrame    *next_free; // 16
-	InterpState state; // 20
+    InterpFrame    *parent; // 0
+    InterpMethod   *imethod; // 4
+    stackval       *retval; // 8
+    stackval       *stack; // 12
+    InterpFrame    *next_free; // 16
+    InterpState state; // 20
 };
 
 struct InterpMethod {
@@ -169,12 +177,13 @@ struct InterpMethod {
        void **data_items;
 */
 
-export let traceBuilder : WasmBuilder;
-export let traceImports : Array<[string, string, Function]> | undefined;
+export let traceBuilder: WasmBuilder;
+export let traceImports: Array<[string, string, Function]> | undefined;
 
 export let _wrap_trace_function: Function;
 
-const mathOps1d = [
+const mathOps1d =
+    [
         "asin",
         "acos",
         "atan",
@@ -220,7 +229,7 @@ const mathOps1d = [
         "powf",
     ];
 
-function recordBailout (ip: number, base: MintOpcodePtr, reason: BailoutReason) {
+function recordBailout(ip: number, base: MintOpcodePtr, reason: BailoutReason) {
     cwraps.mono_jiterp_trace_bailout(reason);
     // Counting these is not meaningful and messes up the end of run statistics
     if (reason === BailoutReason.Return)
@@ -246,7 +255,7 @@ function recordBailout (ip: number, base: MintOpcodePtr, reason: BailoutReason) 
     return ip;
 }
 
-function getTraceImports () {
+function getTraceImports() {
     if (traceImports)
         return traceImports;
 
@@ -307,7 +316,7 @@ function getTraceImports () {
     return traceImports;
 }
 
-function wrap_trace_function (
+function wrap_trace_function(
     f: Function, name: string, traceBuf: any,
     base: MintOpcodePtr, instrumentedTraceId: number
 ) {
@@ -346,265 +355,343 @@ function wrap_trace_function (
     );
 }
 
-function initialize_builder (builder: WasmBuilder) {
+function initialize_builder(builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
-        "trace", {
+        "trace",
+        {
             "frame": WasmValtype.i32,
             "pLocals": WasmValtype.i32,
             "cinfo": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "bailout", {
+        "bailout",
+        {
             "retval": WasmValtype.i32,
             "base": WasmValtype.i32,
             "reason": WasmValtype.i32
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "copy_pointer", {
+        "copy_pointer",
+        {
             "dest": WasmValtype.i32,
             "src": WasmValtype.i32
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "value_copy", {
+        "value_copy",
+        {
             "dest": WasmValtype.i32,
             "src": WasmValtype.i32,
             "klass": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "entry", {
+        "entry",
+        {
             "imethod": WasmValtype.i32
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "strlen", {
+        "strlen",
+        {
             "ppString": WasmValtype.i32,
             "pResult": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "getchr", {
+        "getchr",
+        {
             "ppString": WasmValtype.i32,
             "pIndex": WasmValtype.i32,
             "pResult": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "getspan", {
+        "getspan",
+        {
             "destination": WasmValtype.i32,
             "span": WasmValtype.i32,
             "index": WasmValtype.i32,
             "element_size": WasmValtype.i32
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "overflow_check_i4", {
+        "overflow_check_i4",
+        {
             "lhs": WasmValtype.i32,
             "rhs": WasmValtype.i32,
             "opcode": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "mathop_d_d", {
+        "mathop_d_d",
+        {
             "value": WasmValtype.f64,
-        }, WasmValtype.f64, true
+        },
+        WasmValtype.f64, true
     );
     builder.defineType(
-        "mathop_dd_d", {
+        "mathop_dd_d",
+        {
             "lhs": WasmValtype.f64,
             "rhs": WasmValtype.f64,
-        }, WasmValtype.f64, true
+        },
+        WasmValtype.f64, true
     );
     builder.defineType(
-        "mathop_f_f", {
+        "mathop_f_f",
+        {
             "value": WasmValtype.f32,
-        }, WasmValtype.f32, true
+        },
+        WasmValtype.f32, true
     );
     builder.defineType(
-        "mathop_ff_f", {
+        "mathop_ff_f",
+        {
             "lhs": WasmValtype.f32,
             "rhs": WasmValtype.f32,
-        }, WasmValtype.f32, true
+        },
+        WasmValtype.f32, true
     );
     builder.defineType(
-        "fmaf", {
+        "fmaf",
+        {
             "x": WasmValtype.f32,
             "y": WasmValtype.f32,
             "z": WasmValtype.f32,
-        }, WasmValtype.f32, true
+        },
+        WasmValtype.f32, true
     );
     builder.defineType(
-        "fma", {
+        "fma",
+        {
             "x": WasmValtype.f64,
             "y": WasmValtype.f64,
             "z": WasmValtype.f64,
-        }, WasmValtype.f64, true
+        },
+        WasmValtype.f64, true
     );
     builder.defineType(
-        "trace_eip", {
+        "trace_eip",
+        {
             "traceId": WasmValtype.i32,
             "eip": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "newobj_i", {
+        "newobj_i",
+        {
             "ppDestination": WasmValtype.i32,
             "vtable": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "newstr", {
+        "newstr",
+        {
             "ppDestination": WasmValtype.i32,
             "length": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "localloc", {
+        "localloc",
+        {
             "destination": WasmValtype.i32,
             "len": WasmValtype.i32,
             "frame": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "ld_del_ptr", {
+        "ld_del_ptr",
+        {
             "ppDestination": WasmValtype.i32,
             "ppSource": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "ldtsflda", {
+        "ldtsflda",
+        {
             "ppDestination": WasmValtype.i32,
             "offset": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "gettype", {
+        "gettype",
+        {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "cast", {
+        "cast",
+        {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
             "klass": WasmValtype.i32,
             "opcode": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "try_unbox", {
+        "try_unbox",
+        {
             "klass": WasmValtype.i32,
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "box", {
+        "box",
+        {
             "vtable": WasmValtype.i32,
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
             "vt": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "conv", {
+        "conv",
+        {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
             "opcode": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "relop_fp", {
+        "relop_fp",
+        {
             "lhs": WasmValtype.f64,
             "rhs": WasmValtype.f64,
             "opcode": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "safepoint", {
+        "safepoint",
+        {
             "frame": WasmValtype.i32,
             "ip": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "hashcode", {
+        "hashcode",
+        {
             "ppObj": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "try_hash", {
+        "try_hash",
+        {
             "ppObj": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "hascsize", {
+        "hascsize",
+        {
             "ppObj": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "hasflag", {
+        "hasflag",
+        {
             "klass": WasmValtype.i32,
             "dest": WasmValtype.i32,
             "sp1": WasmValtype.i32,
             "sp2": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "array_rank", {
+        "array_rank",
+        {
             "destination": WasmValtype.i32,
             "source": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "stfld_o", {
+        "stfld_o",
+        {
             "locals": WasmValtype.i32,
             "fieldOffsetBytes": WasmValtype.i32,
             "targetLocalOffsetBytes": WasmValtype.i32,
             "sourceLocalOffsetBytes": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "notnull", {
+        "notnull",
+        {
             "ptr": WasmValtype.i32,
             "expected": WasmValtype.i32,
             "traceIp": WasmValtype.i32,
             "ip": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "cmpxchg_i32", {
+        "cmpxchg_i32",
+        {
             "dest": WasmValtype.i32,
             "newVal": WasmValtype.i32,
             "expected": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "cmpxchg_i64", {
+        "cmpxchg_i64",
+        {
             "dest": WasmValtype.i32,
             "newVal": WasmValtype.i32,
             "expected": WasmValtype.i32,
             "oldVal": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "transfer", {
+        "transfer",
+        {
             "displacement": WasmValtype.i32,
             "trace": WasmValtype.i32,
             "frame": WasmValtype.i32,
             "locals": WasmValtype.i32,
             "cinfo": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
     builder.defineType(
-        "stelem_ref", {
+        "stelem_ref",
+        {
             "o": WasmValtype.i32,
             "aindex": WasmValtype.i32,
             "ref": WasmValtype.i32,
-        }, WasmValtype.i32, true
+        },
+        WasmValtype.i32, true
     );
 
     const traceImports = getTraceImports();
@@ -616,7 +703,7 @@ function initialize_builder (builder: WasmBuilder) {
     }
 }
 
-function assert_not_null (
+function assert_not_null(
     value: number, expectedValue: number, traceIp: MintOpcodePtr, ip: MintOpcodePtr
 ) {
     if (value && (value === expectedValue))
@@ -626,11 +713,11 @@ function assert_not_null (
 }
 
 // returns function id
-function generate_wasm (
+function generate_wasm(
     frame: NativePointer, methodName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
     methodFullName: string | undefined, backwardBranchTable: Uint16Array | null
-) : number {
+): number {
     // Pre-allocate a decent number of constant slots - this adds fixed size bloat
     //  to the trace but will make the actual pointer constants in the trace smaller
     // If we run out of constant slots it will transparently fall back to i32_const
@@ -651,15 +738,6 @@ function generate_wasm (
     const traceOffset = <any>ip - <any>startOfBody;
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
-
-    // HACK: If we aren't starting at the beginning of the method, we don't know which
-    //  locals may have already had their address taken, so the null check optimization
-    //  is potentially invalid since there could be addresses on the stack
-    // FIXME: The interpreter maintains information on which locals have had their address
-    //  taken, so if we flow that information through it will allow us to make this optimization
-    //  robust in all scenarios and remove this hack
-    if (traceOffset > 0)
-        builder.allowNullCheckOptimization = false;
 
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
@@ -693,7 +771,7 @@ function generate_wasm (
         builder.generateTypeSection();
 
         let keep = true,
-            opcodesProcessed = 0;
+            traceValue = 0;
         builder.defineFunction(
             {
                 type: "trace",
@@ -709,6 +787,7 @@ function generate_wasm (
                     "math_rhs64": WasmValtype.i64,
                     "temp_f32": WasmValtype.f32,
                     "temp_f64": WasmValtype.f64,
+                    "backbranched": WasmValtype.i32,
                 }
             }, () => {
                 if (emitPadding) {
@@ -717,21 +796,22 @@ function generate_wasm (
                 }
 
                 builder.base = ip;
+                builder.frame = frame;
                 if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
                     throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
                 builder.cfg.initialize(startOfBody, backwardBranchTable, instrument ? 1 : 0);
 
-                // TODO: Call generate_wasm_body before generating any of the sections and headers.
+                // TODO: Call generateWasmBody before generating any of the sections and headers.
                 // This will allow us to do things like dynamically vary the number of locals, in addition
                 //  to using global constants and figuring out how many constant slots we need in advance
                 //  since a long trace might need many slots and that bloats the header.
-                opcodesProcessed = generate_wasm_body(
+                traceValue = generateWasmBody(
                     frame, traceName, ip, startOfBody, endOfBody,
                     builder, instrumentedTraceId, backwardBranchTable
                 );
 
-                keep = (opcodesProcessed >= mostRecentOptions!.minimumTraceLength);
+                keep = (traceValue >= mostRecentOptions!.minimumTraceValue);
 
                 return builder.cfg.generate();
             }
@@ -744,8 +824,8 @@ function generate_wasm (
             if (ti && (ti.abortReason === "end-of-body"))
                 ti.abortReason = "trace-too-small";
 
-            if (traceTooSmall && (opcodesProcessed > 1))
-                console.log(`${traceName} too small: ${opcodesProcessed} opcodes, ${builder.current.size} wasm bytes`);
+            if (traceTooSmall && (traceValue > 1))
+                console.log(`${traceName} too small: value=${traceValue}, ${builder.current.size} wasm bytes`);
             return 0;
         }
 
@@ -861,7 +941,7 @@ function generate_wasm (
     }
 }
 
-export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
+export function trace_current_ip(traceId: number, eip: MintOpcodePtr) {
     const tup = instrumentedTraces[traceId];
     if (!tup)
         throw new Error(`Unrecognized instrumented trace id ${traceId}`);
@@ -869,14 +949,14 @@ export function trace_current_ip (traceId: number, eip: MintOpcodePtr) {
     mostRecentTrace = tup;
 }
 
-export function trace_operands (a: number, b: number) {
+export function trace_operands(a: number, b: number) {
     if (!mostRecentTrace)
         throw new Error("No trace active");
     mostRecentTrace.operand1 = a >>> 0;
     mostRecentTrace.operand2 = b >>> 0;
 }
 
-export function record_abort (traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
+export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
         reason = OpcodeInfo[<any>reason][0];
@@ -899,10 +979,10 @@ export function record_abort (traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceNa
 const JITERPRETER_TRAINING = 0;
 const JITERPRETER_NOT_JITTED = 1;
 
-export function mono_interp_tier_prepare_jiterpreter (
+export function mono_interp_tier_prepare_jiterpreter(
     frame: NativePointer, method: MonoMethod, ip: MintOpcodePtr, index: number,
     startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr
-) : number {
+): number {
     mono_assert(ip, "expected instruction pointer");
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
@@ -968,7 +1048,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     }
 }
 
-export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
+export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     if (!mostRecentOptions || (b !== undefined))
         mostRecentOptions = getOptions();
 
@@ -991,7 +1071,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                 console.log(`// traces bailed out ${bailoutCount} time(s) due to ${BailoutReasonNames[i]}`);
         }
 
-        for (let i = 0, c = 0; i < traces.length && c < 30; i++) {
+        for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
             const trace = traces[i];
             if (!trace.bailoutCount)
                 continue;
@@ -1003,7 +1083,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
     }
 
     if (mostRecentOptions.estimateHeat) {
-        const counts : { [key: string] : number } = {};
+        const counts: { [key: string]: number } = {};
         const traces = Object.values(traceInfo);
 
         for (let i = 0; i < traces.length; i++) {
@@ -1023,7 +1103,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
             console.log("// hottest call targets:");
             const targetPointers = Object.keys(callTargetCounts);
             targetPointers.sort((l, r) => callTargetCounts[Number(r)] - callTargetCounts[Number(l)]);
-            for (let i = 0, c = Math.min(20, targetPointers.length); i < c; i++) {
+            for (let i = 0, c = Math.min(summaryStatCount, targetPointers.length); i < c; i++) {
                 const targetMethod = Number(targetPointers[i]) | 0;
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
                 const targetMethodName = Module.UTF8ToString(pMethodName);
@@ -1035,7 +1115,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
         traces.sort((l, r) => r.hitCount - l.hitCount);
         console.log("// hottest failed traces:");
-        for (let i = 0, c = 0; i < traces.length && c < 20; i++) {
+        for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
             // this means the trace has a low hit count and we don't know its identity. no value in
             //  logging it.
             if (!traces[i].name)
@@ -1071,7 +1151,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                     case "newobj_slow":
                     case "switch":
                     case "rethrow":
-                    case "endfinally":
                     case "end-of-body":
                     case "ret":
                         continue;
@@ -1079,7 +1158,6 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
                     // not worth implementing / too difficult
                     case "intrins_marvin_block":
                     case "intrins_ascii_chars_to_uppercase":
-                    case "newarr":
                         continue;
                 }
             }
@@ -1088,7 +1166,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
             console.log(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
         }
 
-        const tuples : Array<[string, number]> = [];
+        const tuples: Array<[string, number]> = [];
         for (const k in counts)
             tuples.push([k, counts[k]]);
 
@@ -1113,7 +1191,7 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
             console.log(`// ${keys[i]}: ${abortCounts[keys[i]]} abort(s)`);
     }
 
-    if ((typeof(globalThis.setTimeout) === "function") && (b !== undefined))
+    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
         setTimeout(
             () => jiterpreter_dump_stats(b),
             15000

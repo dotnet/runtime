@@ -146,6 +146,15 @@ namespace ILCompiler
             var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
+            var byRefMapNode = new ByRefTypeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ByRefTypeMap), byRefMapNode, byRefMapNode, byRefMapNode.EndSymbol);
+
+            var pointerMapNode = new PointerTypeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.PointerTypeMap), pointerMapNode, pointerMapNode, pointerMapNode.EndSymbol);
+
+            var functionPointerMapNode = new FunctionPointerMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FunctionPointerTypeMap), functionPointerMapNode, functionPointerMapNode, functionPointerMapNode.EndSymbol);
+
             var fieldMapNode = new ReflectionFieldMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FieldAccessMap), fieldMapNode, fieldMapNode, fieldMapNode.EndSymbol);
 
@@ -257,9 +266,6 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
-
-                if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
-                    _reflectableMethods.Add(method);
             }
 
             if (obj is InterfaceDispatchCellNode dispatchCell)
@@ -529,12 +535,6 @@ namespace ILCompiler
             InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
 
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
-        }
-
-        public virtual void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // MetadataManagers can override this to provide additional dependencies caused by the presence of
-            // method generic dictionary.
         }
 
         public virtual void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -901,10 +901,6 @@ namespace ILCompiler
         public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             return null;
-        }
-
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
         }
 
         public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)

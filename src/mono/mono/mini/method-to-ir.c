@@ -2474,6 +2474,9 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 static gboolean
 context_used_is_mrgctx (MonoCompile *cfg, int context_used)
 {
+	if (mono_opt_experimental_gshared_mrgctx)
+		return context_used != 0;
+
 	/* gshared dim methods use an mrgctx */
 	if (mini_method_is_default_method (cfg->method))
 		return context_used != 0;
@@ -2598,6 +2601,7 @@ get_gshared_info_slot (MonoCompile *cfg, MonoJumpInfo *patch_info, MonoRgctxInfo
 	case MONO_PATCH_INFO_DELEGATE_INFO:
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
+	case MONO_PATCH_INFO_SIGNATURE:
 		data = (gpointer)patch_info->data.target;
 		break;
 	default:
@@ -3692,6 +3696,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		return obj;
 	}
 
+	/* Set invoke_info field */
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_info), info_ins->dreg);
+
 	/* Set method field */
 	if (target_method_context_used || invoke_context_used) {
 		// We copy from the delegate trampoline info as it's faster than a rgctx fetch
@@ -3702,21 +3709,6 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 		// This is emitted as a constant store for the non-shared case.
 		MonoInst *method_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD);
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
-	}
-
-	/*
-	 * To avoid looking up the compiled code belonging to the target method
-	 * in mono_delegate_trampoline (), we allocate a per-domain memory slot to
-	 * store it, and we fill it after the method has been compiled.
-	 */
-	if (!method->dynamic) {
-		MonoInst *code_slot_ins;
-
-		if (target_method_context_used)
-			code_slot_ins = emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD_DELEGATE_CODE);
-		else
-			code_slot_ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_METHOD_CODE_SLOT, method);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method_code), code_slot_ins->dreg);
 	}
 
 	/* Set invoke_impl field */
@@ -5862,7 +5854,8 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 
 	/* Avoid virtual calls to ctors if possible */
 	if (!context_used && !rgctx_arg) {
-		INLINE_FAILURE ("inline failure");
+		if (!m_method_is_aggressive_inlining (cfg->current_method) && !m_method_is_aggressive_inlining (cmethod))
+			INLINE_FAILURE ("ctor call");
 		// FIXME-VT: Clean this up
 		if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
 			GSHAREDVT_FAILURE(*ip);
@@ -6762,7 +6755,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			EMIT_NEW_PCONST (cfg, args [1], info);
 
 		cfg->init_method_rgctx_ins_arg = args [1];
-		cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
+		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
+			MONO_INST_NEW (cfg, ins, OP_INIT_MRGCTX);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+			cfg->init_method_rgctx_ins = ins;
+		} else {
+			cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
+		}
 	}
 
 	if (cfg->gsharedvt && cfg->method == method) {
@@ -7976,7 +7977,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
 
-				if ((!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod))) {
+				if ((!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) || MONO_METHOD_IS_FINAL (cmethod)) && !delegate_invoke) {
 					if (virtual_)
 						check_this = TRUE;
 					virtual_ = FALSE;
@@ -8396,7 +8397,7 @@ call_end:
 			g_assert (!called_is_supported_tailcall || !tailcall || tailcall_cmethod == cmethod);
 			g_assert (!called_is_supported_tailcall || tailcall_fsig == fsig);
 			g_assert (!called_is_supported_tailcall || tailcall_virtual == virtual_);
-			g_assert (!called_is_supported_tailcall || tailcall_extra_arg == (vtable_arg || imt_arg || will_have_imt_arg || mono_class_is_interface (cmethod->klass)));
+			//g_assert (!called_is_supported_tailcall || tailcall_extra_arg == (vtable_arg || imt_arg || will_have_imt_arg || mono_class_is_interface (cmethod->klass)));
 
 			if (common_call) // FIXME goto call_end && !common_call often skips tailcall processing.
 				ins = mini_emit_method_call_full (cfg, cmethod, fsig, tailcall, sp, virtual_ ? sp [0] : NULL,
@@ -10025,6 +10026,10 @@ calli_end:
 							EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 							store = mini_emit_storing_write_barrier (cfg, ptr, sp [1]);
 						} else {
+							if (MONO_TYPE_ISSTRUCT (field->type))
+								/* The decomposition might end up calling a copy/wbarrier function which doesn't do null checks */
+								MONO_EMIT_EXPLICIT_NULL_CHECK (cfg, sp [0]->dreg);
+
 							EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 						}
 					}
@@ -12163,21 +12168,21 @@ mono_ldptr:
 
 mono_error_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to error");
+		g_print ("exiting due to error\n");
 
 	g_assert (!is_ok (cfg->error));
 	goto cleanup;
 
  exception_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to exception");
+		g_print ("exiting due to exception\n");
 
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
 	goto cleanup;
 
  unverified:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to invalid il");
+		g_print ("exiting due to invalid il\n");
 
 	set_exception_type_from_invalid_il (cfg, method, ip);
 	goto cleanup;

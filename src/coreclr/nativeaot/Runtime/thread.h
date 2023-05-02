@@ -88,8 +88,7 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    PTR_PTR_VOID            m_pThreadLocalModuleStatics;
-    uint32_t                m_numThreadLocalModuleStatics;
+    Object*                 m_pThreadLocalModuleStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
@@ -211,6 +210,7 @@ public:
     void                Hijack();
     void                Unhijack();
     bool                IsHijacked();
+    void*               GetHijackedReturnAddress();
 
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -283,11 +283,10 @@ public:
     void InlinePInvoke(PInvokeTransitionFrame * pFrame);
     void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
 
-    Object * GetThreadAbortException();
+    Object* GetThreadAbortException();
     void SetThreadAbortException(Object *exception);
 
-    Object* GetThreadStaticStorageForModule(uint32_t moduleIndex);
-    bool SetThreadStaticStorageForModule(Object* pStorage, uint32_t moduleIndex);
+    Object** GetThreadStaticStorage();
 
     NATIVE_CONTEXT* GetInterruptedContext();
 

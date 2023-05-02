@@ -1841,7 +1841,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
 #error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
-        SystemVAmd64CheckForPassStructInRegister();
+        SystemVAmd64CheckForPassStructInRegister(pByValueClassCache);
 #endif // UNIX_AMD64_ABI
     }
 
@@ -1902,7 +1902,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // if there are context or thread static set the info in the method table optional members
     //
 
-    // Check for the RemotingProxy Attribute
     // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
     if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % TARGET_POINTER_SIZE != 0))
     {
@@ -1968,7 +1967,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
             CONSISTENCY_CHECK(!current->IsStatic());
             if (current->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
-                TypeHandle th = current->LookupApproxFieldTypeHandle();
+                _ASSERTE((size_t)fields.GetValueClassCacheIndex() < bmtEnumFields->dwNumInstanceFields);
+                TypeHandle th = TypeHandle(pByValueClassCache[fields.GetValueClassCacheIndex()]);
                 CONSISTENCY_CHECK(!th.IsNull());
                 if (th.AsMethodTable()->GetClass()->IsUnsafeValueClass())
                 {
@@ -3787,6 +3787,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // Track whether any field in this type requires 8-byte alignment
     BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
 #endif
+#if defined(EnC_SUPPORTED)
+    bool isEnCField = pFieldDescList != NULL && pFieldDescList->IsEnCNew();
+#else
+    bool isEnCField = false;
+#endif // EnC_SUPPORTED
 
     for (i = 0; i < bmtMetaData->cFields; i++)
     {
@@ -4091,14 +4096,30 @@ IS_VALUETYPE:
                 {
                     // Loading a non-self-ref valuetype field.
                     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
-                    // We load the approximate type of the field to avoid recursion problems.
-                    // MethodTable::DoFullyLoad() will later load it fully
-                    pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
+                    if (isEnCField || fIsStatic)
+                    {
+                        // EnCFieldDescs are not created at normal MethodTableBuilder time, and don't need to avoid recursive generic instantiation
+                        pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
                                                                             &bmtGenerics->typeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
                                                                              TRUE
                                                                              ).GetMethodTable();
+                    }
+                    else
+                    {
+                        // We load the approximate type of the field to avoid recursion problems.
+                        // MethodTable::DoFullyLoad() will later load it fully
+                        SigPointer::HandleRecursiveGenericsForFieldLayoutLoad recursiveControl;
+                        recursiveControl.pModuleWithTokenToAvoidIfPossible = GetModule();
+                        recursiveControl.tkTypeDefToAvoidIfPossible = GetCl();
+                        pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
+                                                                                &bmtGenerics->typeContext,
+                                                                                ClassLoader::LoadTypes,
+                                                                                CLASS_LOAD_APPROXPARENTS,
+                                                                                TRUE, NULL, NULL, NULL,
+                                                                                &recursiveControl).GetMethodTable();
+                    }
                 }
 
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type
@@ -4455,9 +4476,12 @@ IS_VALUETYPE:
         BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
     }
 
-    GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
-    GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
-    GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    if (!isEnCField)
+    {
+        GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
+        GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
+        GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    }
 
     if (bmtFP->fHasFixedAddressValueTypes)
     {
@@ -6053,7 +6077,7 @@ MethodTableBuilder::InitMethodDesc(
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:%x (%s::%s)\n",
+    LOG((LF_CORDB, LL_EVERYTHING, "MTB::IMD: pNewMD:%p (%u) EnC: %s tok:0x%08x (%s::%s)\n",
         pNewMD, Classification, (fEnC ? "true" : "false"), tok, pszDebugClassName, pszDebugMethodName));
 
     // Now we know the classification we can perform any classification specific initialization.
@@ -8428,7 +8452,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
 #ifdef UNIX_AMD64_ABI
 // checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
+void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8457,7 +8481,7 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
     const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pByValueClassCache))
     {
         LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
                this->GetDebugClassName()));

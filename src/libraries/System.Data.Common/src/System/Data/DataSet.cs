@@ -244,6 +244,8 @@ namespace System.Data
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataSet(SerializationInfo info, StreamingContext context) : this(info, context, true)
         {
         }
@@ -252,6 +254,8 @@ namespace System.Data
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DataSet(SerializationInfo info, StreamingContext context, bool ConstructSchema) : this()
         {
             SerializationFormat remotingFormat = SerializationFormat.Xml;
@@ -296,6 +300,8 @@ namespace System.Data
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Binary serialization is unsafe in general and is planned to be obsoleted. We do not want to mark interface or ctors of this class as unsafe as that would show many unnecessary warnings elsewhere.")]
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             SerializationFormat remotingFormat = RemotingFormat;
@@ -338,10 +344,12 @@ namespace System.Data
                     //Tables, Columns, Rows
                     for (int i = 0; i < Tables.Count; i++)
                     {
-                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         MemoryStream memStream = new MemoryStream();
 #pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
+                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         bf.Serialize(memStream, Tables[i]);
+#pragma warning restore SYSLIB0050
 #pragma warning restore SYSLIB0011
                         memStream.Position = 0;
                         info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
@@ -421,9 +429,11 @@ namespace System.Data
                         byte[] buffer = (byte[])info.GetValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), typeof(byte[]))!;
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
-                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
 #pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
+                        BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
+#pragma warning restore SYSLIB0050
 #pragma warning restore SYSLIB0011
                         Tables.Add(dt);
                     }

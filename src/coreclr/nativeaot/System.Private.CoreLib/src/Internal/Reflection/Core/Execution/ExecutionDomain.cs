@@ -152,6 +152,23 @@ namespace Internal.Reflection.Core.Execution
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
+        public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            ExecutionEnvironment.GetFunctionPointerTypeComponents(typeHandle, out RuntimeTypeHandle returnTypeHandle,
+                                                                              out RuntimeTypeHandle[] parameterHandles,
+                                                                              out bool isUnmanaged);
+
+            RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
+            int count = parameterHandles.Length;
+            RuntimeTypeInfo[] parameterTypes = new RuntimeTypeInfo[count];
+            for (int i = 0; i < count; i++)
+            {
+                parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
+            }
+
+            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
+        }
+
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle targetTypeHandle;
@@ -251,28 +268,17 @@ namespace Internal.Reflection.Core.Execution
             return true;
         }
 
+        public static bool IsPrimitiveType(Type type)
+            => type == typeof(bool) || type == typeof(char)
+                || type == typeof(sbyte) || type == typeof(byte)
+                || type == typeof(short) || type == typeof(ushort)
+                || type == typeof(int) || type == typeof(uint)
+                || type == typeof(long) || type == typeof(ulong)
+                || type == typeof(float) || type == typeof(double)
+                || type == typeof(nint) || type == typeof(nuint);
+
         internal ExecutionEnvironment ExecutionEnvironment { get; }
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
-
-        internal static IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
-
-        private static readonly Type[] s_primitiveTypes =
-        {
-                    typeof(bool),
-                    typeof(char),
-                    typeof(sbyte),
-                    typeof(byte),
-                    typeof(short),
-                    typeof(ushort),
-                    typeof(int),
-                    typeof(uint),
-                    typeof(long),
-                    typeof(ulong),
-                    typeof(float),
-                    typeof(double),
-                    typeof(IntPtr),
-                    typeof(UIntPtr),
-        };
     }
 }

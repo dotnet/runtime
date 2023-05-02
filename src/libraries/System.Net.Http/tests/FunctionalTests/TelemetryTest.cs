@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
-using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -22,7 +21,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public static void EventSource_ExistsWithCorrectId()
+        public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpTelemetry", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
@@ -412,19 +411,40 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(count, starts.Length);
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == "RequestStop").ToArray();
-            Assert.All(stops, stopEvent => Assert.Empty(stopEvent.Event.Payload));
+            foreach (EventWrittenEventArgs stopEvent in stops.Select(e => e.Event))
+            {
+                object payload = Assert.Single(stopEvent.Payload);
+                int statusCode = Assert.IsType<int>(payload);
+                Assert.Equal(shouldHaveFailures ? -1 : 200, statusCode);
+            }
 
             ValidateSameActivityIds(starts, stops);
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] failures = events.Where(e => e.Event.EventName == "RequestFailed").ToArray();
-            Assert.All(failures, failedEvent => Assert.Empty(failedEvent.Event.Payload));
+            (EventWrittenEventArgs Event, Guid ActivityId)[] detailedFailures = events.Where(e => e.Event.EventName == "RequestFailedDetailed").ToArray();
             if (shouldHaveFailures)
             {
+                foreach (EventWrittenEventArgs failedEvent in failures.Select(e => e.Event))
+                {
+                    object payload = Assert.Single(failedEvent.Payload);
+                    string exceptionMessage = Assert.IsType<string>(payload);
+                    Assert.Equal(new OperationCanceledException().Message, exceptionMessage);
+                }
+
+                foreach (EventWrittenEventArgs failedEvent in detailedFailures.Select(e => e.Event))
+                {
+                    object payload = Assert.Single(failedEvent.Payload);
+                    string exception = Assert.IsType<string>(payload);
+                    Assert.StartsWith("System.Threading.Tasks.TaskCanceledException", exception);
+                }
+
                 ValidateSameActivityIds(starts, failures);
+                ValidateSameActivityIds(starts, detailedFailures);
             }
             else
             {
                 Assert.Empty(failures);
+                Assert.Empty(detailedFailures);
             }
         }
 
@@ -470,8 +490,8 @@ namespace System.Net.Http.Functional.Tests
             foreach (EventWrittenEventArgs requestContentStop in requestContentStops.Select(e => e.Event))
             {
                 object payload = Assert.Single(requestContentStop.Payload);
-                Assert.True(payload is long);
-                Assert.Equal(requestContentLength.Value, (long)payload);
+                long contentLength = Assert.IsType<long>(payload);
+                Assert.Equal(requestContentLength.Value, contentLength);
             }
 
             ValidateSameActivityIds(requestContentStarts, requestContentStops);
@@ -482,7 +502,12 @@ namespace System.Net.Http.Functional.Tests
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] responseHeadersStops = events.Where(e => e.Event.EventName == "ResponseHeadersStop").ToArray();
             Assert.Equal(count, responseHeadersStops.Length);
-            Assert.All(responseHeadersStops, r => Assert.Empty(r.Event.Payload));
+            foreach (EventWrittenEventArgs responseHeadersStop in responseHeadersStops.Select(e => e.Event))
+            {
+                object payload = Assert.Single(responseHeadersStop.Payload);
+                int statusCode = Assert.IsType<int>(payload);
+                Assert.Equal(200, statusCode);
+            }
 
             ValidateSameActivityIds(responseHeadersStarts, responseHeadersStops);
 

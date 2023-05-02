@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
@@ -11,8 +12,18 @@ namespace System.Buffers
         private ProbabilisticMap _map;
         private readonly string _values;
 
-        public unsafe IndexOfAnyCharValuesProbabilistic(ReadOnlySpan<char> values)
+        public IndexOfAnyCharValuesProbabilistic(scoped ReadOnlySpan<char> values)
         {
+            if (Vector128.IsHardwareAccelerated && values.Length < 8)
+            {
+                // ProbabilisticMap does a Span.Contains check to confirm potential matches.
+                // If we have fewer than 8 values, pad them with existing ones to make the verification faster.
+                Span<char> newValues = stackalloc char[8];
+                newValues.Fill(values[0]);
+                values.CopyTo(newValues);
+                values = newValues;
+            }
+
             _values = new string(values);
             _map = new ProbabilisticMap(_values);
         }

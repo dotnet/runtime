@@ -8,9 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+        // https://learn.microsoft.com/windows/win32/api/sddl/nf-sddl-convertstringsidtosidw
         [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        internal static partial BOOL ConvertStringSidToSid(
-            string stringSid,
-            out IntPtr ByteArray);
+        internal static unsafe partial BOOL ConvertStringSidToSid(
+            string StringSid,
+            out void* Sid);
     }
 }

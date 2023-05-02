@@ -20,23 +20,22 @@ unsafe class Program
         Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
         Console.WriteLine("****************************************************");
 
-        const int Meg = 1024 * 1024;
-        const int HalfMeg = Meg / 2;
         long lowerBound, upperBound;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
+            const int Meg = 1024 * 1024;
             lowerBound = 2 * Meg; // 2 MB
             upperBound = 4 * Meg; // 4 MB
         }
         else
         {
-            lowerBound = Meg + HalfMeg; // 1.5 MB
-            upperBound = 2 * Meg; // 2 MB
+            lowerBound = 1300 * 1024; // ~1.3 MB
+            upperBound = 1750 * 1024; // ~1.75 MB
         }
 
         if (fileSize < lowerBound || fileSize > upperBound)
         {
-            Console.WriteLine("BUG: File size is not in the expected range. Did a libraries change regress size of Hello World?");
+            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
             return 1;
         }
 

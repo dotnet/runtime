@@ -23,13 +23,22 @@ namespace Internal.Runtime
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            // Get the array that holds thread static memory blocks for each type in the given module
-            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(pModuleData->ModuleIndex);
+            Debug.Assert(typeTlsIndex >= 0);
+            int moduleIndex = pModuleData->ModuleIndex;
+            Debug.Assert(moduleIndex >= 0);
 
-            // Check whether thread static storage has already been allocated for this module and type.
-            if ((storage != null) && ((uint)typeTlsIndex < (uint)storage.Length) && (storage[typeTlsIndex] != null))
+            object[][] threadStorage = RuntimeImports.RhGetThreadStaticStorage();
+            if (threadStorage != null && threadStorage.Length > moduleIndex)
             {
-                return storage[typeTlsIndex];
+                object[] moduleStorage = threadStorage[moduleIndex];
+                if (moduleStorage != null && moduleStorage.Length > typeTlsIndex)
+                {
+                    object threadStaticBase = moduleStorage[typeTlsIndex];
+                    if (threadStaticBase != null)
+                    {
+                        return threadStaticBase;
+                    }
+                }
             }
 
             return GetThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
@@ -39,49 +48,42 @@ namespace Internal.Runtime
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe object GetThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
-            // Get the array that holds thread static memory blocks for each type in the given module
-            object[] storage = RuntimeImports.RhGetThreadStaticStorageForModule(pModuleData->ModuleIndex);
+            Debug.Assert(typeTlsIndex >= 0);
+            int moduleIndex = pModuleData->ModuleIndex;
+            Debug.Assert(typeTlsIndex >= 0);
 
-            // This the first access to the thread statics of the type corresponding to typeTlsIndex.
-            // Make sure there is enough storage allocated to hold it.
-            storage = EnsureThreadStaticStorage(pModuleData->ModuleIndex, storage, requiredSize: typeTlsIndex + 1);
+            // Get the array that holds thread statics for the current thread, if none present
+            // allocate a new one big enough to hold the current module data
+            ref object[][] threadStorage = ref RuntimeImports.RhGetThreadStaticStorage();
+            if (threadStorage == null)
+            {
+                threadStorage = new object[moduleIndex + 1][];
+            }
+            else if (moduleIndex >= threadStorage.Length)
+            {
+                Array.Resize(ref threadStorage, moduleIndex + 1);
+            }
+
+            // Get the array that holds thread static memory blocks for each type in the given module
+            ref object[] moduleStorage = ref threadStorage[moduleIndex];
+            if (moduleStorage == null)
+            {
+                moduleStorage = new object[typeTlsIndex + 1];
+            }
+            else if (typeTlsIndex >= moduleStorage.Length)
+            {
+                // typeTlsIndex could have a big range, we do not want to reallocate every time we see +1 index
+                // so we double up from previous size to guarantee a worst case linear complexity
+                int newSize = Math.Max(typeTlsIndex + 1, moduleStorage.Length * 2);
+                Array.Resize(ref moduleStorage, newSize);
+            }
 
             // Allocate an object that will represent a memory block for all thread static fields of the type
             object threadStaticBase = AllocateThreadStaticStorageForType(pModuleData->TypeManager, typeTlsIndex);
 
-            Debug.Assert(storage[typeTlsIndex] == null);
-
-            storage[typeTlsIndex] = threadStaticBase;
-
+            Debug.Assert(moduleStorage[typeTlsIndex] == null);
+            moduleStorage[typeTlsIndex] = threadStaticBase;
             return threadStaticBase;
-        }
-
-        /// <summary>
-        /// if it is required, this method extends thread static storage of the given module
-        /// to the specified size and then registers the memory with the runtime.
-        /// </summary>
-        private static object[] EnsureThreadStaticStorage(int moduleIndex, object[] existingStorage, int requiredSize)
-        {
-            if ((existingStorage != null) && (requiredSize < existingStorage.Length))
-            {
-                return existingStorage;
-            }
-
-            object[] newStorage = new object[requiredSize];
-            if (existingStorage != null)
-            {
-                Array.Copy(existingStorage, newStorage, existingStorage.Length);
-            }
-
-            // Install the newly created array as thread static storage for the given module
-            // on the current thread. This call can fail due to a failure to allocate/extend required
-            // internal thread specific resources.
-            if (!RuntimeImports.RhSetThreadStaticStorageForModule(newStorage, moduleIndex))
-            {
-                throw new OutOfMemoryException();
-            }
-
-            return newStorage;
         }
 
         /// <summary>

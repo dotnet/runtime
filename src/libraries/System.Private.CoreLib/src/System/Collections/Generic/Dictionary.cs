@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -156,6 +157,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected Dictionary(SerializationInfo info, StreamingContext context)
         {
             // We can't do anything with the keys and values until the entire graph has been deserialized
@@ -342,6 +345,8 @@ namespace System.Collections.Generic
             Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
             GetEnumerator();
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
@@ -381,7 +386,7 @@ namespace System.Collections.Generic
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
 
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                     i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
                     do
                     {
@@ -501,7 +506,7 @@ namespace System.Collections.Generic
             if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                 comparer == null)
             {
-                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                 while (true)
                 {
                     // Should be a while loop https://github.com/dotnet/runtime/issues/9422
@@ -656,7 +661,7 @@ namespace System.Collections.Generic
                 if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
                     comparer == null)
                 {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                    // ValueType: Devirtualize with EqualityComparer<TKey>.Default intrinsic
                     while (true)
                     {
                         // Should be a while loop https://github.com/dotnet/runtime/issues/9422
@@ -1317,7 +1322,7 @@ namespace System.Collections.Generic
 #if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
-            return ref buckets[hashCode % (uint)buckets.Length];
+            return ref buckets[(uint)hashCode % buckets.Length];
 #endif
         }
 

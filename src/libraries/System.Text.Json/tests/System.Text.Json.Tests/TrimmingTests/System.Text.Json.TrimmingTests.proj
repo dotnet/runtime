@@ -60,6 +60,9 @@
     <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
     <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" />
     <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
+    <TestConsoleAppSourceFiles Include="IsReflectionEnabledByDefaultFalse.cs">
+      <DisabledFeatureSwitches>System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

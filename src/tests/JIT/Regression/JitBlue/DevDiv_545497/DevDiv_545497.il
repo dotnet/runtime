@@ -4,7 +4,7 @@
 // The bug that this test captures was a case where arm LSRA built wrong uses order for
 // the IL_0090 shift operand.
 
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'DevDiv_545497' {}
 .assembly extern xunit.core {}
 

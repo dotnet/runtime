@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
 public class P
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // This bug is caused by a broken flowgraph due to a return from
         // a try inside a catch block
@@ -17,7 +19,7 @@ public class P
         return 100;
     }
 
-    public static void TestCatchReturn()
+    internal static void TestCatchReturn()
     {
         try
         {

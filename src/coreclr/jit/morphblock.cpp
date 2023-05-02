@@ -144,7 +144,9 @@ GenTree* MorphInitBlockHelper::Morph()
     assert(m_result != nullptr);
 
 #ifdef DEBUG
-    if (m_result != m_asg)
+    // If we are going to return a different node than the input then morph
+    // expects us to have set GTF_DEBUG_NODE_MORPHED.
+    if ((m_result != m_asg) || (sideEffects != nullptr))
     {
         m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
     }
@@ -158,6 +160,7 @@ GenTree* MorphInitBlockHelper::Morph()
             commaPool      = commaPool->gtNext;
 
             assert(comma->OperIs(GT_COMMA));
+            comma->gtType        = TYP_VOID;
             comma->AsOp()->gtOp1 = sideEffects;
             comma->AsOp()->gtOp2 = m_result;
             comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
@@ -166,7 +169,7 @@ GenTree* MorphInitBlockHelper::Morph()
         }
         else
         {
-            m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+            m_result = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, sideEffects, m_result);
         }
         INDEBUG(m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
@@ -215,7 +218,7 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
+        assert(m_dst->OperIs(GT_IND, GT_BLK) && (!m_dst->OperIs(GT_IND) || !m_dst->TypeIs(TYP_STRUCT)));
     }
 
     if (m_dst->TypeIs(TYP_STRUCT))
@@ -765,11 +768,6 @@ void MorphCopyBlockHelper::PrepareSrc()
     {
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
-    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
-    else if (m_src->OperIsBlk())
-    {
-        m_src->SetOper(GT_IND);
-    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
@@ -888,15 +886,15 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 
 #if defined(TARGET_ARM)
-    if ((m_src->OperIsIndir()) && (m_src->gtFlags & GTF_IND_UNALIGNED))
+    if ((m_dst->OperIsIndir()) && m_dst->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" src is unaligned");
+        JITDUMP(" store is unaligned");
         requiresCopyBlock = true;
     }
 
-    if (m_asg->gtFlags & GTF_BLK_UNALIGNED)
+    if ((m_src->OperIsIndir()) && m_src->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" m_asg is unaligned");
+        JITDUMP(" src is unaligned");
         requiresCopyBlock = true;
     }
 #endif // TARGET_ARM
@@ -1621,7 +1619,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            GenTree*     dst    = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();
@@ -1633,7 +1631,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
             }
 
             GenTree* asg = gtNewAssignNode(dst, src);
-            asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
+            asg->AddAllEffectsFlags(tree);
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             fgAssignSetVarDef(asg);

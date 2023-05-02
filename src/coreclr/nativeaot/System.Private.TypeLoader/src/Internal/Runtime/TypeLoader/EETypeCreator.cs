@@ -53,7 +53,7 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe void SetInterface(this RuntimeTypeHandle rtth, int interfaceIndex, RuntimeTypeHandle interfaceType)
         {
-            rtth.ToEETypePtr()->InterfaceMap[interfaceIndex].InterfaceType = interfaceType.ToEETypePtr();
+            rtth.ToEETypePtr()->InterfaceMap[interfaceIndex] = interfaceType.ToEETypePtr();
         }
 
         public static unsafe void SetGenericDefinition(this RuntimeTypeHandle rtth, RuntimeTypeHandle genericDefinitionHandle)
@@ -61,19 +61,10 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->GenericDefinition = genericDefinitionHandle.ToEETypePtr();
         }
 
-        public static unsafe void SetGenericVariance(this RuntimeTypeHandle rtth, int argumentIndex, GenericVariance variance)
-        {
-            rtth.ToEETypePtr()->GenericVariance[argumentIndex] = variance;
-        }
-
-        public static unsafe void SetGenericArity(this RuntimeTypeHandle rtth, uint arity)
-        {
-            rtth.ToEETypePtr()->GenericArity = arity;
-        }
-
         public static unsafe void SetGenericArgument(this RuntimeTypeHandle rtth, int argumentIndex, RuntimeTypeHandle argumentType)
         {
-            rtth.ToEETypePtr()->GenericArguments[argumentIndex].Value = argumentType.ToEETypePtr();
+            MethodTableList argumentList = rtth.ToEETypePtr()->GenericArguments;
+            argumentList[argumentIndex] = argumentType.ToEETypePtr();
         }
 
         public static unsafe void SetRelatedParameterType(this RuntimeTypeHandle rtth, RuntimeTypeHandle relatedTypeHandle)
@@ -177,7 +168,7 @@ namespace Internal.Runtime.TypeLoader
                     runtimeInterfacesLength = checked((ushort)state.RuntimeInterfaces.Length);
                 }
 
-                baseSize = (int)pTemplateEEType->BaseSize;
+                baseSize = (int)pTemplateEEType->RawBaseSize;
                 isValueType = pTemplateEEType->IsValueType;
                 hasFinalizer = pTemplateEEType->IsFinalizable;
                 isNullable = pTemplateEEType->IsNullable;
@@ -189,6 +180,7 @@ namespace Internal.Runtime.TypeLoader
 
                 flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
 
+                int numFunctionPointerTypeParameters = 0;
                 if (state.TypeBeingBuilt.IsMdArray)
                 {
                     // If we're building an MDArray, the template is object[,] and we
@@ -196,6 +188,17 @@ namespace Internal.Runtime.TypeLoader
                     baseSize = IntPtr.Size + // sync block
                         2 * IntPtr.Size + // EETypePtr + Length
                         state.ArrayRank.Value * sizeof(int) * 2; // 2 ints per rank for bounds
+                }
+                else if (state.TypeBeingBuilt.IsFunctionPointer)
+                {
+                    // Base size encodes number of parameters and calling convention
+                    MethodSignature sig = ((FunctionPointerType)state.TypeBeingBuilt).Signature;
+                    baseSize = (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                    numFunctionPointerTypeParameters = sig.Length;
                 }
 
                 // Optional fields encoding
@@ -250,6 +253,7 @@ namespace Internal.Runtime.TypeLoader
                         cbOptionalFieldsSize > 0,
                         (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
+                        numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
                         state.GcDataSize != 0,
                         state.ThreadDataSize != 0);
@@ -269,7 +273,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // Set basic MethodTable fields
                     pEEType->Flags = flags;
-                    pEEType->BaseSize = (uint)baseSize;
+                    pEEType->RawBaseSize = (uint)baseSize;
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
@@ -329,8 +333,11 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGeneric)
                 {
-                    genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
-                    pEEType->SetGenericComposition(genericComposition);
+                    if (arity > 1)
+                    {
+                        genericComposition = MemoryHelpers.AllocateMemory(MethodTable.GetGenericCompositionSize(arity));
+                        pEEType->SetGenericComposition(genericComposition);
+                    }
 
                     if (allocatedNonGCDataSize > 0)
                     {
@@ -624,6 +631,24 @@ namespace Internal.Runtime.TypeLoader
             return numSeries;
         }
 
+        public static RuntimeTypeHandle CreateFunctionPointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, FunctionPointerType functionPointerType)
+        {
+            TypeBuilderState state = new TypeBuilderState(functionPointerType);
+
+            CreateEETypeWorker(typeof(delegate*<void>).TypeHandle.ToEETypePtr(), hashCodeOfNewType, 0, state);
+            Debug.Assert(!state.HalfBakedRuntimeTypeHandle.IsNull());
+
+            TypeLoaderLogger.WriteLine("Allocated new FUNCTION POINTER type " + functionPointerType.ToString() + " with hashcode value = 0x" + hashCodeOfNewType.LowLevelToString() + " with MethodTable = " + state.HalfBakedRuntimeTypeHandle.ToIntPtr().LowLevelToString());
+
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->FunctionPointerReturnType = returnTypeHandle.ToEETypePtr();
+            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->NumFunctionPointerParameters == parameterHandles.Length);
+            MethodTableList paramList = state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->FunctionPointerParameters;
+            for (int i = 0; i < parameterHandles.Length; i++)
+                paramList[i] = parameterHandles[i].ToEETypePtr();
+
+            return state.HalfBakedRuntimeTypeHandle;
+        }
+
         public static RuntimeTypeHandle CreatePointerEEType(uint hashCodeOfNewType, RuntimeTypeHandle pointeeTypeHandle, TypeDesc pointerType)
         {
             TypeBuilderState state = new TypeBuilderState(pointerType);
@@ -666,7 +691,7 @@ namespace Internal.Runtime.TypeLoader
 
             MethodTable* pTemplateEEType;
 
-            if (type is PointerType || type is ByRefType)
+            if (type is PointerType || type is ByRefType || type is FunctionPointerType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
                 Debug.Assert(false == state.HasStaticConstructor);
@@ -675,8 +700,17 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
-                // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
-                RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
+                RuntimeTypeHandle templateTypeHandle;
+                if (type is FunctionPointerType)
+                {
+                    // There's still differences to paper over, but `delegate*<void>` is close enough.
+                    templateTypeHandle = typeof(delegate*<void>).TypeHandle;
+                }
+                else
+                {
+                    // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
+                    templateTypeHandle = typeof(void*).TypeHandle;
+                }
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
             }

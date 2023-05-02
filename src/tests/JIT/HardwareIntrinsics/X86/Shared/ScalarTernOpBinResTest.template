@@ -33,14 +33,8 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.ReadUnaligned
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -95,20 +89,9 @@ namespace JIT.HardwareIntrinsics.X86
         private static {Op2BaseType} _data2;
         private static {Op3BaseType} _data3;
 
-        private static {Op1BaseType} _clsVar1;
-        private static {Op2BaseType} _clsVar2;
-        private static {Op3BaseType} _clsVar3;
-
         private {Op1BaseType} _fld1;
         private {Op2BaseType} _fld2;
         private {Op3BaseType} _fld3;
-
-        static ScalarTernOpBinResTest__{Method}{RetBaseType}()
-        {
-            _clsVar1 = {NextValueOp1};
-            _clsVar2 = {NextValueOp2};
-            _clsVar3 = {NextValueOp3};
-        }
 
         public ScalarTernOpBinResTest__{Method}{RetBaseType}()
         {
@@ -158,19 +141,6 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_data1, _data2, buffer, ({RetBaseType})result);
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-            {Op3BaseType} buffer = 0;
-            var result = {Isa}.{Method}(
-                _clsVar1,
-                _clsVar2,
-                &buffer
-            );
-
-            ValidateResult(_clsVar1, _clsVar2, buffer, result);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -181,18 +151,6 @@ namespace JIT.HardwareIntrinsics.X86
             var result = {Isa}.{Method}(data1, data2, &data3);
 
             ValidateResult(data1, data2, data3, result);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            {Op3BaseType} buffer = 0;
-
-            var test = new ScalarTernOpBinResTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld1, test._fld2, &buffer);
-
-            ValidateResult(test._fld1, test._fld2, buffer, result);
         }
 
         public void RunClassFldScenario()

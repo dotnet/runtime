@@ -10,6 +10,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -36,6 +37,8 @@ namespace System.Runtime.InteropServices
             HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MarshalDirectiveException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

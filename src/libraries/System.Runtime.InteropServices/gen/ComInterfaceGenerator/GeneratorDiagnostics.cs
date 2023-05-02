@@ -22,6 +22,7 @@ namespace Microsoft.Interop
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
+            public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -185,6 +186,16 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
+
+        public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypesAttribute =
+            new DiagnosticDescriptor(
+                Ids.MultipleComInterfaceBaseTypes,
+                GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesTitle)),
+                GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesDescription)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 

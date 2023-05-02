@@ -26,7 +26,10 @@ namespace SourceGenerators.Tests
         /// </summary>
         /// <param name="references">Assembly references to include in the project.</param>
         /// <param name="includeBaseReferences">Whether to include references to the BCL assemblies.</param>
-        public static Project CreateTestProject(IEnumerable<Assembly>? references, bool includeBaseReferences = true)
+        public static Project CreateTestProject(
+            IEnumerable<Assembly>? references,
+            bool includeBaseReferences = true,
+            LanguageVersion langVersion = LanguageVersion.Preview)
         {
             string corelib = Assembly.GetAssembly(typeof(object))!.Location;
             string runtimeDir = Path.GetDirectoryName(corelib)!;
@@ -51,7 +54,8 @@ namespace SourceGenerators.Tests
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("Test", "test.dll", "C#")
                 .WithMetadataReferences(refs)
-                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable));
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).WithNullableContextOptions(NullableContextOptions.Enable))
+                .WithParseOptions(new CSharpParseOptions(langVersion));
         }
 
         public static Task CommitChanges(this Project proj, params string[] ignorables)
@@ -149,9 +153,10 @@ namespace SourceGenerators.Tests
             IEnumerable<Assembly>? references,
             IEnumerable<string> sources,
             bool includeBaseReferences = true,
+            LanguageVersion langVersion = LanguageVersion.Preview,
             CancellationToken cancellationToken = default)
         {
-            Project proj = CreateTestProject(references, includeBaseReferences);
+            Project proj = CreateTestProject(references, includeBaseReferences, langVersion);
             proj = proj.WithDocuments(sources);
             Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
             Compilation? comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);

@@ -28,6 +28,7 @@
 #ifndef DACCESS_COMPILE
 
 void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
+void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, EnumGcRefCallbackFunc* fnGcEnumRef, EnumGcRefScanContext* pSc);
 
 /*
  * Scan all stack and statics roots
@@ -53,6 +54,9 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         else
 #endif
         {
+            STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
+            GcEnumObject(pThread->GetThreadStaticStorage(), 0 /*flags*/, fn, sc);
+
             STRESS_LOG1(LF_GC|LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p\n", pThread);
             sc->thread_under_crawl = pThread;
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)

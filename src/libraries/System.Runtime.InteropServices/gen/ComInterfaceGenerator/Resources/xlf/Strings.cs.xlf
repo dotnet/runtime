@@ -147,6 +147,21 @@
         <target state="translated">Metoda je deklarovaná v jiné částečné deklaraci než atribut GeneratedComInterface.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Rozhraní s atributem GeneratedComInterfaceAttribute může být odvozeno pouze z jednoho jiného rozhraní s atributem GeneratedComInterfaceAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">Rozhraní „{0}“ je odvozeno ze dvou nebo více rozhraní s atributem GeneratedComInterfaceAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Zadané rozhraní je odvozeno ze dvou nebo více rozhraní s atributem GeneratedComInterfaceAttribute.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">U typů, které nejsou podporovány zdrojem generovanými voláními P/Invoke, bude výsledné volání P/Invoke záviset na podkladovém modulu runtime, aby určený typ zařadil.</target>
