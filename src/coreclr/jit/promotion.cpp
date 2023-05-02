@@ -349,47 +349,6 @@ public:
         }
     }
 
-    bool matchGlob(const char* pattern, const char* patternEnd, const char* str)
-    {
-        // Invariant: [patternStart..backtrackPattern) matches [stringStart..backtrackStr)
-        const char* backtrackPattern = nullptr;
-        const char* backtrackStr     = nullptr;
-
-        while (true)
-        {
-            if (pattern == patternEnd)
-            {
-                if (*str == '\0')
-                    return true;
-            }
-            else if (*pattern == '*')
-            {
-                backtrackPattern = ++pattern;
-                backtrackStr     = str;
-                continue;
-            }
-            else if (*str == '\0')
-            {
-                // No match since pattern needs at least one char in remaining cases.
-            }
-            else if ((*pattern == '?') || (*pattern == *str))
-            {
-                pattern++;
-                str++;
-                continue;
-            }
-
-            // In this case there was no match, see if we can backtrack to a wild
-            // card and consume one more character from the string.
-            if ((backtrackPattern == nullptr) || (*backtrackStr == '\0'))
-                return false;
-
-            // Consume one more character for the wildcard.
-            pattern = backtrackPattern;
-            str     = ++backtrackStr;
-        }
-    }
-
     //------------------------------------------------------------------------
     // PickPromotions:
     //   Pick specific replacements to make for this struct local after a set
@@ -550,13 +509,6 @@ public:
             return true;
         }
 #endif
-
-        const char* glob = "System.Text.RegularExpressions.CompiledRegexRunner:Regex*_TryFindNextPossibleStartingPosition*";
-        if ((lclNum == 2) && (access.Offset == 0) && (access.AccessType == TYP_BYREF) && matchGlob(glob, glob + strlen(glob), comp->info.compFullName))
-        {
-            JITDUMP("  Promoting replacement due to weird circumstances\n\n");
-            return true;
-        }
 
         JITDUMP("  Disqualifying replacement\n\n");
         return false;
