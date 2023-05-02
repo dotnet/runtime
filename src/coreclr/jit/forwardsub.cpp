@@ -569,8 +569,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     bool found = false;
     for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
     {
-        bool isUse = ((lcl->gtFlags) & GTF_VAR_DEF) == 0;
-        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum) && isUse)
+        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
         {
             if (fsv.IsLastUse(lcl->AsLclVar()))
             {
