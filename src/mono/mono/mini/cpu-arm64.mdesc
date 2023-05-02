@@ -467,6 +467,15 @@ arm64_cbzw: src1:i len:16
 arm64_cbzx: src1:i len:16
 arm64_cbnzw: src1:i len:16
 arm64_cbnzx: src1:i len:16
+lzcnt32: dest:i src1:i len:4
+lzcnt64: dest:i src1:i len:4
+lscnt32: dest:i src1:i len:4
+lscnt64: dest:i src1:i len:4
+xop_i8_i8: dest:i src1:i len:4
+xop_i4_i4: dest:i src1:i len:4
+arm64_smulh: dest:i src1:i src2:i len:4
+arm64_umulh: dest:i src1:i src2:i len:4
+arm64_hint: len:4
 
 atomic_add_i4: dest:i src1:i src2:i len:32
 atomic_add_i8: dest:i src1:i src2:i len:32
