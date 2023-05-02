@@ -3915,7 +3915,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
-				encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
+				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
+					encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
 
 				if (wrapper_info && wrapper_info->subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)
 					encode_klass_ref (acfg, method->klass, p, &p);
