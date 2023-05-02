@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -210,7 +209,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     genericType.ConstructUnboundGenericType() is INamedTypeSymbol { } unboundGeneric &&
                     unboundGeneric.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
-                    return TryGetTypeSpec(genericType.TypeArguments[0], NotSupportedReason.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingType)
+                    return TryGetTypeSpec(genericType.TypeArguments[0], NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingType)
                         ? CacheSpec(new NullableSpec(type) { Location = location, UnderlyingType = underlyingType })
                         : null;
                 }
@@ -266,7 +265,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return CacheSpec(spec);
                 }
 
-                ReportUnsupportedType(type, NotSupportedReason.TypeNotSupported, location);
+                ReportUnsupportedType(type, TypeNotSupported, location);
                 return null;
 
                 T CacheSpec<T>(T? s) where T : TypeSpec
@@ -398,13 +397,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private bool TryGetTypeSpec(ITypeSymbol type, string unsupportedReason, out TypeSpec? spec)
+            private bool TryGetTypeSpec(ITypeSymbol type, DiagnosticDescriptor descriptor, out TypeSpec? spec)
             {
                 spec = GetOrCreateTypeSpec(type);
 
                 if (spec == null)
                 {
-                    ReportUnsupportedType(type, unsupportedReason);
+                    ReportUnsupportedType(type, descriptor);
                     return false;
                 }
 
@@ -413,7 +412,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private ArraySpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
             {
-                if (!TryGetTypeSpec(arrayType.ElementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(arrayType.ElementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -441,7 +440,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (arrayType.Rank > 1)
                 {
-                    ReportUnsupportedType(arrayType, NotSupportedReason.MultiDimArraysNotSupported, location);
+                    ReportUnsupportedType(arrayType, MultiDimArraysNotSupported, location);
                     elementType = null;
                     return false;
                 }
@@ -466,15 +465,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, Location? location, ITypeSymbol keyType, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(keyType, NotSupportedReason.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
-                    !TryGetTypeSpec(elementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(keyType, DictionaryKeyNotSupported, out TypeSpec keySpec) ||
+                    !TryGetTypeSpec(elementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
 
                 if (keySpec.SpecKind != TypeSpecKind.ParsableFromString)
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.DictionaryKeyNotSupported, location);
+                    ReportUnsupportedType(type, DictionaryKeyNotSupported, location);
                     return null;
                 }
 
@@ -487,7 +486,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType, keyType))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, CollectionNotSupported, location);
                     return null;
                 }
 
@@ -509,7 +508,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(elementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(elementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -526,7 +525,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, CollectionNotSupported, location);
                     return null;
                 }
 
@@ -687,12 +686,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (type.IsAbstract || type.TypeKind == TypeKind.Interface)
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.AbstractOrInterfaceNotSupported, location);
+                    ReportUnsupportedType(type, AbstractOrInterfaceNotSupported, location);
                     return false;
                 }
                 else if (!HasPublicParameterlessCtor(type))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.NeedPublicParameterlessConstructor, location);
+                    ReportUnsupportedType(type, NeedPublicParameterlessConstructor, location);
                     return false;
                 }
 
@@ -752,12 +751,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
 
-            private void ReportUnsupportedType(ITypeSymbol type, string reason, Location? location = null)
+            private void ReportUnsupportedType(ITypeSymbol type, DiagnosticDescriptor descriptor, Location? location = null)
             {
                 if (!_unsupportedTypes.Contains(type))
                 {
                     _context.ReportDiagnostic(
-                        Diagnostic.Create(TypeNotSupported, location, new string[] { type.ToDisplayString(), reason }));
+                        Diagnostic.Create(descriptor, location, new string[] { type.ToDisplayString() }));
                     _unsupportedTypes.Add(type);
                 }
             }

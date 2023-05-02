@@ -438,14 +438,6 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.GenericVarianceInfo:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.GenericVarianceInfo");
-                        NativeParser varianceInfoParser = typeInfoParser.GetParserFromRelativeOffset();
-                        state.GenericVarianceFlags = new GenericVariance[varianceInfoParser.GetSequenceCount()];
-                        for (int i = 0; i < state.GenericVarianceFlags.Length; i++)
-                            state.GenericVarianceFlags[i] = checked((GenericVariance)varianceInfoParser.GetUnsigned());
-                        break;
-
                     case BagElementKind.FieldLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
@@ -794,15 +786,9 @@ namespace Internal.Runtime.TypeLoader
 
                     state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
                     Instantiation instantiation = typeAsDefType.Instantiation;
-                    state.HalfBakedRuntimeTypeHandle.SetGenericArity((uint)instantiation.Length);
                     for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
                     {
                         state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
-                        if (state.GenericVarianceFlags != null)
-                        {
-                            Debug.Assert(state.GenericVarianceFlags.Length == instantiation.Length);
-                            state.HalfBakedRuntimeTypeHandle.SetGenericVariance(argIndex, state.GenericVarianceFlags[argIndex]);
-                        }
                     }
                 }
 
@@ -1301,6 +1287,30 @@ namespace Internal.Runtime.TypeLoader
                 TypeSystemContextFactory.Recycle(context);
             }
 
+            return true;
+        }
+
+        public static bool TryBuildFunctionPointerType(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            var key = new TypeSystemContext.FunctionPointerTypeKey(returnTypeHandle, parameterHandles, isUnmanaged);
+            if (!TypeSystemContext.FunctionPointerTypesCache.TryGetValue(key, out runtimeTypeHandle))
+            {
+                TypeSystemContext context = TypeSystemContextFactory.Create();
+                FunctionPointerType functionPointerType = context.GetFunctionPointerType(new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    context.ResolveRuntimeTypeHandle(returnTypeHandle),
+                    context.ResolveRuntimeTypeHandlesInternal(parameterHandles)));
+                runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
+                unsafe
+                {
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                }
+                TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
+
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
+                TypeSystemContextFactory.Recycle(context);
+            }
             return true;
         }
 

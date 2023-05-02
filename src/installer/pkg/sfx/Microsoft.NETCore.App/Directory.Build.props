@@ -253,7 +253,6 @@
     <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />

@@ -204,10 +204,6 @@ let mono_exit = (code, reason) => {
     console.log(`test-main failed early ${code} ${reason}`);
 };
 
-async function loadDotnet(file) {
-    return await import(file);
-}
-
 const App = {
     /** Runs a particular test in legacy interop tests
      * @type {(method_name: string, args: any[]=, signature: any=) => return number}
@@ -255,7 +251,7 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
-function configureRuntime(dotnet, runArgs, INTERNAL) {
+function configureRuntime(dotnet, runArgs) {
     dotnet
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
@@ -272,7 +268,7 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
             dotnet.withModuleConfig({
-                onConfigLoaded: (config) => {
+                onConfigLoaded: (config, { INTERNAL }) => {
                     loadNodeModules(config, INTERNAL.require, modulesToLoad)
                 }
             })
@@ -300,9 +296,9 @@ async function dry_run(runArgs) {
     try {
         console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
         // this separate instance of the ES6 module, in which we just populate the caches
-        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js?dry_run=true');
+        const { dotnet, exit } = await import('./dotnet.js?dry_run=true');
         mono_exit = exit;
-        configureRuntime(dotnet, runArgs, INTERNAL);
+        configureRuntime(dotnet, runArgs);
         // silent minimal startup
         await dotnet.withConfig({
             forwardConsoleLogsToWS: false,
@@ -338,7 +334,7 @@ async function run() {
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
         // This way, we are testing that the cached version works.
-        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
+        const { dotnet, exit, INTERNAL } = await import('./dotnet.js');
         mono_exit = exit;
 
         if (runArgs.applicationArguments.length == 0) {

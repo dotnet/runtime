@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
 import { VoidPtr } from "./types/emscripten";
 
 // @offset must be the address of an ICU data archive in the native heap.

@@ -202,11 +202,10 @@ EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExc
 
     Thread * pThread = ThreadStore::GetCurrentThread();
 
-    // If the thread is currently in the "do not trigger GC" mode, we must not allocate, we must not reverse pinvoke, or
-    // return from a pinvoke.  All of these things will deadlock with the GC and they all become increasingly likely as
-    // exception dispatch kicks off.  So we just address this as early as possible with a FailFast.  The most
-    // likely case where this occurs is in our GC-callouts for Jupiter lifetime management -- in that case, we have
-    // managed code that calls to native code (without pinvoking) which might have a bug that causes an AV.
+    // A thread in DoNotTriggerGc mode has many restrictions that will become increasingly likely to be violated as
+    // exception dispatch kicks off. So we just address this as early as possible with a FailFast.
+    // The most likely case where this occurs is in GC-callouts -- in that case, we have
+    // managed code that runs on behalf of GC, which might have a bug that causes an AV.
     if (pThread->IsDoNotTriggerGcSet())
         RhFailFast();
 
@@ -286,6 +285,16 @@ EXTERN_C void * RhpCheckedLockCmpXchgAVLocation;
 EXTERN_C void * RhpCheckedXchgAVLocation;
 EXTERN_C void * RhpLockCmpXchg32AVLocation;
 EXTERN_C void * RhpLockCmpXchg64AVLocation;
+EXTERN_C void * RhpByRefAssignRefAVLocation1;
+
+#if !defined(HOST_ARM64)
+EXTERN_C void * RhpByRefAssignRefAVLocation2;
+#endif
+
+#if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+EXTERN_C void* RhpCheckedLockCmpXchgAVLocation2;
+EXTERN_C void* RhpCheckedXchgAVLocation2;
+#endif
 
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
 {
@@ -298,6 +307,14 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedXchgAVLocation,
         (uintptr_t)&RhpLockCmpXchg32AVLocation,
         (uintptr_t)&RhpLockCmpXchg64AVLocation,
+        (uintptr_t)&RhpByRefAssignRefAVLocation1,
+#if !defined(HOST_ARM64)
+        (uintptr_t)&RhpByRefAssignRefAVLocation2,
+#endif
+#if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+        (uintptr_t)&RhpCheckedLockCmpXchgAVLocation2,
+        (uintptr_t)&RhpCheckedXchgAVLocation2,
+#endif
     };
 
     // compare the IP against the list of known possible AV locations in the write barrier helpers

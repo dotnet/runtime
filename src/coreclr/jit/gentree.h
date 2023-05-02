@@ -82,6 +82,7 @@ enum GenTreeOperKind
     GTK_EXOP    = 0x10, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
                         // by adding non-node fields to unary or binary operator.
     GTK_NOVALUE = 0x20, // node does not produce a value
+    GTK_STORE   = 0x40, // node represents a store
 
     GTK_MASK = 0xFF
 };
@@ -1615,15 +1616,14 @@ public:
         return OperIsAtomicOp(gtOper);
     }
 
+    static bool OperIsStore(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_STORE) != 0;
+    }
+
     bool OperIsStore() const
     {
         return OperIsStore(gtOper);
-    }
-
-    static bool OperIsStore(genTreeOps gtOper)
-    {
-        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
-                OperIsStoreBlk(gtOper) || OperIsAtomicOp(gtOper));
     }
 
     static bool OperIsMultiOp(genTreeOps gtOper)
@@ -3450,6 +3450,13 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeUnOp(oper, type, data DEBUGARG(/* largeNode */ false))
+    {
+        assert(OperIsLocalStore());
+        SetLclNum(lclNum);
+    }
+
     GenTree*& Data()
     {
         assert(OperIsLocalStore());
@@ -3594,7 +3601,7 @@ private:
     MultiRegSpillFlags gtSpillFlags;
 
 public:
-    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
+    INDEBUG(IL_OFFSET gtLclILoffs = BAD_IL_OFFSET;) // instr offset of ref (only for JIT dumps)
 
     // Multireg support
     bool IsMultiReg() const
@@ -3681,6 +3688,11 @@ public:
         assert(OperIsScalarLocal(oper));
     }
 
+    GenTreeLclVar(var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeLclVarCommon(GT_STORE_LCL_VAR, type, lclNum, data)
+    {
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVar() : GenTreeLclVarCommon()
     {
@@ -3699,6 +3711,13 @@ private:
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
         : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
+    {
+        assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
+    }
+
+    GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs, GenTree* data, ClassLayout* layout)
+        : GenTreeLclVarCommon(GT_STORE_LCL_FLD, type, lclNum, data), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
         SetLayout(layout);
@@ -8792,7 +8811,16 @@ struct GenTreeCCMP final : public GenTreeOpCC
 
 inline bool GenTree::OperIsBlkOp()
 {
-    return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || OperIsStoreBlk();
+    if (OperIs(GT_STORE_DYN_BLK))
+    {
+        return true;
+    }
+    if (OperIs(GT_ASG) || OperIsStore())
+    {
+        return varTypeIsStruct(this);
+    }
+
+    return false;
 }
 
 inline bool GenTree::OperIsInitBlkOp()
@@ -8801,16 +8829,11 @@ inline bool GenTree::OperIsInitBlkOp()
     {
         return false;
     }
-    GenTree* src;
-    if (gtOper == GT_ASG)
-    {
-        src = gtGetOp2();
-    }
-    else
-    {
-        src = AsBlk()->Data()->gtSkipReloadOrCopy();
-    }
-    return src->OperIsInitVal() || src->IsIntegralConst();
+    GenTree* src       = Data();
+    bool     isInitBlk = src->TypeIs(TYP_INT);
+    assert(isInitBlk == src->gtSkipReloadOrCopy()->IsInitVal());
+
+    return isInitBlk;
 }
 
 inline bool GenTree::OperIsCopyBlkOp()
@@ -9201,8 +9224,8 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() && (OperIsIndir() || OperIsLocal()));
-    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
+    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK, GT_ASG));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : static_cast<GenTreeOp*>(this)->gtOp2;
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)

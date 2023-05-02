@@ -3944,10 +3944,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			if (dreg != sreg1)
-				arm_neon_mov (code, dreg, sreg1);
-			
-			arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			if (dreg != sreg1) {
+				if (dreg != sreg2) {
+					arm_neon_mov (code, dreg, sreg1);
+					arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+				} else {
+					arm_neon_mov (code, NEON_TMP_REG, sreg1);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, ins->inst_c0, 0);
+					arm_neon_mov (code, dreg, NEON_TMP_REG);
+				}
+			} else {
+				g_assert (dreg != sreg2);
+				arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			}
 			break;
 		}
 		case OP_ARM64_XTN:
@@ -4041,7 +4050,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		// Enable this when adding support for Narrow and enable support for Create at the same time
+		// This requires Vector64 SIMD support
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
@@ -5326,6 +5335,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (int i = 0; i < MONO_MAX_IREGS; i++)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
+			break;
+
+		/**** Arm.ArmBase ****/
+		case OP_LZCNT32:
+			arm_clzw (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT32:
+			arm_clsw (code, dreg, sreg1);
+			break;
+
+		case OP_LZCNT64:
+			arm_clzx (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT64:
+			arm_clsx (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_SMULH:
+			arm_smulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_ARM64_UMULH:
+			arm_umulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XOP_I8_I8:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I64);
+			arm_rbitx (code, dreg, sreg1);
+			break;
+
+		case OP_XOP_I4_I4:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
+			arm_rbitw (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
 			break;
 
 		default:
