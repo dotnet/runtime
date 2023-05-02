@@ -267,7 +267,7 @@ jobs:
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
     # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(buildAsStandaloneArg)
       displayName: Copy native test components to test output folder
 
 
@@ -279,7 +279,7 @@ jobs:
     # Compose the Core_Root folder containing all artifacts needed for running
     # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) $(buildAsStandaloneArg)
       displayName: Generate CORE_ROOT
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
