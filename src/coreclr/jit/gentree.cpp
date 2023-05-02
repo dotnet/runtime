@@ -19137,10 +19137,12 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
-        case NI_AVX2_BroadcastScalarToVector256:
-        case NI_AVX2_BroadcastScalarToVector128:
-        case NI_AVX512F_BroadcastScalarToVector512:
         case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
         {
             return true;
         }

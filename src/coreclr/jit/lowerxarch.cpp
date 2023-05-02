@@ -7591,10 +7591,12 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             return false;
         }
 
-        case NI_AVX2_BroadcastScalarToVector256:
-        case NI_AVX2_BroadcastScalarToVector128:
-        case NI_AVX512F_BroadcastScalarToVector512:
         case NI_SSE3_MoveAndDuplicate:
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX2_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX2_BroadcastScalarToVector256:
+        case NI_AVX512F_BroadcastScalarToVector512:
         {
             if (intrinsicId == NI_SSE3_MoveAndDuplicate)
             {
