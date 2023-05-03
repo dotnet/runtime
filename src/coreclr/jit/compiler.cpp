@@ -1919,6 +1919,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
+    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -1927,8 +1928,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
-    compGeneratingProlog = false;
-    compGeneratingEpilog = false;
+    compGeneratingProlog       = false;
+    compGeneratingEpilog       = false;
+    compGeneratingUnwindProlog = false;
+    compGeneratingUnwindEpilog = false;
 
     compPostImportationCleanupDone = false;
     compLSRADone                   = false;
@@ -5029,6 +5032,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed            = false;
     optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
+
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);

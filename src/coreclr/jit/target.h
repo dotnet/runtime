@@ -38,7 +38,7 @@ inline bool compMacOsArm64Abi()
 }
 inline bool compFeatureArgSplit()
 {
-    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 ||
+    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 || TargetArchitecture::IsRiscv64 ||
            (TargetOS::IsWindows && TargetArchitecture::IsArm64);
 }
 inline bool compUnixX86Abi()

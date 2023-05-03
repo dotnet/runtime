@@ -19,19 +19,23 @@ Every pull request will have automatically a single `area-*` label assigned. The
 
 If during the code review process a merge conflict occurs the area owner is responsible for its resolution. Pull requests should not be on hold due to the author's unwillingness to resolve code conflicts. GitHub makes this easier by allowing simple conflict resolution using the [conflict-editor](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github).
 
+## Pull Request Builds
+
+When submitting a PR to the `dotnet/runtime` repository, various builds will run validating many areas to ensure we keep developer productivity and product quality high. For a high level overview of the build process and the different pipelines that might run against your PR, please check [pipelines overview](pipelines-overview.md).
+
 ## Merging Pull Requests
 
-Anyone with write access can merge a pull request manually or by setting the [auto-merge](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/automatically-merging-a-pull-request) label when it satisfies all of the following conditions:
+Anyone with write access can merge a pull request manually when the following conditions have been met:
 
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.
-* The PR successfully builds and passes all tests in the Continuous Integration (CI) system. For more information please read to our [PR Builds](pr-builds.md) doc.
+* The PR successfully builds and passes all tests in the Continuous Integration (CI) system. In case of failures, refer to the [analyzing build failures](failure-analysis.md) doc.
 
-Typically, PRs are merged as one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
+Typically, PRs are merged as one commit (squash merges). It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to disect them.
 
 ## Blocking Pull Request Merging
 
-If for whatever reason you would like to move your pull request back to an in-progress status to avoid merging it in the current form, you can do that by adding [WIP] prefix to the pull request title.
+If for whatever reason you would like to move your pull request back to an in-progress status to avoid merging it in the current form, you can turn the PR into a draft PR by selecting the option under the reviewers section. Alternatively, you can do that by adding [WIP] prefix to the pull request title.
 
 ## Old Pull Request Policy
 

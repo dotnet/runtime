@@ -1057,6 +1057,7 @@ public:
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
 
+        GenTreeFlags indirFlags = GTF_EMPTY;
         if (src->OperIs(GT_BLK, GT_FIELD))
         {
             GenTree* addr = src->gtGetOp1();
@@ -1078,6 +1079,16 @@ public:
                 unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
                 result->AddStatement(m_compiler->gtNewTempAssign(addrLcl, addr));
                 src->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
+            }
+
+            if (src->OperIs(GT_BLK))
+            {
+                indirFlags =
+                    src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+            }
+            else
+            {
+                indirFlags = src->gtFlags & GTF_IND_VOLATILE;
             }
         }
 
@@ -1128,8 +1139,10 @@ public:
                 if ((rep == firstRep) && m_compiler->fgIsBigOffset(srcOffs) &&
                     m_compiler->fgAddrCouldBeNull(src->gtGetOp1()))
                 {
-                    GenTree* addrForNullCheck = m_compiler->gtCloneExpr(src->gtGetOp1());
-                    result->AddStatement(m_compiler->gtNewIndir(TYP_BYTE, addrForNullCheck));
+                    GenTree*      addrForNullCheck = m_compiler->gtCloneExpr(src->gtGetOp1());
+                    GenTreeIndir* indir            = m_compiler->gtNewIndir(TYP_BYTE, addrForNullCheck);
+                    indir->gtFlags |= indirFlags;
+                    result->AddStatement(indir);
                     UpdateEarlyRefCount(addrForNullCheck);
                 }
 
@@ -1143,7 +1156,7 @@ public:
                 }
 
                 GenTree* dstLcl = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
-                srcFld          = m_compiler->gtNewIndir(rep->AccessType, addr, src->gtFlags & GTF_IND_VOLATILE);
+                srcFld          = m_compiler->gtNewIndir(rep->AccessType, addr, indirFlags);
                 srcFld->gtFlags |= GTF_GLOB_REF;
             }
 
@@ -1757,11 +1770,13 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n", i,
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                             rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                    GenTree* readBack = replacer.CreateReadBack(i, rep);
-                    m_compiler->fgInsertStmtNearEnd(bb, m_compiler->fgNewStmtFromTree(readBack));
+                    GenTree*   readBack = replacer.CreateReadBack(i, rep);
+                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                    DISPSTMT(stmt);
+                    m_compiler->fgInsertStmtNearEnd(bb, stmt);
                     rep.NeedsReadBack = false;
                 }
 

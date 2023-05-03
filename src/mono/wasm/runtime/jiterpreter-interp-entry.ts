@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoMethod, MonoType } from "./types";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import {
     getU32_unaligned, _zero_region
 } from "./memory";
@@ -24,18 +24,18 @@ const
 
 /*
 typedef struct {
-	InterpMethod *rmethod;
-	gpointer this_arg;
-	gpointer res;
-	gpointer args [16];
-	gpointer *many_args;
+    InterpMethod *rmethod;
+    gpointer this_arg;
+    gpointer res;
+    gpointer args [16];
+    gpointer *many_args;
 } InterpEntryData;
 
 typedef struct {
-	InterpMethod *rmethod; // 0
-	ThreadContext *context; // 4
-	gpointer orig_domain; // 8
-	gpointer attach_cookie; // 12
+    InterpMethod *rmethod; // 0
+    ThreadContext *context; // 4
+    gpointer orig_domain; // 8
+    gpointer attach_cookie; // 12
 } JiterpEntryDataHeader;
 */
 
@@ -47,12 +47,12 @@ const
 const maxJitQueueLength = 4,
     queueFlushDelayMs = 10;
 
-let trampBuilder : WasmBuilder;
-let trampImports : Array<[string, string, Function]> | undefined;
-let fnTable : WebAssembly.Table;
+let trampBuilder: WasmBuilder;
+let trampImports: Array<[string, string, Function]> | undefined;
+let fnTable: WebAssembly.Table;
 let jitQueueTimeout = 0;
-const jitQueue : TrampolineInfo[] = [];
-const infoTable : { [ptr: number] : TrampolineInfo } = {};
+const jitQueue: TrampolineInfo[] = [];
+const infoTable: { [ptr: number]: TrampolineInfo } = {};
 
 /*
 const enum WasmReftype {
@@ -61,7 +61,7 @@ const enum WasmReftype {
 }
 */
 
-function getTrampImports () {
+function getTrampImports() {
     if (trampImports)
         return trampImports;
 
@@ -91,7 +91,7 @@ class TrampolineInfo {
     result: number;
     hitCount: number;
 
-    constructor (
+    constructor(
         imethod: number, method: MonoMethod, argumentCount: number, pParamTypes: NativePointer,
         unbox: boolean, hasThisReference: boolean, hasReturnValue: boolean, name: string,
         defaultImplementation: number
@@ -125,9 +125,9 @@ class TrampolineInfo {
     }
 }
 
-let mostRecentOptions : JiterpreterOptions | undefined = undefined;
+let mostRecentOptions: JiterpreterOptions | undefined = undefined;
 
-export function mono_interp_record_interp_entry (imethod: number) {
+export function mono_interp_record_interp_entry(imethod: number) {
     // clear the unbox bit
     imethod = imethod & ~0x1;
 
@@ -153,11 +153,11 @@ export function mono_interp_record_interp_entry (imethod: number) {
 }
 
 // returns function pointer
-export function mono_interp_jit_wasm_entry_trampoline (
+export function mono_interp_jit_wasm_entry_trampoline(
     imethod: number, method: MonoMethod, argumentCount: number, pParamTypes: NativePointer,
     unbox: boolean, hasThisReference: boolean, hasReturnValue: boolean, name: NativePointer,
     defaultImplementation: number
-) : number {
+): number {
     // HACK
     if (argumentCount > maxInlineArgs)
         return 0;
@@ -182,7 +182,7 @@ export function mono_interp_jit_wasm_entry_trampoline (
     return info.result;
 }
 
-function ensure_jit_is_scheduled () {
+function ensure_jit_is_scheduled() {
     if (jitQueueTimeout > 0)
         return;
 
@@ -201,7 +201,7 @@ function ensure_jit_is_scheduled () {
     }, queueFlushDelayMs);
 }
 
-function flush_wasm_entry_trampoline_jit_queue () {
+function flush_wasm_entry_trampoline_jit_queue() {
     if (jitQueue.length <= 0)
         return;
 
@@ -213,29 +213,37 @@ function flush_wasm_entry_trampoline_jit_queue () {
         trampBuilder = builder = new WasmBuilder(constantSlots);
 
         builder.defineType(
-            "unbox", {
+            "unbox",
+            {
                 "pMonoObject": WasmValtype.i32,
-            }, WasmValtype.i32, true
+            },
+            WasmValtype.i32, true
         );
         builder.defineType(
-            "interp_entry_prologue", {
+            "interp_entry_prologue",
+            {
                 "pData": WasmValtype.i32,
                 "this_arg": WasmValtype.i32,
-            }, WasmValtype.i32, true
+            },
+            WasmValtype.i32, true
         );
         builder.defineType(
-            "interp_entry", {
+            "interp_entry",
+            {
                 "pData": WasmValtype.i32,
                 "sp_args": WasmValtype.i32,
                 "res": WasmValtype.i32,
-            }, WasmValtype.void, true
+            },
+            WasmValtype.void, true
         );
         builder.defineType(
-            "stackval_from_data", {
+            "stackval_from_data",
+            {
                 "type": WasmValtype.i32,
                 "result": WasmValtype.i32,
                 "value": WasmValtype.i32
-            }, WasmValtype.i32, true
+            },
+            WasmValtype.i32, true
         );
     } else
         builder.clear(constantSlots);
@@ -257,7 +265,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
-            const sig : any = {};
+            const sig: any = {};
             if (info.hasThisReference)
                 sig["this_arg"] = WasmValtype.i32;
             if (info.hasReturnValue)
@@ -405,7 +413,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
     }
 }
 
-function append_stackval_from_data (
+function append_stackval_from_data(
     builder: WasmBuilder, type: MonoType, valueName: string
 ) {
     const stackvalSize = cwraps.mono_jiterp_get_size_of_stackval();
@@ -486,9 +494,9 @@ function append_stackval_from_data (
     builder.local("sp_args", WasmOpcode.set_local);
 }
 
-function generate_wasm_body (
+function generate_wasm_body(
     builder: WasmBuilder, info: TrampolineInfo
-) : boolean {
+): boolean {
     // FIXME: This is not thread-safe, but the alternative of alloca makes the trampoline
     //  more expensive
     // The solution is likely to put the address of the scratch buffer in a global that we provide
@@ -558,15 +566,15 @@ function generate_wasm_body (
     }
 
     /*
-	for (i = 0; i < sig->param_count; ++i) {
-		if (m_type_is_byref (sig->params [i])) {
-			sp_args->data.p = params [i];
-			sp_args++;
-		} else {
-			int size = stackval_from_data (sig->params [i], sp_args, params [i], FALSE);
-			sp_args = STACK_ADD_BYTES (sp_args, size);
-		}
-	}
+    for (i = 0; i < sig->param_count; ++i) {
+        if (m_type_is_byref (sig->params [i])) {
+            sp_args->data.p = params [i];
+            sp_args++;
+        } else {
+            int size = stackval_from_data (sig->params [i], sp_args, params [i], FALSE);
+            sp_args = STACK_ADD_BYTES (sp_args, size);
+        }
+    }
     */
 
     for (let i = 0; i < info.paramTypes.length; i++) {
