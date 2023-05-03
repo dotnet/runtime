@@ -1207,14 +1207,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         case GT_IND:
             if (willDeref)
             {
-                GenTree* addr = structVal->AsIndir()->Addr();
-                if (addr->OperIs(GT_FIELD_ADDR))
-                {
-                    // TODO-FIELD: delete this zero-diff quirk.
-                    addr->gtFlags &= ~GTF_FLD_DEREFERENCED;
-                }
-
-                return addr;
+                return structVal->AsIndir()->Addr();
             }
             break;
 
