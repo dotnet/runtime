@@ -6524,7 +6524,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         varx1,
                                        int         varx2,
                                        int         offs1,
-                                       int         offs2)
+                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -6619,6 +6619,10 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
         id->idGCrefReg2(GCT_NONE);
     }
 
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs  = var1RefsOffs;
+    id->idDebugOnlyInfo()->idVarRefOffs2 = var2RefsOffs;
+#endif
     dispIns(id);
     appendToCurIG(id);
 }
@@ -13922,11 +13926,18 @@ void emitter::emitDispInsHelp(
             break;
     }
 
-    if (id->idDebugOnlyInfo()->idVarRefOffs)
+    if (id->idIsLclVar())
     {
         printf("\t// ");
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                          id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+        if (id->idIsLclVarPair())
+        {
+            printf(", ");
+            emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
+            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2,
+                             asmfm);
+        }
     }
 
     printf("\n");
@@ -13954,7 +13965,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 
-    if (varx >= 0 && emitComp->opts.varNames)
+    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
 
@@ -16463,6 +16474,10 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     }
 
     regNumber prevReg1 = emitLastIns->idReg1();
+#ifdef DEBUG
+    unsigned prevVarRefsOffs = emitLastIns->idDebugOnlyInfo()->idVarRefOffs;
+    unsigned newVarRefsOffs  = emitVarRefOffs;
+#endif
 
     ssize_t     prevImm = emitGetInsSC(emitLastIns);
     instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
@@ -16513,12 +16528,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     if (optimizationOrder == eRO_ascending)
     {
         emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, varx,
-                                 prevOffset, offs);
+                                 prevOffset, offs DEBUG_ARG(prevVarRefsOffs) DEBUG_ARG(newVarRefsOffs));
     }
     else
     {
         emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum,
-                                 offs, prevOffset);
+                                 offs, prevOffset DEBUG_ARG(newVarRefsOffs) DEBUG_ARG(prevVarRefsOffs));
     }
 
     return true;

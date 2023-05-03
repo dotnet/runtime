@@ -14867,6 +14867,7 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
 
                 tree->ChangeOper(GT_LCL_VAR);
                 assert(tree->AsLclVarCommon()->GetLclNum() == fieldLclIndex);
+
                 tree->gtType = fldVarDsc->TypeGet();
 
                 if ((parent->gtOper == GT_ASG) && (parent->AsOp()->gtOp1 == tree))
