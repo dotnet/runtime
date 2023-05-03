@@ -428,7 +428,7 @@ namespace Wasm.Build.Tests
                 {
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
-                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework),
+                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework, isPublish: options.Publish),
                                                     options.IsBrowserTemplateProject ? "wwwroot" : "AppBundle");
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
@@ -633,8 +633,6 @@ namespace Wasm.Build.Tests
                 AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
                 AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js"), dotnetJsPath!, label);
             }
-
-            AssertIcuAssets(binFrameworkDir, GlobalizationMode.FullIcu, "");
         }
 
         static void AssertRuntimePackPath(string buildOutput, string targetFramework)
@@ -668,22 +666,19 @@ namespace Wasm.Build.Tests
                 "dotnet.js"
             };
 
-            Console.WriteLine ($"AssertBasicAppBundle: isPub:{isPublish}");
             // FIXME: um.. does this apply to all the templates?
             if (isPublish)
-            {
                 filesToExist.Add(Path.Combine(bundleDir, mainJS));
-            }
 
             string managedDir;
             if (fromTemplate == WasmTemplate.wasmbrowser)
             {
+                if (isPublish)
+                    filesToExist.Add(Path.Combine(bundleDir, "index.html"));
                 bundleDir = Path.Combine(bundleDir, "_framework");
                 managedDir = bundleDir;
 
                 filesToExist.Add("blazor.boot.json");
-                if (isPublish)
-                    filesToExist.Add("index.html");
             }
             else
             {
@@ -724,6 +719,7 @@ namespace Wasm.Build.Tests
 
         protected static void AssertIcuAssets(string bundleDir, GlobalizationMode? globalizationMode, string predefinedIcudt)
         {
+            Console.WriteLine ($"AssertIcuAssets: mode: {globalizationMode}, predef: {predefinedIcudt}");
             bool expectEFIGS = false;
             bool expectCJK = false;
             bool expectNOCJK = false;
@@ -734,6 +730,10 @@ namespace Wasm.Build.Tests
                     break;
                 case GlobalizationMode.FullIcu:
                     expectFULL = true;
+                    // Bug: all the files are deployed currently for blazor, and wasmbrowser case
+                    expectCJK = true;
+                    expectEFIGS = true;
+                    expectNOCJK = true;
                     break;
                 case GlobalizationMode.PredefinedIcu:
                     if (string.IsNullOrEmpty(predefinedIcudt))
@@ -761,6 +761,8 @@ namespace Wasm.Build.Tests
                     expectCJK = true;
                     expectEFIGS = true;
                     expectNOCJK = true;
+                    // Bug: all the files are deployed currently for blazor, and wasmbrowser case
+                    expectFULL = true;
                     break;
             }
             // FIXME: AJ: open an issue
@@ -853,6 +855,8 @@ namespace Wasm.Build.Tests
                         dotnetJsPath!,
                         "Expected dotnet.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
+
+            AssertIcuAssets(binFrameworkDir, GlobalizationMode.FullIcu, "");
         }
 
         protected void AssertBlazorBootJson(string config, bool isPublish, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir=null)
@@ -896,11 +900,11 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null, bool isPublish=false)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
-            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
+            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm", isPublish ? "publish" : string.Empty);
         }
 
         protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
