@@ -336,27 +336,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
                 ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
 
-                const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences();
+                const bool canUseSimd = !blkNode->IsOnHeapAndContainsReferences() && comp->IsBaselineSimdIsaSupported();
                 if (size > comp->getUnrollThreshold(Compiler::UnrollKind::Memset, canUseSimd))
                 {
                     // It turns out we can't use SIMD so the default threshold is too big
                     goto TOO_BIG_TO_UNROLL;
                 }
-
-                bool willUseSimd = canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
-                if (willUseSimd)
+                if (canUseSimd && (size >= XMM_REGSIZE_BYTES))
                 {
-// We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register with a fill value
-// just to handle the remainder when we can do that with an overlapped SIMD load).
-#ifdef FEATURE_SIMD
+                    // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register
+                    // with a fill value just to handle the remainder when we can do that with
+                    // an overlapped SIMD load).
                     src->SetContained();
-#else
-                    if (fill == 0)
-                    {
-                        // When we don't have FEATURE_SIMD we can only handle zeroing
-                        src->SetContained();
-                    }
-#endif
                 }
                 else if (fill == 0)
                 {

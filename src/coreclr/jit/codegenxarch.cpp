@@ -426,7 +426,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 //    targetType - target's type
 //    simd_t     - constant data (its width depends on type)
 //
-void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t val)
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val)
 {
     emitter* emit = GetEmitter();
     emitAttr attr = emitTypeSize(targetType);
@@ -435,7 +435,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
     {
         case TYP_SIMD8:
         {
-            simd8_t val8 = *(simd8_t*)&val;
+            simd8_t val8 = *(simd8_t*)val;
             if (val8.IsAllBitsSet())
             {
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
@@ -453,7 +453,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
         }
         case TYP_SIMD12:
         {
-            simd12_t val12 = *(simd12_t*)&val;
+            simd12_t val12 = *(simd12_t*)val;
             if (val12.IsAllBitsSet())
             {
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
@@ -473,7 +473,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
         }
         case TYP_SIMD16:
         {
-            simd16_t val16 = *(simd16_t*)&val;
+            simd16_t val16 = *(simd16_t*)val;
             if (val16.IsAllBitsSet())
             {
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
@@ -491,7 +491,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
         }
         case TYP_SIMD32:
         {
-            simd32_t val32 = *(simd32_t*)&val;
+            simd32_t val32 = *(simd32_t*)val;
             if (val32.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
@@ -509,7 +509,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
         }
         case TYP_SIMD64:
         {
-            simd64_t val64 = *(simd64_t*)&val;
+            simd64_t val64 = *(simd64_t*)val;
             if (val64.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
             {
                 emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
@@ -603,7 +603,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
 #if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
-            genSetRegToConst(vecCon->GetRegNum(), targetType, vecCon->gtSimdVal);
+            genSetRegToConst(vecCon->GetRegNum(), targetType, &vecCon->gtSimdVal);
 #else
             unreached();
 #endif
@@ -3134,68 +3134,20 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     assert(size <= INT32_MAX);
     assert(dstOffset < (INT32_MAX - static_cast<int>(size)));
 
+#ifdef FEATURE_SIMD
     if (willUseSimdMov)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
-
-        unsigned regSize = compiler->roundDownSIMDSize(size);
+        unsigned  regSize   = compiler->roundDownSIMDSize(size);
         if (size < ZMM_RECOMMENDED_THRESHOLD)
         {
             // Involve ZMM only for large data due to possible downclocking.
             regSize = min(regSize, YMM_REGSIZE_BYTES);
         }
-
-        if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
-        {
-            // If the source is constant 0 then always use xorps, it's faster
-            // than copying the constant from a GPR to a XMM register.
-            emit->emitIns_SIMD_R_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg, srcXmmReg);
-        }
-#ifdef FEATURE_SIMD
-        else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
-        {
-            // Populate a constant vector from the fill value and save it
-            // to the data section so we can load it by address.
-            assert(regSize <= ZMM_REGSIZE_BYTES);
-
-            var_types loadType = compiler->getSIMDTypeForSize(regSize);
-            simd_t    vecCon;
-            memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
-            genSetRegToConst(srcXmmReg, loadType, vecCon);
-        }
-#endif
-        else
-        {
-            // TODO-AVX512-ARCH: Enable AVX-512 for non-zeroing initblk.
-            regSize = min(regSize, YMM_REGSIZE_BYTES);
-
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Vector512))
-            {
-                emit->emitIns_R_R(INS_vpbroadcastd_gpr, EA_ATTR(regSize), srcXmmReg, srcIntReg);
-            }
-            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
-                emit->emitIns_R_R(INS_vpbroadcastd, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
-            }
-            else
-            {
-                emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
-
-                emit->emitIns_SIMD_R_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg, srcXmmReg);
-
-#ifdef TARGET_X86
-                // For x86, we need one more to convert it from 8 bytes to 16 bytes.
-                emit->emitIns_SIMD_R_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg, srcXmmReg);
-#endif
-
-                if (regSize == YMM_REGSIZE_BYTES)
-                {
-                    // Extend the bytes in the lower lanes to the upper lanes
-                    emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
-                }
-            }
-        }
+        var_types loadType = compiler->getSIMDTypeForSize(regSize);
+        simd_t    vecCon;
+        memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
+        genSetRegToConst(srcXmmReg, loadType, &vecCon);
 
         instruction simdMov      = simdUnalignedMovIns();
         unsigned    bytesWritten = 0;
@@ -3239,6 +3191,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             size = 0;
         }
     }
+#endif // FEATURE_SIMD
 
     assert((srcIntReg != REG_NA) || (size == 0));
 
