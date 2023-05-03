@@ -5,7 +5,7 @@ import { mono_wasm_new_external_root } from "./roots";
 import { MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
-import { setU16 } from "./memory";
+import { setU16_unchecked } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
@@ -16,8 +16,8 @@ export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src:
         if (result.length > dstLength)
             result = input;
 
-        for (let i = 0; i < result.length; i++)
-            setU16(dst + i * 2, result.charCodeAt(i));
+        for (let i = 0, j = dst; i < result.length; i++, j += 2)
+            setU16_unchecked(j, result.charCodeAt(i));
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
@@ -35,8 +35,8 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
         if (result.length > destLength)
             result = input;
 
-        for (let i = 0; i < destLength; i++)
-            setU16(dst + i * 2, result.charCodeAt(i));
+        for (let i = 0, j = dst; i < result.length; i++, j += 2)
+            setU16_unchecked(j, result.charCodeAt(i));
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
