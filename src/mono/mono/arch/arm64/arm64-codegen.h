@@ -123,6 +123,15 @@ typedef enum {
 	ARMSIZE_X = 0x3
 } ARMSize;
 
+typedef enum {
+	ARMHINT_NOP = 0x0,
+	ARMHINT_YIELD = 0x1,
+	ARMHINT_WFE = 0x2,
+	ARMHINT_WFI = 0x3,
+	ARMHINT_SEV = 0x4,
+	ARMHINT_SEVL = 0x5
+} ARMHint;
+
 #define arm_emit(p, ins) do { *(guint32*)(p) = (ins); (p) += 4; } while (0)
 
 /* Overwrite bits [offset,offset+nbits] with value */
@@ -703,6 +712,19 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_mulw(p, rd, rn, rm) arm_maddw ((p), (rd), (rn), (rm), ARMREG_RZR)
 
 /* FIXME: Missing multiple opcodes */
+#define arm_format_clx(p, sf, op, rd, rn) arm_emit ((p), 0b01011010110000000001000000000000 | (sf) << 31 | (op) << 10 | (rn) << 5 | (rd))
+#define arm_clsw(p, rd, rn) arm_format_clx ((p), 0, 1, (rd), (rn))
+#define arm_clsx(p, rd, rn) arm_format_clx ((p), 1, 1, (rd), (rn))
+#define arm_clzw(p, rd, rn) arm_format_clx ((p), 0, 0, (rd), (rn))
+#define arm_clzx(p, rd, rn) arm_format_clx ((p), 1, 0, (rd), (rn))
+
+#define arm_format_mulh(p, u, rd, rn, rm) arm_emit ((p), 0b10011011010000000111110000000000 | (u) << 23 | (rm) << 16 | (rn) << 5 | (rd))
+#define arm_smulh(p, rd, rn, rm) arm_format_mulh ((p), 0, (rd), (rn), (rm))
+#define arm_umulh(p, rd, rn, rm) arm_format_mulh ((p), 1, (rd), (rn), (rm))
+
+#define arm_format_rbit(p, sf, rd, rn) arm_emit ((p), 0b01011010110000000000000000000000 | (sf) << 31 | (rn) << 5 | (rd))
+#define arm_rbitw(p, rd, rn) arm_format_rbit ((p), 0, (rd), (rn))
+#define arm_rbitx(p, rd, rn) arm_format_rbit ((p), 1, (rd), (rn))
 
 /* Division */
 #define arm_format_div(p, sf, o1, rd, rn, rm) arm_emit ((p), ((sf) << 31) | (0xd6 << 21) | ((rm) << 16) | (0x1 << 11) | ((o1) << 10) | ((rn) << 5) | ((rd) << 0))

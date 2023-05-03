@@ -106,11 +106,15 @@ namespace Microsoft.Extensions.Hosting
 
         private static void AddWindowsServiceLifetime(IServiceCollection services, Action<WindowsServiceLifetimeOptions> configure)
         {
+#if !NETFRAMEWORK
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
 
             services.AddLogging(logging =>
             {
+#if !NETFRAMEWORK
                 Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
                 logging.AddEventLog();
             });
             services.AddSingleton<IHostLifetime, WindowsServiceLifetime>();
@@ -129,7 +133,9 @@ namespace Microsoft.Extensions.Hosting
 
             public void Configure(EventLogSettings settings)
             {
+#if !NETFRAMEWORK
                 Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
 
                 if (string.IsNullOrEmpty(settings.SourceName))
                 {

@@ -558,7 +558,7 @@ class SchemaDef
             name: "MethodInstantiation",
             members: new MemberDef[] {
                 new MemberDef("Method", MethodDefOrRef, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -674,7 +674,7 @@ class SchemaDef
             name: "TypeInstantiationSignature",
             members: new MemberDef[] {
                 new MemberDef("GenericType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(
@@ -686,7 +686,7 @@ class SchemaDef
         new RecordDef(
             name: "ArraySignature",
             members: new MemberDef[] {
-                new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("ElementType", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
                 new MemberDef("Rank", "int"),
                 new MemberDef("Sizes", "Int32", MemberDefFlags.Array),
                 new MemberDef("LowerBounds", "Int32", MemberDefFlags.Array),
@@ -695,7 +695,7 @@ class SchemaDef
         new RecordDef(
             name: "ByReferenceSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(

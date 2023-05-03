@@ -777,10 +777,6 @@ public:
     void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
     CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
 
-    void recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
-    void dmpAreTypesEquivalent(DLDL key, DWORD value);
-    bool repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
-
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
     TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
@@ -986,7 +982,7 @@ private:
 
 enum mcPackets
 {
-    Packet_AreTypesEquivalent = 1,
+    //Packet_AreTypesEquivalent = 1,
     Packet_AsCorInfoType = 2,
     Packet_CanAccessClass = 3,
     Packet_CanAccessFamily = 4,
