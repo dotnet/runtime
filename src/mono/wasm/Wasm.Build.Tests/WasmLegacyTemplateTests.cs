@@ -26,7 +26,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
         string mainJsPath = Path.Combine(_projectDir!, "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
 
-        // FIXME: withConsoleForwarding - use only with wasm app host
+        // .withConsoleForwarding - use only with WasmAppHost
         // .withExitOnUnhandledError() is available only only >net7.0
         mainJsContent = mainJsContent.Replace(".create()",
                 targetFramework == "net8.0"
