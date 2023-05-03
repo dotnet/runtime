@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../types-api";
 import { toAbsoluteUri } from "./_Polyfill";
 import { BootJsonData, ResourceList } from "./BootConfig";
-import { WebAssemblyStartOptions, WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 const networkFetchCacheMode = "no-cache";
 
 export class WebAssemblyResourceLoader {

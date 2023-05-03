@@ -286,6 +286,7 @@ METHOD(CarrylessMultiply)
 // ArmBase
 METHOD(LeadingSignCount)
 METHOD(ReverseElementBits)
+METHOD(Yield)
 // Crc32
 METHOD(ComputeCrc32)
 METHOD(ComputeCrc32C)

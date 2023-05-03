@@ -646,7 +646,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
             attributes &= ~ParameterAttributes.ReservedMask;
-            return new ParameterBuilder(this, position, attributes, strParamName);
+            return new RuntimeParameterBuilder(this, position, attributes, strParamName);
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)

@@ -7,7 +7,7 @@ namespace Internal.Runtime
     {
         TypeMap                                     = 1,
         ArrayMap                                    = 2,
-        // unused                                   = 3,
+        PointerTypeMap                              = 3,
         FunctionPointerTypeMap                      = 4,
         BlockReflectionTypeMap                      = 5,
         InvokeMap                                   = 6,
@@ -15,7 +15,7 @@ namespace Internal.Runtime
         CommonFixupsTable                           = 8,
         FieldAccessMap                              = 9,
         CCtorContextMap                             = 10,
-        // unused                                   = 11,
+        ByRefTypeMap                                = 11,
         // unused                                   = 12,
         EmbeddedMetadata                            = 13,
         DefaultConstructorMap                       = 14,
