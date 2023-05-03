@@ -28,7 +28,6 @@
     "wasi-experimental": {
       "description": ".NET WASI experimental",
       "packs": [
-        "Microsoft.NET.Sdk.WebAssembly.Pack",
         "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm",
         "Microsoft.NET.Runtime.WebAssembly.Templates"
