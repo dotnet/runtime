@@ -298,17 +298,17 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         if (assembliesCount != 0) {
             preallocatedAssemblies.AppendLine("};");
             preallocatedResources.AppendLine(preallocatedAssemblies.ToString());
-            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledAssemblyResources, {assembliesCount});");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledAssemblyResources, {assembliesCount});");
         }
         if (satelliteAssembliesCount != 0) {
             preallocatedSatelliteAssemblies.AppendLine("};");
             preallocatedResources.AppendLine(preallocatedSatelliteAssemblies.ToString());
-            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
         }
         if (dataCount != 0) {
             preallocatedData.AppendLine("};");
             preallocatedResources.AppendLine(preallocatedData.ToString());
-            addPreallocatedResources.AppendLine($"    mono_add_bundled_resource (bundledDataResources, {dataCount});");
+            addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledDataResources, {dataCount});");
         }
 
         outputUtf8Writer.Write(Utils.GetEmbeddedResource("mono-bundled-resource-registration.c")

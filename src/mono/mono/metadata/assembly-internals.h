@@ -142,12 +142,6 @@ MonoBundledAssembly *
 mono_create_new_bundled_assembly (const char *name, const unsigned char *data, unsigned int size);
 
 void
-mono_hash_contains_bundled_assemblies (gboolean contains);
-
-void
-mono_hash_contains_bundled_satellite_assemblies (gboolean contains);
-
-void
 mono_set_assemblies_path_direct (char **path);
 
 MONO_COMPONENT_API

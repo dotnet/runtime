@@ -50,16 +50,22 @@ typedef struct _MonoBundledSatelliteAssembly {
 typedef struct _MonoBundledSatelliteAssemblyResource {
 	MonoBundledResource resource;
 	MonoBundledSatelliteAssembly satellite_assembly;
-    MonoBundledSymfile symfile;
+    MonoBundledSymbolData symbol_data;
 } MonoBundledSatelliteAssemblyResource;
 
 void
-mono_free_bundled_resources (void);
+mono_bundled_resources_free (void);
 
 void
-mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t len);
+mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
 
 MonoBundledResource *
-mono_get_bundled_resource_data (const char *name);
+mono_bundled_resources_get (const char *name);
+
+int32_t
+mono_bundled_resources_contains_assemblies (void);
+
+int32_t
+mono_bundled_resources_contains_satellite_assemblies (void);
 
 #endif /* __MONO_BUNDLED_SOURCE_H__ */

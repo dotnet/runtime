@@ -19,6 +19,8 @@
 #include "library-builder.h"
 #include "mono-bundled-source.h"
 
+void mono_register_resources_bundle (void);
+
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
@@ -37,7 +39,7 @@ initialize_runtimeconfig (const char *bundle_path)
         LOG_ERROR ("Out of memory.\n");
 
     const char *file_name = "runtimeconfig.bin";
-    MonoBundledDataResource *runtimeConfig = (MonoBundledDataResource *)mono_get_bundled_resource_data (file_name);
+    MonoBundledDataResource *runtimeConfig = (MonoBundledDataResource *)mono_bundled_resources_get (file_name);
 
     if (runtimeConfig) {
         arg->kind = 1;

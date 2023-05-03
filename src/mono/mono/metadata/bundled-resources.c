@@ -3,6 +3,7 @@
 //
 
 #include <glib.h>
+#include <stdbool.h>
 
 #include "bundled-resources-internals.h"
 #include "assembly-internals.h"
@@ -11,27 +12,28 @@
 #include <mono/metadata/mono-private-unstable.h>
 
 static GHashTable *bundled_resources = NULL;
+static gboolean bundle_contains_assemblies, bundle_contains_satellite_assemblies = false;
 
 //---------------------------------------------------------------------------------------
 //
-// mono_free_bundled_resources frees all memory allocated for bundled resources.
+// mono_bundled_resources_free frees all memory allocated for bundled resources.
 // It should only be called when the runtime no longer needs access to the data,
 // most likely to happen during runtime shutdown.
 //
 
 void
-mono_free_bundled_resources (void)
+mono_bundled_resources_free (void)
 {
 	g_hash_table_destroy (bundled_resources);
 	bundled_resources = NULL;
 
-	mono_hash_contains_bundled_assemblies (FALSE);
-	mono_hash_contains_bundled_satellite_assemblies (FALSE);
+	bundle_contains_assemblies = false;
+	bundle_contains_satellite_assemblies = false;
 }
 
 //---------------------------------------------------------------------------------------
 //
-// mono_add_bundled_resource handles bundling of many types of resources to circumvent
+// mono_bundled_resources_add handles bundling of many types of resources to circumvent
 // needing to find or have those resources on disk. The MonoBundledResource struct models
 // the union of information carried by all supported types of resources which are
 // enumerated in MonoBundledResourceType.
@@ -49,7 +51,7 @@ mono_free_bundled_resources (void)
 //
 
 void
-mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t len)
+mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
@@ -81,17 +83,17 @@ mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t l
 	}
 
 	if (assemblyAdded)
-		mono_hash_contains_bundled_assemblies (assemblyAdded);
+		bundle_contains_assemblies = true;
 
 	if (satelliteAssemblyAdded)
-		mono_hash_contains_bundled_satellite_assemblies (satelliteAssemblyAdded);
+		bundle_contains_satellite_assemblies = true;
 }
 
 //---------------------------------------------------------------------------------------
 //
-// mono_get_bundled_resource_data retrieves the pointer of the MonoBundledResource associated
+// mono_bundled_resources_get retrieves the pointer of the MonoBundledResource associated
 // with a key equivalent to the requested resource name. If the requested bundled resource's
-// name has been added via mono_add_bundled_resource, a MonoBundled*Resource had been
+// name has been added via mono_bundled_resources_add, a MonoBundled*Resource had been
 // preallocated, typically through EmitBundleTask.
 //
 // Arguments:
@@ -102,7 +104,37 @@ mono_add_bundled_resource (MonoBundledResource **resources_to_bundle, uint32_t l
 //
 
 MonoBundledResource *
-mono_get_bundled_resource_data (const char *name)
+mono_bundled_resources_get (const char *name)
 {
 	return g_hash_table_lookup (bundled_resources, name);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_contains_assemblies returns whether or not assemblies
+// have been added to the bundled resource hash table via mono_bundled_resources_add.
+//
+// Returns:
+//  gboolean - bool value indicating whether or not a bundled assembly resource had been added.
+//
+
+gboolean
+mono_bundled_resources_contains_assemblies (void)
+{
+	return bundle_contains_assemblies;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_contains_satellite_assemblies returns whether or not satellite assemblies
+// have been added to the bundled resource hash table via mono_bundled_resources_add.
+//
+// Returns:
+//  gboolean - bool value indicating whether or not a bundled satellite assembly resource had been added.
+//
+
+gboolean
+mono_bundled_resources_contains_satellite_assemblies (void)
+{
+	return bundle_contains_satellite_assemblies;
 }

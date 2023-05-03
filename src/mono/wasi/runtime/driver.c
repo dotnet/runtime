@@ -69,7 +69,7 @@ extern void mono_register_assemblies_bundle();
 #ifndef INVARIANT_GLOBALIZATION
 extern void mono_register_icu_bundle();
 #endif /* INVARIANT_GLOBALIZATION */
-extern MonoBundledResource * mono_get_bundled_resource_data (const char *name);
+extern MonoBundledResource * mono_bundled_resources_get (const char *name);
 #endif /* WASM_SINGLE_FILE */
 
 extern const char* dotnet_wasi_getentrypointassemblyname();
@@ -347,7 +347,7 @@ void load_icu_data (void)
 #ifdef WASM_SINGLE_FILE
 	mono_register_icu_bundle();
 
-    MonoBundledDataResource *icu_data = (MonoBundledDataResource *)mono_get_bundled_resource_data ("icudt.dat");
+    MonoBundledDataResource *icu_data = (MonoBundledDataResource *)mono_bundled_resources_get ("icudt.dat");
     if (!icu_data) {
 		printf("Could not load icudt.dat from the bundle");
 		assert(buffer);
