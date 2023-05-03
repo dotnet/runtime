@@ -369,7 +369,7 @@ public:
 
     //------------------------------------------------------------------------
     // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a promoted field into a replacement.
+    //   Add an entry specifying to copy from a replacement into a promoted field.
     //
     // Parameters:
     //   dstRep - The destination replacement.
@@ -378,7 +378,7 @@ public:
     //   type   - The type of copy.
     //
     // Remarks:
-    //   Used when the source local is a regular promoted field.
+    //   Used when the destination local is a regular promoted field.
     //
     void CopyBetweenReplacements(unsigned dstLcl, Replacement* srcRep, unsigned offset)
     {
@@ -411,20 +411,6 @@ public:
     void CopyFromReplacement(Replacement* srcRep, unsigned offset)
     {
         m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
-    }
-
-    //------------------------------------------------------------------------
-    // CopyFromReplacement:
-    //   Add an entry specifying to copy from a replacement local into the destination.
-    //
-    // Parameters:
-    //   srcLcl - The source local to copy from.
-    //   offset - The relative offset into the destination to write.
-    //   type   - The type of copy.
-    //
-    void CopyFromReplacement(unsigned srcLcl, unsigned offset, var_types type)
-    {
-        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcLcl, nullptr, offset, type});
     }
 
     //------------------------------------------------------------------------
