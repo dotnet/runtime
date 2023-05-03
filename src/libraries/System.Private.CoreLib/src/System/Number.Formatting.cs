@@ -3446,11 +3446,6 @@ namespace System
                     }
                 }
             }
-
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
-            {
-                vlb.Insert(0, info.NegativeSignTChar<TChar>());
-            }
         }
 
         private static void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
