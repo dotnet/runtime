@@ -62,6 +62,8 @@ internal sealed class JSEngineHost
         {
             // v8 needs this flag to enable WASM support
             args.Add("--expose_wasm");
+            // treat file as ES6 module
+            args.Add("--module");
         }
 
         args.AddRange(_args.CommonConfig.HostArguments);
