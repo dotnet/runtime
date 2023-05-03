@@ -8,15 +8,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingSourceGenerator
     {
-        private const string GeneratorProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
-
-        private static DiagnosticDescriptor TypeNotSupported { get; } = new DiagnosticDescriptor(
-            id: "SYSLIB1100",
-            title: new LocalizableResourceString(nameof(SR.TypeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
-            messageFormat: new LocalizableResourceString(nameof(SR.TypeNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
-            category: GeneratorProjectName,
-            defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+        private static DiagnosticDescriptor TypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.TypeNotSupported));
+        private static DiagnosticDescriptor AbstractOrInterfaceNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.AbstractOrInterfaceNotSupported));
+        private static DiagnosticDescriptor NeedPublicParameterlessConstructor { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NeedPublicParameterlessConstructor));
+        private static DiagnosticDescriptor CollectionNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.CollectionNotSupported));
+        private static DiagnosticDescriptor DictionaryKeyNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.DictionaryKeyNotSupported));
+        private static DiagnosticDescriptor ElementTypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.ElementTypeNotSupported));
+        private static DiagnosticDescriptor MultiDimArraysNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MultiDimArraysNotSupported));
+        private static DiagnosticDescriptor NullableUnderlyingTypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NullableUnderlyingTypeNotSupported));
 
         private static DiagnosticDescriptor PropertyNotSupported { get; } = new DiagnosticDescriptor(
             id: "SYSLIB1101",
@@ -34,18 +33,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        private static class NotSupportedReason
-        {
-            public const string AbstractOrInterfaceNotSupported = "Abstract or interface types are not supported";
-            public const string NeedPublicParameterlessConstructor = "Only objects with public parameterless ctors are supported";
-            public const string CollectionNotSupported = "The collection type is not supported";
-            public const string DictionaryKeyNotSupported = "The dictionary key type is not supported";
-            public const string ElementTypeNotSupported = "The collection element type is not supported";
-            public const string MultiDimArraysNotSupported = "Multidimensional arrays are not supported.";
-            public const string NullableUnderlyingTypeNotSupported = "Nullable underlying type is not supported";
-            public const string TypeNotDetectedAsInput = "Generator parser did not detect the type as input";
-            public const string TypeNotSupported = "The type is not supported";
-        }
+        private static DiagnosticDescriptor CreateTypeNotSupportedDescriptor(string nameofLocalizableMessageFormat) =>
+            new DiagnosticDescriptor(
+            id: "SYSLIB1100",
+            title: new LocalizableResourceString(nameof(SR.TypeNotSupportedTitle), SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+            messageFormat: new LocalizableResourceString(nameofLocalizableMessageFormat, SR.ResourceManager, typeof(FxResources.Microsoft.Extensions.Configuration.Binder.SourceGeneration.SR)),
+            category: GeneratorProjectName,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
 
         private static class Identifier
         {

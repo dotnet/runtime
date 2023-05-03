@@ -8770,6 +8770,7 @@ namespace
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(pMT != NULL);
+            PRECONDITION(pMT->IsCanonicalMethodTable());
             PRECONDITION(pDefMD != NULL);
             PRECONDITION(pDefMD->IsEnCAddedMethod());
             PRECONDITION(pDefMD->GetSlot() == MethodTable::NO_SLOT);

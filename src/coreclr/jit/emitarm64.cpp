@@ -86,9 +86,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
 
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
+    if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
     assert((unsigned)id->idInsFmt() < emitFmtCount);
@@ -16645,18 +16645,12 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    // Don't remove instructions whilst in prologs or epilogs, as these contain  "unwindable"
-    // parts, where we need to report unwind codes to the OS,
-    if (emitIGisInProlog(emitCurIG) || emitIGisInEpilog(emitCurIG))
+    if (emitComp->compGeneratingUnwindProlog || emitComp->compGeneratingUnwindEpilog)
     {
+        // Don't remove instructions while generating "unwind" part of prologs or epilogs,
+        // because for those instructions, we need to report unwind codes to the OS.
         return eRO_none;
     }
-#ifdef FEATURE_EH_FUNCLETS
-    if (emitIGisInFuncletProlog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG))
-    {
-        return eRO_none;
-    }
-#endif
 
     return optimisationOrder;
 }

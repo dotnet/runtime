@@ -3180,7 +3180,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal(true /*commaOnly*/);
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && varTypeIsStruct(argObj) && !argObj->OperIs(GT_ASG, GT_MKREFANY, GT_FIELD_LIST))
+        if (isStructArg && !reMorphing && !argObj->OperIs(GT_MKREFANY))
         {
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
@@ -3193,6 +3193,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 originalSize = genTypeSize(argx);
             }
 
+            assert(argx->TypeGet() == arg.GetSignatureType());
             assert(originalSize == info.compCompHnd->getClassSize(arg.GetSignatureClassHandle()));
 
             // First, handle the case where the argument is passed by reference.
@@ -3943,9 +3944,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
         if (lcl != nullptr)
         {
-            const unsigned       varNum           = lcl->GetLclNum();
-            LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
-            const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+            const unsigned   varNum = lcl->GetLclNum();
+            LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
             // We generally use liveness to figure out if we can omit creating
             // this copy. However, even without liveness (e.g. due to too many
@@ -3958,9 +3958,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //   We also check for just one reference here as we are not doing
             //   alias analysis of the call's parameters, or checking if the call
             //   site is not within some try region.
-            //
-            // * (may not copy) if there is exactly one use of the local in the method,
-            //   and the call is not in loop, this is a last use.
             //
             bool omitCopy = call->IsTailCall();
 
@@ -7912,32 +7909,28 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
             // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`. Copy
             // the spill trees as well if necessary.
-            GenTreeOp* argSetup = nullptr;
+            GenTree* argSetup = nullptr;
             for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                GenTree* const argNode = arg.GetEarlyNode();
-                if (argNode->OperGet() != GT_ASG)
+                if (arg.GetLateNode() == nullptr)
                 {
                     continue;
                 }
 
-                assert(argNode != arr);
-                assert(argNode != index);
+                GenTree* const setupArgNode = arg.GetEarlyNode();
+                assert((setupArgNode != arr) && (setupArgNode != index));
 
-                GenTree* op1 = argSetup;
-                if (op1 == nullptr)
+                if (argSetup == nullptr)
                 {
-                    op1 = gtNewNothingNode();
+                    argSetup = setupArgNode;
+                }
+                else
+                {
+                    argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, setupArgNode);
 #if DEBUG
-                    op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+                    argSetup->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif // DEBUG
                 }
-
-                argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, op1, argNode);
-
-#if DEBUG
-                argSetup->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
             }
 
 #ifdef DEBUG
@@ -7951,11 +7944,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgWalkTreePost(&value, resetMorphedFlag);
 #endif // DEBUG
 
-            GenTree* const arrIndexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
-            GenTree* const arrIndex     = gtNewIndexIndir(arrIndexAddr->AsIndexAddr());
-            GenTree* const arrStore     = gtNewAssignNode(arrIndex, value);
+            GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
+            GenTree* store;
+            if (compAssignmentRationalized)
+            {
+                store = gtNewStoreIndNode(TYP_REF, indexAddr, value);
+            }
+            else
+            {
+                store = gtNewAssignNode(gtNewIndir(TYP_REF, indexAddr), value);
+            }
 
-            GenTree* result = fgMorphTree(arrStore);
+            GenTree* result = fgMorphTree(store);
             if (argSetup != nullptr)
             {
                 result = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, result);
@@ -11665,6 +11665,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     switch (oper)
     {
         case GT_ASG:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
             // Make sure we're allowed to do this.
             if (optValnumCSE_phase)
             {
@@ -11690,6 +11694,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 {
                     return fgMorphInitBlock(tree);
                 }
+            }
+
+            if (!tree->OperIs(GT_ASG))
+            {
+                break;
             }
 
             if (typ == TYP_LONG)

@@ -1220,12 +1220,6 @@ simd_op_to_llvm_type (int opcode)
 #endif
 }
 
-#if defined(TARGET_OSX) || defined(TARGET_LINUX)
-#define COLD_CCONV_SUPPORTED 1
-#elif !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
-#define COLD_CCONV_SUPPORTED 1
-#endif
-
 static void
 set_cold_cconv (LLVMValueRef func)
 {
@@ -1233,7 +1227,7 @@ set_cold_cconv (LLVMValueRef func)
 	 * xcode10 (watchOS) and ARM/ARM64 doesn't seem to support preserveall, it fails with:
 	 * fatal error: error in backend: Unsupported calling convention
 	 */
-#ifdef COLD_CCONV_SUPPORTED
+#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 	LLVMSetFunctionCallConv (func, LLVMColdCallConv);
 #endif
 }
@@ -1241,7 +1235,7 @@ set_cold_cconv (LLVMValueRef func)
 static void
 set_call_cold_cconv (LLVMValueRef func)
 {
-#ifdef COLD_CCONV_SUPPORTED
+#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 	LLVMSetInstructionCallConv (func, LLVMColdCallConv);
 #endif
 }
@@ -10275,6 +10269,13 @@ MONO_RESTORE_WARNING
 			if (scalar)
 				result = vector_from_scalar (ctx, LLVMVectorType (LLVMIntType (1), LLVMGetVectorSize (ret_t)), result);
 			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
+			break;
+		}
+		case OP_ARM64_HINT: {
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			LLVMValueRef hintid = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
+			LLVMValueRef args [] = { hintid };
+			call_intrins (ctx, INTRINS_AARCH64_HINT, args, "");
 			break;
 		}
 		case OP_ARM64_EXT: {

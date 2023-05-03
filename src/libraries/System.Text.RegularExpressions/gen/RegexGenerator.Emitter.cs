@@ -714,6 +714,7 @@ namespace System.Text.RegularExpressions.Generator
                     switch (regexTree.FindOptimizations.FindMode)
                     {
                         case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                             EmitIndexOf_LeftToRight();
                             break;
@@ -948,14 +949,20 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexFindOptimizations opts = regexTree.FindOptimizations;
 
-                string substring = "";
-                string offset = "";
-                string offsetDescription = "at the beginning of the pattern";
+                string substring = "", stringComparison = "", offset = "", offsetDescription = "";
 
                 switch (opts.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingString_LeftToRight:
                         substring = regexTree.FindOptimizations.LeadingPrefix;
+                        offsetDescription = "at the beginning of the pattern";
+                        Debug.Assert(!string.IsNullOrEmpty(substring));
+                        break;
+
+                    case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                        substring = regexTree.FindOptimizations.LeadingPrefix;
+                        stringComparison = ", StringComparison.OrdinalIgnoreCase";
+                        offsetDescription = "ordinal case-insensitive at the beginning of the pattern";
                         Debug.Assert(!string.IsNullOrEmpty(substring));
                         break;
 
@@ -976,7 +983,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)}{stringComparison});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
