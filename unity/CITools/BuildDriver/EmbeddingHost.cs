@@ -83,7 +83,7 @@ public class EmbeddingHost
             {
                 "exec",
                 vsTestPath,
-                $"/Settings:{runSettingsFile}",
+                $"/Settings:\"{runSettingsFile}\"",
                 testAssemblyPath
             };
 
