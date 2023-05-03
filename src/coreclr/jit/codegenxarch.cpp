@@ -417,6 +417,123 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     regSet.verifyRegUsed(reg);
 }
 
+#if defined(FEATURE_SIMD)
+//----------------------------------------------------------------------------------
+// genSetRegToConst: generate code to set target SIMD register to a given constant value
+//
+// Arguments:
+//    targetReg  - target SIMD register
+//    targetType - target's type
+//    simd_t     - constant data (its width depends on type)
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t val)
+{
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitTypeSize(targetType);
+
+    switch (targetType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t val8 = *(simd8_t*)&val;
+            if (val8.IsAllBitsSet())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+            }
+            else if (val8.IsZero())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg);
+            }
+            else
+            {
+                CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(val8);
+                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+            }
+            break;
+        }
+        case TYP_SIMD12:
+        {
+            simd12_t val12 = *(simd12_t*)&val;
+            if (val12.IsAllBitsSet())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
+            }
+            else if (val12.IsZero())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg);
+            }
+            else
+            {
+                simd16_t val16 = {};
+                memcpy(&val16, &val12, sizeof(val12));
+                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
+                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+            }
+            break;
+        }
+        case TYP_SIMD16:
+        {
+            simd16_t val16 = *(simd16_t*)&val;
+            if (val16.IsAllBitsSet())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+            }
+            else if (val16.IsZero())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+            }
+            else
+            {
+                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
+                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+            }
+            break;
+        }
+        case TYP_SIMD32:
+        {
+            simd32_t val32 = *(simd32_t*)&val;
+            if (val32.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
+            }
+            else if (val32.IsZero())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+            }
+            else
+            {
+                CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(val32);
+                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+            }
+            break;
+        }
+        case TYP_SIMD64:
+        {
+            simd64_t val64 = *(simd64_t*)&val;
+            if (val64.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
+                                           static_cast<int8_t>(0xFF));
+            }
+            else if (val64.IsZero())
+            {
+                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
+            }
+            else
+            {
+                CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(val64);
+                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+            }
+            break;
+        }
+        default:
+        {
+            unreached();
+        }
+    }
+}
+#endif // FEATURE_SIMD
+
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
@@ -484,147 +601,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_VEC:
         {
+#if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
-
-            emitter* emit = GetEmitter();
-            emitAttr attr = emitTypeSize(targetType);
-
-            if (vecCon->IsAllBitsSet())
-            {
-                switch (attr)
-                {
-                    case EA_8BYTE:
-                    case EA_16BYTE:
-                    {
-                        emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, EA_16BYTE, targetReg, targetReg, targetReg);
-                        return;
-                    }
-
-#if defined(FEATURE_SIMD)
-                    case EA_32BYTE:
-                    {
-                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                        {
-                            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, targetReg, targetReg, targetReg);
-                            return;
-                        }
-                        break;
-                    }
-
-                    case EA_64BYTE:
-                    {
-                        assert(compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F));
-                        emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
-                                                   static_cast<int8_t>(0xFF));
-                        return;
-                    }
-#endif // FEATURE_SIMD
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-            }
-
-            if (vecCon->IsZero())
-            {
-                switch (attr)
-                {
-                    case EA_8BYTE:
-                    case EA_16BYTE:
-                    {
-                        emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg);
-                        return;
-                    }
-
-                    case EA_32BYTE:
-                    {
-                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
-                        {
-                            emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
-                            return;
-                        }
-                        break;
-                    }
-
-                    case EA_64BYTE:
-                    {
-                        if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
-                        {
-                            emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg);
-                            return;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-            }
-
-            switch (tree->TypeGet())
-            {
-#if defined(FEATURE_SIMD)
-                case TYP_SIMD8:
-                {
-                    simd8_t constValue;
-                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
-
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
-                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
-                    break;
-                }
-
-                case TYP_SIMD12:
-                {
-                    simd16_t constValue = {};
-                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
-
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
-                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
-                    break;
-                }
-
-                case TYP_SIMD16:
-                {
-                    simd16_t constValue;
-                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
-
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
-                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
-                    break;
-                }
-
-                case TYP_SIMD32:
-                {
-                    simd32_t constValue;
-                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
-
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(constValue);
-                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
-                    break;
-                }
-
-                case TYP_SIMD64:
-                {
-                    simd64_t constValue;
-                    memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
-
-                    CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(constValue);
-                    emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
-                    break;
-                }
-#endif // FEATURE_SIMD
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
+            genSetRegToConst(vecCon->GetRegNum(), targetType, vecCon->gtSimdVal);
+#else
+            unreached();
+#endif
             break;
         }
 
@@ -3175,10 +3157,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             // Populate a constant vector from the fill value and save it
             // to the data section so we can load it by address.
             assert(regSize <= ZMM_REGSIZE_BYTES);
-            simd64_t constValue;
-            memset(&constValue, (uint8_t)(src->AsIntCon()->IconValue() & 0xFF), sizeof(simd64_t));
+
             var_types loadType = compiler->getSIMDTypeForSize(regSize);
-            genSetRegToConst(srcXmmReg, loadType, compiler->gtNewVconNode(loadType, &constValue));
+            simd_t    vecCon;
+            memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
+            genSetRegToConst(srcXmmReg, loadType, vecCon);
         }
 #endif
         else
