@@ -391,14 +391,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new EmbeddedTrimmingDescriptorNode(module);
             });
 
-            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
-            {
-                return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
-            });
-
-            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
+            });
+
+            _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
+            {
+                return new GenericVarianceNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -754,18 +754,18 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMaps.GetOrAdd(type);
         }
 
-        private NodeCache<TypeDesc, EmbeddedObjectNode> _interfaceDispatchMapIndirectionNodes;
+        private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
 
-        public EmbeddedObjectNode InterfaceDispatchMapIndirection(TypeDesc type)
-        {
-            return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
-        }
-
-        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
-
-        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
+
+        internal ISymbolNode GenericVariance(GenericVarianceDetails details)
+        {
+            return _genericVariances.GetOrAdd(details);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -1236,11 +1236,6 @@ namespace ILCompiler.DependencyAnalysis
             "__EagerCctorEnd",
             null);
 
-        public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            "__DispatchMapTableStart",
-            "__DispatchMapTableEnd",
-            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
-
         public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
@@ -1264,7 +1259,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
-            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
@@ -1273,7 +1267,6 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 

@@ -217,7 +217,13 @@ namespace Microsoft.Extensions.Hosting
             // any trailing directory separator characters. I'm not even sure the casing can ever be different from these APIs, but I think it makes sense to
             // ignore case for Windows path comparisons given the file system is usually (always?) going to be case insensitive for the system path.
             string cwd = Environment.CurrentDirectory;
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT ||
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+#endif
+                !string.Equals(cwd, Environment.SystemDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 hostConfigBuilder.AddInMemoryCollection(new[]
                 {
@@ -270,6 +276,8 @@ namespace Microsoft.Extensions.Hosting
                 bool isWindows =
 #if NETCOREAPP
                     OperatingSystem.IsWindows();
+#elif NETFRAMEWORK
+                    Environment.OSVersion.Platform == PlatformID.Win32NT;
 #else
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif

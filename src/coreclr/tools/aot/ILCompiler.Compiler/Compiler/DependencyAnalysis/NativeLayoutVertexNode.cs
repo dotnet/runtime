@@ -1261,27 +1261,6 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }
 
-            if (_type.GetTypeDefinition().HasVariance || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
-            {
-                // Runtime casting logic relies on all interface types implemented on arrays
-                // to have the variant flag set (even if all the arguments are non-variant).
-                // This supports e.g. casting uint[] to ICollection<int>
-                List<uint> varianceFlags = new List<uint>();
-                foreach (GenericParameterDesc param in _type.GetTypeDefinition().Instantiation)
-                {
-                    varianceFlags.Add((uint)param.Variance);
-                }
-
-                layoutInfo.Append(BagElementKind.GenericVarianceInfo, factory.NativeLayout.PlacedUIntVertexSequence(varianceFlags).WriteVertex(factory));
-            }
-            else if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-            {
-                // Generic array enumerators use special variance rules recognized by the runtime
-                List<uint> varianceFlag = new List<uint>();
-                varianceFlag.Add((uint)Internal.Runtime.GenericVariance.ArrayCovariant);
-                layoutInfo.Append(BagElementKind.GenericVarianceInfo, factory.NativeLayout.PlacedUIntVertexSequence(varianceFlag).WriteVertex(factory));
-            }
-
             if (_isUniversalCanon)
             {
                 // For universal canonical template types, we need to write out field layout information so that we

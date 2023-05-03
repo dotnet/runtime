@@ -816,7 +816,7 @@ public:
 
         JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(asg));
 
-        if (dstInvolvesReplacements && (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD) || src->IsConstInitVal()))
+        if (dstInvolvesReplacements && (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal()))
         {
             StatementList result;
             EliminateCommasInBlockOp(asg, &result);
@@ -1055,12 +1055,12 @@ public:
     void CopyIntoFields(
         Replacement* firstRep, Replacement* endRep, GenTreeLclVarCommon* dst, GenTree* src, StatementList* result)
     {
-        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
+        assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
         GenTreeFlags indirFlags = GTF_EMPTY;
-        if (src->OperIs(GT_BLK, GT_FIELD))
+        if (src->OperIs(GT_BLK))
         {
-            GenTree* addr = src->gtGetOp1();
+            GenTree* addr = src->AsIndir()->Addr();
 
             if (addr->OperIsLocal() && (addr->AsLclVarCommon()->GetLclNum() != dst->GetLclNum()))
             {
@@ -1081,15 +1081,8 @@ public:
                 src->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
             }
 
-            if (src->OperIs(GT_BLK))
-            {
-                indirFlags =
-                    src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
-            }
-            else
-            {
-                indirFlags = src->gtFlags & GTF_IND_VOLATILE;
-            }
+            indirFlags =
+                src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
         }
 
         LclVarDsc* srcDsc =
@@ -1131,22 +1124,17 @@ public:
             }
             else
             {
-                if (src->OperIs(GT_FIELD))
-                {
-                    srcOffs += src->AsField()->gtFldOffset;
-                }
-
                 if ((rep == firstRep) && m_compiler->fgIsBigOffset(srcOffs) &&
-                    m_compiler->fgAddrCouldBeNull(src->gtGetOp1()))
+                    m_compiler->fgAddrCouldBeNull(src->AsIndir()->Addr()))
                 {
-                    GenTree*      addrForNullCheck = m_compiler->gtCloneExpr(src->gtGetOp1());
+                    GenTree*      addrForNullCheck = m_compiler->gtCloneExpr(src->AsIndir()->Addr());
                     GenTreeIndir* indir            = m_compiler->gtNewIndir(TYP_BYTE, addrForNullCheck);
                     indir->gtFlags |= indirFlags;
                     result->AddStatement(indir);
                     UpdateEarlyRefCount(addrForNullCheck);
                 }
 
-                GenTree* addr = m_compiler->gtCloneExpr(src->gtGetOp1());
+                GenTree* addr = m_compiler->gtCloneExpr(src->AsIndir()->Addr());
                 UpdateEarlyRefCount(addr);
                 if (srcOffs != 0)
                 {
@@ -1157,7 +1145,6 @@ public:
 
                 GenTree* dstLcl = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
                 srcFld          = m_compiler->gtNewIndir(rep->AccessType, addr, indirFlags);
-                srcFld->gtFlags |= GTF_GLOB_REF;
             }
 
             result->AddStatement(m_compiler->gtNewAssignNode(dstLcl, srcFld));
@@ -1225,7 +1212,7 @@ public:
     {
         bool     any = false;
         GenTree* lhs = asg->gtGetOp1();
-        assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_BLK));
+        assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_IND, GT_BLK));
 
         GenTree* rhs = asg->gtGetOp2();
 
