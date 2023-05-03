@@ -1921,16 +1921,12 @@ namespace System
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
-                if (cachedData._systemTimeZones.TryGetValue(id, out TimeZoneInfo? match))
+                if (cachedData._systemTimeZones.TryGetValue(id, out value))
                 {
-                    if (dstDisabled && match._supportsDaylightSavingTime)
+                    if (dstDisabled && value._supportsDaylightSavingTime)
                     {
                         // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
-                    }
-                    else
-                    {
-                        value = match;
+                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                     }
 
                     return result;
@@ -1939,16 +1935,12 @@ namespace System
 
             if (cachedData._timeZonesUsingAlternativeIds != null)
             {
-                if (cachedData._timeZonesUsingAlternativeIds.TryGetValue(id, out TimeZoneInfo? match))
+                if (cachedData._timeZonesUsingAlternativeIds.TryGetValue(id, out value))
                 {
-                    if (dstDisabled && match._supportsDaylightSavingTime)
+                    if (dstDisabled && value._supportsDaylightSavingTime)
                     {
                         // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
-                    }
-                    else
-                    {
-                        value = match;
+                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                     }
 
                     return result;
@@ -1979,7 +1971,7 @@ namespace System
         {
             TimeZoneInfoResult result;
 
-            result = TryGetTimeZoneFromLocalMachine(id, out TimeZoneInfo? match, out e);
+            result = TryGetTimeZoneFromLocalMachine(id, out value, out e);
 
             if (result == TimeZoneInfoResult.Success)
             {
@@ -1992,22 +1984,14 @@ namespace System
                 // uses reference equality with the Utc object.
                 if (!id.Equals(UtcId, StringComparison.OrdinalIgnoreCase))
                 {
-                    cachedData._systemTimeZones.Add(id, match!);
+                    cachedData._systemTimeZones.Add(id, value!);
                 }
 
-                if (dstDisabled && match!._supportsDaylightSavingTime)
+                if (dstDisabled && value!._supportsDaylightSavingTime)
                 {
                     // we found a cache hit but we want a time zone without DST and this one has DST data
-                    value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
+                    value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                 }
-                else
-                {
-                    value = match;
-                }
-            }
-            else
-            {
-                value = null;
             }
 
             return result;
