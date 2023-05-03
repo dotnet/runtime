@@ -2,7 +2,7 @@ import { INTERNAL, Module } from "../globals";
 import { MonoConfigInternal } from "../types";
 import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
-import { WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
+import { ConfigFile, WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 
@@ -21,18 +21,23 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
     Module.config = newConfig;
 }
 
-export async function loadConfigFilesToVfs(resourceLoader: WebAssemblyResourceLoader | null, config: MonoConfigInternal) {
+let configFiles: ConfigFile[] = [];
+
+export async function loadConfigFiles(resourceLoader: WebAssemblyResourceLoader | null, config: MonoConfigInternal) {
     if (!resourceLoader) {
         return;
     }
 
-    const configFiles = await WebAssemblyConfigLoader.initAsync(resourceLoader.bootConfig, config.applicationEnvironment!, config.startupOptions ?? {});
+    configFiles = await WebAssemblyConfigLoader.initAsync(resourceLoader.bootConfig, config.applicationEnvironment!, config.startupOptions ?? {});
+}
+
+export function installConfigFilesToVfs() {
     for (let i = 0; i < configFiles.length; i++) {
         const configFile = configFiles[i];
         Module.FS_createDataFile(
             "/", // TODO: Maybe working directory?
             configFile.name,
-            configFile.content, true /* canRead */, true /* canWrite */, true /* canOwn */
+            new Uint8Array(configFile.content.buffer), true /* canRead */, true /* canWrite */, true /* canOwn */
         );
     }
 }

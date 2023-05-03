@@ -29,7 +29,7 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
-import { loadBootConfig, loadConfigFilesToVfs } from "./blazor/_Integration";
+import { installConfigFilesToVfs, loadBootConfig, loadConfigFiles } from "./blazor/_Integration";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -258,6 +258,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         // signal this stage, this will allow pending assets to allocate memory
         beforeOnRuntimeInitialized.promise_control.resolve();
 
+        installConfigFilesToVfs();
+
         await wait_for_all_assets();
 
         // Diagnostics early are not supported with memory snapshot. See below how we enable them later.
@@ -410,7 +412,7 @@ async function mono_wasm_pre_init_full(): Promise<void> {
 
     await Promise.all([
         mono_download_assets(),
-        loadConfigFilesToVfs(INTERNAL.resourceLoader, config)
+        loadConfigFiles(INTERNAL.resourceLoader, config)
     ]);
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
