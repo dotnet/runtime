@@ -905,8 +905,14 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                     {
                         case TYP_FLOAT:
                         {
-                            float scalar = static_cast<float>(op->AsVecCon()->gtSimd32Val.f32[0]);
+                            float scalar = static_cast<float>(op->AsVecCon()->gtSimdVal.f32[0]);
                             return OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
+                        }
+
+                        case TYP_DOUBLE:
+                        {
+                            double scalar = static_cast<double>(op->AsVecCon()->gtSimdVal.f64[0]);
+                            return OperandDesc(emit->emitFltOrDblConst(scalar, EA_8BYTE));
                         }
 
                         default:

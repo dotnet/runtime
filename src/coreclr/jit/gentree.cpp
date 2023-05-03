@@ -21666,6 +21666,10 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             {
                 double cnsVal = static_cast<double>(op1->AsDblCon()->DconValue());
 
+#if defined(TARGET_XARCH)
+                vecCon->SetCreatedFromScalar();
+#endif //  TARGET_XARCH
+
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
                     vecCon->gtSimdVal.f64[i] = cnsVal;
