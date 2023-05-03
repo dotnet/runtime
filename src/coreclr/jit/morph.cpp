@@ -10189,9 +10189,14 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
     if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD))
         return asg;
 
-    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
-        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
-        return asg;
+    if (effectiveOp1->OperIs(GT_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum());
+
+        // It is not safe to remove the cast for non-NormalizeOnLoad variables or parameters.
+        if (!varDsc->lvNormalizeOnLoad() || varDsc->lvIsParam)
+            return asg;
+    }
 
     if (op2->gtOverflow())
         return asg;
