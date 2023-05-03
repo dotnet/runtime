@@ -16,7 +16,10 @@ namespace Internal.Runtime
         /// </summary>
         EETypeKindMask = 0x00030000,
 
-        // Unused = 0x00040000,
+        /// <summary>
+        /// Type has an associated dispatch map.
+        /// </summary>
+        HasDispatchMap = 0x00040000,
 
         /// <summary>
         /// This type was dynamically allocated at runtime.
@@ -177,6 +180,7 @@ namespace Internal.Runtime
         ETF_InterfaceMap,
         ETF_TypeManagerIndirection,
         ETF_WritableData,
+        ETF_DispatchMap,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
@@ -235,11 +239,6 @@ namespace Internal.Runtime
         /// Extra <c>MethodTable</c> flags not commonly used such as HasClassConstructor
         /// </summary>
         RareFlags,
-
-        /// <summary>
-        /// Index of the dispatch map pointer in the DispatchMap table
-        /// </summary>
-        DispatchMap,
 
         /// <summary>
         /// Padding added to a value type when allocated on the GC heap

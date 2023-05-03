@@ -78,7 +78,7 @@ namespace Internal.Runtime
         StringTable = 200, // Unused
         GCStaticRegion = 201,
         ThreadStaticRegion = 202,
-        InterfaceDispatchTable = 203,
+        // Unused = 203,
         TypeManagerIndirection = 204,
         EagerCctor = 205,
         FrozenObjectRegion = 206,

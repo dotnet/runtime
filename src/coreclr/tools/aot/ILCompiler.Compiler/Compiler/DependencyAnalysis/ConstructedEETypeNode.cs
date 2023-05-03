@@ -36,12 +36,6 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (MightHaveInterfaceDispatchMap(factory))
-            {
-                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                dependencyList.Add(factory.InterfaceDispatchMap(canonType), "Interface dispatch map");
-            }
-
             if (_type.IsArray)
             {
                 // Array MethodTable depends on System.Array's virtuals. Array EETypes don't point to

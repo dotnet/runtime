@@ -43,7 +43,7 @@ enum class ReadyToRunSectionType
     StringTable                 = 200,
     GCStaticRegion              = 201,
     ThreadStaticRegion          = 202,
-    InterfaceDispatchTable      = 203,
+    // unused                   = 203,
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
     FrozenObjectRegion          = 206,

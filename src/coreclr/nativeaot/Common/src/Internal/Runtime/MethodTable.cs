@@ -856,22 +856,7 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
-                    return false;
-                byte* optionalFields = OptionalFieldsPtr;
-
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->HasDispatchMap;
-                    return false;
-                }
-                return true;
+                return (_uFlags & (uint)EETypeFlags.HasDispatchMap) != 0;
             }
         }
 
@@ -879,25 +864,23 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
+                if (!HasDispatchMap)
                     return null;
-                byte* optionalFields = OptionalFieldsPtr;
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->DispatchMap;
-                    return null;
-                }
 
-                if (SupportsRelativePointers)
-                    return (DispatchMap*)FollowRelativePointer((int*)TypeManager.DispatchMap + idxDispatchMap);
-                else
-                    return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
+
+                return GetField<RelativePointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && HasDispatchMap);
+
+                fixed (MethodTable* pThis = &this)
+                    *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DispatchMap)) = value;
+            }
+#endif
         }
 
         // Get the address of the finalizer method for finalizable types.
@@ -1345,6 +1328,15 @@ namespace Internal.Runtime
                 cbOffset += relativeOrFullPointerOffset;
             }
 
+            // Followed by pointer to the dispatch map
+            if (eField == EETypeField.ETF_DispatchMap)
+            {
+                Debug.Assert(HasDispatchMap);
+                return cbOffset;
+            }
+            if (HasDispatchMap)
+                cbOffset += relativeOrFullPointerOffset;
+
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
             {
@@ -1450,6 +1442,7 @@ namespace Internal.Runtime
         internal static uint GetSizeofEEType(
             ushort cVirtuals,
             ushort cInterfaces,
+            bool fHasDispatchMap,
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
@@ -1464,6 +1457,7 @@ namespace Internal.Runtime
                 (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
                 (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
+                (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
