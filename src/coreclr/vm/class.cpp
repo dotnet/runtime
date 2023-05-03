@@ -979,8 +979,6 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
 
     LoadExactParentAndInterfacesTransitively(pMT);
 
-    MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
-
     PropagateCovariantReturnMethodImplSlots(pMT);
 
     // We can now mark this type as having exact parents

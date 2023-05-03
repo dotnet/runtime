@@ -9189,95 +9189,6 @@ InsertMethodTable(
 } // InsertMethodTable
 
 
-//*******************************************************************************
-// --------------------------------------------------------------------------------------------
-// Copy virtual slots inherited from parent:
-//
-// In types created at runtime, inherited virtual slots are initialized using approximate parent
-// during method table building. This method will update them based on the exact parent.
-// In types loaded from NGen image, inherited virtual slots from cross-module parents are not
-// initialized. This method will initialize them based on the actually loaded exact parent
-// if necessary.
-/* static */
-void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT, MethodTable *pApproxParentMT)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pMT));
-    }
-    CONTRACTL_END;
-
-    DWORD nParentVirtuals = pMT->GetNumParentVirtuals();
-    if (nParentVirtuals == 0)
-        return;
-
-    _ASSERTE(nParentVirtuals == pApproxParentMT->GetNumVirtuals());
-
-    //
-    // Update all inherited virtual slots to match exact parent
-    //
-
-    if (!pMT->IsCanonicalMethodTable())
-    {
-        //
-        // Copy all slots for non-canonical methodtables to avoid touching methoddescs.
-        //
-        MethodTable * pCanonMT = pMT->GetCanonicalMethodTable();
-
-        // Do not write into vtable chunks shared with parent. It would introduce race
-        // with code:MethodDesc::SetStableEntryPointInterlocked.
-        //
-        // Non-canonical method tables either share everything or nothing so it is sufficient to check
-        // just the first indirection to detect sharing.
-        if (pMT->GetVtableIndirections()[0] != pCanonMT->GetVtableIndirections()[0])
-        {
-            MethodTable::MethodDataWrapper hCanonMTData(MethodTable::GetMethodData(pCanonMT, FALSE));
-            for (DWORD i = 0; i < nParentVirtuals; i++)
-            {
-                pMT->CopySlotFrom(i, hCanonMTData, pCanonMT);
-            }
-        }
-    }
-    else
-    {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
-
-        MethodTable * pParentMT = pMT->GetParentMethodTable();
-        MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentMT, FALSE));
-
-        for (DWORD i = 0; i < nParentVirtuals; i++)
-        {
-            // fix up wrongly-inherited method descriptors
-            MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
-            CONSISTENCY_CHECK(CheckPointer(pMD));
-            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
-
-            if (pMD->GetMethodTable() == pMT)
-                continue;
-
-            // We need to re-inherit this slot from the exact parent.
-
-            DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(i);
-            if (pMT->GetVtableIndirections()[indirectionIndex] == pApproxParentMT->GetVtableIndirections()[indirectionIndex])
-            {
-                // The slot lives in a chunk shared from the approximate parent MT
-                // If so, we need to change to share the chunk from the exact parent MT
-
-                _ASSERTE(MethodTable::CanShareVtableChunksFrom(pParentMT, pMT->GetLoaderModule()));
-
-                pMT->GetVtableIndirections()[indirectionIndex] = pParentMT->GetVtableIndirections()[indirectionIndex];
-
-                i = MethodTable::GetEndSlotForVtableIndirection(indirectionIndex, nParentVirtuals) - 1;
-                continue;
-            }
-
-            // The slot lives in an unshared chunk. We need to update the slot contents
-            pMT->CopySlotFrom(i, hParentMTData, pParentMT);
-        }
-    }
-} // MethodTableBuilder::CopyExactParentSlots
-
 bool InstantiationIsAllTypeVariables(const Instantiation &inst)
 {
     for (auto i = inst.GetNumArgs(); i > 0;)
@@ -10310,22 +10221,11 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     S_SIZE_T offsetOfUnsharedVtableChunks = cbTotalSize;
 
-    BOOL canShareVtableChunks = pMTParent && MethodTable::CanShareVtableChunksFrom(pMTParent, pLoaderModule
-        );
-
-    // If pMTParent has a generic instantiation, we cannot share its vtable chunks
-    // This is because pMTParent is only approximate at this point, and MethodTableBuilder::CopyExactParentSlots
-    // may swap in an exact parent that does not satisfy CanShareVtableChunksFrom
-    if (pMTParent && pMTParent->HasInstantiation())
-    {
-        canShareVtableChunks = FALSE;
-    }
-
     // We will share any parent vtable chunk that does not contain a method we overrode (or introduced)
     // For the rest, we need to allocate space
     for (DWORD i = 0; i < dwVirtuals; i++)
     {
-        if (!canShareVtableChunks || ChangesImplementationOfVirtualSlot(static_cast<SLOT_INDEX>(i)))
+        if (ChangesImplementationOfVirtualSlot(static_cast<SLOT_INDEX>(i)))
         {
             DWORD chunkStart = MethodTable::GetStartSlotForVtableIndirection(MethodTable::GetIndexOfVtableIndirection(i), dwVirtuals);
             DWORD chunkEnd = MethodTable::GetEndSlotForVtableIndirection(MethodTable::GetIndexOfVtableIndirection(i), dwVirtuals);
@@ -10391,18 +10291,15 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     MethodTable::VtableIndirectionSlotIterator it = pMT->IterateVtableIndirectionSlots();
     while (it.Next())
     {
-        BOOL shared = canShareVtableChunks;
+        BOOL shared = TRUE;
 
         // Recalculate whether we will share this chunk
-        if (canShareVtableChunks)
+        for (DWORD i = it.GetStartSlot(); i < it.GetEndSlot(); i++)
         {
-            for (DWORD i = it.GetStartSlot(); i < it.GetEndSlot(); i++)
+            if (ChangesImplementationOfVirtualSlot(static_cast<SLOT_INDEX>(i)))
             {
-                if (ChangesImplementationOfVirtualSlot(static_cast<SLOT_INDEX>(i)))
-                {
-                    shared = FALSE;
-                    break;
-                }
+                shared = FALSE;
+                break;
             }
         }
 

@@ -1754,13 +1754,6 @@ MethodTable::IsExternallyVisible()
     return bIsVisible;
 } // MethodTable::IsExternallyVisible
 
-BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
-}
-
 BOOL MethodTable::IsAllGCPointers()
 {
     if (this->ContainsPointers())
@@ -4506,7 +4499,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
         , fHasEquivalentStructParameter(FALSE)
 #endif
-        , fDependsOnEquivalentOrForwardedStructs(FALSE)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -4518,7 +4510,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasEquivalentStructParameter;
 #endif
-    BOOL fDependsOnEquivalentOrForwardedStructs;
 };
 
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
@@ -4541,7 +4532,6 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
         CONSISTENCY_CHECK(!th.IsNull());
 
         th.DoFullyLoad(&pLocals->newVisited, pLocals->level, pLocals->pPending, &pLocals->fBailed, NULL);
-        pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
         pLocals->fHasEquivalentStructParameter = TRUE;
     }
 }
@@ -4794,13 +4784,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         }
     }
 #endif //FEATURE_TYPEEQUIVALENCE
-
-    if (locals.fDependsOnEquivalentOrForwardedStructs)
-    {
-        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-        // make sure we come here and pre-load these structure types in NGENed cases as well
-        SetDependsOnEquivalentOrForwardedStructs();
-    }
 
     // The rules for constraint cycles are same as rules for access checks
     if (fNeedAccessChecks)
