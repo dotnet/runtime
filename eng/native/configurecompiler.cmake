@@ -151,11 +151,12 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
     # The rest of our platforms use statically-linked ASAN so this isn't a concern for those platforms.
     if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
       function(getSanitizerRuntimeDirectory output)
-        get_filename_component(toolchain_usr_bin "${CMAKE_C_COMPILER}" DIRECTORY)
-        get_filename_component(toolchain_usr "${toolchain_usr_bin}" DIRECTORY)
-        get_filename_component(toolchainRoot "${toolchain_usr}" DIRECTORY)
-        string(REGEX MATCH "[0-9]+\.[0-9]+\.[0-9]+" complierVersionMajorMinorPatch "${CMAKE_C_COMPILER_VERSION}")
-        set(${output} "${toolchainRoot}/usr/lib/clang/${complierVersionMajorMinorPatch}/lib/darwin/" PARENT_SCOPE)
+        enable_language(C)
+        execute_process(
+          COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
+          OUTPUT_VARIABLE compilerResourceDir
+          OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(${output} "${compilerResourceDir}/lib/darwin/" PARENT_SCOPE)
       endfunction()
       getSanitizerRuntimeDirectory(sanitizerRuntimeDirectory)
       find_library(ASAN_RUNTIME clang_rt.asan_osx_dynamic PATHS ${sanitizerRuntimeDirectory})
