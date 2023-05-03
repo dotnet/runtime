@@ -19236,12 +19236,15 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     assert(comp != nullptr);
 
 #if defined(TARGET_XARCH)
+    GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
     if (!comp->canUseVexEncoding())
     {
-        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+        return HWIntrinsicInfo::HasRMWSemantics(intrinsicId);
     }
 
-    switch (AsHWIntrinsic()->GetHWIntrinsicId())
+    switch (intrinsicId)
     {
         // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
@@ -19273,8 +19276,6 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
         {
-            GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
-
             // We are actually only RMW in the case where the lookup table
             // has any value that could result in `op1` being picked. So
             // in the case `op3` is a constant and none of the nibbles are
@@ -19293,6 +19294,12 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             unsigned  simdSize     = hwintrinsic->GetSimdSize();
             uint32_t  count        = simdSize / sizeof(uint32_t);
             uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
+
+            if (intrinsicId == NI_AVX512F_FixupScalar)
+            {
+                // Upper elements come from op2
+                count = 1;
+            }
 
             for (uint32_t i = 0; i < count; i += incSize)
             {
