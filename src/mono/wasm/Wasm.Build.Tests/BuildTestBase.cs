@@ -440,7 +440,8 @@ namespace Wasm.Build.Tests
                                          options.PredefinedIcudt ?? "",
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
                                          UseWebcil,
-                                         options.IsBrowserTemplateProject);
+                                         options.FromTemplate,
+                                         options.Publish);
                 }
 
                 if (options.UseCache)
@@ -632,6 +633,8 @@ namespace Wasm.Build.Tests
                 AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
                 AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js"), dotnetJsPath!, label);
             }
+
+            AssertIcuAssets(binFrameworkDir, GlobalizationMode.FullIcu, "");
         }
 
         static void AssertRuntimePackPath(string buildOutput, string targetFramework)
@@ -656,25 +659,48 @@ namespace Wasm.Build.Tests
                                                    string predefinedIcudt = "",
                                                    bool dotnetWasmFromRuntimePack = true,
                                                    bool useWebcil = true,
-                                                   bool isBrowserProject = true)
+                                                   WasmTemplate fromTemplate = WasmTemplate.none,
+                                                   bool isPublish = false)
         {
             var filesToExist = new List<string>()
             {
-                mainJS,
                 "dotnet.wasm",
-                "mono-config.json",
                 "dotnet.js"
             };
 
-            if (isBrowserProject)
-                filesToExist.Add("index.html");
+            Console.WriteLine ($"AssertBasicAppBundle: isPub:{isPublish}");
+            // FIXME: um.. does this apply to all the templates?
+            if (isPublish)
+            {
+                filesToExist.Add(Path.Combine(bundleDir, mainJS));
+            }
+
+            string managedDir;
+            if (fromTemplate == WasmTemplate.wasmbrowser)
+            {
+                bundleDir = Path.Combine(bundleDir, "_framework");
+                managedDir = bundleDir;
+
+                filesToExist.Add("blazor.boot.json");
+                if (isPublish)
+                    filesToExist.Add("index.html");
+            }
+            else
+            {
+                managedDir = Path.Combine(bundleDir, "managed");
+
+                if (fromTemplate == WasmTemplate.wasmbrowser_legacy)
+                {
+                    filesToExist.Add("mono-config.json");
+                    filesToExist.Add("index.html");
+                }
+            }
 
             AssertFilesExist(bundleDir, filesToExist);
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            AssertIcuAssets();
+            AssertIcuAssets(bundleDir, globalizationMode, predefinedIcudt);
 
-            string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
                 useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
@@ -694,53 +720,54 @@ namespace Wasm.Build.Tests
             }
 
             AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
+        }
 
-            void AssertIcuAssets()
+        protected static void AssertIcuAssets(string bundleDir, GlobalizationMode? globalizationMode, string predefinedIcudt)
+        {
+            bool expectEFIGS = false;
+            bool expectCJK = false;
+            bool expectNOCJK = false;
+            bool expectFULL = false;
+            switch (globalizationMode)
             {
-                bool expectEFIGS = false;
-                bool expectCJK = false;
-                bool expectNOCJK = false;
-                bool expectFULL = false;
-                switch (globalizationMode)
-                {
-                    case GlobalizationMode.Invariant:
-                        break;
-                    case GlobalizationMode.FullIcu:
-                        expectFULL = true;
-                        break;
-                    case GlobalizationMode.PredefinedIcu:
-                        if (string.IsNullOrEmpty(predefinedIcudt))
-                            throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                        AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
-                        // predefined ICU name can be identical with the icu files from runtime pack
-                        switch (predefinedIcudt)
-                        {
-                            case "icudt.dat":
-                                expectFULL = true;
-                                break;
-                            case "icudt_EFIGS.dat":
-                                expectEFIGS = true;
-                                break;
-                            case "icudt_CJK.dat":
-                                expectCJK = true;
-                                break;
-                            case "icudt_no_CJK.dat":
-                                expectNOCJK = true;
-                                break;
-                        }
-                        break;
-                    default:
-                        // icu shard chosen based on the locale
-                        expectCJK = true;
-                        expectEFIGS = true;
-                        expectNOCJK = true;
-                        break;
-                }
-                AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-                AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-                AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-                AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                case GlobalizationMode.Invariant:
+                    break;
+                case GlobalizationMode.FullIcu:
+                    expectFULL = true;
+                    break;
+                case GlobalizationMode.PredefinedIcu:
+                    if (string.IsNullOrEmpty(predefinedIcudt))
+                        throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
+                    AssertFilesExist(bundleDir, new[] { predefinedIcudt }, expectToExist: true);
+                    // predefined ICU name can be identical with the icu files from runtime pack
+                    switch (predefinedIcudt)
+                    {
+                        case "icudt.dat":
+                            expectFULL = true;
+                            break;
+                        case "icudt_EFIGS.dat":
+                            expectEFIGS = true;
+                            break;
+                        case "icudt_CJK.dat":
+                            expectCJK = true;
+                            break;
+                        case "icudt_no_CJK.dat":
+                            expectNOCJK = true;
+                            break;
+                    }
+                    break;
+                default:
+                    // icu shard chosen based on the locale
+                    expectCJK = true;
+                    expectEFIGS = true;
+                    expectNOCJK = true;
+                    break;
             }
+            // FIXME: AJ: open an issue
+            AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+            AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+            AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+            AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
         }
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
@@ -771,7 +798,7 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
-                string path = Path.Combine(dir, filename);
+                string path = Path.IsPathRooted(filename) ? filename : Path.Combine(dir, filename);
                 if (expectToExist && !File.Exists(path))
                     throw new XunitException($"{prefix}Expected the file to exist: {path}");
 
@@ -1255,6 +1282,7 @@ namespace Wasm.Build.Tests
         none,
         wasmconsole,
         wasmbrowser,
+        wasmbrowser_legacy,
         wasiconsole
     };
 

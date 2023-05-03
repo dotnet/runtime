@@ -57,7 +57,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
     [InlineData("Release")]
     public void BrowserBuildThenPublish(string config)
     {
-        string id = $"browser_{config}_{Path.GetRandomFileName()}";
+        string id = $"browser_legacy_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateWasmTemplateProjectFromAssets(id, "wasmbrowser-legacy");
         string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
@@ -136,7 +136,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
 
     private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
     {
-        string id = $"browser_{config}_{Path.GetRandomFileName()}";
+        string id = $"browser_legacy_{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateWasmTemplateProjectFromAssets(id, "wasmbrowser-legacy");
 
         UpdateBrowserMainJs(DefaultTargetFramework);
@@ -171,7 +171,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
     public async Task BrowserBuildAndRun()
     {
         string config = "Debug";
-        string id = $"browser_{config}_{Path.GetRandomFileName()}";
+        string id = $"browser_legacy_{config}_{Path.GetRandomFileName()}";
         CreateWasmTemplateProjectFromAssets(id, "wasmbrowser-legacy");
 
         UpdateBrowserMainJs("net8.0");

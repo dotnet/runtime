@@ -90,8 +90,16 @@ internal class BrowserRunner : IAsyncDisposable
         });
 
         IPage page = await Browser.NewPageAsync();
-        if (onConsoleMessage is not null)
-            page.Console += (_, msg) => onConsoleMessage(msg);
+        page.Console += (_, msg) =>
+        {
+            if (onConsoleMessage is not null)
+                onConsoleMessage(msg);
+
+            // when not forwarding console messages, they show up as
+            // Console log messages here. That should be checked with
+            // the various regexes
+            outputHandler(msg.Text);
+        };
         await page.GotoAsync(urlAvailable.Task.Result);
         RunTask = runTask;
         return page;

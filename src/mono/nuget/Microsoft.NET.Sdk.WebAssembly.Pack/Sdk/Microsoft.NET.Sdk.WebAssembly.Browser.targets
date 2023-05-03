@@ -488,6 +488,11 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     </ItemGroup>
 
+    <PropertyGroup>
+      <_WasmLinkerEnabled>$(PublishTrimmed)</_WasmLinkerEnabled>
+      <_WasmLinkerEnabled Condition="'$(_WasmLinkerEnabled)' == ''">false</_WasmLinkerEnabled>
+    </PropertyGroup>
+
     <ComputeStaticWebAssetsTargetPaths
       Assets="@(_WasmJsModuleCandidatesForPublish);@(_BlazorExtensionsCandidatesForPublish)"
       PathPrefix=""
@@ -504,7 +509,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmPublishBootResourceWithHash)"
       DebugBuild="false"
-      LinkerEnabled="$(PublishTrimmed)"
+      LinkerEnabled="$(_WasmLinkerEnabled)"
       CacheBootResources="$(BlazorCacheBootResources)"
       OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
