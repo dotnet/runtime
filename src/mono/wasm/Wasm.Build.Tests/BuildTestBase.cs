@@ -428,8 +428,14 @@ namespace Wasm.Build.Tests
                 {
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
-                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework, isPublish: options.Publish),
-                                                    options.IsBrowserTemplateProject ? "wwwroot" : "AppBundle");
+                    string bundleDir = GetBinDir(config: buildArgs.Config,
+                                                 targetFramework: options.TargetFramework ?? DefaultTargetFramework);
+
+                    if (options.IsTemplateUsingWasmSdk)
+                        bundleDir = Path.Combine(bundleDir, options.Publish ? "publish" : string.Empty, "wwwroot");
+                    else
+                        bundleDir = Path.Combine(bundleDir, "AppBundle");
+
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
@@ -694,7 +700,7 @@ namespace Wasm.Build.Tests
             AssertFilesExist(bundleDir, filesToExist);
 
             AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
-            AssertIcuAssets(bundleDir, globalizationMode, predefinedIcudt);
+            AssertIcuAssets(bundleDir, globalizationMode, predefinedIcudt, fromTemplate);
 
             string bundledMainAppAssembly =
                 useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
@@ -717,7 +723,7 @@ namespace Wasm.Build.Tests
             AssertDotNetWasmJs(bundleDir, fromRuntimePack: dotnetWasmFromRuntimePack, targetFramework);
         }
 
-        protected static void AssertIcuAssets(string bundleDir, GlobalizationMode? globalizationMode, string predefinedIcudt)
+        protected static void AssertIcuAssets(string bundleDir, GlobalizationMode? globalizationMode, string predefinedIcudt, WasmTemplate fromTemplate)
         {
             Console.WriteLine ($"AssertIcuAssets: mode: {globalizationMode}, predef: {predefinedIcudt}");
             bool expectEFIGS = false;
@@ -730,10 +736,13 @@ namespace Wasm.Build.Tests
                     break;
                 case GlobalizationMode.FullIcu:
                     expectFULL = true;
-                    // Bug: all the files are deployed currently for blazor, and wasmbrowser case
-                    expectCJK = true;
-                    expectEFIGS = true;
-                    expectNOCJK = true;
+                    if (fromTemplate == WasmTemplate.wasmbrowser || fromTemplate == WasmTemplate.blazorwasm)
+                    {
+                        // Bug: all the files are deployed currently for blazor, and wasmbrowser case
+                        expectCJK = true;
+                        expectEFIGS = true;
+                        expectNOCJK = true;
+                    }
                     break;
                 case GlobalizationMode.PredefinedIcu:
                     if (string.IsNullOrEmpty(predefinedIcudt))
@@ -761,8 +770,11 @@ namespace Wasm.Build.Tests
                     expectCJK = true;
                     expectEFIGS = true;
                     expectNOCJK = true;
-                    // Bug: all the files are deployed currently for blazor, and wasmbrowser case
-                    expectFULL = true;
+                    if (fromTemplate == WasmTemplate.wasmbrowser || fromTemplate == WasmTemplate.blazorwasm)
+                    {
+                        // Bug: all the files are deployed currently for blazor, and wasmbrowser case
+                        expectFULL = true;
+                    }
                     break;
             }
             // FIXME: AJ: open an issue
@@ -856,7 +868,7 @@ namespace Wasm.Build.Tests
                         "Expected dotnet.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
 
-            AssertIcuAssets(binFrameworkDir, GlobalizationMode.FullIcu, "");
+            AssertIcuAssets(binFrameworkDir, GlobalizationMode.FullIcu, "", WasmTemplate.blazorwasm);
         }
 
         protected void AssertBlazorBootJson(string config, bool isPublish, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir=null)
@@ -900,11 +912,11 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null, bool isPublish=false)
+        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
-            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm", isPublish ? "publish" : string.Empty);
+            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
         }
 
         protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
@@ -1261,7 +1273,7 @@ namespace Wasm.Build.Tests
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     )
     {
-        public bool IsBrowserTemplateProject => FromTemplate == WasmTemplate.wasmbrowser;
+        public bool IsTemplateUsingWasmSdk => FromTemplate == WasmTemplate.wasmbrowser || FromTemplate == WasmTemplate.blazorwasm;
     }
 
     public record BlazorBuildOptions
@@ -1287,7 +1299,8 @@ namespace Wasm.Build.Tests
         wasmconsole,
         wasmbrowser,
         wasmbrowser_legacy,
-        wasiconsole
+        wasiconsole,
+        blazorwasm
     };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
