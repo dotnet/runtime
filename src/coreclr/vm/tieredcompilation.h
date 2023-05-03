@@ -75,9 +75,12 @@ private:
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
+    
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
+public:
+    void DeOptimizeMethod(MethodDesc * pMethodDesc);
 
 #ifndef DACCESS_COMPILE
 public:

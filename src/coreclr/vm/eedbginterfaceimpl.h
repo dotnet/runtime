@@ -326,6 +326,8 @@ public:
 #ifndef DACCESS_COMPILE
     virtual BOOL AdjustContextForJITHelpersForDebugger(CONTEXT* context);
 #endif
+
+void DisableOptimizations(ICorDebugFunction5 iCorFunction);
 };
 
 #endif // DEBUGGING_SUPPORTED

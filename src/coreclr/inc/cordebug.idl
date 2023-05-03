@@ -5707,6 +5707,27 @@ interface ICorDebugFunction4 : IUnknown
 };
 
 /*
+ICorDebugFunction5 is a logical extension to ICorDebugFunction.
+*/
+[
+    object,
+    local,
+    uuid(9D4DAB7B-3401-4F37-BD08-CA09F3FDF10F),
+    pointer_default(unique)
+]
+interface ICorDebugFunction5 : IUnknown 
+{
+    /*
+     * Triggers a new JIT so the next time the function is called, it will be unoptimized.
+     */
+    HRESULT DisableOptimizations();
+    /*
+     * Returns the JIT flags the function will have when it is next invoked.
+     */
+    HRESULT GetOptimizationLevel(CorDebugJITCompilerFlags *pFlags);
+};
+
+/*
     ICorDebugCode represents an IL or native code blob.
 
     For methods that take offsets, the units are the same as the units on the CordbCode object.

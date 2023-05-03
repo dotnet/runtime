@@ -136,6 +136,10 @@ HRESULT CordbFunction::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugFunction4*>(this);
     }
+    else if (id == IID_ICorDebugFunction5)
+    {
+        *pInterface = static_cast<ICorDebugFunction5*>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown*>(static_cast<ICorDebugFunction*>(this));
@@ -604,6 +608,69 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
     }
 
     return hr;
+}
+
+//-----------------------------------------------------------------------------
+// CordbFunction::DisableOptimizations
+//  Public method for ICorDebugFunction5::DisableOptimizations.
+//   Triggers a new JIT so the next time the function is called, it will be unoptimized.
+//
+// Parameters
+//   
+//
+// Returns:
+//   S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT CordbFunction::DisableOptimizations()
+{
+    HRESULT hr;
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+
+    CordbProcess * pProcess = GetProcess();
+    RSLockHolder lockHolder(pProcess->GetProcessLock());
+    pProcess->ClearPatchTable();
+
+    DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+    CordbAppDomain * pAppDomain = GetAppDomain();
+    _ASSERTE (pAppDomain != NULL);
+
+    pProcess->InitIPCEvent(pEvent, DB_IPCE_DISABLE_OPS, true, pAppDomain->GetADToken());
+    pEvent->DisableOptData.funcMetadataToken = m_MDToken;
+    pEvent->DisableOptData.pModule = m_pModule->GetRuntimeModule();
+
+    lockHolder.Release();
+    hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+    lockHolder.Acquire();
+
+    hr = WORST_HR(hr, pEvent->hr);
+
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    return hr;
+}
+
+//-----------------------------------------------------------------------------
+// CordbFunction::GetOptimizationLevel
+//  Public method for ICorDebugFunction5::GetOptimizationLevel.
+//   Returns the JIT flags the function will have when it is next invoked.
+//
+// Parameters:
+//   CorDebugJITCompilerFlags *pFlags
+//   
+//
+// Returns:
+//   S_OK on success.
+//-----------------------------------------------------------------------------
+HRESULT CordbFunction::GetOptimizationLevel(CorDebugJITCompilerFlags *pFlags)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+    return E_NOTIMPL;
 }
 
 // determine whether we have a native-only implementation

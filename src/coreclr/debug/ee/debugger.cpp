@@ -10441,6 +10441,38 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             GetCanary()->ClearCache();
             break;
         }
+    case DB_IPCE_DISABLE_OPS:
+        {
+            //get app domain get m_tierredCompilationManager
+            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
+            mdToken memberRef = pEvent->DisableOptData.funcMetadataToken;
+            // AppDomain *appDomain = pModule->GetAppDomain();
+            MethodDesc *pMethodDesc = g_pEEInterface->FindLoadedMethodRefOrDef(pModule, memberRef);
+            AppDomain *appDomain = pEvent->DisableOptData.vmAppDomain.GetRawPtr(); //GetAppDomain()?
+            TieredCompilationManager * tieredCompilationManager = appDomain->GetTieredCompilationManager();
+            tieredCompilationManager->DeOptimizeMethod(pMethodDesc);
+
+
+
+
+
+            //Module * pModule = pDebuggerModule->GetRuntimeModule();
+            // NativeCodeVersion newNativeCodeVersion;
+            // MethodDesc *pMethodDesc = g_pEEInterface->FindLoadedMethodRefOrDef(pEvent->DisableOptData.pModule.GetRawPtr(), pEvent->DisableOptData.funcMetadataToken);
+            // NativeCodeVersion::OptimizationTier debugTier = NativeCodeVersion::OptimizationDebug;
+            // CodeVersionManager * pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
+            // ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc);
+            // //Build a new NativeCodeVersion
+            // HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, debugTier, &newNativeCodeVersion);
+            // if (FAILED(hr))
+            // {
+            //     ThrowHR(hr);
+            // }
+            //Set optimization tier
+            //set as active native code version
+
+        }
+        break;
 
     case DB_IPCE_BREAKPOINT_ADD:
         {
