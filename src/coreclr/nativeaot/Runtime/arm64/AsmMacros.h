@@ -217,14 +217,14 @@ __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
 TrashRegister32Bit SETS "$trashReg"
 TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
 
-        adrp        $trashReg, _tls_index
-        ldr         $TrashRegister32Bit, [$trashReg, _tls_index]
+        adrp        $destReg, _tls_index
+        ldr         $TrashRegister32Bit, [$destReg, _tls_index]
         ldr         $destReg, [xpr, #__tls_array]
-        ldr         $destReg, [$destReg, $trashReg uxtw #3]
-        add         $destReg, $destReg, tls_CurrentThread
-        RELOC       9, tls_CurrentThread                            ;; IMAGE_REL_ARM64_SECREL_LOW12A
+        ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
         add         $destReg, $destReg, tls_CurrentThread
         RELOC       0xA, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
+        add         $destReg, $destReg, tls_CurrentThread
+        RELOC       0x9, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
     MEND
 
     ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
