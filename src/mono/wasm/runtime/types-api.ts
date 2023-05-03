@@ -95,7 +95,7 @@ export interface LoadingResource {
     response: Promise<Response>;
 }
 
-// Types of assets that can be in the mono-config.js/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
+// Types of assets that can be in the _framework/blazor.boot.json file (taken from /src/tasks/WasmAppBuilder/WasmAppBuilder.cs)
 export interface AssetEntry extends ResourceRequest {
     /**
      * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.

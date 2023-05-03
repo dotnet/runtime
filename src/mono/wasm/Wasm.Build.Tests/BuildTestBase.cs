@@ -669,7 +669,7 @@ namespace Wasm.Build.Tests
             {
                 mainJS,
                 "dotnet.wasm",
-                "blazor.boot.json",
+                "_framework/blazor.boot.json",
                 "dotnet.js"
             };
 
