@@ -9734,11 +9734,57 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // So if we have an int, explicitly extend it to be a native int.
                 op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-#ifdef FEATURE_READYTORUN
-                if (opts.IsReadyToRun())
+                bool isFrozenAllocator = false;
+                // If we're jitting a static constructor and detect the following code pattern:
+                //
+                //  newarr
+                //  stsfld
+                //  ret
+                //
+                // we emit a "frozen" allocator for newarr to, hopefully, allocate that array on a frozen segment.
+                // This is a very simple and conservative implementation targeting Array.Empty<T>()'s shape
+                // Ideally, we want to be able to use frozen allocators more broadly, but such an analysis is
+                // not trivial.
+                //
+                if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                    // Does VM allow us to use frozen allocators?
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
                 {
-                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, nullptr,
-                                                    op2);
+                    // Check next two opcodes (have to be STSFLD and RET)
+                    const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
+                    const BYTE* nextOpcode2 = nextOpcode1 + sizeof(mdToken) + 1;
+                    if ((nextOpcode2 < codeEndp) && (getU1LittleEndian(nextOpcode1) == CEE_STSFLD))
+                    {
+                        if (getU1LittleEndian(nextOpcode2) == CEE_RET)
+                        {
+                            // Check that the field is "static readonly", we don't want to waste memory
+                            // for potentially mutable fields.
+                            CORINFO_RESOLVED_TOKEN fldToken;
+                            impResolveToken(nextOpcode1 + 1, &fldToken, CORINFO_TOKENKIND_Field);
+                            CORINFO_FIELD_INFO fi;
+                            eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
+                            unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
+                            if ((fi.fieldFlags & flagsToCheck) == flagsToCheck)
+                            {
+#ifdef FEATURE_READYTORUN
+                                if (opts.IsReadyToRun())
+                                {
+                                    // Need to restore array classes before creating array objects on the heap
+                                    op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
+                                }
+#endif
+                                op1 = gtNewHelperCallNode(CORINFO_HELP_NEWARR_1_MAYBEFROZEN, TYP_REF, op1, op2);
+                                isFrozenAllocator = true;
+                            }
+                        }
+                    }
+                }
+
+#ifdef FEATURE_READYTORUN
+                if (opts.IsReadyToRun() && !isFrozenAllocator)
+                {
+                    helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
+                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr, op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -9750,7 +9796,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //      3) Allocate the new array
                         // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-                        // Need to restore array classes before creating array objects on the heap
                         op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
                         if (op1 == nullptr)
                         { // compDonotInline()
@@ -9759,15 +9804,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                if (!usingReadyToRunHelper)
+                if (!usingReadyToRunHelper && !isFrozenAllocator)
 #endif
                 {
                     /* Create a call to 'new' */
+                    helper = info.compCompHnd->getNewArrHelper(resolvedToken.hClass);
 
                     // Note that this only works for shared generic code because the same helper is used for all
                     // reference array types
-                    op1 =
-                        gtNewHelperCallNode(info.compCompHnd->getNewArrHelper(resolvedToken.hClass), TYP_REF, op1, op2);
+                    op1 = gtNewHelperCallNode(helper, TYP_REF, op1, op2);
                 }
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
