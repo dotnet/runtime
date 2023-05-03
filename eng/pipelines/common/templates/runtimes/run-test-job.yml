@@ -583,8 +583,8 @@ jobs:
             - jitpartialcompilation
             - jitpartialcompilation_pgo
             - jitobjectstackallocation
-            - jitgeneralizedpromotion
-            - jitgeneralizedpromotion_full
+            - jitphysicalpromotion
+            - jitphysicalpromotion_full
 
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:

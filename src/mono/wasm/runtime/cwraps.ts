@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { disableLegacyJsInterop, Module } from "./imports";
+import { disableLegacyJsInterop, Module } from "./globals";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 

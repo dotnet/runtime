@@ -10,15 +10,18 @@ class NonGcHeapProfiler : public Profiler
 public:
     NonGcHeapProfiler() : Profiler(),
         _nonGcHeapObjects(0),
-        _failures(0)
+        _failures(0),
+        _garbageCollections(0)
     {}
 
-	static GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE ObjectAllocated(ObjectID objectId, ClassID classId);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
+    virtual HRESULT STDMETHODCALLTYPE GarbageCollectionFinished();
 
 private:
     std::atomic<int> _nonGcHeapObjects;
     std::atomic<int> _failures;
+    std::atomic<int> _garbageCollections;
 };

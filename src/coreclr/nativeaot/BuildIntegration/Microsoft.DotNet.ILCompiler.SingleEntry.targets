@@ -22,8 +22,6 @@
 
     <!-- From this point onwards, we will treat linux-musl as linux -->
     <_targetOS Condition="$(_targetOS.StartsWith('linux'))">linux</_targetOS>
-
-    <IlcCalledViaPackage>true</IlcCalledViaPackage>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -33,22 +31,23 @@
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
   </PropertyGroup>
 
-  <!-- If called via package instead of the SDK, update the runtime package version to match the build package -->
-  <ItemGroup Condition="'$(AotRuntimePackageLoadedViaSDK)' != 'true'">
+  <!-- Update the KnownILCompilerPack version to match the PackageReference, in case there's an explicit reference to a specific version. -->
+  <!-- The _IlcReferencedAsPackage check is only there for using live ILCompiler targets (not a supported scenario outside of dotnet/runtime). -->
+  <ItemGroup Condition="'$(_IlcReferencedAsPackage)' != 'false'">
     <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler">
       <ILCompilerPackVersion>$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(ILCompilerTargetsPath)))))))</ILCompilerPackVersion>
     </KnownILCompilerPack>
   </ItemGroup>
 
-  <!-- Generate a warning if the non-SDK path is used  -->
-  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(AotRuntimePackageLoadedViaSDK)' != 'true' and '$(ILCompilerTargetsPath)' != ''"
+  <!-- Generate a warning if the user added an explicit PackageReference  -->
+  <Target Name="GenerateILCompilerExplicitPackageReferenceWarning" Condition="'$(SuppressGenerateILCompilerExplicitPackageReferenceWarning)' == '' and '$(ILCompilerTargetsPath)' != ''"
       BeforeTargets="ImportRuntimeIlcPackageTarget">
     <Warning Condition="'%(PackageReference.Identity)' == 'Microsoft.DotNet.ILCompiler' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
              Text="Delete explicit 'Microsoft.DotNet.ILCompiler' package reference in your project file. Explicit 'Microsoft.DotNet.ILCompiler' package reference can run into version errors." />
   </Target>
 
   <!-- Locate the runtime package according to the current target runtime -->
-  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true' and $(IlcCalledViaPackage) == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
+  <Target Name="ImportRuntimeIlcPackageTarget" Condition="'$(BuildingFrameworkLibrary)' != 'true' and '$(PublishAot)' == 'true'" DependsOnTargets="$(ImportRuntimeIlcPackageTargetDependsOn)" BeforeTargets="Publish">
     <Error Condition="'@(ResolvedILCompilerPack)' == ''" Text="The ResolvedILCompilerPack ItemGroup is required for target ImportRuntimeIlcPackageTarget" />
 
     <PropertyGroup>

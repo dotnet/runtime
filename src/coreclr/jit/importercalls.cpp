@@ -1631,8 +1631,9 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
      * it may cause registered args to be spilled. Simply spill it.
      */
 
-    // Ignore this trivial case.
-    if (impStackTop().val->gtOper != GT_LCL_VAR)
+    // Ignore no args or trivial cases.
+    if ((sig->callConv != CORINFO_CALLCONV_DEFAULT || sig->totalILArgs() > 0) &&
+        !impStackTop().val->OperIs(GT_LCL_VAR, GT_FTN_ADDR, GT_CNS_INT))
     {
         impSpillStackEntry(verCurrentState.esStackDepth - 1,
                            BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impImportIndirectCall"));
@@ -1871,6 +1872,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     bool isMDArray = false;
 
     if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) &&
+        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8)
@@ -2041,7 +2043,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         GenTree* arrayLengthNode;
 
 #ifdef FEATURE_READYTORUN
-        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
+        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+            newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
         {
             // Array length is 1st argument for readytorun helper
             arrayLengthNode = newArrayCall->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
@@ -2895,8 +2898,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                length->SetIsSpanLength(true);
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* length = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2912,8 +2917,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
                 const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
+                GenTreeFieldAddr*    dataFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpanClone), ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree* data   = gtNewFieldIndirNode(TYP_BYREF, nullptr, dataFieldAddr);
+                GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -2956,9 +2963,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                fieldRef->SetIsSpanLength(true);
-                return fieldRef;
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* lengthField = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
+
+                return lengthField;
             }
 
             case NI_System_RuntimeTypeHandle_GetValueInternal:
@@ -5476,12 +5486,11 @@ private:
         comp->impAssignTempGen(tmp, retExpr, (unsigned)Compiler::CHECK_SPILL_NONE);
         *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
 
+        assert(comp->lvaTable[tmp].lvSingleDef == 0);
+        comp->lvaTable[tmp].lvSingleDef = 1;
+        JITDUMP("Marked V%02u as a single def temp\n", tmp);
         if (retExpr->TypeGet() == TYP_REF)
         {
-            assert(comp->lvaTable[tmp].lvSingleDef == 0);
-            comp->lvaTable[tmp].lvSingleDef = 1;
-            JITDUMP("Marked V%02u as a single def temp\n", tmp);
-
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE retClsHnd = comp->gtGetClassHandle(retExpr, &isExact, &isNonNull);

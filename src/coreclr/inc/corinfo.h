@@ -404,6 +404,7 @@ enum CorInfoHelpFunc
        which is the right helper to use to allocate an object of a given type. */
 
     CORINFO_HELP_NEWFAST,
+    CORINFO_HELP_NEWFAST_MAYBEFROZEN, // allocator for objects that *might* allocate them on a frozen segment
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
     CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
@@ -412,6 +413,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR,// multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array)
     CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
+    CORINFO_HELP_NEWARR_1_MAYBEFROZEN, // allocator for arrays that *might* allocate them on a frozen segment
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
@@ -582,8 +584,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
-
-    CORINFO_HELP_ARE_TYPES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
 
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
@@ -1133,7 +1133,8 @@ struct CORINFO_SIG_INFO
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + (hasThis() ? 1 : 0)); }
+    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
@@ -2618,12 +2619,6 @@ public:
             CORINFO_CLASS_HANDLE        parent  // base type
             ) = 0;
 
-    // TRUE if cls1 and cls2 are considered equivalent types.
-    virtual bool areTypesEquivalent(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            ) = 0;
-
     // See if a cast from fromClass to toClass will succeed, fail, or needs
     // to be resolved at runtime.
     virtual TypeCompareState compareTypesForCast(
@@ -3224,7 +3219,7 @@ public:
                     ) = 0;
 
     //------------------------------------------------------------------------------
-    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    // getStaticFieldContent: returns true and the actual field's value if the given
     //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
@@ -3236,12 +3231,19 @@ public:
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
                     int                     valueOffset = 0,
                     bool                    ignoreMovableObjects = true
+                    ) = 0;
+
+    virtual bool getObjectContent(
+                    CORINFO_OBJECT_HANDLE   obj,
+                    uint8_t*                buffer,
+                    int                     bufferSize,
+                    int                     valueOffset
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

@@ -442,6 +442,7 @@ public:
     ValueNum VNForSimd64Con(simd64_t cnsVal);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+    ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
 #ifdef TARGET_64BIT
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)
@@ -945,8 +946,8 @@ public:
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
-    // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
-    int GetNewArrSize(ValueNum vn);
+    // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
+    bool TryGetNewArrSize(ValueNum vn, int* size);
 
     // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
@@ -989,6 +990,9 @@ public:
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
+
+    // Returns true iff the VN represents an object handle constant.
+    bool IsVNObjHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1118,6 +1122,12 @@ public:
     T CoercedConstantValue(ValueNum vn)
     {
         return ConstantValueInternal<T>(vn DEBUGARG(true));
+    }
+
+    CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
+    {
+        assert(IsVNObjHandle(vn));
+        return reinterpret_cast<CORINFO_OBJECT_HANDLE>(CoercedConstantValue<size_t>(vn));
     }
 
     // Requires "mthFunc" to be an intrinsic math function (one of the allowable values for the "gtMath" field

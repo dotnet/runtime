@@ -46,6 +46,9 @@ private:
     CORINFO_FIELD_HANDLE absBitmaskFlt;
     CORINFO_FIELD_HANDLE absBitmaskDbl;
 
+    // Bit mask used in zeroing the 3rd element of a SIMD12
+    CORINFO_FIELD_HANDLE zroSimd12Elm3;
+
     // Bit mask used in U8 -> double conversion to adjust the result.
     CORINFO_FIELD_HANDLE u8ToDblBitmask;
 
@@ -777,6 +780,9 @@ protected:
 #endif
 
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
+#if defined(FEATURE_SIMD)
+    void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
 
@@ -924,6 +930,8 @@ protected:
 #endif
     void genSimdUpperSave(GenTreeIntrinsic* node);
     void genSimdUpperRestore(GenTreeIntrinsic* node);
+
+    void genSimd12UpperClear(regNumber tgtReg);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
     // two reads/writes on 64-bit targets. These routines abstract reading/writing of Vector3
@@ -1237,10 +1245,10 @@ protected:
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
@@ -1532,6 +1540,8 @@ public:
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
+    void inst_RV_RV_TT_IV(
+        instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
 #endif
 
     void inst_set_SV_var(GenTree* tree);

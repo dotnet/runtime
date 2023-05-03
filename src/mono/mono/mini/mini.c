@@ -3051,7 +3051,10 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
-	return MONO_RGCTX_ACCESS_THIS;
+	if (mono_opt_experimental_gshared_mrgctx)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+	else
+		return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*

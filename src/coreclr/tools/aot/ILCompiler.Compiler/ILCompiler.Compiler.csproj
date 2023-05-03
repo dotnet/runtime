@@ -335,6 +335,7 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
@@ -404,6 +405,7 @@
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FunctionPointerMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericStaticBaseInfoNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\GenericVarianceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodImplNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
@@ -411,6 +413,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />

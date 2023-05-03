@@ -1,43 +1,42 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
 import { mono_wasm_new_external_root } from "./roots";
-import {MonoString, MonoStringRef } from "./types";
+import { MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
 import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
-import { setU16 } from "./memory";
+import { setU16_unchecked } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
-        const input = get_utf16_string(src, srcLength);
+        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
         if (result.length > dstLength)
             result = input;
 
-        for (let i = 0; i < result.length; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
+        for (let i = 0, j = dst; i < result.length; i++, j += 2)
+            setU16_unchecked(j, result.charCodeAt(i));
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
     }
 }
 
-export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number) : void{
+export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number): void {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
+    try {
         const cultureName = conv_string_root(cultureRoot);
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
-        const input = get_utf16_string(src, srcLength);
+        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
         let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
         if (result.length > destLength)
             result = input;
 
-        for (let i = 0; i < destLength; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
+        for (let i = 0, j = dst; i < result.length; i++, j += 2)
+            setU16_unchecked(j, result.charCodeAt(i));
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
@@ -47,20 +46,12 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-function get_utf16_string(ptr: number, length: number): string{
-    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
-    let string = "";
-    for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);
-    return string;
-}
-
-export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
+export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
+    try {
         const cultureName = conv_string_root(cultureRoot);
-        const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
-        const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
+        const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2 * str1Length));
+        const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2 * str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(string1, string2, locale, casePicker);
@@ -77,16 +68,16 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     }
 }
 
-function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
+function pass_exception_details(ex: any, exceptionMessage: Int32Ptr) {
     const exceptionJsString = ex.message + "\n" + ex.stack;
     const exceptionRoot = mono_wasm_new_external_root<MonoString>(<any>exceptionMessage);
     js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
     exceptionRoot.release();
 }
 
-export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
+    try {
         const cultureName = conv_string_root(cultureRoot);
         const prefix = get_clean_string(str2, str2Length);
         // no need to look for an empty string
@@ -114,9 +105,9 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
+    try {
         const cultureName = conv_string_root(cultureRoot);
         const suffix = get_clean_string(str2, str2Length);
         if (suffix.length == 0)
@@ -144,16 +135,14 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
     }
 }
 
-function get_clean_string(strPtr: number, strLen: number)
-{
-    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+function get_clean_string(strPtr: number, strLen: number) {
+    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2 * strLen));
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
 
-export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
-    switch (casePicker)
-    {
+export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number): number {
+    switch (casePicker) {
         case 0:
             // 0: None - default algorithm for the platform OR
             //    StringSort - since .Net 5 StringSort gives the same result as None, even for hyphen etc.

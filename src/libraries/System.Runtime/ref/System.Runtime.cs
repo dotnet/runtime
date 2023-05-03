@@ -13492,6 +13492,63 @@ namespace System.Runtime.InteropServices.Marshalling
             public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         }
     }
+
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedRef,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedRef))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedOut))]
+    public static class SafeHandleMarshaller<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : SafeHandle
+    {
+        public struct ManagedToUnmanagedIn
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedRef
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+
+            public ManagedToUnmanagedRef() { }
+
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void FromUnmanaged(nint value) { }
+
+            public void OnInvoked() { }
+
+            public T ToManagedFinally() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedOut
+        {
+            private int _dummyPrimitive;
+            private T _newHandle;
+            public ManagedToUnmanagedOut() { }
+
+            public void FromUnmanaged(nint value) { }
+
+            public T ToManaged() { throw null; }
+
+            public void Free() { }
+        }
+    }
+
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>),
         System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
@@ -14194,8 +14251,8 @@ namespace System.Text
     {
         internal CompositeFormat() { }
         public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
         public string Format { get { throw null; } }
+        public int MinimumArgumentCount { get { throw null; } }
     }
     public abstract partial class Decoder
     {

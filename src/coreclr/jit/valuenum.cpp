@@ -1876,6 +1876,113 @@ ValueNum ValueNumStore::VNForSimd64Con(simd64_t cnsVal)
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
+ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
+{
+    // For now we only support these primitives, we can extend this list to FP, SIMD and structs in future.
+    switch (typ)
+    {
+#define READ_VALUE(typ)                                                                                                \
+    typ val = {};                                                                                                      \
+    memcpy(&val, cnsVal, sizeof(typ));
+
+        case TYP_BOOL:
+        case TYP_UBYTE:
+        {
+            READ_VALUE(uint8_t);
+            return VNForIntCon(val);
+        }
+        case TYP_BYTE:
+        {
+            READ_VALUE(int8_t);
+            return VNForIntCon(val);
+        }
+        case TYP_SHORT:
+        {
+            READ_VALUE(int16_t);
+            return VNForIntCon(val);
+        }
+        case TYP_USHORT:
+        {
+            READ_VALUE(uint16_t);
+            return VNForIntCon(val);
+        }
+        case TYP_INT:
+        {
+            READ_VALUE(int32_t);
+            return VNForIntCon(val);
+        }
+        case TYP_UINT:
+        {
+            READ_VALUE(uint32_t);
+            return VNForIntCon(val);
+        }
+        case TYP_LONG:
+        {
+            READ_VALUE(int64_t);
+            return VNForLongCon(val);
+        }
+        case TYP_ULONG:
+        {
+            READ_VALUE(uint64_t);
+            return VNForLongCon(val);
+        }
+        case TYP_FLOAT:
+        {
+            READ_VALUE(float);
+            return VNForFloatCon(val);
+        }
+        case TYP_DOUBLE:
+        {
+            READ_VALUE(double);
+            return VNForDoubleCon(val);
+        }
+        case TYP_REF:
+        {
+            READ_VALUE(ssize_t);
+            if (val == 0)
+            {
+                return VNForNull();
+            }
+            else
+            {
+                return VNForHandle(val, GTF_ICON_OBJ_HDL);
+            }
+        }
+#if defined(FEATURE_SIMD)
+        case TYP_SIMD8:
+        {
+            READ_VALUE(simd8_t);
+            return VNForSimd8Con(val);
+        }
+        case TYP_SIMD12:
+        {
+            READ_VALUE(simd12_t);
+            return VNForSimd12Con(val);
+        }
+        case TYP_SIMD16:
+        {
+            READ_VALUE(simd16_t);
+            return VNForSimd16Con(val);
+        }
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            READ_VALUE(simd32_t);
+            return VNForSimd32Con(val);
+        }
+        case TYP_SIMD64:
+        {
+            READ_VALUE(simd64_t);
+            return VNForSimd64Con(val);
+        }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+        default:
+            unreached();
+            break;
+    }
+}
+
 ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 {
     assert(castToType != TYP_STRUCT);
@@ -2284,7 +2391,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
         {
             // Case 1: ARR_LENGTH(FROZEN_OBJ)
             ValueNum addressVN = VNNormalValue(arg0VN);
-            if (IsVNHandle(addressVN) && (GetHandleFlags(addressVN) == GTF_ICON_OBJ_HDL))
+            if (IsVNObjHandle(addressVN))
             {
                 size_t handle = CoercedConstantValue<size_t>(addressVN);
                 int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
@@ -2308,8 +2415,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         if (field != NULL)
                         {
                             uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_pComp->info.compCompHnd->getReadonlyStaticFieldValue(field, buffer,
-                                                                                       TARGET_POINTER_SIZE, 0, false))
+                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
+                                                                                 false))
                             {
                                 // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
                                 // value holding 32bit handle with upper half zeroed (hence, "= NULL").
@@ -2325,6 +2432,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                         }
                     }
                 }
+            }
+
+            // Case 3: ARR_LENGTH(new T[cns])
+            // TODO: Add support for MD arrays
+            int knownSize;
+            if ((resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
+            {
+                resultVN = VNForIntCon(knownSize);
             }
         }
 
@@ -5810,6 +5925,11 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
     return c->m_attribs == CEA_Handle;
 }
 
+bool ValueNumStore::IsVNObjHandle(ValueNum vn)
+{
+    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
+}
+
 //------------------------------------------------------------------------
 // SwapRelop: return VNFunc for swapped relop
 //
@@ -6379,18 +6499,24 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
 
 // TODO-MDArray: support array dimension length of a specific dimension for JitNewMdArr, with a GetNewMDArrSize()
 // function.
-int ValueNumStore::GetNewArrSize(ValueNum vn)
+bool ValueNumStore::TryGetNewArrSize(ValueNum vn, int* size)
 {
     VNFuncApp funcApp;
     if (IsVNNewArr(vn, &funcApp))
     {
         ValueNum arg1VN = funcApp.m_args[1];
-        if (IsVNConstant(arg1VN) && TypeOfVN(arg1VN) == TYP_INT)
+        if (IsVNConstant(arg1VN))
         {
-            return ConstantValue<int>(arg1VN);
+            ssize_t val = CoercedConstantValue<ssize_t>(arg1VN);
+            if ((size_t)val <= INT_MAX)
+            {
+                *size = (int)val;
+                return true;
+            }
         }
     }
-    return 0;
+    *size = 0;
+    return false;
 }
 
 bool ValueNumStore::IsVNArrLen(ValueNum vn)
@@ -10165,12 +10291,14 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     }
     ssize_t val = 0;
 
-    // Special case for NativeAOT: ADD(ICON_STATIC, CNS_INT) where CNS_INT has field sequence corresponding to field's
-    // offset
-    if (tree->OperIs(GT_ADD) && tree->gtGetOp1()->IsIconHandle(GTF_ICON_STATIC_HDL) && tree->gtGetOp2()->IsCnsIntOrI())
+    // Special cases for NativeAOT:
+    //   ADD(ICON_STATIC, CNS_INT)                // nonGC-static base
+    //   ADD(IND(ICON_STATIC_ADDR_PTR), CNS_INT)  // GC-static base
+    // where CNS_INT has field sequence corresponding to field's offset
+    if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if (cns2->gtFieldSeq != nullptr)
+        if ((cns2->gtFieldSeq != nullptr) && (cns2->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
             *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
             *pFseq      = cns2->gtFieldSeq;
@@ -10222,6 +10350,61 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
 }
 
 //----------------------------------------------------------------------------------
+// GetObjectHandleAndOffset: Try to obtain a constant object handle with an offset from
+//    the given tree.
+//
+// Arguments:
+//    vnStore    - ValueNumStore object
+//    tree       - tree node to inspect
+//    byteOffset - [Out] resulting byte offset
+//    pObj       - [Out] constant object handle
+//
+// Return Value:
+//    true if the given tree is a ObjHandle + CNS
+//
+static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
+                                     GenTree*               tree,
+                                     ssize_t*               byteOffset,
+                                     CORINFO_OBJECT_HANDLE* pObj)
+{
+
+    if (!tree->gtVNPair.BothEqual())
+    {
+        return false;
+    }
+
+    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    {
+        // [objHandle + offset]
+        if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
+        {
+            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
+            return true;
+        }
+
+        // [offset + objHandle]
+        // TODO: Introduce a general helper to accumulate offsets for
+        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
+        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        {
+            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
+            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
+            return true;
+        }
+    }
+    else if (vnStore->IsVNObjHandle(treeVN))
+    {
+        *pObj       = vnStore->ConstantObjHandle(treeVN);
+        *byteOffset = 0;
+        return true;
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------
 // fgValueNumberConstLoad: Try to detect const_immutable_array[cns_index] tree
 //    and apply a constant VN representing given element at cns_index in that array.
 //
@@ -10244,139 +10427,45 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     //
     //   sbyte GetVal() => RVA[1]; // fold to '100'
     //
-    ssize_t   byteOffset = 0;
-    FieldSeq* fieldSeq   = nullptr;
+    ssize_t               byteOffset     = 0;
+    FieldSeq*             fieldSeq       = nullptr;
+    CORINFO_OBJECT_HANDLE obj            = nullptr;
+    int                   size           = (int)genTypeSize(tree->TypeGet());
+    const int             maxElementSize = sizeof(simd_t);
+
     if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-        CORINFO_FIELD_HANDLE fieldHandle    = fieldSeq->GetFieldHandle();
-        int                  size           = (int)genTypeSize(tree->TypeGet());
-        const int            maxElementSize = sizeof(simd_t);
+        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(fieldHandle, (uint8_t*)&buffer, size, (int)byteOffset))
+            if (info.compCompHnd->getStaticFieldContent(fieldHandle, buffer, size, (int)byteOffset))
             {
-                // For now we only support these primitives, we can extend this list to FP, SIMD and structs in future.
-                switch (tree->TypeGet())
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                if (vnStore->IsVNObjHandle(vn))
                 {
-#define READ_VALUE(typ)                                                                                                \
-    typ val = {};                                                                                                      \
-    memcpy(&val, buffer, sizeof(typ));
-
-                    case TYP_BOOL:
-                    case TYP_UBYTE:
-                    {
-                        READ_VALUE(uint8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_BYTE:
-                    {
-                        READ_VALUE(int8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_SHORT:
-                    {
-                        READ_VALUE(int16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_USHORT:
-                    {
-                        READ_VALUE(uint16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_INT:
-                    {
-                        READ_VALUE(int32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_UINT:
-                    {
-                        READ_VALUE(uint32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForIntCon(val));
-                        return true;
-                    }
-                    case TYP_LONG:
-                    {
-                        READ_VALUE(int64_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
-                        return true;
-                    }
-                    case TYP_ULONG:
-                    {
-                        READ_VALUE(uint64_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForLongCon(val));
-                        return true;
-                    }
-                    case TYP_FLOAT:
-                    {
-                        READ_VALUE(float);
-                        tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(val));
-                        return true;
-                    }
-                    case TYP_DOUBLE:
-                    {
-                        READ_VALUE(double);
-                        tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(val));
-                        return true;
-                    }
-                    case TYP_REF:
-                    {
-                        READ_VALUE(ssize_t);
-                        if (val == 0)
-                        {
-                            tree->gtVNPair.SetBoth(vnStore->VNForNull());
-                        }
-                        else
-                        {
-                            tree->gtVNPair.SetBoth(vnStore->VNForHandle(val, GTF_ICON_OBJ_HDL));
-                            setMethodHasFrozenObjects();
-                        }
-                        return true;
-                    }
-#if defined(FEATURE_SIMD)
-                    case TYP_SIMD8:
-                    {
-                        READ_VALUE(simd8_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd8Con(val));
-                        return true;
-                    }
-                    case TYP_SIMD12:
-                    {
-                        READ_VALUE(simd12_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(val));
-                        return true;
-                    }
-                    case TYP_SIMD16:
-                    {
-                        READ_VALUE(simd16_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd16Con(val));
-                        return true;
-                    }
-#if defined(TARGET_XARCH)
-                    case TYP_SIMD32:
-                    {
-                        READ_VALUE(simd32_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd32Con(val));
-                        return true;
-                    }
-                    case TYP_SIMD64:
-                    {
-                        READ_VALUE(simd64_t);
-                        tree->gtVNPair.SetBoth(vnStore->VNForSimd64Con(val));
-                        return true;
-                    }
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-                    default:
-                        assert(!varTypeIsSIMD(tree));
-                        break;
+                    setMethodHasFrozenObjects();
                 }
+                tree->gtVNPair.SetBoth(vn);
+                return true;
+            }
+        }
+    }
+    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+             GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
+    {
+        // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
+        assert(obj != nullptr);
+        if ((size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
+        {
+            uint8_t buffer[maxElementSize] = {0};
+            if (info.compCompHnd->getObjectContent(obj, buffer, size, (int)byteOffset))
+            {
+                ValueNum vn = vnStore->VNForGenericCon(tree->TypeGet(), buffer);
+                assert(!vnStore->IsVNObjHandle(vn));
+                tree->gtVNPair.SetBoth(vn);
+                return true;
             }
         }
     }
@@ -10396,10 +10485,9 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
     // Is given VN representing a frozen object handle
     auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
-        if (vnStore->IsVNHandle(vn) && (vnStore->GetHandleFlags(vn) == GTF_ICON_OBJ_HDL))
+        if (vnStore->IsVNObjHandle(vn))
         {
-            const size_t obj = vnStore->CoercedConstantValue<size_t>(vn);
-            *handle          = reinterpret_cast<CORINFO_OBJECT_HANDLE>(obj);
+            *handle = vnStore->ConstantObjHandle(vn);
             return true;
         }
         return false;
@@ -10633,8 +10721,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             ValueNumPair addrXvnp;
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
+            // To be able to propagate exception sets, we give location nodes the "Void" VN.
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+            {
+                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
+            }
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
-            if (tree->gtFlags & GTF_IND_INVARIANT)
+            else if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
@@ -10734,9 +10827,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 ValueNum newUniq = vnStore->VNForExpr(compCurBB, tree->TypeGet());
                 tree->gtVNPair   = vnStore->VNPWithExc(ValueNumPair(newUniq, newUniq), addrXvnp);
             }
-            // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
-            // We will "evaluate" this as part of the assignment.
-            else if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+            else
             {
                 var_types loadType = tree->TypeGet();
                 ssize_t   offset   = 0;
@@ -10778,12 +10869,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
 
                 tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
-            }
-
-            // To be able to propagate exception sets, we give location nodes the "Void" VN.
-            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
-            {
-                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
             }
         }
         else if (tree->OperGet() == GT_CAST)
@@ -12102,6 +12187,14 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitReadyToRunNewArr;
             break;
 
+        case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNew : VNF_JitNew;
+            break;
+
+        case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
+            break;
+
         case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             vnf = VNF_GetgenericsGcstaticBase;
             break;
@@ -12218,10 +12311,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
             vnf = VNF_TypeHandleToRuntimeTypeHandle;
-            break;
-
-        case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-            vnf = VNF_AreTypesEquivalent;
             break;
 
         case CORINFO_HELP_READYTORUN_ISINSTANCEOF:

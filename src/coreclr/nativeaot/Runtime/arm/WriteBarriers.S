@@ -322,11 +322,16 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      r0, r1 are incremented by 4,
 //      r2, r3: trashed
 //
+// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
+// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
+// - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
           // See comment in RhpAssignRef
           dmb
 
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
           ldr          r2, [r1]
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
           str          r2, [r0]
 
           // Check whether the writes were even into the heap. If not there's no card update required.

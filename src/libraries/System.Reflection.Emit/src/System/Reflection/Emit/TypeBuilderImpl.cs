@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -12,24 +12,34 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeBuilderImpl : TypeBuilder
     {
-        internal List<MethodBuilderImpl> _methodDefStore = new();
-        internal List<FieldBuilderImpl> _fieldDefStore = new();
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
-        internal readonly TypeDefinitionHandle _handle;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
+        private readonly TypeBuilderImpl? _declaringType;
         private TypeAttributes _attributes;
+        private PackingSize _packingSize;
+        private int _typeSize;
+
+        internal readonly TypeDefinitionHandle _handle;
+        internal readonly List<MethodBuilderImpl> _methodDefinitions = new();
+        internal readonly List<FieldBuilderImpl> _fieldDefinitions = new();
+        internal List<Type>? _interfaces;
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module, TypeDefinitionHandle handle)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module,
+            TypeDefinitionHandle handle, Type[]? interfaces, PackingSize packingSize, int typeSize, TypeBuilderImpl? enclosingType)
         {
             _name = fullName;
             _module = module;
             _attributes = typeAttributes;
+            _packingSize = packingSize;
+            _typeSize = typeSize;
             SetParent(parent);
             _handle = handle;
+            _declaringType = enclosingType;
 
             // Extract namespace from fullName
             int idx = _name.LastIndexOf('.');
@@ -38,12 +48,28 @@ namespace System.Reflection.Emit
                 _namespace = _name[..idx];
                 _name = _name[(idx + 1)..];
             }
+
+            if (interfaces != null)
+            {
+                _interfaces = new List<Type>();
+                for (int i = 0; i < interfaces.Length; i++)
+                {
+                    Type @interface = interfaces[i];
+                    // cannot contain null in the interface list
+                    ArgumentNullException.ThrowIfNull(@interface, nameof(interfaces));
+                    _interfaces.Add(@interface);
+                }
+            }
         }
 
         internal ModuleBuilderImpl GetModuleBuilder() => _module;
-        protected override PackingSize PackingSizeCore => throw new NotImplementedException();
-        protected override int SizeCore => throw new NotImplementedException();
-        protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type interfaceType) => throw new NotImplementedException();
+        protected override PackingSize PackingSizeCore => _packingSize;
+        protected override int SizeCore => _typeSize;
+        protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes.All))] Type interfaceType)
+        {
+            _interfaces ??= new List<Type>();
+            _interfaces.Add(interfaceType);
+        }
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
         protected override TypeInfo CreateTypeInfoCore() => throw new NotImplementedException();
         protected override ConstructorBuilder DefineConstructorCore(MethodAttributes attributes, CallingConventions callingConvention, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers) => throw new NotImplementedException();
@@ -52,7 +78,7 @@ namespace System.Reflection.Emit
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
-            _fieldDefStore.Add(field);
+            _fieldDefinitions.Add(field);
             return field;
         }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
@@ -60,20 +86,102 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefineMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             MethodBuilderImpl methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, _module, this);
-            _methodDefStore.Add(methodBuilder);
+            _methodDefinitions.Add(methodBuilder);
             return methodBuilder;
         }
 
         protected override void DefineMethodOverrideCore(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration) => throw new NotImplementedException();
-        protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, Emit.PackingSize packSize, int typeSize) => throw new NotImplementedException();
+        protected override TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize)
+        {
+            return _module.DefineNestedType(name, attr, parent, interfaces, packSize, typeSize, this);
+        }
+
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override PropertyBuilder DefinePropertyCore(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
+            {
+                case "System.Runtime.InteropServices.StructLayoutAttribute":
+                    ParseStructLayoutAttribute(con, binaryAttribute);
+                    return;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= TypeAttributes.SpecialName;
+                    return;
+                case "System.SerializableAttribute":
+#pragma warning disable SYSLIB0050 // 'TypeAttributes.Serializable' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
+                    _attributes |= TypeAttributes.Serializable;
+#pragma warning restore SYSLIB0050
+                    return;
+                case "System.Runtime.InteropServices.ComImportAttribute":
+                    _attributes |= TypeAttributes.Import;
+                    return;
+                case "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute":
+                    _attributes |= TypeAttributes.WindowsRuntime;
+                    return;
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute": // It says has no effect in .NET Core, maybe remove?
+                    _attributes |= TypeAttributes.HasSecurity;
+                    break;
+            }
+
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
+
+        private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            CustomAttributeInfo attributeInfo = CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute);
+            LayoutKind layoutKind = (LayoutKind)attributeInfo._ctorArgs[0]!;
+            _attributes &= ~TypeAttributes.LayoutMask;
+            _attributes |= layoutKind switch
+            {
+                LayoutKind.Auto => TypeAttributes.AutoLayout,
+                LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
+                LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                _ => TypeAttributes.AutoLayout,
+            };
+
+            for (int i = 0; i < attributeInfo._namedParamNames.Length; ++i)
+            {
+                string name = attributeInfo._namedParamNames[i];
+                int value = (int)attributeInfo._namedParamValues[i]!;
+
+                switch (name)
+                {
+                    case "CharSet":
+                        switch ((CharSet)value)
+                        {
+                            case CharSet.None:
+                            case CharSet.Ansi:
+                                _attributes &= ~(TypeAttributes.UnicodeClass | TypeAttributes.AutoClass);
+                                break;
+                            case CharSet.Unicode:
+                                _attributes &= ~TypeAttributes.AutoClass;
+                                _attributes |= TypeAttributes.UnicodeClass;
+                                break;
+                            case CharSet.Auto:
+                                _attributes &= ~TypeAttributes.UnicodeClass;
+                                _attributes |= TypeAttributes.AutoClass;
+                                break;
+                        }
+                        break;
+                    case "Pack":
+                        _packingSize = (PackingSize)value;
+                        break;
+                    case "Size":
+                        _typeSize = value;
+                        break;
+                    default:
+                        throw new ArgumentException(SR.Format(SR.Argument_UnknownNamedType, con.DeclaringType, name), nameof(binaryAttribute));
+                }
+            }
+        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
             Justification = "TODO: Need to figure out how to preserve System.Object public constructor")]
@@ -107,6 +215,8 @@ namespace System.Reflection.Emit
             }
         }
         public override string Name => _name;
+        public override Type? DeclaringType => _declaringType;
+        public override Type? ReflectedType => _declaringType;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
@@ -161,7 +271,8 @@ namespace System.Reflection.Emit
         public override Type? GetInterface(string name, bool ignoreCase) => throw new NotSupportedException();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() => throw new NotSupportedException();
+        public override Type[] GetInterfaces() => _interfaces == null ? EmptyTypes : _interfaces.ToArray();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]

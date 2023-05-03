@@ -871,9 +871,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_84693/Runtime_84693/*">
-            <Issue>https://github.com/dotnet/runtime/issues/85081</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
@@ -1150,12 +1147,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Arrays/misc/initializearray_il_r/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_d/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/basics/throwinfilter_il_r/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/interactions/throw1dimarray_il_d/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Non-exception throw</Issue>
         </ExcludeList>
@@ -1201,9 +1192,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/*">
             <Issue>Needs xunit.performance</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b68872/b68872/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71120/b71120/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
         </ExcludeList>
@@ -1212,9 +1200,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.2/ddb/b429039/b429039/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: RuntimeHelpers.InitializeArray</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19444/GitHub_19444/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/197</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_22583/GitHub_22583/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
@@ -1227,9 +1212,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35384/GitHub_35384/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/198</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_4044/GitHub_4044/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/188</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_71375/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
@@ -1248,12 +1230,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/154</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Casting/Functionpointer/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Pointers/Pointers/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test3/*">
             <Issue>Won't fix https://github.com/dotnet/corert/issues/2396</Issue>
@@ -1320,9 +1296,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Regressions/Regression4/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection emit</Issue>
@@ -1423,6 +1396,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
             <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
         </ExcludeList>
@@ -2678,7 +2654,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
@@ -3335,6 +3311,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
         </ExcludeList>
     </ItemGroup>
 

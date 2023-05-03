@@ -2510,7 +2510,9 @@ public:
 
     GenTree* gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF);
 
-    GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
+    GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
+
+    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data);
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
 
@@ -2534,6 +2536,7 @@ public:
                                                   void*                   compileTimeHandle);
 
     GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclVarNode(unsigned lclNum, var_types type = TYP_UNDEF);
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
     GenTreeLclFld* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
@@ -2801,12 +2804,12 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
-    GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
+                                         CORINFO_FIELD_HANDLE fldHnd,
+                                         GenTree*             obj    = nullptr,
+                                         DWORD                offset = 0);
 
-    GenTreeField* gtNewFieldAddrNode(var_types            type,
-                                     CORINFO_FIELD_HANDLE fldHnd,
-                                     GenTree*             obj    = nullptr,
-                                     DWORD                offset = 0);
+    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr);
 
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
@@ -2836,6 +2839,12 @@ public:
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
+    GenTreeBlk* gtNewStoreBlkNode(
+        ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTreeStoreInd* gtNewStoreIndNode(
+        var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
     GenTree* gtNewLoadValueNode(
         var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
@@ -2847,6 +2856,14 @@ public:
     GenTree* gtNewLoadValueNode(var_types type, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
     {
         return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
+    }
+
+    GenTree* gtNewStoreValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewStoreValueNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
@@ -2960,6 +2977,9 @@ public:
 
     void gtPrepareCost(GenTree* tree);
     bool gtIsLikelyRegVar(GenTree* tree);
+    void gtGetLclVarNodeCost(GenTreeLclVar* node, int* pCostEx, int* pCostSz, bool isLikelyRegVar);
+    void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
+    bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
@@ -3018,10 +3038,6 @@ public:
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtFoldExprConditional(GenTree* tree);
-    GenTree* gtCreateHandleCompare(genTreeOps             oper,
-                                   GenTree*               op1,
-                                   GenTree*               op2,
-                                   CorInfoInlineTypeCheck typeCheckInliningResult);
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
@@ -4833,6 +4849,9 @@ public:
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
+    PhaseStatus fgRationalizeAssignments();
+    GenTree* fgRationalizeAssignment(GenTreeOp* assignment);
+
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     PhaseStatus fgSimpleLowering();
@@ -5305,20 +5324,20 @@ public:
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
 
-    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
     PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
 
-    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
-    bool fgExpandHelperForBlock(BasicBlock* block);
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
+    bool fgExpandHelperForBlock(BasicBlock** pBlock);
 
     PhaseStatus fgExpandRuntimeLookups();
-    bool fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandThreadLocalAccess();
-    bool fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStaticInit();
-    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -5907,7 +5926,7 @@ public:
     void fgAssignSetVarDef(GenTree* tree);
 
 private:
-    GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
@@ -6008,7 +6027,7 @@ private:
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
+    unsigned fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode);
 
     //----------------------- Liveness analysis -------------------------------
 
@@ -8629,7 +8648,7 @@ private:
     GenTree* impSIMDPopStack();
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool areFieldsContiguous(GenTree* op1, GenTree* op2);
+    bool areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
     bool areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
     bool areArrayElementsContiguous(GenTree* op1, GenTree* op2);
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
@@ -8896,12 +8915,6 @@ public:
         {
             maxRegSize = maxSIMDStructBytes();
 #if defined(TARGET_XARCH)
-            if (type != UnrollKind::Memmove)
-            {
-                // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial.
-                // Enabled for Memmove only for now.
-                maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
-            }
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8933,7 +8946,7 @@ public:
         //
         // | arch        | memset | memcpy |
         // |-------------|--------|--------|
-        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
+        // | x86 avx512  |   512  |   256  |
         // | x86 avx     |   256  |   128  |
         // | x86 sse     |   128  |    64  |
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)
@@ -9236,6 +9249,7 @@ public:
     bool compLocallocOptimized;        // Does the method have an optimized localloc
     bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
+    bool compAssignmentRationalized;   // Have the ASG nodes been turned into their store equivalents?
     bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts
@@ -9271,6 +9285,8 @@ public:
 
     bool compGeneratingProlog;
     bool compGeneratingEpilog;
+    bool compGeneratingUnwindProlog;
+    bool compGeneratingUnwindEpilog;
     bool compNeedsGSSecurityCookie; // There is an unsafe buffer (or localloc) on the stack.
                                     // Insert cookie on frame and code to check the cookie, like VC++ -GS.
     bool compGSReorderStackLayout;  // There is an unsafe buffer on the stack, reorder locals and make local
@@ -11080,7 +11096,6 @@ public:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:
             case GT_NOP:
-            case GT_FIELD:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:
