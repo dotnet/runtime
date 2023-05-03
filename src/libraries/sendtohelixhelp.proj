@@ -174,10 +174,6 @@
     <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
   </ItemGroup>
 
-  <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
-  <ItemGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(WindowsShell)' != 'true'">
-    <HelixPreCommand Include="(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true" />
-  </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
@@ -191,12 +187,22 @@
       <HelixPreCommands>$(HelixPreCommands);@(HelixPreCommand)</HelixPreCommands>
       <HelixPostCommands>$(HelixPostCommands);@(HelixPostCommand)</HelixPostCommands>
       <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
-      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(WindowsShell)' != 'true' and @(HelixCommandPrefixItem->Count()) > 0 ">$(HelixCommandPrefix) export @(HelixCommandPrefixItem, ' ')</HelixCommandPrefix>
       <IncludeHelixCorrelationPayload Condition="'$(IncludeHelixCorrelationPayload)' == '' and '$(HelixCorrelationPayload)' != ''">true</IncludeHelixCorrelationPayload>
     </PropertyGroup>
 
+    <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
+    <PropertyGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(WindowsShell)' != 'true'">
+      <_WorkaroundForNuGetMigrations>((CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true)</_WorkaroundForNuGetMigrations>
+
+      <HelixCommandPrefix Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) &amp;&amp;</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp;</HelixCommandPrefix>
+
+      <HelixCommandPrefix>$(HelixCommandPrefix) $(_WorkaroundForNuGetMigrations)</HelixCommandPrefix>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(HelixCommand)' == ''">
-      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) </HelixCommand>
+      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) &amp;&amp; </HelixCommand>
       <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp; </HelixCommand>
 
       <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
