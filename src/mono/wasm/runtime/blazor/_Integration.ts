@@ -1,18 +1,22 @@
 import { INTERNAL, Module } from "../globals";
 import { MonoConfigInternal } from "../types";
-import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
+import { AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../types-api";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 
-export async function loadBootConfig(config: MonoConfigInternal,) {
+export async function loadBootConfig(config: MonoConfigInternal) {
     const candidateOptions = config.startupOptions ?? {};
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
 
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
 
-    const resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
+    await initializeBootConfig(bootConfigResult, candidateOptions);
+}
+
+export async function initializeBootConfig(bootConfigResult: BootConfigResult, startupOptions?: Partial<WebAssemblyStartOptions>) {
+    const resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions || {});
 
     INTERNAL.resourceLoader = resourceLoader;
 
@@ -23,7 +27,7 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 let resourcesLoaded = 0;
 let totalResources = 0;
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string): MonoConfigInternal {
+function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string): MonoConfigInternal {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];

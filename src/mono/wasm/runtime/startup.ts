@@ -29,13 +29,14 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
-import { loadBootConfig } from "./blazor/_Integration";
+import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { init_globalization } from "./icu";
+import { BootConfigResult } from "./blazor/BootConfig";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -669,20 +670,26 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
-        if (config.startupOptions) {
+        if (config.startupOptions && config.startupOptions.loadBootResource) {
             await loadBootConfig(config);
         } else {
             const resolveSrc = runtimeHelpers.locateFile(configFilePath);
             const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
-            const loadedConfig: MonoConfigInternal = (await configResponse.json()) || {};
-            if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
-                throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
+            const loadedAnyConfig: any = (await configResponse.json()) || {};
+            if (loadedAnyConfig.resources) {
+                await initializeBootConfig(loadedAnyConfig as BootConfigResult);
+            } else {
+                const loadedConfig = loadedAnyConfig as MonoConfigInternal;
 
-            // merge
-            loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
-            loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
-            loadedConfig.runtimeOptions = [...(loadedConfig.runtimeOptions || []), ...(config.runtimeOptions || [])];
-            config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
+                if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
+                    throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
+
+                // merge
+                loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
+                loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
+                loadedConfig.runtimeOptions = [...(loadedConfig.runtimeOptions || []), ...(config.runtimeOptions || [])];
+                config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
+            }
         }
 
         normalizeConfig();
