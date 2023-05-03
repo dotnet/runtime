@@ -26,9 +26,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\IncrementalHash.netfx.cs"
-             Link="Common\System\Security\Cryptography\IncrementalHash.cs"
-             Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
 
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
