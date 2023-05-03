@@ -1229,6 +1229,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*             val,
 
         case GT_LCL_FLD:
             return gtNewLclAddrNode(val->AsLclFld()->GetLclNum(), val->AsLclFld()->GetLclOffs(), TYP_BYREF);
+
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
             return impGetNodeAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, pDerefFlags);
