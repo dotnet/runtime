@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !NETFRAMEWORK || NET471_OR_GREATER
+#error "This implementation of IncrementalHash should only be used for .NET Framework where it is not available"
+#endif
+
 using System.Diagnostics;
 
 namespace System.Security.Cryptography
