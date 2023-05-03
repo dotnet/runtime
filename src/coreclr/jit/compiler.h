@@ -9289,6 +9289,8 @@ public:
 
     bool compGeneratingProlog;
     bool compGeneratingEpilog;
+    bool compGeneratingUnwindProlog;
+    bool compGeneratingUnwindEpilog;
     bool compNeedsGSSecurityCookie; // There is an unsafe buffer (or localloc) on the stack.
                                     // Insert cookie on frame and code to check the cookie, like VC++ -GS.
     bool compGSReorderStackLayout;  // There is an unsafe buffer on the stack, reorder locals and make local
