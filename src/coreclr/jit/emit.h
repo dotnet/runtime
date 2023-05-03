@@ -1329,6 +1329,19 @@ protected:
             IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
             return (isInfo & (IS_AM_RW | IS_AM_WR)) != 0;
         }
+
+        bool idHasMem() const
+        {
+            return idHasMemGen() || idHasMemStk() || idHasMemAdr();
+        }
+        bool idHasMemRead() const
+        {
+            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
+        }
+        bool idHasMemWrite() const
+        {
+            return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
+        }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
         insOpts idInsOpt() const

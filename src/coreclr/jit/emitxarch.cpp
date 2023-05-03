@@ -887,20 +887,29 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
         return false;
     }
 
-    // Only consider if safe
-    //
     if (!emitCanPeepholeLastIns())
     {
+        // Don't consider if not safe
         return false;
     }
 
     instrDesc*  id      = emitLastIns;
     instruction lastIns = id->idIns();
 
-    if (!id->idHasReg1() || (id->idReg1() != reg))
+    if (!id->idIsReg1Write() || (id->idReg1() != reg))
     {
+        // Don't consider instructions which didn't write a register
         return false;
     }
+
+    if (id->idHasMemWrite() || id->idIsReg2Write())
+    {
+        // Don't consider instructions which also wrote a mem location or second register
+        return false;
+    }
+
+    assert(!id->idIsReg3Write());
+    assert(!id->idIsReg4Write());
 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
@@ -956,8 +965,15 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondi
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
-    if (!id->idHasReg1() || (id->idReg1() != reg))
+    if (!id->idIsReg1Write() || (id->idReg1() != reg))
     {
+        // Don't consider instructions which didn't write a register
+        return false;
+    }
+
+    if (id->idHasMemWrite() || id->idIsReg2Write())
+    {
+        // Don't consider instructions which also wrote a mem location or second register
         return false;
     }
 
