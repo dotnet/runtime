@@ -798,6 +798,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GenericNonGcTlsBase       = 0x67,
     READYTORUN_HELPER_VirtualFuncPtr            = 0x68,
     READYTORUN_HELPER_IsInstanceOfException     = 0x69,
+    READYTORUN_HELPER_NewMaybeFrozenArray       = 0x6A,
+    READYTORUN_HELPER_NewMaybeFrozenObject      = 0x6B,
 
     // Long mul/div/shift ops
     READYTORUN_HELPER_LMul                      = 0xC0,

@@ -1872,6 +1872,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     bool isMDArray = false;
 
     if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) &&
+        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC) &&
         newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8)
@@ -2042,7 +2043,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         GenTree* arrayLengthNode;
 
 #ifdef FEATURE_READYTORUN
-        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1))
+        if (newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+            newArrayCall->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
         {
             // Array length is 1st argument for readytorun helper
             arrayLengthNode = newArrayCall->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
@@ -2896,8 +2898,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                length->SetIsSpanLength(true);
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* length = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2913,8 +2917,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
                 const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
+                GenTreeFieldAddr*    dataFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpanClone), ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree* data   = gtNewFieldIndirNode(TYP_BYREF, nullptr, dataFieldAddr);
+                GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -2957,9 +2963,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                fieldRef->SetIsSpanLength(true);
-                return fieldRef;
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* lengthField = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
+
+                return lengthField;
             }
 
             case NI_System_RuntimeTypeHandle_GetValueInternal:

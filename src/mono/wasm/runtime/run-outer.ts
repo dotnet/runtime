@@ -60,7 +60,7 @@ export class HostBuilder implements DotnetHostBuilder {
         const handler = function fatal_handler(event: Event, error: any) {
             event.preventDefault();
             try {
-                mono_exit(1, error);
+                if (!error || !error.silent) mono_exit(1, error);
             } catch (err) {
                 // no not re-throw from the fatal handler
             }

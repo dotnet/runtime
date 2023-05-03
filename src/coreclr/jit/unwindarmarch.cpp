@@ -126,8 +126,6 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 }
 #endif // TARGET_ARM && FEATURE_CFI_SUPPORT
 
-#ifdef TARGET_ARMARCH
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -140,6 +138,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
+    assert(!compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -167,11 +167,15 @@ void Compiler::unwindBegProlog()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    assert(compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(!compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -186,6 +190,8 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 #if defined(TARGET_ARM)
@@ -2579,5 +2585,3 @@ void DumpUnwindInfo(Compiler*         comp,
 #endif // DEBUG
 
 #endif // defined(TARGET_ARM)
-
-#endif // TARGET_ARMARCH

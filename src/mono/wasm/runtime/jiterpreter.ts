@@ -1049,6 +1049,9 @@ export function mono_interp_tier_prepare_jiterpreter(
 }
 
 export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
+    if (!runtimeHelpers.runtimeReady) {
+        return;
+    }
     if (!mostRecentOptions || (b !== undefined))
         mostRecentOptions = getOptions();
 

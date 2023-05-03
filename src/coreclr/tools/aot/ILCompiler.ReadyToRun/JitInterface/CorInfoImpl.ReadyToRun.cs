@@ -898,6 +898,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenArray;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenObject;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
                     id = ReadyToRunHelper.VirtualFuncPtr;
                     break;

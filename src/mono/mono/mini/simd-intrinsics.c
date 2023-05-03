@@ -1326,6 +1326,7 @@ emit_msb_shift_vector_constant (MonoCompile *cfg, MonoClass *arg_class, MonoType
 	return msb_shift_vec;
 }
 
+/* Emit intrinsics in System.Numerics.Vector and System.Runtime.Intrinsics.Vector64/128/256/512 */
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {	
@@ -1340,13 +1341,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 	}
 
-	if (!strcmp (m_class_get_name (cmethod->klass), "Vector256") || !strcmp (m_class_get_name (cmethod->klass), "Vector512"))
+	int vector_size;
+	if (!strcmp (m_class_get_name (cmethod->klass), "Vector64"))
+		vector_size = 64;
+	else if (!strcmp (m_class_get_name (cmethod->klass), "Vector128"))
+		vector_size = 128;
+	else if (!strcmp (m_class_get_name (cmethod->klass), "Vector256"))
+		vector_size = 256;
+	else if (!strcmp (m_class_get_name (cmethod->klass), "Vector512"))
+		vector_size = 512;
+	else if (!strcmp (m_class_get_name (cmethod->klass), "Vector"))
+		vector_size = register_size * 8;
+	else
+		return NULL;
+
+	if (vector_size == 256 || vector_size == 512)
 		return NULL; 
 		
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
+		if (vector_size != 128)
 			return NULL;
 		switch (id) {
 		case SN_GetLower:
@@ -2006,6 +2021,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
+#elif defined(TARGET_ARM64)
+		if (vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
+		return NULL;
 #else
 		return NULL;
 #endif
