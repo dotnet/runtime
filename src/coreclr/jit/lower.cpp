@@ -8264,8 +8264,6 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
             if (store->OperIs(GT_STORE_LCL_VAR))
             {
                 store->SetOper(GT_STORE_LCL_FLD);
-                store->AsLclFld()->SetLclOffs(0);
-                store->AsLclFld()->SetLayout(nullptr);
             }
             store->ChangeType(type);
         }

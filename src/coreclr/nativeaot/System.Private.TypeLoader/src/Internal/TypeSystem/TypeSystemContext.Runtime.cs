@@ -197,7 +197,7 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
                     for (int i = 0; i < genericParameters.Length; i++)

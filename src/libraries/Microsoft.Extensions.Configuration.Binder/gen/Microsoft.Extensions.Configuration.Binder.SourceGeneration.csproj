@@ -21,23 +21,22 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="CollectionSpec.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.Helpers.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.Parser.cs" />
-    <Compile Include="ConstructionStrategy.cs" />
-    <Compile Include="ConfigurationSectionTypeSpec.cs" />
     <Compile Include="ExceptionMessages.cs" />
     <Compile Include="MethodSpecifier.cs" />
-    <Compile Include="NullableSpec.cs" />
-    <Compile Include="ObjectSpec.cs" />
-    <Compile Include="ParsableFromStringTypeSpec.cs" />
-    <Compile Include="PopulationStrategy.cs" />
-    <Compile Include="PropertySpec.cs" />
     <Compile Include="SourceGenerationSpec.cs" />
     <Compile Include="SourceWriter.cs" />
-    <Compile Include="TypeSpecKind.cs" />
-    <Compile Include="TypeSpec.cs" />
+    <Compile Include="TypeGraph\CollectionSpec.cs" />
+    <Compile Include="TypeGraph\ConstructionStrategy.cs" />
+    <Compile Include="TypeGraph\ConfigurationSectionTypeSpec.cs" />
+    <Compile Include="TypeGraph\NullableSpec.cs" />
+    <Compile Include="TypeGraph\ObjectSpec.cs" />
+    <Compile Include="TypeGraph\ParsableFromStringTypeSpec.cs" />
+    <Compile Include="TypeGraph\PropertySpec.cs" />
+    <Compile Include="TypeGraph\TypeSpecKind.cs" />
+    <Compile Include="TypeGraph\TypeSpec.cs" />
   </ItemGroup>
 </Project>
