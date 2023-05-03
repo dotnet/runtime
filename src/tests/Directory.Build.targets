@@ -576,20 +576,17 @@
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     </PropertyGroup>
 
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="$(CppCompilerAndLinker.Contains('clang'))"
-          IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" StandardErrorImportance="Low" ConsoleToMSBuild="true">
-      <Output TaskParameter="ExitCode" PropertyName="_LLDCheckExitCode" />
-    </Exec>
-
-    <PropertyGroup Condition="'$(_LLDCheckExitCode)' == '0'">
-      <LinkerFlavor>lld</LinkerFlavor>
+    <PropertyGroup>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
     </PropertyGroup>
   </Target>
 
