@@ -13,7 +13,7 @@ namespace System.Reflection.Emit
         private readonly TypeBuilderImpl _type;
         private readonly int _genParamPosition;
         private GenericParameterAttributes _genParamAttributes;
-        private bool _isGenericType;
+        private bool _isGenericMethodParameter;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _parent;
 
@@ -25,7 +25,7 @@ namespace System.Reflection.Emit
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
-            _isGenericType = true;
+            _isGenericMethodParameter = false;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
@@ -59,8 +59,8 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericParameterConstraints() =>
             _interfaces == null ? EmptyTypes : _interfaces.ToArray();
-        public override bool IsGenericTypeParameter => _isGenericType;
-        public override bool IsGenericMethodParameter => !_isGenericType;
+        public override bool IsGenericTypeParameter => !_isGenericMethodParameter;
+        public override bool IsGenericMethodParameter => _isGenericMethodParameter;
         public override int GenericParameterPosition => _genParamPosition;
         public override GenericParameterAttributes GenericParameterAttributes => _genParamAttributes;
         public override string Name => _name;

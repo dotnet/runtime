@@ -242,7 +242,9 @@ namespace System.Reflection.Emit
         public override Type? ReflectedType => _declaringType;
         public override bool IsGenericTypeDefinition => IsGenericType;
         public override bool IsGenericType => _typeParameters != null;
+        // Not returning a copy for compat with existing runtime behavior
         public override Type[] GenericTypeParameters => _typeParameters ?? EmptyTypes;
+        public override Type[] GetGenericArguments() => _typeParameters ?? EmptyTypes;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(bool inherit) => throw new NotImplementedException();
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotImplementedException();
