@@ -9245,8 +9245,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField, obj,
-                                                 fieldInfo.offset);
+                        op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
@@ -9552,8 +9551,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField, obj,
-                                                 fieldInfo.offset);
+                        op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
