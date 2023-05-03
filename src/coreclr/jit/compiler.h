@@ -6164,8 +6164,10 @@ private:
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
+public:
     bool fgIsBigOffset(size_t offset);
 
+private:
     bool fgNeedReturnSpillTemp();
 
     /*

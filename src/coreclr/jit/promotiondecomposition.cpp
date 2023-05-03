@@ -822,8 +822,7 @@ private:
     //
     void FinalizeCopy(DecompositionStatementList* statements)
     {
-        assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD) &&
-               m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
+        assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) && m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
 
@@ -831,7 +830,7 @@ private:
         // then avoid incurring multiple write barriers for each source
         // replacement that is a GC pointer -- write them back to the struct
         // first instead.
-        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_dst->OperIs(GT_BLK, GT_FIELD) &&
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_dst->OperIs(GT_BLK) &&
             m_dst->GetLayout(m_compiler)->HasGCPtr())
         {
             for (int i = 0; i < m_entries.Height(); i++)
@@ -854,31 +853,20 @@ private:
             }
         }
 
-        GenTree*     addr         = nullptr;
-        unsigned     addrBaseOffs = 0;
-        GenTreeFlags indirFlags   = GTF_EMPTY;
+        GenTree*     addr       = nullptr;
+        GenTreeFlags indirFlags = GTF_EMPTY;
 
-        if (m_dst->OperIs(GT_BLK, GT_FIELD))
+        if (m_dst->OperIs(GT_BLK))
         {
             addr = m_dst->gtGetOp1();
-
-            if (m_dst->OperIs(GT_FIELD))
-            {
-                addrBaseOffs = m_dst->AsField()->gtFldOffset;
-            }
-
-            indirFlags = GetPropagatedIndirFlags(m_dst);
+            indirFlags =
+                m_dst->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
         }
-        else if (m_src->OperIs(GT_BLK, GT_FIELD))
+        else if (m_src->OperIs(GT_BLK))
         {
             addr = m_src->gtGetOp1();
-
-            if (m_src->OperIs(GT_FIELD))
-            {
-                addrBaseOffs = m_src->AsField()->gtFldOffset;
-            }
-
-            indirFlags = GetPropagatedIndirFlags(m_src);
+            indirFlags =
+                m_src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
         }
 
         int numAddrUses = 0;
@@ -918,7 +906,8 @@ private:
                         const Entry& entry = m_entries.BottomRef(0);
 
                         assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
-                        needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+                        needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
+                        break;
                     }
                     break;
             }
@@ -981,16 +970,12 @@ private:
         {
             // We will reuse the existing block op's operands. Rebase the
             // address off of the new local we created.
-            if (m_src->OperIs(GT_BLK, GT_FIELD))
+            if (m_src->OperIs(GT_BLK))
             {
-                // Note that we should use 0 instead of addrBaseOffs here
-                // since this ends up as the address of the GT_FIELD node
-                // that already has the field offset.
                 m_src->AsUnOp()->gtOp1 = grabAddr(0);
             }
-            else if (m_dst->OperIs(GT_BLK, GT_FIELD))
+            else if (m_dst->OperIs(GT_BLK))
             {
-                // Like above, use 0 intentionally here.
                 m_dst->AsUnOp()->gtOp1 = grabAddr(0);
             }
         }
@@ -1013,7 +998,7 @@ private:
 
         if (needsNullCheck)
         {
-            GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(addrBaseOffs));
+            GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(0));
             PropagateIndirFlags(indir, indirFlags);
             statements->AddStatement(indir);
         }
@@ -1054,7 +1039,7 @@ private:
                 }
                 else
                 {
-                    GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
+                    GenTree* addr = grabAddr(entry.Offset);
                     dst           = m_compiler->gtNewIndir(entry.Type, addr);
                     PropagateIndirFlags(dst, indirFlags);
                 }
@@ -1082,7 +1067,7 @@ private:
                 }
                 else
                 {
-                    GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
+                    GenTree* addr = grabAddr(entry.Offset);
                     src           = m_compiler->gtNewIndir(entry.Type, addr);
                     PropagateIndirFlags(src, indirFlags);
                 }
@@ -1109,7 +1094,7 @@ private:
             else
             {
                 dst = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
-                                             grabAddr(addrBaseOffs + remainderStrategy.PrimitiveOffset));
+                                             grabAddr(remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(dst, indirFlags);
             }
 
@@ -1124,7 +1109,7 @@ private:
             else
             {
                 src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
-                                             grabAddr(addrBaseOffs + remainderStrategy.PrimitiveOffset));
+                                             grabAddr(remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(src, indirFlags);
             }
 
@@ -1141,28 +1126,6 @@ private:
         // copying the replacement explicitly.
         return (remainderStrategy.Type == RemainderStrategy::FullBlock) && (entry.FromReplacement != nullptr) &&
                !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
-    }
-    //------------------------------------------------------------------------
-    // GetPropagatedIndirFlags:
-    //   Convert GT_BLK or GT_FIELD indir flags into flags that should be
-    //   propagated to derived GT_IND nodes.
-    //
-    // Parameters:
-    //   indir - The indirection
-    //
-    // Returns:
-    //   Flags to propagate to created derived GT_IND nodes.
-    //
-    GenTreeFlags GetPropagatedIndirFlags(GenTree* indir)
-    {
-        assert(indir->OperIs(GT_BLK, GT_FIELD));
-        if (indir->OperIs(GT_BLK))
-        {
-            return indir->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
-        }
-
-        static_assert_no_msg(GTF_FLD_VOLATILE == GTF_IND_VOLATILE);
-        return indir->gtFlags & GTF_IND_VOLATILE;
     }
 
     //------------------------------------------------------------------------
@@ -1291,7 +1254,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                                        DecompositionStatementList* statements,
                                        DecompositionPlan*          plan)
 {
-    assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
+    assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
     GenTreeLclVarCommon* dstLcl      = dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? dst->AsLclVarCommon() : nullptr;
     GenTreeLclVarCommon* srcLcl      = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? src->AsLclVarCommon() : nullptr;
@@ -1448,7 +1411,7 @@ void ReplaceVisitor::EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionState
 {
     bool     any = false;
     GenTree* lhs = asg->gtGetOp1();
-    assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_BLK));
+    assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_IND, GT_BLK));
 
     GenTree* rhs = asg->gtGetOp2();
 
@@ -1463,7 +1426,7 @@ void ReplaceVisitor::EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionState
     }
     else
     {
-        if (lhs->OperIsUnary() && rhs->OperIs(GT_COMMA))
+        if (lhs->OperIsIndir() && rhs->OperIs(GT_COMMA))
         {
             GenTree* addr = lhs->gtGetOp1();
             // Note that GTF_GLOB_REF is not up to date here, hence we need
@@ -1608,7 +1571,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
 
     JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(asg));
 
-    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD) || src->IsConstInitVal())
+    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal())
     {
         DecompositionStatementList result;
         EliminateCommasInBlockOp(asg, &result);
