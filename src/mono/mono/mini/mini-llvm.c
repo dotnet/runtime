@@ -11546,8 +11546,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		case OP_NEGATION:
 		case OP_NEGATION_SCALAR: {
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
@@ -11565,6 +11563,8 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
