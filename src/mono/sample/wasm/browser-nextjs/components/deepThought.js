@@ -8,9 +8,8 @@ let dotnetRuntimePromise = undefined;
 
 async function createRuntime() {
     try {
-        return dotnet
-            .withMonoConfig()
-            .withModuleConfig({
+        return dotnet.
+            withModuleConfig({
                 locateFile: (path, prefix) => {
                     return '/' + path;
                 }

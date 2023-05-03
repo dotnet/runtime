@@ -4,6 +4,7 @@
 import { dotnet } from './_framework/dotnet.js'
 
 const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+    .withStartupOptions({})
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();

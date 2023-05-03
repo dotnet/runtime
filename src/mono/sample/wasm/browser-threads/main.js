@@ -53,7 +53,6 @@ function onInputValueChanged(exports, inputElement) {
 try {
     const inputElement = document.getElementById("inputN");
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
-        .withMonoConfig()    
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         .withElementOnExit()
         .withExitCodeLogging()

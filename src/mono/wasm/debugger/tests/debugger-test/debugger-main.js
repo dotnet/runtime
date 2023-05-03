@@ -7,7 +7,6 @@ import { dotnet, exit } from './dotnet.js'
 
 try {
     const runtime = await dotnet
-        .withMonoConfig()
         .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
         // For custom logging patch the functions below
         //.withDiagnosticTracing(true)

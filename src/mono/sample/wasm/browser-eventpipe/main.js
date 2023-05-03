@@ -51,7 +51,6 @@ async function runTest({ StartAsyncWork, StopWork, GetIterationsDone }) {
 
 async function main() {
     const { INTERNAL, MONO, Module, getAssemblyExports, getConfig } = await dotnet
-        .withMonoConfig()
         .withElementOnExit()
         .withExitCodeLogging()
         .withDiagnosticTracing(false)

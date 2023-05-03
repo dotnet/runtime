@@ -10,7 +10,7 @@ function wasm_exit(exit_code) {
 }
 
 try {
-    const { getAssemblyExports, INTERNAL } = await dotnet.withMonoConfig().withRuntimeOptions(["--jiterpreter-stats-enabled"]).create();
+    const { getAssemblyExports, INTERNAL } = await dotnet.withRuntimeOptions(["--jiterpreter-stats-enabled"]).create();
     const exports = await getAssemblyExports("WebAssembly.Browser.RuntimeConfig.Test.dll");
     const testMeaning = exports.Sample.Test.TestMeaning;
     const ret = testMeaning();

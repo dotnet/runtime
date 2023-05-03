@@ -10,7 +10,7 @@ function wasm_exit(exit_code) {
 }
 
 try {
-    const { getAssemblyExports } = await dotnet.withMonoConfig().create();
+    const { getAssemblyExports } = await dotnet.create();
     const exports = await getAssemblyExports("WebAssembly.Browser.StartupHook.Test.dll");
     const testMeaning = exports.Sample.Test.TestMeaning;
     const ret = testMeaning();

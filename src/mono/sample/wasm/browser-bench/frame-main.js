@@ -31,7 +31,6 @@ try {
     }
 
     const runtime = await dotnet
-        .withMonoConfig()
         .withModuleConfig({
             printErr: () => undefined,
             print: () => undefined,

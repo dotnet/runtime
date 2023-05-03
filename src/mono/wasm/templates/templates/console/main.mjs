@@ -4,7 +4,6 @@
 import { dotnet } from './dotnet.js'
 
 const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
-    .withMonoConfg() // This will go away in later previews/RC
     .withDiagnosticTracing(false)
     .create();
 

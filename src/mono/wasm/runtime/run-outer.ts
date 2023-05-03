@@ -30,7 +30,6 @@ export class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
     private applicationArguments?: string[];
     private virtualWorkingDirectory?: string;
-    private useMonoConfig = false;
 
     // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
@@ -291,18 +290,9 @@ export class HostBuilder implements DotnetHostBuilder {
         return this.withConfigSrc("blazor.boot.json");
     }
 
-    withMonoConfig(): DotnetHostBuilder {
-        this.useMonoConfig = true;
-        return this;
-    }
-
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
-                if (!this.useMonoConfig) {
-                    this.withStartupOptions({});
-                }
-
                 if (ENVIRONMENT_IS_WEB && (module.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }

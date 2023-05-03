@@ -6,7 +6,7 @@ import _ from 'underscore'
 
 async function dotnetMeaning() {
     try {
-        const { getAssemblyExports } = await dotnet.withMonoConfig().create();
+        const { getAssemblyExports } = await dotnet.create();
 
         const exports = await getAssemblyExports("Wasm.Browser.WebPack.Sample");
         const meaningFunction = exports.Sample.Test.Main;

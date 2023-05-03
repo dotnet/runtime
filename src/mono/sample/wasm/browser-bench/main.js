@@ -180,7 +180,6 @@ try {
     globalThis.mainApp.PageShow = globalThis.mainApp.pageShow.bind(globalThis.mainApp);
 
     const runtime = await dotnet
-        .withMonoConfig()
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
         .withElementOnExit()
         .withExitCodeLogging()

@@ -3,7 +3,7 @@ import { color } from 'console-log-colors'
 
 async function dotnetMeaning() {
     try {
-        const { getAssemblyExports } = await dotnet.withMonoConfig().create();
+        const { getAssemblyExports } = await dotnet.create();
         const exports = await getAssemblyExports("Wasm.Node.WebPack.Sample");
         const meaningFunction = exports.Sample.Test.Main;
         return meaningFunction();

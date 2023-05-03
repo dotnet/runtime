@@ -9,7 +9,6 @@ function displayMeaning(meaning) {
 
 try {
     const { setModuleImports } = await dotnet
-        .withMonoConfig()
         .withElementOnExit()
         .create();
 

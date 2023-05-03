@@ -253,7 +253,6 @@ globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.
 
 function configureRuntime(dotnet, runArgs) {
     dotnet
-        .withMonoOptions()
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
