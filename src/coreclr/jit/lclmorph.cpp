@@ -1220,7 +1220,6 @@ private:
                 indir->ChangeOper(GT_LCL_VAR);
                 indir->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->AsLclVarCommon();
-                INDEBUG(indir->AsLclVar()->ResetLclILoffs());
                 break;
 
             case IndirTransform::NarrowCast:
@@ -1464,7 +1463,6 @@ private:
                     node->AsLclVar()->SetLclNum(fieldLclNum);
                     node->gtType  = fieldType;
                     node->gtFlags = lclVarFlags;
-                    INDEBUG(node->AsLclVar()->ResetLclILoffs());
                 }
                 else // Here we will turn "FIELD/IND(LCL_ADDR_VAR<parent>)" into "OBJ/IND(LCL_ADDR_VAR<field>)".
                 {

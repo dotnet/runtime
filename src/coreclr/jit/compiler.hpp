@@ -1242,7 +1242,12 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
@@ -1466,7 +1471,6 @@ inline GenTreeLclVar* GenTree::BashToLclVar(Compiler* comp, unsigned lclNum)
     ChangeOper(GT_LCL_VAR);
     ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
     AsLclVar()->SetLclNum(lclNum);
-    INDEBUG(AsLclVar()->ResetLclILoffs());
 
     return AsLclVar();
 }
