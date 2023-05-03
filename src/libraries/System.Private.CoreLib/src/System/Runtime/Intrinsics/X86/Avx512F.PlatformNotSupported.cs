@@ -34,6 +34,48 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<ulong> Abs(Vector256<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> AlignRight32(Vector128<int> left, Vector128<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_alignr_epi32 (__m128i a, __m128i b, const int count)
+            ///   VALIGND xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> AlignRight32(Vector128<uint> left, Vector128<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> AlignRight32(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi32 (__m256i a, __m256i b, const int count)
+            ///   VALIGND ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> AlignRight32(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> AlignRight64(Vector128<long> left, Vector128<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_alignr_epi64 (__m128i a, __m128i b, const int count)
+            ///   VALIGNQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> AlignRight64(Vector128<ulong> left, Vector128<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> AlignRight64(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_alignr_epi64 (__m256i a, __m256i b, const int count)
+            ///   VALIGNQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> AlignRight64(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_cvtepi32_epi8 (__m128i a)
             ///   VPMOVDB xmm1/m32 {k1}{z}, xmm2
             /// </summary>
@@ -728,6 +770,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> AlignRight32(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_alignr_epi32 (__m512i a, __m512i b, const int count)
+        ///   VALIGND zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> AlignRight32(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> AlignRight64(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_alignr_epi64 (__m512i a, __m512i b, const int count)
+        ///   VALIGNQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> AlignRight64(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_and_si512 (__m512i a, __m512i b)

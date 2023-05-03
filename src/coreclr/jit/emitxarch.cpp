@@ -18501,15 +18501,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movshdup:
         case INS_insertps:
         case INS_palignr:
+        case INS_valignd:
+        case INS_valignq:
         case INS_vpermilps:
         case INS_vpermilpd:
         case INS_vpermilpsvar:
         case INS_vpermilpdvar:
         case INS_pslldq:
         case INS_psrldq:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_1C;
             break;
+        }
 
         case INS_vblendvps:
         case INS_vblendvpd:
