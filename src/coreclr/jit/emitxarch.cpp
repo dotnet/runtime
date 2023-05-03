@@ -965,8 +965,15 @@ bool emitter::AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondi
     instruction lastIns = id->idIns();
     insFormat   fmt     = id->idInsFmt();
 
-    if (!id->idHasReg1() || (id->idReg1() != reg))
+    if (!id->idIsReg1Write() || (id->idReg1() != reg))
     {
+        // Don't consider instructions which didn't write a register
+        return false;
+    }
+
+    if (id->idHasMemWrite() || id->idIsReg2Write())
+    {
+        // Don't consider instructions which also wrote a mem location or second register
         return false;
     }
 

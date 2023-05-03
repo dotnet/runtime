@@ -1332,21 +1332,15 @@ protected:
 
         bool idHasMem() const
         {
-            return idHasMemGen()
-                || idHasMemStk()
-                || idHasMemAdr();
+            return idHasMemGen() || idHasMemStk() || idHasMemAdr();
         }
         bool idHasMemRead() const
         {
-            return idHasMemGenRead()
-                || idHasMemStkRead()
-                || idHasMemAdrRead();
+            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
         }
         bool idHasMemWrite() const
         {
-            return idHasMemGenWrite()
-                || idHasMemStkWrite()
-                || idHasMemAdrWrite();
+            return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
