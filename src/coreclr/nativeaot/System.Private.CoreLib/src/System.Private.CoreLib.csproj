@@ -236,7 +236,6 @@
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.cs" />
-    <Compile Include="System\Threading\ThreadPool.NativeAot.cs" />
     <Compile Include="System\Type.NativeAot.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Include="System\TypedReference.cs" />
@@ -296,7 +295,6 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(FeaturePortableThreadPool)' != 'true'">
     <Compile Include="System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolRegisteredWaitHandle.cs" />
   </ItemGroup>

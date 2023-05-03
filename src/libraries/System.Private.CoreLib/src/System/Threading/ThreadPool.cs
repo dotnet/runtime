@@ -166,7 +166,7 @@ namespace System.Threading
         internal static void ReportThreadStatus(bool isWorking)
         {
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
-            ReportThreadStatusCore(isWorking);
+            PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
         }
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace System.Threading
         {
             get
             {
-                return PortableThreadPool.ThreadPoolInstance.ThreadCount;
+                return ThreadPool.UseWindowsThreadPool ? WindowsThreadPool.ThreadCount : PortableThreadPool.ThreadPoolInstance.ThreadCount;
             }
         }
 
@@ -193,7 +193,7 @@ namespace System.Threading
         {
             get
             {
-                return PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+                return ThreadPool.UseWindowsThreadPool ? WindowsThreadPool.CompletedWorkItemCount : PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
             }
         }
 
@@ -250,23 +250,25 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            ArgumentNullException.ThrowIfNull(waitObject);
-            ArgumentNullException.ThrowIfNull(callBack);
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                return WindowsThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+            }
+            else
+            {
+                ArgumentNullException.ThrowIfNull(waitObject);
+                ArgumentNullException.ThrowIfNull(callBack);
 
-            RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
-                waitObject,
-                new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
-                (int)millisecondsTimeOutInterval,
-                !executeOnlyOnce);
+                RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
+                    waitObject,
+                    new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
+                    (int)millisecondsTimeOutInterval,
+                    !executeOnlyOnce);
 
-            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
+                PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
 
-            return registeredWaitHandle;
-        }
-
-        private static void ReportThreadStatusCore(bool isWorking)
-        {
-            PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
+                return registeredWaitHandle;
+            }
         }
     }
 }
