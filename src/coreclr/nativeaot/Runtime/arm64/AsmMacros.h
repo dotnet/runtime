@@ -200,16 +200,16 @@ $ReturnAddressName
 
 ;; -----------------------------------------------------------------------------
 ;;
-;; Macro to get a pointer to the Thread* object for the currently executing thread
+;; Macro to get a pointer to a threadlocal symbol for the currently executing thread
 ;;
 
 __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-    EXTERN _tls_index
-    EXTERN tls_CurrentThread
-
     MACRO
-        INLINE_GETTHREAD $destReg, $trashReg
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
+
+        EXTERN _tls_index
+        EXTERN $variable
 
         ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
         ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
@@ -222,10 +222,21 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         ldr         $destReg, [xpr, #__tls_array]
         ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
         add         $destReg, $destReg, #0, lsl #0xC
-        RELOC       0xA, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
+        RELOC       0xA, $variable                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
         add         $destReg, $destReg, #0, lsl #0
-        RELOC       0x9, tls_CurrentThread                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
+        RELOC       0x9, $variable                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
     MEND
+
+;; -----------------------------------------------------------------------------
+;;
+;; Macro to get a pointer to the Thread* object for the currently executing thread
+;;
+    MACRO
+        INLINE_GETTHREAD $destReg, $trashReg
+
+        INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
+    MEND
+
 
     MACRO
         INLINE_THREAD_UNHIJACK $threadReg, $trashReg1, $trashReg2
