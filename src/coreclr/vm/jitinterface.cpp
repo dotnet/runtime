@@ -1573,13 +1573,16 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 #ifdef HOST_WINDOWS
 #ifndef TARGET_ARM
-                // Only check if the field type is non-generic.
-                if (((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_VALUETYPE)) ||
+                bool canOptimizeHelper =
+                    ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_VALUETYPE)) ||
                     (pField->GetFieldType() == ELEMENT_TYPE_OBJECT) ||
                     (pField->GetFieldType() == ELEMENT_TYPE_ARRAY) ||
                     (pField->GetFieldType() == ELEMENT_TYPE_I) ||
                     (pField->GetFieldType() == ELEMENT_TYPE_U) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_SZARRAY))
+                    (pField->GetFieldType() == ELEMENT_TYPE_SZARRAY);
+
+                // Only check if the field type is non-generic.
+                if (canOptimizeHelper)
                 {
                     // For windows, we convert the TLS access to the optimized helper where we will store
                     // the static blocks in TLS directly and access them via inline code.
