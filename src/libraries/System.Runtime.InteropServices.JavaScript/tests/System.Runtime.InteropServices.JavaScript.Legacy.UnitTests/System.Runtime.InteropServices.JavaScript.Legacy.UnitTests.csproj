@@ -3,7 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)-browser</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --engine-arg=--stack-trace-limit=1000 --web-server-use-cop</WasmXHarnessArgs>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <NoWarn>0612</NoWarn>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
