@@ -16,35 +16,72 @@ using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-
-internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTypeProvider<bool, object>
+internal enum Compatibility
 {
+    Compatible,
+    Incompatible,
+    Inconclusive
+}
 
-    //Dictionary<string, 
+internal sealed class InconclusiveCompatibilityCollection
+{
+    private HashSet<(string AssyName, string TypeName, string UserName)> _data = new();
 
-    public bool GetArrayType(bool elementType, ArrayShape shape) => false;
-    public bool GetByReferenceType(bool elementType) => true;
-    public bool GetFunctionPointerType(MethodSignature<bool> signature) => true;
-    public bool GetGenericInstantiation(bool gennricType, ImmutableArray<bool> typeArguments) => false;
-    public bool GetGenericMethodParameter(object genericContext, int index) => false;
-    public bool GetGenericTypeParameter(object genericContext, int index) => false;
-    public bool GetModifiedType(bool modifier, bool unmodifiedType, bool isRequired) => false;
-    public bool GetPinnedType(bool elementType) => true; // TODO: really?
-    public bool GetPointerType(bool elementType) => true;
-    public bool GetPrimitiveType(PrimitiveTypeCode typeCode)
+    public bool IsEmpty => _data.Count == 0;
+
+    public void Add(string assyName, string typeName, string userName)
+    {
+        _data.Add((assyName, typeName, userName));
+    }
+
+
+}
+
+internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTypeProvider<Compatibility, object>
+{
+    // assembly name -> set of types needed for second pass
+    private HashSet<
+
+    private void RegisterTypeForSecondPass(string assyName, string typeName)
+    {
+        HashSet<string> hs = null;
+
+        if(!_secondPassTypes.TryGetValue(assyName, out hs))
+        {
+            hs = new HashSet<string>();
+            _secondPassTypes.Add(assyName, hs);
+        }
+
+        hs.Add(typeName);
+    }
+
+    public bool IsSecondPassNeeded => _secondPassTypes.Count > 0;
+
+    //Dictionary<string,
+
+    public Compatibility GetArrayType(Compatibility elementType, ArrayShape shape) => Compatibility.Incompatible;
+    public Compatibility GetByReferenceType(Compatibility elementType) => Compatibility.Compatible;
+    public Compatibility GetFunctionPointerType(MethodSignature<Compatibility> signature) => Compatibility.Compatible;
+    public Compatibility GetGenericInstantiation(Compatibility gennricType, ImmutableArray<Compatibility> typeArguments) => Compatibility.Incompatible;
+    public Compatibility GetGenericMethodParameter(object genericContext, int index) => Compatibility.Incompatible;
+    public Compatibility GetGenericTypeParameter(object genericContext, int index) => Compatibility.Incompatible;
+    public Compatibility GetModifiedType(Compatibility modifier, Compatibility unmodifiedType, bool isRequired) => Compatibility.Incompatible;
+    public Compatibility GetPinnedType(Compatibility elementType) => Compatibility.Compatible; // TODO: really?
+    public Compatibility GetPointerType(Compatibility elementType) => Compatibility.Compatible;
+    public Compatibility GetPrimitiveType(PrimitiveTypeCode typeCode)
     {
         return typeCode switch
         {
-           PrimitiveTypeCode.Object => false,
-           PrimitiveTypeCode.String => false,
-           PrimitiveTypeCode.TypedReference => false, // TODO: really?
-           _ => true
+           PrimitiveTypeCode.Object => Compatibility.Incompatible,
+           PrimitiveTypeCode.String => Compatibility.Incompatible,
+           PrimitiveTypeCode.TypedReference => Compatibility.Incompatible, // TODO: really?
+           _ => Compatibility.Compatible
         };
     }
 
-    public bool GetSZArrayType(bool elementType) => false;
+    public Compatibility GetSZArrayType(bool elementType) => Compatibility.Incompatible;
 
-    public bool GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+    public Compatibility GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
         TypeDefinition typeDef = reader.GetTypeDefinition(handle);
 
@@ -53,17 +90,17 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
         {
             TypeReference baseType = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
             if (reader.GetString(baseType.Name) == "Enum")
-                return true;
+                return Compatibility.Compatible;
         }
         else
         {
             throw new NotImplementedException();
         }
 
-        return false;
+        return Compatibility.Incompatible;
     }
 
-    public bool GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+    public Compatibility GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
     {
         if (rawTypeKind == 0x11 /*ELEMENT_TYPE_VALUETYPE*/)
         {
@@ -75,12 +112,20 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
                 AssemblyReferenceHandle assyRefHandle = (AssemblyReferenceHandle)typeRef.ResolutionScope;
                 AssemblyReference assyRef = reader.GetAssemblyReference(assyRefHandle);
 
+                RegisterTypeForSecondPass(reader.GetString(assyRef.Name), reader.GetString(typeRef.Name));
+                return Compatibility.Inconclusive;
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
         }
+
+        return Compatibility.Incompatible;
     }
 
-    public bool GetTypeFromSpecification(MetadataReader reader, object genericContext, TypeSpecificationHandle handle, byte rawTypeKind) =>
-        false; // TODO: Really?
+    public Compatibility GetTypeFromSpecification(MetadataReader reader, object genericContext, TypeSpecificationHandle handle, byte rawTypeKind) =>
+        Compatibility.Incompatible; // TODO: Really?
 }
 
 
@@ -132,6 +177,8 @@ public class MarshalingPInvokeScanner : Task
 
         PathAssemblyResolver resolver = new PathAssemblyResolver(assemblies);
         using MetadataLoadContext mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+
+        MinimalMarshalingTypeCompatibilityProvider mmtcp =  new MinimalMarshalingTypeCompatibilityProvider();
         foreach (string aname in assemblies)
         {
             if (IsAssemblyIncompatible(aname))
@@ -146,7 +193,7 @@ public class MarshalingPInvokeScanner : Task
         return mr.GetString(md.Name);
     }
 
-    private static bool IsAssemblyIncompatible(string path)
+    private static bool IsAssemblyIncompatible(string path, MinimalMarshalingTypeCompatibilityProvider mmtcp)
     {
         using FileStream file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using PEReader peReader = new PEReader(file);
@@ -176,7 +223,6 @@ public class MarshalingPInvokeScanner : Task
             }
         }
 
-        MinimalMarshalingTypeCompatibilityProvider mmtcp =  new MinimalMarshalingTypeCompatibilityProvider();
         foreach (TypeDefinitionHandle typeDefHandle in mdtReader.TypeDefinitions)
         {
             TypeDefinition typeDef = mdtReader.GetTypeDefinition(typeDefHandle);
@@ -190,10 +236,10 @@ public class MarshalingPInvokeScanner : Task
                     continue;
 
                 BlobReader sgnBlobReader = mdtReader.GetBlobReader(mthDef.Signature);
-                SignatureDecoder<bool, object> decoder = new SignatureDecoder<bool, object>(
+                SignatureDecoder<Compatibility, object> decoder = new SignatureDecoder<Compatibility, object>(
                     mmtcp, mdtReader, null!);
 
-                MethodSignature<bool> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
+                MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
                 if(!sgn.ReturnType)
                 {
                     Console.WriteLine("   " + GetMethodName(mdtReader, mthDef) + " - incompatible return type.");
