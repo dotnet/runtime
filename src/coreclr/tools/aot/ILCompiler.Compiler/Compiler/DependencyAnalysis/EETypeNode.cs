@@ -689,6 +689,7 @@ namespace ILCompiler.DependencyAnalysis
 
             OutputTypeManagerIndirection(factory, ref objData);
             OutputWritableData(factory, ref objData);
+            OutputDispatchMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -738,6 +739,11 @@ namespace ILCompiler.DependencyAnalysis
                 SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
                 if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
                     flags |= (uint)EETypeFlags.HasSealedVTableEntriesFlag;
+            }
+
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                flags |= (uint)EETypeFlags.HasDispatchMap;
             }
 
             if (HasOptionalFields)
@@ -1200,17 +1206,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputDispatchMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                ISymbolNode dispatchMap = factory.InterfaceDispatchMap(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(dispatchMap, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(dispatchMap);
+            }
+        }
+
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            if (!relocsOnly && MightHaveInterfaceDispatchMap(factory))
-            {
-                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
-            }
-
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
