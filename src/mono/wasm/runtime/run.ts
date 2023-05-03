@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
@@ -127,7 +127,11 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     logErrorOnExit(exit_code, reason);
     appendElementOnExit(exit_code);
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (runtimeHelpers.quit) {
+        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
+            INTERNAL.process.exit(exit_code);
+            throw reason;
+        }
+        else if (runtimeHelpers.quit) {
             runtimeHelpers.quit(exit_code, reason);
         } else {
             throw reason;

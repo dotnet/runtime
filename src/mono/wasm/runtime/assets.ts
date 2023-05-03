@@ -514,9 +514,15 @@ export async function instantiate_wasm_asset(
         }
         const arrayBuffer = await response.arrayBuffer();
         if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module buffered");
-        const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasmModuleImports!);
-        compiledInstance = arrayBufferResult.instance;
-        compiledModule = arrayBufferResult.module;
+        if (ENVIRONMENT_IS_SHELL) {
+            // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
+            compiledModule = new WebAssembly.Module(arrayBuffer);
+            compiledInstance = new WebAssembly.Instance(compiledModule, wasmModuleImports);
+        } else {
+            const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasmModuleImports!);
+            compiledInstance = arrayBufferResult.instance;
+            compiledModule = arrayBufferResult.module;
+        }
     }
     successCallback(compiledInstance, compiledModule);
 }

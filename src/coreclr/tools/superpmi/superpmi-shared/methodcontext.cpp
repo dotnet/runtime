@@ -1201,6 +1201,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_OSR";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT:
         return "CORJIT_FLAG_ALT_JIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
+        return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE:
         return "CORJIT_FLAG_MAKEFINALCODE";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:
@@ -6192,37 +6194,6 @@ CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE han
     if (ppIndirection != nullptr)
         *ppIndirection = (void*)value.A;
     return (CORINFO_FIELD_HANDLE)value.B;
-}
-
-void MethodContext::recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result)
-{
-    if (AreTypesEquivalent == nullptr)
-        AreTypesEquivalent = new LightWeightMap<DLDL, DWORD>();
-
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORD value = result ? 1 : 0;
-    AreTypesEquivalent->Add(key, value);
-    DEBUG_REC(dmpAreTypesEquivalent(key, value));
-}
-void MethodContext::dmpAreTypesEquivalent(DLDL key, DWORD value)
-{
-    printf("AreTypesEquivalent NYI");
-}
-bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORD value = LookupByKeyOrMiss(AreTypesEquivalent, key, ": key %016" PRIX64 " %016" PRIX64 "", key.A, key.B);
-
-    DEBUG_REP(dmpAreTypesEquivalent(key, value));
-    return value != 0;
 }
 
 void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,

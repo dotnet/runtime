@@ -5970,6 +5970,7 @@ void CodeGen::genFnProlog()
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif // TARGET_AMD64
+    compiler->unwindEndProlog();
 
 //-------------------------------------------------------------------------
 //
@@ -6297,7 +6298,6 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
     GetEmitter()->emitEndProlog();
-    compiler->unwindEndProlog();
 }
 #ifdef _PREFAST_
 #pragma warning(pop)

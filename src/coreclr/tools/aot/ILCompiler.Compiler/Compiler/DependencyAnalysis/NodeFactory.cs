@@ -391,11 +391,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new EmbeddedTrimmingDescriptorNode(module);
             });
 
-            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
-            {
-                return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
-            });
-
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
@@ -757,13 +752,6 @@ namespace ILCompiler.DependencyAnalysis
         internal InterfaceDispatchMapNode InterfaceDispatchMap(TypeDesc type)
         {
             return _interfaceDispatchMaps.GetOrAdd(type);
-        }
-
-        private NodeCache<TypeDesc, EmbeddedObjectNode> _interfaceDispatchMapIndirectionNodes;
-
-        public EmbeddedObjectNode InterfaceDispatchMapIndirection(TypeDesc type)
-        {
-            return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
         }
 
         private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
@@ -1248,11 +1236,6 @@ namespace ILCompiler.DependencyAnalysis
             "__EagerCctorEnd",
             null);
 
-        public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            "__DispatchMapTableStart",
-            "__DispatchMapTableEnd",
-            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
-
         public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
@@ -1276,7 +1259,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
-            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
@@ -1285,7 +1267,6 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 
