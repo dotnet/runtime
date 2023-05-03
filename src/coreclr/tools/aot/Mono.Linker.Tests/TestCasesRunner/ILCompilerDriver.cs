@@ -65,11 +65,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
 
 			foreach (var rootedAssembly in options.AdditionalRootAssemblies) {
-				// For compatibility with IL Linker, the parameter could be a file name or an assembly name.
-				// This is the logic IL Linker uses to decide how to interpret the string. Really.
-				EcmaModule module = File.Exists (rootedAssembly)
-					? typeSystemContext.GetModuleFromPath (rootedAssembly)
-					: typeSystemContext.GetModuleForSimpleName (rootedAssembly);
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (rootedAssembly);
 
 				// We only root the module type. The rest will fall out because we treat rootedAssemblies
 				// same as conditionally rooted ones and here we're fulfilling the condition ("something is used").

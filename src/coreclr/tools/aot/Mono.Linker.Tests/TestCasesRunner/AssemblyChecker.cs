@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
 				"<Module>.MainMethodWrapper()",
 
-				// Ignore compiler generated code which can't be reasonably matches to the source method
+				// Ignore compiler generated code which can't be reasonably matched to the source method
 				"<PrivateImplementationDetails>",
 			};
 
