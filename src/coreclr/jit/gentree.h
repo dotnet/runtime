@@ -243,7 +243,7 @@ public:
     }
 };
 
-// GT_FIELD nodes will be lowered into more "code-gen-able" representations, like GT_IND's of addresses.
+// GT_FIELD_ADDR nodes will be lowered into more "code-gen-able" representations, like ADD's of addresses.
 // For value numbering, we would like to preserve the aliasing information for class and static fields,
 // and so will annotate such lowered addresses with "field sequences", representing the "base" static or
 // class field and any additional struct fields. We only need to preserve the handle for the first field,
@@ -476,8 +476,7 @@ enum GenTreeFlags : unsigned int
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
-    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
+    GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
@@ -1718,7 +1717,6 @@ public:
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
-            case GT_FIELD:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
@@ -3881,8 +3879,8 @@ struct GenTreeBox : public GenTreeUnOp
     }
 };
 
-// GenTreeField -- data member ref (GT_FIELD)
-struct GenTreeField : public GenTreeUnOp
+// GenTreeFieldAddr -- data member address (GT_FIELD_ADDR)
+struct GenTreeFieldAddr : public GenTreeUnOp
 {
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
@@ -3896,8 +3894,8 @@ public:
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(oper, type, obj)
+    GenTreeFieldAddr(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTreeUnOp(GT_FIELD_ADDR, type, obj)
         , gtFldHnd(fldHnd)
         , gtFldOffset(offs)
         , gtFldMayOverlap(false)
@@ -3909,7 +3907,7 @@ public:
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeField() : GenTreeUnOp()
+    GenTreeFieldAddr() : GenTreeUnOp()
     {
     }
 #endif
@@ -3921,13 +3919,6 @@ public:
         return gtOp1;
     }
 
-    // True if this field is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
-        return (gtFlags & GTF_FLD_VOLATILE) != 0;
-    }
-
     bool IsSpanLength() const
     {
         // This is limited to span length today rather than a more general "IsNeverNegative"
@@ -3936,8 +3927,6 @@ public:
         // Extending this support more in the future will require additional work and
         // considerations to help ensure it is correctly used since people may want
         // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
-
-        assert(OperIs(GT_FIELD));
         return gtFldIsSpanLength;
     }
 

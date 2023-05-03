@@ -2898,8 +2898,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* length = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                length->SetIsSpanLength(true);
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* length = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2915,8 +2917,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
                 const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTree*             data      = gtNewFieldRef(TYP_BYREF, ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree*             result    = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
+                GenTreeFieldAddr*    dataFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpanClone), ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree* data   = gtNewFieldIndirNode(TYP_BYREF, nullptr, dataFieldAddr);
+                GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -2959,9 +2963,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeField* fieldRef = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                fieldRef->SetIsSpanLength(true);
-                return fieldRef;
+                GenTreeFieldAddr* lengthFieldAddr =
+                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                lengthFieldAddr->SetIsSpanLength(true);
+                GenTree* lengthField = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
+
+                return lengthField;
             }
 
             case NI_System_RuntimeTypeHandle_GetValueInternal:
