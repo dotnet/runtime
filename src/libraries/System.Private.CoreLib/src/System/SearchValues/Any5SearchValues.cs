@@ -10,13 +10,13 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny5Values<T, TImpl> : IndexOfAnyValues<T>
+    internal sealed class Any5SearchValues<T, TImpl> : SearchValues<T>
         where T : struct, IEquatable<T>
         where TImpl : struct, INumber<TImpl>
     {
         private readonly TImpl _e0, _e1, _e2, _e3, _e4;
 
-        public IndexOfAny5Values(ReadOnlySpan<TImpl> values)
+        public Any5SearchValues(ReadOnlySpan<TImpl> values)
         {
             Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TImpl>());
             Debug.Assert(values.Length == 5);

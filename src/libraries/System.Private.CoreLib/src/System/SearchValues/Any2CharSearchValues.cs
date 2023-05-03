@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny2CharValue<TShouldUsePacked> : IndexOfAnyValues<char>
-        where TShouldUsePacked : struct, IndexOfAnyValues.IRuntimeConst
+    internal sealed class Any2CharSearchValues<TShouldUsePacked> : SearchValues<char>
+        where TShouldUsePacked : struct, SearchValues.IRuntimeConst
     {
         private char _e0, _e1;
 
-        public IndexOfAny2CharValue(char value0, char value1) =>
+        public Any2CharSearchValues(char value0, char value1) =>
             (_e0, _e1) = (value0, value1);
 
         internal override char[] GetValues() => new[] { _e0, _e1 };

@@ -7,12 +7,12 @@ using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyCharValuesProbabilistic : IndexOfAnyValues<char>
+    internal sealed class ProbabilisticCharSearchValues : SearchValues<char>
     {
         private ProbabilisticMap _map;
         private readonly string _values;
 
-        public IndexOfAnyCharValuesProbabilistic(scoped ReadOnlySpan<char> values)
+        public ProbabilisticCharSearchValues(scoped ReadOnlySpan<char> values)
         {
             if (Vector128.IsHardwareAccelerated && values.Length < 8)
             {

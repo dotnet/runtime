@@ -3,32 +3,27 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyLatin1CharValues : IndexOfAnyValues<char>
+    internal sealed class AsciiCharSearchValues<TOptimizations> : SearchValues<char>
+        where TOptimizations : struct, IndexOfAnyAsciiSearcher.IOptimizations
     {
+        private readonly Vector128<byte> _bitmap;
         private readonly BitVector256 _lookup;
 
-        public IndexOfAnyLatin1CharValues(ReadOnlySpan<char> values)
+        public AsciiCharSearchValues(Vector128<byte> bitmap, BitVector256 lookup)
         {
-            foreach (char c in values)
-            {
-                if (c > 255)
-                {
-                    // The values were modified concurrent with the call to IndexOfAnyValues.Create
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-                }
-
-                _lookup.Set(c);
-            }
+            _bitmap = bitmap;
+            _lookup = lookup;
         }
 
         internal override char[] GetValues() => _lookup.GetCharValues();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
-            _lookup.Contains256(value);
+            _lookup.Contains128(value);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<char> span) =>
@@ -46,7 +41,25 @@ namespace System.Buffers
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<char> span) =>
             LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(ref MemoryMarshal.GetReference(span), span.Length);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= Vector128<short>.Count
+                ? IndexOfAnyAsciiSearcher.IndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, _bitmap)
+                : IndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            return IndexOfAnyAsciiSearcher.IsVectorizationSupported && searchSpaceLength >= Vector128<short>.Count
+                ? IndexOfAnyAsciiSearcher.LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref Unsafe.As<char, short>(ref searchSpace), searchSpaceLength, _bitmap)
+                : LastIndexOfAnyScalar<TNegator>(ref searchSpace, searchSpaceLength);
+        }
+
+        private int IndexOfAnyScalar<TNegator>(ref char searchSpace, int searchSpaceLength)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
@@ -55,7 +68,7 @@ namespace System.Buffers
             while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
             {
                 char c = cur;
-                if (TNegator.NegateIfNeeded(_lookup.Contains256(c)))
+                if (TNegator.NegateIfNeeded(_lookup.Contains128(c)))
                 {
                     return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                 }
@@ -66,13 +79,13 @@ namespace System.Buffers
             return -1;
         }
 
-        private int LastIndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
+        private int LastIndexOfAnyScalar<TNegator>(ref char searchSpace, int searchSpaceLength)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
             for (int i = searchSpaceLength - 1; i >= 0; i--)
             {
                 char c = Unsafe.Add(ref searchSpace, i);
-                if (TNegator.NegateIfNeeded(_lookup.Contains256(c)))
+                if (TNegator.NegateIfNeeded(_lookup.Contains128(c)))
                 {
                     return i;
                 }

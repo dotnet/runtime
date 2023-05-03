@@ -5,12 +5,12 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyByteValuesInRange : IndexOfAnyValues<byte>
+    internal sealed class RangeByteSearchValues : SearchValues<byte>
     {
         private readonly byte _lowInclusive, _highInclusive;
         private readonly uint _lowUint, _highMinusLow;
 
-        public IndexOfAnyByteValuesInRange(byte lowInclusive, byte highInclusive)
+        public RangeByteSearchValues(byte lowInclusive, byte highInclusive)
         {
             (_lowInclusive, _highInclusive) = (lowInclusive, highInclusive);
             _lowUint = lowInclusive;

@@ -6,14 +6,14 @@ using System.Runtime.InteropServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAnyCharValuesInRange<TShouldUsePacked> : IndexOfAnyValues<char>
-        where TShouldUsePacked : struct, IndexOfAnyValues.IRuntimeConst
+    internal sealed class RangeCharSearchValues<TShouldUsePacked> : SearchValues<char>
+        where TShouldUsePacked : struct, SearchValues.IRuntimeConst
     {
         private readonly char _rangeInclusive;
         private char _lowInclusive, _highInclusive;
         private readonly uint _lowUint, _highMinusLow;
 
-        public IndexOfAnyCharValuesInRange(char lowInclusive, char highInclusive)
+        public RangeCharSearchValues(char lowInclusive, char highInclusive)
         {
             (_lowInclusive, _rangeInclusive, _highInclusive) = (lowInclusive, (char)(highInclusive - lowInclusive), highInclusive);
             _lowUint = lowInclusive;

@@ -3,7 +3,7 @@
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfEmptyValues<T> : IndexOfAnyValues<T>
+    internal sealed class EmptySearchValues<T> : SearchValues<T>
         where T : IEquatable<T>?
     {
         internal override T[] GetValues() =>

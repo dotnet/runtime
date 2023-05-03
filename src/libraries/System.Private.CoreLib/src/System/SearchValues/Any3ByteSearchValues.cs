@@ -6,11 +6,11 @@ using System.Runtime.CompilerServices;
 
 namespace System.Buffers
 {
-    internal sealed class IndexOfAny3ByteValues : IndexOfAnyValues<byte>
+    internal sealed class Any3ByteSearchValues : SearchValues<byte>
     {
         private readonly byte _e0, _e1, _e2;
 
-        public IndexOfAny3ByteValues(ReadOnlySpan<byte> values)
+        public Any3ByteSearchValues(ReadOnlySpan<byte> values)
         {
             Debug.Assert(values.Length == 3);
             (_e0, _e1, _e2) = (values[0], values[1], values[2]);
