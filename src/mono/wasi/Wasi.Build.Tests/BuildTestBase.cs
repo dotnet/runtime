@@ -37,7 +37,7 @@ namespace Wasm.Build.Tests
         protected string _nugetPackagesDir = string.Empty;
 
         // FIXME: use an envvar to override this
-        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
+        protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30 * 60 * 1000 : 15 * 60 * 1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -49,7 +49,7 @@ namespace Wasm.Build.Tests
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
-                            // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+                                                                          // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
         static BuildTestBase()
         {
@@ -69,15 +69,15 @@ namespace Wasm.Build.Tests
                 else
                     s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
 
-                Console.WriteLine ("");
-                Console.WriteLine ($"==============================================================================================");
-                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
-                Console.WriteLine ($"==============================================================================================");
-                Console.WriteLine ("");
+                Console.WriteLine("");
+                Console.WriteLine($"==============================================================================================");
+                Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
+                Console.WriteLine($"==============================================================================================");
+                Console.WriteLine("");
             }
             catch (Exception ex)
             {
-                Console.WriteLine ($"Exception: {ex}");
+                Console.WriteLine($"Exception: {ex}");
                 throw;
             }
         }
@@ -90,7 +90,7 @@ namespace Wasm.Build.Tests
             _logPath = s_buildEnv.LogRootPath; // FIXME:
         }
 
-        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config=null)
+        public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null)
         {
             if (config == null)
             {
@@ -163,7 +163,7 @@ namespace Wasm.Build.Tests
               ##INSERT_AT_END##
             </Project>";
 
-        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties="", string extraItems="", string insertAtEnd="", string projectTemplate=SimpleProjectTemplate)
+        protected static BuildArgs ExpandBuildArgs(BuildArgs buildArgs, string extraProperties = "", string extraItems = "", string insertAtEnd = "", string projectTemplate = SimpleProjectTemplate)
         {
             if (buildArgs.AOT)
             {
@@ -185,7 +185,7 @@ namespace Wasm.Build.Tests
             string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
             if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
-                _testOutput.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
+                _testOutput.WriteLine($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
                 if (!product.Result)
                     throw new XunitException($"Found existing build at {product.ProjectDir}, but it had failed. Check build log at {product.LogFile}");
@@ -309,7 +309,7 @@ namespace Wasm.Build.Tests
             return projectfile;
         }
 
-        protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
+        protected (CommandResult, string) BuildInternal(string id, string config, bool publish = false, bool setWasmDevel = true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
             _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
@@ -361,7 +361,7 @@ namespace Wasm.Build.Tests
                 "index.html",
                 mainJS,
                 "dotnet.wasm",
-                "mono-config.json",
+                "blazor.boot.json",
                 "dotnet.js"
             });
 
@@ -392,7 +392,7 @@ namespace Wasm.Build.Tests
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
             => AssertFilesExist(dir, filenames, label, expectToExist: false);
 
-        protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
+        protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist = true)
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
             if (!Directory.Exists(dir))
@@ -408,10 +408,10 @@ namespace Wasm.Build.Tests
             }
         }
 
-        protected static void AssertSameFile(string file0, string file1, string? label=null) => AssertFile(file0, file1, label, same: true);
-        protected static void AssertNotSameFile(string file0, string file1, string? label=null) => AssertFile(file0, file1, label, same: false);
+        protected static void AssertSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: true);
+        protected static void AssertNotSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: false);
 
-        protected static void AssertFile(string file0, string file1, string? label=null, bool same=true)
+        protected static void AssertFile(string file0, string file1, string? label = null, bool same = true)
         {
             Assert.True(File.Exists(file0), $"{label}: Expected to find {file0}");
             Assert.True(File.Exists(file1), $"{label}: Expected to find {file1}");
@@ -426,7 +426,7 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
-        protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null, int? timeoutMs=null)
+        protected (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
         {
             var result = RunProcess(s_buildEnv.DotNet, _testOutput, args, workingDir: _projectDir, label: label, envVars: envVars, timeoutMs: timeoutMs ?? s_defaultPerTestTimeoutMs);
             if (expectSuccess && result.exitCode != 0)
@@ -450,14 +450,14 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "bin", config, targetFramework, BuildEnvironment.DefaultRuntimeIdentifier);
         }
 
-        protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetObjDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
@@ -489,7 +489,7 @@ namespace Wasm.Build.Tests
         {
             _testOutput.WriteLine($"Running {path} {args}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
-            StringBuilder outputBuilder = new ();
+            StringBuilder outputBuilder = new();
             object syncObj = new();
 
             var processStartInfo = new ProcessStartInfo
@@ -523,7 +523,7 @@ namespace Wasm.Build.Tests
                 processStartInfo.RemoveEnvironmentVariables("MSBuildSDKsPath");
             }
 
-            Process process = new ();
+            Process process = new();
             process.StartInfo = processStartInfo;
             process.EnableRaisingEvents = true;
 
@@ -596,7 +596,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties=null, string? extraItems=null, string? atTheEnd=null)
+        public static string AddItemsPropertiesToProject(string projectFile, string? extraProperties = null, string? extraItems = null, string? atTheEnd = null)
         {
             if (extraProperties == null && extraItems == null && atTheEnd == null)
                 return projectFile;
@@ -643,7 +643,7 @@ namespace Wasm.Build.Tests
             return string.IsNullOrEmpty(value) ? defaultValue : value;
         }
 
-        internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish=true)
+        internal BuildPaths GetBuildPaths(BuildArgs buildArgs, bool forPublish = true)
         {
             string objDir = GetObjDir(buildArgs.Config);
             string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
@@ -686,25 +686,25 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
-    internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
+    internal record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 
     public record BuildProjectOptions
     (
-        Action? InitProject               = null,
-        bool?   DotnetWasmFromRuntimePack = null,
-        bool    HasIcudt                  = true,
-        bool    UseCache                  = true,
-        bool    ExpectSuccess             = true,
-        bool    AssertAppBundle           = true,
-        bool    CreateProject             = true,
-        bool    Publish                   = true,
-        bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
-        string? Verbosity                 = null,
-        string? Label                     = null,
-        string? TargetFramework           = null,
-        string? MainJS                    = null,
+        Action? InitProject = null,
+        bool? DotnetWasmFromRuntimePack = null,
+        bool HasIcudt = true,
+        bool UseCache = true,
+        bool ExpectSuccess = true,
+        bool AssertAppBundle = true,
+        bool CreateProject = true,
+        bool Publish = true,
+        bool BuildOnlyAfterPublish = true,
+        bool HasV8Script = true,
+        string? Verbosity = null,
+        string? Label = null,
+        string? TargetFramework = null,
+        string? MainJS = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 

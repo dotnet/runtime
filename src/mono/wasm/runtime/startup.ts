@@ -60,7 +60,7 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
 
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
-        module.configSrc = "./mono-config.json";
+        module.configSrc = "./blazor.boot.json";
     }
 
     if (!module["locateFile"]) {
@@ -650,7 +650,7 @@ export function bindings_init(): void {
 }
 
 /**
- * Loads the mono config file (typically called mono-config.json) asynchroniously
+ * Loads the mono config file (typically called blazor.boot.json) asynchroniously
  * Note: the run dependencies are so emsdk actually awaits it in order.
  *
  * @param {string} configFilePath - relative path to the config file
