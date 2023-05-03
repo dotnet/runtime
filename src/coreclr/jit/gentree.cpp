@@ -16082,7 +16082,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
-        asg = impAssignStruct(gtNewLclvNode(tmp, dstTyp), val, curLevel, pAfterStmt, di, block);
+        store = impAssignStruct(gtNewLclvNode(tmp, dstTyp), val, curLevel, pAfterStmt, di, block);
     }
     else
     {
