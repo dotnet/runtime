@@ -116,7 +116,8 @@ namespace Internal.JitInterface
         private CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
         private bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
         private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-        private uint totalILArgs() { return (uint)(numArgs + (hasThis() ? 1 : 0)); }
+        private bool hasImplicitThis() { return ((callConv & (CorInfoCallConv.CORINFO_CALLCONV_HASTHIS | CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS)) == CorInfoCallConv.CORINFO_CALLCONV_HASTHIS); }
+        private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
     };

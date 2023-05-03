@@ -210,7 +210,7 @@ set( JIT_ARM_SOURCES
   lsraarmarch.cpp
   lsraarm.cpp
   targetarm.cpp
-  unwindarm.cpp
+  unwindarmarch.cpp
 )
 
 set( JIT_I386_SOURCES
@@ -238,7 +238,7 @@ set( JIT_ARM64_SOURCES
   simd.cpp
   simdashwintrinsic.cpp
   targetarm64.cpp
-  unwindarm.cpp
+  unwindarmarch.cpp
   unwindarm64.cpp
   hwintrinsicarm64.cpp
   hwintrinsiccodegenarm64.cpp

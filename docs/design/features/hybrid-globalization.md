@@ -8,7 +8,16 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 ### WASM
 
-For WebAssembly in Browser we are using Web API instead of some ICU data.
+For WebAssembly in Browser we are using Web API instead of some ICU data. Ideally, we would use `System.Runtime.InteropServices.JavaScript` to call JS code from inside of C# but we cannot reference any assemblies from inside of `System.Private.CoreLib`. That is why we are using iCalls instead.
+
+**SortKey**
+
+Affected public APIs:
+- CompareInfo.GetSortKey
+- CompareInfo.GetSortKeyLength
+- CompareInfo.GetHashCode
+
+Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
 
 **Case change**
 
@@ -172,3 +181,20 @@ hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "base" }) // 0;
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`
 
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`
+
+
+**String starts with / ends with**
+
+Affected public APIs:
+- CompareInfo.IsPrefix
+- CompareInfo.IsSuffix
+- String.StartsWith
+- String.EndsWith
+
+Web API does not expose locale-sensitive endsWith/startsWith function. As a workaround, both strings get normalized and weightless characters are removed. Resulting strings are cut to the same length and comparison is performed. This approach, beyond having the same compare option limitations as described under **String comparison**, has additional limitations connected with the workaround used. Because we are normalizing strings to be able to cut them, we cannot calculate the match length on the original strings. Methods that calculate this information throw PlatformNotSupported exception:
+
+- [CompareInfo.IsPrefix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.isprefix?view=net-8.0#system-globalization-compareinfo-isprefix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+- [CompareInfo.IsSuffix](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.compareinfo.issuffix?view=net-8.0#system-globalization-compareinfo-issuffix(system-readonlyspan((system-char))-system-readonlyspan((system-char))-system-globalization-compareoptions-system-int32@))
+
+- `IgnoreSymbols`
+Only comparisons that do not skip character types are allowed. E.g. `IgnoreSymbols` skips symbol-chars in comparison/indexing. All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.

@@ -1522,16 +1522,28 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+bool WrapICorJitInfo::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    API_LEAVE(getReadonlyStaticFieldValue);
+    API_ENTER(getStaticFieldContent);
+    bool temp = wrapHnd->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    API_LEAVE(getStaticFieldContent);
+    return temp;
+}
+
+bool WrapICorJitInfo::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(getObjectContent);
+    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(getObjectContent);
     return temp;
 }
 

@@ -100,5 +100,17 @@ namespace System.SpanTests
                 Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>(null), ref pinnableReference));
             }
         }
+
+        [Fact]
+        public static void ReadOnlySpanGetReferenceAndReadInteger()
+        {
+            Assert.Equal(6619240, 
+                Unsafe.As<byte, int>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
+                ref MemoryMarshal.GetReference("hello world 1".AsSpan())), 0)));
+
+            Assert.Equal(7998511687277765888,
+                Unsafe.As<byte, long>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
+                    ref MemoryMarshal.GetReference("hello world 2".AsSpan())), 1)));
+        }
     }
 }

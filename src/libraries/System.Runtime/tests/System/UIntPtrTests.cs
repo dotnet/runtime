@@ -268,7 +268,12 @@ namespace System.Tests
                 yield return new object[] { (nuint)4567, "D", defaultFormat, "4567" };
                 yield return new object[] { (nuint)4567, "D18", defaultFormat, "000000000000004567" };
 
+                yield return new object[] { (nuint)0, "x", defaultFormat, "0" };
                 yield return new object[] { (nuint)0x2468, "x", defaultFormat, "2468" };
+
+                yield return new object[] { (nuint)0, "b", defaultFormat, "0" };
+                yield return new object[] { (nuint)0x2468, "b", defaultFormat, "10010001101000" };
+
                 yield return new object[] { (nuint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -343,24 +348,36 @@ namespace System.Tests
             // All lengths decimal
             {
                 string s = "";
-                uint result = 0;
-                for (int i = 1; i <= 10; i++)
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size == 8 ? 20 : 10); i++)
                 {
-                    result = (uint)(result * 10 + (i % 10));
+                    result = result * 10 + (i % 10);
                     s += (i % 10).ToString();
-                    yield return new object[] { s, NumberStyles.Integer, null, (nuint)result };
+                    yield return new object[] { s, NumberStyles.Integer, null, result };
                 }
             }
 
             // All lengths hexadecimal
             {
                 string s = "";
-                uint result = 0;
-                for (uint i = 1; i <= 8; i++)
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size * 2); i++)
                 {
                     result = ((result * 16) + (i % 16));
                     s += (i % 16).ToString("X");
                     yield return new object[] { s, NumberStyles.HexNumber, null, result };
+                }
+            }
+
+            // All lengths binary
+            {
+                string s = "";
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size * 8); i++)
+                {
+                    result = ((result * 2) + (i % 2));
+                    s += (i % 2).ToString("b");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, result };
                 }
             }
 
@@ -370,6 +387,8 @@ namespace System.Tests
             yield return new object[] { Is64Bit ? "  +18446744073709551615  " : "  +4294967295  ", NumberStyles.Integer, null, nuint.MaxValue };
             yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, nuint.MaxValue };
             yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "1111111111111111111111111111111111111111111111111111111111111111" : "11111111111111111111111111111111", NumberStyles.BinaryNumber, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "  1111111111111111111111111111111111111111111111111111111111111111  " : "  11111111111111111111111111111111  ", NumberStyles.BinaryNumber, null, nuint.MaxValue };
         }
 
         [Theory]
@@ -413,7 +432,8 @@ namespace System.Tests
         {
             // > max value
             yield return new object[] { "18446744073709551616", NumberStyles.Integer, null, typeof(OverflowException) };
-            yield return new object[] { "10000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { IntPtr.Size == 8 ? "10000000000000000" : "100000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { IntPtr.Size == 8 ? "10000000000000000000000000000000000000000000000000000000000000000" : "100000000000000000000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -454,16 +474,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             nuint result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.TryParse("1", style, null, out result));
             Assert.Equal(default(nuint), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -479,6 +501,8 @@ namespace System.Tests
             yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (nuint)5 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (nuint)0x1 };
             yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (nuint)0x2 };
+            yield return new object[] { "01", 0, 1, NumberStyles.BinaryNumber, null, (nuint)0b0 };
+            yield return new object[] { "01", 1, 1, NumberStyles.BinaryNumber, null, (nuint)0b1 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (nuint)10 };
         }
 

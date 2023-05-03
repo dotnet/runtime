@@ -83,9 +83,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
 
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
+    if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
     assert((unsigned)id->idInsFmt() < emitFmtCount);
@@ -4190,7 +4190,7 @@ void emitter::emitIns_R_ARX(
         assert(!"Please use ins_Load() to select the correct instruction");
     }
 
-    unsigned shift = genLog2((unsigned)mul);
+    unsigned shift = genLog2(mul);
 
     if ((ins == INS_lea) || emitInsIsLoad(ins))
     {

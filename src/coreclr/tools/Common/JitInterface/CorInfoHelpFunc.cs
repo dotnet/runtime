@@ -161,7 +161,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_SETFIELDDOUBLE,
 
         CORINFO_HELP_GETFIELDADDR,
-
+        CORINFO_HELP_GETSTATICFIELDADDR,
         CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
         // There are a variety of specialized helpers for accessing static fields. The JIT should use

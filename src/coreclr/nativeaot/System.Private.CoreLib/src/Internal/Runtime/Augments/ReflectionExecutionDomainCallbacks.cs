@@ -37,6 +37,7 @@ namespace Internal.Runtime.Augments
         public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
         public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
 

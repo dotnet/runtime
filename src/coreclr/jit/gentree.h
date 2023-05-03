@@ -82,6 +82,7 @@ enum GenTreeOperKind
     GTK_EXOP    = 0x10, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
                         // by adding non-node fields to unary or binary operator.
     GTK_NOVALUE = 0x20, // node does not produce a value
+    GTK_STORE   = 0x40, // node represents a store
 
     GTK_MASK = 0xFF
 };
@@ -476,7 +477,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
@@ -494,9 +494,10 @@ enum GenTreeFlags : unsigned int
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
+    GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
-                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INITCLASS,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -507,12 +508,6 @@ enum GenTreeFlags : unsigned int
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
-
-    GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
-    GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
@@ -547,13 +542,6 @@ enum GenTreeFlags : unsigned int
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
-    GTF_ICON_INITCLASS          = 0x00100000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
-                                              //               class/static init helper.  In some cases, the constant is
-                                              //               the address of the static field itself, and in other cases
-                                              //               there's an extra layer of indirection and it is the address
-                                              //               of the cell that the runtime will fill in with the address
-                                              //               of the static field; in both of those cases, the constant
-                                              //               is what gets flagged.
 
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
@@ -1204,6 +1192,11 @@ public:
         return OperIsInitVal(OperGet());
     }
 
+    bool IsInitVal() const
+    {
+        return IsIntegralConst(0) || OperIsInitVal();
+    }
+
     bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
@@ -1225,7 +1218,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYN_BLK);
+        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -1547,8 +1540,7 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(
-            AreContiguous(GT_IND, GT_STOREIND, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
         return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -1599,6 +1591,8 @@ public:
     // Helper function to return the address of an indir or array meta-data node.
     GenTree* GetIndirOrArrMetaDataAddr();
 
+    bool IndirMayFault(Compiler* compiler);
+
     bool OperIsImplicitIndir() const;
 
     static bool OperIsAtomicOp(genTreeOps gtOper)
@@ -1622,15 +1616,14 @@ public:
         return OperIsAtomicOp(gtOper);
     }
 
+    static bool OperIsStore(genTreeOps gtOper)
+    {
+        return (OperKind(gtOper) & GTK_STORE) != 0;
+    }
+
     bool OperIsStore() const
     {
         return OperIsStore(gtOper);
-    }
-
-    static bool OperIsStore(genTreeOps gtOper)
-    {
-        return (gtOper == GT_STOREIND || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD ||
-                OperIsStoreBlk(gtOper) || OperIsAtomicOp(gtOper));
     }
 
     static bool OperIsMultiOp(genTreeOps gtOper)
@@ -1679,7 +1672,7 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC);
     }
 
     bool OperConsumesFlags() const
@@ -1698,6 +1691,9 @@ public:
 #endif
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
+
+    bool OperIsStoreLclVar(unsigned* pLclNum);
+    bool OperIsStoreLcl(unsigned* pLclNum);
 
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
@@ -1792,6 +1788,8 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
+
+    inline GenTree* GetStoreDestination();
 
     inline GenTree*& Data();
 
@@ -3457,6 +3455,13 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeUnOp(oper, type, data DEBUGARG(/* largeNode */ false))
+    {
+        assert(OperIsLocalStore());
+        SetLclNum(lclNum);
+    }
+
     GenTree*& Data()
     {
         assert(OperIsLocalStore());
@@ -3601,7 +3606,7 @@ private:
     MultiRegSpillFlags gtSpillFlags;
 
 public:
-    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
+    INDEBUG(IL_OFFSET gtLclILoffs = BAD_IL_OFFSET;) // instr offset of ref (only for JIT dumps)
 
     // Multireg support
     bool IsMultiReg() const
@@ -3688,6 +3693,11 @@ public:
         assert(OperIsScalarLocal(oper));
     }
 
+    GenTreeLclVar(var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeLclVarCommon(GT_STORE_LCL_VAR, type, lclNum, data)
+    {
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVar() : GenTreeLclVarCommon()
     {
@@ -3706,6 +3716,13 @@ private:
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
         : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
+    {
+        assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
+    }
+
+    GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs, GenTree* data, ClassLayout* layout)
+        : GenTreeLclVarCommon(GT_STORE_LCL_FLD, type, lclNum, data), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
         SetLayout(layout);
@@ -5557,6 +5574,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
+    CorInfoHelpFunc GetHelperNum() const;
+
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
@@ -7303,6 +7322,10 @@ public:
     enum
     {
         BlkOpKindInvalid,
+        BlkOpKindCpObjUnroll,
+#ifdef TARGET_XARCH
+        BlkOpKindCpObjRepInstr,
+#endif
 #ifndef TARGET_X86
         BlkOpKindHelper,
 #endif
@@ -8793,7 +8816,16 @@ struct GenTreeCCMP final : public GenTreeOpCC
 
 inline bool GenTree::OperIsBlkOp()
 {
-    return ((gtOper == GT_ASG) && varTypeIsStruct(AsOp()->gtOp1)) || OperIsStoreBlk();
+    if (OperIs(GT_STORE_DYN_BLK))
+    {
+        return true;
+    }
+    if (OperIs(GT_ASG) || OperIsStore())
+    {
+        return varTypeIsStruct(this);
+    }
+
+    return false;
 }
 
 inline bool GenTree::OperIsInitBlkOp()
@@ -8802,21 +8834,50 @@ inline bool GenTree::OperIsInitBlkOp()
     {
         return false;
     }
-    GenTree* src;
-    if (gtOper == GT_ASG)
-    {
-        src = gtGetOp2();
-    }
-    else
-    {
-        src = AsBlk()->Data()->gtSkipReloadOrCopy();
-    }
-    return src->OperIsInitVal() || src->IsIntegralConst();
+    GenTree* src       = Data();
+    bool     isInitBlk = src->TypeIs(TYP_INT);
+    assert(isInitBlk == src->gtSkipReloadOrCopy()->IsInitVal());
+
+    return isInitBlk;
 }
 
 inline bool GenTree::OperIsCopyBlkOp()
 {
     return OperIsBlkOp() && !OperIsInitBlkOp();
+}
+
+inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        *pLclNum = AsLclVar()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
+    {
+        *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
+}
+
+inline bool GenTree::OperIsStoreLcl(unsigned* pLclNum) // TODO-ASG: delete.
+{
+    if (OperIsLocalStore())
+    {
+        *pLclNum = AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+    if (OperIs(GT_ASG) && gtGetOp1()->OperIsLocal())
+    {
+        *pLclNum = gtGetOp1()->AsLclVarCommon()->GetLclNum();
+        return true;
+    }
+
+    *pLclNum = BAD_VAR_NUM;
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -9200,10 +9261,16 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     return op2;
 }
 
+inline GenTree* GenTree::GetStoreDestination() // TODO-ASG: delete.
+{
+    assert(OperIs(GT_ASG) || OperIsStore());
+    return OperIs(GT_ASG) ? gtGetOp1() : this;
+}
+
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() && (OperIsIndir() || OperIsLocal()));
-    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
+    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK, GT_ASG));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : static_cast<GenTreeOp*>(this)->gtOp2;
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)

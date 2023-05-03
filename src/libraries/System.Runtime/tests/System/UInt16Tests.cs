@@ -99,7 +99,12 @@ namespace System.Tests
                 yield return new object[] { (ushort)123, "D", defaultFormat, "123" };
                 yield return new object[] { (ushort)123, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
+                yield return new object[] { (ushort)0, "x", defaultFormat, "0" };
                 yield return new object[] { (ushort)0x2468, "x", defaultFormat, "2468" };
+
+                yield return new object[] { (ushort)0, "b", defaultFormat, "0" };
+                yield return new object[] { (ushort)0x2468, "b", defaultFormat, "10010001101000" };
+
                 yield return new object[] { (ushort)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -111,6 +116,7 @@ namespace System.Tests
             yield return new object[] { (ushort)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (ushort)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (ushort)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (ushort)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -193,6 +199,9 @@ namespace System.Tests
             yield return new object[] { "12", NumberStyles.HexNumber, emptyFormat, (ushort)0x12 };
             yield return new object[] { "abc", NumberStyles.HexNumber, emptyFormat, (ushort)0xabc };
             yield return new object[] { "ABC", NumberStyles.HexNumber, null, (ushort)0xabc };
+            yield return new object[] { "10010", NumberStyles.BinaryNumber, emptyFormat, (ushort)0b10010};
+            yield return new object[] { "101010111100", NumberStyles.BinaryNumber, emptyFormat, (ushort)0b101010111100 };
+            yield return new object[] { "101010111100", NumberStyles.BinaryNumber, null, (ushort)0b101010111100 };
             yield return new object[] { "$1,000", NumberStyles.Currency, customFormat, (ushort)1000 };
         }
 
@@ -244,6 +253,7 @@ namespace System.Tests
             // > max value
             yield return new object[] { "65536", NumberStyles.Integer, null, typeof(OverflowException) };
             yield return new object[] { "10000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { "10000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -284,16 +294,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             ushort result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.TryParse("1", style, null, out result));
             Assert.Equal(default(ushort), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => ushort.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -308,6 +320,7 @@ namespace System.Tests
             yield return new object[] { "+123", 0, 2, NumberStyles.Integer, null, (ushort)1 };
             yield return new object[] { "+123", 1, 3, NumberStyles.Integer, null, (ushort)123 };
             yield return new object[] { "AJK", 0, 1, NumberStyles.HexNumber, new NumberFormatInfo(), (ushort)0XA };
+            yield return new object[] { "111", 0, 1, NumberStyles.BinaryNumber, new NumberFormatInfo(), (ushort)0b1 };
             yield return new object[] { "$1,000", 0, 2, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)1 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (ushort)10 };
         }

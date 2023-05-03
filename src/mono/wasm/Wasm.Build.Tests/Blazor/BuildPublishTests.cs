@@ -197,9 +197,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
-            <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
+        string razorClassLibraryFileName = UseWebcil ? "RazorClassLibrary.webcil" : "RazorClassLibrary.dll";
+        AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -222,7 +223,7 @@ public class BuildPublishTests : BuildTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

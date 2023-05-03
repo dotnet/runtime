@@ -1631,8 +1631,9 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
      * it may cause registered args to be spilled. Simply spill it.
      */
 
-    // Ignore this trivial case.
-    if (impStackTop().val->gtOper != GT_LCL_VAR)
+    // Ignore no args or trivial cases.
+    if ((sig->callConv != CORINFO_CALLCONV_DEFAULT || sig->totalILArgs() > 0) &&
+        !impStackTop().val->OperIs(GT_LCL_VAR, GT_FTN_ADDR, GT_CNS_INT))
     {
         impSpillStackEntry(verCurrentState.esStackDepth - 1,
                            BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impImportIndirectCall"));
@@ -2124,11 +2125,10 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     ClassLayout* blkLayout = typGetBlkLayout(blkSize);
     GenTree*     dstAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
-    GenTree*     dst       = gtNewStructVal(blkLayout, dstAddr);
-    dst->gtFlags |= GTF_GLOB_REF;
+    GenTree*     dst       = gtNewBlkIndir(blkLayout, dstAddr);
 
     GenTree* srcAddr = gtNewIconHandleNode((size_t)initData, GTF_ICON_CONST_PTR);
-    GenTree* src     = gtNewStructVal(blkLayout, srcAddr);
+    GenTree* src     = gtNewBlkIndir(blkLayout, srcAddr);
 
 #ifdef DEBUG
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
@@ -3697,8 +3697,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLengthOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
-                                        retNode->gtFlags |= GTF_IND_INVARIANT;
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
                                         break;
                                     }
                                     case NI_System_Array_GetLowerBound:
@@ -3707,8 +3706,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
-                                        retNode->gtFlags |= GTF_IND_INVARIANT;
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
                                         break;
                                     }
                                     case NI_System_Array_GetUpperBound:
@@ -3721,14 +3719,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs         = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs       = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr       = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr);
-                                        gtLowerBound->gtFlags |= GTF_IND_INVARIANT;
+                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
 
                                         offs              = eeGetMDArrayLengthOffset(rank, dim);
                                         gtOffs            = gtNewIconNode(offs, TYP_I_IMPL);
                                         gtAddr            = gtNewOperNode(GT_ADD, TYP_BYREF, gtArrClone, gtOffs);
-                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr);
-                                        gtLength->gtFlags |= GTF_IND_INVARIANT;
+                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
 
                                         GenTree* gtSum = gtNewOperNode(GT_ADD, TYP_INT, gtLowerBound, gtLength);
                                         GenTree* gtOne = gtNewIconNode(1, TYP_INT);
@@ -5156,10 +5152,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->gtType == TYP_BYREF);
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
-            obj = gtNewOperNode(GT_IND, JITtype2varType(constraintTyp), obj);
-            // ldind could point anywhere, example a boxed class static int
-            obj->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
-
+            obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
             return obj;
         }
 
@@ -5175,20 +5168,9 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             GenTree* obj = thisPtr;
 
             assert(obj->TypeGet() == TYP_BYREF || obj->TypeGet() == TYP_I_IMPL);
-            obj = gtNewBlkIndir(typGetObjLayout(pConstrainedResolvedToken->hClass), obj);
-
-            CorInfoType jitTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
-            if (impIsPrimitive(jitTyp))
-            {
-                if (obj->OperIsBlk())
-                {
-                    obj->ChangeOperUnchecked(GT_IND);
-                    obj->AsOp()->gtOp2 = nullptr; // must be zero for tree walkers
-                }
-
-                obj->gtType = JITtype2varType(jitTyp);
-                assert(varTypeIsArithmetic(obj->gtType));
-            }
+            ClassLayout* layout;
+            var_types    objType = TypeHandleToVarType(pConstrainedResolvedToken->hClass, &layout);
+            obj                  = (objType == TYP_STRUCT) ? gtNewBlkIndir(layout, obj) : gtNewIndir(objType, obj);
 
             // This pushes on the dereferenced byref
             // This is then used immediately to box.
@@ -5495,12 +5477,11 @@ private:
         comp->impAssignTempGen(tmp, retExpr, (unsigned)Compiler::CHECK_SPILL_NONE);
         *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
 
+        assert(comp->lvaTable[tmp].lvSingleDef == 0);
+        comp->lvaTable[tmp].lvSingleDef = 1;
+        JITDUMP("Marked V%02u as a single def temp\n", tmp);
         if (retExpr->TypeGet() == TYP_REF)
         {
-            assert(comp->lvaTable[tmp].lvSingleDef == 0);
-            comp->lvaTable[tmp].lvSingleDef = 1;
-            JITDUMP("Marked V%02u as a single def temp\n", tmp);
-
             bool                 isExact   = false;
             bool                 isNonNull = false;
             CORINFO_CLASS_HANDLE retClsHnd = comp->gtGetClassHandle(retExpr, &isExact, &isNonNull);
@@ -8776,8 +8757,10 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         return nullptr;
     }
 
-    CORINFO_CLASS_HANDLE arrElemClsHnd = nullptr;
-    var_types            elemType      = JITtype2varType(info.compCompHnd->getChildType(clsHnd, &arrElemClsHnd));
+    CORINFO_CLASS_HANDLE elemClsHnd  = NO_CLASS_HANDLE;
+    CorInfoType          elemJitType = info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+    ClassLayout*         elemLayout  = nullptr;
+    var_types            elemType    = TypeHandleToVarType(elemJitType, elemClsHnd, &elemLayout);
 
     // For the ref case, we will only be able to inline if the types match
     // (verifier checks for this, we don't care for the nonverified case and the
@@ -8822,18 +8805,9 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         }
     }
 
-    unsigned arrayElemSize;
-    if (elemType == TYP_STRUCT)
-    {
-        assert(arrElemClsHnd);
-        arrayElemSize = info.compCompHnd->getClassSize(arrElemClsHnd);
-    }
-    else
-    {
-        arrayElemSize = genTypeSize(elemType);
-    }
+    unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : genTypeSize(elemType);
 
-    if ((unsigned char)arrayElemSize != arrayElemSize)
+    if (!FitsIn<unsigned char>(arrayElemSize))
     {
         // arrayElemSize would be truncated as an unsigned char.
         // This means the array element is too large. Don't do the optimization.
@@ -8848,7 +8822,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // Assignment of a struct is more work, and there are more gets than sets.
         // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
-        if (elemType == TYP_STRUCT)
+        if (varTypeIsStruct(elemType))
         {
             JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
                     " (implementation limitation)\n",
@@ -8892,13 +8866,13 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicName != NI_Array_Address)
     {
-        if (varTypeIsStruct(elemType))
+        if (elemType == TYP_STRUCT)
         {
-            arrElem = gtNewBlkIndir(typGetObjLayout(sig->retTypeClass), arrElem);
+            arrElem = gtNewBlkIndir(elemLayout, arrElem);
         }
         else
         {
-            arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+            arrElem = gtNewIndir(elemType, arrElem);
         }
     }
 

@@ -101,12 +101,6 @@ namespace ILCompiler.DependencyAnalysis
                 _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
-
-            // We don't have a representation for function pointers right now
-            if (WithoutParameterizeTypes(type).IsFunctionPointer)
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-
-            static TypeDesc WithoutParameterizeTypes(TypeDesc t) => t is ParameterizedType pt ? WithoutParameterizeTypes(pt.ParameterType) : t;
         }
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
@@ -639,6 +633,9 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
 
+            if (_type.IsFunctionPointer)
+                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
+
             return dependencies;
         }
 
@@ -696,6 +693,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
+            OutputFunctionPointerParameters(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -738,16 +736,6 @@ namespace ILCompiler.DependencyAnalysis
             if (_type.IsIDynamicInterfaceCastable)
             {
                 flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
-            }
-
-            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
-
-            // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
-            // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
-            // that it should indirect through the import address table
-            if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
-            {
-                flags |= (uint)EETypeFlags.RelatedTypeViaIATFlag;
             }
 
             if (HasOptionalFields)
@@ -835,6 +823,16 @@ namespace ILCompiler.DependencyAnalysis
                     // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
                     return ParameterizedTypeShapeConstants.ByRef;
                 }
+                else if (_type.IsFunctionPointer)
+                {
+                    // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
+                    MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                    return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                }
                 else
                     throw new NotImplementedException();
 
@@ -882,6 +880,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
                 }
+            }
+            else if (_type.IsFunctionPointer)
+            {
+                relatedTypeNode = factory.NecessaryTypeSymbol(((FunctionPointerType)_type).Signature.ReturnType);
             }
             else
             {
@@ -1062,7 +1064,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerRelocOrIndirectionReference(GetInterfaceTypeNode(factory, itf));
+                objData.EmitPointerReloc(GetInterfaceTypeNode(factory, itf));
             }
         }
 
@@ -1134,29 +1136,65 @@ namespace ILCompiler.DependencyAnalysis
                         objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
                     else
                         objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
-                }
 
-                GenericCompositionDetails details;
-                if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-                {
-                    // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
-                }
-                else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
-                {
-                    // Runtime casting logic relies on all interface types implemented on arrays
-                    // to have the variant flag set (even if all the arguments are non-variant).
-                    // This supports e.g. casting uint[] to ICollection<int>
-                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
+                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
+                        ? factory.GenericComposition(_type.Instantiation)
+                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(compositionNode);
                 }
                 else
-                    details = new GenericCompositionDetails(_type);
+                {
+                    GenericVarianceDetails details;
+                    if (_type == factory.ArrayOfTEnumeratorType)
+                    {
+                        // Generic array enumerators use special variance rules recognized by the runtime
+                        details = new GenericVarianceDetails(new[] { GenericVariance.ArrayCovariant });
+                    }
+                    else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                    {
+                        // Runtime casting logic relies on all interface types implemented on arrays
+                        // to have the variant flag set (even if all the arguments are non-variant).
+                        // This supports e.g. casting uint[] to ICollection<int>
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else if (_type.HasVariance)
+                    {
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else
+                    {
+                        details = default;
+                    }
 
-                ISymbolNode compositionNode = factory.GenericComposition(details);
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
-                else
-                    objData.EmitPointerReloc(compositionNode);
+                    if (!details.IsNull)
+                    {
+                        ISymbolNode varianceInfoNode = factory.GenericVariance(details);
+                        if (factory.Target.SupportsRelativePointers)
+                            objData.EmitReloc(varianceInfoNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        else
+                            objData.EmitPointerReloc(varianceInfoNode);
+                    }
+                }
+            }
+        }
+
+        private void OutputFunctionPointerParameters(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (_type.IsFunctionPointer)
+            {
+                MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                foreach (TypeDesc paramType in sig)
+                {
+                    ISymbolNode paramTypeNode = factory.NecessaryTypeSymbol(paramType);
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(paramTypeNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(paramTypeNode);
+                }
             }
         }
 

@@ -3332,59 +3332,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     return lvaGetDesc(varNum)->lvExactSize();
 }
 
-// getCalledCount -- get the value used to normalized weights for this method
-//  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
-//  otherwise it returns the number of times that profile data says the method was called.
-//
-// static
-weight_t BasicBlock::getCalledCount(Compiler* comp)
-{
-    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
-    weight_t calledCount = comp->fgCalledCount;
-
-    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
-    // so return a reasonable value to use until we set it.
-    //
-    if (calledCount == 0)
-    {
-        if (comp->fgIsUsingProfileWeights())
-        {
-            // When we use profile data block counts we have exact counts,
-            // not multiples of BB_UNITY_WEIGHT (100)
-            calledCount = 1;
-        }
-        else
-        {
-            calledCount = comp->fgFirstBB->bbWeight;
-
-            if (calledCount == 0)
-            {
-                calledCount = BB_UNITY_WEIGHT;
-            }
-        }
-    }
-    return calledCount;
-}
-
-// getBBWeight -- get the normalized weight of this block
-weight_t BasicBlock::getBBWeight(Compiler* comp)
-{
-    if (this->bbWeight == BB_ZERO_WEIGHT)
-    {
-        return BB_ZERO_WEIGHT;
-    }
-    else
-    {
-        weight_t calledCount = getCalledCount(comp);
-
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
-        //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
-
-        return fullResult;
-    }
-}
-
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
 class LclVarDsc_SmallCode_Less
 {

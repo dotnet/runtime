@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>8</NumberOfStripesToUseInStress>
+
+    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
+    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="$(MSBuildThisFileDirectory)General/**/*_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
