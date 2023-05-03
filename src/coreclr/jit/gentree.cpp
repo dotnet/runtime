@@ -19273,12 +19273,14 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
         {
+            GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
+            
             // We are actually only RMW in the case where the lookup table
             // has any value that could result in `op1` being picked. So
             // in the case `op3` is a constant and none of the nibbles are
             // `0`, then we don't have to be RMW and can actually "drop" `op1`
 
-            GenTree* op3 = Op(3);
+            GenTree* op3 = hwintrinsic->Op(3);
 
             if (!op3->IsCnsVec())
             {
@@ -19287,8 +19289,8 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
             GenTreeVecCon* vecCon = op3->AsVecCon();
 
-            var_types simdBaseType = GetSimdBaseType();
-            unsigned  simdSize     = GetSimdSize();
+            var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+            unsigned  simdSize     = hwintrinsic->GetSimdSize();
             uint32_t  count        = simdSize / sizeof(uint32_t);
             uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
 
@@ -19296,14 +19298,14 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             {
                 uint32_t tbl = vecCon->gtSimdVal.u32[i];
 
-                if (((test & 0x0000000F) == 0) ||
-                    ((test & 0x000000F0) == 0) ||
-                    ((test & 0x00000F00) == 0) ||
-                    ((test & 0x0000F000) == 0) ||
-                    ((test & 0x000F0000) == 0) ||
-                    ((test & 0x00F00000) == 0) ||
-                    ((test & 0x0F000000) == 0) ||
-                    ((test & 0xF0000000) == 0))
+                if (((tbl & 0x0000000F) == 0) ||
+                    ((tbl & 0x000000F0) == 0) ||
+                    ((tbl & 0x00000F00) == 0) ||
+                    ((tbl & 0x0000F000) == 0) ||
+                    ((tbl & 0x000F0000) == 0) ||
+                    ((tbl & 0x00F00000) == 0) ||
+                    ((tbl & 0x0F000000) == 0) ||
+                    ((tbl & 0xF0000000) == 0))
                 {
                     return true;
                 }
