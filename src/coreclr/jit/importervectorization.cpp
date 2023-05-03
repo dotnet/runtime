@@ -788,9 +788,9 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
     GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(TYP_BYREF, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTree*          spanLength     = gtNewFieldIndirNode(TYP_INT, nullptr, spanLengthAddr);
+    GenTree*          spanLength     = gtNewIndir(TYP_INT, spanLengthAddr);
     GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(TYP_BYREF, pointerHnd, spanObjRefLcl);
-    GenTree*          spanData       = gtNewFieldIndirNode(TYP_BYREF, nullptr, spanDataAddr);
+    GenTree*          spanData       = gtNewIndir(TYP_BYREF, spanDataAddr);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);

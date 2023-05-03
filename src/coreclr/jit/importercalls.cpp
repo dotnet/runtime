@@ -2901,7 +2901,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTreeFieldAddr* lengthFieldAddr =
                     gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
                 lengthFieldAddr->SetIsSpanLength(true);
-                GenTree* length = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
+                GenTree* length = gtNewIndir(TYP_INT, lengthFieldAddr);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2919,7 +2919,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
                 GenTreeFieldAddr*    dataFieldAddr =
                     gtNewFieldAddrNode(genActualType(ptrToSpanClone), ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree* data   = gtNewFieldIndirNode(TYP_BYREF, nullptr, dataFieldAddr);
+                GenTree* data   = gtNewIndir(TYP_BYREF, dataFieldAddr);
                 GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
@@ -2966,7 +2966,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTreeFieldAddr* lengthFieldAddr =
                     gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
                 lengthFieldAddr->SetIsSpanLength(true);
-                GenTree* lengthField = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
+                GenTree* lengthField = gtNewIndir(TYP_INT, lengthFieldAddr);
 
                 return lengthField;
             }
