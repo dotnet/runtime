@@ -3038,10 +3038,6 @@ public:
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtFoldExprConditional(GenTree* tree);
-    GenTree* gtCreateHandleCompare(genTreeOps             oper,
-                                   GenTree*               op1,
-                                   GenTree*               op2,
-                                   CorInfoInlineTypeCheck typeCheckInliningResult);
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
@@ -9289,6 +9285,8 @@ public:
 
     bool compGeneratingProlog;
     bool compGeneratingEpilog;
+    bool compGeneratingUnwindProlog;
+    bool compGeneratingUnwindEpilog;
     bool compNeedsGSSecurityCookie; // There is an unsafe buffer (or localloc) on the stack.
                                     // Insert cookie on frame and code to check the cookie, like VC++ -GS.
     bool compGSReorderStackLayout;  // There is an unsafe buffer on the stack, reorder locals and make local

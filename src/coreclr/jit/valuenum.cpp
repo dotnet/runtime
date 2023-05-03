@@ -12187,6 +12187,14 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitReadyToRunNewArr;
             break;
 
+        case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNew : VNF_JitNew;
+            break;
+
+        case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
+            break;
+
         case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             vnf = VNF_GetgenericsGcstaticBase;
             break;
@@ -12303,10 +12311,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
             vnf = VNF_TypeHandleToRuntimeTypeHandle;
-            break;
-
-        case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-            vnf = VNF_AreTypesEquivalent;
             break;
 
         case CORINFO_HELP_READYTORUN_ISINSTANCEOF:

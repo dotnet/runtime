@@ -10148,7 +10148,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 #ifdef DEBUG
-    if (varx >= 0 && emitComp->opts.varNames)
+    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
 

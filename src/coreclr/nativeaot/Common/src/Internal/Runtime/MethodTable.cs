@@ -619,14 +619,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsAbstract
-        {
-            get
-            {
-                return IsInterface || (RareFlags & EETypeRareFlags.IsAbstractClassFlag) != 0;
-            }
-        }
-
         internal bool IsByRefLike
         {
             get
@@ -753,7 +745,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_uFlags & (uint)EETypeFlags.IDynamicInterfaceCastableFlag) != 0);
+                return ((ExtendedFlags & (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag) != 0);
             }
         }
 
@@ -771,6 +763,14 @@ namespace Internal.Runtime
             get
             {
                 return ElementType < EETypeElementType.ValueType;
+            }
+        }
+
+        internal bool HasSealedVTableEntries
+        {
+            get
+            {
+                return (_uFlags & (uint)EETypeFlags.HasSealedVTableEntriesFlag) != 0;
             }
         }
 
@@ -856,22 +856,7 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
-                    return false;
-                byte* optionalFields = OptionalFieldsPtr;
-
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->HasDispatchMap;
-                    return false;
-                }
-                return true;
+                return (_uFlags & (uint)EETypeFlags.HasDispatchMap) != 0;
             }
         }
 
@@ -879,25 +864,23 @@ namespace Internal.Runtime
         {
             get
             {
-                if (NumInterfaces == 0)
+                if (!HasDispatchMap)
                     return null;
-                byte* optionalFields = OptionalFieldsPtr;
-                const uint NoDispatchMap = 0xffffffff;
-                uint idxDispatchMap = NoDispatchMap;
-                if (optionalFields != null)
-                    idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, NoDispatchMap);
-                if (idxDispatchMap == NoDispatchMap)
-                {
-                    if (IsDynamicType)
-                        return DynamicTemplateType->DispatchMap;
-                    return null;
-                }
 
-                if (SupportsRelativePointers)
-                    return (DispatchMap*)FollowRelativePointer((int*)TypeManager.DispatchMap + idxDispatchMap);
-                else
-                    return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
+
+                return GetField<RelativePointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && HasDispatchMap);
+
+                fixed (MethodTable* pThis = &this)
+                    *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DispatchMap)) = value;
+            }
+#endif
         }
 
         // Get the address of the finalizer method for finalizable types.
@@ -1044,7 +1027,7 @@ namespace Internal.Runtime
 #endif
         void* GetSealedVirtualTable()
         {
-            Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
+            Debug.Assert(HasSealedVTableEntries);
 
             uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
             byte* pThis = (byte*)Unsafe.AsPointer(ref this);
@@ -1345,6 +1328,15 @@ namespace Internal.Runtime
                 cbOffset += relativeOrFullPointerOffset;
             }
 
+            // Followed by pointer to the dispatch map
+            if (eField == EETypeField.ETF_DispatchMap)
+            {
+                Debug.Assert(HasDispatchMap);
+                return cbOffset;
+            }
+            if (HasDispatchMap)
+                cbOffset += relativeOrFullPointerOffset;
+
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
             {
@@ -1367,10 +1359,8 @@ namespace Internal.Runtime
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
 
-            EETypeRareFlags rareFlags = RareFlags;
-
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
-            if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+            if (HasSealedVTableEntries)
                 cbOffset += relativeOrFullPointerOffset;
 
             if (eField == EETypeField.ETF_GenericDefinition)
@@ -1411,6 +1401,7 @@ namespace Internal.Runtime
             if (IsDynamicType)
                 cbOffset += (uint)IntPtr.Size;
 
+            EETypeRareFlags rareFlags = RareFlags;
             if (eField == EETypeField.ETF_DynamicGcStatics)
             {
                 Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
@@ -1451,6 +1442,7 @@ namespace Internal.Runtime
         internal static uint GetSizeofEEType(
             ushort cVirtuals,
             ushort cInterfaces,
+            bool fHasDispatchMap,
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
@@ -1465,6 +1457,7 @@ namespace Internal.Runtime
                 (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
                 (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
+                (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +

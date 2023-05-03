@@ -1928,8 +1928,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
-    compGeneratingProlog = false;
-    compGeneratingEpilog = false;
+    compGeneratingProlog       = false;
+    compGeneratingEpilog       = false;
+    compGeneratingUnwindProlog = false;
+    compGeneratingUnwindEpilog = false;
 
     compPostImportationCleanupDone = false;
     compLSRADone                   = false;

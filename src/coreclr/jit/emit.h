@@ -607,6 +607,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
+        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
         size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
