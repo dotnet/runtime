@@ -369,13 +369,8 @@ namespace System.Text
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
-        /// <summary>Encodes into a span of bytes a set of characters from the specified read-only span if the destination is large enough.</summary>
-        /// <param name="chars">The span containing the set of characters to encode.</param>
-        /// <param name="bytes">The byte span to hold the encoded bytes.</param>
-        /// <param name="bytesWritten">Upon successful completion of the operation, the number of bytes encoded into <paramref name="bytes"/>.</param>
-        /// <returns><see langword="true"/> if all of the characters were encoded into the destination; <see langword="false"/> if the destination was too small to contain all the encoded bytes.</returns>
-        internal override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        /// <inheritdoc/>
+        public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
             fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
             fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
@@ -569,6 +564,24 @@ namespace System.Text
             }
         }
 
+        /// <inheritdoc/>
+        public override unsafe bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            {
+                int written = GetCharsCommon(bytesPtr, bytes.Length, charsPtr, chars.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    charsWritten = written;
+                    return true;
+                }
+
+                charsWritten = 0;
+                return false;
+            }
+        }
+
         // WARNING:  If we throw an error, then System.Resources.ResourceReader calls this method.
         //           So if we're really broken, then that could also throw an error... recursively.
         //           So try to make sure GetChars can at least process all uses by
@@ -577,7 +590,7 @@ namespace System.Text
         // Note:  We throw exceptions on individually encoded surrogates and other non-shortest forms.
         //        If exceptions aren't turned on, then we drop all non-shortest &individual surrogates.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount)
+        private unsafe int GetCharsCommon(byte* pBytes, int byteCount, char* pChars, int charCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-DecoderNLS entry points to GetChars.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -601,7 +614,7 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten);
+                return GetCharsWithFallback(pBytes, byteCount, pChars, charCount, bytesConsumed, charsWritten, throwForDestinationOverflow);
             }
         }
 
@@ -618,7 +631,7 @@ namespace System.Text
             return (int)(pOutputBufferRemaining - pChars);
         }
 
-        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
+        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
         {
             // We special-case DecoderReplacementFallback if it's telling us to write a single U+FFFD char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -649,7 +662,7 @@ namespace System.Text
             }
             else
             {
-                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder);
+                return base.GetCharsWithFallback(bytes, originalBytesLength, chars, originalCharsLength, decoder, throwForDestinationOverflow);
             }
         }
 

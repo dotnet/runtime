@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Text;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
@@ -29,18 +32,15 @@ namespace System.Buffers.Text
         /// </exceptions>
         public static bool TryFormat(DateTimeOffset value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
         {
-            TimeSpan offset = Utf8Constants.NullUtcOffset;
-            char symbol = format.Symbol;
             if (format.IsDefault)
             {
-                symbol = 'G';
-                offset = value.Offset;
+                return DateTimeFormat.TryFormatInvariantG(value.DateTime, value.Offset, destination, out bytesWritten);
             }
 
-            switch (symbol)
+            switch (format.Symbol)
             {
                 case 'R':
-                    return DateTimeFormat.TryFormatR(value.UtcDateTime, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten);
+                    return DateTimeFormat.TryFormatR(value.UtcDateTime, NullOffset, destination, out bytesWritten);
 
                 case 'O':
                     return DateTimeFormat.TryFormatO(value.DateTime, value.Offset, destination, out bytesWritten);
@@ -49,7 +49,7 @@ namespace System.Buffers.Text
                     return TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten);
 
                 case 'G':
-                    return TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten);
+                    return DateTimeFormat.TryFormatInvariantG(value.DateTime, NullOffset, destination, out bytesWritten);
 
                 default:
                     ThrowHelper.ThrowFormatException_BadFormatSpecifier();
@@ -83,21 +83,36 @@ namespace System.Buffers.Text
             switch (FormattingHelpers.GetSymbolOrDefault(format, 'G'))
             {
                 case 'R':
-                    return DateTimeFormat.TryFormatR(value, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten);
+                    return DateTimeFormat.TryFormatR(value, NullOffset, destination, out bytesWritten);
 
                 case 'O':
-                    return DateTimeFormat.TryFormatO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
+                    return DateTimeFormat.TryFormatO(value, NullOffset, destination, out bytesWritten);
 
                 case 'l':
                     return TryFormatDateTimeL(value, destination, out bytesWritten);
 
                 case 'G':
-                    return TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
+                    return DateTimeFormat.TryFormatInvariantG(value, NullOffset, destination, out bytesWritten);
 
                 default:
                     ThrowHelper.ThrowFormatException_BadFormatSpecifier();
                     goto case 'R'; // unreachable
             }
         }
+
+        // Rfc1123 lowercased
+        private static bool TryFormatDateTimeL(DateTime value, Span<byte> destination, out int bytesWritten)
+        {
+            if (DateTimeFormat.TryFormatR(value, NullOffset, destination, out bytesWritten))
+            {
+                Debug.Assert(bytesWritten == DateTimeFormat.FormatRLength);
+                Ascii.ToLowerInPlace(destination.Slice(0, bytesWritten), out bytesWritten);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static TimeSpan NullOffset => new TimeSpan(DateTimeFormat.NullOffset);
     }
 }

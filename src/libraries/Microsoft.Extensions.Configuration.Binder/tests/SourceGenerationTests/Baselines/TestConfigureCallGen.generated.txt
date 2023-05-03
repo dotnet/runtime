@@ -23,7 +23,7 @@ internal static class GeneratedConfigurationBinder
             });
         }
 
-        throw new global::System.NotSupportedException($"Unable to bind to type '{typeof(T)}': 'Generator parser did not detect the type as input'");
+        throw new global::System.NotSupportedException($"Unable to bind to type '{typeof(T)}': generator did not detect the type as input.");
     }
 }
 

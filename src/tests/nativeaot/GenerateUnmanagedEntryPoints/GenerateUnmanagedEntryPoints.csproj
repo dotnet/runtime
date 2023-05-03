@@ -4,6 +4,11 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
+    <!--
+      For some reason, this particular test hits some case in AddressSanitizer where it fails to intercept methods correctly, causing failures.
+      Disable for now.
+    -->
+    <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
   </PropertyGroup>
 
   <ItemGroup>

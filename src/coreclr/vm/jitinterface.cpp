@@ -747,7 +747,7 @@ size_t CEEInfo::printObjectDescription (
     }
     else
     {
-        _ASSERTE(!"Unexpected object type");
+        obj->GetMethodTable()->_GetFullyQualifiedNameForClass(stackStr);
     }
 
     const UTF8* utf8data = stackStr.GetUTF8();
@@ -980,8 +980,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 EnsureActive(th, pMD);
             }
         }
-        else
-        if (pFD != NULL)
+        else if (pFD != NULL)
         {
             if ((tkType != mdtFieldDef) && (tkType != mdtMemberRef))
                 ThrowBadTokenException(pResolvedToken);
@@ -1021,7 +1020,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     }
     else
     {
-        unsigned metaTOK = pResolvedToken->token;
+        mdToken metaTOK = pResolvedToken->token;
         Module * pModule = (Module *)pResolvedToken->tokenScope;
 
         switch (TypeFromToken(metaTOK))
@@ -1533,9 +1532,18 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             if (pFieldMT->IsSharedByGenericInstantiations())
             {
-                fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+                if (pField->IsEnCNew())
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                pResult->helper = getGenericStaticsHelper(pField);
+                    pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR;
+                }
+                else
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+
+                    pResult->helper = getGenericStaticsHelper(pField);
+                }
             }
             else
             if (pFieldMT->GetModule()->IsSystem() && (flags & CORINFO_ACCESS_GET) &&
@@ -1561,6 +1569,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
 
 #ifdef HOST_WINDOWS
+#ifndef TARGET_ARM
                 bool canOptimizeHelper = (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
                     (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE);
                 // For windows, we convert the TLS access to the optimized helper where we will store
@@ -1571,6 +1580,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
+#endif // !TARGET_ARM
 #endif // HOST_WINDOWS
             }
             else
@@ -4196,29 +4206,6 @@ bool CEEInfo::canCast(
 }
 
 /*********************************************************************/
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool CEEInfo::areTypesEquivalent(
-        CORINFO_CLASS_HANDLE        cls1,
-        CORINFO_CLASS_HANDLE        cls2)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    result = !!((TypeHandle)cls1).IsEquivalentTo((TypeHandle)cls2);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState CEEInfo::compareTypesForCast(
@@ -6147,20 +6134,33 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 
     _ASSERT(objHandle != NULL);
 
-#ifdef DEBUG
+    bool isImmutable = false;
+
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
     OBJECTREF obj = getObjectFromJitHandle(objHandle);
     MethodTable* type = obj->GetMethodTable();
 
-    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
+    if (type->IsString() || type == g_pRuntimeTypeClass)
+    {
+        // These types are always immutable
+        isImmutable = true;
+    }
+    else if (type->IsArray() && ((ArrayBase*)OBJECTREFToObject(obj))->GetComponentSize() == 0)
+    {
+        // Empty arrays are always immutable
+        isImmutable = true;
+    }
+    else if (type->IsDelegate() || type->GetNumInstanceFields() == 0)
+    {
+        // Delegates and types without fields are always immutable
+        isImmutable = true;
+    }
 
     EE_TO_JIT_TRANSITION();
-#endif
 
-     // All currently allocated frozen objects can be treated as immutable
-    return true;
+    return isImmutable;
 }
 
 /***********************************************************************/
@@ -11841,7 +11841,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11972,6 +11972,40 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 }
             }
         }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(handle != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    OBJECTREF objRef = getObjectFromJitHandle(handle);
+    _ASSERTE(objRef != NULL);
+
+    // TODO: support types containing GC pointers
+    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
+    {
+        Object* obj = OBJECTREFToObject(objRef);
+        memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+        result = true;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12824,6 +12858,12 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
     if (CORProfilerTrackTransitions())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
 #endif // PROFILING_SUPPORTED
+
+    // Don't allow allocations on FOH from collectible contexts to avoid memory leaks
+    if (!ftn->GetLoaderAllocator()->CanUnload())
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
+    }
 
     // Set optimization flags
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))

@@ -339,10 +339,6 @@ bool canCast(
           CORINFO_CLASS_HANDLE child,
           CORINFO_CLASS_HANDLE parent) override;
 
-bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2) override;
-
 TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass) override;
@@ -636,12 +632,18 @@ unsigned getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection) override;
 
-bool getReadonlyStaticFieldValue(
+bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects) override;
+
+bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

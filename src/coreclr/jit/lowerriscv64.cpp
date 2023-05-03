@@ -138,7 +138,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree*     cmpOp1;
     GenTree*     cmpOp2;
 
-    if (op->OperIsCompare())
+    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
         // We do not expect any other relops on LA64
         assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
@@ -165,12 +165,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // for RISCV64's compare and condition-branch instructions,
     // it's very similar to the IL instructions.
-    jtrue->SetOper(GT_JCMP);
-    jtrue->gtOp1 = cmpOp1;
-    jtrue->gtOp2 = cmpOp2;
-
-    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+    jtrue->ChangeOper(GT_JCMP);
+    jtrue->gtOp1                 = cmpOp1;
+    jtrue->gtOp2                 = cmpOp2;
+    jtrue->AsOpCC()->gtCondition = cond;
 
     if (cmpOp2->IsCnsIntOrI())
     {
@@ -191,30 +189,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
-    {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
-        }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
-        }
-
-        if (notNode != nullptr)
-        {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
-    }
-
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
@@ -276,10 +250,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->SetContained();
             src = src->AsUnOp()->gtGetOp1();
         }
-        if (blkNode->OperIs(GT_STORE_OBJ))
-        {
-            blkNode->SetOper(GT_STORE_BLK);
-        }
 
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
         {
@@ -320,43 +290,29 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
-        if (src->OperIs(GT_IND))
-        {
-            // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
-            // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
-            // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            src->AsIndir()->Addr()->ClearContained();
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
-        if (blkNode->OperIs(GT_STORE_OBJ))
+
+        bool doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && blkNode->GetLayout()->HasGCPtr();
+        if (doCpObj && dstAddr->OperIs(GT_LCL_ADDR) && (size <= CPBLK_UNROLL_LIMIT))
         {
-            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-            else if (dstAddr->OperIs(GT_LCL_ADDR) && (size <= CPBLK_UNROLL_LIMIT))
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                blkNode->SetOper(GT_STORE_BLK);
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
+            // If the size is small enough to unroll then we need to mark the block as non-interruptible
+            // to actually allow unrolling. The generated code does not report GC references loaded in the
+            // temporary register(s) used for copying.
+            doCpObj                  = false;
+            blkNode->gtBlkOpGcUnsafe = true;
         }
 
         // CopyObj or CopyBlk
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        if (doCpObj)
         {
             assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
-
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;

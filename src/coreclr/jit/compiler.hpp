@@ -981,7 +981,7 @@ inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arra
 inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 {
     GenTreeIndir* index;
-    if (varTypeIsStruct(indexAddr->gtElemType))
+    if (indexAddr->gtElemType == TYP_STRUCT)
     {
         index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
@@ -1082,60 +1082,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
-}
-
-//------------------------------------------------------------------------
-// gtNewBlkIndir: Create a struct indirection node.
-//
-// Arguments:
-//    layout     - The struct layout
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_BLK node.
-//
-inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    blkNode->gtFlags |= indirFlags;
-    blkNode->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        blkNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------------
-// gtNewIndir : Create an indirection node.
-//
-// Arguments:
-//    typ        - Type of the node
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_IND node.
-//
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    return indir->AsIndir();
 }
 
 //------------------------------------------------------------------------------
@@ -1284,6 +1230,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             break;
 #endif
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetLayout(nullptr);
             break;
@@ -1295,7 +1242,12 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
@@ -1339,8 +1291,8 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
 {
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object);
-    result->gtFlags |= GTF_IND_INVARIANT;
+    assert(object->TypeIs(TYP_REF));
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
 
@@ -4039,7 +3991,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
-        case GT_FIELD:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4415,10 +4366,9 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 // Notes:
 //    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
-
+//
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
 {
-
 #if defined(DEBUG)
     assert(state != RCS_INVALID);
     Compiler* compiler = JitTls::GetCompiler();
@@ -4428,6 +4378,25 @@ inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
     unsigned short oldRefCnt = m_lvRefCnt;
     m_lvRefCnt += delta;
     assert(m_lvRefCnt >= oldRefCnt);
+}
+
+//------------------------------------------------------------------------------
+// incLvRefCntSaturating: increment reference count for this local var (with saturating semantics)
+//
+// Arguments:
+//    delta: the amount of the increment
+//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
+//
+inline void LclVarDsc::incLvRefCntSaturating(unsigned short delta, RefCountState state)
+{
+#if defined(DEBUG)
+    assert(state != RCS_INVALID);
+    Compiler* compiler = JitTls::GetCompiler();
+    assert(compiler->lvaRefCountState == state);
+#endif
+
+    int newRefCnt = m_lvRefCnt + delta;
+    m_lvRefCnt    = static_cast<unsigned short>(min(USHRT_MAX, newRefCnt));
 }
 
 //------------------------------------------------------------------------------

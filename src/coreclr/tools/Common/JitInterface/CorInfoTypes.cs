@@ -116,7 +116,8 @@ namespace Internal.JitInterface
         private CorInfoCallConv getCallConv() { return (CorInfoCallConv)((callConv & CorInfoCallConv.CORINFO_CALLCONV_MASK)); }
         private bool hasThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_HASTHIS) != 0); }
         private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-        private uint totalILArgs() { return (uint)(numArgs + (hasThis() ? 1 : 0)); }
+        private bool hasImplicitThis() { return ((callConv & (CorInfoCallConv.CORINFO_CALLCONV_HASTHIS | CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS)) == CorInfoCallConv.CORINFO_CALLCONV_HASTHIS); }
+        private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
     };
@@ -1410,6 +1411,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED6 = 12,
         CORJIT_FLAG_OSR = 13, // Generate alternate version for On Stack Replacement
         CORJIT_FLAG_ALT_JIT = 14, // JIT should consider itself an ALT_JIT
+        CORJIT_FLAG_FROZEN_ALLOC_ALLOWED = 15, // JIT is allowed to use *_MAYBEFROZEN allocators
         CORJIT_FLAG_UNUSED10 = 17,
         CORJIT_FLAG_MAKEFINALCODE = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN = 19, // Use version-resilient code generation

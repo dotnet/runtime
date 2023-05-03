@@ -818,10 +818,10 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 
 #if defined(TARGET_ARM)
     DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs, isSignalFrame);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs, isSignalFrame, /* stage2 */ false);
 #else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame, /* stage2 */ false);
 #endif
 
     if (stepRet != UNW_STEP_SUCCESS)

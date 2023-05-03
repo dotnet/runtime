@@ -8,15 +8,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoIndexOfTests
+    public class CompareInfoIndexOfTests : CompareInfoTestsBase
     {
-        private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
-        private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
-        private static CompareInfo s_germanCompare = new CultureInfo("de-DE").CompareInfo;
-        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
-        private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
-
         public static IEnumerable<object[]> IndexOf_TestData()
         {
             // Empty string

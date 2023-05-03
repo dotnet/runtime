@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization.Converters;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,8 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal void Serialize(
             Utf8JsonWriter writer,
             in T? rootValue,
-            object? rootValueBoxed = null,
-            bool isInvokedByPolymorphicConverter = false)
+            object? rootValueBoxed = null)
         {
             Debug.Assert(IsConfigured);
             Debug.Assert(rootValueBoxed is null || rootValueBoxed is T);
@@ -46,13 +44,13 @@ namespace System.Text.Json.Serialization.Metadata
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? derivedTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                derivedTypeInfo.SerializeAsObject(writer, rootValue, isInvokedByPolymorphicConverter: true);
+                derivedTypeInfo.SerializeAsObject(writer, rootValue);
                 // NB flushing is handled by the derived type's serialization method.
             }
             else
             {
                 WriteStack state = default;
-                state.Initialize(this, rootValueBoxed, isPolymorphicRootValue: isInvokedByPolymorphicConverter);
+                state.Initialize(this, rootValueBoxed);
 
                 bool success = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
                 Debug.Assert(success);
@@ -65,8 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             Stream utf8Json,
             T? rootValue,
             CancellationToken cancellationToken,
-            object? rootValueBoxed = null,
-            bool isInvokedByPolymorphicConverter = false)
+            object? rootValueBoxed = null)
         {
             Debug.Assert(IsConfigured);
             Debug.Assert(rootValueBoxed is null || rootValueBoxed is T);
@@ -102,13 +99,12 @@ namespace System.Text.Json.Serialization.Metadata
 #if NETCOREAPP
                 !typeof(T).IsValueType &&
 #endif
-                !isInvokedByPolymorphicConverter &&
                 Converter.CanBePolymorphic &&
                 rootValue is not null &&
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? derivedTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken, isInvokedByPolymorphicConverter: true).ConfigureAwait(false);
+                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -116,7 +112,6 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this,
                     rootValueBoxed,
-                    isInvokedByPolymorphicConverter,
                     supportContinuation: true,
                     supportAsync: true);
 
@@ -183,7 +178,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (CanUseSerializeHandler)
                 {
-                    // On sucessful serialization, record the serialization size
+                    // On successful serialization, record the serialization size
                     // to determine potential suitability of the type for
                     // fast-path serialization in streaming methods.
                     Debug.Assert(writer.BytesPending == 0);
@@ -196,8 +191,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal void Serialize(
             Stream utf8Json,
             in T? rootValue,
-            object? rootValueBoxed = null,
-            bool isInvokedByPolymorphicConverter = false)
+            object? rootValueBoxed = null)
         {
             Debug.Assert(IsConfigured);
             Debug.Assert(rootValueBoxed is null || rootValueBoxed is T);
@@ -230,13 +224,12 @@ namespace System.Text.Json.Serialization.Metadata
 #if NETCOREAPP
                 !typeof(T).IsValueType &&
 #endif
-                !isInvokedByPolymorphicConverter &&
                 Converter.CanBePolymorphic &&
                 rootValue is not null &&
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? polymorphicTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                polymorphicTypeInfo.SerializeAsObject(utf8Json, rootValue, isInvokedByPolymorphicConverter: true);
+                polymorphicTypeInfo.SerializeAsObject(utf8Json, rootValue);
             }
             else
             {
@@ -244,7 +237,6 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this,
                     rootValueBoxed,
-                    isInvokedByPolymorphicConverter,
                     supportContinuation: true,
                     supportAsync: false);
 
@@ -266,7 +258,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (CanUseSerializeHandler)
                 {
-                    // On sucessful serialization, record the serialization size
+                    // On successful serialization, record the serialization size
                     // to determine potential suitability of the type for
                     // fast-path serialization in streaming methods.
                     Debug.Assert(writer.BytesPending == 0);
@@ -275,14 +267,14 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false)
-            => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue, isInvokedByPolymorphicConverter);
+        internal sealed override void SerializeAsObject(Utf8JsonWriter writer, object? rootValue)
+            => Serialize(writer, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
-        internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false)
-            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue, isInvokedByPolymorphicConverter);
+        internal sealed override Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken)
+            => SerializeAsync(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), cancellationToken, rootValue);
 
-        internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false)
-            => Serialize(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue, isInvokedByPolymorphicConverter);
+        internal sealed override void SerializeAsObject(Stream utf8Json, object? rootValue)
+            => Serialize(utf8Json, JsonSerializer.UnboxOnWrite<T>(rootValue), rootValue);
 
         // Fast-path serialization in source gen has not been designed with streaming in mind.
         // Even though it's not used in streaming by default, we can sometimes try to turn it on

@@ -5533,6 +5533,7 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
             }
 
             unsigned exposedObjectGeneration = gcHeap->WhichGeneration(exposedObject);
+            _ASSERTE(exposedObjectGeneration != INT32_MAX);
             SIZE_T newDeadThreadGenerationCount = ++s_DeadThreadGenerationCounts[exposedObjectGeneration];
             if (exposedObjectGeneration > gcGenerationToTrigger && newDeadThreadGenerationCount >= generationCountThreshold)
             {

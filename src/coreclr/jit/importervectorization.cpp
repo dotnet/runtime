@@ -109,7 +109,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     assert(len >= 8 && len <= MaxPossibleUnrollSize);
 
     const int byteLen  = len * sizeof(WCHAR);
-    const int simdSize = (int)roundDownSIMDSize(byteLen);
+    int       simdSize = (int)roundDownSIMDSize(byteLen);
+#ifdef TARGET_XARCH
+    if ((simdSize == YMM_REGSIZE_BYTES) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+    {
+        // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
+        simdSize = XMM_REGSIZE_BYTES;
+    }
+#endif
     if (byteLen > (simdSize * 2))
     {
         // Data is too big to be processed via two SIMD loads
@@ -381,7 +388,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
 //
 // Arguments:
 //    data         - Pointer (LCL_VAR) to a data to vectorize
-//    lengthFld    - Pointer (LCL_VAR or GT_FIELD) to Length field
+//    lengthFld    - Pointer (LCL_VAR or GT_IND) to Length field
 //    checkForNull - Check data for null
 //    startsWith   - Is it StartsWith or Equals?
 //    cns          - Constant data (array of 2-byte chars)
@@ -780,8 +787,10 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
     GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
-    GenTreeField* spanLength = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTreeField* spanData   = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
+    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(TYP_BYREF, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTree*          spanLength     = gtNewFieldIndirNode(TYP_INT, nullptr, spanLengthAddr);
+    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(TYP_BYREF, pointerHnd, spanObjRefLcl);
+    GenTree*          spanData       = gtNewFieldIndirNode(TYP_BYREF, nullptr, spanDataAddr);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);

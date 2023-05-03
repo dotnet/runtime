@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
 export const wasm_func_map = new Map<number, string>();
@@ -131,8 +131,18 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     }
                 }
 
-                if (typeof payload === "string" && id !== "main")
-                    payload = `[${id}] ${payload}`;
+                if (typeof payload === "string") {
+                    if (payload[0] == "[") {
+                        const now = new Date().toISOString();
+                        if (id !== "main") {
+                            payload = `[${id}][${now}] ${payload}`;
+                        } else {
+                            payload = `[${now}] ${payload}`;
+                        }
+                    } else if (id !== "main") {
+                        payload = `[${id}] ${payload}`;
+                    }
+                }
 
                 if (asJson) {
                     func(JSON.stringify({

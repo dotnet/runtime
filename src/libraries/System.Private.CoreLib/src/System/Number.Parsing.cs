@@ -143,7 +143,7 @@ namespace System
             Debug.Assert(str != null);
             Debug.Assert(strEnd != null);
             Debug.Assert(str <= strEnd);
-            Debug.Assert((styles & NumberStyles.AllowHexSpecifier) == 0);
+            Debug.Assert((styles & (NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) == 0);
 
             const int StateSign = 0x0001;
             const int StateParens = 0x0002;
@@ -412,6 +412,11 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
             }
 
+            if ((styles & NumberStyles.AllowBinarySpecifier) != 0)
+            {
+                return TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, BinaryParser<TInteger>>(value, styles, out result);
+            }
+
             return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
@@ -650,11 +655,46 @@ namespace System
             goto DoneAtEndButPotentialOverflow;
         }
 
-        /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
+        /// <summary>Parses <typeparamref name="TInteger"/> limited to styles that make up NumberStyles.HexNumber.</summary>
         internal static ParsingStatus TryParseBinaryIntegerHexNumberStyle<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, out TInteger result)
-            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger> =>
+            TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, HexParser<TInteger>>(value, styles, out result);
+
+        private interface IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
+            static abstract NumberStyles AllowedStyles { get; }
+            static abstract bool IsValidChar(int ch);
+            static abstract uint FromChar(int ch);
+            static abstract uint MaxDigitValue { get; }
+            static abstract int MaxDigitCount { get; }
+            static abstract TInteger ShiftLeftForNextDigit(TInteger value);
+        }
+
+        private readonly struct HexParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            public static NumberStyles AllowedStyles => NumberStyles.HexNumber;
+            public static bool IsValidChar(int ch) => HexConverter.IsHexChar(ch);
+            public static uint FromChar(int ch) => (uint)HexConverter.FromChar(ch);
+            public static uint MaxDigitValue => 0xF;
+            public static int MaxDigitCount => TInteger.MaxHexDigitCount;
+            public static TInteger ShiftLeftForNextDigit(TInteger value) => TInteger.MultiplyBy16(value);
+        }
+
+        private readonly struct BinaryParser<TInteger> : IHexOrBinaryParser<TInteger> where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            public static NumberStyles AllowedStyles => NumberStyles.BinaryNumber;
+            public static bool IsValidChar(int ch) => (uint)(ch - '0') <= 1;
+            public static uint FromChar(int ch) => (uint)(ch - '0');
+            public static uint MaxDigitValue => 1;
+            public static unsafe int MaxDigitCount => sizeof(TInteger) * 8;
+            public static TInteger ShiftLeftForNextDigit(TInteger value) => value << 1;
+        }
+
+        private static ParsingStatus TryParseBinaryIntegerHexOrBinaryNumberStyle<TInteger, TParser>(ReadOnlySpan<char> value, NumberStyles styles, out TInteger result)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+            where TParser : struct, IHexOrBinaryParser<TInteger>
+        {
+            Debug.Assert((styles & ~TParser.AllowedStyles) == 0, $"Only handles subsets of {TParser.AllowedStyles} format");
 
             if (value.IsEmpty)
                 goto FalseExit;
@@ -678,7 +718,7 @@ namespace System
             bool overflow = false;
             TInteger answer = TInteger.Zero;
 
-            if (HexConverter.IsHexChar(num))
+            if (TParser.IsValidChar(num))
             {
                 // Skip past leading zeros.
                 if (num == '0')
@@ -690,24 +730,24 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
-                    if (!HexConverter.IsHexChar(num))
+                    if (!TParser.IsValidChar(num))
                         goto HasTrailingChars;
                 }
 
-                // Parse up through MaxHexDigitCount digits, as no overflow is possible
-                answer = TInteger.CreateTruncating((uint)HexConverter.FromChar(num)); // first digit
+                // Parse up through MaxDigitCount digits, as no overflow is possible
+                answer = TInteger.CreateTruncating(TParser.FromChar(num)); // first digit
                 index++;
-                for (int i = 0; i < TInteger.MaxHexDigitCount - 1; i++) // next MaxHexDigitCount - 1 digits can't overflow
+                for (int i = 0; i < TParser.MaxDigitCount - 1; i++) // next MaxDigitCount - 1 digits can't overflow
                 {
                     if ((uint)index >= (uint)value.Length)
                         goto DoneAtEnd;
                     num = value[index];
 
-                    uint numValue = (uint)HexConverter.FromChar(num);
-                    if (numValue == 0xFF)
+                    uint numValue = TParser.FromChar(num);
+                    if (numValue > TParser.MaxDigitValue)
                         goto HasTrailingChars;
                     index++;
-                    answer = TInteger.MultiplyBy16(answer);
+                    answer = TParser.ShiftLeftForNextDigit(answer);
                     answer += TInteger.CreateTruncating(numValue);
                 }
 
@@ -715,7 +755,7 @@ namespace System
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEnd;
                 num = value[index];
-                if (!HexConverter.IsHexChar(num))
+                if (!TParser.IsValidChar(num))
                     goto HasTrailingChars;
 
                 // At this point, we're either overflowing or hitting a formatting error.
@@ -726,7 +766,7 @@ namespace System
                     if ((uint)index >= (uint)value.Length)
                         goto OverflowExit;
                     num = value[index];
-                } while (HexConverter.IsHexChar(num));
+                } while (TParser.IsValidChar(num));
                 overflow = true;
                 goto HasTrailingChars;
             }

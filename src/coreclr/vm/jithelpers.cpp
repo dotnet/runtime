@@ -746,9 +746,9 @@ HCIMPLEND
 //========================================================================
 
 /*********************************************************************/
-// Returns the address of the field in the object (This is an interior
-// pointer and the caller has to use it appropriately). obj can be
-// either a reference or a byref
+// Returns the address of the instance field in the object (This is an interior
+// pointer and the caller has to use it appropriately) or a static field.
+// obj can be either a reference or a byref
 HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 {
     CONTRACTL {
@@ -761,9 +761,8 @@ HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
 
-    if (objRef == NULL)
+    if (!pFD->IsStatic() && objRef == NULL)
         COMPlusThrow(kNullReferenceException);
-
 
     fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
 
@@ -788,6 +787,25 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
     }
 
     return pFD->GetAddressGuaranteedInHeap(obj);
+}
+HCIMPLEND
+#include <optdefault.h>
+
+#include <optsmallperfcritical.h>
+HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFD));
+    } CONTRACTL_END;
+
+    // [TODO] Only handling EnC for now
+    _ASSERTE(pFD->IsEnCNew());
+
+    {
+        ENDFORBIDGC();
+        return HCCALL2(JIT_GetFieldAddr_Framed, NULL, pFD);
+    }
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -2386,6 +2404,37 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 }
 HCIMPLEND
 
+/*************************************************************/
+HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newobj = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    TypeHandle typeHnd(typeHnd_);
+
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
+    MethodTable* pMT = typeHnd.AsMethodTable();
+    _ASSERTE(pMT->IsRestored_NoLogging());
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newobj = TryAllocateFrozenObject(pMT);
+    if (newobj == NULL)
+    {
+        // Fallback to normal heap allocation.
+        newobj = AllocateObject(pMT);
+    }
+
+    HELPER_METHOD_FRAME_END();
+    return(OBJECTREFToObject(newobj));
+}
+HCIMPLEND
 
 
 //========================================================================
@@ -2695,6 +2744,53 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 #endif // _DEBUG
 
     newArray = AllocateSzArray(pArrayMT, (INT32)size);
+    HELPER_METHOD_FRAME_END();
+
+    return(OBJECTREFToObject(newArray));
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newArray = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    MethodTable* pArrayMT = (MethodTable*)arrayMT;
+
+    _ASSERTE(pArrayMT->IsFullyLoaded());
+    _ASSERTE(pArrayMT->IsArray());
+    _ASSERTE(!pArrayMT->IsMultiDimArray());
+
+    if (size < 0)
+        COMPlusThrow(kOverflowException);
+
+#ifdef HOST_64BIT
+    // Even though ECMA allows using a native int as the argument to newarr instruction
+    // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+    // platforms we can't create an array whose size exceeds 32 bits.
+    if (size > INT_MAX)
+        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+#endif
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newArray = TryAllocateFrozenSzArray(pArrayMT, (INT32)size);
+    if (newArray == NULL)
+    {
+        // Fallback to default heap allocation
+        newArray = AllocateSzArray(pArrayMT, (INT32)size);
+    }
+    _ASSERTE(newArray != NULL);
+
     HELPER_METHOD_FRAME_END();
 
     return(OBJECTREFToObject(newArray));

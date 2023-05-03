@@ -1897,6 +1897,7 @@ namespace System
         public virtual System.TimeZoneInfo LocalTimeZone { get; }
         public virtual long TimestampFrequency { get; }
         public virtual long GetTimestamp() { throw null; }
+        public TimeSpan GetElapsedTime(long startingTimestamp) { throw null; }
         public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
         public virtual System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
     }
@@ -7366,6 +7367,7 @@ namespace System.CodeDom.Compiler
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual void OutputTabs() { }
         protected virtual System.Threading.Tasks.Task OutputTabsAsync() { throw null; }
         public override void Write(bool value) { }
@@ -9026,6 +9028,8 @@ namespace System.Globalization
         Any = 511,
         AllowHexSpecifier = 512,
         HexNumber = 515,
+        AllowBinarySpecifier = 1024,
+        BinaryNumber = 1027,
     }
     public partial class PersianCalendar : System.Globalization.Calendar
     {
@@ -10134,6 +10138,7 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
@@ -10251,6 +10256,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual void Flush() { }
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(char value) { }
@@ -13486,6 +13492,63 @@ namespace System.Runtime.InteropServices.Marshalling
             public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         }
     }
+
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedRef,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedRef))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedOut))]
+    public static class SafeHandleMarshaller<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : SafeHandle
+    {
+        public struct ManagedToUnmanagedIn
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedRef
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+
+            public ManagedToUnmanagedRef() { }
+
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void FromUnmanaged(nint value) { }
+
+            public void OnInvoked() { }
+
+            public T ToManagedFinally() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedOut
+        {
+            private int _dummyPrimitive;
+            private T _newHandle;
+            public ManagedToUnmanagedOut() { }
+
+            public void FromUnmanaged(nint value) { }
+
+            public T ToManaged() { throw null; }
+
+            public void Free() { }
+        }
+    }
+
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>),
         System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
@@ -14151,6 +14214,14 @@ namespace System.Text
 {
     public static class Ascii
     {
+        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<char> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool Equals(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<char> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<byte> right) { throw null; }
+        public static bool EqualsIgnoreCase(System.ReadOnlySpan<char> left, System.ReadOnlySpan<char> right) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> value) { throw null; }
         public static bool IsValid(byte value) { throw null; }
@@ -14180,8 +14251,8 @@ namespace System.Text
     {
         internal CompositeFormat() { }
         public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
         public string Format { get { throw null; } }
+        public int MinimumArgumentCount { get { throw null; } }
     }
     public abstract partial class Decoder
     {
@@ -14430,6 +14501,8 @@ namespace System.Text
         public bool IsAlwaysNormalized() { throw null; }
         public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { throw null; }
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
+        public virtual bool TryGetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
+        public virtual bool TryGetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten) { throw null; }
     }
     public sealed partial class EncodingInfo
     {

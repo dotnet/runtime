@@ -2956,6 +2956,8 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_OUT_TRAMPOLINE_VIRT:
 		return MONO_PATCH_INFO_GSHAREDVT_CALL;
+	case MONO_RGCTX_INFO_SIG_GSHAREDVT_OUT_TRAMPOLINE_CALLI:
+		return MONO_PATCH_INFO_SIGNATURE;
 	default:
 		printf ("%d\n", info_type);
 		g_assert_not_reached ();
@@ -3726,6 +3728,9 @@ mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_v
 	if (!mono_method_is_generic_sharable (method, allow_type_vars))
 		return FALSE;
 
+	if (mono_opt_experimental_gshared_mrgctx)
+		return method->is_inflated;
+
 	if (method->is_inflated && mono_method_get_context (method)->method_inst)
 		return TRUE;
 
@@ -4081,7 +4086,11 @@ mini_method_needs_mrgctx (MonoMethod *m)
 		return TRUE;
 	if (m->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (m->klass))
 		return TRUE;
-	return (mini_method_get_context (m) && mini_method_get_context (m)->method_inst);
+
+	if (mono_opt_experimental_gshared_mrgctx)
+		return mini_method_get_context (m) != NULL;
+	else
+		return (mini_method_get_context (m) && mini_method_get_context (m)->method_inst);
 }
 
 /*
