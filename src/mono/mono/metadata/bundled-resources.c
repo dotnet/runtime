@@ -12,7 +12,7 @@
 #include <mono/metadata/mono-private-unstable.h>
 
 static GHashTable *bundled_resources = NULL;
-static gboolean bundle_contains_assemblies, bundle_contains_satellite_assemblies = false;
+static bool bundle_contains_assemblies, bundle_contains_satellite_assemblies = false;
 
 //---------------------------------------------------------------------------------------
 //
@@ -56,21 +56,21 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
 
-	gboolean assemblyAdded, satelliteAssemblyAdded;
+	bool assemblyAdded, satelliteAssemblyAdded;
 
-	for (int i = 0; i < len; ++i) {
+	for (uint32_t i = 0; i < len; ++i) {
 		MonoBundledResource *resource_to_bundle = (MonoBundledResource *)resources_to_bundle[i];
 		switch (resource_to_bundle->type) {
 		case MONO_BUNDLED_ASSEMBLY: {
 			MonoBundledAssemblyResource *assembly = (MonoBundledAssemblyResource *)resource_to_bundle;
 			g_hash_table_insert (bundled_resources, (gpointer) assembly->assembly.name, assembly);
-			assemblyAdded = TRUE;
+			assemblyAdded = true;
 			break;
 		}
 		case MONO_BUNDLED_SATELLITE_ASSEMBLY: {
 			MonoBundledSatelliteAssemblyResource *satellite_assembly = (MonoBundledSatelliteAssemblyResource *)resource_to_bundle;
 			g_hash_table_insert (bundled_resources, (gpointer) satellite_assembly->satellite_assembly.name, satellite_assembly);
-			satelliteAssemblyAdded = TRUE;
+			satelliteAssemblyAdded = true;
 			break;
 		}
 		case MONO_BUNDLED_DATA:
@@ -115,10 +115,10 @@ mono_bundled_resources_get (const char *name)
 // have been added to the bundled resource hash table via mono_bundled_resources_add.
 //
 // Returns:
-//  gboolean - bool value indicating whether or not a bundled assembly resource had been added.
+//  bool - bool value indicating whether or not a bundled assembly resource had been added.
 //
 
-gboolean
+bool
 mono_bundled_resources_contains_assemblies (void)
 {
 	return bundle_contains_assemblies;
@@ -130,10 +130,10 @@ mono_bundled_resources_contains_assemblies (void)
 // have been added to the bundled resource hash table via mono_bundled_resources_add.
 //
 // Returns:
-//  gboolean - bool value indicating whether or not a bundled satellite assembly resource had been added.
+//  bool - bool value indicating whether or not a bundled satellite assembly resource had been added.
 //
 
-gboolean
+bool
 mono_bundled_resources_contains_satellite_assemblies (void)
 {
 	return bundle_contains_satellite_assemblies;

@@ -4,6 +4,8 @@
 #ifndef __MONO_BUNDLED_SOURCE_H__
 #define __MONO_BUNDLED_SOURCE_H__
 
+#include <stdbool.h>
+
 #include <mono/metadata/assembly.h>
 
 typedef enum {
@@ -62,10 +64,10 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 MonoBundledResource *
 mono_bundled_resources_get (const char *name);
 
-int32_t
+bool
 mono_bundled_resources_contains_assemblies (void);
 
-int32_t
+bool
 mono_bundled_resources_contains_satellite_assemblies (void);
 
 #endif /* __MONO_BUNDLED_SOURCE_H__ */

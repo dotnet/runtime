@@ -5,6 +5,8 @@
 #ifndef __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 #define __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 
+#include <stdbool.h>
+
 #include "loader-internals.h"
 
 #include <mono/metadata/assembly.h>
@@ -59,10 +61,10 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 MonoBundledResource *
 mono_bundled_resources_get (const char *name);
 
-gboolean
+bool
 mono_bundled_resources_contains_assemblies (void);
 
-gboolean
+bool
 mono_bundled_resources_contains_satellite_assemblies (void);
 
 #endif /* __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__ */
