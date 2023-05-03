@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "nongcheap.h"
+#include <vector>
 
 GUID NonGcHeapProfiler::GetClsid()
 {
@@ -59,11 +60,14 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
     _garbageCollections++;
 
+    std::vector<ULONG> segment_starts;
+    std::vector<ULONG> segment_ends;
     const int MAX_NON_GC_HEAP_SEGMENTS = 16;
-    COR_PRF_NONGC_HEAP_RANGE segments[MAX_NON_GC_HEAP_SEGMENTS];
+    COR_PRF_NONGC_HEAP_RANGE frozen_segments[MAX_NON_GC_HEAP_SEGMENTS];
+    COR_PRF_GC_GENERATION_RANGE normal_segments[MAX_NON_GC_HEAP_SEGMENTS];
     ULONG segCount;
     ObjectID firstObj = 0;
-    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, segments);
+    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, frozen_segments);
     if (FAILED(hr))
     {
         printf("GetNonGCHeapBounds returned an error\n!");
@@ -77,27 +81,83 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     else
     {
         // Save very first object ID to compare with EnumerateNonGCObjects
-        firstObj = segments[0].rangeStart;
+        firstObj = frozen_segments[0].rangeStart;
 
         printf("\nGetNonGCHeapBounds (segCount = %u):\n", segCount);
         for (ULONG i = 0; i < segCount; i++)
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
-                i, (void*)segments[i].rangeStart, (ULONG)segments[i].rangeLength, (ULONG)segments[i].rangeLengthReserved);
+                i, (void*)frozen_segments[i].rangeStart, (ULONG)frozen_segments[i].rangeLength, (ULONG)frozen_segments[i].rangeLengthReserved);
 
-            if ((ULONG)segments[i].rangeLength > (ULONG)segments[i].rangeLengthReserved)
+            if ((ULONG)frozen_segments[i].rangeLength > (ULONG)frozen_segments[i].rangeLengthReserved)
             {
                 printf("GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
                 _failures++;
             }
 
-            if (!segments[i].rangeStart)
+            if (!frozen_segments[i].rangeStart)
             {
                 printf("GetNonGCHeapBounds: rangeStart is null");
                 _failures++;
             }
+            segment_starts.emplace_back((ULONG)frozen_segments[i].rangeStart);
+            segment_ends.emplace_back((ULONG)frozen_segments[i].rangeStart + (ULONG)frozen_segments[i].rangeLengthReserved);
         }
         printf("\n");
+    }
+    hr = pCorProfilerInfo->GetGenerationBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, normal_segments);
+    if (FAILED(hr))
+    {
+        printf("GetGenerationBounds returned an error\n!");
+        _failures++;
+    }
+    else if (segCount == 0 || segCount > MAX_NON_GC_HEAP_SEGMENTS)
+    {
+        printf("GetGenerationBounds: invalid segCount (%u)\n!", segCount);
+        _failures++;
+    }
+    else
+    {
+        for (ULONG i = 0; i < segCount; i++)
+        {
+            printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
+                i, (void*)normal_segments[i].rangeStart, (ULONG)normal_segments[i].rangeLength, (ULONG)normal_segments[i].rangeLengthReserved);
+                
+            if ((ULONG)normal_segments[i].rangeLength > (ULONG)normal_segments[i].rangeLengthReserved)
+            {
+                printf("GetGenerationBounds: rangeLength > rangeLengthReserved");
+                _failures++;
+            }
+
+            if (!normal_segments[i].rangeStart)
+            {
+                printf("GetGenerationBounds: rangeStart is null");
+                _failures++;
+            }
+            segment_starts.emplace_back((ULONG)normal_segments[i].rangeStart);
+            segment_ends.emplace_back((ULONG)normal_segments[i].rangeStart + (ULONG)normal_segments[i].rangeLengthReserved);
+        }
+        printf("\n");
+    }
+    sort(segment_starts.begin(), segment_starts.end());
+    sort(segment_ends.begin(), segment_ends.end());
+    for (int i = 0; i < segment_starts.size() - 1; i++)
+    {
+        if (segment_starts[i] == segment_starts[i+1])
+        {
+            printf("Duplicated segment starts");
+            _failures++;
+        }
+        if (segment_ends[i] == segment_ends[i+1])
+        {
+            printf("Duplicated segment ends");
+            _failures++;
+        }
+        if (segment_ends[i] >= segment_starts[i+1])
+        {
+            printf("Overlapping segments");
+            _failures++;
+        }
     }
 
     // Let's make sure we got the same number of objects as we got from the callback

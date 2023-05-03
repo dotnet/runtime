@@ -46170,9 +46170,10 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
 #ifdef USE_REGIONS
             while (seg)
             {
-                fn(context, curr_gen_number, heap_segment_mem (seg),
-                                              heap_segment_allocated (seg),
-                                              heap_segment_reserved (seg));
+                int gen_num = heap_segment_read_only_p (seg) ? INT32_MAX : curr_gen_number;
+                fn(context, gen_num, heap_segment_mem (seg),
+                                     heap_segment_allocated (seg),
+                                     heap_segment_reserved (seg));
 
                 seg = heap_segment_next (seg);
             }
@@ -46185,10 +46186,11 @@ void gc_heap::descr_generations_to_profiler (gen_walk_fn fn, void *context)
                 // heap_segment_allocated (seg);
                 // for generation # curr_gen_number
                 // for heap # heap_no
-                fn(context, curr_gen_number, heap_segment_mem (seg),
-                                              heap_segment_allocated (seg),
-                                              (curr_gen_number > max_generation) ?
-                                                heap_segment_reserved (seg) : heap_segment_allocated (seg));
+                int gen_num = heap_segment_read_only_p (seg) ? INT32_MAX : curr_gen_number;
+                fn(context, gen_num, heap_segment_mem (seg),
+                                     heap_segment_allocated (seg),
+                                     (curr_gen_number > max_generation) ?
+                                       heap_segment_reserved (seg) : heap_segment_allocated (seg));
 
                 seg = heap_segment_next (seg);
             }

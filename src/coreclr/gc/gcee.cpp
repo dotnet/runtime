@@ -62,6 +62,11 @@ void GCHeap::ReportGenerationBounds()
     {
         g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
+            // TODO: What shall we do with the GCGenerationRange event with frozen segments?
+            if (generation == INT32_MAX)
+            {
+                generation = 2;
+            }
             uint64_t range = static_cast<uint64_t>(rangeEnd - rangeStart);
             uint64_t rangeReserved = static_cast<uint64_t>(rangeEndReserved - rangeStart);
             FIRE_EVENT(GCGenerationRange, (uint8_t)generation, rangeStart, range, rangeReserved);
@@ -451,6 +456,7 @@ segment_handle GCHeap::RegisterFrozenSegment(segment_info *pseginfo)
     heap_segment_used(seg) = heap_segment_allocated(seg);
     heap_segment_plan_allocated(seg) = 0;
 #ifdef USE_REGIONS
+    // TODO - that can be interesting
     heap_segment_gen_num(seg) = max_generation;
 #endif //USE_REGIONS
     seg->flags = heap_segment_flags_readonly;
