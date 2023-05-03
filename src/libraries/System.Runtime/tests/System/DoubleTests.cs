@@ -823,7 +823,6 @@ namespace System.Tests
                 yield return testData;
             }
 
-
             yield return new object[] { double.MinValue, "G", null, "-1.7976931348623157E+308" };
             yield return new object[] { double.MaxValue, "G", null, "1.7976931348623157E+308" };
 
@@ -838,39 +837,32 @@ namespace System.Tests
             yield return new object[] { 32.5, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
-        [Fact]
-        public static void Test_ToString_NotNetFramework()
+        [Theory]
+        [MemberData(nameof(ToString_TestData_NotNetFramework))]
+        public static void Test_ToString_NotNetFramework(double d, string format, IFormatProvider provider, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                foreach (object[] testdata in ToString_TestData_NotNetFramework())
+                bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
+                if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
                 {
-                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    if (isDefaultProvider)
+                    {
+                        Assert.Equal(expected, d.ToString());
+                        Assert.Equal(expected, d.ToString((IFormatProvider)null));
+                    }
+                    Assert.Equal(expected, d.ToString(provider));
                 }
-            }
-        }
-
-        private static void ToString(double d, string format, IFormatProvider provider, string expected)
-        {
-            bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
-            {
                 if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, d.ToString());
-                    Assert.Equal(expected, d.ToString((IFormatProvider)null));
+                    Assert.Equal(expected, d.ToString(format.ToUpperInvariant()), true);
+                    Assert.Equal(expected, d.ToString(format.ToLowerInvariant()), true);
+                    Assert.Equal(expected, d.ToString(format.ToUpperInvariant(), null), true);
+                    Assert.Equal(expected, d.ToString(format.ToLowerInvariant(), null), true);
                 }
-                Assert.Equal(expected, d.ToString(provider));
+                Assert.Equal(expected, d.ToString(format.ToUpperInvariant(), provider), true);
+                Assert.Equal(expected, d.ToString(format.ToLowerInvariant(), provider), true);
             }
-            if (isDefaultProvider)
-            {
-                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), null));
-                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), null));
-            }
-            Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), provider));
-            Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), provider));
         }
 
         [Fact]
