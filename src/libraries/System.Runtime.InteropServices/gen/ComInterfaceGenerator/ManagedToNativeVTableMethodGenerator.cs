@@ -185,6 +185,16 @@ namespace Microsoft.Interop
             }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
+            // GC.KeepAlive(this);
+            tryStatements.Add(
+                ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseTypeName(TypeNames.System_GC),
+                            IdentifierName("KeepAlive")),
+                        ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
+
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;

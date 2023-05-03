@@ -51,6 +51,8 @@ namespace Microsoft.Interop
 
         public const string System_Exception = "System.Exception";
 
+        public const string System_GC = "System.GC";
+
         public const string System_Type = "System.Type";
 
         public const string System_Int16 = "System.Int16";
