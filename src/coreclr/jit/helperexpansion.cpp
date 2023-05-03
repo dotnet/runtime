@@ -186,15 +186,10 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 
     // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
     // we can drop it and use that LCL as the destination
-    if (stmt->GetRootNode()->OperIs(GT_ASG))
+    if (stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) && (stmt->GetRootNode()->AsLclVar()->Data() == *callUse))
     {
-        GenTree* lhs = stmt->GetRootNode()->gtGetOp1();
-        GenTree* rhs = stmt->GetRootNode()->gtGetOp2();
-        if (lhs->OperIs(GT_LCL_VAR) && rhs == *callUse)
-        {
-            rtLookupLcl = gtClone(lhs)->AsLclVar();
-            fgRemoveStmt(block, stmt);
-        }
+        rtLookupLcl = gtNewLclVarNode(stmt->GetRootNode()->AsLclVar()->GetLclNum());
+        fgRemoveStmt(block, stmt);
     }
 
     // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
@@ -285,12 +280,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
 
     // Fallback basic block
-    GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, asgFallbackValue, debugInfo, true);
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
+    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, fallbackValueDef, debugInfo, true);
 
     // Fast-path basic block
-    GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, asgFastpathValue, debugInfo);
+    GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
+    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo);
 
     BasicBlock* sizeCheckBb = nullptr;
     if (needsSizeCheck)
@@ -565,15 +560,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the tls value
     unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-    GenTree* defTlsLclValue    = gtNewLclvNode(tlsLclNum, TYP_I_IMPL);
-    GenTree* useTlsLclValue    = gtCloneExpr(defTlsLclValue); // Create a use for tlsLclValue
-    GenTree* asgTlsValue       = gtNewAssignNode(defTlsLclValue, tlsValue);
+    GenTree* tlsValueDef       = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    GenTree* tlsLclValueUse    = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
     GenTree* offsetOfMaxThreadStaticBlocks =
         gtNewIconNode(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfMaxThreadStaticBlocks);
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -585,7 +579,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadStaticBlocksInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfThreadStaticBlocks);
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
     GenTree* threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -599,14 +593,12 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
     lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
-    GenTree* defThreadStaticBlockBaseLclValue    = gtNewLclvNode(threadStaticBlockBaseLclNum, TYP_I_IMPL);
-    GenTree* useThreadStaticBlockBaseLclValue =
-        gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
-    GenTree* asgThreadStaticBlockBase = gtNewAssignNode(defThreadStaticBlockBaseLclValue, typeThreadStaticBlockValue);
+    GenTree* threadStaticBlockBaseDef = gtNewStoreLclVarNode(threadStaticBlockBaseLclNum, typeThreadStaticBlockValue);
+    GenTree* threadStaticBlockBaseLclValueUse = gtNewLclVarNode(threadStaticBlockBaseLclNum);
 
     // Create tree for "if (threadStaticBlockValue != nullptr)"
     GenTree* threadStaticBlockNullCond =
-        gtNewOperNode(GT_NE, TYP_INT, useThreadStaticBlockBaseLclValue, gtNewIconNode(0, TYP_I_IMPL));
+        gtNewOperNode(GT_NE, TYP_INT, threadStaticBlockBaseLclValueUse, gtNewIconNode(0, TYP_I_IMPL));
     threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
 
     // prevBb (BBJ_NONE):                                               [weight: 1.0]
@@ -633,26 +625,26 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     //      use(threadStaticBlockBase);
 
     // maxThreadStaticBlocksCondBB
-    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, asgTlsValue, debugInfo);
+    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
 
     fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
                       fgNewStmtFromTree(maxThreadStaticBlocksCond));
 
     // threadStaticBlockNullCondBB
     BasicBlock* threadStaticBlockNullCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, asgThreadStaticBlockBase, debugInfo);
+        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
     fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
                       fgNewStmtFromTree(threadStaticBlockNullCond));
 
     // fallbackBb
-    GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(threadStaticBlockLcl), call);
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, asgFallbackValue, debugInfo, true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
 
     // fastPathBb
-    GenTree* asgFastPathValue =
-        gtNewAssignNode(gtClone(threadStaticBlockLcl), gtCloneExpr(useThreadStaticBlockBaseLclValue));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, asgFastPathValue, debugInfo, true);
+    GenTree* fastPathValueDef =
+        gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
     //
     // Update preds in all new blocks
