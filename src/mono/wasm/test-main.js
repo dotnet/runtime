@@ -4,13 +4,13 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
-"use strict";
+import { dotnet, exit } from './dotnet.js';
 
 
 /*****************************************************************************
  * Please don't use this as template for startup code.
  * There are simpler and better samples like src\mono\sample\wasm\browser\main.js
- * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills.
+ * It has edge case polyfills.
  * It handles strange things which happen with XHarness.
  ****************************************************************************/
 
@@ -296,8 +296,7 @@ async function dry_run(runArgs) {
     try {
         console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
         // this separate instance of the ES6 module, in which we just populate the caches
-        const { dotnet, exit } = await import('./dotnet.js?dry_run=true');
-        mono_exit = exit;
+        const { dotnet } = await import('./dotnet.js?dry_run=true');
         configureRuntime(dotnet, runArgs);
         // silent minimal startup
         await dotnet.withConfig({
@@ -310,12 +309,14 @@ async function dry_run(runArgs) {
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true
         }).create();
+        console.log("Separate runtime instance finished loading.");
     } catch (err) {
-        if (err && err.status !== 0) {
-            return false;
+        if (err && err.status === 0) {
+            return true;
         }
+        console.log("Separate runtime instance failed loading.", err);
+        return false;
     }
-    console.log("Separate runtime instance finished loading.");
     return true;
 }
 
@@ -334,7 +335,6 @@ async function run() {
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
         // This way, we are testing that the cached version works.
-        const { dotnet, exit, INTERNAL } = await import('./dotnet.js');
         mono_exit = exit;
 
         if (runArgs.applicationArguments.length == 0) {
@@ -342,7 +342,7 @@ async function run() {
             return;
         }
 
-        configureRuntime(dotnet, runArgs, INTERNAL);
+        configureRuntime(dotnet, runArgs);
 
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
@@ -398,4 +398,4 @@ async function run() {
     }
 }
 
-run();
+await run();
