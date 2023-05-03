@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Linker.Dataflow;
+using Mono.Linker.Tests.Cases.CppCLI;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
@@ -48,7 +50,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyReferences (originalAssembly, linkedAssembly);
 			VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName);
 
-			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
+			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Where(m => !IsCompilerGeneratedMember(m)).Select (s => {
 				return s.FullName;
 			}), StringComparer.Ordinal);
 
@@ -64,11 +66,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
-					if (td.Name == "<Module>") {
-						linkedMembers.Remove (td.Name);
-						continue;
-					}
-
 					TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
 					VerifyTypeDefinition (td, linkedType);
 					linkedMembers.Remove (td.FullName);
@@ -80,6 +77,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			Assert.IsEmpty (linkedMembers, "Linked output includes unexpected member");
+		}
+
+		static bool IsCompilerGeneratedMemberName (string memberName)
+		{
+			return memberName.Length > 0 && memberName[0] == '<';
+		}
+
+		static bool IsCompilerGeneratedMember (IMemberDefinition member)
+		{
+			if (IsCompilerGeneratedMemberName (member.Name))
+				return true;
+
+			if (member.DeclaringType != null)
+				return IsCompilerGeneratedMember (member.DeclaringType);
+
+			return false;
 		}
 
 		protected virtual void VerifyModule (ModuleDefinition original, ModuleDefinition linked)
@@ -103,6 +116,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
+			if (IsCompilerGeneratedMember (original))
+				return;
+
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
 				return;
 
@@ -1045,9 +1061,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
-							Assert.IsEmpty (lnkp.Name, "Expected empty parameter name");
+							Assert.IsEmpty (lnkp.Name, $"Expected empty parameter name. Parameter {i} of {(src as MethodDefinition)}");
 						else
-							Assert.AreEqual (srcp.Name, lnkp.Name, "Mismatch in parameter name");
+							Assert.AreEqual (srcp.Name, lnkp.Name, $"Mismatch in parameter name. Parameter {i} of {(src as MethodDefinition)}");
 					}
 				}
 			}
