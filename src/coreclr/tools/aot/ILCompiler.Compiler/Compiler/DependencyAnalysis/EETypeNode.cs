@@ -648,7 +648,7 @@ namespace ILCompiler.DependencyAnalysis
             ComputeOptionalEETypeFields(factory, relocsOnly);
 
             OutputGCDesc(ref objData);
-            OutputFlags(factory, ref objData);
+            OutputFlags(factory, ref objData, relocsOnly);
             objData.EmitInt(BaseSize);
             OutputRelatedType(factory, ref objData);
 
@@ -715,7 +715,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GCDescSize == 0);
         }
 
-        private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
+        private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData, bool relocsOnly)
         {
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
@@ -733,9 +733,11 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
-            if (_type.IsIDynamicInterfaceCastable)
+            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
             {
-                flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
+                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
+                    flags |= (uint)EETypeFlags.HasSealedVTableEntriesFlag;
             }
 
             if (HasOptionalFields)
@@ -1136,29 +1138,49 @@ namespace ILCompiler.DependencyAnalysis
                         objData.EmitRelativeRelocOrIndirectionReference(typeDefNode);
                     else
                         objData.EmitPointerRelocOrIndirectionReference(typeDefNode);
-                }
 
-                GenericCompositionDetails details;
-                if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-                {
-                    // Generic array enumerators use special variance rules recognized by the runtime
-                    details = new GenericCompositionDetails(_type.Instantiation, new[] { GenericVariance.ArrayCovariant });
-                }
-                else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
-                {
-                    // Runtime casting logic relies on all interface types implemented on arrays
-                    // to have the variant flag set (even if all the arguments are non-variant).
-                    // This supports e.g. casting uint[] to ICollection<int>
-                    details = new GenericCompositionDetails(_type, forceVarianceInfo: true);
+                    ISymbolNode compositionNode = _type.Instantiation.Length > 1
+                        ? factory.GenericComposition(_type.Instantiation)
+                        : factory.NecessaryTypeSymbol(_type.Instantiation[0]);
+
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(compositionNode);
                 }
                 else
-                    details = new GenericCompositionDetails(_type);
+                {
+                    GenericVarianceDetails details;
+                    if (_type == factory.ArrayOfTEnumeratorType)
+                    {
+                        // Generic array enumerators use special variance rules recognized by the runtime
+                        details = new GenericVarianceDetails(new[] { GenericVariance.ArrayCovariant });
+                    }
+                    else if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
+                    {
+                        // Runtime casting logic relies on all interface types implemented on arrays
+                        // to have the variant flag set (even if all the arguments are non-variant).
+                        // This supports e.g. casting uint[] to ICollection<int>
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else if (_type.HasVariance)
+                    {
+                        details = new GenericVarianceDetails(_type);
+                    }
+                    else
+                    {
+                        details = default;
+                    }
 
-                ISymbolNode compositionNode = factory.GenericComposition(details);
-                if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
-                else
-                    objData.EmitPointerReloc(compositionNode);
+                    if (!details.IsNull)
+                    {
+                        ISymbolNode varianceInfoNode = factory.GenericVariance(details);
+                        if (factory.Target.SupportsRelativePointers)
+                            objData.EmitReloc(varianceInfoNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                        else
+                            objData.EmitPointerReloc(varianceInfoNode);
+                    }
+                }
             }
         }
 
@@ -1189,12 +1211,12 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
             }
 
-            ComputeRareFlags(factory, relocsOnly);
+            ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
         }
 
-        private void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
+        private void ComputeRareFlags(NodeFactory factory)
         {
             uint flags = 0;
 
@@ -1219,21 +1241,9 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
 
-            if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
-            {
-                flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
-            }
-
             if (_type.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-            }
-
-            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
-            {
-                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
-                if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
-                    flags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
             }
 
             if (flags != 0)

@@ -256,6 +256,8 @@ namespace System.Reflection.Emit
             // Netcore only allows one module per assembly
             manifest_module = new RuntimeModuleBuilder(this, "RefEmit_InMemoryManifestModule");
             modules = new RuntimeModuleBuilder[] { manifest_module };
+
+            AssemblyLoadContext.InvokeAssemblyLoadEvent (this);
         }
 
         public override bool ReflectionOnly
