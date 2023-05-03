@@ -13,8 +13,10 @@ jobs:
   check-labels:
     runs-on: ubuntu-latest
     steps:
-    - name: Check servicing labels
+    - name: Check `Servicing-approved` label
       run: |
+        echo "Merging permission is enabled for servicing PRs when the `Servicing-approved` label is applied."
+        echo "Rules for applying the label can be found [here](~/docs/project/library-servicing.md)."
         if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
           exit 0
         else
