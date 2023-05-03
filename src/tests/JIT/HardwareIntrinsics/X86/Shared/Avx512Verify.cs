@@ -14,37 +14,32 @@ namespace JIT.HardwareIntrinsics.X86
 
     public static class Avx512Verify
     {
-        public static double Fixup(double x, double y, long z)
+        public static bool ValidateFixup(double actual, double x, double y, long z)
         {
-            return Fixup<double>(x, y, (int)(z));
+            // Tests expect true on error
+            double expected = Fixup<double>(x, y, (int)(z));
+
+            if (BitConverter.DoubleToInt64Bits(actual) == BitConverter.DoubleToInt64Bits(expected))
+            {
+                return false;
+            }
+
+            // The real fixup returns specific NaNs, but we don't need to validate for this test
+            return !(double.IsNaN(actual) && double.IsNaN(expected));
         }
 
-        public static TFloat Fixup<TFloat>(TFloat x, TFloat y, int z)
-            where TFloat : IFloatingPointIeee754<TFloat>, IMinMaxValue<TFloat>
+        public static bool ValidateFixup(float actual, float x, float y, int z)
         {
-            int tokenType = GetTokenType(x);
-            int tokenResponse = GetTokenResponse(tokenType, z);
+            // Tests expect true on error
+            float expected = Fixup<float>(x, y, (int)(z));
 
-            switch (tokenResponse)
+            if (BitConverter.SingleToInt32Bits(actual) == BitConverter.SingleToInt32Bits(expected))
             {
-                case 0: return x;
-                case 1: return y;
-                case 2: return TFloat.NaN;
-                case 3: return TFloat.NaN;
-                case 4: return TFloat.NegativeInfinity;
-                case 5: return TFloat.PositiveInfinity;
-                case 6: return TFloat.CopySign(y, TFloat.PositiveInfinity);
-                case 7: return TFloat.NegativeZero;
-                case 8: return TFloat.Zero;
-                case 9: return -TFloat.One;
-                case 10: return TFloat.One;
-                case 11: return TFloat.CreateSaturating(0.5);
-                case 13: return TFloat.CreateSaturating(90);
-                case 14: return TFloat.Pi / TFloat.CreateSaturating(2);
-                case 15: return TFloat.MaxValue;
-                case 16: return TFloat.MinValue;
-                default: throw new Exception($"Unexpected tokenResponse ({tokenResponse}) for ({x}, {y}, {z})");
+                return false;
             }
+
+            // The real fixup returns specific NaNs, but we don't need to validate for this test
+            return !(float.IsNaN(actual) && float.IsNaN(expected));
         }
 
         public static float GetExponent(float x)
@@ -99,6 +94,34 @@ namespace JIT.HardwareIntrinsics.X86
             return relativeError >= (TFloat.One / TFloat.CreateSaturating(16384)); // 2^-14
         }
 
+        private static TFloat Fixup<TFloat>(TFloat x, TFloat y, int z)
+            where TFloat : IFloatingPointIeee754<TFloat>, IMinMaxValue<TFloat>
+        {
+            int tokenType = GetTokenType(y);
+            int tokenResponse = GetTokenResponse(tokenType, z);
+
+            switch (tokenResponse)
+            {
+                case 0: return x;
+                case 1: return y;
+                case 2: return TFloat.NaN;
+                case 3: return TFloat.NaN;
+                case 4: return TFloat.NegativeInfinity;
+                case 5: return TFloat.PositiveInfinity;
+                case 6: return TFloat.CopySign(TFloat.PositiveInfinity, y);
+                case 7: return TFloat.NegativeZero;
+                case 8: return TFloat.Zero;
+                case 9: return -TFloat.One;
+                case 10: return TFloat.One;
+                case 11: return TFloat.CreateSaturating(0.5);
+                case 12: return TFloat.CreateSaturating(90);
+                case 13: return TFloat.Pi / TFloat.CreateSaturating(2);
+                case 14: return TFloat.MaxValue;
+                case 15: return TFloat.MinValue;
+                default: throw new Exception($"Unexpected tokenResponse ({tokenResponse}) for ({x}, {y}, {z})");
+            }
+        }
+
         private static int GetBiasedExponent(float x)
         {
             int bits = BitConverter.SingleToInt32Bits(x);
@@ -113,7 +136,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static int GetTokenResponse(int tokenType, int z)
         {
-            return (tokenType >> (4 * tokenType)) & 0xF;
+            return (z >> (4 * tokenType)) & 0xF;
         }
 
         private static int GetTokenType<TFloat>(TFloat x)
