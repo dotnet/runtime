@@ -8335,6 +8335,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             {
                                 MakeSrcRegOptional(node, op3);
                             }
+
+                            if (!node->isRMWHWIntrinsic(comp))
+                            {
+                                // op1 is never selected by the table so
+                                // we can contain and ignore any register
+                                // allocated to it resulting in better
+                                // non-RMW based codegen.
+
+                                MakeSrcContained(node, op1);
+                            }
                             break;
                         }
 

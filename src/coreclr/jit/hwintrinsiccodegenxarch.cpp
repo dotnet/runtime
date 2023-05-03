@@ -912,6 +912,17 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction in
     regNumber op1Reg    = op1->GetRegNum();
     regNumber op2Reg    = op2->GetRegNum();
 
+    if (op1->isContained())
+    {
+        // op1 is never selected by the table so
+        // we can contain and ignore any register
+        // allocated to it resulting in better
+        // non-RMW based codegen.
+
+        assert(!node->isRMWHWIntrinsic(compiler));
+        op1Reg = targetReg;
+    }
+
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
     assert(op2Reg != REG_NA);
