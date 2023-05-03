@@ -648,7 +648,7 @@ namespace ILCompiler.DependencyAnalysis
             ComputeOptionalEETypeFields(factory, relocsOnly);
 
             OutputGCDesc(ref objData);
-            OutputFlags(factory, ref objData);
+            OutputFlags(factory, ref objData, relocsOnly);
             objData.EmitInt(BaseSize);
             OutputRelatedType(factory, ref objData);
 
@@ -715,7 +715,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GCDescSize == 0);
         }
 
-        private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
+        private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData, bool relocsOnly)
         {
             uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
@@ -733,9 +733,11 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
-            if (_type.IsIDynamicInterfaceCastable)
+            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
             {
-                flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
+                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
+                    flags |= (uint)EETypeFlags.HasSealedVTableEntriesFlag;
             }
 
             if (HasOptionalFields)
@@ -1209,12 +1211,12 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
             }
 
-            ComputeRareFlags(factory, relocsOnly);
+            ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();
         }
 
-        private void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
+        private void ComputeRareFlags(NodeFactory factory)
         {
             uint flags = 0;
 
@@ -1239,21 +1241,9 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
 
-            if (metadataType != null && !_type.IsInterface && metadataType.IsAbstract)
-            {
-                flags |= (uint)EETypeRareFlags.IsAbstractClassFlag;
-            }
-
             if (_type.IsByRefLike)
             {
                 flags |= (uint)EETypeRareFlags.IsByRefLikeFlag;
-            }
-
-            if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
-            {
-                SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
-                if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
-                    flags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
             }
 
             if (flags != 0)

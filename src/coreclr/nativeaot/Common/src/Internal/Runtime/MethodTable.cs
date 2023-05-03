@@ -619,14 +619,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsAbstract
-        {
-            get
-            {
-                return IsInterface || (RareFlags & EETypeRareFlags.IsAbstractClassFlag) != 0;
-            }
-        }
-
         internal bool IsByRefLike
         {
             get
@@ -753,7 +745,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_uFlags & (uint)EETypeFlags.IDynamicInterfaceCastableFlag) != 0);
+                return ((ExtendedFlags & (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag) != 0);
             }
         }
 
@@ -771,6 +763,14 @@ namespace Internal.Runtime
             get
             {
                 return ElementType < EETypeElementType.ValueType;
+            }
+        }
+
+        internal bool HasSealedVTableEntries
+        {
+            get
+            {
+                return (_uFlags & (uint)EETypeFlags.HasSealedVTableEntriesFlag) != 0;
             }
         }
 
@@ -1044,7 +1044,7 @@ namespace Internal.Runtime
 #endif
         void* GetSealedVirtualTable()
         {
-            Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
+            Debug.Assert(HasSealedVTableEntries);
 
             uint cbSealedVirtualSlotsTypeOffset = GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
             byte* pThis = (byte*)Unsafe.AsPointer(ref this);
@@ -1367,10 +1367,8 @@ namespace Internal.Runtime
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
 
-            EETypeRareFlags rareFlags = RareFlags;
-
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
-            if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+            if (HasSealedVTableEntries)
                 cbOffset += relativeOrFullPointerOffset;
 
             if (eField == EETypeField.ETF_GenericDefinition)
@@ -1411,6 +1409,7 @@ namespace Internal.Runtime
             if (IsDynamicType)
                 cbOffset += (uint)IntPtr.Size;
 
+            EETypeRareFlags rareFlags = RareFlags;
             if (eField == EETypeField.ETF_DynamicGcStatics)
             {
                 Debug.Assert((rareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);

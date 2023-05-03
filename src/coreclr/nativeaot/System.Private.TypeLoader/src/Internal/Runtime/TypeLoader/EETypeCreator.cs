@@ -159,6 +159,7 @@ namespace Internal.Runtime.TypeLoader
                 bool isNullable;
                 bool isArray;
                 bool isGeneric;
+                bool hasSealedVTable;
                 uint flags;
                 ushort runtimeInterfacesLength = 0;
                 IntPtr typeManager = IntPtr.Zero;
@@ -175,6 +176,7 @@ namespace Internal.Runtime.TypeLoader
                 flags = pTemplateEEType->Flags;
                 isArray = pTemplateEEType->IsArray;
                 isGeneric = pTemplateEEType->IsGeneric;
+                hasSealedVTable = pTemplateEEType->HasSealedVTableEntries;
                 typeManager = pTemplateEEType->PointerToTypeManager;
                 Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
 
@@ -251,7 +253,7 @@ namespace Internal.Runtime.TypeLoader
                         runtimeInterfacesLength,
                         hasFinalizer,
                         cbOptionalFieldsSize > 0,
-                        (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
+                        hasSealedVTable,
                         isGeneric,
                         numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
@@ -306,7 +308,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 // Copy the sealed vtable entries if they exist on the template type
-                if ((rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+                if (hasSealedVTable)
                 {
                     uint cbSealedVirtualSlotsTypeOffset = pEEType->GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
