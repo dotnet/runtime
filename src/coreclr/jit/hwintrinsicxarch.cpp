@@ -584,14 +584,43 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX512BW_ShiftRightArithmetic:
         case NI_AVX512BW_ShiftRightLogical:
         {
+            // These intrinsics have overloads that take op2 in a simd register and just read the lowest 8-bits
+
             impSpillSideEffect(true,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
 
-            GenTree* tmpOp =
-                gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_SSE2_ConvertScalarToVector128Int32, CORINFO_TYPE_INT, 16);
+            GenTree* tmpOp = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, CORINFO_TYPE_INT, 16);
+            return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, intrinsic, simdBaseJitType, genTypeSize(simdType));
+        }
+
+        case NI_AVX512F_RotateLeft:
+        case NI_AVX512F_RotateRight:
+        case NI_AVX512F_VL_RotateLeft:
+        case NI_AVX512F_VL_RotateRight:
+        {
+            // These intrinsics have variants that take op2 in a simd register and read a unique shift per element
+            intrinsic = static_cast<NamedIntrinsic>(intrinsic + 1);
+
+            static_assert_no_msg(NI_AVX512F_RotateLeftVariable == (NI_AVX512F_RotateLeft + 1));
+            static_assert_no_msg(NI_AVX512F_RotateRightVariable == (NI_AVX512F_RotateRight + 1));
+            static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
+            static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impSIMDPopStack();
+
+            if (varTypeIsLong(simdType))
+            {
+                op2 = gtNewCastNode(TYP_LONG, op2, /* fromUnsigned */ true, TYP_LONG);
+            }
+
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
             return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, intrinsic, simdBaseJitType, genTypeSize(simdType));
         }
 

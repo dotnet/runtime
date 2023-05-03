@@ -505,6 +505,18 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 | arg1;
         }
 
+        case GT_ROL:
+        {
+            return EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, arg1) |
+                   EvaluateBinaryScalarRSZ<TBase>(arg0, (sizeof(TBase) * 8) - arg1);
+        }
+
+        case GT_ROR:
+        {
+            return EvaluateBinaryScalarRSZ<TBase>(arg0, arg1) |
+                   EvaluateBinaryScalarSpecialized<TBase>(GT_LSH, arg0, (sizeof(TBase) * 8) - arg1);
+        }
+
         case GT_RSH:
         {
             return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));

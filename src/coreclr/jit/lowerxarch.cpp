@@ -6976,12 +6976,16 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_Permute2x64:
                 case NI_AVX512F_Permute4x32:
                 case NI_AVX512F_Permute4x64:
+                case NI_AVX512F_RotateLeft:
+                case NI_AVX512F_RotateRight:
                 case NI_AVX512F_ShiftLeftLogical:
                 case NI_AVX512F_ShiftRightArithmetic:
                 case NI_AVX512F_ShiftRightLogical:
                 case NI_AVX512F_Shuffle:
                 case NI_AVX512F_VL_AlignRight32:
                 case NI_AVX512F_VL_AlignRight64:
+                case NI_AVX512F_VL_RotateLeft:
+                case NI_AVX512F_VL_RotateRight:
                 case NI_AVX512F_VL_ShiftRightArithmetic:
                 case NI_AVX512BW_AlignRight:
                 case NI_AVX512BW_ShiftLeftLogical:
@@ -7736,9 +7740,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ShiftLeftLogical:
                         case NI_AVX2_ShiftRightArithmetic:
                         case NI_AVX2_ShiftRightLogical:
+                        case NI_AVX512F_RotateLeft:
+                        case NI_AVX512F_RotateRight:
                         case NI_AVX512F_ShiftLeftLogical:
                         case NI_AVX512F_ShiftRightArithmetic:
                         case NI_AVX512F_ShiftRightLogical:
+                        case NI_AVX512F_VL_RotateLeft:
+                        case NI_AVX512F_VL_RotateRight:
                         case NI_AVX512F_VL_ShiftRightArithmetic:
                         case NI_AVX512BW_ShiftLeftLogical:
                         case NI_AVX512BW_ShiftRightArithmetic:

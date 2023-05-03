@@ -608,6 +608,170 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateLeft(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi32 (__m128i a, int imm8)
+            ///   VPROLD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateLeft(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateLeft(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rol_epi64 (__m128i a, int imm8)
+            ///   VPROLQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateLeft(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateLeft(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi32 (__m256i a, int imm8)
+            ///   VPROLD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateLeft(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateLeft(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rol_epi64 (__m256i a, int imm8)
+            ///   VPROLQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateLeft(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateLeftVariable(Vector128<int> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi32 (__m128i a, __m128i b)
+            ///   VPROLDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateLeftVariable(Vector128<uint> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateLeftVariable(Vector128<long> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rolv_epi64 (__m128i a, __m128i b)
+            ///   VPROLQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateLeftVariable(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateLeftVariable(Vector256<int> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi32 (__m256i a, __m256i b)
+            ///   VPROLDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateLeftVariable(Vector256<uint> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateLeftVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rolv_epi64 (__m256i a, __m256i b)
+            ///   VPROLQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateLeftVariable(Vector256<ulong> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> RotateRight(Vector128<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi32 (__m128i a, int imm8)
+            ///   VPRORD xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> RotateRight(Vector128<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> RotateRight(Vector128<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_ror_epi64 (__m128i a, int imm8)
+            ///   VPRORQ xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> RotateRight(Vector128<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> RotateRight(Vector256<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi32 (__m256i a, int imm8)
+            ///   VPRORD ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> RotateRight(Vector256<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> RotateRight(Vector256<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_ror_epi64 (__m256i a, int imm8)
+            ///   VPRORQ ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> RotateRight(Vector256<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<int> RotateRightVariable(Vector128<int> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi32 (__m128i a, __m128i b)
+            ///   VPRORDV xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<uint> RotateRightVariable(Vector128<uint> value, Vector128<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> RotateRightVariable(Vector128<long> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128i _mm_rorv_epi64 (__m128i a, __m128i b)
+            ///   VPRORQV xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> RotateRightVariable(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<int> RotateRightVariable(Vector256<int> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi32 (__m256i a, __m256i b)
+            ///   VPRORDV ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<uint> RotateRightVariable(Vector256<uint> value, Vector256<uint> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> RotateRightVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_rorv_epi64 (__m256i a, __m256i b)
+            ///   VPRORQV ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> RotateRightVariable(Vector256<ulong> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128 _mm_roundscale_ps (__m128 a, int imm)
             ///   VRNDSCALEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
             /// </summary>
@@ -2105,6 +2269,90 @@ namespace System.Runtime.Intrinsics.X86
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateLeft(Vector512<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi32 (__m512i a, int imm8)
+        ///   VPROLD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateLeft(Vector512<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateLeft(Vector512<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rol_epi64 (__m512i a, int imm8)
+        ///   VPROLQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateLeft(Vector512<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateLeftVariable(Vector512<int> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi32 (__m512i a, __m512i b)
+        ///   VPROLDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateLeftVariable(Vector512<uint> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateLeftVariable(Vector512<long> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rolv_epi64 (__m512i a, __m512i b)
+        ///   VPROLQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateLeftVariable(Vector512<ulong> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> RotateRight(Vector512<int> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi32 (__m512i a, int imm8)
+        ///   VPRORD zmm1 {k1}{z}, zmm2/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> RotateRight(Vector512<uint> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> RotateRight(Vector512<long> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_ror_epi64 (__m512i a, int imm8)
+        ///   VPRORQ zmm1 {k1}{z}, zmm2/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> RotateRight(Vector512<ulong> value, [ConstantExpected] byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<int> RotateRightVariable(Vector512<int> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi32 (__m512i a, __m512i b)
+        ///   VPRORDV zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
+        /// </summary>
+        public static Vector512<uint> RotateRightVariable(Vector512<uint> value, Vector512<uint> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<long> RotateRightVariable(Vector512<long> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_rorv_epi64 (__m512i a, __m512i b)
+        ///   VPRORQV zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+        /// </summary>
+        public static Vector512<ulong> RotateRightVariable(Vector512<ulong> value, Vector512<ulong> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_roundscale_ps (__m512 a, int imm)

@@ -162,6 +162,18 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
             return (regNumber)4;
         }
 
+        case INS_vprold:
+        case INS_vprolq:
+        {
+            return (regNumber)1;
+        }
+
+        case INS_vprord:
+        case INS_vprorq:
+        {
+            return (regNumber)0;
+        }
+
         default:
         {
             assert(!"Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
@@ -6355,40 +6367,17 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
 
     code_t code = 0;
 
-    switch (ins)
+    if (hasCodeMR(ins))
     {
-        case INS_pextrb:
-        case INS_pextrd:
-        case INS_pextrq:
-        case INS_pextrw_sse41:
-        case INS_extractps:
-        case INS_vextractf128:
-        case INS_vextractf32x8:
-        case INS_vextractf64x2:
-        case INS_vextractf64x4:
-        case INS_vextracti128:
-        case INS_vextracti32x8:
-        case INS_vextracti64x2:
-        case INS_vextracti64x4:
-        case INS_shld:
-        case INS_shrd:
-        {
-            code = insCodeMR(ins);
-            break;
-        }
-
-        case INS_psrldq:
-        case INS_pslldq:
-        {
-            code = insCodeMI(ins);
-            break;
-        }
-
-        default:
-        {
-            code = insCodeRM(ins);
-            break;
-        }
+        code = insCodeMR(ins);
+    }
+    else if (hasCodeMI(ins))
+    {
+        code = insCodeMI(ins);
+    }
+    else
+    {
+        code = insCodeRM(ins);
     }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, code, ival);
@@ -18415,6 +18404,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_psignb:
         case INS_psignw:
         case INS_psignd:
+        case INS_vprold:
+        case INS_vprolq:
+        case INS_vprolvd:
+        case INS_vprolvq:
+        case INS_vprord:
+        case INS_vprorq:
+        case INS_vprorvd:
+        case INS_vprorvq:
         case INS_vpsravd:
         case INS_vpsravq:
         case INS_vpsravw:
@@ -18435,9 +18432,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpsrlvq:
         case INS_vpsrlvw:
         case INS_vpternlogd:
+        {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_1C;
             break;
+        }
 
         case INS_pslld:
         case INS_psllw:
