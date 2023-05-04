@@ -418,7 +418,7 @@ void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
 
 regMaskTP LinearScan::internalFloatRegCandidates()
 {
-    needFloatingRegisters = true;
+    needNonIntegerRegisters = true;
 
     if (compiler->compFloatingPointUsed)
     {
@@ -689,7 +689,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , listNodePool(theCompiler)
 {
     availableRegCount     = ACTUAL_REG_COUNT;
-    needFloatingRegisters = false;
+    needNonIntegerRegisters = false;
 
 #if defined(TARGET_XARCH)
 

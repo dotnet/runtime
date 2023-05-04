@@ -733,7 +733,7 @@ public:
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
-    bool         needFloatingRegisters;
+    bool         needNonIntegerRegisters;
 
 #ifdef DEBUG
 private:
