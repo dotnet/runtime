@@ -141,7 +141,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     }
     sort(segment_starts.begin(), segment_starts.end());
     sort(segment_ends.begin(), segment_ends.end());
-    for (int i = 0; i < segment_starts.size() - 1; i++)
+    for (size_t i = 0; i < segment_starts.size() - 1; i++)
     {
         if (segment_starts[i] == segment_starts[i+1])
         {
