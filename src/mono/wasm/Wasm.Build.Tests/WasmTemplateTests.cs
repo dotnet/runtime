@@ -97,7 +97,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: true,
                             CreateProject: false,
-                            HasV8Script: false,
+                            // HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
                             TargetFramework: DefaultTargetFramework,
@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
-                            HasV8Script: false,
+                            // HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
@@ -150,7 +150,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
-                        HasV8Script: false,
+                        // HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
@@ -176,7 +176,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
-                            HasV8Script: false,
+                            // HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
@@ -220,7 +220,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !relinking,
                             CreateProject: false,
-                            HasV8Script: false,
+                            // HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
                             TargetFramework: expectedTFM,
@@ -392,7 +392,7 @@ namespace Wasm.Build.Tests
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,
                             CreateProject: false,
-                            HasV8Script: false,
+                            // HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,

@@ -71,7 +71,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
                     new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: true,
                         CreateProject: false,
-                        HasV8Script: false,
+                        // HasV8Script: false,
                         MainJS: "main.js",
                         Publish: false,
                         TargetFramework: DefaultTargetFramework,
@@ -94,7 +94,7 @@ public class WasmLegacyTemplateTests : BuildTestBase
                     new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: !expectRelinking,
                         CreateProject: false,
-                        HasV8Script: false,
+                        // HasV8Script: false,
                         MainJS: "main.js",
                         Publish: true,
                         TargetFramework: DefaultTargetFramework,

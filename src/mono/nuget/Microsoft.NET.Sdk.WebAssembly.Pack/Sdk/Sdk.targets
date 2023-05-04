@@ -9,4 +9,6 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
-<Project ToolsVersion="14.0"></Project>
+<Project ToolsVersion="14.0">
+  <Import Project="$(_WebAssemblyTargetsFile)" />
+</Project>

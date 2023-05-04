@@ -374,16 +374,7 @@ namespace Wasm.Build.Tests
 
             if (options.CreateProject)
             {
-                InitPaths(id);
-                InitProjectDir(_projectDir);
-                options.InitProject?.Invoke();
-
-                File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
-                File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
-
-                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
+                CreateProject(id, buildArgs, options);
             }
             else if (_projectDir is null)
             {
@@ -429,7 +420,8 @@ namespace Wasm.Build.Tests
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
                     string bundleDir = GetBinDir(config: buildArgs.Config,
-                                                 targetFramework: options.TargetFramework ?? DefaultTargetFramework);
+                                                 targetFramework: options.TargetFramework ?? DefaultTargetFramework,
+                                                 usesWasmSdk: options.IsTemplateUsingWasmSdk);
 
                     if (options.IsTemplateUsingWasmSdk)
                         bundleDir = Path.Combine(bundleDir, options.Publish ? "publish" : string.Empty, "wwwroot");
@@ -451,15 +443,40 @@ namespace Wasm.Build.Tests
                 }
 
                 if (options.UseCache)
-                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, true, result.buildOutput));
+                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, true, result.buildOutput));
 
-                return (_projectDir, result.buildOutput);
+                return (_projectDir!, result.buildOutput);
             }
             catch (Exception ex)
             {
                 if (options.UseCache)
-                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir, logFilePath, false, $"The build attempt resulted in exception: {ex}."));
+                    _buildContext.CacheBuild(buildArgs, new BuildProduct(_projectDir!, logFilePath, false, $"The build attempt resulted in exception: {ex}."));
                 throw;
+            }
+        }
+
+        protected void CreateProject(string id, BuildArgs buildArgs, BuildProjectOptions options)
+        {
+            if (options.FromTemplate == WasmTemplate.wasmbrowser)
+            {
+                CreateWasmTemplateProject(id, template: "wasmbrowser", buildArgs.ExtraBuildArgs ?? string.Empty);
+                File.Copy(Path.Combine(AppContext.BaseDirectory,
+                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
+                            Path.Combine(_projectDir!, "wwwroot", "test-main.js"));
+                File.Move(Path.Combine(_projectDir!, $"{id}.csproj"), Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"));
+            }
+            else
+            {
+                InitPaths(id);
+                InitProjectDir(_projectDir);
+                options.InitProject?.Invoke();
+
+                File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
+                File.Copy(Path.Combine(AppContext.BaseDirectory,
+                                        options.TargetFramework == "net8.0" ? "test-main.js" : "data/test-main-7.0.js"),
+                            Path.Combine(_projectDir, "test-main.js"));
+
+                File.WriteAllText(Path.Combine(_projectDir!, "index.html"), @"<html><body><script type=""module"" src=""test-main.js""></script></body></html>");
             }
         }
 
@@ -809,7 +826,7 @@ namespace Wasm.Build.Tests
         {
             string prefix = label != null ? $"{label}: " : string.Empty;
             if (!Directory.Exists(dir))
-                throw new XunitException($"[{label}] {dir} not found");
+                throw new XunitException($"[{label}] {dir} directory not found");
             foreach (string filename in filenames)
             {
                 string path = Path.IsPathRooted(filename) ? filename : Path.Combine(dir, filename);
@@ -912,11 +929,11 @@ namespace Wasm.Build.Tests
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
+        protected string GetBinDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null, bool usesWasmSdk=false)
         {
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
-            return Path.Combine(dir!, "bin", config, targetFramework, "browser-wasm");
+            return Path.Combine(dir!, "bin", config, targetFramework, usesWasmSdk ? string.Empty : "browser-wasm");
         }
 
         protected string GetObjDir(string config, string targetFramework=DefaultTargetFramework, string? baseDir=null)
@@ -1264,16 +1281,17 @@ namespace Wasm.Build.Tests
         bool                CreateProject             = true,
         bool                Publish                   = true,
         bool                BuildOnlyAfterPublish     = true,
-        bool                HasV8Script               = true,
+        // bool                HasV8Script               = true,
         string?             Verbosity                 = null,
         string?             Label                     = null,
         string?             TargetFramework           = null,
         string?             MainJS                    = null,
-        WasmTemplate        FromTemplate              = WasmTemplate.none,
+        WasmTemplate        FromTemplate              = WasmTemplate.wasmbrowser,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     )
     {
         public bool IsTemplateUsingWasmSdk => FromTemplate == WasmTemplate.wasmbrowser || FromTemplate == WasmTemplate.blazorwasm;
+        public bool HasV8Script => !IsTemplateUsingWasmSdk && FromTemplate != WasmTemplate.wasmbrowser_legacy && FromTemplate != WasmTemplate.wasmconsole;
     }
 
     public record BlazorBuildOptions
