@@ -6264,9 +6264,18 @@ bool emitter::IsRedundantMov(
         return false;
     }
 
+    bool hasSideEffect = HasSideEffect(ins, size);
+
     // Peephole optimization to eliminate redundant 'mov' instructions.
-    if (emitComp->opts.OptimizationEnabled() && (dst == src))
+    if (dst == src)
     {
+        // Check if we are already in the correct register and don't have a side effect
+        if (!hasSideEffect)
+        {
+            JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
+            return true;
+        }
+
         switch (ins)
         {
             case INS_movzx:
@@ -6297,15 +6306,6 @@ bool emitter::IsRedundantMov(
             default:
                 break;
         }
-    }
-
-    bool hasSideEffect = HasSideEffect(ins, size);
-
-    // Check if we are already in the correct register and don't have a side effect
-    if ((dst == src) && !hasSideEffect)
-    {
-        JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
-        return true;
     }
 
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
