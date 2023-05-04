@@ -6281,6 +6281,7 @@ bool emitter::IsRedundantMov(
             case INS_movzx:
                 if (AreUpperBitsZero(src, size))
                 {
+                    JITDUMP("\n -- suppressing movzx because upper bits are zero.\n");
                     return true;
                 }
                 break;
@@ -6291,6 +6292,7 @@ bool emitter::IsRedundantMov(
 #endif // TARGET_64BIT
                 if (AreUpperBitsSignExtended(src, size))
                 {
+                    JITDUMP("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
                     return true;
                 }
                 break;
@@ -6299,6 +6301,7 @@ bool emitter::IsRedundantMov(
             case INS_mov:
                 if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
                 {
+                    JITDUMP("\n -- suppressing mov because upper bits are zero.\n");
                     return true;
                 }
                 break;
