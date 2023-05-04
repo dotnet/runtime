@@ -13,7 +13,7 @@ jobs:
   check-labels:
     runs-on: ubuntu-latest
     steps:
-    - name: Check `Servicing-approved` label
+    - name: Check 'Servicing-approved' label
       run: |
         echo "Merging permission is enabled for servicing PRs when the `Servicing-approved` label is applied."
         echo "Rules for applying the label can be found in https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md"
