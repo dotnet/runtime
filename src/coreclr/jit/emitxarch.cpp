@@ -557,7 +557,7 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                         {
                             result = true;
                         }
-                        else if (size == EA_1BYTE || EA_2BYTE)
+                        else if (size == EA_1BYTE || size == EA_2BYTE)
                         {
                             result = (id->idOpSize() <= size);
                         }
@@ -612,7 +612,6 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 #ifdef TARGET_64BIT
     if (size == EA_4BYTE)
     {
-
         if (id->idReg1() != reg)
         {
             return false;
