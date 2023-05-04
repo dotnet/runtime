@@ -13,7 +13,6 @@ using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -542,10 +541,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-                    id = ReadyToRunHelper.AreTypesEquivalent;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
@@ -2060,6 +2055,11 @@ namespace Internal.JitInterface
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
             uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
+
+            if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+            {
+                fieldOffset += _compilation.NodeFactory.ThreadStaticBaseOffset(mt);
+            }
 
             if (field.IsStatic)
             {

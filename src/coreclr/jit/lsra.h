@@ -1839,6 +1839,9 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
+#ifdef TARGET_ARM64
+    regMaskTP consecutiveRegsInUseThisLocation;
+#endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
         regMaskTP regMask = getRegMask(reg, regType);

@@ -253,7 +253,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             // RemoteEndPoint is DnsEndPoint containing hostname that is different from requested SNI.
             // --> Resolve the hostname and set the IP directly, use requested SNI in ConnectionStart.
             else if (host is not null &&
-                    !host.Equals(options.ClientAuthenticationOptions.TargetHost, StringComparison.InvariantCultureIgnoreCase))
+                    !host.Equals(options.ClientAuthenticationOptions.TargetHost, StringComparison.OrdinalIgnoreCase))
             {
                 IPAddress[] addresses = await Dns.GetHostAddressesAsync(host!, cancellationToken).ConfigureAwait(false);
                 cancellationToken.ThrowIfCancellationRequested();

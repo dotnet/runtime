@@ -64,7 +64,7 @@ namespace System.Net
         private Stream? _inputStream;
         private readonly HttpListenerContext _context;
         private bool _isChunked;
-        private static readonly IndexOfAnyValues<char> s_validMethodChars = IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly SearchValues<char> s_validMethodChars = SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
         private static readonly byte[] s_100continue = "HTTP/1.1 100 Continue\r\n\r\n"u8.ToArray();
 
         internal HttpListenerRequest(HttpListenerContext context)

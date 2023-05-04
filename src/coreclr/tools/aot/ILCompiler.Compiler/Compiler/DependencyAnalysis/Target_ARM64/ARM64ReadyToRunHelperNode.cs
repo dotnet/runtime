@@ -71,30 +71,59 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
-
-                        // First arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance (which is used
-                        // for initialization on first access).
-                        encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
-
-                        // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        ISortableSymbolNode index = factory.TypeThreadStaticIndex(target);
+                        if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
                         {
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            ISymbolNode helper = factory.ExternSymbol("RhpGetInlinedThreadStaticBase");
+
+                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                            {
+                                encoder.EmitJMP(helper);
+                            }
+                            else
+                            {
+                                encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
+                                encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+
+                                encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                                encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
+                                encoder.EmitJE(helper);
+
+                                // First arg: unused address of the TypeManager
+                                encoder.EmitMOV(encoder.TargetRegister.Arg0, (ushort)0);
+                                // Second arg: ~0 (index of inlined storage)
+                                encoder.EmitMVN(encoder.TargetRegister.Arg1, 0);
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            }
                         }
                         else
                         {
-                            encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, index);
 
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
-                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitJE(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            // First arg: address of the TypeManager slot that provides the helper with
+                            // information about module index and the type manager instance (which is used
+                            // for initialization on first access).
+                            encoder.EmitLDR(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
 
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            // Second arg: index of the type in the ThreadStatic section of the modules
+                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+
+                            ISymbolNode helper = factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType);
+                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                            {
+                                encoder.EmitJMP(helper);
+                            }
+                            else
+                            {
+                                encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
+                                encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+
+                                encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2);
+                                encoder.EmitCMP(encoder.TargetRegister.Arg3, 0);
+                                encoder.EmitJE(helper);
+
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            }
                         }
                     }
                     break;

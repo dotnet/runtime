@@ -146,6 +146,12 @@ namespace ILCompiler
             var arrayMapNode = new ArrayMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ArrayMap), arrayMapNode, arrayMapNode, arrayMapNode.EndSymbol);
 
+            var byRefMapNode = new ByRefTypeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.ByRefTypeMap), byRefMapNode, byRefMapNode, byRefMapNode.EndSymbol);
+
+            var pointerMapNode = new PointerTypeMapNode(commonFixupsTableNode);
+            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.PointerTypeMap), pointerMapNode, pointerMapNode, pointerMapNode.EndSymbol);
+
             var functionPointerMapNode = new FunctionPointerMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.FunctionPointerTypeMap), functionPointerMapNode, functionPointerMapNode, functionPointerMapNode.EndSymbol);
 
