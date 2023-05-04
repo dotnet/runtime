@@ -49,6 +49,7 @@ export function normalizeConfig() {
         config.diagnosticTracing = true;
     }
     loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
+    loaderHelpers.assetUniqueQuery = config.assetUniqueQuery;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {

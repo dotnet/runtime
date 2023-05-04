@@ -82,7 +82,11 @@ export type MonoConfig = {
     /**
      * application environment
      */
-    applicationEnvironment?: string
+    applicationEnvironment?: string,
+    /**
+     * query string to be used for asset loading
+     */
+    assetUniqueQuery?: string,
 };
 
 export interface ResourceRequest {

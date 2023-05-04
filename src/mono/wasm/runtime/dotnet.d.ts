@@ -139,6 +139,10 @@ type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string;
+    /**
+     * query string to be used for asset loading
+     */
+    assetUniqueQuery?: string;
 };
 interface ResourceRequest {
     name: string;

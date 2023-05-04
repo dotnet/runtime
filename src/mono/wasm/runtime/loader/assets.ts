@@ -371,6 +371,9 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
             attemptUrl = sourcePrefix + asset.name;
         }
         attemptUrl = loaderHelpers.locateFile(attemptUrl);
+        if (loaderHelpers.assetUniqueQuery) {
+            attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
+        }
     }
     else {
         attemptUrl = asset.resolvedUrl;
