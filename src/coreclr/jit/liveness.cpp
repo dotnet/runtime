@@ -237,11 +237,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             }
             break;
 
-        // These should have been morphed away to become GT_INDs:
-        case GT_FIELD:
-            unreached();
-            break;
-
         case GT_ASG:
             // An indirect store defines a memory location.
             if (!tree->AsOp()->gtGetOp1()->OperIsLocal())

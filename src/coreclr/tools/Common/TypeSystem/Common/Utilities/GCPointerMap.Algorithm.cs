@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -100,13 +101,8 @@ namespace Internal.TypeSystem
             return builder.ToGCMap();
         }
 
-        /// <summary>
-        /// Computes the GC pointer map of the thread static region of the type.
-        /// </summary>
-        public static GCPointerMap FromThreadStaticLayout(MetadataType type)
+        private static void MapThreadStaticsForType(GCPointerMapBuilder builder, MetadataType type, int baseOffset)
         {
-            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
-
             foreach (FieldDesc field in type.GetFields())
             {
                 if (!field.IsStatic || field.HasRva || field.IsLiteral || !field.IsThreadStatic || !field.HasGCStaticBase)
@@ -115,7 +111,7 @@ namespace Internal.TypeSystem
                 TypeDesc fieldType = field.FieldType;
                 if (fieldType.IsGCPointer)
                 {
-                    builder.MarkGCPointer(field.Offset.AsInt);
+                    builder.MarkGCPointer(field.Offset.AsInt + baseOffset);
                 }
                 else if (fieldType.IsValueType)
                 {
@@ -123,13 +119,38 @@ namespace Internal.TypeSystem
                     if (fieldDefType.ContainsGCPointers)
                     {
                         GCPointerMapBuilder innerBuilder =
-                            builder.GetInnerBuilder(field.Offset.AsInt, fieldDefType.InstanceByteCount.AsInt);
+                            builder.GetInnerBuilder(field.Offset.AsInt + baseOffset, fieldDefType.InstanceByteCount.AsInt);
                         FromInstanceLayoutHelper(ref innerBuilder, fieldDefType);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Computes the GC pointer map of the thread static region of the type.
+        /// </summary>
+        public static GCPointerMap FromThreadStaticLayout(MetadataType type)
+        {
+            GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
+
+            MapThreadStaticsForType(builder, type, baseOffset: 0);
 
             Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadGcStaticFieldSize.AsInt);
+            return builder.ToGCMap();
+        }
+
+        public static GCPointerMap FromInlinedThreadStatics(
+            List<MetadataType> types,
+            Dictionary<MetadataType, int> offsets,
+            int threadStaticSize,
+            int pointerSize)
+        {
+            GCPointerMapBuilder builder = new GCPointerMapBuilder(threadStaticSize, pointerSize);
+            foreach (var type in types)
+            {
+                MapThreadStaticsForType(builder, type, offsets[type]);
+            }
+
             return builder.ToGCMap();
         }
     }

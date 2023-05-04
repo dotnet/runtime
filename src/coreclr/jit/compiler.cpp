@@ -9718,17 +9718,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_NO_OP:
                 break;
 
-            case GT_FIELD:
-                if (tree->gtFlags & GTF_FLD_VOLATILE)
-                {
-                    chars += printf("[FLD_VOLATILE]");
-                }
-                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
-                {
-                    chars += printf("[FLD_TGT_HEAP]");
-                }
-                break;
-
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -10332,7 +10321,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
+    assert(tree->OperIs(GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);
