@@ -2104,10 +2104,50 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
         // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
 
-        GenTree* op1    = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
-        GenTree* op2    = (numArgs >= 2) ? SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2)) : nullptr;
-        GenTree* op3    = (numArgs >= 3) ? SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3)) : nullptr;
+        GenTree* op1    = nullptr;
+        GenTree* op2    = nullptr;
+        GenTree* op3    = nullptr;
+        GenTree* op4    = nullptr;
+        GenTree* op5    = nullptr;
         GenTree* lastOp = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(numArgs));
+
+        switch (numArgs)
+        {
+            case 5:
+            {
+                op5 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(5));
+                FALLTHROUGH;
+            }
+
+            case 4:
+            {
+                op4 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(4));
+                FALLTHROUGH;
+            }
+
+            case 3:
+            {
+                op3 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3));
+                FALLTHROUGH;
+            }
+
+            case 2:
+            {
+                op2 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2));
+                FALLTHROUGH;
+            }
+
+            case 1:
+            {
+                op1 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
 
         bool buildUses = true;
 
@@ -2130,7 +2170,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 #if defined(TARGET_AMD64)
         bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic();
-#endif
+#endif // TARGET_AMD64
 
         // Create internal temps, and handle any other special requirements.
         // Note that the default case for building uses will handle the RMW flag, but if the uses
@@ -2504,9 +2544,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(!isRMW);
 
-                GenTree* op4 = intrinsicTree->Op(4);
-                GenTree* op5 = intrinsicTree->Op(5);
-
                 // Any pair of the index, mask, or destination registers should be different
                 srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
                 srcCount += BuildDelayFreeUses(op2, nullptr, BuildEvexIncompatibleMask(op2));
@@ -2543,15 +2580,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (buildUses)
         {
-            assert((numArgs > 0) && (numArgs < 4));
-
             regMaskTP op1RegCandidates = RBM_NONE;
+
 #if defined(TARGET_AMD64)
             if (!isEvexCompatible)
             {
                 op1RegCandidates = BuildEvexIncompatibleMask(op1);
             }
-#endif
+#endif // TARGET_AMD64
 
             if (intrinsicTree->OperIsMemoryLoadOrStore())
             {
@@ -2570,12 +2606,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             if (op2 != nullptr)
             {
                 regMaskTP op2RegCandidates = RBM_NONE;
+
 #if defined(TARGET_AMD64)
                 if (!isEvexCompatible)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
                 }
-#endif
+#endif // TARGET_AMD64
+
                 if (op2->OperIs(GT_HWINTRINSIC) && op2->AsHWIntrinsic()->OperIsMemoryLoad() && op2->isContained())
                 {
                     srcCount += BuildAddrUses(op2->AsHWIntrinsic()->Op(1), op2RegCandidates);
@@ -2614,14 +2652,28 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (op3 != nullptr)
                 {
                     regMaskTP op3RegCandidates = RBM_NONE;
+
 #if defined(TARGET_AMD64)
                     if (!isEvexCompatible)
                     {
                         op3RegCandidates = BuildEvexIncompatibleMask(op3);
                     }
-#endif
+#endif // TARGET_AMD64
+
                     srcCount += isRMW ? BuildDelayFreeUses(op3, op1, op3RegCandidates)
                                       : BuildOperandUses(op3, op3RegCandidates);
+
+                    if (op4 != nullptr)
+                    {
+                        regMaskTP op4RegCandidates = RBM_NONE;
+
+#if defined(TARGET_AMD64)
+                        assert(isEvexCompatible);
+#endif // TARGET_AMD64
+
+                        srcCount += isRMW ? BuildDelayFreeUses(op4, op1, op4RegCandidates)
+                                          : BuildOperandUses(op4, op4RegCandidates);
+                    }
                 }
             }
         }

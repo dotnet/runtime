@@ -11,7 +11,7 @@ using System.Runtime.Intrinsics;
 namespace JIT.HardwareIntrinsics.X86
 {
 
-    public static class Sse2Verify
+    public static class SseVerify
     {
         public static bool AddSaturate(byte x, byte y, byte z)
         {

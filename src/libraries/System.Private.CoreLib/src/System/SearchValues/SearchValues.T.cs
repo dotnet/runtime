@@ -8,19 +8,19 @@ namespace System.Buffers
 {
     /// <summary>
     /// Provides an immutable, read-only set of values optimized for efficient searching.
-    /// Instances are created by <see cref="IndexOfAnyValues.Create(ReadOnlySpan{byte})"/> or <see cref="IndexOfAnyValues.Create(ReadOnlySpan{char})"/>.
+    /// Instances are created by <see cref="SearchValues.Create(ReadOnlySpan{byte})"/> or <see cref="SearchValues.Create(ReadOnlySpan{char})"/>.
     /// </summary>
     /// <typeparam name="T">The type of the values to search for.</typeparam>
     /// <remarks>
-    /// <see cref="IndexOfAnyValues{T}"/> are optimized for situations where the same set of values is frequently used for searching at runtime.
+    /// <see cref="SearchValues{T}"/> are optimized for situations where the same set of values is frequently used for searching at runtime.
     /// </remarks>
-    [DebuggerTypeProxy(typeof(IndexOfAnyValuesDebugView<>))]
-    public class IndexOfAnyValues<T> where T : IEquatable<T>?
+    [DebuggerTypeProxy(typeof(SearchValuesDebugView<>))]
+    public class SearchValues<T> where T : IEquatable<T>?
     {
         // Only CoreLib can create derived types
-        private protected IndexOfAnyValues() { }
+        private protected SearchValues() { }
 
-        /// <summary>Used by <see cref="IndexOfAnyValuesDebugView{T}"/>.</summary>
+        /// <summary>Used by <see cref="SearchValuesDebugView{T}"/>.</summary>
         internal virtual T[] GetValues() => throw new UnreachableException();
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace System.Buffers
         internal virtual int LastIndexOfAnyExcept(ReadOnlySpan<T> span) => throw new UnreachableException();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny(ReadOnlySpan<T> span, IndexOfAnyValues<T> values)
+        internal static int IndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
         {
             if (values is null)
             {
@@ -49,7 +49,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExcept(ReadOnlySpan<T> span, IndexOfAnyValues<T> values)
+        internal static int IndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
         {
             if (values is null)
             {
@@ -60,7 +60,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny(ReadOnlySpan<T> span, IndexOfAnyValues<T> values)
+        internal static int LastIndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
         {
             if (values is null)
             {
@@ -71,7 +71,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExcept(ReadOnlySpan<T> span, IndexOfAnyValues<T> values)
+        internal static int LastIndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
         {
             if (values is null)
             {

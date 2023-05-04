@@ -10,19 +10,18 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System
 {
     public partial class String
     {
-        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
-        internal static class IndexOfAnyValuesStorage
+        // Avoid paying the init cost of all the SearchValues unless they are actually used.
+        internal static class SearchValuesStorage
         {
             /// <summary>
-            /// IndexOfAnyValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
-            /// No need to allocate the IndexOfAnyValues as a regular Span.IndexOfAny will use the same implementation.
+            /// SearchValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
+            /// No need to allocate the SearchValues as a regular Span.IndexOfAny will use the same implementation.
             /// </summary>
             public const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
 
@@ -32,8 +31,8 @@ namespace System
             /// also specifically excludes VT from the list of newline functions, so we do not include
             /// it in the needle list.
             /// </summary>
-            public static readonly IndexOfAnyValues<char> NewLineChars =
-                IndexOfAnyValues.Create(NewLineCharsExceptLineFeed + "\n");
+            public static readonly SearchValues<char> NewLineChars =
+                SearchValues.Create(NewLineCharsExceptLineFeed + "\n");
         }
 
         internal const int StackallocIntBufferSizeLimit = 128;
@@ -1442,7 +1441,7 @@ namespace System
 
             while (true)
             {
-                int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
+                int idx = text.IndexOfAny(SearchValuesStorage.NewLineChars);
 
                 if ((uint)idx >= (uint)text.Length)
                 {
@@ -1486,7 +1485,7 @@ namespace System
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
-            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
             if ((uint)idxOfFirstNewlineChar >= (uint)Length)
             {
                 return this;
@@ -1501,7 +1500,7 @@ namespace System
             var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
             {
-                int idx = remaining.IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+                int idx = remaining.IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
                 if ((uint)idx >= (uint)remaining.Length) break; // no more newline chars
                 stride = remaining[idx] == '\r' && (uint)(idx + 1) < (uint)remaining.Length && remaining[idx + 1] == '\n' ? 2 : 1;
                 builder.Append('\n');

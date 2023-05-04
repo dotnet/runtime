@@ -14,33 +14,33 @@ using System.Runtime.Intrinsics.X86;
 namespace System.Buffers
 {
     /// <summary>
-    /// Provides a set of initialization methods for instances of the <see cref="IndexOfAnyValues{T}"/> class.
+    /// Provides a set of initialization methods for instances of the <see cref="SearchValues{T}"/> class.
     /// </summary>
     /// <remarks>
-    /// IndexOfAnyValues are optimized for situations where the same set of values is frequently used for searching at runtime.
+    /// SearchValues are optimized for situations where the same set of values is frequently used for searching at runtime.
     /// </remarks>
-    public static class IndexOfAnyValues
+    public static class SearchValues
     {
         /// <summary>
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
-        public static IndexOfAnyValues<byte> Create(ReadOnlySpan<byte> values)
+        public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
             {
-                return new IndexOfEmptyValues<byte>();
+                return new EmptySearchValues<byte>();
             }
 
             if (values.Length == 1)
             {
-                return new IndexOfAny1ByteValue(values);
+                return new SingleByteSearchValues(values);
             }
 
-            // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
+            // RangeByteSearchValues is slower than SingleByteSearchValues, but faster than Any2ByteSearchValues
             if (TryGetSingleRange(values, out byte minInclusive, out byte maxInclusive))
             {
-                return new IndexOfAnyByteValuesInRange(minInclusive, maxInclusive);
+                return new RangeByteSearchValues(minInclusive, maxInclusive);
             }
 
             if (values.Length <= 5)
@@ -48,46 +48,46 @@ namespace System.Buffers
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
                 return values.Length switch
                 {
-                    2 => new IndexOfAny2ByteValues(values),
-                    3 => new IndexOfAny3ByteValues(values),
-                    4 => new IndexOfAny4Values<byte, byte>(values),
-                    _ => new IndexOfAny5Values<byte, byte>(values),
+                    2 => new Any2ByteSearchValues(values),
+                    3 => new Any3ByteSearchValues(values),
+                    4 => new Any4SearchValues<byte, byte>(values),
+                    _ => new Any5SearchValues<byte, byte>(values),
                 };
             }
 
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                return new IndexOfAnyAsciiByteValues(values);
+                return new AsciiByteSearchValues(values);
             }
 
-            return new IndexOfAnyByteValues(values);
+            return new AnyByteSearchValues(values);
         }
 
         /// <summary>
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
-        public static IndexOfAnyValues<char> Create(ReadOnlySpan<char> values)
+        public static SearchValues<char> Create(ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
-                return new IndexOfEmptyValues<char>();
+                return new EmptySearchValues<char>();
             }
 
             if (values.Length == 1)
             {
                 char value = values[0];
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value)
-                    ? new IndexOfAny1CharValue<TrueConst>(value)
-                    : new IndexOfAny1CharValue<FalseConst>(value);
+                    ? new SingleCharSearchValues<TrueConst>(value)
+                    : new SingleCharSearchValues<FalseConst>(value);
             }
 
-            // IndexOfAnyValuesInRange is slower than IndexOfAny1Value, but faster than IndexOfAny2Values
+            // RangeCharSearchValues is slower than SingleCharSearchValues, but faster than Any2CharSearchValues
             if (TryGetSingleRange(values, out char minInclusive, out char maxInclusive))
             {
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(minInclusive) && PackedSpanHelpers.CanUsePackedIndexOf(maxInclusive)
-                    ? new IndexOfAnyCharValuesInRange<TrueConst>(minInclusive, maxInclusive)
-                    : new IndexOfAnyCharValuesInRange<FalseConst>(minInclusive, maxInclusive);
+                    ? new RangeCharSearchValues<TrueConst>(minInclusive, maxInclusive)
+                    : new RangeCharSearchValues<FalseConst>(minInclusive, maxInclusive);
             }
 
             if (values.Length == 2)
@@ -95,8 +95,8 @@ namespace System.Buffers
                 char value0 = values[0];
                 char value1 = values[1];
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
-                    ? new IndexOfAny2CharValue<TrueConst>(value0, value1)
-                    : new IndexOfAny2CharValue<FalseConst>(value0, value1);
+                    ? new Any2CharSearchValues<TrueConst>(value0, value1)
+                    : new Any2CharSearchValues<FalseConst>(value0, value1);
             }
 
             if (values.Length == 3)
@@ -105,18 +105,18 @@ namespace System.Buffers
                 char value1 = values[1];
                 char value2 = values[2];
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
-                    ? new IndexOfAny3CharValue<TrueConst>(value0, value1, value2)
-                    : new IndexOfAny3CharValue<FalseConst>(value0, value1, value2);
+                    ? new Any3CharSearchValues<TrueConst>(value0, value1, value2)
+                    : new Any3CharSearchValues<FalseConst>(value0, value1, value2);
             }
 
-            // IndexOfAnyAsciiSearcher for chars is slower than IndexOfAny3Values, but faster than IndexOfAny4Values
+            // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
                 IndexOfAnyAsciiSearcher.ComputeBitmap(values, out Vector128<byte> bitmap, out BitVector256 lookup);
 
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && lookup.Contains(0)
-                    ? new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
-                    : new IndexOfAnyAsciiCharValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(bitmap, lookup)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(bitmap, lookup);
             }
 
             // Vector128<char> isn't valid. Treat the values as shorts instead.
@@ -126,21 +126,21 @@ namespace System.Buffers
 
             if (values.Length == 4)
             {
-                return new IndexOfAny4Values<char, short>(shortValues);
+                return new Any4SearchValues<char, short>(shortValues);
             }
 
             if (values.Length == 5)
             {
-                return new IndexOfAny5Values<char, short>(shortValues);
+                return new Any5SearchValues<char, short>(shortValues);
             }
 
             if (maxInclusive < 256)
             {
                 // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported
-                return new IndexOfAnyLatin1CharValues(values);
+                return new Latin1CharSearchValues(values);
             }
 
-            return new IndexOfAnyCharValuesProbabilistic(values);
+            return new ProbabilisticCharSearchValues(values);
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)

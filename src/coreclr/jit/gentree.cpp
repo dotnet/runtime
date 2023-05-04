@@ -19332,12 +19332,15 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     assert(comp != nullptr);
 
 #if defined(TARGET_XARCH)
+    GenTreeHWIntrinsic* hwintrinsic = AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
     if (!comp->canUseVexEncoding())
     {
-        return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+        return HWIntrinsicInfo::HasRMWSemantics(intrinsicId);
     }
 
-    switch (AsHWIntrinsic()->GetHWIntrinsicId())
+    switch (intrinsicId)
     {
         // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
@@ -19363,6 +19366,50 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_X86Base_X64_DivRem:
         {
             return true;
+        }
+
+        case NI_AVX512F_Fixup:
+        case NI_AVX512F_FixupScalar:
+        case NI_AVX512F_VL_Fixup:
+        {
+            // We are actually only RMW in the case where the lookup table
+            // has any value that could result in `op1` being picked. So
+            // in the case `op3` is a constant and none of the nibbles are
+            // `0`, then we don't have to be RMW and can actually "drop" `op1`
+
+            GenTree* op3 = hwintrinsic->Op(3);
+
+            if (!op3->IsCnsVec())
+            {
+                return true;
+            }
+
+            GenTreeVecCon* vecCon = op3->AsVecCon();
+
+            var_types simdBaseType = hwintrinsic->GetSimdBaseType();
+            unsigned  simdSize     = hwintrinsic->GetSimdSize();
+            uint32_t  count        = simdSize / sizeof(uint32_t);
+            uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
+
+            if (intrinsicId == NI_AVX512F_FixupScalar)
+            {
+                // Upper elements come from op2
+                count = 1;
+            }
+
+            for (uint32_t i = 0; i < count; i += incSize)
+            {
+                uint32_t tbl = vecCon->gtSimdVal.u32[i];
+
+                if (((tbl & 0x0000000F) == 0) || ((tbl & 0x000000F0) == 0) || ((tbl & 0x00000F00) == 0) ||
+                    ((tbl & 0x0000F000) == 0) || ((tbl & 0x000F0000) == 0) || ((tbl & 0x00F00000) == 0) ||
+                    ((tbl & 0x0F000000) == 0) || ((tbl & 0xF0000000) == 0))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         default:
@@ -20585,7 +20632,8 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        intrinsic = NI_AVX512F_Ceiling;
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToPositiveInfinity));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
     }
     else
     {
@@ -22156,7 +22204,8 @@ GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType 
     else if (simdSize == 64)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-        intrinsic = NI_AVX512F_Floor;
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToNegativeInfinity));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
     }
     else
     {

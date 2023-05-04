@@ -140,20 +140,20 @@
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>8.0.0-preview.5.23251.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23225.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23225.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>8.0.0-beta.23225.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>8.0.0-beta.23225.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>8.0.0-beta.23225.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>8.0.0-beta.23225.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>8.0.0-beta.23225.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>8.0.0-beta.23225.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>8.0.0-beta.23225.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>8.0.0-beta.23225.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>8.0.0-beta.23225.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>8.0.0-beta.23225.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>8.0.0-beta.23225.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>8.0.0-beta.23225.1</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>8.0.0-beta.23252.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>8.0.0-beta.23252.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>8.0.0-beta.23252.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>8.0.0-beta.23252.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>8.0.0-beta.23252.1</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>8.0.0-beta.23252.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>8.0.0-beta.23252.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>8.0.0-beta.23252.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>8.0.0-beta.23252.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>8.0.0-beta.23252.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>8.0.0-beta.23252.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>8.0.0-beta.23252.1</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>8.0.0-beta.23252.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>8.0.0-beta.23252.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.23229.3</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.23229.3</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -180,10 +180,10 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.1.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>1.0.0-prerelease.23252.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>1.0.0-prerelease.23252.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>1.0.0-prerelease.23252.1</MicrosoftDotNetXHarnessCLIVersion>
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23251.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetXHarnessTestRunnersCommonVersion>8.0.0-prerelease.23253.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>8.0.0-prerelease.23253.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>8.0.0-prerelease.23253.1</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>8.0.0-alpha.0.23252.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2</XUnitVersion>
     <XUnitAnalyzersVersion>1.0.0</XUnitAnalyzersVersion>
     <XUnitRunnerVisualStudioVersion>2.4.5</XUnitRunnerVisualStudioVersion>
@@ -233,7 +233,7 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.5.23225.2</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>8.0.0-preview.5.23252.1</MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest80100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
