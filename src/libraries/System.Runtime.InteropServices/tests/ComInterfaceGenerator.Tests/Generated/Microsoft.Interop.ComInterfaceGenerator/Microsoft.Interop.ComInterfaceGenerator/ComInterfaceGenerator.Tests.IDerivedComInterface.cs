@@ -116,50 +116,6 @@ file unsafe partial interface InterfaceImplementation : global::ComInterfaceGene
 file unsafe partial interface InterfaceImplementation
 {
     [System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute]
-    internal static int ABI_GetData(System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch* __this_native, int* __invokeRetValUnmanaged__param)
-    {
-        global::ComInterfaceGenerator.Tests.IComInterface1 @this = default;
-        ref int __invokeRetValUnmanaged = ref *__invokeRetValUnmanaged__param;
-        int __invokeRetVal = default;
-        int __retVal = default;
-        try
-        {
-            // Unmarshal - Convert native data to managed data.
-            __retVal = 0; // S_OK
-            @this = System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch.GetInstance<global::ComInterfaceGenerator.Tests.IComInterface1>(__this_native);
-            __invokeRetVal = @this.GetData();
-            // Marshal - Convert managed data to native data.
-            __invokeRetValUnmanaged = __invokeRetVal;
-        }
-        catch (System.Exception __exception)
-        {
-            __retVal = System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<int>.ConvertToUnmanaged(__exception);
-        }
-
-        return __retVal;
-    }
-
-    [System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute]
-    internal static int ABI_SetData(System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch* __this_native, int n)
-    {
-        global::ComInterfaceGenerator.Tests.IComInterface1 @this = default;
-        int __retVal = default;
-        try
-        {
-            // Unmarshal - Convert native data to managed data.
-            __retVal = 0; // S_OK
-            @this = System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch.GetInstance<global::ComInterfaceGenerator.Tests.IComInterface1>(__this_native);
-            @this.SetData(n);
-        }
-        catch (System.Exception __exception)
-        {
-            __retVal = System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<int>.ConvertToUnmanaged(__exception);
-        }
-
-        return __retVal;
-    }
-
-    [System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute]
     internal static int ABI_SetName(System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch* __this_native, ushort* __name_native)
     {
         global::ComInterfaceGenerator.Tests.IDerivedComInterface @this = default;

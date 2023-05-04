@@ -411,7 +411,7 @@ namespace Microsoft.Interop
             return ImplementationInterfaceTemplate
                 .WithMembers(
                     List<MemberDeclarationSyntax>(
-                        comInterfaceAndMethods.Methods
+                        comInterfaceAndMethods.DeclaredMethods
                             .Select(m => m.NativeToManagedStub)
                             .OfType<GeneratedStubCodeContext>()
                             .Select(context => context.Stub.Node) ));
