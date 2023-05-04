@@ -292,6 +292,22 @@ TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
             return ~arg0;
         }
 
+        case GT_LZCNT:
+        {
+            if (sizeof(TBase) == sizeof(uint32_t))
+            {
+                uint32_t result = BitOperations::LeadingZeroCount(static_cast<uint32_t>(arg0));
+                return static_cast<TBase>(result);
+            }
+            else if (sizeof(TBase) == sizeof(uint64_t))
+            {
+                uint64_t result = BitOperations::LeadingZeroCount(static_cast<uint64_t>(arg0));
+                return static_cast<TBase>(result);
+            }
+
+            unreached();
+        }
+
         default:
         {
             unreached();

@@ -7017,6 +7017,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
+            case NI_AVX512CD_LeadingZeroCount:
+            case NI_AVX512CD_VL_LeadingZeroCount:
+            {
+                return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
+            }
+
             case NI_BMI1_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
