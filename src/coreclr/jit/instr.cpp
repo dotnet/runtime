@@ -816,11 +816,35 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                         // if broadcast node is contained, should mean that we have some forms like
                         // broadcast -> CreateScalarUnsafe -> scalar.
                         // if so, directly emit scalar.
-                        assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
-                        op = hwintrinsic->AsHWIntrinsic()->Op(1);
-                        assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
-                        assert(op->isContained());
-                        return genOperandDesc(op->AsHWIntrinsic()->Op(1));
+                        switch (simdBaseType)
+                        {
+                            case TYP_INT:
+                            case TYP_UINT:
+                            case TYP_LONG:
+                            case TYP_ULONG:
+                            {
+                                // a special case is when the operand of CreateScalarUnsafe is in integer type,
+                                // CreateScalarUnsafe node will be fold, so we directly match a pattern of
+                                // broadcast -> LCL_VAR(TYP_(U)INT)
+                                assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR));
+                                op = hwintrinsic->Op(1);
+                                assert(op->isContained());
+                                return genOperandDesc(op);
+                            }
+
+                            case TYP_FLOAT:
+                            case TYP_DOUBLE:
+                            {
+                                assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
+                                op = hwintrinsic->Op(1);
+                                assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
+                                assert(op->isContained());
+                                return genOperandDesc(op->AsHWIntrinsic()->Op(1));
+                            }
+
+                            default:
+                                unreached();
+                        }
                     }
                     else
                     {
@@ -901,6 +925,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
 #if defined(TARGET_XARCH)
                 if (instOptions == INS_OPTS_EVEX_b)
                 {
+                    assert(op->isContained());
                     switch (simdBaseType)
                     {
                         case TYP_FLOAT:
@@ -913,6 +938,31 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                         {
                             double scalar = static_cast<double>(op->AsVecCon()->gtSimdVal.f64[0]);
                             return OperandDesc(emit->emitFltOrDblConst(scalar, EA_8BYTE));
+                        }
+
+                        case TYP_INT:
+                        {
+                            uint32_t       scalar = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.i32[0]);
+                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 4, 4, TYP_INT);
+                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                        }
+                        case TYP_UINT:
+                        {
+                            uint32_t       scalar = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[0]);
+                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 4, 4, TYP_UINT);
+                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                        }
+                        case TYP_LONG:
+                        {
+                            uint64_t       scalar = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.i64[0]);
+                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 8, 8, TYP_LONG);
+                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                        }
+                        case TYP_ULONG:
+                        {
+                            uint64_t       scalar = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[0]);
+                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 8, 8, TYP_ULONG);
+                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
                         }
 
                         default:

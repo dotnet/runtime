@@ -2329,18 +2329,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     node->ResetHWIntrinsicId(NI_AVX512BW_BroadcastScalarToVector512, tmp1);
                     break;
                 }
+
                 case TYP_INT:
                 case TYP_UINT:
-                case TYP_LONG:
-                case TYP_ULONG:
-                {
-                    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                    node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
-                    break;
-                }
-
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
+                case TYP_LONG:
+                case TYP_ULONG:
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
@@ -2352,8 +2347,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) &&
-                        (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
                         // issue.
@@ -2407,14 +2401,29 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) &&
-                        (op1->TypeIs(TYP_FLOAT) || op1->TypeIs(TYP_DOUBLE)))
+                    if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR))
                     {
-                        // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
-                        // issue.
-                        if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                        switch (op1->TypeGet())
                         {
-                            std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                            case TYP_FLOAT:
+                            case TYP_DOUBLE:
+                            case TYP_INT:
+                            case TYP_UINT:
+                            case TYP_LONG:
+                            case TYP_ULONG:
+                            {
+                                // swap the embedded broadcast candidate to 2nd operand, convenient to handle the
+                                // containment
+                                // issue.
+                                if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                                {
+                                    std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                                }
+                                break;
+                            }
+
+                            default:
+                                break;
                         }
                     }
                 }
@@ -2506,13 +2515,28 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 {
                     CreateUser = use.User();
                 }
-                if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
+                if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR))
                 {
-                    // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
-                    // issue.
-                    if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                    switch (op1->TypeGet())
                     {
-                        std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                        case TYP_FLOAT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            // swap the embedded broadcast candidate to 2nd operand, convenient to handle the
+                            // containment
+                            // issue.
+                            if (node == CreateUser->AsHWIntrinsic()->Op(1))
+                            {
+                                std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                            }
+                            break;
+                        }
+
+                        default:
+                            break;
                     }
                 }
             }
@@ -7615,18 +7639,41 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                 {
                     GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
-                    if (Scalar->OperIs(GT_LCL_VAR) && (Scalar->TypeIs(TYP_FLOAT) || Scalar->TypeIs(TYP_DOUBLE)))
+                    if (Scalar->OperIs(GT_LCL_VAR))
                     {
-                        const unsigned opLclNum = Scalar->AsLclVar()->GetLclNum();
-                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                        MakeSrcContained(CreateScalar, Scalar);
-                        MakeSrcContained(childNode, CreateScalar);
-                        return true;
+                        switch (Scalar->TypeGet())
+                        {
+                            case TYP_FLOAT:
+                            case TYP_DOUBLE:
+                            {
+                                const unsigned opLclNum = Scalar->AsLclVar()->GetLclNum();
+                                comp->lvaSetVarDoNotEnregister(
+                                    opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                                MakeSrcContained(CreateScalar, Scalar);
+                                MakeSrcContained(childNode, CreateScalar);
+                                return true;
+                            }
+
+                            default:
+                                return false;
+                                ;
+                        }
                     }
                     else
                     {
                         return false;
                     }
+                }
+                else if (CreateScalar->OperIs(GT_LCL_VAR))
+                {
+                    // if the operand of the CreateScalarUnsafe node is in Integer type, CreateScalarUnsafe node will be
+                    // fold, we need to specially handle this case.
+                    assert(CreateScalar->TypeIs(TYP_INT) || CreateScalar->TypeIs(TYP_UINT) ||
+                           CreateScalar->TypeIs(TYP_LONG) || CreateScalar->TypeIs(TYP_ULONG));
+                    const unsigned opLclNum = CreateScalar->AsLclVar()->GetLclNum();
+                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                    MakeSrcContained(childNode, CreateScalar);
+                    return true;
                 }
                 else
                 {

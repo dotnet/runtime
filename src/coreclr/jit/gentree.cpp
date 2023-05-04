@@ -21628,6 +21628,10 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             {
                 uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
 
+#if defined(TARGET_XARCH)
+                vecCon->SetCreatedFromScalar();
+#endif //  TARGET_XARCH
+
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
                     vecCon->gtSimdVal.u32[i] = cnsVal;
@@ -21639,6 +21643,9 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             case TYP_ULONG:
             {
                 uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+#if defined(TARGET_XARCH)
+                vecCon->SetCreatedFromScalar();
+#endif //  TARGET_XARCH
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
