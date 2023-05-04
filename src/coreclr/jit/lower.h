@@ -364,6 +364,7 @@ private:
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
+    GenTree* TryLowerConstVec(GenTreeVecCon* node);
     void TryCanonizeEmbBroadcastCandicate(GenTreeHWIntrinsic* node);
     void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)

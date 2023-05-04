@@ -729,8 +729,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
     }
 
     bool      isRMW        = node->isRMWHWIntrinsic(compiler);
-    var_types simdBaseType = node->GetSimdBaseType();
-    inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW, simdBaseType);
+    inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW);
 }
 
 //------------------------------------------------------------------------

@@ -587,6 +587,19 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             return LowerHWIntrinsic(node->AsHWIntrinsic());
+#ifdef TARGET_XARCH
+        case GT_CNS_VEC:
+        {
+            if(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            {
+                return TryLowerConstVec(node->AsVecCon());
+            }
+            else
+                break;
+        }
+            
+#endif // TARGET_XARCH
+
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_LCL_FLD:

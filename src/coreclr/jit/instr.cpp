@@ -760,7 +760,7 @@ void CodeGen::inst_RV_SH(
 //    This method is not idempotent - it can only be called once for a
 //    given node.
 //
-CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, var_types simdBaseType)
+CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 {
     if (!op->isContained() && !op->isUsedFromSpillTemp())
     {
@@ -799,7 +799,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
 #if defined(FEATURE_HW_INTRINSICS)
             GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
+            var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
                 case NI_AVX_BroadcastScalarToVector128:
@@ -846,10 +846,19 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                             // a special case is when the operand of CreateScalarUnsafe is in integer type,
                             // CreateScalarUnsafe node will be fold, so we directly match a pattern of
                             // broadcast -> LCL_VAR(TYP_(U)INT)
-                            assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR));
-                            op = hwintrinsic->Op(1);
-                            assert(op->isContained());
-                            return genOperandDesc(op);
+                            assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR, GT_CNS_INT));
+                            GenTree* scalar = hwintrinsic->Op(1);
+                            if(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR))
+                            {
+                                assert(scalar->isContained());
+                                return genOperandDesc(scalar);
+                            }
+                            else
+                            {
+                                ssize_t scalarValue = scalar->AsIntCon()->IconValue();
+                                UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType), genTypeSize(simdBaseType), simdBaseType);
+                                return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                            }
                         }
 
                         case TYP_FLOAT:
@@ -932,60 +941,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                 return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
+            {
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+            }
 
             case GT_CNS_VEC:
             {
-#if defined(TARGET_XARCH)
-                if (instOptions == INS_OPTS_EVEX_b)
-                {
-                    assert(op->isContained());
-                    switch (simdBaseType)
-                    {
-                        case TYP_FLOAT:
-                        {
-                            float scalar = static_cast<float>(op->AsVecCon()->gtSimdVal.f32[0]);
-                            return OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
-                        }
-
-                        case TYP_DOUBLE:
-                        {
-                            double scalar = static_cast<double>(op->AsVecCon()->gtSimdVal.f64[0]);
-                            return OperandDesc(emit->emitFltOrDblConst(scalar, EA_8BYTE));
-                        }
-
-                        case TYP_INT:
-                        {
-                            uint32_t       scalar = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.i32[0]);
-                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 4, 4, TYP_INT);
-                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
-                        }
-                        case TYP_UINT:
-                        {
-                            uint32_t       scalar = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[0]);
-                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 4, 4, TYP_UINT);
-                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
-                        }
-                        case TYP_LONG:
-                        {
-                            uint64_t       scalar = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.i64[0]);
-                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 8, 8, TYP_LONG);
-                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
-                        }
-                        case TYP_ULONG:
-                        {
-                            uint64_t       scalar = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[0]);
-                            UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalar, 8, 8, TYP_ULONG);
-                            return OperandDesc(compiler->eeFindJitDataOffs(cnum));
-                        }
-
-                        default:
-                            unreached();
-                    }
-                    break;
-                }
-#endif // TARGET_XARCH
                 switch (op->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
@@ -1233,59 +1195,13 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[ins] & Input_Mask));
 
     // Embedded broadcast can be applied when operands are in the following forms.
-    // 1. Broadcast -> CreateScalar -> LCL_VAR
-    // 2. CnsVec
+    // 1. Broadcast -> CreateScalar -> LCL_VAR/CNS
     bool IsEmbBroadcastEnabled = false;
     switch (op->OperGet())
     {
         case GT_HWINTRINSIC:
         {
             if (op->isContained() && op->AsHWIntrinsic()->OperIsBroadcastScalar())
-            {
-                IsEmbBroadcastEnabled = true;
-            }
-            break;
-        }
-
-        case GT_CNS_VEC:
-        {
-            var_types simdType    = op->TypeGet();
-            bool      IsIdentical = true;
-            switch (inputSize)
-            {
-                case Input_32Bit:
-                {
-                    uint32_t FirstElement = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[0]);
-                    for (unsigned i = 1; i < genTypeSize(simdType) / 4; i++)
-                    {
-                        uint32_t ElementToCheck = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[i]);
-                        if (FirstElement != ElementToCheck)
-                        {
-                            IsIdentical = false;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case Input_64Bit:
-                {
-                    uint64_t FirstElement = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[0]);
-                    for (unsigned i = 1; i < genTypeSize(simdType) / 8; i++)
-                    {
-                        uint64_t ElementToCheck = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[i]);
-                        if (FirstElement != ElementToCheck)
-                        {
-                            IsIdentical = false;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                default:
-                    unreached();
-            }
-
-            if (IsIdentical)
             {
                 IsEmbBroadcastEnabled = true;
             }
@@ -1322,8 +1238,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
                             regNumber   targetReg,
                             regNumber   op1Reg,
                             GenTree*    op2,
-                            bool        isRMW,
-                            var_types   simdBaseType)
+                            bool        isRMW)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
@@ -1339,7 +1254,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
         instOptions = INS_OPTS_EVEX_b;
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
-    OperandDesc op2Desc = genOperandDesc(op2, instOptions, simdBaseType);
+    OperandDesc op2Desc = genOperandDesc(op2);
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
