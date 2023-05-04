@@ -16,8 +16,9 @@ jobs:
     - name: Check `Servicing-approved` label
       run: |
         echo "Merging permission is enabled for servicing PRs when the `Servicing-approved` label is applied."
-        echo "Rules for applying the label can be found [here](~/docs/project/library-servicing.md)."
+        echo "Rules for applying the label can be found in https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md"
         if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
+          echo "::error 'Servicing-approved' label not applied to the PR yet."
           exit 0
         else
           exit 1
