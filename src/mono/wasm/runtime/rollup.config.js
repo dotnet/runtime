@@ -45,10 +45,24 @@ const inlineAssert = [
     {
         pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
         replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
-    }, {
-        pattern: /^\s*mono_assert/gm,
-        failure: "previous regexp didn't inline all mono_assert statements"
-    }];
+    }
+];
+const checkAssert =
+{
+    pattern: /^\s*mono_assert/gm,
+    failure: "previous regexp didn't inline all mono_assert statements"
+};
+const checkNoLoader =
+{
+    pattern: /thisIsLoaderModuleRollupGuard/gm,
+    failure: "module should not contain thisIsLoaderModuleRollupGuard member. This is probably duplicated code in the output caused by a dependency outside on the loader module."
+};
+const checkNoRuntime =
+{
+    pattern: /thisIsRuntimeModuleRollupGuard/gm,
+    failure: "module should not contain thisIsRuntimeModuleRollupGuard member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
+
 
 let gitHash;
 try {
@@ -80,7 +94,7 @@ const typescriptConfigOptions = {
     include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
 };
 
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const outputCodePlugins = [consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
 const externalDependencies = ["module"];
 
 const loaderConfig = {
@@ -95,7 +109,7 @@ const loaderConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const typesConfig = {
@@ -123,7 +137,7 @@ const runtimeConfig = {
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const legacyConfig = {
@@ -262,11 +276,45 @@ function checkFileExists(file) {
         .catch(() => false);
 }
 
+function regexCheck(checks = []) {
+    const filter = createFilter("**/*.ts");
+
+    return {
+        name: "regexCheck",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        },
+
+        transform(code, id) {
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        }
+    };
+
+    function executeCheck(self, code, id) {
+        // self.warn("executeCheck" + id);
+        for (const rep of checks) {
+            const { pattern, failure } = rep;
+            const match = pattern.test(code);
+            if (match) {
+                self.error(failure + " " + id);
+                return null;
+            }
+        }
+
+        return null;
+    }
+}
+
+
 function regexReplace(replacements = []) {
     const filter = createFilter("**/*.ts");
 
     return {
-        name: "replace",
+        name: "regexReplace",
 
         renderChunk(code, chunk) {
             const id = chunk.fileName;
@@ -280,21 +328,12 @@ function regexReplace(replacements = []) {
         }
     };
 
-    function executeReplacement(self, code, id) {
+    function executeReplacement(_, code) {
         // TODO use MagicString for sourcemap support
         let fixed = code;
         for (const rep of replacements) {
-            const { pattern, replacement, failure } = rep;
-            if (failure) {
-                const match = pattern.test(fixed);
-                if (match) {
-                    self.error(failure + " " + id, pattern.lastIndex);
-                    return null;
-                }
-            }
-            else {
-                fixed = fixed.replace(pattern, replacement);
-            }
+            const { pattern, replacement } = rep;
+            fixed = fixed.replace(pattern, replacement);
         }
 
         if (fixed == code) {

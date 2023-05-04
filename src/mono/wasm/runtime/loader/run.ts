@@ -4,7 +4,7 @@
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
 import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal, initializeExportsType, initializeReplacementsType, configureEmscriptenStartupType, configureWorkerStartupType, setGlobalObjectsType, passEmscriptenInternalsType, } from "../types/internal";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, setGlobalObjects } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, setLoaderGlobals } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { mono_exit } from "./exit";
 import { setup_proxy_console } from "./logging";
@@ -24,7 +24,7 @@ export const globalObjectsRoot: GlobalObjects = {
     api: {}
 } as any;
 
-setGlobalObjects(globalObjectsRoot);
+setLoaderGlobals(globalObjectsRoot);
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
 
@@ -391,8 +391,8 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
     // TODO call mono_download_assets(); here in parallel ?
 
     const es6Modules = await Promise.all(promises);
-    const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setGlobalObjects, passEmscriptenInternals } = es6Modules[0] as {
-        setGlobalObjects: setGlobalObjectsType,
+    const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0] as {
+        setRuntimeGlobals: setGlobalObjectsType,
         initializeExports: initializeExportsType,
         initializeReplacements: initializeReplacementsType,
         configureEmscriptenStartup: configureEmscriptenStartupType,
@@ -403,7 +403,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         default: (unificator: Function) => EmscriptenModuleInternal
     };
 
-    setGlobalObjects(globalObjectsRoot);
+    setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 

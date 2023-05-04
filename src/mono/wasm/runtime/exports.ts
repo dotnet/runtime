@@ -7,7 +7,7 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import type { RuntimeAPI } from "./types";
 
-import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setGlobalObjects, } from "./globals";
+import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects, is_nullish } from "./types/internal";
 import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
 
@@ -142,5 +142,5 @@ class RuntimeList {
 
 // export external API
 export {
-    passEmscriptenInternals, initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setGlobalObjects
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
 };
