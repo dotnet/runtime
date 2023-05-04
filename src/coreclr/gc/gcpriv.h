@@ -3854,6 +3854,7 @@ private:
 
     PER_HEAP_FIELD_DIAG_ONLY gen_to_condemn_tuning gen_to_condemn_reasons;
     PER_HEAP_FIELD_DIAG_ONLY size_t etw_allocation_running_amount[total_oh_count];
+    PER_HEAP_FIELD_DIAG_ONLY size_t etw_allocation_running_threshold[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY uint64_t total_alloc_bytes_soh;
     PER_HEAP_FIELD_DIAG_ONLY uint64_t total_alloc_bytes_uoh;
 

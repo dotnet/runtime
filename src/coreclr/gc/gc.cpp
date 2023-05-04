@@ -17,6 +17,8 @@
 //
 
 #include "gcpriv.h"
+#include <math.h>
+#include <time.h>
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 #define USE_VXSORT
@@ -1892,7 +1894,7 @@ size_t align_on_segment_hard_limit (size_t add)
 
 #endif //SERVER_GC
 
-const size_t etw_allocation_tick = 100*1024;
+const size_t etw_allocation_tick_mean = 100*1024;
 
 const size_t low_latency_alloc = 256*1024;
 
@@ -2480,6 +2482,7 @@ uint8_t*    gc_heap::last_gen1_pin_end;
 gen_to_condemn_tuning gc_heap::gen_to_condemn_reasons;
 
 size_t      gc_heap::etw_allocation_running_amount[total_oh_count];
+size_t      gc_heap::etw_allocation_running_threshold[total_oh_count];
 
 uint64_t    gc_heap::total_alloc_bytes_soh = 0;
 
@@ -14424,6 +14427,10 @@ gc_heap::init_gc_heap (int h_number)
 #endif //MULTIPLE_HEAPS
 
     memset (etw_allocation_running_amount, 0, sizeof (etw_allocation_running_amount));
+    for (int i = 0; i < total_oh_count; i++)
+	{
+        etw_allocation_running_threshold[i] = etw_allocation_tick_mean;
+	}
     memset (allocated_since_last_gc, 0, sizeof (allocated_since_last_gc));
     memset (&oom_info, 0, sizeof (oom_info));
     memset (&fgm_result, 0, sizeof (fgm_result));
@@ -18009,6 +18016,23 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
 #endif //BACKGROUND_GC
 }
 
+// The code of the helper function is a replicate of CRT rand() implementation.
+inline
+int FastRNG(int iMaxValue)
+{
+    static BOOL bisRandInit = FALSE;
+    static int lHoldrand = 1L;
+
+    if (!bisRandInit)
+    {
+        lHoldrand = (int)time(NULL);
+        bisRandInit = TRUE;
+    }
+    int randValue = (((lHoldrand = lHoldrand * 214013L + 2531011L) >> 16) & 0x7fff);
+    return randValue % iMaxValue;
+}
+
+
 inline
 bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* etw_allocation_amount)
 {
@@ -18018,11 +18042,26 @@ bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* 
 
     size_t& etw_allocated = etw_allocation_running_amount[oh_index];
     etw_allocated += allocated_size;
-    if (etw_allocated > etw_allocation_tick)
+
+    size_t& etw_threshold = etw_allocation_running_threshold[oh_index];
+    if (etw_allocated > etw_threshold)
     {
         *etw_allocation_amount = etw_allocated;
         exceeded_p = true;
         etw_allocated = 0;
+
+// avoid computing if not needed
+#ifdef FEATURE_EVENT_TRACE
+  #ifdef FEATURE_NATIVEAOT
+    if (EVENT_ENABLED(GCAllocationTick_V1))
+  #else
+    if (EVENT_ENABLED(GCAllocationTick_V4))
+  #endif
+    {
+        // compute the next threshold based on a Poisson process with a etw_allocation_tick_mean average
+        etw_threshold = (size_t)(-log(1 - ((double)FastRNG(RAND_MAX)/(double)RAND_MAX)) * etw_allocation_tick_mean) + 1;
+    }
+#endif
     }
 
     return exceeded_p;
@@ -46228,22 +46267,14 @@ void StressHeapDummy ();
 // the test/application run by CLR is enabling any FPU exceptions.
 // We want to avoid any unexpected exception coming from stress
 // infrastructure, so CLRRandom is not an option.
-// The code below is a replicate of CRT rand() implementation.
+// The code of the helper function is a replicate of CRT rand() implementation.
 // Using CRT rand() is not an option because we will interfere with the user application
 // that may also use it.
 int StressRNG(int iMaxValue)
 {
-    static BOOL bisRandInit = FALSE;
-    static int lHoldrand = 1L;
-
-    if (!bisRandInit)
-    {
-        lHoldrand = (int)time(NULL);
-        bisRandInit = TRUE;
-    }
-    int randValue = (((lHoldrand = lHoldrand * 214013L + 2531011L) >> 16) & 0x7fff);
-    return randValue % iMaxValue;
+    return FastRNG(iMaxValue);
 }
+
 #endif // STRESS_HEAP
 #endif // !FEATURE_NATIVEAOT
 
