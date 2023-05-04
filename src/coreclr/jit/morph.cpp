@@ -10194,6 +10194,8 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
         LclVarDsc* varDsc = lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum());
 
         // It is not safe to remove the cast for non-NormalizeOnLoad variables or parameters.
+        // The reason why the parameters are not safe is because there are issues surrounding
+        // NormalizeOnLoad variables in VN and/or CSE.
         if (!varDsc->lvNormalizeOnLoad() || varDsc->lvIsParam)
             return asg;
     }
