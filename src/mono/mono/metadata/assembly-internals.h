@@ -138,9 +138,6 @@ mono_assembly_get_name_internal (MonoAssembly *assembly);
 MONO_PROFILER_API MonoImage*
 mono_assembly_get_image_internal (MonoAssembly *assembly);
 
-MonoBundledAssembly *
-mono_create_new_bundled_assembly (const char *name, const unsigned char *data, unsigned int size);
-
 void
 mono_set_assemblies_path_direct (char **path);
 

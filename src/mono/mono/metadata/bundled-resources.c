@@ -106,6 +106,9 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 MonoBundledResource *
 mono_bundled_resources_get (const char *name)
 {
+	if (!bundled_resources)
+		return NULL;
+
 	return g_hash_table_lookup (bundled_resources, name);
 }
 

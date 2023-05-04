@@ -1129,7 +1129,7 @@ open_symfile_from_bundle (MonoImage *image)
 	int len = strlen (image->module_name);
 	char *module_name_dll_suffix = strdup (image->module_name);
 	/* if image's module_name ends with .webcil, check if theres a bundled resource with a .dll extension instead */
-	if (module_name_dll_suffix && !g_strcasecmp (".webcil", &image->module_name [len - 7])) {
+	if (module_name_dll_suffix && len >= 7 && !g_strcasecmp (".webcil", &image->module_name [len - 7])) {
 		memcpy (module_name_dll_suffix + len - 7, ".dll", 4);
 		*(module_name_dll_suffix + len - 3) = '\0';
 		assembly = (MonoBundledAssemblyResource *)mono_bundled_resources_get (module_name_dll_suffix);

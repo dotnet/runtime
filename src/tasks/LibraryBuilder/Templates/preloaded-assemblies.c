@@ -18,7 +18,7 @@ preload_assembly (const char* filename)
     if (!filename_without_extension)
         LOG_ERROR ("Out of memory.\n");
 
-    if (!STR_CASE_CMP (".dll", &filename [len - 4]))
+    if (len >= 4 && !STR_CASE_CMP (".dll", &filename [len - 4]))
         *(filename_without_extension + len - 4) = '\0';
 
     assembly = mono_assembly_load_with_partial_name (filename_without_extension, NULL);

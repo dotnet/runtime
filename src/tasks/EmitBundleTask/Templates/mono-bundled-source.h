@@ -39,7 +39,7 @@ typedef struct _MonoBundledSymfile {
 typedef struct _MonoBundledAssemblyResource {
 	MonoBundledResource resource;
 	MonoBundledAssembly assembly;
-    MonoBundledSymfile symfile;
+	MonoBundledSymfile symfile;
 } MonoBundledAssemblyResource;
 
 typedef struct _MonoBundledSatelliteAssembly {
@@ -52,7 +52,7 @@ typedef struct _MonoBundledSatelliteAssembly {
 typedef struct _MonoBundledSatelliteAssemblyResource {
 	MonoBundledResource resource;
 	MonoBundledSatelliteAssembly satellite_assembly;
-    MonoBundledSymbolData symbol_data;
+	MonoBundledSymbolData symbol_data;
 } MonoBundledSatelliteAssemblyResource;
 
 void
