@@ -1688,9 +1688,6 @@ public:
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
-    bool OperIsStoreLclVar(unsigned* pLclNum = nullptr);
-    bool OperIsStoreLcl(unsigned* pLclNum);
-
 #ifdef DEBUG
     static const GenTreeDebugOperKind gtDebugOperKindTable[];
 
@@ -8716,46 +8713,6 @@ inline bool GenTree::OperIsCopyBlkOp()
     return OperIsBlkOp() && !OperIsInitBlkOp();
 }
 
-inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
-{
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        if (pLclNum != nullptr)
-        {
-            *pLclNum = AsLclVar()->GetLclNum();
-        }
-        return true;
-    }
-    if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
-    {
-        if (pLclNum != nullptr)
-        {
-            *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
-        }
-        return true;
-    }
-
-    *pLclNum = BAD_VAR_NUM;
-    return false;
-}
-
-inline bool GenTree::OperIsStoreLcl(unsigned* pLclNum) // TODO-ASG: delete.
-{
-    if (OperIsLocalStore())
-    {
-        *pLclNum = AsLclVarCommon()->GetLclNum();
-        return true;
-    }
-    if (OperIs(GT_ASG) && gtGetOp1()->OperIsLocal())
-    {
-        *pLclNum = gtGetOp1()->AsLclVarCommon()->GetLclNum();
-        return true;
-    }
-
-    *pLclNum = BAD_VAR_NUM;
-    return false;
-}
-
 //------------------------------------------------------------------------
 // IsIntegralConst: Checks whether this is a constant node with the given value
 //
@@ -9092,7 +9049,6 @@ inline GenTree* GenTree::gtGetOp1() const
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-        case GT_ASG:
         case GT_EQ:
         case GT_NE:
         case GT_LT:
@@ -9139,8 +9095,8 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 
 inline GenTree*& GenTree::Data()
 {
-    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK, GT_ASG));
-    return OperIsLocalStore() ? AsLclVarCommon()->Data() : static_cast<GenTreeOp*>(this)->gtOp2;
+    assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK));
+    return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 
 inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)

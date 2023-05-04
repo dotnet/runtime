@@ -2814,8 +2814,6 @@ public:
         return gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, fldHnd, obj, offset);
     }
 
-    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr);
-
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
                                      var_types            elemType,
@@ -2882,8 +2880,6 @@ public:
 
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
-
-    GenTreeOp* gtNewAssignNode(GenTree* dst, GenTree* src);
 
     GenTree* gtNewTempAssign(unsigned         tmp,
                              GenTree*         val,
@@ -9181,7 +9177,6 @@ public:
     bool compLocallocOptimized;        // Does the method have an optimized localloc
     bool compQmarkUsed;                // Does the method use GT_QMARK/GT_COLON
     bool compQmarkRationalized;        // Is it allowed to use a GT_QMARK/GT_COLON node.
-    bool compAssignmentRationalized;   // Have the ASG nodes been turned into their store equivalents?
     bool compHasBackwardJump;          // Does the method (or some inlinee) have a lexically backwards jump?
     bool compHasBackwardJumpInHandler; // Does the method have a lexically backwards jump in a handler?
     bool compSwitchedToOptimized;      // Codegen initially was Tier0 but jit switched to FullOpts

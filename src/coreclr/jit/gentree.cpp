@@ -7895,40 +7895,6 @@ GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HAN
 }
 
 //------------------------------------------------------------------------
-// gtNewFieldIndirNode: Create a new field indirection node.
-//
-// Arguments:
-//    type   - Indirection's type
-//    layout - Indirection's struct layout
-//    add    - The field address
-//
-// Return Value:
-//    The created node.
-//
-// Notes:
-//    This method exists to preserve previous behavior. New code should
-//    use "gtNewIndir"/"gtNewBlkIndir" directly.
-//
-GenTreeIndir* Compiler::gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr)
-{
-    GenTreeIndir* indir = (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, GTF_IND_NONFAULTING)
-                                               : gtNewIndir(type, addr, GTF_IND_NONFAULTING);
-
-    if (addr->IsInstance() && addr->GetFldObj()->OperIs(GT_LCL_ADDR))
-    {
-        indir->gtFlags &= ~GTF_GLOB_REF;
-    }
-    else
-    {
-        indir->gtFlags |= GTF_GLOB_REF;
-    }
-
-    addr->gtFlags |= GTF_FLD_DEREFERENCED;
-
-    return indir;
-}
-
-//------------------------------------------------------------------------
 // gtInitializeStoreNode: Initialize a store node.
 //
 // Common initialization for all STORE nodes. Marks SIMD locals as "used in
@@ -8155,57 +8121,6 @@ GenTree* Compiler::gtNewStoreValueNode(
     }
 
     return store;
-}
-
-/*****************************************************************************
- *
- *  Create a node that will assign 'src' to 'dst'.
- */
-
-GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
-{
-    assert(!src->TypeIs(TYP_VOID) && !compAssignmentRationalized);
-    /* Mark the target as being assigned */
-
-    if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))
-    {
-        dst->gtFlags |= GTF_VAR_DEF;
-        if (dst->IsPartialLclFld(this))
-        {
-            // We treat these partial writes as combined uses and defs.
-            dst->gtFlags |= GTF_VAR_USEASG;
-        }
-    }
-    dst->gtFlags |= GTF_DONT_CSE;
-
-#if defined(FEATURE_SIMD)
-#if !defined(TARGET_X86)
-    if (varTypeIsSIMD(dst))
-    {
-        // We want to track SIMD assignments as being intrinsics since they
-        // are functionally SIMD `mov` instructions and are more efficient
-        // when we don't promote, particularly when it occurs due to inlining
-        SetOpLclRelatedToSIMDIntrinsic(dst);
-        SetOpLclRelatedToSIMDIntrinsic(src);
-    }
-#else  // TARGET_X86
-    // TODO-Cleanup: merge with the all-arch logic.
-    if (varTypeIsSIMD(src) && src->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
-    {
-        SetOpLclRelatedToSIMDIntrinsic(dst);
-    }
-#endif // TARGET_X86
-#endif // FEATURE_SIMD
-
-    /* Create the assignment node */
-
-    GenTreeOp* asg = gtNewOperNode(GT_ASG, dst->TypeGet(), dst, src)->AsOp();
-
-    /* Mark the expression as containing an assignment */
-
-    asg->gtFlags |= GTF_ASG;
-
-    return asg;
 }
 
 //------------------------------------------------------------------------
@@ -8665,8 +8580,9 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #ifdef FEATURE_READYTORUN
                 copy->AsFieldAddr()->gtFieldLookup = addr->gtFieldLookup;
 #endif
-                ClassLayout* layout = tree->OperIs(GT_BLK) ? tree->AsBlk()->GetLayout() : nullptr;
-                copy                = gtNewFieldIndirNode(tree->TypeGet(), layout, copy->AsFieldAddr());
+                copy = tree->OperIs(GT_BLK) ? gtNewBlkIndir(tree->AsBlk()->GetLayout(), copy)
+                                            : gtNewIndir(tree->TypeGet(), copy);
+                impAnnotateFieldIndir(copy->AsIndir());
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
@@ -14184,7 +14100,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // If we don't recognize the form of the store, bail.
     GenTree* boxLclDef = allocStmt->GetRootNode();
-    if (!boxLclDef->OperIsStoreLclVar())
+    if (!boxLclDef->OperIs(GT_STORE_LCL_VAR))
     {
         JITDUMP(" bailing; unexpected alloc def op %s\n", GenTree::OpName(boxLclDef->OperGet()));
         return nullptr;
@@ -14201,7 +14117,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     GenTree* boxTypeHandle = nullptr;
     if ((options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE) || (options == BR_DONT_REMOVE_WANT_TYPE_HANDLE))
     {
-        GenTree*   defSrc     = boxLclDef->Data();
+        GenTree*   defSrc     = boxLclDef->AsLclVar()->Data();
         genTreeOps defSrcOper = defSrc->OperGet();
 
         // Allocation may be via AllocObj or via helper call, depending
@@ -14237,7 +14153,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // If we don't recognize the form of the copy, bail.
     GenTree* copy = copyStmt->GetRootNode();
-    if (!copy->OperIs(GT_ASG, GT_STOREIND, GT_STORE_BLK))
+    if (!copy->OperIs(GT_STOREIND, GT_STORE_BLK))
     {
         // GT_RET_EXPR is a tolerable temporary failure.
         // The jit will revisit this optimization after
@@ -14266,21 +14182,13 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         CORINFO_CLASS_HANDLE boxClass = lvaTable[boxTempLcl].lvClassHnd;
         assert(boxClass != nullptr);
 
-        // Verify that the copyDst has the expected shape
-        // (blk|obj|ind (add (boxTempLcl, ptr-size)))
+        // Verify that the copy has the expected shape
+        // (store_blk|store_ind (add (boxTempLcl, ptr-size)))
         //
         // The shape here is constrained to the patterns we produce
         // over in impImportAndPushBox for the inlined box case.
-        bool     copyIsAsg = copy->OperIs(GT_ASG);
-        GenTree* copyDst   = copyIsAsg ? copy->AsOp()->gtOp1 : copy;
-
-        if (copyIsAsg && !copyDst->OperIs(GT_BLK, GT_IND))
-        {
-            JITDUMP("Unexpected copy dest operator %s\n", GenTree::OpName(copyDst->gtOper));
-            return nullptr;
-        }
-
-        GenTree* copyDstAddr = copyDst->AsOp()->gtOp1;
+        //
+        GenTree* copyDstAddr = copy->AsIndir()->Addr();
         if (copyDstAddr->OperGet() != GT_ADD)
         {
             JITDUMP("Unexpected copy dest address tree\n");
@@ -14314,7 +14222,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         boxLclDef->gtBashToNOP();
 
         // Update the copy from the value to be boxed to the box temp
-        copyDst->AsOp()->gtOp1 = gtNewLclVarAddrNode(boxTempLcl, TYP_BYREF);
+        copy->AsIndir()->Addr() = gtNewLclVarAddrNode(boxTempLcl, TYP_BYREF);
 
         // Return the address of the now-struct typed box temp
         GenTree* retValue = gtNewLclVarAddrNode(boxTempLcl, TYP_BYREF);
