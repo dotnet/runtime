@@ -6,13 +6,12 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Microsoft.NET.Sdk.WebAssembly;
 using Moq;
 using Xunit;
 
-namespace Microsoft.NET.Sdk.BlazorWebAssembly.Tests;
+namespace Microsoft.NET.Sdk.WebAssembly.Tests;
 
-public class ComputeBlazorBuildAssetsTest
+public class ComputeBuildAssetsTest
 {
     [Fact]
     public void Execute_FixesReferencesTo()

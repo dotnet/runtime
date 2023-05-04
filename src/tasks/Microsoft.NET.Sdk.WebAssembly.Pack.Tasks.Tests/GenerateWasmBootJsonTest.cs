@@ -6,13 +6,12 @@ using System.IO;
 using System.Runtime.Serialization.Json;
 using FluentAssertions;
 using Microsoft.Build.Framework;
-using Microsoft.NET.Sdk.WebAssembly;
 using Moq;
 using Xunit;
 
-namespace Microsoft.NET.Sdk.BlazorWebAssembly.Tests
+namespace Microsoft.NET.Sdk.WebAssembly.Tests
 {
-    public class GenerateBlazorWebAssemblyBootJsonTest
+    public class GenerateWasmBootJsonTest
     {
         [Fact]
         public void GroupsResourcesByType()

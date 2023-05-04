@@ -9,13 +9,12 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Microsoft.NET.Sdk.WebAssembly;
 using Moq;
 using Xunit;
 
-namespace Microsoft.NET.Sdk.BlazorWebAssembly.Tests
+namespace Microsoft.NET.Sdk.WebAssembly.Tests
 {
-    public class ComputeBlazorPublishAssetsTest
+    public class ComputePublishAssetsTest
     {
         [Fact]
         public void UpdatesAssets_WithLinked_Assemblies()
@@ -28,7 +27,7 @@ namespace Microsoft.NET.Sdk.BlazorWebAssembly.Tests
                 CopySymbols = false,
                 InvariantGlobalization = false,
                 TimeZoneSupport = true,
-                PublishPath = "bin\\Debug\\net6.0\\publish\\"
+                PublishPath = @"bin\Debug\net6.0\publish\"
             };
 
             taskInstance.BuildEngine = Mock.Of<IBuildEngine>();
