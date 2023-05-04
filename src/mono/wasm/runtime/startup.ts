@@ -106,6 +106,7 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
         // - here we resolve the promise returned by createDotnetRuntime export
         // - any code after createDotnetRuntime is executed now
         dotnetReady.promise_control.resolve(exportedRuntimeAPI);
+        runtimeHelpers.runtimeReady = true;
     }).catch(err => {
         dotnetReady.promise_control.reject(err);
     });

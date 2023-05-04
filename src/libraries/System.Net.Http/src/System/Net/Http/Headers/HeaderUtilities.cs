@@ -23,8 +23,8 @@ namespace System.Net.Http.Headers
 
         // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
         //      ; token except ( "*" / "'" / "%" )
-        private static readonly IndexOfAnyValues<byte> s_rfc5987AttrBytes =
-            IndexOfAnyValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+        private static readonly SearchValues<byte> s_rfc5987AttrBytes =
+            SearchValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
 
         internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
