@@ -2704,7 +2704,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 #endif
 		default:
-			printf ("unable to lowering following IR:");
+			printf ("unable to lower the following IR:");
 			mono_print_ins (ins);
 			NOT_IMPLEMENTED;
 			break;

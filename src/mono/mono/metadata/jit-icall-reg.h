@@ -340,7 +340,6 @@ MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
 MONO_JIT_ICALL (mono_marshal_lookup_pinvoke) \
 MONO_JIT_ICALL (mono_gsharedvt_constrained_call_fast) \
 MONO_JIT_ICALL (mono_dummy_runtime_init_callback) \
-MONO_JIT_ICALL (mono_riscv_throw_exception) \
 	\
 MONO_JIT_ICALL (count) \
 
