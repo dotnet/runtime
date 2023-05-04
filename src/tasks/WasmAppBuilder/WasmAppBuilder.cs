@@ -229,7 +229,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 config.Assets.Add(new RuntimeJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
             }
-            else if (IncludeThreadsWorker && name == "dotnet.worker.js")
+            else if (IncludeThreadsWorker && name == "dotnet.native.worker.js")
             {
                 config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }

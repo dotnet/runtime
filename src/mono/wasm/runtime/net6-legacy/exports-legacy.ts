@@ -26,7 +26,6 @@ export function export_mono_api(): MONOType {
         mono_wasm_load_icu_data,
         mono_wasm_runtime_ready,
         mono_wasm_load_data_archive,
-        mono_wasm_load_config: null as any,//TODO ZAMO
         mono_wasm_new_root_buffer,
         mono_wasm_new_root,
         mono_wasm_new_external_root,
