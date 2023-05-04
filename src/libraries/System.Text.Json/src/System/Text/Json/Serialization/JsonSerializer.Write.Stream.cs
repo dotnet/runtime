@@ -40,7 +40,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static Task SerializeAsync<TValue>(
             Stream utf8Json,
-            TValue value,
+            TValue? value,
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
@@ -71,7 +71,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
             Stream utf8Json,
-            TValue value,
+            TValue? value,
             JsonSerializerOptions? options = null)
         {
             if (utf8Json is null)
@@ -170,7 +170,7 @@ namespace System.Text.Json
         /// </exception>
         public static Task SerializeAsync<TValue>(
             Stream utf8Json,
-            TValue value,
+            TValue? value,
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
@@ -199,7 +199,7 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize<TValue>(
             Stream utf8Json,
-            TValue value,
+            TValue? value,
             JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (utf8Json is null)

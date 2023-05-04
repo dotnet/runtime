@@ -27,7 +27,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
             Utf8JsonWriter writer,
-            TValue value,
+            TValue? value,
             JsonSerializerOptions? options = null)
         {
             if (writer is null)

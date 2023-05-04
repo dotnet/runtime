@@ -23,7 +23,7 @@ namespace System.Text.Json
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static JsonElement SerializeToElement<TValue>(TValue value, JsonSerializerOptions? options = null)
+        public static JsonElement SerializeToElement<TValue>(TValue? value, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return WriteElement(value, jsonTypeInfo);
@@ -65,7 +65,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
-        public static JsonElement SerializeToElement<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static JsonElement SerializeToElement<TValue>(TValue? value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (jsonTypeInfo is null)
             {
@@ -129,7 +129,7 @@ namespace System.Text.Json
             return WriteElementAsObject(value, typeInfo);
         }
 
-        private static JsonElement WriteElement<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
+        private static JsonElement WriteElement<TValue>(in TValue? value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
             JsonSerializerOptions options = jsonTypeInfo.Options;
