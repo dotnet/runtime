@@ -502,7 +502,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             assert(isGeneralRegisterOrR0(reg));
             assert(imm >= -1048576 && imm < 1048576);
 
-            code != reg << 7;
+            code |= reg << 7;
             code |= ((imm >> 12) & 0xff) << 12;
             code |= ((imm >> 11) & 0x1) << 20;
             code |= ((imm >> 1) & 0x3ff) << 21;
@@ -3370,7 +3370,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x21:            // FCVT.D.S
-                    if (opcode4 == 1) // FCVT.D.S
+                    if (opcode3 == 0) // FCVT.D.S
                     {
                         printf("fcvt.d.s     %s, %s\n", fd, fs1);
                     }
