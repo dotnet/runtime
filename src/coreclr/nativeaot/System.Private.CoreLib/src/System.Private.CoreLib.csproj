@@ -236,6 +236,7 @@
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.cs" />
+    <Compile Include="System\Threading\ThreadPool.NativeAot.cs" />
     <Compile Include="System\Type.NativeAot.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Include="System\TypedReference.cs" />

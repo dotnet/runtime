@@ -23,7 +23,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(callback);
 
-            _overlapped_core = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
+            _overlappedCore = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
         }
 
         internal bool AddRef() => AddRefCore();
