@@ -1184,6 +1184,12 @@ public:
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
 
+    // True if ssaNum is a viable ssaNum for this local.
+    bool IsValidSsaNum(unsigned ssaNum) const
+    {
+        return lvPerSsaData.IsValidSsaNum(ssaNum);
+    }
+
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).

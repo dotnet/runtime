@@ -1958,6 +1958,11 @@ public:
         return OperIsLocal(OperGet());
     }
 
+    bool IsAnyLocal() const
+    {
+        return OperIsAnyLocal(OperGet());
+    }
+
     bool IsLclVarAddr() const;
 
     // Returns "true" iff 'this' is a GT_LCL_FLD or GT_STORE_LCL_FLD on which the type
