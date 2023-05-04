@@ -504,19 +504,18 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
     return false;
 }
 
-#ifdef TARGET_64BIT
 //------------------------------------------------------------------------
-// AreUpper32BitsZero: check if some previously emitted
-//     instruction set the upper 32 bits of reg to zero.
+// AreUpperBitsZero: check if some previously emitted
+//     instruction set the upper bits of reg to zero.
 //
 // Arguments:
 //    reg - register of interest
 //
 // Return Value:
-//    true if previous instruction zeroed reg's upper 32 bits.
+//    true if previous instruction zeroed reg's upper bits.
 //    false if it did not, or if we can't safely determine.
 //
-bool emitter::AreUpper32BitsZero(regNumber reg)
+bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -532,55 +531,69 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
-        if (emitIsInstrWritingToReg(id, reg))
+    emitPeepholeIterateLastInstrs(
+        [&](instrDesc* id)
         {
-            switch (id->idIns())
+            if (emitIsInstrWritingToReg(id, reg))
             {
-                // Conservative.
-                case INS_call:
-                    return PEEPHOLE_ABORT;
+                switch (id->idIns())
+                {
+                    // Conservative.
+                    case INS_call:
+                        return PEEPHOLE_ABORT;
 
-                // These instructions sign-extend.
-                case INS_cwde:
-                case INS_cdq:
-                case INS_movsx:
-                case INS_movsxd:
-                    return PEEPHOLE_ABORT;
+                    // These instructions sign-extend.
+                    case INS_cwde:
+                    case INS_cdq:
+                    case INS_movsx:
+#ifdef TARGET_64BIT
+                    case INS_movsxd:
+#endif // TARGET_64BIT
+                        return PEEPHOLE_ABORT;
 
-                // movzx always zeroes the upper 32 bits.
-                case INS_movzx:
-                    result = true;
-                    return PEEPHOLE_ABORT;
+                    case INS_movzx:
+                        // movzx always zeroes the upper 32 bits.
+                        if (size == EA_4BYTE)
+                        {
+                            result = true;
+                        }
+                        else if (size == EA_1BYTE || EA_2BYTE)
+                        {
+                            result = (id->idOpSize() <= size);
+                        }
+                        return PEEPHOLE_ABORT;
 
-                default:
-                    break;
+                    default:
+                        break;
+                }
+
+                // otherwise rely on operation size.
+                if (size == EA_4BYTE)
+                {
+                    result = (id->idOpSize() == EA_4BYTE);
+                }
+                return PEEPHOLE_ABORT;
             }
-
-            // otherwise rely on operation size.
-            result = (id->idOpSize() == EA_4BYTE);
-            return PEEPHOLE_ABORT;
-        }
-        else
-        {
-            return PEEPHOLE_CONTINUE;
-        }
-    });
+            else
+            {
+                return PEEPHOLE_CONTINUE;
+            }
+        });
 
     return result;
 }
 
 //------------------------------------------------------------------------
 // AreUpper32BitsSignExtended: check if some previously emitted
-//     instruction sign-extended the upper 32 bits.
+//     instruction sign-extended the upper bits.
 //
 // Arguments:
 //    reg - register of interest
 //
 // Return Value:
-//    true if previous instruction upper 32 bits are sign-extended.
+//    true if previous instruction upper bits are sign-extended.
 //    false if it did not, or if we can't safely determine.
-bool emitter::AreUpper32BitsSignExtended(regNumber reg)
+bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -596,24 +609,62 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 
     instrDesc* id = emitLastIns;
 
-    if (id->idReg1() != reg)
+#ifdef TARGET_64BIT
+    if (size == EA_4BYTE)
     {
-        return false;
-    }
 
-    // movsx always sign extends to 8 bytes. W-bit is set.
-    if (id->idIns() == INS_movsx)
-    {
-        return true;
-    }
+        if (id->idReg1() != reg)
+        {
+            return false;
+        }
 
-    // movsxd is always an 8 byte operation. W-bit is set.
-    if (id->idIns() == INS_movsxd)
-    {
-        return true;
+        // movsx always sign extends to 8 bytes. W-bit is set.
+        if (id->idIns() == INS_movsx)
+        {
+            return true;
+        }
+
+        // movsxd is always an 8 byte operation. W-bit is set.
+        if (id->idIns() == INS_movsxd)
+        {
+            return true;
+        }
     }
+#endif // TARGET_64BIT
 
     return false;
+}
+
+#ifdef TARGET_64BIT
+//------------------------------------------------------------------------
+// AreUpper32BitsZero: check if some previously emitted
+//     instruction set the upper 32 bits of reg to zero.
+//
+// Arguments:
+//    reg - register of interest
+//
+// Return Value:
+//    true if previous instruction zeroed reg's upper 32 bits.
+//    false if it did not, or if we can't safely determine.
+//
+bool emitter::AreUpper32BitsZero(regNumber reg)
+{
+    return AreUpperBitsZero(reg, EA_4BYTE);
+}
+
+//------------------------------------------------------------------------
+// AreUpper32BitsSignExtended: check if some previously emitted
+//     instruction sign-extended the upper 32 bits.
+//
+// Arguments:
+//    reg - register of interest
+//
+// Return Value:
+//    true if previous instruction upper 32 bits are sign-extended.
+//    false if it did not, or if we can't safely determine.
+bool emitter::AreUpper32BitsSignExtended(regNumber reg)
+{
+    return AreUpperBitsSignExtended(reg, EA_4BYTE);
 }
 #endif // TARGET_64BIT
 
@@ -6219,6 +6270,12 @@ bool emitter::IsRedundantMov(
     if (EA_IS_GCREF_OR_BYREF(size))
     {
         return false;
+    }
+
+    // Peephole optimization to eliminate redundant 'movzx' instructions.
+    if (emitComp->opts.OptimizationEnabled() && (dst == src) && (ins == INS_movzx) && AreUpperBitsZero(src, size))
+    {
+        return true;
     }
 
     bool hasSideEffect = HasSideEffect(ins, size);
