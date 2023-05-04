@@ -18,7 +18,7 @@
     <!-- We want to have WasmDebugLevel=0, but if DebuggerSupport=true then WasmApp.targets
          *will* override it. So, set this to "reset-to-zero" here, and reset the value later
          in targets. -->
-    <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">reset-to-zero</WasmDebugLevel>
+    <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(WasmDebugLevel)' == ''">reset-to-zero</WasmDebugLevel>
 
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
