@@ -119,6 +119,7 @@ namespace System.Reflection
             this.PositionImpl = -1; // since parameter positions are zero-based, return type pos is -1
             this.AttrsImpl = ParameterAttributes.Retval;
             this.marshalAs = marshalAs;
+            this.DefaultValueImpl = DBNull.Value;
         }
 
         // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases
@@ -202,11 +203,6 @@ namespace System.Reflection
 
         private object? GetDefaultValue(bool raw)
         {
-            if (IsRetval)
-            {
-                return DBNull.Value;
-            }
-
             // Prioritize metadata constant over custom attribute constant
             object? defaultValue = DefaultValueImpl;
             if (defaultValue != null && (defaultValue.GetType() == typeof(DBNull) || defaultValue.GetType() == typeof(Missing)))
