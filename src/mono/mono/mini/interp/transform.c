@@ -785,8 +785,16 @@ init_bb_stack_state (TransformData *td, InterpBasicBlock *bb)
 {
 	// FIXME If already initialized, then we need to generate mov to the registers in the state.
 	// Check if already initialized
-	if (bb->stack_height >= 0)
+	if (bb->stack_height >= 0) {
+		// Discard type information if we have type conflicts for stack contents
+		for (int i = 0; i < bb->stack_height; i++) {
+			if (bb->stack_state [i].klass != td->stack [i].klass) {
+				bb->stack_state [i].klass = NULL;
+				td->stack [i].klass = NULL;
+			}
+		}
 		return;
+	}
 
 	bb->stack_height = GPTRDIFF_TO_INT (td->sp - td->stack);
 	if (bb->stack_height > 0) {
