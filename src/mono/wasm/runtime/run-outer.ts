@@ -287,7 +287,7 @@ export class HostBuilder implements DotnetHostBuilder {
         deep_merge_config(monoConfig, {
             startupOptions
         });
-        return this.withConfigSrc("blazor.boot.json");
+        return this.withConfigSrc("_framework/blazor.boot.json");
     }
 
     async create(): Promise<RuntimeAPI> {

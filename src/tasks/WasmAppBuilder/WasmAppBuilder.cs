@@ -24,7 +24,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public bool UseWebcil { get; set; }
 
     // <summary>
-    // Extra json elements to add to blazor.boot.json
+    // Extra json elements to add to _framework/blazor.boot.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -374,7 +374,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
         }
-        string monoConfigPath = Path.Combine(AppDir, "blazor.boot.json"); // TODO: Unify with Wasm SDK
+
+        string monoConfigDir = Path.Combine(AppDir, "_framework");
+        if (!Directory.Exists(monoConfigDir))
+            Directory.CreateDirectory(monoConfigDir);
+
+        string monoConfigPath = Path.Combine(monoConfigDir, "blazor.boot.json"); // TODO: Unify with Wasm SDK
         Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
