@@ -199,49 +199,6 @@ namespace System.Threading
 
         private static void InitializeForThreadPoolThreadPortableCore() { }
 
-        [SupportedOSPlatform("windows")]
-        private static unsafe bool UnsafeQueueNativeOverlappedPortableCore(NativeOverlapped* overlapped)
-        {
-            if (overlapped == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
-            }
-
-            // OS doesn't signal handle, so do it here
-            overlapped->InternalLow = IntPtr.Zero;
-
-            PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
-            return true;
-        }
-
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
-        [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(IntPtr osHandle)
-        {
-            PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
-            return true;
-        }
-
-        [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(SafeHandle osHandle)
-        {
-            ArgumentNullException.ThrowIfNull(osHandle);
-
-            bool mustReleaseSafeHandle = false;
-            try
-            {
-                osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
-
-                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
-                return true;
-            }
-            finally
-            {
-                if (mustReleaseSafeHandle)
-                    osHandle.DangerousRelease();
-            }
-        }
-
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,

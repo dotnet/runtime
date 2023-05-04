@@ -1372,10 +1372,6 @@ namespace System.Threading
             }
         };
 
-#if NATIVEAOT
-        private const bool IsWorkerTrackingEnabledInConfig = false;
-#endif
-
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_THREADS
