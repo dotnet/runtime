@@ -14,7 +14,7 @@ namespace Microsoft.Interop
             /// <summary>
             /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext. Does not guarantee the ordering of the output.
             /// </summary>
-            public static Dictionary<string, ComInterfaceContext>.ValueCollection GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
+            public static IEnumerable<ComInterfaceContext> GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
             {
                 Dictionary<string, ComInterfaceInfo> symbolToInterfaceInfoMap = new();
                 foreach (var iface in data)
@@ -25,9 +25,8 @@ namespace Microsoft.Interop
 
                 foreach (var iface in data)
                 {
-                    AddContext(iface);
+                    yield return AddContext(iface);
                 }
-                return symbolToContextMap.Values;
 
                 ComInterfaceContext AddContext(ComInterfaceInfo iface)
                 {

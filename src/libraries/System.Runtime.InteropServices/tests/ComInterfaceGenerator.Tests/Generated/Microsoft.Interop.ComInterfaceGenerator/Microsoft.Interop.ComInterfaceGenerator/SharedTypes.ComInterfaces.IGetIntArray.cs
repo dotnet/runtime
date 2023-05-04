@@ -68,11 +68,6 @@ file unsafe partial interface InterfaceImplementation
         {
             __retVal = System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<int>.ConvertToUnmanaged(__exception);
         }
-        finally
-        {
-            // Cleanup - Perform required cleanup.
-            global::System.Runtime.InteropServices.Marshalling.ArrayMarshaller<int, int>.Free(__invokeRetValUnmanaged);
-        }
 
         return __retVal;
     }

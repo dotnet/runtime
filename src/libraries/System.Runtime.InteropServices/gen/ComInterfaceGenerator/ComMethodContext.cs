@@ -50,20 +50,21 @@ namespace Microsoft.Interop
                 // {
                 //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
                 // }
+                // TODO: Copy full name of parameter types and attributes / attribute arguments for parameters
                 return MethodInfo.Syntax
                     .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
-                    .WithBody(
-                    Block(
-                        ReturnStatement(
+                    .WithExpressionBody(
+                        ArrowExpressionClause(
                             InvocationExpression(
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
-                                    CastExpression(DeclaringInterface.Info.Type.Syntax, IdentifierName("this")), // Token(SyntaxKind.ThisKeyword))),
+                                    ParenthesizedExpression(
+                                        CastExpression(DeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                     IdentifierName(MethodInfo.MethodName)),
                                 ArgumentList(
                                     // TODO: RefKind keywords
                                     SeparatedList(MethodInfo.Parameters.Select(p =>
-                                    Argument(IdentifierName(p.Name)))))))));
+                                    Argument(IdentifierName(p.Name))))))));
             }
         }
     }

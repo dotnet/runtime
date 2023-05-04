@@ -167,7 +167,7 @@ namespace Microsoft.Interop
                 .Select((data, ct) =>
                 {
                     var context = data.Interface.Info;
-                    var methods = data.ShadowingMethods.Select(m => (MemberDeclarationSyntax)m.GenerateShadow());
+                    var methods = data.InheritedMethods.Select(m => (MemberDeclarationSyntax)m.GenerateShadow());
                     var asdf = TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
                         .WithModifiers(context.ContainingSyntax.Modifiers)
                         .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
@@ -272,7 +272,7 @@ namespace Microsoft.Interop
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_iUnknownDerivedAttributeTemplate))));
 
         // Todo: extract info needed from the IMethodSymbol into MethodInfo and only pass a MethodInfo here
-        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, CancellationToken ct)
+        private static IncrementalMethodStubGenerationContext CalculateStubInformation(MethodDeclarationSyntax syntax, IMethodSymbol symbol, int index, StubEnvironment environment, ManagedTypeInfo typeKeyOwner, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             INamedTypeSymbol? lcidConversionAttrType = environment.Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute);
@@ -365,8 +365,6 @@ namespace Microsoft.Interop
 
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VtableIndexStubGenerator.GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
 
-            var typeKeyOwner = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
-
             var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, MarshalDirection.Bidirectional, true, ExceptionMarshalling.Com);
 
             return new IncrementalMethodStubGenerationContext(
@@ -392,15 +390,31 @@ namespace Microsoft.Interop
         private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken _)
         {
             var definingType = interfaceGroup.Interface.Info.Type;
+            var shadowImplementations = interfaceGroup.ShadowingMethods.Select(m => (m, m.ManagedToUnmanagedStub))
+                .Where(p => p.ManagedToUnmanagedStub is GeneratedStubCodeContext)
+                .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
+                .WithExplicitInterfaceSpecifier(
+                    ExplicitInterfaceSpecifier(ParseName(definingType.FullTypeName))));
             return ImplementationInterfaceTemplate
                 .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
-                .WithMembers(List<MemberDeclarationSyntax>(interfaceGroup.Methods.Select(m => m.ManagedToUnmanagedStub).OfType<GeneratedStubCodeContext>().Select(ctx => ctx.Stub.Node)))
+                .WithMembers(
+                    List<MemberDeclarationSyntax>(
+                        interfaceGroup.Methods
+                        .Select(m => m.ManagedToUnmanagedStub)
+                        .OfType<GeneratedStubCodeContext>()
+                        .Select(ctx => ctx.Stub.Node)
+                        .Concat(shadowImplementations)))
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
         private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)
         {
             return ImplementationInterfaceTemplate
-                .WithMembers(List<MemberDeclarationSyntax>(comInterfaceAndMethods.Methods.Select(m => m.NativeToManagedStub).OfType<GeneratedStubCodeContext>().Select(context => context.Stub.Node)));
+                .WithMembers(
+                    List<MemberDeclarationSyntax>(
+                        comInterfaceAndMethods.Methods
+                            .Select(m => m.NativeToManagedStub)
+                            .OfType<GeneratedStubCodeContext>()
+                            .Select(context => context.Stub.Node) ));
         }
 
         private static readonly TypeSyntax VoidStarStarSyntax = PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))));
@@ -566,7 +580,7 @@ namespace Microsoft.Interop
                                                 ParenthesizedExpression(
                                                     BinaryExpression(SyntaxKind.MultiplyExpression,
                                                         SizeOfExpression(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword)))),
-                                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.ShadowingMethods.Count() + 3))))))
+                                                        LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(interfaceMethods.InheritedMethods.Count() + 3))))))
                                         })))));
             }
 

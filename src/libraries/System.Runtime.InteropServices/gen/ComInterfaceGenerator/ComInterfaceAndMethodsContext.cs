@@ -14,7 +14,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Represents an interface and all of the methods that need to be generated for it (methods declared on the interface and methods inherited from base interfaces).
         /// </summary>
-        private sealed record ComInterfaceAndMethodsContext(ComInterfaceContext Interface, SequenceEqualImmutableArray<ComMethodContext> Methods)
+        private sealed record ComInterfaceAndMethodsContext(ComInterfaceContext Interface, SequenceEqualImmutableArray<ComMethodContext> Methods, SequenceEqualImmutableArray<ComMethodContext> ShadowingMethods)
         {
             /// <summary>
             /// COM methods that are declared on the attributed interface declaration.
@@ -24,23 +24,23 @@ namespace Microsoft.Interop
             /// <summary>
             /// COM methods that are declared on an interface the interface inherits from.
             /// </summary>
-            public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.DeclaringInterface != Interface);
+            public IEnumerable<ComMethodContext> InheritedMethods => Methods.Where(m => m.DeclaringInterface != Interface);
 
-            internal static ComInterfaceAndMethodsContext From((ComInterfaceContext, SequenceEqualImmutableArray<ComMethodContext>) data, CancellationToken _)
-                => new ComInterfaceAndMethodsContext(data.Item1, data.Item2);
+            //internal static ComInterfaceAndMethodsContext From((ComInterfaceContext, SequenceEqualImmutableArray<ComMethodContext>) data, CancellationToken _)
+            //    => new ComInterfaceAndMethodsContext(data.Item1, data.Item2);
 
             public static IEnumerable<ComInterfaceAndMethodsContext> CalculateAllMethods(ValueEqualityImmutableDictionary<ComInterfaceContext, SequenceEqualImmutableArray<ComMethodInfo>> ifaceToDeclaredMethodsMap, StubEnvironment environment, CancellationToken ct)
             {
-                Dictionary<ComInterfaceContext, ImmutableArray<ComMethodContext>> allMethodsCache = new();
+                Dictionary<ComInterfaceContext, (ImmutableArray<ComMethodContext> Methods, ImmutableArray<ComMethodContext> ShadowingMethods)> allMethodsCache = new();
 
                 foreach (var kvp in ifaceToDeclaredMethodsMap)
                 {
                     AddMethods(kvp.Key, kvp.Value);
                 }
 
-                return allMethodsCache.Select(kvp => new ComInterfaceAndMethodsContext(kvp.Key, kvp.Value.ToSequenceEqual()));
+                return allMethodsCache.Select(kvp => new ComInterfaceAndMethodsContext(kvp.Key, kvp.Value.Methods.ToSequenceEqual(), kvp.Value.ShadowingMethods.ToSequenceEqualImmutableArray()));
 
-                ImmutableArray<ComMethodContext> AddMethods(ComInterfaceContext iface, IEnumerable<ComMethodInfo> declaredMethods)
+                (ImmutableArray<ComMethodContext> Methods, ImmutableArray<ComMethodContext> ShadowingMethods) AddMethods(ComInterfaceContext iface, IEnumerable<ComMethodInfo> declaredMethods)
                 {
                     if (allMethodsCache.TryGetValue(iface, out var cachedValue))
                     {
@@ -53,23 +53,33 @@ namespace Microsoft.Interop
                     if (iface.Base is not null)
                     {
                         var baseComIface = iface.Base;
-                        if (!allMethodsCache.TryGetValue(baseComIface, out var baseMethods))
+                        ImmutableArray<ComMethodContext> baseMethods;
+                        if (!allMethodsCache.TryGetValue(baseComIface, out var pair))
                         {
-                            baseMethods = AddMethods(baseComIface, ifaceToDeclaredMethodsMap[baseComIface]);
+                            baseMethods = AddMethods(baseComIface, ifaceToDeclaredMethodsMap[baseComIface]).Methods;
+                        }
+                        else
+                        {
+                            baseMethods = pair.Methods;
                         }
                         methods.AddRange(baseMethods);
-                        startingIndex += baseMethods.Length;
                     }
+                    var shadowingMethods = methods.Select(method =>
+                    {
+                        var info = method.MethodInfo;
+                        var ctx = CalculateStubInformation(info.Syntax, info.Symbol, startingIndex, environment, iface.Info.Type, ct);
+                        return new ComMethodContext(iface, info, startingIndex++, ctx);
+                    }).ToImmutableArray();
                     // Then we append the declared methods in vtable order
                     foreach (var method in declaredMethods)
                     {
-                        var ctx = CalculateStubInformation(method.Syntax, method.Symbol, startingIndex, environment, ct);
+                        var ctx = CalculateStubInformation(method.Syntax, method.Symbol, startingIndex, environment, iface.Info.Type, ct);
                         methods.Add(new ComMethodContext(iface, method, startingIndex++, ctx));
                     }
                     // Cache so we don't recalculate if many interfaces inherit from the same one
-                    var immutableMethods = methods.ToImmutableArray();
-                    allMethodsCache[iface] = immutableMethods;
-                    return immutableMethods;
+                    var finalPair = (methods.ToImmutableArray(), shadowingMethods);
+                    allMethodsCache[iface] = finalPair;
+                    return finalPair;
                 }
             }
         }

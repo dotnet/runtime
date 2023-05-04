@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Remoting;
 using Xunit;
 using Xunit.Sdk;
 
@@ -21,7 +22,7 @@ internal unsafe partial class NativeExportsNE
 }
 
 
-public class GeneratedComInterfaceTests
+public partial class GeneratedComInterfaceTests
 {
     [Fact]
     public unsafe void CallNativeComObjectThroughGeneratedStub()
@@ -53,5 +54,60 @@ public class GeneratedComInterfaceTests
         var actual = new ReadOnlySpan<nint>(derivedInterfaceDetails.ManagedVirtualMethodTable, numPointersToCompare);
 
         Assert.True(expected.SequenceEqual(actual));
+    }
+
+    [Fact]
+    public unsafe void CallBaseInterfaceMethod_EnsureQiCalledOnce()
+    {
+        var cw = new SingleQIComWrapper();
+        var asdf = new DerivedImpl();
+        var nativeObj = cw.GetOrCreateComInterfaceForObject(asdf, CreateComInterfaceFlags.None);
+        var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+        IDerivedComInterface iface = (IDerivedComInterface)obj;
+
+        Assert.Equal(3, iface.GetData());
+        iface.SetData(5);
+        Assert.Equal(5, iface.GetData());
+
+        Assert.Equal("myName", iface.GetName());
+        // https://github.com/dotnet/runtime/issues/85795
+        //iface.SetName("updated");
+        //Assert.Equal("updated", iface.GetName());
+
+        var qiCallCountObj = obj.GetType().GetRuntimeProperties().Where(p => p.Name == "IUnknownStrategy").Single().GetValue(obj);
+        var countQi = (SingleQIComWrapper.CountQI)qiCallCountObj;
+        Assert.Equal(1, countQi.QiCallCount);
+    }
+
+    [GeneratedComClass]
+    partial class DerivedImpl : IDerivedComInterface
+    {
+        int data = 3;
+        string myName = "myName";
+        public int GetData() => data;
+        [return: MarshalUsing(typeof(Utf16StringMarshaller))]
+        public string GetName() => myName;
+        public void SetData(int n) => data = n;
+        public void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name) => myName = name;
+    }
+
+    class SingleQIComWrapper : StrategyBasedComWrappers
+    {
+        public class CountQI : IIUnknownStrategy
+        {
+            public CountQI(IIUnknownStrategy iUnknown) => _iUnknownStrategy = iUnknown;
+            private IIUnknownStrategy _iUnknownStrategy;
+            public int QiCallCount = 0;
+            public unsafe void* CreateInstancePointer(void* unknown) => _iUnknownStrategy.CreateInstancePointer(unknown);
+            public unsafe int QueryInterface(void* instancePtr, in Guid iid, out void* ppObj)
+            {
+                QiCallCount++;
+                return _iUnknownStrategy.QueryInterface(instancePtr, in iid, out ppObj);
+            }
+            public unsafe int Release(void* instancePtr) => _iUnknownStrategy.Release(instancePtr);
+        }
+
+        protected override IIUnknownStrategy GetOrCreateIUnknownStrategy()
+            => new CountQI(base.GetOrCreateIUnknownStrategy());
     }
 }

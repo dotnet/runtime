@@ -81,6 +81,36 @@ file unsafe partial interface InterfaceImplementation : global::ComInterfaceGene
 
         return __retVal;
     }
+
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Interop.ComInterfaceGenerator", "42.42.42.42")]
+    [System.Runtime.CompilerServices.SkipLocalsInitAttribute]
+    int global::ComInterfaceGenerator.Tests.IDerivedComInterface.GetData()
+    {
+        var(__this, __vtable_native) = ((System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(global::ComInterfaceGenerator.Tests.IDerivedComInterface));
+        int __retVal;
+        int __invokeRetVal;
+        {
+            __invokeRetVal = ((delegate* unmanaged<void*, int*, int> )__vtable_native[3])(__this, &__retVal);
+        }
+
+        // Unmarshal - Convert native data to managed data.
+        System.Runtime.InteropServices.Marshal.ThrowExceptionForHR(__invokeRetVal);
+        return __retVal;
+    }
+
+    [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Interop.ComInterfaceGenerator", "42.42.42.42")]
+    [System.Runtime.CompilerServices.SkipLocalsInitAttribute]
+    void global::ComInterfaceGenerator.Tests.IDerivedComInterface.SetData(int n)
+    {
+        var(__this, __vtable_native) = ((System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(global::ComInterfaceGenerator.Tests.IDerivedComInterface));
+        int __invokeRetVal;
+        {
+            __invokeRetVal = ((delegate* unmanaged<void*, int, int> )__vtable_native[4])(__this, n);
+        }
+
+        // Unmarshal - Convert native data to managed data.
+        System.Runtime.InteropServices.Marshal.ThrowExceptionForHR(__invokeRetVal);
+    }
 }
 
 file unsafe partial interface InterfaceImplementation
@@ -176,11 +206,6 @@ file unsafe partial interface InterfaceImplementation
         {
             __retVal = System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<int>.ConvertToUnmanaged(__exception);
         }
-        finally
-        {
-            // Cleanup - Perform required cleanup.
-            global::System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller.Free(__invokeRetValUnmanaged);
-        }
 
         return __retVal;
     }
@@ -216,13 +241,7 @@ namespace ComInterfaceGenerator.Tests
 {
     public partial interface IDerivedComInterface
     {
-        new int GetData()
-        {
-            return (global::ComInterfaceGenerator.Tests.IComInterface1)this.GetData();
-        };
-        new void SetData(int n)
-        {
-            return (global::ComInterfaceGenerator.Tests.IComInterface1)this.SetData(n);
-        };
+        new int GetData() => ((global::ComInterfaceGenerator.Tests.IComInterface1)this).GetData();
+        new void SetData(int n) => ((global::ComInterfaceGenerator.Tests.IComInterface1)this).SetData(n);
     }
 }
