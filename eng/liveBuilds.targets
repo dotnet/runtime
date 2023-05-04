@@ -233,7 +233,7 @@
     <ItemGroup Label="Wasi" Condition="'$(TargetOS)' == 'wasi'">
       <LibrariesRuntimeFiles
                              Include="
-        $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
 

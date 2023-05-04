@@ -271,13 +271,13 @@ public class ComputeWasmPublishAssets : Task
         static bool IsDotNetJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal) && !fileName.Contains("worker");
+            return fileName.StartsWith("dotnet.native.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal) && !fileName.Contains("worker");
         }
 
         static bool IsDotNetWorkerJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
+            return fileName.StartsWith("dotnet.native.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
         }
 
         static bool IsDotNetWasm(string key) => string.Equals("dotnet.native.wasm", Path.GetFileName(key), StringComparison.Ordinal);
