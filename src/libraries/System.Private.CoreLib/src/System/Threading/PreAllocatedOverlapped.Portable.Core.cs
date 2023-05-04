@@ -9,7 +9,7 @@ namespace System.Threading
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly ThreadPoolBoundHandleOverlapped? _overlapped_portable_core;
+        internal readonly ThreadPoolBoundHandleOverlapped? _overlappedPortableCore;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying
@@ -70,17 +70,17 @@ namespace System.Threading
 
         private unsafe void IDeferredDisposableOnFinalReleasePortableCore(bool disposed)
         {
-            if (_overlapped_portable_core != null) // protect against ctor throwing exception and leaving field uninitialized
+            if (_overlappedPortableCore != null) // protect against ctor throwing exception and leaving field uninitialized
             {
                 if (disposed)
                 {
-                    Overlapped.Free(_overlapped_portable_core._nativeOverlapped);
+                    Overlapped.Free(_overlappedPortableCore._nativeOverlapped);
                 }
                 else
                 {
-                    _overlapped_portable_core._boundHandle = null;
-                    _overlapped_portable_core._completed = false;
-                    *_overlapped_portable_core._nativeOverlapped = default;
+                    _overlappedPortableCore._boundHandle = null;
+                    _overlappedPortableCore._completed = false;
+                    *_overlappedPortableCore._nativeOverlapped = default;
                 }
             }
         }

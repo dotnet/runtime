@@ -37,7 +37,6 @@ namespace System.Threading
         {
             _lock = new Lock();
 
-            // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
             waitHandle.DangerousAddRef();
             _waitHandle = waitHandle;
 

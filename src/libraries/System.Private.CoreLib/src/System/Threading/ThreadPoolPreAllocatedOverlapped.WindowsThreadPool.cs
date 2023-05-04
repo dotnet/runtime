@@ -7,7 +7,7 @@ namespace System.Threading
 {
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped_core;
+        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlappedCore;
 
         private static PreAllocatedOverlapped UnsafeCreateCore(IOCompletionCallback callback, object? state, object? pinData) =>
             new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
@@ -22,7 +22,7 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        internal unsafe bool IsUserObject(byte[]? buffer) => _overlapped_core->IsUserObject(buffer);
+        internal unsafe bool IsUserObject(byte[]? buffer) => _overlappedCore->IsUserObject(buffer);
 
         private void DisposeCore()
         {
@@ -32,12 +32,12 @@ namespace System.Threading
 
         private unsafe void IDeferredDisposableOnFinalReleaseCore(bool disposed)
         {
-            if (_overlapped_core != null)
+            if (_overlappedCore != null)
             {
                 if (disposed)
-                    Win32ThreadPoolNativeOverlapped.Free(_overlapped_core);
+                    Win32ThreadPoolNativeOverlapped.Free(_overlappedCore);
                 else
-                    *Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(_overlapped_core) = default(NativeOverlapped);
+                    *Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(_overlappedCore) = default(NativeOverlapped);
             }
         }
     }

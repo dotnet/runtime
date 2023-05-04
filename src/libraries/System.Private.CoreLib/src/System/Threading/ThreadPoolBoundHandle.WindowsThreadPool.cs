@@ -76,7 +76,7 @@ namespace System.Threading
                 addedRefToThis = AddRef();
                 addedRefToPreAllocated = preAllocated.AddRef();
 
-                Win32ThreadPoolNativeOverlapped.OverlappedData data = preAllocated._overlapped_core->Data;
+                Win32ThreadPoolNativeOverlapped.OverlappedData data = preAllocated._overlappedCore->Data;
                 if (data._boundHandle != null)
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
@@ -84,7 +84,7 @@ namespace System.Threading
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
-                return Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlapped_core);
+                return Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlappedCore);
             }
             catch
             {
