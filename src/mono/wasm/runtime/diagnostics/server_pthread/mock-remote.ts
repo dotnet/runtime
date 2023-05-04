@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { runtimeHelpers } from "../../globals";
+import { loaderHelpers } from "../../globals";
 import type { Mock } from "../mock";
 import { mock } from "../mock";
 
@@ -12,7 +12,7 @@ export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
         const scriptURL = mockURL.substring(mockPrefix.length);
         return import(scriptURL).then((mockModule) => {
             const script = mockModule.default;
-            return mock(script, { trace: runtimeHelpers.diagnosticTracing });
+            return mock(script, { trace: loaderHelpers.diagnosticTracing });
         });
     } else {
         return Promise.resolve(undefined as unknown as Mock);

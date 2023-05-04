@@ -235,7 +235,7 @@ public class ComputeWasmPublishAssets : Task
 
             if (isDotNetWasm)
             {
-                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == "dotnet.wasm");
+                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == "dotnet.native.wasm");
                 ITaskItem newDotNetWasm = null;
                 if (aotDotNetWasm != null)
                 {
@@ -252,7 +252,7 @@ public class ComputeWasmPublishAssets : Task
 
                 ApplyPublishProperties(newDotNetWasm);
                 nativeStaticWebAssets.Add(newDotNetWasm);
-                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.wasm", out var resolved))
+                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.native.wasm", out var resolved))
                 {
                     filesToRemove.Add(resolved);
                 }
@@ -280,7 +280,7 @@ public class ComputeWasmPublishAssets : Task
             return fileName.StartsWith("dotnet.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
         }
 
-        static bool IsDotNetWasm(string key) => string.Equals("dotnet.wasm", Path.GetFileName(key), StringComparison.Ordinal);
+        static bool IsDotNetWasm(string key) => string.Equals("dotnet.native.wasm", Path.GetFileName(key), StringComparison.Ordinal);
     }
 
     private List<ITaskItem> ProcessSymbolAssets(

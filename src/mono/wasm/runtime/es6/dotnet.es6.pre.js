@@ -1,1 +1,1 @@
-createDotnetRuntime = Module = unifyModuleConfig(Module, createDotnetRuntime);
+createDotnetRuntime = Module = createDotnetRuntime(Module);

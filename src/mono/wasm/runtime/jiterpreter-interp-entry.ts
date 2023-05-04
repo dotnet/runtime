@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod, MonoType } from "./types";
+import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./globals";
 import {

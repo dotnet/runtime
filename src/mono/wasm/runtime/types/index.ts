@@ -1,4 +1,7 @@
-import type { EmscriptenModule, NativePointer } from "./types/emscripten";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import type { EmscriptenModule, NativePointer } from "./emscripten";
 
 export interface DotnetHostBuilder {
     withConfig(config: MonoConfig): DotnetHostBuilder
@@ -134,6 +137,9 @@ export type AssetBehaviours =
     | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
     | "dotnetwasm" // the binary of the dotnet runtime
     | "js-module-threads" // the javascript module for threads
+    | "js-module-runtime" // the javascript module for threads
+    | "js-module-dotnet" // the javascript module for threads
+    | "js-module-native" // the javascript module for threads
     | "symbols" // the javascript module for threads
 
 export type GlobalizationMode =

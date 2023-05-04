@@ -4,10 +4,10 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../globals";
+import { Module, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_WEB, loaderHelpers } from "../../globals";
 import { makeChannelCreatedMonoMessage, makePreloadMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
-import { is_nullish, MonoConfigInternal, mono_assert } from "../../types";
+import { is_nullish, MonoConfigInternal } from "../../types/internal";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -16,9 +16,8 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { setup_proxy_console } from "../../logging";
-import { afterConfigLoaded, preRunWorker } from "../../startup";
-import { MonoConfig } from "../../types-api";
+import { preRunWorker } from "../../startup";
+import { MonoConfig } from "../../types";
 
 // re-export some of the events types
 export {
@@ -100,13 +99,13 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     }
 
     console.debug("MONO_WASM: mono config received");
-    config = runtimeHelpers.config = Module.config = Object.assign(Module.config || {} as any, config);
+    config = loaderHelpers.config = Module.config = Object.assign(Module.config || {} as any, config);
     workerMonoConfigReceived = true;
 
-    afterConfigLoaded.promise_control.resolve(config);
+    loaderHelpers.afterConfigLoaded.promise_control.resolve(config);
 
     if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
-        setup_proxy_console("pthread-worker", console, self.location.href);
+        loaderHelpers.setup_proxy_console("pthread-worker", console, self.location.href);
     }
 }
 
@@ -115,7 +114,7 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
     const self = pthread_self;
     mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
-    if (runtimeHelpers.diagnosticTracing)
+    if (loaderHelpers.diagnosticTracing)
         console.debug("MONO_WASM: attaching pthread to runtime 0x" + pthread_id.toString(16));
     preRunWorker();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
@@ -129,7 +128,7 @@ export function afterThreadInitTLS(): void {
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-        if (runtimeHelpers.diagnosticTracing)
+        if (loaderHelpers.diagnosticTracing)
             console.debug("MONO_WASM: after thread init, pthread ptr 0x" + pthread_ptr.toString(16));
         const self = setupChannelToMainThread(pthread_ptr);
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, self));

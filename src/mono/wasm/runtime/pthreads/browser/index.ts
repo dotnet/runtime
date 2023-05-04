@@ -4,11 +4,10 @@
 import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage } from "../shared";
 import { pthread_ptr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
-import { PromiseController, createPromiseController } from "../../promise-controller";
-import { mono_assert } from "../../types";
 import Internals from "../shared/emscripten-internals";
-import { runtimeHelpers } from "../../globals";
-import { MonoConfig } from "../../types-api";
+import { createPromiseController, loaderHelpers } from "../../globals";
+import { PromiseController } from "../../types/internal";
+import { MonoConfig } from "../../types";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -91,7 +90,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     const data = ev.data;
     if (isMonoWorkerMessagePreload(data)) {
         const port = data[monoSymbol].port;
-        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
+        port.postMessage(makeMonoThreadMessageApplyMonoConfig(loaderHelpers.config));
     }
     else if (isMonoWorkerMessageChannelCreated(data)) {
         console.debug("MONO_WASM: received the channel created message", data, worker);

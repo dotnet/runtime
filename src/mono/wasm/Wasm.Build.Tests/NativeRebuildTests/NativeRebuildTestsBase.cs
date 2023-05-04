@@ -164,8 +164,10 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
                 Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
 
-                Path.Combine(paths.BundleDir, "dotnet.wasm"),
-                Path.Combine(paths.BundleDir, "dotnet.js")
+                Path.Combine(paths.BundleDir, "dotnet.native.wasm"),
+                Path.Combine(paths.BundleDir, "dotnet.js"),
+                Path.Combine(paths.BundleDir, "dotnet.runtime.js"),
+                Path.Combine(paths.BundleDir, "dotnet.native.js"),
             };
 
             if (buildArgs.AOT)

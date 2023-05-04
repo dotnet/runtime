@@ -31,7 +31,7 @@
       $(TargetFileName)
       "
       Outputs="
-      bin/$(Configuration)/AppBundle/dotnet.wasm;
+      bin/$(Configuration)/AppBundle/dotnet.native.wasm;
       bin/$(Configuration)/AppBundle/$(_WasmMainJSFileName);
       ">
     <PropertyGroup>

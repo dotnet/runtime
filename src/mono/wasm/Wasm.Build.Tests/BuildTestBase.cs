@@ -621,7 +621,7 @@ namespace Wasm.Build.Tests
                 _ => throw new ArgumentOutOfRangeException(nameof(type))
             };
 
-            AssertSameFile(Path.Combine(srcDir, "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
+            AssertSameFile(Path.Combine(srcDir, "dotnet.native.wasm"), Path.Combine(binFrameworkDir, "dotnet.native.wasm"), label);
 
             // find dotnet*js
             string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir)
@@ -630,13 +630,13 @@ namespace Wasm.Build.Tests
                                     .SingleOrDefault();
 
             Assert.True(!string.IsNullOrEmpty(dotnetJsPath), $"[{label}] Expected to find dotnet*js in {binFrameworkDir}");
-            AssertSameFile(Path.Combine(srcDir, "dotnet.js"), dotnetJsPath!, label);
+            AssertSameFile(Path.Combine(srcDir, "dotnet.native.js"), dotnetJsPath!, label);
 
             if (type != NativeFilesType.FromRuntimePack)
             {
                 // check that the files are *not* from runtime pack
-                AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.wasm"), Path.Combine(binFrameworkDir, "dotnet.wasm"), label);
-                AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js"), dotnetJsPath!, label);
+                AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"), Path.Combine(binFrameworkDir, "dotnet.native.wasm"), label);
+                AssertNotSameFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"), dotnetJsPath!, label);
             }
         }
 
@@ -667,9 +667,11 @@ namespace Wasm.Build.Tests
             var filesToExist = new List<string>()
             {
                 mainJS,
-                "dotnet.wasm",
+                "dotnet.native.wasm",
                 "mono-config.json",
-                "dotnet.js"
+                "dotnet.js",
+                "dotnet.native.js",
+                "dotnet.runtime.js"
             };
 
             if (isBrowserProject)
@@ -751,20 +753,20 @@ namespace Wasm.Build.Tests
 
         protected static void AssertDotNetWasmJs(string bundleDir, bool fromRuntimePack, string targetFramework)
         {
-            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.wasm"),
-                       Path.Combine(bundleDir, "dotnet.wasm"),
-                       "Expected dotnet.wasm to be same as the runtime pack",
+            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
+                       Path.Combine(bundleDir, "dotnet.native.wasm"),
+                       "Expected dotnet.native.wasm to be same as the runtime pack",
                        same: fromRuntimePack);
 
-            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js"),
-                       Path.Combine(bundleDir, "dotnet.js"),
-                       "Expected dotnet.js to be same as the runtime pack",
+            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
+                       Path.Combine(bundleDir, "dotnet.native.js"),
+                       "Expected dotnet.native.js to be same as the runtime pack",
                        same: fromRuntimePack);
         }
 
         protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
-            => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js.symbols"),
-                            Path.Combine(bundleDir, "dotnet.js.symbols"),
+            => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
+                            Path.Combine(bundleDir, "dotnet.native.js.symbols"),
                             same: fromRuntimePack);
 
         protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
@@ -820,17 +822,17 @@ namespace Wasm.Build.Tests
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
             AssertBlazorBootJson(config, isPublish, targetFramework, binFrameworkDir: binFrameworkDir);
-            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.wasm"),
-                       Path.Combine(binFrameworkDir, "dotnet.wasm"),
-                       "Expected dotnet.wasm to be same as the runtime pack",
+            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.wasm"),
+                       Path.Combine(binFrameworkDir, "dotnet.native.wasm"),
+                       "Expected dotnet.native.wasm to be same as the runtime pack",
                        same: dotnetWasmFromRuntimePack);
 
             string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir, "dotnet.*.js").FirstOrDefault();
             Assert.True(dotnetJsPath != null, $"Could not find blazor's dotnet*js in {binFrameworkDir}");
 
-            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.js"),
+            AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js"),
                         dotnetJsPath!,
-                        "Expected dotnet.js to be same as the runtime pack",
+                        "Expected dotnet.native.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
         }
 
@@ -847,7 +849,7 @@ namespace Wasm.Build.Tests
             Assert.NotNull(runtimeObj);
 
             string msgPrefix=$"[{( isPublish ? "publish" : "build" )}]";
-            Assert.True(runtimeObj!.Where(kvp => kvp.Key == "dotnet.wasm").Any(), $"{msgPrefix} Could not find dotnet.wasm entry in blazor.boot.json");
+            Assert.True(runtimeObj!.Where(kvp => kvp.Key == "dotnet.native.wasm").Any(), $"{msgPrefix} Could not find dotnet.native.wasm entry in blazor.boot.json");
             Assert.True(runtimeObj!.Where(kvp => kvp.Key.StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
                                                     kvp.Key.EndsWith(".js", StringComparison.OrdinalIgnoreCase)).Any(),
                                             $"{msgPrefix} Could not find dotnet.*js in {bootJson}");
