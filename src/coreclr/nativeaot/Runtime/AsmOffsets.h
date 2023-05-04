@@ -58,8 +58,6 @@ ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
 ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
-ASM_OFFSET(   50,    90, Thread, m_pThreadLocalModuleStatics)
-
 ASM_SIZEOF(   14,    20, EHEnum)
 
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)

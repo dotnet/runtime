@@ -1184,6 +1184,12 @@ public:
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
 
+    // True if ssaNum is a viable ssaNum for this local.
+    bool IsValidSsaNum(unsigned ssaNum) const
+    {
+        return lvPerSsaData.IsValidSsaNum(ssaNum);
+    }
+
     // Returns the address of the per-Ssa data for the given ssaNum (which is required
     // not to be the SsaConfig::RESERVED_SSA_NUM, which indicates that the variable is
     // not an SSA variable).
@@ -2804,12 +2810,12 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
-    GenTreeField* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
+                                         CORINFO_FIELD_HANDLE fldHnd,
+                                         GenTree*             obj    = nullptr,
+                                         DWORD                offset = 0);
 
-    GenTreeField* gtNewFieldAddrNode(var_types            type,
-                                     CORINFO_FIELD_HANDLE fldHnd,
-                                     GenTree*             obj    = nullptr,
-                                     DWORD                offset = 0);
+    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr);
 
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
@@ -5926,7 +5932,7 @@ public:
     void fgAssignSetVarDef(GenTree* tree);
 
 private:
-    GenTree* fgMorphField(GenTree* tree, MorphAddrContext* mac);
+    GenTree* fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac);
     GenTree* fgMorphExpandTlsFieldAddr(GenTree* tree);
     bool fgCanFastTailCall(GenTreeCall* call, const char** failReason);
@@ -6027,7 +6033,7 @@ private:
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
+    unsigned fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode);
 
     //----------------------- Liveness analysis -------------------------------
 
@@ -8648,7 +8654,7 @@ private:
     GenTree* impSIMDPopStack();
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool areFieldsContiguous(GenTree* op1, GenTree* op2);
+    bool areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
     bool areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
     bool areArrayElementsContiguous(GenTree* op1, GenTree* op2);
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
@@ -11096,7 +11102,6 @@ public:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:
             case GT_NOP:
-            case GT_FIELD:
             case GT_FIELD_ADDR:
             case GT_RETURN:
             case GT_RETFILT:

@@ -185,6 +185,19 @@ namespace Microsoft.Interop
             }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
+            // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
+            // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
+            // If we ever move the "this" object handling out of this type, we'll move the handling to be emitted in that phase.
+            // GC.KeepAlive(this);
+            tryStatements.Add(
+                ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseTypeName(TypeNames.System_GC),
+                            IdentifierName("KeepAlive")),
+                        ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
+
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;

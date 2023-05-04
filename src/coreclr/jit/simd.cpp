@@ -473,23 +473,26 @@ void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 }
 
 //-------------------------------------------------------------
-// Check if two field nodes reference at the same memory location.
-// Notice that this check is just based on pattern matching.
+// Check if two field address nodes reference at the same location.
+//
 // Arguments:
-//      op1 - GenTree*.
-//      op2 - GenTree*.
+//   op1 - first field address
+//   op2 - second field address
+//
 // Return Value:
-//    If op1's parents node and op2's parents node are at the same location, return true. Otherwise, return false
-
-bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
+//    If op1's parents node and op2's parents node are at the same
+//    location, return true. Otherwise, return false
+//
+bool areFieldAddressesTheSame(GenTreeFieldAddr* op1, GenTreeFieldAddr* op2)
 {
-    assert(op1->OperGet() == GT_FIELD);
-    assert(op2->OperGet() == GT_FIELD);
+    assert(op1->OperIs(GT_FIELD_ADDR) && op2->OperIs(GT_FIELD_ADDR));
 
-    GenTree* op1ObjRef = op1->AsField()->GetFldObj();
-    GenTree* op2ObjRef = op2->AsField()->GetFldObj();
-    while (op1ObjRef != nullptr && op2ObjRef != nullptr)
+    GenTree* op1ObjRef = op1->GetFldObj();
+    GenTree* op2ObjRef = op2->GetFldObj();
+    while ((op1ObjRef != nullptr) && (op2ObjRef != nullptr))
     {
+        assert(varTypeIsI(genActualType(op1ObjRef)) && varTypeIsI(genActualType(op2ObjRef)));
+
         if (op1ObjRef->OperGet() != op2ObjRef->OperGet())
         {
             break;
@@ -501,10 +504,18 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
             return true;
         }
 
-        if (op1ObjRef->OperIs(GT_FIELD) && (op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd))
+        if (op1ObjRef->OperIs(GT_IND))
         {
-            op1ObjRef = op1ObjRef->AsField()->GetFldObj();
-            op2ObjRef = op2ObjRef->AsField()->GetFldObj();
+            op1ObjRef = op1ObjRef->AsIndir()->Addr();
+            op2ObjRef = op2ObjRef->AsIndir()->Addr();
+            continue;
+        }
+
+        if (op1ObjRef->OperIs(GT_FIELD_ADDR) &&
+            (op1ObjRef->AsFieldAddr()->gtFldHnd == op2ObjRef->AsFieldAddr()->gtFldHnd))
+        {
+            op1ObjRef = op1ObjRef->AsFieldAddr()->GetFldObj();
+            op2ObjRef = op2ObjRef->AsFieldAddr()->GetFldObj();
             continue;
         }
         else
@@ -517,28 +528,29 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
 }
 
 //----------------------------------------------------------------------
-// Check whether two field are contiguous
+// areFieldsContiguous: Check whether two fields are contiguous.
+//
 // Arguments:
-//      first - GenTree*. The Type of the node should be TYP_FLOAT
-//      second - GenTree*. The Type of the node should be TYP_FLOAT
+//      op1 - The first field indirection
+//      op2 - The second field indirection
+//
 // Return Value:
-//      if the first field is located before second field, and they are located contiguously,
-//      then return true. Otherwise, return false.
-
-bool Compiler::areFieldsContiguous(GenTree* first, GenTree* second)
+//      If the first field is located before second field, and they are
+//      located contiguously, then return true. Otherwise, return false.
+//
+bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
 {
-    assert(first->OperGet() == GT_FIELD);
-    assert(second->OperGet() == GT_FIELD);
-    assert(first->gtType == TYP_FLOAT);
-    assert(second->gtType == TYP_FLOAT);
+    assert(op1->OperIs(GT_IND) && op2->OperIs(GT_IND));
+    // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
+    assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
-    var_types firstFieldType  = first->gtType;
-    var_types secondFieldType = second->gtType;
-
-    unsigned firstFieldEndOffset = first->AsField()->gtFldOffset + genTypeSize(firstFieldType);
-    unsigned secondFieldOffset   = second->AsField()->gtFldOffset;
-    if (firstFieldEndOffset == secondFieldOffset && firstFieldType == secondFieldType &&
-        areFieldsParentsLocatedSame(first, second))
+    var_types         op1Type      = op1->TypeGet();
+    var_types         op2Type      = op2->TypeGet();
+    GenTreeFieldAddr* op1Addr      = op1->Addr()->AsFieldAddr();
+    GenTreeFieldAddr* op2Addr      = op2->Addr()->AsFieldAddr();
+    unsigned          op1EndOffset = op1Addr->gtFldOffset + genTypeSize(op1Type);
+    unsigned          op2Offset    = op2Addr->gtFldOffset;
+    if ((op1Type == op2Type) && (op1EndOffset == op2Offset) && areFieldAddressesTheSame(op1Addr, op2Addr))
     {
         return true;
     }
@@ -594,19 +606,25 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
     GenTree* op1IndexNode = op1IndexAddr->Index();
     GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
-        op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal)
+        (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {
-        if (op1ArrayRef->OperIs(GT_FIELD) && op2ArrayRef->OperIs(GT_FIELD) &&
-            areFieldsParentsLocatedSame(op1ArrayRef, op2ArrayRef))
+        if (op1ArrayRef->OperIs(GT_IND) && op2ArrayRef->OperIs(GT_IND))
         {
-            return true;
+            GenTree* op1ArrayRefAddr = op1ArrayRef->AsIndir()->Addr();
+            GenTree* op2ArrayRefAddr = op2ArrayRef->AsIndir()->Addr();
+            if (op1ArrayRefAddr->OperIs(GT_FIELD_ADDR) && op2ArrayRefAddr->OperIs(GT_FIELD_ADDR) &&
+                areFieldAddressesTheSame(op1ArrayRefAddr->AsFieldAddr(), op2ArrayRefAddr->AsFieldAddr()))
+            {
+                return true;
+            }
         }
         else if (op1ArrayRef->OperIs(GT_LCL_VAR) && op2ArrayRef->OperIs(GT_LCL_VAR) &&
-                 op1ArrayRef->AsLclVarCommon()->GetLclNum() == op2ArrayRef->AsLclVarCommon()->GetLclNum())
+                 (op1ArrayRef->AsLclVar()->GetLclNum() == op2ArrayRef->AsLclVar()->GetLclNum()))
         {
             return true;
         }
     }
+
     return false;
 }
 
@@ -630,19 +648,25 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 
     assert(!op1->TypeIs(TYP_STRUCT));
 
-    if (op1->OperIs(GT_IND) && op1->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) && op2->OperIs(GT_IND) &&
-        op2->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR))
+    if (op1->OperIs(GT_IND) && op2->OperIs(GT_IND))
     {
-        return areArrayElementsContiguous(op1, op2);
-    }
-    else if (op1->OperIs(GT_FIELD) && op2->OperIs(GT_FIELD))
-    {
-        return areFieldsContiguous(op1, op2);
+        GenTree* op1Addr = op1->AsIndir()->Addr();
+        GenTree* op2Addr = op2->AsIndir()->Addr();
+
+        if (op1Addr->OperIs(GT_INDEX_ADDR) && op2Addr->OperIs(GT_INDEX_ADDR))
+        {
+            return areArrayElementsContiguous(op1, op2);
+        }
+        if (op1Addr->OperIs(GT_FIELD_ADDR) && op2Addr->OperIs(GT_FIELD_ADDR))
+        {
+            return areFieldsContiguous(op1->AsIndir(), op2->AsIndir());
+        }
     }
     else if (op1->OperIs(GT_LCL_FLD) && op2->OperIs(GT_LCL_FLD))
     {
         return areLocalFieldsContiguous(op1->AsLclFld(), op2->AsLclFld());
     }
+
     return false;
 }
 
@@ -659,19 +683,23 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 //      return the address node.
 //
 // TODO-CQ:
-//      Currently just supports GT_FIELD and GT_IND(GT_INDEX_ADDR), because we can only verify those nodes
+//      Currently just supports GT_IND(GT_INDEX_ADDR / GT_FIELD_ADDR), because we can only verify those nodes
 //      are located contiguously or not. In future we should support more cases.
 //
 GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize)
 {
+    assert(tree->OperIs(GT_IND));
+    GenTree*  addr      = tree->AsIndir()->Addr();
     GenTree*  byrefNode = nullptr;
     unsigned  offset    = 0;
     var_types baseType  = tree->gtType;
 
-    if (tree->OperIs(GT_FIELD))
+    if (addr->OperIs(GT_FIELD_ADDR))
     {
-        GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->IsLclVarAddr())
+        assert(addr->AsFieldAddr()->IsInstance());
+
+        GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
+        if (objRef->IsLclVarAddr())
         {
             // If the field is directly from a struct, then in this case,
             // we should set this struct's lvUsedInSIMDIntrinsic as true,
@@ -690,17 +718,15 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
             }
         }
 
-        byrefNode = gtCloneExpr(tree->AsField()->GetFldObj());
+        // TODO-FIELD: this seems unnecessary. Simply "return addr;"?
+        byrefNode = gtCloneExpr(objRef);
         assert(byrefNode != nullptr);
-        offset = tree->AsField()->gtFldOffset;
+        offset = addr->AsFieldAddr()->gtFldOffset;
     }
     else
     {
-        assert(tree->OperIs(GT_IND) && tree->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR));
-
-        GenTreeIndexAddr* indexAddr = tree->AsIndir()->Addr()->AsIndexAddr();
-        GenTree*          arrayRef  = indexAddr->Arr();
-        GenTree*          index     = indexAddr->Index();
+        GenTree* arrayRef = addr->AsIndexAddr()->Arr();
+        GenTree* index    = addr->AsIndexAddr()->Index();
         assert(index->IsCnsIntOrI());
 
         GenTree* checkIndexExpr = nullptr;
@@ -780,12 +806,16 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                     // Successfully found the pattern, mark the lclvar as UsedInSIMDIntrinsic
                     setLclRelatedToSIMDIntrinsic(srcSimdLclAddr);
 
-                    if (curDst->OperIs(GT_FIELD) && curDst->AsField()->IsInstance())
+                    if (curDst->OperIs(GT_IND) && curDst->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
                     {
-                        GenTree* objRef = curDst->AsField()->GetFldObj();
-                        if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
+                        GenTreeFieldAddr* addr = curDst->AsIndir()->Addr()->AsFieldAddr();
+                        if (addr->IsInstance())
                         {
-                            setLclRelatedToSIMDIntrinsic(objRef);
+                            GenTree* objRef = addr->GetFldObj();
+                            if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
+                            {
+                                setLclRelatedToSIMDIntrinsic(objRef);
+                            }
                         }
                     }
                 }

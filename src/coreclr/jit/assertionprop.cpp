@@ -227,15 +227,6 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-        case GT_FIELD:
-        {
-            if (node->AsField()->IsSpanLength())
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-            break;
-        }
-
         default:
             break;
     }
