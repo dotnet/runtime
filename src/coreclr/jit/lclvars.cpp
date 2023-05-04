@@ -960,7 +960,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            unsigned  secondAllocatedRegArgNum = 0;
+            unsigned secondAllocatedRegArgNum = 0;
             if (argRegTypeInStruct1 != TYP_UNKNOWN)
             {
                 firstAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct1, 1);
@@ -1138,7 +1138,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     }
                 }
                 else
-#endif // defined(UNIX_AMD64_ABI)
+#endif // UNIX_AMD64_ABI, TARGET_RISCV64
                 {
                     assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
 
