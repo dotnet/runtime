@@ -930,17 +930,20 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_TestData()
         {
-            yield return new object[] { -4570.0f, "G", null, "-4570" };
-            yield return new object[] { 0.0f, "G", null, "0" };
-            yield return new object[] { 4570.0f, "G", null, "4570" };
+            yield return new object[] { (Half)(-4570.0f), "G", null, "-4570" };
+            yield return new object[] { (Half)(-0.001f), "+0.00;-0.00", null, "-0.00" };
+            yield return new object[] { (Half)(-0.0f), string.Empty, null, "-0" };
+            yield return new object[] { (Half)(- 0.0f), "#", null, "" };
+            yield return new object[] { Half.Zero, "G", null, "0" };
+            yield return new object[] { (Half)4570.0f, "G", null, "4570" };
 
-            yield return new object[] { float.NaN, "G", null, "NaN" };
+            yield return new object[] { Half.NaN, "G", null, "NaN" };
 
-            yield return new object[] { 2468.0f, "N", null, "2,468.00" };
+            yield return new object[] { (Half)2468.0f, "N", null, "2,468.00" };
 
             // Changing the negative pattern doesn't do anything without also passing in a format string
             var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
-            yield return new object[] { -6310.0f, "G", customNegativePattern, "-6310" };
+            yield return new object[] { (Half)(-6310.0f), "G", customNegativePattern, "-6310" };
 
             var customNegativeSignDecimalGroupSeparator = new NumberFormatInfo()
             {
@@ -948,8 +951,8 @@ namespace System.Tests
                 NumberDecimalSeparator = "~",
                 NumberGroupSeparator = "*"
             };
-            yield return new object[] { -2468.0f, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
-            yield return new object[] { 2468.0f, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
+            yield return new object[] { (Half)(-2468.0f), "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
+            yield return new object[] { (Half)(2468.0f), "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
 
             var customNegativeSignGroupSeparatorNegativePattern = new NumberFormatInfo()
             {
@@ -957,12 +960,12 @@ namespace System.Tests
                 NumberGroupSeparator = "*",
                 NumberNegativePattern = 0
             };
-            yield return new object[] { -2468.0f, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
+            yield return new object[] { (Half)(-2468.0f), "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { float.NaN, "G", invariantFormat, "NaN" };
-            yield return new object[] { float.PositiveInfinity, "G", invariantFormat, "Infinity" };
-            yield return new object[] { float.NegativeInfinity, "G", invariantFormat, "-Infinity" };
+            yield return new object[] { Half.NaN, "G", invariantFormat, "NaN" };
+            yield return new object[] { Half.PositiveInfinity, "G", invariantFormat, "Infinity" };
+            yield return new object[] { Half.NegativeInfinity, "G", invariantFormat, "-Infinity" };
         }
 
         public static IEnumerable<object[]> ToString_TestData_NotNetFramework()
@@ -987,39 +990,32 @@ namespace System.Tests
             yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
-        [Fact]
-        public static void Test_ToString_NotNetFramework()
+        [Theory]
+        [MemberData(nameof(ToString_TestData_NotNetFramework))]
+        public static void Test_ToString_NotNetFramework(Half h, string format, IFormatProvider provider, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                foreach (object[] testdata in ToString_TestData_NotNetFramework())
+                bool isDefaultProvider = provider == null;
+                if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
                 {
-                    ToStringTest(testdata[0] is float floatData ? (Half)floatData : (Half)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                    if (isDefaultProvider)
+                    {
+                        Assert.Equal(expected, h.ToString());
+                        Assert.Equal(expected, h.ToString((IFormatProvider)null));
+                    }
+                    Assert.Equal(expected, h.ToString(provider));
                 }
-            }
-        }
-
-        private static void ToStringTest(Half f, string format, IFormatProvider provider, string expected)
-        {
-            bool isDefaultProvider = provider == null;
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
-            {
                 if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, f.ToString());
-                    Assert.Equal(expected, f.ToString((IFormatProvider)null));
+                    Assert.Equal(expected, h.ToString(format.ToUpperInvariant()), true);
+                    Assert.Equal(expected, h.ToString(format.ToLowerInvariant()), true);
+                    Assert.Equal(expected, h.ToString(format.ToUpperInvariant(), null), true);
+                    Assert.Equal(expected, h.ToString(format.ToLowerInvariant(), null), true);
                 }
-                Assert.Equal(expected, f.ToString(provider));
+                Assert.Equal(expected, h.ToString(format.ToUpperInvariant(), provider), true);
+                Assert.Equal(expected, h.ToString(format.ToLowerInvariant(), provider), true);
             }
-            if (isDefaultProvider)
-            {
-                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
-                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
-                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
-            }
-            Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
-            Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
         }
 
         [Fact]
@@ -1040,7 +1036,7 @@ namespace System.Tests
             {
                 foreach (object[] testdata in ToString_TestData())
                 {
-                    float localI = (float)testdata[0];
+                    Half localI = (Half)testdata[0];
                     string localFormat = (string)testdata[1];
                     IFormatProvider localProvider = (IFormatProvider)testdata[2];
                     string localExpected = (string)testdata[3];
