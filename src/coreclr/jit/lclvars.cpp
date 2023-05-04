@@ -913,8 +913,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-#if defined(TARGET_LOONGARCH64)
-            // On LoongArch64, if there aren't any remaining floating-point registers to pass the
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
             // argument,
             // integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
