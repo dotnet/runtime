@@ -91,174 +91,6 @@ struct Access
     }
 };
 
-<<<<<<< HEAD
-//------------------------------------------------------------------------
-// Replacement::Overlaps:
-//   Check if this replacement overlaps the specified range.
-//
-// Parameters:
-//   otherStart - Start of the other range.
-//   otherSize  - Size of the other range.
-//
-// Returns:
-//    True if they overlap.
-//
-bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
-{
-    unsigned end = Offset + genTypeSize(AccessType);
-    if (end <= otherStart)
-    {
-        return false;
-    }
-
-    unsigned otherEnd = otherStart + otherSize;
-    if (otherEnd <= Offset)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// CreateWriteBack:
-//   Create IR that writes a replacement local's value back to its struct local:
-//
-//     ASG
-//       LCL_FLD int V00 [+4]
-//       LCL_VAR int V01
-//
-// Parameters:
-//   structLclNum - Struct local
-//   replacement  - Information about the replacement
-//
-// Returns:
-//   IR node.
-//
-GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
-{
-    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
-}
-
-//------------------------------------------------------------------------
-// CreateReadBack:
-//   Create IR that reads a replacement local's value back from its struct local:
-//
-//     ASG
-//       LCL_VAR int V01
-//       LCL_FLD int V00 [+4]
-//
-// Parameters:
-//   structLclNum - Struct local
-//   replacement  - Information about the replacement
-//
-// Returns:
-//   IR node.
-//
-GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
-{
-    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-    GenTree* asg = compiler->gtNewAssignNode(dst, src);
-    return asg;
-}
-
-||||||| 458f3de2828
-//------------------------------------------------------------------------
-// BinarySearch:
-//   Find first entry with an equal offset, or bitwise complement of first
-//   entry with a higher offset.
-//
-// Parameters:
-//   vec    - The vector to binary search in
-//   offset - The offset to search for
-//
-// Returns:
-//    Index of the first entry with an equal offset, or bitwise complement of
-//    first entry with a higher offset.
-//
-template <typename T, unsigned(T::*field)>
-static size_t BinarySearch(const jitstd::vector<T>& vec, unsigned offset)
-{
-    size_t min = 0;
-    size_t max = vec.size();
-    while (min < max)
-    {
-        size_t mid = min + (max - min) / 2;
-        if (vec[mid].*field == offset)
-        {
-            while (mid > 0 && vec[mid - 1].*field == offset)
-            {
-                mid--;
-            }
-
-            return mid;
-        }
-        if (vec[mid].*field < offset)
-        {
-            min = mid + 1;
-        }
-        else
-        {
-            max = mid;
-        }
-    }
-
-    return ~min;
-}
-
-// Represents a single replacement of a (field) access into a struct local.
-struct Replacement
-{
-    unsigned  Offset;
-    var_types AccessType;
-    unsigned  LclNum;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
-    // Is the value in the struct local fresher than the replacement local?
-    // Note that the invariant is that this is always false at the entrance to
-    // a basic block, i.e. all predecessors would have read the replacement
-    // back before transferring control if necessary.
-    bool NeedsReadBack = false;
-    // Arbitrary flag bit used e.g. by decomposition. Assumed to be false.
-    bool Handled = false;
-#ifdef DEBUG
-    const char* Name;
-#endif
-
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum DEBUGARG(const char* name))
-        : Offset(offset)
-        , AccessType(accessType)
-        , LclNum(lclNum)
-#ifdef DEBUG
-        , Name(name)
-#endif
-    {
-    }
-
-    bool Overlaps(unsigned otherStart, unsigned otherSize) const
-    {
-        unsigned end = Offset + genTypeSize(AccessType);
-        if (end <= otherStart)
-        {
-            return false;
-        }
-
-        unsigned otherEnd = otherStart + otherSize;
-        if (otherEnd <= Offset)
-        {
-            return false;
-        }
-
-        return true;
-    }
-};
-
-=======
->>>>>>> 2e17200fc6782beac0b63c290628dbf79ff13650
 enum class AccessKindFlags : uint32_t
 {
     None                    = 0,
@@ -757,6 +589,80 @@ private:
         return flags;
     }
 };
+
+//------------------------------------------------------------------------
+// Replacement::Overlaps:
+//   Check if this replacement overlaps the specified range.
+//
+// Parameters:
+//   otherStart - Start of the other range.
+//   otherSize  - Size of the other range.
+//
+// Returns:
+//    True if they overlap.
+//
+bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
+{
+    unsigned end = Offset + genTypeSize(AccessType);
+    if (end <= otherStart)
+    {
+        return false;
+    }
+
+    unsigned otherEnd = otherStart + otherSize;
+    if (otherEnd <= Offset)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CreateWriteBack:
+//   Create IR that writes a replacement local's value back to its struct local:
+//
+//     ASG
+//       LCL_FLD int V00 [+4]
+//       LCL_VAR int V01
+//
+// Parameters:
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR node.
+//
+GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
+
+//------------------------------------------------------------------------
+// CreateReadBack:
+//   Create IR that reads a replacement local's value back from its struct local:
+//
+//     ASG
+//       LCL_VAR int V01
+//       LCL_FLD int V00 [+4]
+//
+// Parameters:
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR node.
+//
+GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
 
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {

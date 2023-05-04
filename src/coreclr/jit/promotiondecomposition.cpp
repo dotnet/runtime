@@ -1196,6 +1196,307 @@ private:
 };
 
 //------------------------------------------------------------------------
+// HandleAssignment:
+//   Handle an assignment that may be between struct locals with replacements.
+//
+// Parameters:
+//   asg - The assignment
+//   user - The user of the assignment.
+//
+void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
+{
+    GenTreeOp* asg = (*use)->AsOp();
+
+    if (!asg->gtGetOp1()->TypeIs(TYP_STRUCT))
+    {
+        return;
+    }
+
+    GenTree* dst = asg->gtGetOp1();
+    assert(!dst->OperIs(GT_COMMA));
+    GenTree* src = asg->gtGetOp2()->gtEffectiveVal();
+
+    GenTreeLclVarCommon* dstLcl = dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? dst->AsLclVarCommon() : nullptr;
+    GenTreeLclVarCommon* srcLcl = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? src->AsLclVarCommon() : nullptr;
+
+    Replacement* dstFirstRep     = nullptr;
+    Replacement* dstEndRep       = nullptr;
+    bool dstInvolvesReplacements = (dstLcl != nullptr) && OverlappingReplacements(dstLcl, &dstFirstRep, &dstEndRep);
+    Replacement* srcFirstRep     = nullptr;
+    Replacement* srcEndRep       = nullptr;
+    bool srcInvolvesReplacements = (srcLcl != nullptr) && OverlappingReplacements(srcLcl, &srcFirstRep, &srcEndRep);
+
+    if (!dstInvolvesReplacements && !srcInvolvesReplacements)
+    {
+        return;
+    }
+
+    JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(asg));
+
+    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal())
+    {
+        DecompositionStatementList result;
+        EliminateCommasInBlockOp(asg, &result);
+
+        if (dstInvolvesReplacements)
+        {
+            unsigned dstLclOffs = dstLcl->GetLclOffs();
+            unsigned dstLclSize = dstLcl->GetLayout(m_compiler)->GetSize();
+            if (dstFirstRep->Offset < dstLclOffs)
+            {
+                if (dstFirstRep->NeedsWriteBack)
+                {
+                    JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
+                            "read-backs are "
+                            "necessary.\n",
+                            dstFirstRep->LclNum, dstFirstRep->Description);
+                    // The value of the replacement will be partially assembled from its old value and this struct
+                    // operation.
+                    // We accomplish this by an initial write back, the struct copy, followed by a later read back.
+                    // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
+                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
+
+                    dstFirstRep->NeedsWriteBack = false;
+                }
+
+                dstFirstRep->NeedsReadBack = true;
+                dstFirstRep++;
+            }
+
+            if (dstEndRep > dstFirstRep)
+            {
+                Replacement* dstLastRep = dstEndRep - 1;
+                if (dstLastRep->Offset + genTypeSize(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
+                {
+                    if (dstLastRep->NeedsWriteBack)
+                    {
+                        JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
+                                "read-backs are "
+                                "necessary.\n",
+                                dstLastRep->LclNum, dstLastRep->Description);
+                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
+
+                        dstLastRep->NeedsWriteBack = false;
+                    }
+
+                    dstLastRep->NeedsReadBack = true;
+                    dstEndRep--;
+                }
+            }
+        }
+
+        if (srcInvolvesReplacements)
+        {
+            unsigned srcLclOffs = srcLcl->GetLclOffs();
+            unsigned srcLclSize = srcLcl->GetLayout(m_compiler)->GetSize();
+
+            if (srcFirstRep->Offset < srcLclOffs)
+            {
+                if (srcFirstRep->NeedsWriteBack)
+                {
+                    JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
+                            srcFirstRep->LclNum, srcFirstRep->Description);
+
+                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
+
+                    srcFirstRep->NeedsWriteBack = false;
+                }
+
+                srcFirstRep++;
+            }
+
+            if (srcEndRep > srcFirstRep)
+            {
+                Replacement* srcLastRep = srcEndRep - 1;
+                if (srcLastRep->Offset + genTypeSize(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
+                {
+                    if (srcLastRep->NeedsWriteBack)
+                    {
+                        JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is "
+                                "necessary.\n",
+                                srcLastRep->LclNum, srcLastRep->Description);
+
+                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
+                        srcLastRep->NeedsWriteBack = false;
+                    }
+
+                    srcEndRep--;
+                }
+            }
+        }
+
+        DecompositionPlan plan(m_compiler, dst, src, srcInvolvesReplacements);
+
+        if (src->IsConstInitVal())
+        {
+            InitFields(dst->AsLclVarCommon(), dstFirstRep, dstEndRep, &plan);
+        }
+        else
+        {
+            CopyBetweenFields(dst, dstFirstRep, dstEndRep, src, srcFirstRep, srcEndRep, &result, &plan);
+        }
+
+        plan.Finalize(&result);
+
+        *use          = result.ToCommaTree(m_compiler);
+        m_madeChanges = true;
+    }
+    else
+    {
+        if (asg->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        {
+            GenTreeLclVarCommon* rhsLcl = asg->gtGetOp2()->AsLclVarCommon();
+            unsigned             size   = rhsLcl->GetLayout(m_compiler)->GetSize();
+            WriteBackBefore(&asg->gtOp2, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
+        }
+
+        if (asg->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        {
+            GenTreeLclVarCommon* lhsLcl = asg->gtGetOp1()->AsLclVarCommon();
+            unsigned             size   = lhsLcl->GetLayout(m_compiler)->GetSize();
+            MarkForReadBack(lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// OverlappingReplacements:
+//   Find replacements that overlap the specified struct local.
+//
+// Parameters:
+//   lcl              - A struct local
+//   firstReplacement - [out] The first replacement that overlaps
+//   endReplacement   - [out, optional] One past the last replacement that overlaps
+//
+// Returns:
+//   True if any replacement overlaps; otherwise false.
+//
+bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
+                                             Replacement**        firstReplacement,
+                                             Replacement**        endReplacement)
+{
+    if (m_replacements[lcl->GetLclNum()] == nullptr)
+    {
+        return false;
+    }
+
+    jitstd::vector<Replacement>& replacements = *m_replacements[lcl->GetLclNum()];
+
+    unsigned offs       = lcl->GetLclOffs();
+    unsigned size       = lcl->GetLayout(m_compiler)->GetSize();
+    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+    if ((ssize_t)firstIndex < 0)
+    {
+        firstIndex = ~firstIndex;
+        if (firstIndex > 0)
+        {
+            Replacement& lastRepBefore = replacements[firstIndex - 1];
+            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offs)
+            {
+                // Overlap with last entry starting before offs.
+                firstIndex--;
+            }
+            else if (firstIndex >= replacements.size())
+            {
+                // Starts after last replacement ends.
+                return false;
+            }
+        }
+
+        const Replacement& first = replacements[firstIndex];
+        if (first.Offset >= (offs + size))
+        {
+            // First candidate starts after this ends.
+            return false;
+        }
+    }
+
+    assert((firstIndex < replacements.size()) && replacements[firstIndex].Overlaps(offs, size));
+    *firstReplacement = &replacements[firstIndex];
+
+    if (endReplacement != nullptr)
+    {
+        size_t lastIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs + size);
+        if ((ssize_t)lastIndex < 0)
+        {
+            lastIndex = ~lastIndex;
+        }
+
+        // Since we verified above that there is an overlapping replacement
+        // we know that lastIndex exists and is the next one that does not
+        // overlap.
+        assert(lastIndex > 0);
+        *endReplacement = replacements.data() + lastIndex;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// EliminateCommasInBlockOp:
+//   Ensure that the sources of a block op are not commas by extracting side effects.
+//
+// Parameters:
+//   asg    - The block op
+//   result   - Statement list to add resulting statements to.
+//
+// Remarks:
+//   Works similarly to MorphInitBlockHelper::EliminateCommas.
+//
+void ReplaceVisitor::EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result)
+{
+    bool     any = false;
+    GenTree* lhs = asg->gtGetOp1();
+    assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_IND, GT_BLK));
+
+    GenTree* rhs = asg->gtGetOp2();
+
+    if (asg->IsReverseOp())
+    {
+        while (rhs->OperIs(GT_COMMA))
+        {
+            result->AddStatement(rhs->gtGetOp1());
+            rhs = rhs->gtGetOp2();
+            any = true;
+        }
+    }
+    else
+    {
+        if (lhs->OperIsIndir() && rhs->OperIs(GT_COMMA))
+        {
+            GenTree* addr = lhs->gtGetOp1();
+            // Note that GTF_GLOB_REF is not up to date here, hence we need
+            // a tree walk to find address exposed locals.
+            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
+                m_compiler->gtHasAddressExposedLocals(addr))
+            {
+                unsigned lhsAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
+
+                result->AddStatement(m_compiler->gtNewTempAssign(lhsAddrLclNum, addr));
+                lhs->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
+                m_compiler->gtUpdateNodeSideEffects(lhs);
+                m_madeChanges = true;
+                any           = true;
+            }
+        }
+
+        while (rhs->OperIs(GT_COMMA))
+        {
+            result->AddStatement(rhs->gtGetOp1());
+            rhs = rhs->gtGetOp2();
+            any = true;
+        }
+    }
+
+    if (any)
+    {
+        asg->gtOp2 = rhs;
+        m_compiler->gtUpdateNodeSideEffects(asg);
+        m_madeChanges = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // InitFields:
 //   Add entries into the plan specifying which replacements can be
 //   directly inited, and mark the other ones as requiring read back.
@@ -1392,307 +1693,6 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             plan->CopyFromReplacement(srcRep, offs);
             JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
             srcRep++;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// EliminateCommasInBlockOp:
-//   Ensure that the sources of a block op are not commas by extracting side effects.
-//
-// Parameters:
-//   asg    - The block op
-//   result   - Statement list to add resulting statements to.
-//
-// Remarks:
-//   Works similarly to MorphInitBlockHelper::EliminateCommas.
-//
-void ReplaceVisitor::EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result)
-{
-    bool     any = false;
-    GenTree* lhs = asg->gtGetOp1();
-    assert(lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_IND, GT_BLK));
-
-    GenTree* rhs = asg->gtGetOp2();
-
-    if (asg->IsReverseOp())
-    {
-        while (rhs->OperIs(GT_COMMA))
-        {
-            result->AddStatement(rhs->gtGetOp1());
-            rhs = rhs->gtGetOp2();
-            any = true;
-        }
-    }
-    else
-    {
-        if (lhs->OperIsIndir() && rhs->OperIs(GT_COMMA))
-        {
-            GenTree* addr = lhs->gtGetOp1();
-            // Note that GTF_GLOB_REF is not up to date here, hence we need
-            // a tree walk to find address exposed locals.
-            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()) ||
-                m_compiler->gtHasAddressExposedLocals(addr))
-            {
-                unsigned lhsAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
-
-                result->AddStatement(m_compiler->gtNewTempAssign(lhsAddrLclNum, addr));
-                lhs->AsUnOp()->gtOp1 = m_compiler->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
-                m_compiler->gtUpdateNodeSideEffects(lhs);
-                m_madeChanges = true;
-                any           = true;
-            }
-        }
-
-        while (rhs->OperIs(GT_COMMA))
-        {
-            result->AddStatement(rhs->gtGetOp1());
-            rhs = rhs->gtGetOp2();
-            any = true;
-        }
-    }
-
-    if (any)
-    {
-        asg->gtOp2 = rhs;
-        m_compiler->gtUpdateNodeSideEffects(asg);
-        m_madeChanges = true;
-    }
-}
-
-//------------------------------------------------------------------------
-// OverlappingReplacements:
-//   Find replacements that overlap the specified struct local.
-//
-// Parameters:
-//   lcl              - A struct local
-//   firstReplacement - [out] The first replacement that overlaps
-//   endReplacement   - [out, optional] One past the last replacement that overlaps
-//
-// Returns:
-//   True if any replacement overlaps; otherwise false.
-//
-bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
-                                             Replacement**        firstReplacement,
-                                             Replacement**        endReplacement)
-{
-    if (m_replacements[lcl->GetLclNum()] == nullptr)
-    {
-        return false;
-    }
-
-    jitstd::vector<Replacement>& replacements = *m_replacements[lcl->GetLclNum()];
-
-    unsigned offs       = lcl->GetLclOffs();
-    unsigned size       = lcl->GetLayout(m_compiler)->GetSize();
-    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-    if ((ssize_t)firstIndex < 0)
-    {
-        firstIndex = ~firstIndex;
-        if (firstIndex > 0)
-        {
-            Replacement& lastRepBefore = replacements[firstIndex - 1];
-            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offs)
-            {
-                // Overlap with last entry starting before offs.
-                firstIndex--;
-            }
-            else if (firstIndex >= replacements.size())
-            {
-                // Starts after last replacement ends.
-                return false;
-            }
-        }
-
-        const Replacement& first = replacements[firstIndex];
-        if (first.Offset >= (offs + size))
-        {
-            // First candidate starts after this ends.
-            return false;
-        }
-    }
-
-    assert((firstIndex < replacements.size()) && replacements[firstIndex].Overlaps(offs, size));
-    *firstReplacement = &replacements[firstIndex];
-
-    if (endReplacement != nullptr)
-    {
-        size_t lastIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs + size);
-        if ((ssize_t)lastIndex < 0)
-        {
-            lastIndex = ~lastIndex;
-        }
-
-        // Since we verified above that there is an overlapping replacement
-        // we know that lastIndex exists and is the next one that does not
-        // overlap.
-        assert(lastIndex > 0);
-        *endReplacement = replacements.data() + lastIndex;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// HandleAssignment:
-//   Handle an assignment that may be between struct locals with replacements.
-//
-// Parameters:
-//   asg - The assignment
-//   user - The user of the assignment.
-//
-void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
-{
-    GenTreeOp* asg = (*use)->AsOp();
-
-    if (!asg->gtGetOp1()->TypeIs(TYP_STRUCT))
-    {
-        return;
-    }
-
-    GenTree* dst = asg->gtGetOp1();
-    assert(!dst->OperIs(GT_COMMA));
-    GenTree* src = asg->gtGetOp2()->gtEffectiveVal();
-
-    GenTreeLclVarCommon* dstLcl = dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? dst->AsLclVarCommon() : nullptr;
-    GenTreeLclVarCommon* srcLcl = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ? src->AsLclVarCommon() : nullptr;
-
-    Replacement* dstFirstRep     = nullptr;
-    Replacement* dstEndRep       = nullptr;
-    bool dstInvolvesReplacements = (dstLcl != nullptr) && OverlappingReplacements(dstLcl, &dstFirstRep, &dstEndRep);
-    Replacement* srcFirstRep     = nullptr;
-    Replacement* srcEndRep       = nullptr;
-    bool srcInvolvesReplacements = (srcLcl != nullptr) && OverlappingReplacements(srcLcl, &srcFirstRep, &srcEndRep);
-
-    if (!dstInvolvesReplacements && !srcInvolvesReplacements)
-    {
-        return;
-    }
-
-    JITDUMP("Processing block operation [%06u] that involves replacements\n", Compiler::dspTreeID(asg));
-
-    if (src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) || src->IsConstInitVal())
-    {
-        DecompositionStatementList result;
-        EliminateCommasInBlockOp(asg, &result);
-
-        if (dstInvolvesReplacements)
-        {
-            unsigned dstLclOffs = dstLcl->GetLclOffs();
-            unsigned dstLclSize = dstLcl->GetLayout(m_compiler)->GetSize();
-            if (dstFirstRep->Offset < dstLclOffs)
-            {
-                if (dstFirstRep->NeedsWriteBack)
-                {
-                    JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
-                            "read-backs are "
-                            "necessary.\n",
-                            dstFirstRep->LclNum, dstFirstRep->Description);
-                    // The value of the replacement will be partially assembled from its old value and this struct
-                    // operation.
-                    // We accomplish this by an initial write back, the struct copy, followed by a later read back.
-                    // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
-                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
-
-                    dstFirstRep->NeedsWriteBack = false;
-                }
-
-                dstFirstRep->NeedsReadBack = true;
-                dstFirstRep++;
-            }
-
-            if (dstEndRep > dstFirstRep)
-            {
-                Replacement* dstLastRep = dstEndRep - 1;
-                if (dstLastRep->Offset + genTypeSize(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
-                {
-                    if (dstLastRep->NeedsWriteBack)
-                    {
-                        JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
-                                "read-backs are "
-                                "necessary.\n",
-                                dstLastRep->LclNum, dstLastRep->Description);
-                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
-
-                        dstLastRep->NeedsWriteBack = false;
-                    }
-
-                    dstLastRep->NeedsReadBack = true;
-                    dstEndRep--;
-                }
-            }
-        }
-
-        if (srcInvolvesReplacements)
-        {
-            unsigned srcLclOffs = srcLcl->GetLclOffs();
-            unsigned srcLclSize = srcLcl->GetLayout(m_compiler)->GetSize();
-
-            if (srcFirstRep->Offset < srcLclOffs)
-            {
-                if (srcFirstRep->NeedsWriteBack)
-                {
-                    JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
-                            srcFirstRep->LclNum, srcFirstRep->Description);
-
-                    result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
-
-                    srcFirstRep->NeedsWriteBack = false;
-                }
-
-                srcFirstRep++;
-            }
-
-            if (srcEndRep > srcFirstRep)
-            {
-                Replacement* srcLastRep = srcEndRep - 1;
-                if (srcLastRep->Offset + genTypeSize(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
-                {
-                    if (srcLastRep->NeedsWriteBack)
-                    {
-                        JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is "
-                                "necessary.\n",
-                                srcLastRep->LclNum, srcLastRep->Description);
-
-                        result.AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
-                        srcLastRep->NeedsWriteBack = false;
-                    }
-
-                    srcEndRep--;
-                }
-            }
-        }
-
-        DecompositionPlan plan(m_compiler, dst, src, srcInvolvesReplacements);
-
-        if (src->IsConstInitVal())
-        {
-            InitFields(dst->AsLclVarCommon(), dstFirstRep, dstEndRep, &plan);
-        }
-        else
-        {
-            CopyBetweenFields(dst, dstFirstRep, dstEndRep, src, srcFirstRep, srcEndRep, &result, &plan);
-        }
-
-        plan.Finalize(&result);
-
-        *use          = result.ToCommaTree(m_compiler);
-        m_madeChanges = true;
-    }
-    else
-    {
-        if (asg->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            GenTreeLclVarCommon* rhsLcl = asg->gtGetOp2()->AsLclVarCommon();
-            unsigned             size   = rhsLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&asg->gtOp2, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
-        }
-
-        if (asg->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            GenTreeLclVarCommon* lhsLcl = asg->gtGetOp1()->AsLclVarCommon();
-            unsigned             size   = lhsLcl->GetLayout(m_compiler)->GetSize();
-            MarkForReadBack(lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size);
         }
     }
 }
