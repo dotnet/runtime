@@ -990,8 +990,6 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
         index = gtNewIndir(indexAddr->gtElemType, indexAddr);
     }
 
-    index->gtFlags |= GTF_GLOB_REF;
-
     return index;
 }
 

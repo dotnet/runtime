@@ -7710,9 +7710,11 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
     return store;
 }
 
-GenTreeLclFld* Compiler::gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
+    unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data)
 {
-    ClassLayout*   layout = (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr;
+    assert((type == TYP_STRUCT) == (layout != nullptr));
+
     GenTreeLclFld* store  = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
     if (store->IsPartialLclFld(this))
@@ -8015,7 +8017,9 @@ GenTreeIndir* Compiler::gtNewFieldIndirNode(var_types type, ClassLayout* layout,
 //
 void Compiler::gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags)
 {
+    assert(varTypeIsI(genActualType(indir->Addr())));
     assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
     indir->gtFlags |= indirFlags;
     indir->SetIndirExceptionFlags(this);
 
@@ -15936,26 +15940,14 @@ GenTree* Compiler::gtNewTempAssign(
         compFloatingPointUsed = true;
     }
 
-    GenTree* store;
-    if (compAssignmentRationalized)
-    {
-        store = gtNewStoreLclVarNode(tmp, val);
+    GenTree* store = gtNewStoreLclVarNode(tmp, val);
 
-#ifdef UNIX_AMD64_ABI
-        if (val->IsCall())
-        {
-            // TODO-ASG: delete this zero-diff quirk.
-            varDsc->lvIsMultiRegRet = true;
-        }
-#endif // UNIX_AMD64_ABI
-    }
-    else if (varTypeIsStruct(varDsc) && !val->IsInitVal())
+    // TODO-ASG: delete this zero-diff quirk. Requires some forward substitution work.
+    store->gtType = dstTyp;
+
+    if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
-        store = impAssignStruct(gtNewLclvNode(tmp, dstTyp), val, curLevel, pAfterStmt, di, block);
-    }
-    else
-    {
-        store = gtNewAssignNode(gtNewLclvNode(tmp, dstTyp), val);
+        store = impAssignStruct(store, curLevel, pAfterStmt, di, block);
     }
 
     return store;
@@ -16072,33 +16064,31 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                     result = gtNewIndir(lclTyp, result);
                 }
             }
-            else if (varTypeIsIntegral(lclTyp) && genTypeSize(lclTyp) < genTypeSize(TYP_INT))
+            else if (varTypeIsSmall(lclTyp))
             {
                 // The helper does not extend the small return types.
                 result = gtNewCastNode(genActualType(lclTyp), result, false, lclTyp);
             }
         }
     }
-    else
+    else if ((access & CORINFO_ACCESS_ADDRESS) == 0) // OK, now do the indirection
     {
-        // OK, now do the indirection
-        if (access & CORINFO_ACCESS_GET)
+        ClassLayout* layout;
+        lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
+
+        if ((access & CORINFO_ACCESS_SET) != 0)
         {
-            ClassLayout* layout;
-            lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, structType, &layout);
-            result = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, result) : gtNewIndir(lclTyp, result);
-        }
-        else if (access & CORINFO_ACCESS_SET)
-        {
+            result = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, result, assg)->AsIndir()
+                                            : gtNewStoreIndNode(lclTyp, result, assg);
             if (varTypeIsStruct(lclTyp))
             {
-                result = impAssignStructPtr(result, assg, CHECK_SPILL_ALL);
+                result = impAssignStruct(result, CHECK_SPILL_ALL);
             }
-            else
-            {
-                result = gtNewIndir(lclTyp, result);
-                result = gtNewAssignNode(result, assg);
-            }
+        }
+        else
+        {
+            assert((access & CORINFO_ACCESS_GET) != 0);
+            result = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, result) : gtNewIndir(lclTyp, result);
         }
     }
 
@@ -23688,8 +23678,7 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, CorInfoType si
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    op1 = gtNewIndir(op2->TypeGet(), op1);
-    return gtNewAssignNode(op1, op2);
+    return gtNewStoreIndNode(op2->TypeGet(), op1, op2);
 }
 
 //----------------------------------------------------------------------------------------------

@@ -2111,17 +2111,16 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     ClassLayout* blkLayout = typGetBlkLayout(blkSize);
+    GenTree*     srcAddr   = gtNewIconHandleNode((size_t)initData, GTF_ICON_CONST_PTR);
+    GenTree*     src       = gtNewBlkIndir(blkLayout, srcAddr);
     GenTree*     dstAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
-    GenTree*     dst       = gtNewBlkIndir(blkLayout, dstAddr);
-
-    GenTree* srcAddr = gtNewIconHandleNode((size_t)initData, GTF_ICON_CONST_PTR);
-    GenTree* src     = gtNewBlkIndir(blkLayout, srcAddr);
+    GenTree*     store     = gtNewStoreBlkNode(blkLayout, dstAddr, src);
 
 #ifdef DEBUG
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
-    return gtNewAssignNode(dst, src);
+    return store;
 }
 
 GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
@@ -2221,15 +2220,13 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
     lvaSetStruct(spanTempNum, spanHnd, false);
 
-    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference);
-    GenTree*       pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
-
-    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, OFFSETOF__CORINFO_Span__length);
-    GenTree*       lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
+    GenTree* dataFieldStore =
+        gtNewStoreLclFldNode(spanTempNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference, pointerValue);
+    GenTree* lengthFieldStore = gtNewStoreLclFldNode(spanTempNum, TYP_INT, OFFSETOF__CORINFO_Span__length, lengthValue);
 
     // Now append a few statements the initialize the span
-    impAppendTree(lengthFieldAsg, CHECK_SPILL_NONE, impCurStmtDI);
-    impAppendTree(pointerFieldAsg, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(lengthFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
+    impAppendTree(dataFieldStore, CHECK_SPILL_NONE, impCurStmtDI);
 
     // And finally create a tree that points at the span.
     return impCreateLocalNode(spanTempNum DEBUGARG(0));
@@ -3113,11 +3110,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     unsigned structLcl = lvaGrabTemp(true DEBUGARG("RuntimeTypeHandle"));
                     lvaSetStruct(structLcl, sig->retTypeClass, false);
-                    GenTree*       realHandle   = op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
-                    GenTreeLclFld* handleFld    = gtNewLclFldNode(structLcl, realHandle->TypeGet(), 0);
-                    GenTree*       asgHandleFld = gtNewAssignNode(handleFld, realHandle);
-                    impAppendTree(asgHandleFld, CHECK_SPILL_NONE, impCurStmtDI);
-                    retNode = impCreateLocalNode(structLcl DEBUGARG(0));
+                    GenTree* realHandle     = op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTree* storeHandleFld = gtNewStoreLclFldNode(structLcl, realHandle->TypeGet(), 0, realHandle);
+                    impAppendTree(storeHandleFld, CHECK_SPILL_NONE, impCurStmtDI);
+
+                    retNode = gtNewLclVarNode(structLcl);
                     impPopStack();
                 }
                 break;
@@ -8931,28 +8928,22 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
                                                               static_cast<unsigned char>(arrayElemSize), &inds[0]);
+    switch (intrinsicName)
+    {
+        case NI_Array_Set:
+            assert(!varTypeIsStruct(elemType));
+            arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+            break;
 
-    if (intrinsicName != NI_Array_Address)
-    {
-        if (elemType == TYP_STRUCT)
-        {
-            arrElem = gtNewBlkIndir(elemLayout, arrElem);
-        }
-        else
-        {
-            arrElem = gtNewIndir(elemType, arrElem);
-        }
+        case NI_Array_Get:
+            arrElem = (elemType == TYP_STRUCT) ? gtNewBlkIndir(elemLayout, arrElem) : gtNewIndir(elemType, arrElem);
+            break;
+
+        default:
+            break;
     }
 
-    if (intrinsicName == NI_Array_Set)
-    {
-        assert(val != nullptr);
-        return gtNewAssignNode(arrElem, val);
-    }
-    else
-    {
-        return arrElem;
-    }
+    return arrElem;
 }
 
 //------------------------------------------------------------------------

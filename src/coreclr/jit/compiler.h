@@ -2498,7 +2498,13 @@ public:
 
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
 
-    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data);
+    GenTreeLclFld* gtNewStoreLclFldNode(
+        unsigned lclNum, var_types type, ClassLayout* layout, unsigned offset, GenTree* data);
+
+    GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+    {
+        return gtNewStoreLclFldNode(lclNum, type, (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr, offset, data);
+    }
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
@@ -2863,6 +2869,11 @@ public:
     GenTree* gtNewStoreValueNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
     {
         return gtNewStoreValueNode(layout->GetType(), layout, addr, data, indirFlags);
+    }
+
+    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewStoreValueNode(type, nullptr, addr, data, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
@@ -3878,11 +3889,13 @@ protected:
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
     GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
-    GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                        CORINFO_ACCESS_FLAGS    access,
-                                        CORINFO_FIELD_INFO*     pFieldInfo,
-                                        var_types               lclTyp,
-                                        /* OUT */ bool*         pIsHoistable = nullptr);
+    GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                         CORINFO_ACCESS_FLAGS    access,
+                                         CORINFO_FIELD_INFO*     pFieldInfo,
+                                         var_types               lclTyp,
+                                         GenTreeFlags*           pIndirFlags,
+                                         bool*                   pIsHoistable = nullptr);
+    void impAnnotateFieldIndir(GenTreeIndir* indir);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
@@ -4048,13 +4061,12 @@ public:
                           GenTree**            clone,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*         dest,
-                             GenTree*         src,
+    GenTree* impAssignStruct(GenTree*         store,
                              unsigned         curLevel,
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impAssignStructPtr(GenTree* dest, GenTree* src, unsigned curLevel);
+    GenTree* impAssignStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
 
     GenTree* impGetStructAddr(GenTree* structVal, unsigned curLevel, bool willDeref);
 
