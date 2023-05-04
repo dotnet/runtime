@@ -23,7 +23,7 @@ export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
 // this is when we link with workload tools. The consts:WasmEnableLegacyJsInterop is when we compile with rollup.
 export let disableLegacyJsInterop = false;
-export const thisIsRuntimeModuleRollupGuard = true;// this will be removed by rollup, please keep it in place 
+export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
@@ -33,6 +33,10 @@ export function passEmscriptenInternals(internals: EmscriptenInternals): void {
 }
 
 export function setRuntimeGlobals(globalObjects: GlobalObjects) {
+    if (_runtimeModuleLoaded) {
+        throw new Error("Runtime module already loaded");
+    }
+    _runtimeModuleLoaded = true;
     Module = globalObjects.module;
     INTERNAL = globalObjects.internal;
     runtimeHelpers = globalObjects.runtimeHelpers;

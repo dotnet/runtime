@@ -17,11 +17,15 @@ export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let INTERNAL: any;
-export const thisIsLoaderModuleRollupGuard = true;// this will be removed by rollup, please keep it in place 
+export let _loaderModuleLoaded = false; // please keep it in place also as rollup guard
 
 export function setLoaderGlobals(
     globalObjects: GlobalObjects,
 ) {
+    if (_loaderModuleLoaded) {
+        throw new Error("Loader module already loaded");
+    }
+    _loaderModuleLoaded = true;
     runtimeHelpers = globalObjects.runtimeHelpers;
     loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;

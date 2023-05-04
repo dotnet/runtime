@@ -54,13 +54,13 @@ const checkAssert =
 };
 const checkNoLoader =
 {
-    pattern: /thisIsLoaderModuleRollupGuard/gm,
-    failure: "module should not contain thisIsLoaderModuleRollupGuard member. This is probably duplicated code in the output caused by a dependency outside on the loader module."
+    pattern: /_loaderModuleLoaded/gm,
+    failure: "module should not contain loaderModuleLoaded member. This is probably duplicated code in the output caused by a dependency outside on the loader module."
 };
 const checkNoRuntime =
 {
-    pattern: /thisIsRuntimeModuleRollupGuard/gm,
-    failure: "module should not contain thisIsRuntimeModuleRollupGuard member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+    pattern: /_runtimeModuleLoaded/gm,
+    failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
 };
 
 
