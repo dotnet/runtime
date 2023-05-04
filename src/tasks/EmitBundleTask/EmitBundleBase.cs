@@ -33,7 +33,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// The filename for the generated source file that registers
     /// the bundled resources.
     /// </summary>
-    public string BundleFile { get; set; } = "mono-bundled-resource-registration.c";
+    public string BundleFile { get; set; } = "mono-bundled-source.c";
 
     /// <summary>
     /// The filename for the generated header file that declares

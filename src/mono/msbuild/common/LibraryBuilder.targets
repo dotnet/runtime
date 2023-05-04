@@ -46,15 +46,15 @@
   <Target Name="_GenerateBundle"
           Condition="'$(BundlesResources)' != 'false'">
     <PropertyGroup>
-      <BundledSourceFile>mono-bundled-resource-data.c</BundledSourceFile>
+      <BundleResourceFile>mono-bundled-resource-data.c</BundleResourceFile>
+      <BundleSourceFile>mono-bundled-source.c</BundleSourceFile>
       <BundleOutputDirectory>$(BundleDir)</BundleOutputDirectory>
     </PropertyGroup>
 
     <ItemGroup>
-      <BundledSources Include="$(BundleOutputDirectory)$(BundledSourceFile)" />
+      <BundledSources Include="$(BundleOutputDirectory)$(BundleResourceFile)" />
+      <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
       <BundledSources Include="$(BundleOutputDirectory)mono-bundled-source.h" />
-      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-preallocated-source.c" />
-      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-resource-registration.c" />
     </ItemGroup>
 
     <ItemGroup>
@@ -73,11 +73,12 @@
       </_ResourcesToBundleWithHashes>
     </ItemGroup>
 
-    <Delete Files="$(BundledSourceFile)"/>
+    <Delete Files="$(BundleResourceFile)"/>
 
     <EmitBundleSourceFiles
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
-      CombinedResourceSource="$(BundledSourceFile)"
+      CombinedResourceSource="$(BundleResourceFile)"
+      BundleFile="$(BundleSourceFile)"
       OutputDirectory="$(BundleOutputDirectory)"
       />
   </Target>

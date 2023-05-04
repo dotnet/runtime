@@ -70,7 +70,6 @@
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
       <_WasmTimezonesBundleObjectFile>$(WasiObjDir)\wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
-      <_WasmTimezonesBundlePreallocatedObjectFile>$(WasiObjDir)\wasm-bundled-preallocated-timezones.o</_WasmTimezonesBundlePreallocatedObjectFile>
       <_WasmTimezonesBundleArchive>$(WasiObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
       <_WasmTimezonesArchiveRsp>$(WasiObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
     </PropertyGroup>
@@ -92,7 +91,6 @@
       ClangExecutable="$(WasiClang)"
       BundleName="mono_register_timezones_bundle"
       BundleFile="wasm-bundled-timezones.o"
-      BundlePreallocationFile="wasm-bundled-preallocated-timezones.o"
       OutputDirectory="$(WasiObjDir)"
       />
     <ItemGroup>
@@ -113,7 +111,6 @@
     <ItemGroup>
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
       <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)mono-bundled-source.h" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
       <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundlePreallocatedObjectFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
     </ItemGroup>

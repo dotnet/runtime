@@ -86,8 +86,6 @@
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
       <_WasmTimezonesBundleSourceFile>$(WasmObjDir)\wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
       <_WasmTimezonesBundleObjectFile>$(WasmObjDir)\wasm-bundled-timezones.o</_WasmTimezonesBundleObjectFile>
-      <_WasmTimezonesBundlePreallocatedSourceFile>$(WasmObjDir)\wasm-bundled-preallocated-timezones.c</_WasmTimezonesBundlePreallocatedSourceFile>
-      <_WasmTimezonesBundlePreallocatedObjectFile>$(WasmObjDir)\wasm-bundled-preallocated-timezones.o</_WasmTimezonesBundlePreallocatedObjectFile>
       <_WasmTimezonesBundleArchive>$(WasmObjDir)\wasm-bundled-timezones.a</_WasmTimezonesBundleArchive>
       <_WasmTimezonesSourcesRsp>$(WasmObjDir)\wasm-bundled-timezones-sources.rsp</_WasmTimezonesSourcesRsp>
       <_WasmTimezonesArchiveRsp>$(WasmObjDir)\wasm-bundled-timezones-archive.rsp</_WasmTimezonesArchiveRsp>
@@ -110,14 +108,12 @@
       FilesToBundle="@(_WasmBundleTimezonesWithHashes)"
       BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="wasm-bundled-timezones.c"
-      BundlePreallocationFile="wasm-bundled-preallocated-timezones.c"
       OutputDirectory="$(WasmObjDir)"
       />
 
     <ItemGroup>
       <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
       <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleSourceFile)).Replace('\','/'))" />
-      <_WasmBundleTimezonesSources Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundlePreallocatedSourceFile)).Replace('\','/'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesSourcesRsp)"
       Overwrite="true"
@@ -132,7 +128,6 @@
     <ItemGroup>
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), %(_WasmBundleTimezonesWithHashes.ObjectFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />
-      <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasmObjDir), $(_WasmTimezonesBundlePreallocatedObjectFile)).Replace('\','/'))" />
     </ItemGroup>
     <WriteLinesToFile File="$(_WasmTimezonesArchiveRsp)"
       Overwrite="true"
@@ -156,8 +151,6 @@
       <_WasmBundleTimezonesToDelete Remove="$(_WasmIntermediateOutputPath)mono-bundled-source.h" />
       <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleSourceFile)" />
       <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundleObjectFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundlePreallocatedSourceFile)" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundlePreallocatedObjectFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.ObjectFile)" />
     </ItemGroup>
