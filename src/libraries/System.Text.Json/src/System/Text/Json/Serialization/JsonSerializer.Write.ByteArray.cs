@@ -23,7 +23,7 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static byte[] SerializeToUtf8Bytes<TValue>(
-            TValue? value,
+            TValue value,
             JsonSerializerOptions? options = null)
         {
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
@@ -135,7 +135,7 @@ namespace System.Text.Json
             return WriteBytesAsObject(value, jsonTypeInfo);
         }
 
-        private static byte[] WriteBytes<TValue>(in TValue? value, JsonTypeInfo<TValue> jsonTypeInfo)
+        private static byte[] WriteBytes<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 

@@ -27,7 +27,7 @@ namespace System.Text.Json
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        public static string Serialize<TValue>(TValue? value, JsonSerializerOptions? options = null)
+        public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
             return WriteString(value, jsonTypeInfo);
@@ -80,7 +80,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes{TValue}(TValue, JsonTypeInfo{TValue})"/>
         /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonTypeInfo{TValue}, Threading.CancellationToken)"/>.
         /// </remarks>
-        public static string Serialize<TValue>(TValue? value, JsonTypeInfo<TValue> jsonTypeInfo)
+        public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             if (jsonTypeInfo is null)
             {
@@ -152,7 +152,7 @@ namespace System.Text.Json
             return WriteStringAsObject(value, jsonTypeInfo);
         }
 
-        private static string WriteString<TValue>(in TValue? value, JsonTypeInfo<TValue> jsonTypeInfo)
+        private static string WriteString<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
