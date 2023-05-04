@@ -12,6 +12,7 @@
 #include <mono/metadata/mono-hash.h>
 #include <mono/metadata/mempool.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/metadata/metadata-update.h>
 
 /*
  * We need to return always the same object for MethodInfo, FieldInfo etc..
@@ -22,6 +23,7 @@
 typedef struct {
 	gpointer item;
 	MonoClass *refclass;
+	uint32_t generation; /* 0 is normal; hot reload may change it */
 } ReflectedEntry;
 
 gboolean
@@ -59,6 +61,7 @@ cache_object (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, M
 		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 		e->item = item;
 		e->refclass = klass;
+		e->generation = mono_metadata_update_get_thread_generation();
 		mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, o);
 		obj = o;
 	}
@@ -83,6 +86,7 @@ cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 			e->item = item;
 			e->refclass = klass;
+			e->generation = mono_metadata_update_get_thread_generation();
 			mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, MONO_HANDLE_RAW (o));
 			MONO_HANDLE_ASSIGN (obj, o);
 		}
@@ -92,6 +96,7 @@ cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 			e->item = item;
 			e->refclass = klass;
+			e->generation = mono_metadata_update_get_thread_generation();
 			mono_weak_hash_table_insert (mem_manager->weak_refobject_hash, e, MONO_HANDLE_RAW (o));
 			MONO_HANDLE_ASSIGN (obj, o);
 		}
@@ -107,6 +112,7 @@ static inline MonoObjectHandle
 check_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item)
 {
 	MonoObjectHandle obj_handle;
+	gpointer orig_e, orig_value;
 	ReflectedEntry e;
 	e.item = item;
 	e.refclass = klass;
@@ -119,6 +125,24 @@ check_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 	if (!mem_manager->collectible) {
 		MonoConcGHashTable *hash = mem_manager->refobject_hash;
 		obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_conc_g_hash_table_lookup (hash, &e));
+	} else {
+		MonoWeakHashTable *hash = mem_manager->weak_refobject_hash;
+		obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_weak_hash_table_lookup (hash, &e));
+	}
+
+	if (!mem_manager->collectible) {
+		MonoConcGHashTable *hash = mem_manager->refobject_hash;
+		if (mono_conc_g_hash_table_lookup_extended (hash, &e, &orig_e, &orig_value))
+			if (((ReflectedEntry *)orig_e)->generation < mono_metadata_update_get_thread_generation()) {
+				mono_conc_g_hash_table_remove (hash, &e);
+				free_reflected_entry ((ReflectedEntry *)orig_e);
+				obj_handle = MONO_HANDLE_NEW (MonoObject, NULL);
+			} else {
+				obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)orig_value);
+			}
+		else {
+			obj_handle = MONO_HANDLE_NEW (MonoObject, NULL);
+		}
 	} else {
 		MonoWeakHashTable *hash = mem_manager->weak_refobject_hash;
 		obj_handle = MONO_HANDLE_NEW (MonoObject, (MonoObject *)mono_weak_hash_table_lookup (hash, &e));
