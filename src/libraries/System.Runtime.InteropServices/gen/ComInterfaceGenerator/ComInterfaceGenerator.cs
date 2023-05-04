@@ -168,11 +168,11 @@ namespace Microsoft.Interop
                 {
                     var context = data.Interface.Info;
                     var methods = data.InheritedMethods.Select(m => (MemberDeclarationSyntax)m.GenerateShadow());
-                    var asdf = TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
+                    var typeDecl = TypeDeclaration(context.ContainingSyntax.TypeKind, context.ContainingSyntax.Identifier)
                         .WithModifiers(context.ContainingSyntax.Modifiers)
                         .WithTypeParameterList(context.ContainingSyntax.TypeParameters)
                         .WithMembers(List(methods));
-                    return data.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(asdf);
+                    return data.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(typeDecl);
                 })
                 .SelectNormalized();
 

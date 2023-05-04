@@ -60,8 +60,8 @@ public partial class GeneratedComInterfaceTests
     public unsafe void CallBaseInterfaceMethod_EnsureQiCalledOnce()
     {
         var cw = new SingleQIComWrapper();
-        var asdf = new DerivedImpl();
-        var nativeObj = cw.GetOrCreateComInterfaceForObject(asdf, CreateComInterfaceFlags.None);
+        var derivedImpl = new DerivedImpl();
+        var nativeObj = cw.GetOrCreateComInterfaceForObject(derivedImpl, CreateComInterfaceFlags.None);
         var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
         IDerivedComInterface iface = (IDerivedComInterface)obj;
 
