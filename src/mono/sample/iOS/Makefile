@@ -1,10 +1,10 @@
 MONO_CONFIG?=Debug
-MONO_ARCH?=x64
+MONO_ARCH?=arm64
 DOTNET := ../../../../dotnet.sh
 USE_LLVM=true
-AOT?=false
-TARGET?=iossimulator
-DEPLOY_AND_RUN?=true
+AOT?=true
+TARGET?=ios
+DEPLOY_AND_RUN?=false
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
 
