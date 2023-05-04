@@ -135,10 +135,6 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
                     break;
 
-                case ReadyToRunHelper.AreTypesEquivalent:
-                    mangledName = "RhTypeCast_AreTypesEquivalent";
-                    break;
-
                 case ReadyToRunHelper.Lng2Dbl:
                     mangledName = "RhpLng2Dbl";
                     break;

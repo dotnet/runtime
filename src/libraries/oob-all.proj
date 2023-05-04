@@ -13,6 +13,14 @@
                                $(MSBuildThisFileDirectory)*\src\**\*.shproj;
                                shims\src\*.csproj" />
 
+    <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj"
+                      Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
+                                 (
+                                  '$(BuildingAnOfficialBuildLeg)' != 'true' or
+                                  '$(BuildAllConfigurations)' == 'true'
+                                 )" />
+
     <!-- Build these packages in the allconfigurations leg only. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;
                               Microsoft.Internal.Runtime.WindowsDesktop.Transport\src\Microsoft.Internal.Runtime.WindowsDesktop.Transport.proj"
@@ -21,10 +29,6 @@
     <!-- Skip these projects during source-build as they rely on external prebuilts. -->
     <ProjectReference Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj"
                       Condition="'$(DotNetBuildFromSource)' == 'true'" />
-
-    <!-- During an official build, build the identity package only in the allconfigurations build, otherwise always. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.native.*.proj"
-                      Condition="'$(BuildingAnOfficialBuildLeg)' != 'true' or '$(BuildAllConfigurations)' == 'true'" />
   </ItemGroup>
 
 </Project>

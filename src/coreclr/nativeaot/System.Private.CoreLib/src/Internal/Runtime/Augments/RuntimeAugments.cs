@@ -401,6 +401,12 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(elementType);
         }
 
+        public static unsafe int GetArrayRankOrMinusOneForSzArray(RuntimeTypeHandle arrayHandle)
+        {
+            Debug.Assert(IsArrayType(arrayHandle));
+            return arrayHandle.ToMethodTable()->IsSzArray ? -1 : arrayHandle.ToMethodTable()->ArrayRank;
+        }
+
         public static bool IsValueType(RuntimeTypeHandle type)
         {
             return type.ToEETypePtr().IsValueType;
@@ -640,6 +646,43 @@ namespace Internal.Runtime.Augments
         public static bool IsFunctionPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsFunctionPointer;
+        }
+
+        public static unsafe RuntimeTypeHandle GetFunctionPointerReturnType(RuntimeTypeHandle typeHandle)
+        {
+            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerReturnType));
+        }
+
+        public static unsafe int GetFunctionPointerParameterCount(RuntimeTypeHandle typeHandle)
+        {
+            return (int)typeHandle.ToMethodTable()->NumFunctionPointerParameters;
+        }
+
+        public static unsafe RuntimeTypeHandle GetFunctionPointerParameterType(RuntimeTypeHandle typeHandle, int argumentIndex)
+        {
+            Debug.Assert(argumentIndex < GetFunctionPointerParameterCount(typeHandle));
+            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerParameters[argumentIndex]));
+        }
+
+        public static unsafe RuntimeTypeHandle[] GetFunctionPointerParameterTypes(RuntimeTypeHandle typeHandle)
+        {
+            int paramCount = GetFunctionPointerParameterCount(typeHandle);
+            if (paramCount == 0)
+                return Array.Empty<RuntimeTypeHandle>();
+
+            RuntimeTypeHandle[] result = new RuntimeTypeHandle[paramCount];
+            MethodTableList parameters = typeHandle.ToMethodTable()->FunctionPointerParameters;
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new RuntimeTypeHandle(new EETypePtr(parameters[i]));
+            }
+
+            return result;
+        }
+
+        public static unsafe bool IsUnmanagedFunctionPointerType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToMethodTable()->IsUnmanagedFunctionPointer;
         }
 
         public static bool IsByRefType(RuntimeTypeHandle typeHandle)

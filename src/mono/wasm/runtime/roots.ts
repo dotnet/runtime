@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import { VoidPtr, ManagedPointer, NativePointer } from "./types/emscripten";
 import { MonoObjectRef, MonoObjectRefNull, MonoObject, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
 import { _zero_region } from "./memory";

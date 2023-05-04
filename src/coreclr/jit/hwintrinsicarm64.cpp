@@ -811,7 +811,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op1                 = nodeBuilder.GetOperand(0);
                 GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
-                retNode             = gtNewOperNode(GT_IND, retType, op1Address);
+                retNode             = gtNewIndir(retType, op1Address);
             }
             else
             {
@@ -1519,6 +1519,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftLeft:
         case NI_Vector128_ShiftLeft:
+        case NI_Vector64_op_LeftShift:
+        case NI_Vector128_op_LeftShift:
         {
             assert(sig->numArgs == 2);
 
@@ -1531,6 +1533,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftRightArithmetic:
         case NI_Vector128_ShiftRightArithmetic:
+        case NI_Vector64_op_RightShift:
+        case NI_Vector128_op_RightShift:
         {
             assert(sig->numArgs == 2);
             genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
@@ -1544,6 +1548,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftRightLogical:
         case NI_Vector128_ShiftRightLogical:
+        case NI_Vector64_op_UnsignedRightShift:
+        case NI_Vector128_op_UnsignedRightShift:
         {
             assert(sig->numArgs == 2);
 

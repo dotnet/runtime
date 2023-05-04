@@ -93,28 +93,23 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 
             if (promotionType != PROMOTION_TYPE_NONE)
             {
-                VARSET_TP bitMask(VarSetOps::MakeEmpty(this));
-
                 for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
                 {
-                    noway_assert(lvaTable[i].lvIsStructField);
-                    if (lvaTable[i].lvTracked)
+                    if (!lvaTable[i].lvTracked)
                     {
-                        noway_assert(lvaTable[i].lvVarIndex < lvaTrackedCount);
-                        VarSetOps::AddElemD(this, bitMask, lvaTable[i].lvVarIndex);
+                        continue;
                     }
-                }
 
-                // For pure defs (i.e. not an "update" def which is also a use), add to the (all) def set.
-                if (!isUse)
-                {
-                    assert(isDef);
-                    VarSetOps::UnionD(this, fgCurDefSet, bitMask);
-                }
-                else if (!VarSetOps::IsSubset(this, bitMask, fgCurDefSet))
-                {
-                    // Mark as used any struct fields that are not yet defined.
-                    VarSetOps::UnionD(this, fgCurUseSet, bitMask);
+                    unsigned varIndex = lvaTable[i].lvVarIndex;
+                    if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varIndex))
+                    {
+                        VarSetOps::AddElemD(this, fgCurUseSet, varIndex);
+                    }
+
+                    if (isDef)
+                    {
+                        VarSetOps::AddElemD(this, fgCurDefSet, varIndex);
+                    }
                 }
             }
         }
@@ -240,11 +235,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             {
                 fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             }
-            break;
-
-        // These should have been morphed away to become GT_INDs:
-        case GT_FIELD:
-            unreached();
             break;
 
         case GT_ASG:
@@ -2101,6 +2091,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
             case GT_JCMP:
+            case GT_JTEST:
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:
@@ -2732,7 +2723,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
+                        assert(cur->OperIsAnyLocal());
                         bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
@@ -2758,7 +2749,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
+                        assert(cur->OperIsAnyLocal());
                         if (!fgComputeLifeLocal(life, keepAliveVars, cur))
                         {
                             cur = cur->gtPrev;

@@ -65,4 +65,8 @@ namespace System.Web
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("str")]
         public static string? UrlPathEncode(string? str) { throw null; }
     }
+    public partial interface IHtmlString
+    {
+        string ToHtmlString();
+    }
 }

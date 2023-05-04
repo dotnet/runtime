@@ -126,9 +126,6 @@
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
   </data>
-  <data name="NotSupported_Signature" xml:space="preserve">
-    <value>The signature {0} is not supported.</value>
-  </data>
   <data name="InvalidOperation_AModuleRequired" xml:space="preserve">
     <value>Assembly needs at least one module defined.</value>
   </data>
@@ -141,7 +138,37 @@
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
   </data>
-  <data name="Argument_InvalidName" xml:space="preserve">
-    <value>Invalid name.</value>
+  <data name="Argument_InvalidTypeCodeForTypeArgument" xml:space="preserve">
+    <value>The type code may not be used as a type argument of a custom attribute .</value>
+  </data>
+  <data name="NotSupported_UnmanagedTypeOnlyForFields" xml:space="preserve">
+    <value> 'UnmanagedType.{0}' named parameter is only valid for fields.</value>
+  </data>
+  <data name="Argument_InvalidCustomAttributeLength" xml:space="preserve">
+    <value>Custom attribute '{0}' data length is only '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidProlog" xml:space="preserve">
+    <value>Custom attribute '{0}' prolog invalid.</value>
+  </data>
+  <data name="Argument_UnknownNamedType" xml:space="preserve">
+    <value>Custom attribute '{0}' has unknown named type '{1}'.</value>
+  </data>
+  <data name="NotImplemented_TypeForValue" xml:space="preserve">
+    <value>Type '{0}' not handled in the custom attribute value decoder.</value>
+  </data>
+  <data name="Argument_DllNameCannotBeEmpty" xml:space="preserve">
+    <value>DllName cannot be empty.</value>
+  </data>
+  <data name="ArgumentOutOfRange_ParamSequence" xml:space="preserve">
+    <value>The specified parameter index is not in range.</value>
+  </data>
+  <data name="Argument_InvalidArgumentForAttribute" xml:space="preserve">
+    <value>Invalid constructor argument {0} provided for MarshalAs atttribute.</value>
+  </data>
+  <data name="Argument_InvalidParameterForUnmanagedType" xml:space="preserve">
+    <value>Named parameter {0} is not valid for UnmanagedType.{1} type.</value>
+  </data>
+  <data name="Argument_SizeConstMustBeSpecified" xml:space="preserve">
+    <value>SizeConst parameter must be specified for UnmanagedType.ByValTStr type.</value>
   </data>
 </root>

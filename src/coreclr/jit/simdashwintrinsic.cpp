@@ -1906,7 +1906,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 8);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD8, op2Address);
                     }
                     else
                     {
@@ -2046,7 +2046,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 12);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD12, op2Address);
                     }
                     else
                     {
@@ -2173,7 +2173,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                              areArgumentsContiguous(op4, op5))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD16, op2Address);
                     }
                     else
                     {
@@ -2206,9 +2206,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-        GenTree* dest = gtNewLoadValueNode(simdType, copyBlkDst);
-        dest->gtFlags |= GTF_GLOB_REF;
-
+        GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;

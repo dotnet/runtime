@@ -402,6 +402,28 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux RISCV64
+
+- ${{ if containsValue(parameters.platforms, 'linux_riscv64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: riscv64
+      targetRid: linux-riscv64
+      platform: linux_riscv64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_riscv64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        disableClrTest: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # WASI WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'wasi_wasm') }}:

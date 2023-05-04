@@ -497,9 +497,13 @@ public:
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
 
-    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
-    void dmpGetReadonlyStaticFieldValue(DLDDD key, DD value);
-    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    void recGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
+    void dmpGetStaticFieldContent(DLDDD key, DD value);
+    bool repGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+
+    void recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result);
+    void dmpGetObjectContent(DLDD key, DD value);
+    bool repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value);
@@ -773,10 +777,6 @@ public:
     void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
     CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
 
-    void recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result);
-    void dmpAreTypesEquivalent(DLDL key, DWORD value);
-    bool repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
-
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
     TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
@@ -982,7 +982,7 @@ private:
 
 enum mcPackets
 {
-    Packet_AreTypesEquivalent = 1,
+    //Packet_AreTypesEquivalent = 1,
     Packet_AsCorInfoType = 2,
     Packet_CanAccessClass = 3,
     Packet_CanAccessFamily = 4,
@@ -1175,7 +1175,7 @@ enum mcPackets
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
-    Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetStaticFieldContent = 198,
     Packet_GetObjectType = 199,
     Packet_IsObjectImmutable = 200,
     Packet_ExpandRawHandleIntrinsic = 201,
@@ -1187,6 +1187,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
+    Packet_GetObjectContent = 210,
 };
 
 void SetDebugDumpVariables();

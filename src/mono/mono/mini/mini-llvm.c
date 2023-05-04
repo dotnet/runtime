@@ -4756,7 +4756,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
 	}
 
-	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+	MonoClass *retclass = mono_class_from_mono_type_internal (sig->ret);
+	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, retclass);
 	gboolean should_promote_to_value = FALSE;
 	const char *load_name = NULL;
 	/*
@@ -4821,11 +4822,17 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	case LLVMArgGsharedvtFixedVtype:
 		values [ins->dreg] = LLVMBuildLoad2 (builder, rtype, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (rtype), FALSE), "");
 		break;
-	case LLVMArgWasmVtypeAsScalar:
+	case LLVMArgWasmVtypeAsScalar: {
+		/*
+		 * If the vtype contains references, making the store volatile ensures there is a reference
+		 * on the stack.
+		 */
+		gboolean is_volatile = m_class_has_references (retclass);
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE));
+		emit_store (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE), is_volatile);
 		break;
+	}
 	default:
 		if (sig->ret->type != MONO_TYPE_VOID)
 			/* If the method returns an unsigned value, need to zext it */
@@ -5827,6 +5834,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_NOT_NULL:
 		case OP_LIVERANGE_START:
 		case OP_LIVERANGE_END:
+		case OP_TAILCALL_PARAMETER:
 			break;
 		case OP_ICONST:
 			values [ins->dreg] = const_int32 (ins->inst_c0);
@@ -7772,6 +7780,12 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildSExt (builder, result, ret_t, "ushll");
 			result = LLVMBuildShl (builder, result, create_shift_vector (ctx, result, rhs), "");
 			values [ins->dreg] = result;
+			break;
+		}
+		case OP_XOP_OVR_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
 			break;
 		}
 #endif
@@ -10257,6 +10271,13 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildSExt (builder, result, ret_t, "");
 			break;
 		}
+		case OP_ARM64_HINT: {
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			LLVMValueRef hintid = LLVMConstInt (LLVMInt32Type (), ins->inst_c0, FALSE);
+			LLVMValueRef args [] = { hintid };
+			call_intrins (ctx, INTRINS_AARCH64_HINT, args, "");
+			break;
+		}
 		case OP_ARM64_EXT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			unsigned int elems = LLVMGetVectorSize (ret_t);
@@ -11452,12 +11473,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
-		case OP_XOP_OVR_X_X: {
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
-			break;
-		}
 		case OP_XOP_OVR_X_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
@@ -11734,13 +11749,20 @@ MONO_RESTORE_WARNING
 		}
 		case OP_IL_SEQ_POINT:
 			break;
-		default: {
+		case OP_ARGLIST:
+		case OP_TAILCALL:
+		case OP_TAILCALL_REG:
+		case OP_TAILCALL_MEMBASE:
+		case OP_CKFINITE: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));
 			set_failure (ctx, reason);
 			break;
 		}
+		default:
+			g_error ("opcode %d %s", ins->opcode, mono_inst_name (ins->opcode));
+			break;
 		}
 
 		if (!ctx_ok (ctx))

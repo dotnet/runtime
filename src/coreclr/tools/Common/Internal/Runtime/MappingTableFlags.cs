@@ -17,12 +17,6 @@ namespace Internal.Runtime
         public const int FlagsMask = 1;
     }
 
-    internal struct FunctionPointerMapEntry
-    {
-        public const uint IsUnmanagedFlag = 1;
-        public const int ParameterCountShift = 1;
-    }
-
     [Flags]
     public enum InvokeTableFlags : uint
     {

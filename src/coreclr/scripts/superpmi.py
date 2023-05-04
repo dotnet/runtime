@@ -3096,7 +3096,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)

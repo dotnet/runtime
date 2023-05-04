@@ -20,7 +20,6 @@ namespace Internal.Runtime
         {
             public IntPtr OsHandle;
             public IntPtr ReadyToRunHeader;
-            public IntPtr DispatchMap;
         }
 
         public TypeManagerHandle(IntPtr handleValue)
@@ -46,14 +45,6 @@ namespace Internal.Runtime
             get
             {
                 return _handleValue->OsHandle;
-            }
-        }
-
-        public unsafe IntPtr DispatchMap
-        {
-            get
-            {
-                return _handleValue->DispatchMap;
             }
         }
     }
