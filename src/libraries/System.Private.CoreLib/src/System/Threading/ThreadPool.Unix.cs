@@ -10,16 +10,16 @@ namespace System.Threading
     {
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        private static unsafe bool UnsafeQueueNativeOverlappedPortableCore(NativeOverlapped* overlapped) =>
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(IntPtr osHandle) =>
+        public static bool BindHandle(IntPtr osHandle) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
 
         [SupportedOSPlatform("windows")]
-        private static bool BindHandlePortableCore(SafeHandle osHandle) =>
+        public static bool BindHandle(SafeHandle osHandle) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
     }
 }
