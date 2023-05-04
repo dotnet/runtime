@@ -2842,6 +2842,189 @@ PhaseStatus Compiler::fgFindOperOrder()
 }
 
 //------------------------------------------------------------------------
+// fgRationalizeAssignments: Rewrite assignment nodes into stores.
+//
+// TODO-ASG: delete.
+//
+PhaseStatus Compiler::fgRationalizeAssignments()
+{
+    class AssignmentRationalizationVisitor : public GenTreeVisitor<AssignmentRationalizationVisitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        AssignmentRationalizationVisitor(Compiler* compiler) : GenTreeVisitor(compiler)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            // GTF_ASG is sometimes not propagated from setup arg assignments so we have to check for GTF_CALL too.
+            if ((node->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
+            {
+                return fgWalkResult::WALK_SKIP_SUBTREES;
+            }
+
+            if (node->OperIs(GT_ASG))
+            {
+                GenTreeFlags lhsRhsFlags = node->gtGetOp1()->gtFlags | node->gtGetOp2()->gtFlags;
+                *use                     = m_compiler->fgRationalizeAssignment(node->AsOp());
+
+                // TP: return early quickly for simple assignments.
+                if ((lhsRhsFlags & (GTF_ASG | GTF_CALL)) == 0)
+                {
+                    return fgWalkResult::WALK_SKIP_SUBTREES;
+                }
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    AssignmentRationalizationVisitor visitor(this);
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree** use = stmt->GetRootNodePointer();
+            if (visitor.PreOrderVisit(use, nullptr) == fgWalkResult::WALK_CONTINUE)
+            {
+                visitor.WalkTree(use, nullptr);
+            }
+        }
+    }
+
+    compAssignmentRationalized = true;
+
+#ifdef DEBUG
+    if (JitConfig.JitStressMorphStores())
+    {
+        for (BasicBlock* block : Blocks())
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                fgMorphBlockStmt(block, stmt DEBUGARG("fgRationalizeAssignments"));
+            }
+        }
+    }
+#endif // DEBUG
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgRationalizeAssignment: Rewrite GT_ASG into a store node.
+//
+// Arguments:
+//    assignment - The assignment node to rewrite
+//
+// Return Value:
+//    Assignment's location, turned into the appropriate store node.
+//
+GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
+{
+    assert(assignment->OperGet() == GT_ASG);
+
+    bool     isReverseOp = assignment->IsReverseOp();
+    GenTree* location    = assignment->gtGetOp1();
+    GenTree* value       = assignment->gtGetOp2();
+    if (location->OperIsLocal())
+    {
+        assert((location->gtFlags & GTF_VAR_DEF) != 0);
+    }
+    else if (value->OperIs(GT_LCL_VAR))
+    {
+        assert((value->gtFlags & GTF_VAR_DEF) == 0);
+    }
+
+    if (assignment->OperIsInitBlkOp())
+    {
+        // No SIMD types are allowed for InitBlks (including zero-inits).
+        assert(assignment->TypeIs(TYP_STRUCT) && location->TypeIs(TYP_STRUCT));
+    }
+
+    genTreeOps storeOp;
+    switch (location->OperGet())
+    {
+        case GT_LCL_VAR:
+            storeOp = GT_STORE_LCL_VAR;
+            break;
+        case GT_LCL_FLD:
+            storeOp = GT_STORE_LCL_FLD;
+            break;
+        case GT_BLK:
+            storeOp = GT_STORE_BLK;
+            break;
+        case GT_IND:
+            storeOp = GT_STOREIND;
+            break;
+        default:
+            unreached();
+    }
+
+    JITDUMP("Rewriting GT_ASG(%s, X) to %s(X)\n", GenTree::OpName(location->OperGet()), GenTree::OpName(storeOp));
+
+    GenTree* store = location;
+    store->SetOperRaw(storeOp);
+    store->Data() = value;
+    store->gtFlags |= GTF_ASG;
+    store->AddAllEffectsFlags(value);
+    store->AddAllEffectsFlags(assignment->gtFlags & GTF_GLOB_REF); // TODO-ASG: zero-diff quirk, delete.
+    if (isReverseOp && !store->OperIsLocalStore())
+    {
+        store->SetReverseOp();
+    }
+    store->CopyRawCosts(assignment);
+
+    if (storeOp == GT_STOREIND)
+    {
+        store->AsStoreInd()->SetRMWStatusDefault();
+    }
+
+    // [..., LHS, ..., RHS, ASG] -> [..., ..., RHS, LHS<STORE>] (normal)
+    // [..., RHS, ..., LHS, ASG] -> [..., RHS, ..., LHS<STORE>] (reversed)
+    if (assignment->gtPrev != nullptr)
+    {
+        assert(fgNodeThreading == NodeThreading::AllTrees);
+        if (isReverseOp)
+        {
+            GenTree* nextNode = assignment->gtNext;
+            store->gtNext     = nextNode;
+            if (nextNode != nullptr)
+            {
+                nextNode->gtPrev = store;
+            }
+        }
+        else
+        {
+            if (store->gtPrev != nullptr)
+            {
+                store->gtPrev->gtNext = store->gtNext;
+            }
+            store->gtNext->gtPrev = store->gtPrev;
+
+            store->gtPrev         = assignment->gtPrev;
+            store->gtNext         = assignment->gtNext;
+            store->gtPrev->gtNext = store;
+            if (store->gtNext != nullptr)
+            {
+                store->gtNext->gtPrev = store;
+            }
+        }
+    }
+
+    DISPNODE(store);
+    JITDUMP("\n");
+
+    return store;
+}
+
+//------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
 // and computing lvaOutgoingArgSpaceSize.
 //

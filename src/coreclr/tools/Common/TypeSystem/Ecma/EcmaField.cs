@@ -22,6 +22,9 @@ namespace Internal.TypeSystem.Ecma
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic           = 0x0200;
             public const int Intrinsic              = 0x0400;
+
+            // Computed when field type is computed
+            public const int HasEmbeddedSignatureData = 0x0800;
         };
 
         private EcmaType _type;
@@ -98,7 +101,11 @@ namespace Internal.TypeSystem.Ecma
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetFieldDefinition(_handle).Signature);
 
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
-            var fieldType = parser.ParseFieldSignature();
+            var fieldType = parser.ParseFieldSignature(out EmbeddedSignatureData[] data);
+
+            if (data != null)
+                _fieldFlags.AddFlags(FieldFlags.HasEmbeddedSignatureData);
+
             return (_fieldType = fieldType);
         }
 
@@ -109,6 +116,17 @@ namespace Internal.TypeSystem.Ecma
                 if (_fieldType == null)
                     return InitializeFieldType();
                 return _fieldType;
+            }
+        }
+
+        public override bool HasEmbeddedSignatureData
+        {
+            get
+            {
+                if (_fieldType == null)
+                    InitializeFieldType();
+
+                return _fieldFlags.HasFlags(FieldFlags.HasEmbeddedSignatureData);
             }
         }
 

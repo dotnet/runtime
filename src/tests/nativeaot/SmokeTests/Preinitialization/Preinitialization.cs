@@ -36,6 +36,7 @@ internal class Program
         TestBadClass.Run();
         TestRefs.Run();
         TestDelegate.Run();
+        TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
         TestDelegateToOtherClass.Run();
@@ -607,6 +608,19 @@ class TestDelegate
         Assert.IsPreinitialized(typeof(TestDelegate));
         Assert.AreEqual(42, s_delegate());
         Assert.AreEqual(2020, s_lambda());
+    }
+}
+
+class TestDelegateReflectionVisible
+{
+    static readonly Action s_a = DelegateTarget;
+
+    static void DelegateTarget() { }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegateReflectionVisible));
+        Assert.AreEqual(nameof(DelegateTarget), s_a.Method.Name);
     }
 }
 

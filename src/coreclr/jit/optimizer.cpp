@@ -7537,13 +7537,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 return fgWalkResult::WALK_CONTINUE;
             }
 
-            // Initclass CLS_VARs and IconHandles are the base cases of cctor dependent trees.
-            // In the IconHandle case, it's of course the dereference, rather than the constant itself, that is
-            // truly dependent on the cctor.  So a more precise approach would be to separately propagate
-            // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for
-            // simplicity/throughput; the constant itself would be considered non-hoistable anyway, since
-            // optIsCSEcandidate returns false for constants.
-            bool treeIsCctorDependent     = tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0);
+            bool treeIsCctorDependent     = tree->OperIsIndir() && ((tree->gtFlags & GTF_IND_INITCLASS) != 0);
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
@@ -8646,7 +8640,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 {
                     GenTree* arg = lhs->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
 
-                    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+                    if ((lhs->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         continue;

@@ -669,6 +669,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
+    assert(!compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -696,11 +698,15 @@ void Compiler::unwindBegProlog()
 void Compiler::unwindEndProlog()
 {
     assert(compGeneratingProlog);
+    assert(compGeneratingUnwindProlog);
+    compGeneratingUnwindProlog = false;
 }
 
 void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(!compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = true;
 
 #if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
@@ -715,6 +721,8 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
+    assert(compGeneratingUnwindEpilog);
+    compGeneratingUnwindEpilog = false;
 }
 
 // The instructions between the last captured "current state" and the current instruction
@@ -997,7 +1005,22 @@ int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
 
 void UnwindPrologCodes::CopyFrom(UnwindPrologCodes* pCopyFrom)
 {
-    NYI_RISCV64("CopyFrom-----unimplemented on RISCV64 yet----");
+    assert(uwiComp == pCopyFrom->uwiComp);
+    assert(upcMem == upcMemLocal);
+    assert(upcMemSize == UPC_LOCAL_COUNT);
+    assert(upcHeaderSlot == -1);
+    assert(upcEpilogSlot == -1);
+
+    // Copy the codes
+    EnsureSize(pCopyFrom->upcMemSize);
+    assert(upcMemSize == pCopyFrom->upcMemSize);
+    memcpy_s(upcMem, upcMemSize, pCopyFrom->upcMem, pCopyFrom->upcMemSize);
+
+    // Copy the other data
+    upcCodeSlot        = pCopyFrom->upcCodeSlot;
+    upcHeaderSlot      = pCopyFrom->upcHeaderSlot;
+    upcEpilogSlot      = pCopyFrom->upcEpilogSlot;
+    upcUnwindBlockSlot = pCopyFrom->upcUnwindBlockSlot;
 }
 
 void UnwindPrologCodes::EnsureSize(int requiredSize)
@@ -1230,7 +1253,8 @@ void UnwindFragmentInfo::AddEpilog()
 
 void UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 {
-    NYI_RISCV64("CopyPrologCodes-----unimplemented on RISCV64 yet----");
+    ufiPrologCodes.CopyFrom(&pCopyFrom->ufiPrologCodes);
+    ufiPrologCodes.AddCode(UWC_END_C);
 }
 
 // Split the epilog codes that currently exist in 'pSplitFrom'. The ones that represent
@@ -1240,7 +1264,42 @@ void UnwindFragmentInfo::CopyPrologCodes(UnwindFragmentInfo* pCopyFrom)
 
 void UnwindFragmentInfo::SplitEpilogCodes(emitLocation* emitLoc, UnwindFragmentInfo* pSplitFrom)
 {
-    NYI_RISCV64("SplitEpilogCodes-----unimplemented on RISCV64 yet----");
+    UnwindEpilogInfo* pEpiPrev;
+    UnwindEpilogInfo* pEpi;
+
+    UNATIVE_OFFSET splitOffset = emitLoc->CodeOffset(uwiComp->GetEmitter());
+
+    for (pEpiPrev = NULL, pEpi = pSplitFrom->ufiEpilogList; pEpi != NULL; pEpiPrev = pEpi, pEpi = pEpi->epiNext)
+    {
+        pEpi->FinalizeOffset(); // Get the offset of the epilog from the emitter so we can compare it
+        if (pEpi->GetStartOffset() >= splitOffset)
+        {
+            // This epilog and all following epilogs, which must be in order of increasing offsets,
+            // get moved to this fragment.
+
+            // Splice in the epilogs to this fragment. Set the head of the epilog
+            // list to this epilog.
+            ufiEpilogList = pEpi; // In this case, don't use 'ufiEpilogFirst'
+            ufiEpilogLast = pSplitFrom->ufiEpilogLast;
+
+            // Splice out the tail of the list from the 'pSplitFrom' epilog list
+            pSplitFrom->ufiEpilogLast = pEpiPrev;
+            if (pSplitFrom->ufiEpilogLast == NULL)
+            {
+                pSplitFrom->ufiEpilogList = NULL;
+            }
+            else
+            {
+                pSplitFrom->ufiEpilogLast->epiNext = NULL;
+            }
+
+            // No more codes should be added once we start splitting
+            pSplitFrom->ufiCurCodes = NULL;
+            ufiCurCodes             = NULL;
+
+            break;
+        }
+    }
 }
 
 // Is this epilog at the end of an unwind fragment? Ask the emitter.
@@ -1794,7 +1853,8 @@ void UnwindInfo::Split()
 
 /*static*/ void UnwindInfo::EmitSplitCallback(void* context, emitLocation* emitLoc)
 {
-    NYI_RISCV64("EmitSplitCallback-----unimplemented on RISCV64 yet----");
+    UnwindInfo* puwi = (UnwindInfo*)context;
+    puwi->AddFragment(emitLoc);
 }
 
 // Reserve space for the unwind info for all fragments
@@ -1861,7 +1921,21 @@ void UnwindInfo::CaptureLocation()
 
 void UnwindInfo::AddFragment(emitLocation* emitLoc)
 {
-    NYI_RISCV64("AddFragment-----unimplemented on RISCV64 yet----");
+    assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
+    assert(uwiFragmentLast != NULL);
+
+    UnwindFragmentInfo* newFrag = new (uwiComp, CMK_UnwindInfo) UnwindFragmentInfo(uwiComp, emitLoc, true);
+
+#ifdef DEBUG
+    newFrag->ufiNum = uwiFragmentLast->ufiNum + 1;
+#endif // DEBUG
+
+    newFrag->CopyPrologCodes(&uwiFragmentFirst);
+    newFrag->SplitEpilogCodes(emitLoc, uwiFragmentLast);
+
+    // Link the new fragment in at the end of the fragment list
+    uwiFragmentLast->ufiNext = newFrag;
+    uwiFragmentLast          = newFrag;
 }
 
 #ifdef DEBUG

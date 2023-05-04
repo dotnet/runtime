@@ -10,8 +10,8 @@ namespace System.Net.Security
     internal static class TargetHostNameHelper
     {
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
-        private static readonly IndexOfAnyValues<char> s_safeDnsChars =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+        private static readonly SearchValues<char> s_safeDnsChars =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private static bool IsSafeDnsString(ReadOnlySpan<char> name) =>
             name.IndexOfAnyExcept(s_safeDnsChars) < 0;

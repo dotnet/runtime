@@ -616,6 +616,7 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
+	MonoBoolean external_eventloop;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;
