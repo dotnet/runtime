@@ -46,7 +46,7 @@
   <Target Name="_GenerateBundle"
           Condition="'$(BundlesResources)' != 'false'">
     <PropertyGroup>
-      <BundledSourceFile>mono-bundled-source.c</BundledSourceFile>
+      <BundledSourceFile>mono-bundled-resource-data.c</BundledSourceFile>
       <BundleOutputDirectory>$(BundleDir)</BundleOutputDirectory>
     </PropertyGroup>
 

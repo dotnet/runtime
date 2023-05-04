@@ -4,3 +4,10 @@
 #include "mono-bundled-source.h"
 
 %PreallocatedStructs%
+
+%PreallocatedResources%
+
+void
+%BundleRegistrationFunctionName% (void) {
+%AddPreallocatedResources%
+}
