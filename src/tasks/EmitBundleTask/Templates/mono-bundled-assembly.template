@@ -1,6 +1,6 @@
-const MonoBundledAssemblyResource %Symbol% = {
+const MonoBundledAssemblyResource %ResourceName% = {
     .resource = { .type = MONO_BUNDLED_ASSEMBLY },
-    .assembly = { .name = "%RegisteredName%",
-                  .data = %Symbol%_data,
+    .assembly = { .name = "%RegisteredFilename%",
+                  .data = %ResourceName%_data,
                   .size = %Len% },
 %MonoBundledSymbolData%};

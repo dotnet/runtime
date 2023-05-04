@@ -1,6 +1,6 @@
-const MonoBundledDataResource %Symbol% = {
+const MonoBundledDataResource %ResourceName% = {
     .resource = { .type = MONO_BUNDLED_DATA },
-    .data = { .name = "%RegisteredName%",
-              .data = %Symbol%_data,
+    .data = { .name = "%RegisteredFilename%",
+              .data = %ResourceName%_data,
               .size = %Len% },
 };

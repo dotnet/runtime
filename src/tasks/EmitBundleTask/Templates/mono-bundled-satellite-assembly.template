@@ -1,6 +1,6 @@
-const MonoBundledSatelliteAssemblyResource %Symbol% = {
+const MonoBundledSatelliteAssemblyResource %ResourceName% = {
     .resource = { .type = MONO_BUNDLED_SATELLITE_ASSEMBLY },
-    .satellite_assembly = { .name = "%RegisteredName%",
-                            .data = %Symbol%_data,
+    .satellite_assembly = { .name = "%RegisteredFilename%",
+                            .data = %ResourceName%_data,
                             .size = %Len% },
 %MonoBundledSymbolData%};

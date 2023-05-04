@@ -1,2 +1,2 @@
-    .symbol_data = { .data = &%SymfileSymbol%_data,
-                 .size = %SymLen% }
+    .symbol_data = { .data = &%ResourceSymbolName%_data,
+                     .size = %SymbolLen% }

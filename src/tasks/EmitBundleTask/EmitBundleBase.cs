@@ -84,8 +84,13 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             var registeredFilename = group.Key;
             var resourceName = ToSafeSymbolName(outputFile);
             string? resourceSymbolName = null;
+<<<<<<< HEAD
             if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
                 resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
+=======
+            if (File.Exists(registeredFile.GetMetadata("Symfile")))
+                resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("Symfile"));
+>>>>>>> 5a56c0e2b21 (Differentiate resource name and symbol)
             return (registeredFilename, resourceName, resourceSymbolName);
         }).ToList();
 
@@ -187,7 +192,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static Dictionary<string, int> symbolDataLen = new();
 
-    private static void GenerateBundledResourcePreallocationAndRegistration(string bundleRegistrationFunctionName, ICollection<(string registeredName, string symbol, string? symfileSymbol)> files, StreamWriter outputUtf8Writer)
+    private static void GenerateBundledResourcePreallocationAndRegistration(string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
     {
         StringBuilder preallocatedSource = new();
 
@@ -206,32 +211,32 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         {
             // extern symbols
             StringBuilder preallocatedResourceData = new();
-            preallocatedResourceData.AppendLine($"extern const unsigned char {tuple.symbol}_data[];");
-            if (!string.IsNullOrEmpty(tuple.symfileSymbol))
+            preallocatedResourceData.AppendLine($"extern const unsigned char {tuple.resourceName}_data[];");
+            if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
             {
-                preallocatedResourceData.AppendLine($"extern const unsigned char {tuple.symfileSymbol}_data[];");
+                preallocatedResourceData.AppendLine($"extern const unsigned char {tuple.resourceSymbolName}_data[];");
             }
             preallocatedSource.AppendLine(preallocatedResourceData.ToString());
 
             // Generate Preloaded MonoBundled*Resource structs
             string preloadedStruct;
-            switch (GetFileType(tuple.registeredName)) {
+            switch (GetFileType(tuple.registeredFilename)) {
             case "MONO_BUNDLED_ASSEMBLY": {
                 preloadedStruct = assemblyTemplate;
-                preallocatedAssemblies.Append($"(MonoBundledResource *)&{tuple.symbol}, ");
+                preallocatedAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 assembliesCount += 1;
                 break;
             }
             case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
                 preloadedStruct = satelliteAssemblyTemplate;
-                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.symbol}, ");
+                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 satelliteAssembliesCount += 1;
                 break;
             }
             case "MONO_BUNDLED_DATA":
             default: {
                 preloadedStruct = symbolDataTemplate;
-                preallocatedData.Append($"(MonoBundledResource *)&{tuple.symbol}, ");
+                preallocatedData.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 dataCount += 1;
                 break;
             }
@@ -239,15 +244,15 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             // Add associated symfile information to MonoBundledAssemblyResource/MonoBundleSatelliteAssemblyResource structs
             string preloadedSymfile = "";
-            if (!string.IsNullOrEmpty(tuple.symfileSymbol))
+            if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
             {
                 preloadedSymfile = Utils.GetEmbeddedResource("mono-bundled-symbol.template")
                                             .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
                                             .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
             }
-            preallocatedSource.AppendLine(preloadedStruct.Replace("%RegisteredName%", tuple.registeredName)
-                                         .Replace("%Symbol%", tuple.symbol)
-                                         .Replace("%Len%", symbolDataLen[tuple.symbol].ToString())
+            preallocatedSource.AppendLine(preloadedStruct.Replace("%RegisteredFilename%", tuple.registeredFilename)
+                                         .Replace("%ResourceName%", tuple.resourceName)
+                                         .Replace("%Len%", symbolDataLen[tuple.resourceName].ToString())
                                          .Replace("%MonoBundledSymbolData%", preloadedSymfile));
         }
 
