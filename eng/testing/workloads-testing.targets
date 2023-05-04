@@ -77,6 +77,13 @@
     <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallCommand)"' />
 
+    <ItemGroup>
+      <_WasmSdkProps Include="$(_SdkWithNoWorkloadPath)\sdk\**\Microsoft.NET.Sdk.WebAssembly\Sdk\Sdk.props" />
+      <_WasmSdkTargets Include="$(_SdkWithNoWorkloadPath)\sdk\**\Microsoft.NET.Sdk.WebAssembly\Sdk\Sdk.targets" />
+    </ItemGroup>
+    <Copy SourceFiles="$(RepoRoot)src\mono\wasm\Wasm.Build.Tests\WasmSdk.props" DestinationFiles="@(_WasmSdkProps)" />
+    <Copy SourceFiles="$(RepoRoot)src\mono\wasm\Wasm.Build.Tests\WasmSdk.targets" DestinationFiles="@(_WasmSdkTargets)" />
+
     <!-- HACK: Remove the now invalid manifest `microsoft.net.workload.mono.toolchain` as a workaround
                till the sdk removes it completely. -->
     <ItemGroup>
