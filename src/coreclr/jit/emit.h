@@ -817,7 +817,7 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:   46 bits
+        // x86:   47 bits
         // amd64: 46 bits
         // arm:   48 bits
         // arm64: 50 bits

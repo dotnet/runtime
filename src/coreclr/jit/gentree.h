@@ -6231,8 +6231,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
-    bool OperIsBroadcastScalar() const;
-    bool OperIsEmbBroadcastHWIntrinsic() const;
+    bool OperIsEmbBroadcastCompatible() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -6338,7 +6337,6 @@ private:
 //
 struct GenTreeVecCon : public GenTree
 {
-
     union {
         simd8_t  gtSimd8Val;
         simd12_t gtSimd12Val;

@@ -811,44 +811,37 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                     {
                         assert(simdBaseType == TYP_DOUBLE);
                     }
-                    if (op->isContained())
+                    // if broadcast node is contained, should mean that we have some forms like
+                    // broadcast -> CreateScalarUnsafe -> scalar.
+                    // if so, directly emit scalar.
+                    switch (simdBaseType)
                     {
-                        // if broadcast node is contained, should mean that we have some forms like
-                        // broadcast -> CreateScalarUnsafe -> scalar.
-                        // if so, directly emit scalar.
-                        switch (simdBaseType)
+                        case TYP_INT:
+                        case TYP_UINT:
+                        case TYP_LONG:
+                        case TYP_ULONG:
                         {
-                            case TYP_INT:
-                            case TYP_UINT:
-                            case TYP_LONG:
-                            case TYP_ULONG:
-                            {
-                                // a special case is when the operand of CreateScalarUnsafe is in integer type,
-                                // CreateScalarUnsafe node will be fold, so we directly match a pattern of
-                                // broadcast -> LCL_VAR(TYP_(U)INT)
-                                assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR));
-                                op = hwintrinsic->Op(1);
-                                assert(op->isContained());
-                                return genOperandDesc(op);
-                            }
-
-                            case TYP_FLOAT:
-                            case TYP_DOUBLE:
-                            {
-                                assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
-                                op = hwintrinsic->Op(1);
-                                assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
-                                assert(op->isContained());
-                                return genOperandDesc(op->AsHWIntrinsic()->Op(1));
-                            }
-
-                            default:
-                                unreached();
+                            // a special case is when the operand of CreateScalarUnsafe is in integer type,
+                            // CreateScalarUnsafe node will be fold, so we directly match a pattern of
+                            // broadcast -> LCL_VAR(TYP_(U)INT)
+                            assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR));
+                            op = hwintrinsic->Op(1);
+                            assert(op->isContained());
+                            return genOperandDesc(op);
                         }
-                    }
-                    else
-                    {
-                        unreached();
+
+                        case TYP_FLOAT:
+                        case TYP_DOUBLE:
+                        {
+                            assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
+                            op = hwintrinsic->Op(1);
+                            assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
+                            assert(op->isContained());
+                            return genOperandDesc(op->AsHWIntrinsic()->Op(1));
+                        }
+
+                        default:
+                            unreached();
                     }
                     break;
                 }

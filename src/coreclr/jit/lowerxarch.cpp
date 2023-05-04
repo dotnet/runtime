@@ -2343,7 +2343,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     bool     foundUse   = BlockRange().TryGetUse(node, &use);
                     GenTree* CreateUser = nullptr;
                     if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
                     {
                         CreateUser = use.User();
                     }
@@ -2397,7 +2397,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     bool     foundUse   = BlockRange().TryGetUse(node, &use);
                     GenTree* CreateUser = nullptr;
                     if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
                     {
                         CreateUser = use.User();
                     }
@@ -2511,7 +2511,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 bool     foundUse   = BlockRange().TryGetUse(node, &use);
                 GenTree* CreateUser = nullptr;
                 if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                    use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                    use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
                 {
                     CreateUser = use.User();
                 }
@@ -2777,7 +2777,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                         bool     foundUse   = BlockRange().TryGetUse(node, &use);
                         GenTree* CreateUser = nullptr;
                         if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                            use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
+                            use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
                         {
                             CreateUser = use.User();
                         }
@@ -7631,7 +7631,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childNode->AsHWIntrinsic()->GetSimdBaseType() == TYP_DOUBLE);
             }
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
-                parentNode->OperIsEmbBroadcastHWIntrinsic())
+                parentNode->OperIsEmbBroadcastCompatible())
             {
 
                 GenTree* CreateScalar = childNode->AsHWIntrinsic()->Op(1);
