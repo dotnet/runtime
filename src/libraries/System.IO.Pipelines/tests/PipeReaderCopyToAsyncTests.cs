@@ -326,11 +326,10 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CopyToAsyncStreamDoesNotDoZeroLengthWrite()
         {
-            using var ms = new LengthCheckStream(unblockAfterBytes: 11);
-            Pipe.Writer.Write("hello world"u8);
-            await Pipe.Writer.FlushAsync();
+            using var ms = new LengthCheckStream();
             var incompleteCopy = Task.Run(() => PipeReader.CopyToAsync(ms));
-            await ms.Unblocked;
+            Pipe.Writer.Write(Array.Empty<byte>());
+            await Pipe.Writer.FlushAsync();
             Pipe.Writer.Complete(null);
             await incompleteCopy;
             Assert.False(ms.ZeroLengthWriteDetected);
@@ -340,56 +339,42 @@ namespace System.IO.Pipelines.Tests
         {
             public bool ZeroLengthWriteDetected { get; private set; }
 
-            // we want to prime things in a state such as the last write will
-            // be zero-length; to make it non-trivial, we'll allow an external
-            // observer to see when we've written a known amount of data
-            public int UnblockAfterBytes { get; }
-            public Task Unblocked => unblocked.Task;
-            private readonly TaskCompletionSource<bool> unblocked = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            public LengthCheckStream(int unblockAfterBytes)
-                => UnblockAfterBytes = unblockAfterBytes;
-
             private void Check(int count)
             {
-                if (Length >= UnblockAfterBytes) unblocked.TrySetResult(true);
                 if (count == 0) ZeroLengthWriteDetected = true;
             }
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                base.Write(buffer, offset, count);
                 Check(count);
+                base.Write(buffer, offset, count);
             }
+#if NETCOREAPP3_0_OR_GREATER
             public override void Write(ReadOnlySpan<byte> buffer)
             {
+                Check(buffer.Length);
                 base.Write(buffer);
-                Check(buffer.Length);
             }
-            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                await base.WriteAsync(buffer, offset, count, cancellationToken);
+                Check(buffer.Length);
+                return base.WriteAsync(buffer, cancellationToken);
+            }
+#endif
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
                 Check(count);
-            }
-            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                await base.WriteAsync(buffer, cancellationToken);
-                Check(buffer.Length);
+                return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-                Check(count); // just for the length-detection behaviour
+                Check(count);
                 return base.BeginWrite(buffer, offset, count, callback, state);
-            }
-            public override void EndWrite(IAsyncResult asyncResult)
-            {
-                Check(-1); // just for the unblock behaviour, which only depends on Length
-                base.EndWrite(asyncResult);
             }
             public override void WriteByte(byte value)
             {
-                base.WriteByte(value);
                 Check(1);
+                base.WriteByte(value);
             }
         }
     }
