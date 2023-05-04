@@ -1,8 +1,7 @@
 import { INTERNAL, Module } from "../globals";
 import { MonoConfigInternal } from "../types";
 import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
-import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
-import { ConfigFile, WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
+import { BootConfigResult, BootJsonData, ICUDataMode, LoadBootResourceCallback } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 
@@ -17,35 +16,14 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 
     INTERNAL.resourceLoader = resourceLoader;
 
-    const newConfig = mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
+    const newConfig = mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment, candidateOptions.loadBootResource);
     Module.config = newConfig;
-}
-
-let configFiles: ConfigFile[] = [];
-
-export async function loadConfigFiles(resourceLoader: WebAssemblyResourceLoader | null, config: MonoConfigInternal) {
-    if (!resourceLoader) {
-        return;
-    }
-
-    configFiles = await WebAssemblyConfigLoader.initAsync(resourceLoader.bootConfig, config.applicationEnvironment!, config.startupOptions ?? {});
-}
-
-export function installConfigFilesToVfs() {
-    for (let i = 0; i < configFiles.length; i++) {
-        const configFile = configFiles[i];
-        Module.FS_createDataFile(
-            "/", // TODO: Maybe working directory?
-            configFile.name,
-            new Uint8Array(configFile.content.buffer), true /* canRead */, true /* canWrite */, true /* canOwn */
-        );
-    }
 }
 
 let resourcesLoaded = 0;
 let totalResources = 0;
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string): MonoConfigInternal {
+export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string, customLoadBootResource?: LoadBootResourceCallback): MonoConfigInternal {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
@@ -174,6 +152,43 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
             behavior,
         };
         assets.push(asset);
+    }
+    for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
+        let config = resourceLoader.bootConfig.config[i];
+        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+            const asset: AssetEntry = {
+                name: config,
+                resolvedUrl: `_framework/${name}`,
+                behavior: "vfs",
+            };
+
+            let response: Promise<Response> | null = null;
+            if (customLoadBootResource) {
+                const customLoadResult = customLoadBootResource("configuration", config, config, "");
+                if (customLoadResult instanceof Promise<Response>) {
+                    // They are supplying an entire custom response, so just use that
+                    response = customLoadResult;
+                } else if (typeof customLoadResult === "string") {
+                    // They are supplying a custom URL, so use that with the default fetch behavior
+                    config = customLoadResult;
+                }
+            }
+
+            if (!response) {
+                response = fetch(config, {
+                    method: "GET",
+                    credentials: "include",
+                    cache: "no-cache",
+                });
+            }
+
+            asset.pendingDownload = {
+                name: config,
+                url: config,
+                response
+            };
+            assets.push(asset);
+        }
     }
 
     if (!hasIcuData) {

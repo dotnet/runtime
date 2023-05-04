@@ -4,7 +4,7 @@
 import { Module } from "../globals";
 import { WebAssemblyBootResourceType } from "../types-api";
 
-type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
 export class BootConfigResult {
     private constructor(public bootConfig: BootJsonData, public applicationEnvironment: string) {
