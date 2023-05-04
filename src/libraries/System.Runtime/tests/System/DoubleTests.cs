@@ -781,9 +781,10 @@ namespace System.Tests
         {
             yield return new object[] { -4567.0, "G", null, "-4567" };
             yield return new object[] { -4567.89101, "G", null, "-4567.89101" };
-            yield return new object[] { -0.001, "+0.00;-0.00", null, "+0.00" };
+            yield return new object[] { -0.001, "+0.00;-0.00", null, "-0.00" };
             yield return new object[] { -0.0, string.Empty, null, "-0" };
             yield return new object[] { -0.0, "#", null, "" };
+            yield return new object[] { 0.0, "+0.00;-0.00", null, "+0.00" };
             yield return new object[] { 0.0, "G", null, "0" };
             yield return new object[] { 4567.0, "G", null, "4567" };
             yield return new object[] { 4567.89101, "G", null, "4567.89101" };

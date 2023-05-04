@@ -3165,15 +3165,6 @@ namespace System
                     number.Scale += scaleAdjust;
                     int pos = scientific ? digitCount : number.Scale + digitCount - decimalPos;
                     RoundNumber(ref number, pos, isCorrectlyRounded: false);
-                    if (dig[0] == 0)
-                    {
-                        src = FindSection(format, 2);
-                        if (src != section)
-                        {
-                            section = src;
-                            continue;
-                        }
-                    }
                 }
                 else
                 {
