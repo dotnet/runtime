@@ -282,6 +282,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
     regNumber reg2 = offs < 0 ? tmpReg : reg3;
     assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
+    assert(reg1 != codeGen->rsGetRsvdReg());
 
     // regNumber reg2 = reg3;
     offs = offs < 0 ? -offs - 8 : offs;
@@ -365,7 +366,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         default:
-            NYI_RISCV64("illegal ins within emitIns_S_R!");
+            NYI_RISCV64("illegal ins within emitIns_R_S!");
             return;
 
     } // end switch (ins)
