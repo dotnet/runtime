@@ -797,11 +797,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
-
         case GT_ADD:
         case GT_SUB:
             if (varTypeIsFloating(tree->TypeGet()))

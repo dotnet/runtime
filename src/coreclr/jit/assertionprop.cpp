@@ -3959,7 +3959,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // Note we can't trust the OAK_EQUAL as the value could end up being a NaN
             // violating the assertion. However, we create OAK_EQUAL assertions for floating
             // point only on JTrue nodes, so if the condition held earlier, it will hold
-            // now. We don't create OAK_EQUAL assertion on floating point from GT_ASG
+            // now. We don't create OAK_EQUAL assertion on floating point from stores
             // because we depend on value num which would constant prop the NaN.
             op1->BashToConst(0.0, op1->TypeGet());
             op2->BashToConst(0.0, op2->TypeGet());

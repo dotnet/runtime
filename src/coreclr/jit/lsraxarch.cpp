@@ -283,11 +283,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
-
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:

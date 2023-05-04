@@ -986,17 +986,12 @@ Statement* BasicBlock::FirstNonPhiDef() const
     {
         return nullptr;
     }
-    GenTree* tree = stmt->GetRootNode();
-    while ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_PHI) ||
-           (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_PHI))
+
+    while ((stmt != nullptr) && stmt->IsPhiDefnStmt())
     {
         stmt = stmt->GetNextStmt();
-        if (stmt == nullptr)
-        {
-            return nullptr;
-        }
-        tree = stmt->GetRootNode();
     }
+
     return stmt;
 }
 
@@ -1008,8 +1003,7 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
         return nullptr;
     }
     GenTree* tree = stmt->GetRootNode();
-    if ((tree->OperGet() == GT_ASG && tree->AsOp()->gtOp2->OperGet() == GT_CATCH_ARG) ||
-        (tree->OperGet() == GT_STORE_LCL_VAR && tree->AsOp()->gtOp1->OperGet() == GT_CATCH_ARG))
+    if (tree->OperIs(GT_STORE_LCL_VAR) && tree->AsLclVar()->Data()->OperIs(GT_CATCH_ARG))
     {
         stmt = stmt->GetNextStmt();
     }

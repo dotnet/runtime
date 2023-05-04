@@ -235,22 +235,8 @@ void GenTree::InitNodeSize()
     }
 
     // Now set all of the appropriate entries to 'large'
-    CLANG_FORMAT_COMMENT_ANCHOR;
 
     // clang-format off
-    if (GlobalJitOptions::compFeatureHfa
-#if defined(UNIX_AMD64_ABI)
-        || true
-#endif // defined(UNIX_AMD64_ABI)
-        )
-    {
-        // On ARM32, ARM64 and System V for struct returning
-        // there is code that does GT_ASG-tree.CopyObj call.
-        // CopyObj is a large node and the GT_ASG is small, which triggers an exception.
-        GenTree::s_gtNodeSizes[GT_ASG]              = TREE_NODE_SZ_LARGE;
-        GenTree::s_gtNodeSizes[GT_RETURN]           = TREE_NODE_SZ_LARGE;
-    }
-
     GenTree::s_gtNodeSizes[GT_CALL]          = TREE_NODE_SZ_LARGE;
 #ifdef TARGET_XARCH
     GenTree::s_gtNodeSizes[GT_CNS_VEC]       = TREE_NODE_SZ_LARGE;
@@ -282,8 +268,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
-
-    assert(GenTree::s_gtNodeSizes[GT_RETURN] == GenTree::s_gtNodeSizes[GT_ASG]);
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -5779,7 +5763,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif // !TARGET_64BIT
 
             SET_INDIRECT_STORE_ORDER:
-                // TODO-ASG-Cleanup: this logic emulates the ASG case below. See how of much of it can be deleted.
+                // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                 if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
                 {
                     if (op1->IsInvariant())
@@ -5809,71 +5793,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                     allowReversal = false;
                     tree->SetReverseOp();
-                }
-                break;
-
-            case GT_ASG:
-                /* Assignments need a bit of special handling */
-                if (gtIsLikelyRegVar(op1))
-                {
-                    /* Assignment to an enregistered LCL_VAR */
-                    costEx         = op2->GetCostEx();
-                    costSz         = max(3, op2->GetCostSz()); // 3 is an estimate for a reg-reg assignment
-                    includeOp1Cost = false;
-                    includeOp2Cost = false;
-                }
-
-                if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
-                {
-                    switch (op1->OperGet())
-                    {
-                        case GT_IND:
-                        case GT_BLK:
-                        {
-                            // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
-                            // the actual indirection will only be realized at the point of the ASG
-                            // itself. As such, we can discard any side effects "induced" by it in
-                            // this logic.
-                            //
-                            GenTree* op1Addr = op1->AsIndir()->Addr();
-
-                            if (op1Addr->IsInvariant())
-                            {
-                                allowReversal = false;
-                                tree->gtFlags |= GTF_REVERSE_OPS;
-                                break;
-                            }
-                            if (op1Addr->gtFlags & GTF_ALL_EFFECT)
-                            {
-                                break;
-                            }
-
-                            // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                            if (op2->gtFlags & GTF_ASG)
-                            {
-                                break;
-                            }
-
-                            // If op2 is simple then evaluate op1 first
-                            if (op2->OperKind() & GTK_LEAF)
-                            {
-                                break;
-                            }
-                        }
-                            // fall through and set GTF_REVERSE_OPS
-                            FALLTHROUGH;
-
-                        case GT_LCL_VAR:
-                        case GT_LCL_FLD:
-                            // Note that for local stores, liveness depends on seeing the defs and
-                            // uses in correct order, and so we MUST reverse the ASG in that case.
-                            allowReversal = false;
-                            tree->gtFlags |= GTF_REVERSE_OPS;
-                            break;
-
-                        default:
-                            break;
-                    }
                 }
                 break;
 
@@ -6697,7 +6616,6 @@ bool GenTree::OperRequiresAsgFlag()
         case GT_STOREIND:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
-        case GT_ASG:
         case GT_XADD:
         case GT_XORR:
         case GT_XAND:
@@ -7717,7 +7635,7 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
 {
     assert((type == TYP_STRUCT) == (layout != nullptr));
 
-    GenTreeLclFld* store  = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
+    GenTreeLclFld* store = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
     store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
     if (store->IsPartialLclFld(this))
     {
@@ -8039,7 +7957,7 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* data)
             SetOpLclRelatedToSIMDIntrinsic(data);
         }
     }
-#else // TARGET_X86
+#else  // TARGET_X86
     // TODO-Cleanup: merge into the all-arch.
     if (varTypeIsSIMD(data) && data->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
     {
@@ -9165,15 +9083,7 @@ GenTree* Compiler::gtCloneExpr(
 
         if (tree->AsOp()->gtOp1)
         {
-            if (tree->gtOper == GT_ASG)
-            {
-                // Don't replace varNum if it appears as the LHS of an assign.
-                copy->AsOp()->gtOp1 = gtCloneExpr(tree->AsOp()->gtOp1, addFlags, -1, 0, deepVarNum, deepVarVal);
-            }
-            else
-            {
-                copy->AsOp()->gtOp1 = gtCloneExpr(tree->AsOp()->gtOp1, addFlags, deepVarNum, deepVarVal);
-            }
+            copy->AsOp()->gtOp1 = gtCloneExpr(tree->AsOp()->gtOp1, addFlags, deepVarNum, deepVarVal);
         }
 
         if (tree->gtGetOp2IfPresent())
@@ -10798,15 +10708,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
                     printf("U");
-                    --msgLength;
-                    break;
-                }
-                goto DASH;
-
-            case GT_ASG:
-                if (tree->OperIsInitBlkOp())
-                {
-                    printf("I");
                     --msgLength;
                     break;
                 }
@@ -13026,17 +12927,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                 displayOperand(operand, "size", operandArc, indentStack, prefixIndent);
             }
         }
-        else if (node->OperIs(GT_ASG))
-        {
-            if (operand == node->gtGetOp1())
-            {
-                displayOperand(operand, "lhs", operandArc, indentStack, prefixIndent);
-            }
-            else
-            {
-                displayOperand(operand, "rhs", operandArc, indentStack, prefixIndent);
-            }
-        }
         else
         {
             displayOperand(operand, "", operandArc, indentStack, prefixIndent);
@@ -14139,17 +14029,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     return tree;
 
 DONE_FOLD:
-
-    /* The node has been folded into 'op' */
-
-    // If there was an assignment update, we just morphed it into
-    // a use, update the flags appropriately
-    if (op->gtOper == GT_LCL_VAR)
-    {
-        assert(tree->OperIs(GT_ASG) || (op->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF)) == 0);
-
-        op->gtFlags &= ~(GTF_VAR_USEASG | GTF_VAR_DEF);
-    }
 
     JITDUMP("\nFolding binary operator with a constant operand:\n");
     DISPTREE(tree);
@@ -16405,11 +16284,6 @@ bool Compiler::gtSplitTree(
                 return false;
             }
 
-            if (useInf.User->OperIs(GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
-            {
-                return true;
-            }
-
             if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) &&
                 (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
             {
@@ -16451,11 +16325,6 @@ bool Compiler::gtSplitTree(
 
             node = node->gtEffectiveVal();
             if (!node->IsValue())
-            {
-                return false;
-            }
-
-            if (node->OperIs(GT_ASG))
             {
                 return false;
             }
@@ -25074,7 +24943,7 @@ bool GenTreeHWIntrinsic::OperRequiresAsgFlag() const
 {
     // A MemoryStore operation is an assignment and barriers, while they
     // don't technically do an assignment are modeled the same as
-    // GT_MEMORYBARRIER which tracks itself as requiring the GT_ASG flag
+    // GT_MEMORYBARRIER which tracks itself as requiring the GTF_ASG flag
     return OperIsMemoryStoreOrBarrier();
 }
 

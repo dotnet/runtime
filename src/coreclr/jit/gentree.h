@@ -2222,10 +2222,8 @@ public:
     // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
     bool IsPhiNode();
 
-    // Returns "true" iff "*this" is an assignment (GT_ASG) tree that defines an SSA name (lcl = phi(...));
+    // Returns "true" iff "*this" is a store (GT_STORE_LCL_VAR) tree that defines an SSA name (lcl = phi(...));
     bool IsPhiDefn();
-
-    // Returns "true" iff "*this" is a statement containing an assignment that defines an SSA name (lcl = phi(...));
 
     // Because of the fact that we hid the assignment operator of "BitSet" (in DEBUG),
     // we can't synthesize an assignment operator.
@@ -2349,14 +2347,11 @@ public:
 // the PHI node's type must be the same as the local variable's type.
 //
 // The PHI node does not represent a definition by itself, it is always
-// the RHS of a GT_ASG node. The LHS of the ASG node is always a GT_LCL_VAR
-// node, that is a definition for the same local variable referenced by
-// all the used PHI_ARG nodes:
+// the value operand of a STORE_LCL_VAR node. The local store node itself
+// is the definition for the same local variable referenced by all the
+// used PHI_ARG nodes:
 //
-//   ASG(LCL_VAR(lcl7), PHI(PHI_ARG(lcl7), PHI_ARG(lcl7), PHI_ARG(lcl7)))
-//
-// PHI nodes are also present in LIR, where GT_STORE_LCL_VAR replaces the
-// ASG node.
+//   STORE_LCL_VAR<V01>(PHI(PHI_ARG(V01), PHI_ARG(V01), PHI_ARG(V01)))
 //
 // The order of the PHI_ARG uses is not currently relevant and it may be
 // the same or not as the order of the predecessor blocks.
@@ -8695,7 +8690,7 @@ inline bool GenTree::OperIsBlkOp()
     {
         return true;
     }
-    if (OperIs(GT_ASG) || OperIsStore())
+    if (OperIsStore())
     {
         return varTypeIsStruct(this);
     }

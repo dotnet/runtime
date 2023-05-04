@@ -5718,12 +5718,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
     oper = tree->OperGet();
     kind = tree->OperKind();
 
-    if (oper == GT_ASG)
-    {
-        noway_assert(doit == false);
-        return false;
-    }
-
     ValueNumPair NoVNPair = ValueNumPair();
 
     if (kind & GTK_LEAF)
