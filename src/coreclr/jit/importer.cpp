@@ -366,15 +366,13 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
         }
     }
 
-    if (tree->OperIs(GT_ASG))
+    if (tree->OperIsStore())
     {
-        // For an assignment to a local variable, all references of that
-        // variable have to be spilled. If it is aliased, all calls and
-        // indirect accesses have to be spilled
-
-        if (tree->AsOp()->gtOp1->OperIsLocal())
+        // For a store to a local variable, all references of that variable have to be spilled.
+        // If it is aliased, all calls and indirect accesses have to be spilled.
+        if (tree->OperIsLocalStore())
         {
-            unsigned lclNum = tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
             for (unsigned level = 0; level < chkLevel; level++)
             {
                 GenTree* stkTree = verCurrentState.esStack[level].val;
@@ -383,7 +381,7 @@ void Compiler::impAppendStmtCheck(Statement* stmt, unsigned chkLevel)
             }
         }
         // If the access may be to global memory, all side effects have to be spilled.
-        else if (tree->AsOp()->gtOp1->gtFlags & GTF_GLOB_REF)
+        else if ((tree->gtFlags & GTF_GLOB_REF) != 0)
         {
             for (unsigned level = 0; level < chkLevel; level++)
             {
@@ -426,7 +424,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         GenTree*     expr  = stmt->GetRootNode();
         GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
 
-        // Assignments to unaliased locals require special handling. Here, we look for trees that
+        // Stores to unaliased locals require special handling. Here, we look for trees that
         // can modify them and spill the references. In doing so, we make two assumptions:
         //
         // 1. All locals which can be modified indirectly are marked as address-exposed or with
@@ -439,9 +437,9 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         // things manually.
         //
         LclVarDsc* dstVarDsc = nullptr;
-        if (expr->OperIs(GT_ASG) && expr->AsOp()->gtOp1->OperIsLocal())
+        if (expr->OperIsLocalStore())
         {
-            dstVarDsc = lvaGetDesc(expr->AsOp()->gtOp1->AsLclVarCommon());
+            dstVarDsc = lvaGetDesc(expr->AsLclVarCommon());
         }
         else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
         {
@@ -474,15 +472,15 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             impSpillLclRefs(lvaGetLclNum(dstVarDsc), chkLevel);
 
-            if (expr->OperIs(GT_ASG))
+            if (expr->OperIsLocalStore())
             {
-                // For assignments, limit the checking to what the RHS could modify/interfere with.
-                GenTree* rhs = expr->AsOp()->gtOp2;
-                flags        = rhs->gtFlags & GTF_GLOB_EFFECT;
+                // For assignments, limit the checking to what the value could modify/interfere with.
+                GenTree* value = expr->AsLclVarCommon()->Data();
+                flags          = value->gtFlags & GTF_GLOB_EFFECT;
 
                 // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
                 // considered as such in the interference checking.
-                if (((flags & GTF_GLOB_REF) == 0) && !impIsAddressInLocal(rhs) && gtHasLocalsWithAddrOp(rhs))
+                if (((flags & GTF_GLOB_REF) == 0) && !impIsAddressInLocal(value) && gtHasLocalsWithAddrOp(value))
                 {
                     flags |= GTF_GLOB_REF;
                 }
@@ -1931,10 +1929,9 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
             GenTree* tree = stmt->GetRootNode();
             assert(tree != nullptr);
 
-            if ((tree->gtOper == GT_ASG) && (tree->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-                (tree->AsOp()->gtOp2->gtOper == GT_CATCH_ARG))
+            if (tree->OperIs(GT_STORE_LCL_VAR) && tree->AsLclVar()->Data()->OperIs(GT_CATCH_ARG))
             {
-                tree = gtNewLclvNode(tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum(), TYP_REF);
+                tree = gtNewLclvNode(tree->AsLclVar()->GetLclNum(), TYP_REF);
 
                 impPushOnStack(tree, typeInfo(TI_REF, clsHnd));
 
@@ -1978,7 +1975,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
         lvaTable[tempNum].lvType = TYP_REF;
-        GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+        GenTree* argStore        = gtNewTempAssign(tempNum, arg);
         arg                      = gtNewLclvNode(tempNum, TYP_REF);
 
         hndBlk->bbStkTempsIn = tempNum;
@@ -1993,11 +1990,11 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
             // here. Can we not just use impCurStmtOffsSet? Are we out of sync
             // here with the stack?
             impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
-            argStmt      = gtNewStmt(argAsg, impCurStmtDI);
+            argStmt      = gtNewStmt(argStore, impCurStmtDI);
         }
         else
         {
-            argStmt = gtNewStmt(argAsg);
+            argStmt = gtNewStmt(argStore);
         }
 
         fgInsertStmtAtEnd(newBlk, argStmt);
@@ -3308,8 +3305,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // Assign the boxed object to the box temp.
         //
-        GenTree*   asg     = gtNewTempAssign(impBoxTemp, op1);
-        Statement* asgStmt = impAppendTree(asg, CHECK_SPILL_NONE, impCurStmtDI);
+        GenTree*   allocBoxStore = gtNewTempAssign(impBoxTemp, op1);
+        Statement* allocBoxStmt  = impAppendTree(allocBoxStore, CHECK_SPILL_NONE, impCurStmtDI);
 
         // If the exprToBox is a call that returns its value via a ret buf arg,
         // move the assignment statement(s) before the call (which must be a top level tree).
@@ -3369,8 +3366,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 // Found the call. Move the statements comprising the assignment.
                 //
                 JITDUMP("Moving " FMT_STMT "..." FMT_STMT " before " FMT_STMT "\n", cursor->GetNextStmt()->GetID(),
-                        asgStmt->GetID(), insertBeforeStmt->GetID());
-                assert(asgStmt == impLastStmt);
+                        allocBoxStmt->GetID(), insertBeforeStmt->GetID());
+                assert(allocBoxStmt == impLastStmt);
                 do
                 {
                     Statement* movingStmt = impExtractLastStmt();
@@ -3436,7 +3433,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
 
         // Record that this is a "box" node and keep track of the matching parts.
-        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, asgStmt, copyStmt);
+        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
 
         // If it is a value class, mark the "box" node.  We can use this information
         // to optimise several cases:
@@ -3445,8 +3442,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         //    "(box(x)).CallAnObjectMethod(...)" --> "(&x).CallAValueTypeMethod"
 
         op1->gtFlags |= GTF_BOX_VALUE;
-        assert(op1->IsBoxedValue());
-        assert(asg->gtOper == GT_ASG);
+        assert(op1->IsBoxedValue() && allocBoxStore->OperIs(GT_STORE_LCL_VAR));
     }
     else
     {

@@ -7707,6 +7707,8 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
         store->gtFlags |= GTF_GLOB_REF;
     }
 
+    gtInitializeStoreNode(store, data);
+
     return store;
 }
 
@@ -7725,6 +7727,8 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
     {
         store->gtFlags |= GTF_GLOB_REF;
     }
+
+    gtInitializeStoreNode(store, data);
 
     return store;
 }
@@ -8007,6 +8011,45 @@ GenTreeIndir* Compiler::gtNewFieldIndirNode(var_types type, ClassLayout* layout,
 }
 
 //------------------------------------------------------------------------
+// gtInitializeStoreNode: Initialize a store node.
+//
+// Common initialization for all STORE nodes. Marks SIMD locals as "used in
+// a HW intrinsic".
+//
+// Arguments:
+//    store - The store node
+//    data  - The value to store
+//
+void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* data)
+{
+    // TODO-ASG: add asserts that the types match here.
+    assert(store->Data() == data);
+
+#if defined(FEATURE_SIMD)
+#ifndef TARGET_X86
+    if (varTypeIsSIMD(store))
+    {
+        // TODO-ASG: delete this zero-diff quirk.
+        if (!data->IsCall() || !data->AsCall()->ShouldHaveRetBufArg())
+        {
+            // We want to track SIMD assignments as being intrinsics since they
+            // are functionally SIMD `mov` instructions and are more efficient
+            // when we don't promote, particularly when it occurs due to inlining.
+            SetOpLclRelatedToSIMDIntrinsic(store);
+            SetOpLclRelatedToSIMDIntrinsic(data);
+        }
+    }
+#else // TARGET_X86
+    // TODO-Cleanup: merge into the all-arch.
+    if (varTypeIsSIMD(data) && data->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
+    {
+        SetOpLclRelatedToSIMDIntrinsic(store);
+    }
+#endif // TARGET_X86
+#endif // FEATURE_SIMD
+}
+
+//------------------------------------------------------------------------
 // gtInitializeIndirNode: Initialize an indirection node.
 //
 // Sets side effect flags based on the passed-in indirection flags.
@@ -8123,6 +8166,8 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
 
+    gtInitializeStoreNode(store, data);
+
     return store;
 }
 
@@ -8145,6 +8190,8 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
     GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
+
+    gtInitializeStoreNode(store, data);
 
     return store;
 }
@@ -18869,7 +18916,7 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
 //
 void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
 {
-    if ((op != nullptr) && op->OperIs(GT_LCL_VAR))
+    if ((op != nullptr) && op->OperIsScalarLocal())
     {
         setLclRelatedToSIMDIntrinsic(op);
     }

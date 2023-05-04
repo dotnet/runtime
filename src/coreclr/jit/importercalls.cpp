@@ -1829,13 +1829,12 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     //
-    // We start by looking at the last statement, making sure it's an assignment, and
-    // that the target of the assignment is the array passed to InitializeArray.
+    // We start by looking at the last statement, making sure it's a store, and
+    // that the target of the store is the array passed to InitializeArray.
     //
-    GenTree* arrayAssignment = impLastStmt->GetRootNode();
-    if ((arrayAssignment->gtOper != GT_ASG) || (arrayAssignment->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
-        (arrayLocalNode->gtOper != GT_LCL_VAR) || (arrayAssignment->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() !=
-                                                   arrayLocalNode->AsLclVarCommon()->GetLclNum()))
+    GenTree* arrayLocalStore = impLastStmt->GetRootNode();
+    if (!arrayLocalStore->OperIs(GT_STORE_LCL_VAR) || !arrayLocalNode->OperIs(GT_LCL_VAR) ||
+        (arrayLocalStore->AsLclVar()->GetLclNum() != arrayLocalNode->AsLclVar()->GetLclNum()))
     {
         return nullptr;
     }
@@ -1844,7 +1843,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     // Make sure that the object being assigned is a helper call.
     //
 
-    GenTree* newArrayCall = arrayAssignment->AsOp()->gtOp2;
+    GenTree* newArrayCall = arrayLocalStore->AsLclVar()->Data();
     if ((newArrayCall->gtOper != GT_CALL) || (newArrayCall->AsCall()->gtCallType != CT_HELPER))
     {
         return nullptr;
@@ -1855,24 +1854,25 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     //
 
     bool isMDArray = false;
-
-    if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) &&
-        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_MAYBEFROZEN) &&
-        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) &&
-        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_VC) &&
-        newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8)
-#ifdef FEATURE_READYTORUN
-        && newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_READYTORUN_NEWARR_1)
-#endif
-            )
+    switch (newArrayCall->AsCall()->GetHelperNum())
     {
-        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR) &&
-            newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_RARE))
-        {
-            return nullptr;
-        }
+        case CORINFO_HELP_NEWARR_1_DIRECT:
+        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+        case CORINFO_HELP_NEWARR_1_VC:
+        case CORINFO_HELP_NEWARR_1_ALIGN8:
+#ifdef FEATURE_READYTORUN
+        case CORINFO_HELP_READYTORUN_NEWARR_1:
+#endif
+            break;
 
-        isMDArray = true;
+        case CORINFO_HELP_NEW_MDARR:
+        case CORINFO_HELP_NEW_MDARR_RARE:
+            isMDArray = true;
+            break;
+
+        default:
+            return nullptr;
     }
 
     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)newArrayCall->AsCall()->compileTimeHelperArgumentHandle;
@@ -1952,13 +1952,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         {
             static bool IsArgsFieldInit(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
             {
-                return tree->OperIs(GT_ASG) && IsArgsField(tree->gtGetOp1(), index, lvaNewObjArrayArgs);
-            }
-
-            static bool IsArgsField(GenTree* tree, unsigned index, unsigned lvaNewObjArrayArgs)
-            {
-                return tree->OperIs(GT_LCL_FLD) && (tree->AsLclFld()->GetLclNum() == lvaNewObjArrayArgs) &&
-                       (tree->AsLclFld()->GetLclOffs() == sizeof(INT32) * index);
+                return tree->OperIs(GT_STORE_LCL_FLD) && (tree->AsLclFld()->GetLclNum() == lvaNewObjArrayArgs) &&
+                       (tree->AsLclFld()->GetLclOffs() == (sizeof(INT32) * index));
             }
 
             static bool IsComma(GenTree* tree)
@@ -1983,9 +1978,9 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
                 if (rank == 1)
                 {
-                    GenTree* lowerBoundAssign = comma->gtGetOp1();
-                    assert(Match::IsArgsFieldInit(lowerBoundAssign, argIndex, lvaNewObjArrayArgs));
-                    GenTree* lowerBoundNode = lowerBoundAssign->gtGetOp2();
+                    GenTree* lowerBoundStore = comma->gtGetOp1();
+                    assert(Match::IsArgsFieldInit(lowerBoundStore, argIndex, lvaNewObjArrayArgs));
+                    GenTree* lowerBoundNode = lowerBoundStore->AsLclVarCommon()->Data();
 
                     if (lowerBoundNode->IsIntegralConst(0))
                     {
@@ -1997,9 +1992,9 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
                 argIndex++;
             }
 
-            GenTree* lengthNodeAssign = comma->gtGetOp1();
-            assert(Match::IsArgsFieldInit(lengthNodeAssign, argIndex, lvaNewObjArrayArgs));
-            GenTree* lengthNode = lengthNodeAssign->gtGetOp2();
+            GenTree* lengthNodeStore = comma->gtGetOp1();
+            assert(Match::IsArgsFieldInit(lengthNodeStore, argIndex, lvaNewObjArrayArgs));
+            GenTree* lengthNode = lengthNodeStore->AsLclVarCommon()->Data();
 
             if (!lengthNode->IsCnsIntOrI())
             {

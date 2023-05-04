@@ -2838,6 +2838,8 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
+    void gtInitializeStoreNode(GenTree* store, GenTree* data);
+
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
 
     GenTreeBlk* gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);

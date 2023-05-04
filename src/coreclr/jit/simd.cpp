@@ -467,7 +467,7 @@ GenTree* Compiler::impSIMDPopStack()
 //
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
-    assert(tree->OperIs(GT_LCL_VAR) || tree->IsLclVarAddr());
+    assert(tree->OperIsScalarLocal() || tree->IsLclVarAddr());
     LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
@@ -745,14 +745,13 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
         return;
     }
     GenTree* expr = stmt->GetRootNode();
-    if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
+    if (expr->OperIsStore() && expr->TypeIs(TYP_FLOAT))
     {
-        GenTree*  curDst         = expr->AsOp()->gtOp1;
-        GenTree*  curSrc         = expr->AsOp()->gtOp2;
+        GenTree*  curValue       = expr->Data();
         unsigned  index          = 0;
-        var_types simdBaseType   = curSrc->TypeGet();
+        var_types simdBaseType   = curValue->TypeGet();
         unsigned  simdSize       = 0;
-        GenTree*  srcSimdLclAddr = getSIMDStructFromField(curSrc, &index, &simdSize, true);
+        GenTree*  srcSimdLclAddr = getSIMDStructFromField(curValue, &index, &simdSize, true);
 
         if (srcSimdLclAddr == nullptr || simdBaseType != TYP_FLOAT)
         {
@@ -765,10 +764,10 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
         else if (fgPreviousCandidateSIMDFieldAsgStmt != nullptr)
         {
             assert(index > 0);
-            GenTree* prevAsgExpr = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
-            GenTree* prevDst     = prevAsgExpr->AsOp()->gtOp1;
-            GenTree* prevSrc     = prevAsgExpr->AsOp()->gtOp2;
-            if (!areArgumentsContiguous(prevDst, curDst) || !areArgumentsContiguous(prevSrc, curSrc))
+            GenTree* curStore  = expr;
+            GenTree* prevStore = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
+            GenTree* prevValue = prevStore->Data();
+            if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
             {
                 fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
             }
@@ -779,9 +778,9 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                     // Successfully found the pattern, mark the lclvar as UsedInSIMDIntrinsic
                     setLclRelatedToSIMDIntrinsic(srcSimdLclAddr);
 
-                    if (curDst->OperIs(GT_IND) && curDst->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
+                    if (curStore->OperIs(GT_STOREIND) && curStore->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
                     {
-                        GenTreeFieldAddr* addr = curDst->AsIndir()->Addr()->AsFieldAddr();
+                        GenTreeFieldAddr* addr = curStore->AsIndir()->Addr()->AsFieldAddr();
                         if (addr->IsInstance())
                         {
                             GenTree* objRef = addr->GetFldObj();
