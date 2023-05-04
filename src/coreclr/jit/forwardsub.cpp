@@ -311,6 +311,18 @@ public:
         return m_useFlags;
     }
 
+    //------------------------------------------------------------------------
+    // GetExceptions: Get precise exceptions thrown by the trees executed
+    // before the use.
+    //
+    // Returns:
+    //   Exception set.
+    //
+    // Remarks:
+    //   The visitor stops tracking precise exceptions once it finds that 2 or
+    //   more different exceptions can be thrown, so this set cannot be used
+    //   for determining the precise different exceptions thrown in that case.
+    //
     ExceptionSetFlags GetExceptions() const
     {
         return m_useExceptions;
@@ -385,10 +397,13 @@ private:
 #ifdef DEBUG
     unsigned m_useCount = 0;
 #endif
-    GenTreeFlags      m_useFlags              = GTF_EMPTY;
-    GenTreeFlags      m_accumulatedFlags      = GTF_EMPTY;
-    ExceptionSetFlags m_useExceptions         = ExceptionSetFlags::None;
+    GenTreeFlags m_useFlags         = GTF_EMPTY;
+    GenTreeFlags m_accumulatedFlags = GTF_EMPTY;
+    // Precise exceptions thrown by the nodes that were visited so far. Note
+    // that we stop updating this field once we find that two or more separate
+    // exceptions.
     ExceptionSetFlags m_accumulatedExceptions = ExceptionSetFlags::None;
+    ExceptionSetFlags m_useExceptions         = ExceptionSetFlags::None;
     unsigned          m_treeSize              = 0;
     bool              m_livenessBased;
 };
@@ -790,7 +805,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Don't substitute nodes args morphing doesn't handle into struct args.
     //
     if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
-        !fwdSubNode->OperIs(GT_BLK, GT_FIELD, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+        !fwdSubNode->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;

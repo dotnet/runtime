@@ -548,7 +548,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
             zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
         }
 
-        GetEmitter()->emitIns_SIMD_R_R_C(INS_andpd, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
+        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
     }
 }
 

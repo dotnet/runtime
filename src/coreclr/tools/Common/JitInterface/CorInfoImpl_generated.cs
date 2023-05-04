@@ -1211,21 +1211,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _areTypesEquivalent(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.areTypesEquivalent(cls1, cls2) ? (byte)1 : (byte)0;
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
         private static TypeCompareState _compareTypesForCast(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
         {
             var _this = GetThis(thisHandle);

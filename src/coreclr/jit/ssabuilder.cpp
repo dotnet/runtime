@@ -110,7 +110,7 @@ void Compiler::fgResetForSsa()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (tree->IsLocal())
+                if (tree->IsAnyLocal())
                 {
                     tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
                 }
