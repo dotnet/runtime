@@ -2043,6 +2043,12 @@ void           LinearScan::identifyCandidates()
 // TODO-Throughput: This mapping can surely be more efficiently done
 void LinearScan::initVarRegMaps()
 {
+    if (!enregisterLocalVars)
+    {
+        inVarToRegMaps  = nullptr;
+        outVarToRegMaps = nullptr;
+        return;
+    }
     assert(compiler->lvaTrackedFixed); // We should have already set this to prevent us from adding any new tracked
                                        // variables.
 
