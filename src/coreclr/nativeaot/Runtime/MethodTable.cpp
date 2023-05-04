@@ -54,47 +54,6 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
         break;
     }
 
-    case ClonedEEType:
-    {
-        // Cloned types must have a related type.
-        if (m_RelatedType.m_ppCanonicalTypeViaIAT == NULL)
-            REPORT_FAILURE();
-
-        // Either we're dealing with a clone of String or a generic type. We can tell the difference based
-        // on the component size.
-        switch (GetComponentSize())
-        {
-        case 0:
-        {
-            // Cloned generic type.
-            if (!IsRelatedTypeViaIAT())
-            {
-                REPORT_FAILURE();
-            }
-            break;
-        }
-
-        case 2:
-        {
-            // Cloned string.
-            if (get_IsValueType() ||
-                HasFinalizer() ||
-                HasReferenceFields() ||
-                HasGenericVariance())
-            {
-                REPORT_FAILURE();
-            }
-
-            break;
-        }
-
-        default:
-            // Apart from cloned strings we don't expected cloned types to have a component size.
-            REPORT_FAILURE();
-        }
-        break;
-    }
-
     case ParameterizedEEType:
     {
         // The only parameter EETypes that can exist on the heap are arrays
@@ -138,17 +97,6 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 MethodTable::Kinds MethodTable::get_Kind()
 {
 	return (Kinds)(m_uFlags & (uint16_t)EETypeKindMask);
-}
-
-//-----------------------------------------------------------------------------------------------------------
-MethodTable * MethodTable::get_CanonicalEEType()
-{
-	// cloned EETypes must always refer to types in other modules
-	ASSERT(IsCloned());
-    if (IsRelatedTypeViaIAT())
-        return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppCanonicalTypeViaIAT));
-    else
-        return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pCanonicalType)); // in the R2R case, the link is direct rather than indirect via the IAT
 }
 
 //-----------------------------------------------------------------------------------------------------------

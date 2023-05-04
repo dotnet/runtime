@@ -514,6 +514,27 @@ namespace Internal.TypeSystem
                 }
             }
 
+            public void UpdateSignatureCallingConventionAtCurrentIndexStack(ref SignatureCallingConvention callConv)
+            {
+                if (!Complete)
+                {
+                    if (_embeddedDataIndex < _embeddedData.Length)
+                    {
+                        if (_embeddedData[_embeddedDataIndex].kind == EmbeddedSignatureDataKind.UnmanagedCallConv)
+                        {
+                            string indexData = string.Join(".", _indexStack);
+
+                            var unmanagedCallConvPossibility = _embeddedData[_embeddedDataIndex].index.Split('|');
+                            if (unmanagedCallConvPossibility[0] == indexData)
+                            {
+                                callConv = (SignatureCallingConvention)int.Parse(unmanagedCallConvPossibility[1]);
+                                _embeddedDataIndex++;
+                            }
+                        }
+                    }
+                }
+            }
+
             public void EmitArrayShapeAtCurrentIndexStack(BlobBuilder signatureBuilder, int rank)
             {
                 var shapeEncoder = new ArrayShapeEncoder(signatureBuilder);
@@ -664,6 +685,9 @@ namespace Internal.TypeSystem
                     sigCallingConvention = (SignatureCallingConvention)9;
                     break;
             }
+
+            if (sigCallingConvention != SignatureCallingConvention.Default)
+                signatureDataEmitter.UpdateSignatureCallingConventionAtCurrentIndexStack(ref sigCallingConvention);
 
             signatureEncoder.MethodSignature(sigCallingConvention, genericParameterCount, isInstanceMethod);
             signatureBuilder.WriteCompressedInteger(sig.Length);

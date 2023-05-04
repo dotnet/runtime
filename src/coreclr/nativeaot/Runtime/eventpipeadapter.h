@@ -38,7 +38,7 @@ public:
         ep_init();
     }
 
-    static inline EventPipeProvider * CreateProvider(LPCWSTR providerName, EventPipeCallback callback, void* pCallbackContext)
+    static inline EventPipeProvider * CreateProvider(LPCWSTR providerName, EventPipeCallback callback, void* pCallbackContext = nullptr)
     {
         ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName), -1);
         EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, pCallbackContext);
@@ -148,6 +148,12 @@ public:
             reinterpret_cast<const uint8_t*>(activityId),
             reinterpret_cast<const uint8_t*>(relatedActivityId));
     }
+
+	static inline bool EventIsEnabled (const EventPipeEvent *epEvent)
+	{
+		STATIC_CONTRACT_NOTHROW;
+		return ep_event_is_enabled(epEvent);
+	}
 };
 
 #endif // FEATURE_PERFTRACING

@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -97,6 +98,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
+        private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceIndexOfAnyValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(IndexOfAnyValues<char>))!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -834,9 +836,13 @@ namespace System.Text.RegularExpressions
 
                 // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
                 // But we avoid using it for the relatively common case of the starting set being '.', aka anything other than
-                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines. And we avoid using it
+                // for the case of the starting set being anything (e.g. '.' with SingleLine), as in that case it'll always match
+                // the first char.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Set != RegexCharClass.NotNewLineClass;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    primarySet.Set != RegexCharClass.AnyClass;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 Label checkSpanLengthLabel = default;
@@ -6098,10 +6104,19 @@ namespace System.Text.RegularExpressions
             int index = list.Count;
             list.Add(IndexOfAnyValues.Create(chars));
 
-            // this._indexOfAnyValues[index]
+            // Logically do _indexOfAnyValues[index], but avoid the bounds check on accessing the array,
+            // and cast to the known derived sealed type to enable devirtualization.
+
+            // DerivedIndexOfAnyValues d = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._indexOfAnyValues), index);
+            // ... = d;
             Ldthisfld(s_indexOfAnyValuesArrayField);
-            Ldc(index);
-            _ilg!.Emit(OpCodes.Ldelem_Ref);
+            Call(s_memoryMarshalGetArrayDataReferenceIndexOfAnyValues);
+            Ldc(index * IntPtr.Size);
+            Add();
+            _ilg!.Emit(OpCodes.Ldind_Ref);
+            LocalBuilder ioavLocal = _ilg!.DeclareLocal(list[index].GetType());
+            Stloc(ioavLocal);
+            Ldloc(ioavLocal);
         }
     }
 }

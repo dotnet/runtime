@@ -26,6 +26,8 @@ namespace System.Threading
         public static System.Threading.CompressedStack Capture() { throw null; }
         public System.Threading.CompressedStack CreateCopy() { throw null; }
         public static System.Threading.CompressedStack GetCompressedStack() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void Run(System.Threading.CompressedStack compressedStack, System.Threading.ContextCallback callback, object? state) { }
     }
@@ -161,6 +163,8 @@ namespace System.Threading
     public partial class ThreadInterruptedException : System.SystemException
     {
         public ThreadInterruptedException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadInterruptedException(string? message) { }
         public ThreadInterruptedException(string? message, System.Exception? innerException) { }
@@ -195,6 +199,8 @@ namespace System.Threading
     public partial class ThreadStateException : System.SystemException
     {
         public ThreadStateException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadStateException(string? message) { }
         public ThreadStateException(string? message, System.Exception? innerException) { }

@@ -695,7 +695,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ThrowIfGeneric();
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
@@ -704,15 +704,6 @@ namespace System.Reflection.Emit
 
             if (IsKnownCA(con))
                 ParseCA(con);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            ThrowIfGeneric();
-            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
-
-            if (IsKnownCA(customBuilder.m_con))
-                ParseCA(customBuilder.m_con);
         }
 
         // this method should return true for any and every ca that requires more work

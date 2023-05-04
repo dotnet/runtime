@@ -7,6 +7,7 @@ using System.IO;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -19,23 +20,25 @@ namespace Microsoft.Extensions.Hosting
 {
     public class WindowsServiceLifetimeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
+
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceStops()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
             {
                 var applicationLifetime = new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance);
                 using var lifetime = new WindowsServiceLifetime(
-                    new HostingEnvironment(), 
+                    new HostingEnvironment(),
                     applicationLifetime,
                     NullLoggerFactory.Instance,
                     new OptionsWrapper<HostOptions>(new HostOptions()));
 
                 await lifetime.WaitForStartAsync(CancellationToken.None);
-                
+
                 // would normally occur here, but WindowsServiceLifetime does not depend on it.
                 // applicationLifetime.NotifyStarted();
-                
+
                 // will be signaled by WindowsServiceLifetime when SCM stops the service.
                 applicationLifetime.ApplicationStopping.WaitHandle.WaitOne();
 
@@ -53,14 +56,14 @@ namespace Microsoft.Extensions.Hosting
 
             serviceTester.Stop();
             serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
-            
+
             serviceProcess.WaitForExit();
 
             var status = serviceTester.QueryServiceStatus();
             Assert.Equal(0, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is missing the fix from https://github.com/dotnet/corefx/commit/3e68d791066ad0fdc6e0b81828afbd9df00dd7f8")]
         public void ExceptionOnStartIsPropagated()
         {
@@ -69,7 +72,7 @@ namespace Microsoft.Extensions.Hosting
                 using (var lifetime = ThrowingWindowsServiceLifetime.Create(throwOnStart: new Exception("Should be thrown")))
                 {
                     Assert.Equal(lifetime.ThrowOnStart,
-                            await Assert.ThrowsAsync<Exception>(async () => 
+                            await Assert.ThrowsAsync<Exception>(async () =>
                                 await lifetime.WaitForStartAsync(CancellationToken.None)));
                 }
             });
@@ -81,7 +84,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_EXCEPTION_IN_SERVICE, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ExceptionOnStopIsPropagated()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -91,7 +94,7 @@ namespace Microsoft.Extensions.Hosting
                     await lifetime.WaitForStartAsync(CancellationToken.None);
                     lifetime.ApplicationLifetime.NotifyStopped();
                     Assert.Equal(lifetime.ThrowOnStop,
-                            await Assert.ThrowsAsync<Exception>( async () => 
+                            await Assert.ThrowsAsync<Exception>(async () =>
                                 await lifetime.StopAsync(CancellationToken.None)));
                 }
             });
@@ -103,19 +106,19 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void CancelStopAsync()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
             {
                 var applicationLifetime = new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance);
                 using var lifetime = new WindowsServiceLifetime(
-                    new HostingEnvironment(), 
+                    new HostingEnvironment(),
                     applicationLifetime,
                     NullLoggerFactory.Instance,
                     new OptionsWrapper<HostOptions>(new HostOptions()));
                 await lifetime.WaitForStartAsync(CancellationToken.None);
-                
+
                 await Assert.ThrowsAsync<OperationCanceledException>(async () => await lifetime.StopAsync(new CancellationToken(true)));
             });
 
@@ -126,7 +129,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceCanStopItself()
         {
             using (var serviceTester = WindowsServiceTester.Create(async () =>
@@ -166,10 +169,10 @@ namespace Microsoft.Extensions.Hosting
 
                 // service should start cleanly
                 serviceTester.Start();
-                
+
                 // service will proceed to stopped without any error
                 serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
-            
+
                 var status = serviceTester.QueryServiceStatus();
                 Assert.Equal(0, status.win32ExitCode);
 
@@ -191,7 +194,7 @@ namespace Microsoft.Extensions.Hosting
                 """, logText);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceSequenceIsCorrect()
         {
             using (var serviceTester = WindowsServiceTester.Create(() =>
@@ -229,7 +232,7 @@ namespace Microsoft.Extensions.Hosting
 
                 serviceTester.Stop();
                 serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
-                
+
                 var status = serviceTester.QueryServiceStatus();
                 Assert.Equal(0, status.win32ExitCode);
 
@@ -272,9 +275,9 @@ namespace Microsoft.Extensions.Hosting
 
         public class ThrowingWindowsServiceLifetime : WindowsServiceLifetime
         {
-            public static ThrowingWindowsServiceLifetime Create(Exception throwOnStart = null, Exception throwOnStop = null) => 
+            public static ThrowingWindowsServiceLifetime Create(Exception throwOnStart = null, Exception throwOnStop = null) =>
                     new ThrowingWindowsServiceLifetime(
-                        new HostingEnvironment(), 
+                        new HostingEnvironment(),
                         new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance),
                         NullLoggerFactory.Instance,
                         new OptionsWrapper<HostOptions>(new HostOptions()))
@@ -285,7 +288,7 @@ namespace Microsoft.Extensions.Hosting
 
             public ThrowingWindowsServiceLifetime(IHostEnvironment environment, ApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor) :
                 base(environment, applicationLifetime, loggerFactory, optionsAccessor)
-            { 
+            {
                 ApplicationLifetime = applicationLifetime;
             }
 

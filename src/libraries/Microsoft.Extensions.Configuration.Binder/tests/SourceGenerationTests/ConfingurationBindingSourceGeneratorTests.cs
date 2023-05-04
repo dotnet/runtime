@@ -115,6 +115,65 @@ public class Program
         }
 
         [Fact]
+        public async Task TestBaseline_TestPrimitivesGen()
+        {
+            string testSourceCode = """
+                using System;
+                using System.Globalization;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MyClass obj = new();
+                        config.Bind(obj);
+                    }
+
+                    public class MyClass
+                    {
+                        public bool Prop0 { get; set; }
+                        public byte Prop1 { get; set; }
+                        public sbyte Prop2 { get; set; }
+                        public char Prop3 { get; set; }
+                        public double Prop4 { get; set; }
+                        public string Prop5 { get; set; }
+                        public int Prop6 { get; set; }
+                        public short Prop8 { get; set; }
+                        public long Prop9 { get; set; }
+                        public float Prop10 { get; set; }
+                        public ushort Prop13 { get; set; }
+                        public uint Prop14 { get; set; }
+                        public ulong Prop15 { get; set; }
+                        public object Prop16 { get; set; }
+                        public CultureInfo Prop17 { get; set; }
+                        public DateTime Prop19 { get; set; }
+                        public DateTimeOffset Prop20 { get; set; }
+                        public decimal Prop21 { get; set; }
+                        public TimeSpan Prop23 { get; set; }
+                        public Guid Prop24 { get; set; }
+                        public Uri Prop25 { get; set; }
+                        public Version Prop26 { get; set; }
+                        public DayOfWeek Prop27 { get; set; }
+                        public Int128 Prop7 { get; set; }
+                        public Half Prop11 { get; set; }
+                        public UInt128 Prop12 { get; set; }
+                        public DateOnly Prop18 { get; set; }
+                        public TimeOnly Prop22 { get; set; }
+                        public byte[] Prop22 { get; set; }
+                        public int Prop23 { get; set; }
+                        public DateTime Prop24 { get; set; }
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("TestPrimitivesGen.generated.txt", testSourceCode);
+        }
+
+        [Fact]
         public async Task LangVersionMustBeCharp11OrHigher()
         {
             var (d, r) = await RunGenerator(BindCallSampleCode, LanguageVersion.CSharp10);
@@ -151,11 +210,13 @@ public class Program
                 new ConfigurationBindingSourceGenerator(),
                 new[] {
                     typeof(ConfigurationBinder).Assembly,
+                    typeof(CultureInfo).Assembly,
                     typeof(IConfiguration).Assembly,
                     typeof(IServiceCollection).Assembly,
                     typeof(IDictionary).Assembly,
                     typeof(ServiceCollection).Assembly,
                     typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
+                    typeof(Uri).Assembly,
                 },
                 new[] { testSourceCode },
                 langVersion: langVersion).ConfigureAwait(false);

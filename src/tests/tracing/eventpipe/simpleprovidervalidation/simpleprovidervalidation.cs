@@ -25,9 +25,9 @@ namespace Tracing.Tests.SimpleProviderValidation
     {
         public static int Main()
         {
-            // This test validates that the rundown events are present
-            // and that providers turned on that generate events are being written to
-            // the stream.
+            // This test is meant to validate NativeAOT EventPipe implementation and is meant to run in regular CI
+            // Its currently not enabled in NativeAOT runs and the below issue tracks the work
+            // https://github.com/dotnet/runtime/issues/84701
 
             var providers = new List<EventPipeProvider>()
             {

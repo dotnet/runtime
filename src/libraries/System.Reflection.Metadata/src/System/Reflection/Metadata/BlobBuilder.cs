@@ -50,6 +50,7 @@ namespace System.Reflection.Metadata
         private bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
         private uint FrozenLength => _length | IsFrozenMask;
+        private Span<byte> Span => _buffer.AsSpan(0, Length);
 
         public BlobBuilder(int capacity = DefaultChunkSize)
         {
@@ -234,7 +235,7 @@ namespace System.Reflection.Metadata
                 var right = rightEnumerator.Current;
 
                 int minLength = Math.Min(left.Length - leftStart, right.Length - rightStart);
-                if (!ByteSequenceComparer.Equals(left._buffer, leftStart, right._buffer, rightStart, minLength))
+                if (!left._buffer.AsSpan(leftStart, minLength).SequenceEqual(right._buffer.AsSpan(rightStart, minLength)))
                 {
                     return false;
                 }
@@ -318,6 +319,19 @@ namespace System.Reflection.Metadata
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
+        internal bool TryGetSpan(out ReadOnlySpan<byte> buffer)
+        {
+            if (_nextOrPrevious == this)
+            {
+                // If the blob builder has one chunk, we can just return it and avoid copies.
+                buffer = Span;
+                return true;
+            }
+
+            buffer = default;
+            return false;
+        }
+
         /// <exception cref="ArgumentNullException"><paramref name="destination"/> is null.</exception>
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public void WriteContentTo(Stream destination)
@@ -344,7 +358,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 
@@ -359,7 +373,7 @@ namespace System.Reflection.Metadata
 
             foreach (var chunk in GetChunks())
             {
-                destination.WriteBytes(chunk._buffer.AsSpan(0, chunk.Length));
+                destination.WriteBytes(chunk.Span);
             }
         }
 

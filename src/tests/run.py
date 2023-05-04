@@ -75,6 +75,11 @@ into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
 naming conflicts.""")
 
+parallel_help = """
+Specify the level of parallelism: none, collections, assemblies, all. Default: collections.
+`-parallel none` is a synonym for `--sequential`.
+"""
+
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument("-os", dest="host_os", nargs='?', default=None)
@@ -84,6 +89,7 @@ parser.add_argument("-test_location", dest="test_location", nargs="?", default=N
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
+parser.add_argument("-parallel", dest="parallel", default=None, help=parallel_help)
 
 # Optional arguments which change execution.
 
@@ -567,6 +573,9 @@ def call_msbuild(args):
 
     common_msbuild_arguments = []
 
+    if args.parallel:
+        common_msbuild_arguments += ["/p:ParallelRun={}".format(args.parallel)]
+
     if args.sequential:
         common_msbuild_arguments += ["/p:ParallelRun=none"]
 
@@ -956,10 +965,18 @@ def setup_args(args):
         print("Error, msbuild currently expects tests in {} (got test_location {})".format(normal_location, coreclr_setup_args.test_location))
         raise Exception("Error, msbuild currently expects tests in artifacts/tests/...")
 
+    # valid_parallel_args is the same list as that allowed by the xunit.console.dll "-parallel" argument.
+    valid_parallel_args = ["none", "collections", "assemblies", "all"]
+
     coreclr_setup_args.verify(args,
                               "test_env",
                               lambda arg: True,
                               "Error setting test_env")
+
+    coreclr_setup_args.verify(args,
+                              "parallel",
+                              lambda arg: arg is None or arg in valid_parallel_args,
+                              "Parallel argument '{}' unknown".format)
 
     coreclr_setup_args.verify(args,
                               "analyze_results_only",
@@ -1041,6 +1058,9 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
 
+    if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
+        print("Error: don't specify both --sequential and -parallel")
+        sys.exit(1)
 
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)

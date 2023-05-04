@@ -36,6 +36,7 @@ namespace System.IO
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private InvalidDataException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

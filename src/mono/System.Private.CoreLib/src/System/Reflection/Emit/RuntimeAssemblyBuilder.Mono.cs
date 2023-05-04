@@ -297,8 +297,9 @@ namespace System.Reflection.Emit
 
         public override bool IsCollectible => access == (uint)AssemblyBuilderAccess.RunAndCollect;
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -313,11 +314,6 @@ namespace System.Reflection.Emit
             }
 
             UpdateNativeCustomAttributes(this);
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/

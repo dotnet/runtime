@@ -10,12 +10,15 @@ parameters:
   helixQueues: ''
   dependOnEvaluatePaths: false
   runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-diffs-job.yml'
+  diffType: 'asmdiffs'            # required -- 'asmdiffs', 'tpdiff', or 'all'
+  baseJitOptions: ''              # e.g. JitStressModeNames=STRESS_PHYSICAL_PROMOTION;JitFullyInt=1
+  diffJitOptions: ''
 
 jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
-    jobName: ${{ format('superpmi_diffs_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
-    displayName: ${{ format('SuperPMI diffs {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    jobName: ${{ format('superpmi_diffs_{0}_{1}{2}_{3}', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+    displayName: ${{ format('SuperPMI {0} {1}{2} {3}', parameters.diffType, parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -25,33 +28,41 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
+    diffType: ${{ parameters.diffType }}
+    baseJitOptions: ${{ parameters.baseJitOptions }}
+    diffJitOptions: ${{ parameters.diffJitOptions }}
     dependsOn:
-     - ${{ format('coreclr_jit_build_{0}{1}_{2}_checked', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
-     - ${{ format('coreclr_jit_build_{0}{1}_{2}_release', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+      - ${{ if in(parameters.diffType, 'asmdiffs', 'all') }}:
+        - ${{ format('coreclr_jit_build_{0}{1}_{2}_checked', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
+      - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+        - ${{ format('coreclr_jit_build_{0}{1}_{2}_release', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
 
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
-    - name: releaseProductRootFolderPath
-      value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
-    - name: releaseProductArtifactName
-      value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
+    - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+      - name: releaseProductRootFolderPath
+        value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'
+      - name: releaseProductArtifactName
+        value: 'CoreCLRProduct_${{ parameters.pgoType }}_${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_release'
 
     steps:
 
-    # Download jit checked builds
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(buildProductRootFolderPath)
-        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
-        artifactName: '$(buildProductArtifactName)'
-        displayName: 'JIT checked build'
+    - ${{ if in(parameters.diffType, 'asmdiffs', 'all') }}:
+      # Download jit checked builds
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(buildProductRootFolderPath)
+          artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+          artifactName: '$(buildProductArtifactName)'
+          displayName: 'JIT checked build'
 
-    #Download jit release builds
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(releaseProductRootFolderPath)
-        artifactFileName: '$(releaseProductArtifactName)$(archiveExtension)'
-        artifactName: '$(releaseProductArtifactName)'
-        displayName: 'JIT release build'
+    - ${{ if in(parameters.diffType, 'tpdiff', 'all') }}:
+      # Download jit release builds
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(releaseProductRootFolderPath)
+          artifactFileName: '$(releaseProductArtifactName)$(archiveExtension)'
+          artifactName: '$(releaseProductArtifactName)'
+          displayName: 'JIT release build'

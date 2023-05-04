@@ -133,7 +133,7 @@ static void InitTranslator(PDBRewriter* pPDB, int* rgSecMap, IMAGE_SECTION_HEADE
 /*                   Interface for generating unwind information        */
 /************************************************************************/
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 bool emitIsFuncEnd(emitLocation* emitLoc, emitLocation* emitLocNextFragment = NULL);
 
@@ -145,7 +145,7 @@ void emitSplit(emitLocation*         startLoc,
 
 void emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp);
 
-#endif // TARGET_ARMARCH || defined(TARGET_LOONGARCH64)
+#endif // TARGET_ARMARCH || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_ARM)
 

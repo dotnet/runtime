@@ -386,10 +386,14 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const D
 {
     Statement* stmt = gtNewStmt(tree, di);
 
-    if (fgNodeThreading != NodeThreading::None)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
+    }
+    else if (fgNodeThreading == NodeThreading::AllLocals)
+    {
+        fgSequenceLocals(stmt);
     }
 
 #if DEBUG
@@ -520,6 +524,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
     {
         case GT_JTRUE:
         case GT_JCMP:
+        case GT_JTEST:
         case GT_JCC:
         case GT_SWITCH:
         case GT_LABEL:
@@ -554,13 +559,13 @@ bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
     GenTree*   tree = stmt->GetRootNode();
     genTreeOps oper = tree->OperGet();
 
-    if (OperIsControlFlow(oper) || GenTree::OperIsHWIntrinsic(oper) || oper == GT_NO_OP)
+    if (OperIsControlFlow(oper) || oper == GT_NO_OP)
     {
         return false;
     }
 
     // TODO: Use a recursive version of gtNodeHasSideEffects()
-    if (tree->gtFlags & GTF_SIDE_EFFECT)
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return false;
     }

@@ -403,7 +403,7 @@ mono_threads_wasm_browser_thread_tid (void)
 #ifdef DISABLE_THREADS
 	return (MonoNativeThreadId)1;
 #else
-	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+	return (MonoNativeThreadId)emscripten_main_runtime_thread_id ();
 #endif
 }
 

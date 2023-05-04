@@ -336,10 +336,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             // Use a double indirection
             GenTree* addr =
                 gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_CONST_PTR, true);
-
-            value = gtNewOperNode(GT_IND, TYP_INT, addr);
-            // This indirection won't cause an exception.
-            value->gtFlags |= GTF_IND_NONFAULTING;
+            value = gtNewIndir(TYP_INT, addr, GTF_IND_NONFAULTING);
         }
         else
         {
@@ -694,7 +691,19 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
+//------------------------------------------------------------------------
+// fgGetStaticsCCtorHelper: Creates a BasicBlock from the `tree` node.
+//
+// Arguments:
+//    cls       - The class handle
+//    helper    - The helper function
+//    typeIndex - The static block type index. Used only for
+//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                the static block in an array at index typeIndex.
+//
+// Return Value:
+//    The call node corresponding to the helper
+GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
     bool         bNeedClassID = true;
     GenTreeFlags callFlags    = GTF_EMPTY;
@@ -722,6 +731,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             // type = TYP_BYREF;
             break;
 
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
             FALLTHROUGH;
@@ -785,11 +795,21 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
     }
+    else if (helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+    {
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
+        result->SetExpTLSFieldAccess();
+    }
     else
     {
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
+    if (IsStaticHelperEligibleForExpansion(result))
+    {
+        // Keep class handle attached to the helper call since it's difficult to restore it.
+        result->gtInitClsHnd = cls;
+    }
     result->gtFlags |= callFlags;
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
@@ -875,6 +895,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+
+        case GT_CALL:
+            return !addr->IsHelperCall() || !s_helperCallProperties.NonNullReturn(addr->AsCall()->GetHelperNum());
 
         case GT_ADD:
             if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
@@ -1800,16 +1823,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // ret(...) ->
             // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
-            //
-            // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
-            // TYP_STRUCT (of 8-bytes) and op1 is call node. See the big comment block in impReturnInstruction()
-            // for details for the case where info.compRetType is not the same as info.compRetNativeType.  For
-            // this reason pass compMethodInfo->args.retTypeClass which is guaranteed to be a valid class handle
-            // if the return type is a value class.  Note that fgInsertCommFormTemp() in turn uses this class handle
-            // if the type of op1 is TYP_STRUCT to perform lvaSetStruct() on the new temp that is created, which
-            // in turn passes it to VM to know the size of value type.
-            GenTree* temp = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1, info.compMethodInfo->args.retTypeClass);
-
+            GenTree* temp   = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1);
             GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
 
             // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
@@ -2684,7 +2698,7 @@ PhaseStatus Compiler::fgAddInternal()
     {
         // Test the JustMyCode VM global state variable
         GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
-        GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
+        GenTree* guardCheckVal  = gtNewIndir(TYP_INT, embNode);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
 
         // Create the callback which will yield the final answer

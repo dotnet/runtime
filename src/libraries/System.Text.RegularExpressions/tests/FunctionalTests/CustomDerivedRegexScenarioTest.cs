@@ -54,7 +54,9 @@ namespace System.Text.RegularExpressions.Tests
             internal class CustomRegexRunner : RegexRunner
             {
                 public Match? CallScanDirectly(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
                     => Scan(regex, text, textbeg, textend, textstart, prevlen, quick);
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
                 protected override void InitTrackCount() => base.runtrackcount = 12;
 

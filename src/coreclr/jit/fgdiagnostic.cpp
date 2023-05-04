@@ -3154,6 +3154,71 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            if (hwintrinsic->OperIsMemoryLoad())
+            {
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (hwintrinsic->OperIsMemoryStore())
+            {
+                assert(tree->OperRequiresAsgFlag());
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+            {
+                switch (intrinsicId)
+                {
+#if defined(TARGET_XARCH)
+                    case NI_SSE_StoreFence:
+                    case NI_SSE2_LoadFence:
+                    case NI_SSE2_MemoryFence:
+                    case NI_X86Serialize_Serialize:
+                    {
+                        assert(tree->OperRequiresAsgFlag());
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    case NI_SSE_Prefetch0:
+                    case NI_SSE_Prefetch1:
+                    case NI_SSE_Prefetch2:
+                    case NI_SSE_PrefetchNonTemporal:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+                    case NI_ArmBase_Yield:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_ARM64
+
+                    default:
+                    {
+                        assert(!"Unhandled HWIntrinsic with special side effect");
+                        break;
+                    }
+                }
+            }
+
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             break;
     }
@@ -4301,7 +4366,7 @@ void Compiler::fgDebugCheckSsa()
         }
     };
 
-    // Visit the blocks that SSA intially renamed
+    // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
@@ -4664,6 +4729,32 @@ void Compiler::fgDebugCheckLoopTable()
         {
             loop.VERIFY_lpIterTree();
             loop.VERIFY_lpTestTree();
+        }
+
+        // If we have dominators, we check more things:
+        // 1. The pre-header dominates the entry (if pre-headers are required).
+        // 2. The entry dominates the exit.
+        // 3. The IDom tree from the exit reaches the entry.
+        if (fgDomsComputed)
+        {
+            if (optLoopsRequirePreHeaders)
+            {
+                assert(fgDominate(loop.lpHead, loop.lpEntry));
+            }
+
+            if (loop.lpExitCnt == 1)
+            {
+                assert(loop.lpExit != nullptr);
+                assert(fgDominate(loop.lpEntry, loop.lpExit));
+
+                BasicBlock* cur = loop.lpExit;
+                while ((cur != nullptr) && (cur != loop.lpEntry))
+                {
+                    assert(fgDominate(cur, loop.lpExit));
+                    cur = cur->bbIDom;
+                }
+                assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
+            }
         }
     }
 

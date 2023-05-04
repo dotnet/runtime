@@ -63,10 +63,12 @@ namespace System.Reflection.Runtime.FieldInfos
                 }
 
                 FieldAttributes attributes = Attributes;
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if (0 != (attributes & FieldAttributes.NotSerialized))
                 {
                     yield return new RuntimePseudoCustomAttributeData(typeof(NonSerializedAttribute), null);
                 }
+#pragma warning restore SYSLIB0050
             }
         }
 

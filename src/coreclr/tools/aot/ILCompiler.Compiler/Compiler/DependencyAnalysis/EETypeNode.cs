@@ -101,12 +101,6 @@ namespace ILCompiler.DependencyAnalysis
                 _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
 
             factory.TypeSystemContext.EnsureLoadableType(type);
-
-            // We don't have a representation for function pointers right now
-            if (WithoutParameterizeTypes(type).IsFunctionPointer)
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-
-            static TypeDesc WithoutParameterizeTypes(TypeDesc t) => t is ParameterizedType pt ? WithoutParameterizeTypes(pt.ParameterType) : t;
         }
 
         private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
@@ -639,6 +633,9 @@ namespace ILCompiler.DependencyAnalysis
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
 
+            if (_type.IsFunctionPointer)
+                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
+
             return dependencies;
         }
 
@@ -696,6 +693,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
+            OutputFunctionPointerParameters(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -755,11 +753,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
             }
 
-            if (this is ClonedConstructedEETypeNode)
-            {
-                flags |= (uint)EETypeKind.ClonedEEType;
-            }
-
             if (_type.IsArray || _type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
@@ -780,7 +773,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     int elementSize = elementType.GetElementSize().AsInt;
                     // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    flags |= (uint)elementSize;
+                    flags |= (uint)checked((ushort)elementSize);
                 }
             }
             else if (_type.IsString)
@@ -840,6 +833,16 @@ namespace ILCompiler.DependencyAnalysis
                     // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
                     return ParameterizedTypeShapeConstants.ByRef;
                 }
+                else if (_type.IsFunctionPointer)
+                {
+                    // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
+                    MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                    return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                }
                 else
                     throw new NotImplementedException();
 
@@ -887,6 +890,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
                 }
+            }
+            else if (_type.IsFunctionPointer)
+            {
+                relatedTypeNode = factory.NecessaryTypeSymbol(((FunctionPointerType)_type).Signature.ReturnType);
             }
             else
             {
@@ -1162,6 +1169,22 @@ namespace ILCompiler.DependencyAnalysis
                     objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                 else
                     objData.EmitPointerReloc(compositionNode);
+            }
+        }
+
+        private void OutputFunctionPointerParameters(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (_type.IsFunctionPointer)
+            {
+                MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                foreach (TypeDesc paramType in sig)
+                {
+                    ISymbolNode paramTypeNode = factory.NecessaryTypeSymbol(paramType);
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(paramTypeNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(paramTypeNode);
+                }
             }
         }
 

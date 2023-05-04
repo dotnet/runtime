@@ -166,6 +166,13 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
+        public static unsafe void FreeMethodSignatureBuffer(JSFunctionBinding signature)
+        {
+            Marshal.FreeHGlobal((nint)signature.Header);
+            signature.Header = null;
+            signature.Sigs = null;
+        }
+
         public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
             JSObject? res = null;

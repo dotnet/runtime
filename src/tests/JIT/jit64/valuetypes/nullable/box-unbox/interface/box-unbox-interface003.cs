@@ -13,8 +13,9 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(IEmptyGen<int> o)
     {
@@ -26,7 +27,8 @@ internal class NullableTest
         return Helper.Compare((ImplementOneInterfaceGen<int>?)o, Helper.Create(default(ImplementOneInterfaceGen<int>)));
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ImplementOneInterfaceGen<int>? s = Helper.Create(default(ImplementOneInterfaceGen<int>));
 

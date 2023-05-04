@@ -141,7 +141,25 @@
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
   </data>
-  <data name="Argument_InvalidName" xml:space="preserve">
-    <value>Invalid name.</value>
+  <data name="Argument_InvalidTypeArgument" xml:space="preserve">
+    <value>The type code may not be used as a type argument of a custom attribute .</value>
+  </data>
+  <data name="InvalidOperation_EmptyFieldForCustomAttribute" xml:space="preserve">
+    <value>Custom attribute '{0}' doesn't contain a field named '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidCustomAttributeLength" xml:space="preserve">
+    <value>Custom attribute '{0}' data length is only '{1}'.</value>
+  </data>
+  <data name="Argument_InvalidProlog" xml:space="preserve">
+    <value>Custom attribute '{0}' prolog invalid.</value>
+  </data>
+  <data name="Argument_UnknownNamedType" xml:space="preserve">
+    <value>Custom attribute '{0}' has unknown named type '{1}'.</value>
+  </data>
+  <data name="NotImplemented_TypeForValue" xml:space="preserve">
+    <value>Type '{0}' not handled in the custom attribute value decoder.</value>
+  </data>
+  <data name="Argument_DllNameCannotBeEmpty" xml:space="preserve">
+    <value>DllName cannot be empty.</value>
   </data>
 </root>

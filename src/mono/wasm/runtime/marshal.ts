@@ -5,7 +5,7 @@ import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles"
 import { Module, runtimeHelpers } from "./imports";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
+import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types";
 import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
@@ -478,38 +478,4 @@ export class ArraySegment extends MemoryView {
     get isDisposed(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
-}
-
-// please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
-    None = 0,
-    Void = 1,
-    Discard,
-    Boolean,
-    Byte,
-    Char,
-    Int16,
-    Int32,
-    Int52,
-    BigInt64,
-    Double,
-    Single,
-    IntPtr,
-    JSObject,
-    Object,
-    String,
-    Exception,
-    DateTime,
-    DateTimeOffset,
-
-    Nullable,
-    Task,
-    Array,
-    ArraySegment,
-    Span,
-    Action,
-    Function,
-
-    // only on runtime
-    JSException,
 }

@@ -136,7 +136,7 @@ IF NOT "%CrossGen2SynthesizePgo"=="" (
 
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
-if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
+set CLRTestExpectedExitCode=$(CLRTestExitCode)
 ECHO BEGIN EXECUTION
       ]]>
       </BatchCLRTestExitCodePrep>

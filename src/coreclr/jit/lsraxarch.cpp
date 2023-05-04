@@ -484,7 +484,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_OBJ:
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
@@ -498,7 +497,6 @@ int LinearScan::BuildNode(GenTree* tree)
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -754,7 +752,6 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_STOREIND:
         case GT_ARR_INDEX:
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_SWITCH_TABLE:
         case GT_LOCKADD:
 #ifdef TARGET_X86
@@ -1301,12 +1298,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the node is TYP_STRUCT and it is put on stack with
             // putarg_stk operation, we consume and produce no registers.
-            // In this case the embedded Obj node should not produce
+            // In this case the embedded Blk node should not produce
             // registers too since it is contained.
             // Note that if it is a SIMD type the argument will be in a register.
             if (argNode->TypeGet() == TYP_STRUCT)
             {
-                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_OBJ);
+                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_BLK);
                 assert(argNode->gtGetOp1()->isContained());
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1475,121 +1472,117 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             srcAddrOrFill = src->AsIndir()->Addr();
         }
 
-        if (blkNode->OperIs(GT_STORE_OBJ))
+        switch (blkNode->gtBlkOpKind)
         {
-            if (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindRepInstr)
-            {
+            case GenTreeBlk::BlkOpKindCpObjRepInstr:
                 // We need the size of the contiguous Non-GC-region to be in RCX to call rep movsq.
                 sizeRegMask = RBM_RCX;
-            }
+                FALLTHROUGH;
 
-            // The srcAddr must be in a register.  If it was under a GT_IND, we need to subsume all of its
-            // sources.
-            dstAddrRegMask = RBM_RDI;
-            srcRegMask     = RBM_RSI;
-        }
-        else
-        {
-            switch (blkNode->gtBlkOpKind)
-            {
-                case GenTreeBlk::BlkOpKindUnroll:
-                    if ((size % XMM_REGSIZE_BYTES) != 0)
-                    {
-                        regMaskTP regMask = availableIntRegs;
-#ifdef TARGET_X86
-                        if ((size & 1) != 0)
-                        {
-                            // We'll need to store a byte so a byte register is needed on x86.
-                            regMask        = allByteRegs();
-                            internalIsByte = true;
-                        }
-#endif
-                        internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
-                    }
+            case GenTreeBlk::BlkOpKindCpObjUnroll:
+                // The srcAddr must be in a register. If it was under a GT_IND, we need to subsume all of its sources.
+                dstAddrRegMask = RBM_RDI;
+                srcRegMask     = RBM_RSI;
+                break;
 
-                    if (size >= XMM_REGSIZE_BYTES)
-                    {
-                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        SetContainsAVXFlags(size);
-                    }
-                    break;
-
-                case GenTreeBlk::BlkOpKindUnrollMemmove:
+            case GenTreeBlk::BlkOpKindUnroll:
+                if ((size % XMM_REGSIZE_BYTES) != 0)
                 {
-                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
-                    // we can ignore the fact that src and dst might overlap if we save the whole src
-                    // to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
-                    //
-                    //       vmovdqu  ymm0, ymmword ptr[rax +  0]
-                    //       vmovdqu  ymm1, ymmword ptr[rax + 32]
-                    //       vmovdqu  ymm2, ymmword ptr[rax + 64]
-                    //       vmovdqu  ymm3, ymmword ptr[rax + 88]
-                    //       vmovdqu  ymmword ptr[rcx +  0], ymm0
-                    //       vmovdqu  ymmword ptr[rcx + 32], ymm1
-                    //       vmovdqu  ymmword ptr[rcx + 64], ymm2
-                    //       vmovdqu  ymmword ptr[rcx + 88], ymm3
-                    //
-
-                    // Not yet finished for x86
-                    assert(TARGET_POINTER_SIZE == 8);
-
-                    // Lowering was expected to get rid of memmove in case of zero
-                    assert(size > 0);
-
-                    // TODO-XARCH-AVX512: Consider enabling it here
-                    unsigned simdSize =
-                        (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
-
-                    if (size >= simdSize)
+                    regMaskTP regMask = availableIntRegs;
+#ifdef TARGET_X86
+                    if ((size & 1) != 0)
                     {
-                        unsigned simdRegs = size / simdSize;
-                        if ((size % simdSize) != 0)
-                        {
-                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
-                            // especially if we enable AVX-512
-                            simdRegs++;
-                        }
-                        for (unsigned i = 0; i < simdRegs; i++)
-                        {
-                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
-                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
-                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        }
-                        SetContainsAVXFlags();
+                        // We'll need to store a byte so a byte register is needed on x86.
+                        regMask        = allByteRegs();
+                        internalIsByte = true;
                     }
-                    else if (isPow2(size))
-                    {
-                        // Single GPR for 1,2,4,8
-                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                    }
-                    else
-                    {
-                        // Any size from 3 to 15 can be handled via two GPRs
-                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                    }
+#endif
+                    internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
+                }
+
+                if (size >= XMM_REGSIZE_BYTES)
+                {
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    SetContainsAVXFlags(size);
                 }
                 break;
 
-                case GenTreeBlk::BlkOpKindRepInstr:
-                    dstAddrRegMask = RBM_RDI;
-                    srcRegMask     = RBM_RSI;
-                    sizeRegMask    = RBM_RCX;
-                    break;
+            case GenTreeBlk::BlkOpKindUnrollMemmove:
+            {
+                // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                // we can ignore the fact that src and dst might overlap if we save the whole src
+                // to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
+                //
+                //       vmovdqu  ymm0, ymmword ptr[rax +  0]
+                //       vmovdqu  ymm1, ymmword ptr[rax + 32]
+                //       vmovdqu  ymm2, ymmword ptr[rax + 64]
+                //       vmovdqu  ymm3, ymmword ptr[rax + 88]
+                //       vmovdqu  ymmword ptr[rcx +  0], ymm0
+                //       vmovdqu  ymmword ptr[rcx + 32], ymm1
+                //       vmovdqu  ymmword ptr[rcx + 64], ymm2
+                //       vmovdqu  ymmword ptr[rcx + 88], ymm3
+                //
+
+                // Not yet finished for x86
+                assert(TARGET_POINTER_SIZE == 8);
+
+                // Lowering was expected to get rid of memmove in case of zero
+                assert(size > 0);
+
+                unsigned simdSize = compiler->roundDownSIMDSize(size);
+                if (size <= ZMM_RECOMMENDED_THRESHOLD)
+                {
+                    // Only use ZMM for large data due to possible CPU throttle issues
+                    simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
+                }
+
+                if ((size >= simdSize) && (simdSize > 0))
+                {
+                    unsigned simdRegs = size / simdSize;
+                    if ((size % simdSize) != 0)
+                    {
+                        // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                        // especially if we enable AVX-512
+                        simdRegs++;
+                    }
+                    for (unsigned i = 0; i < simdRegs; i++)
+                    {
+                        // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                        // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                        buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    }
+                    SetContainsAVXFlags();
+                }
+                else if (isPow2(size))
+                {
+                    // Single GPR for 1,2,4,8
+                    buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                }
+                else
+                {
+                    // Any size from 3 to 15 can be handled via two GPRs
+                    buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                }
+            }
+            break;
+
+            case GenTreeBlk::BlkOpKindRepInstr:
+                dstAddrRegMask = RBM_RDI;
+                srcRegMask     = RBM_RSI;
+                sizeRegMask    = RBM_RCX;
+                break;
 
 #ifdef TARGET_AMD64
-                case GenTreeBlk::BlkOpKindHelper:
-                    dstAddrRegMask = RBM_ARG_0;
-                    srcRegMask     = RBM_ARG_1;
-                    sizeRegMask    = RBM_ARG_2;
-                    break;
+            case GenTreeBlk::BlkOpKindHelper:
+                dstAddrRegMask = RBM_ARG_0;
+                srcRegMask     = RBM_ARG_1;
+                sizeRegMask    = RBM_ARG_2;
+                break;
 #endif
 
-                default:
-                    unreached();
-            }
+            default:
+                unreached();
         }
 
         if ((srcAddrOrFill == nullptr) && (srcRegMask != RBM_NONE))
@@ -2150,6 +2143,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector256_CreateScalarUnsafe:
             case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2163,7 +2157,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         // We will either be in memory and need to be moved
                         // into a register of the appropriate size or we
-                        // are already in an XMM/YMM register and can stay
+                        // are already in an XMM/YMM/ZMM register and can stay
                         // where we are.
 
                         tgtPrefUse = BuildUse(op1);
@@ -2177,6 +2171,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_Vector128_GetElement:
             case NI_Vector256_GetElement:
+            case NI_Vector512_GetElement:
             {
                 assert(numArgs == 2);
 
@@ -2184,7 +2179,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    var_types requiredSimdTempType = (intrinsicId == NI_Vector128_GetElement) ? TYP_SIMD16 : TYP_SIMD32;
+
+                    var_types requiredSimdTempType = Compiler::getSIMDTypeForSize(intrinsicTree->GetSimdSize());
                     compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 break;
@@ -2359,6 +2355,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_FMA_MultiplySubtractNegated:
             case NI_FMA_MultiplySubtractNegatedScalar:
             case NI_FMA_MultiplySubtractScalar:
+            case NI_AVX512F_FusedMultiplyAdd:
+            case NI_AVX512F_FusedMultiplyAddNegated:
+            case NI_AVX512F_FusedMultiplyAddSubtract:
+            case NI_AVX512F_FusedMultiplySubtract:
+            case NI_AVX512F_FusedMultiplySubtractAdd:
+            case NI_AVX512F_FusedMultiplySubtractNegated:
             {
                 assert(numArgs == 3);
                 assert(isRMW);

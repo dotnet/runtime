@@ -45,7 +45,7 @@ if /I [%XHARNESS_COMMAND%] == [test] (
     )
 
     if [%JS_ENGINE_ARGS%] == [] (
-        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000"
+        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000 --engine-arg^=--experimental-wasm-eh"
     )
 ) else (
     if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (

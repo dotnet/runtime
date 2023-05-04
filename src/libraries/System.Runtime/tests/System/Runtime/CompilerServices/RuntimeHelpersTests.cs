@@ -370,10 +370,12 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("Not presently implemented on Mono")]
-        public static void AllocateTypeAssociatedMemoryValidArguments()
+        public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
             Assert.NotEqual(memory, IntPtr.Zero);
+            // Validate that the memory is zeroed out
+            Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]

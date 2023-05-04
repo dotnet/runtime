@@ -328,8 +328,10 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
             if (type.IsSerializable)
                 return false;
+#pragma warning restore SYSLIB0050
 
             if (Globals.TypeOfISerializable.IsAssignableFrom(type))
                 return false;
@@ -635,8 +637,10 @@ namespace System.Runtime.Serialization.DataContracts
                 {
                     if (HasDataContract)
                         throw new InvalidDataContractException(SR.Format(SR.ISerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type)));
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                     if (baseType != null && !(baseType.IsSerializable && Globals.TypeOfISerializable.IsAssignableFrom(baseType)))
                         baseType = null;
+#pragma warning restore SYSLIB0050
                 }
                 IsValueType = type.IsValueType;
                 if (baseType != null && baseType != Globals.TypeOfObject && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri)
@@ -919,7 +923,9 @@ namespace System.Runtime.Serialization.DataContracts
                     {
                         FieldInfo? field = member as FieldInfo;
 
+#pragma warning disable SYSLIB0050 // Field.IsNotSerialized is obsolete
                         if (field != null && !field.IsNotSerialized)
+#pragma warning restore SYSLIB0050
                         {
                             DataMember memberContract = new DataMember(member);
 
@@ -1044,7 +1050,9 @@ namespace System.Runtime.Serialization.DataContracts
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.Interfaces)]
                 Type type)
             {
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                 _isNonAttributedType = !type.IsSerializable && !_hasDataContract && IsNonAttributedTypeValidForSerialization(type);
+#pragma warning restore SYSLIB0050
             }
 
             private static bool IsMethodOverriding(MethodInfo method)

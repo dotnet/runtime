@@ -796,6 +796,10 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 			}
 		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_IS_PRIMITIVE (t2)) {
 			rel = t1->type == t2->type ? CMP_EQ : CMP_NE;
+		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_ISSTRUCT (t2)) {
+			rel = CMP_NE;
+		} else if (MONO_TYPE_IS_PRIMITIVE (t2) && MONO_TYPE_ISSTRUCT (t1)) {
+			rel = CMP_NE;
 		}
 	}
 	return rel;

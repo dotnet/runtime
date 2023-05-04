@@ -5,7 +5,7 @@ import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigInternal, DotnetModuleInternal, mono_assert } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, disableLegacyJsInterop, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -26,6 +26,7 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
+import { loadBootConfig } from "./blazor/_Integration";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -272,6 +273,13 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             string_decoder.init_fields();
         });
 
+        if (config.startupOptions && INTERNAL.resourceLoader) {
+            if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
+                INTERNAL.resourceLoader.logToConsole();
+            }
+            INTERNAL.resourceLoader.purgeUnusedCacheEntriesAsync(); // Don't await - it's fine to run in background
+        }
+
         // call user code
         try {
             userOnRuntimeInitialized();
@@ -341,7 +349,7 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     // init_polyfills() is already called from export.ts
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         cwraps_mono_api(MONO);
         cwraps_binding_api(BINDING);
     }
@@ -606,7 +614,7 @@ export function bindings_init(): void {
     try {
         const mark = startMeasure();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
             init_legacy_exports();
         }
         initialize_marshalers_to_js();
@@ -639,17 +647,21 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
     }
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
-        const resolveSrc = runtimeHelpers.locateFile(configFilePath);
-        const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
-        const loadedConfig: MonoConfigInternal = (await configResponse.json()) || {};
-        if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
-            throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
+        if (config.startupOptions) {
+            await loadBootConfig(config);
+        } else {
+            const resolveSrc = runtimeHelpers.locateFile(configFilePath);
+            const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
+            const loadedConfig: MonoConfigInternal = (await configResponse.json()) || {};
+            if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
+                throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
 
-        // merge
-        loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
-        loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
-        loadedConfig.runtimeOptions = [...(loadedConfig.runtimeOptions || []), ...(config.runtimeOptions || [])];
-        config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
+            // merge
+            loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
+            loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
+            loadedConfig.runtimeOptions = [...(loadedConfig.runtimeOptions || []), ...(config.runtimeOptions || [])];
+            config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
+        }
 
         normalizeConfig();
 
@@ -676,6 +688,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
 function normalizeConfig() {
     // normalize
     Module.config = config = runtimeHelpers.config = Object.assign(runtimeHelpers.config, Module.config || {});
+
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];

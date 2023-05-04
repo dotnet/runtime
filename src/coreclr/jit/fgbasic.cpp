@@ -4700,6 +4700,17 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     block->bbFlags |=
         originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
+    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    {
+        block->bbNatLoopNum = prevBb->bbNatLoopNum;
+
+        // Update lpBottom after block split
+        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+        {
+            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+        }
+    }
+
     return block;
 }
 
@@ -6099,6 +6110,40 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
     newBlk->bbFlags |= (block->bbFlags & BBF_COLD);
 
     return newBlk;
+}
+
+//------------------------------------------------------------------------
+// fgNewBBFromTreeAfter: Create a basic block from the given tree and insert it
+//    after the specified block.
+//
+// Arguments:
+//    jumpKind          - jump kind for the new block.
+//    block             - insertion point.
+//    tree              - tree that will be wrapped into a statement and
+//                        inserted in the new block.
+//    debugInfo         - debug info to propagate into the new statement.
+//    updateSideEffects - update side effects for the whole statement.
+//
+// Return Value:
+//    The new block
+//
+// Notes:
+//    The new block will have BBF_INTERNAL flag and EH region will be extended
+//
+BasicBlock* Compiler::fgNewBBFromTreeAfter(
+    BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
+{
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
+    fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = block->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = block->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        gtUpdateStmtSideEffects(stmt);
+    }
+    return newBlock;
 }
 
 /*****************************************************************************

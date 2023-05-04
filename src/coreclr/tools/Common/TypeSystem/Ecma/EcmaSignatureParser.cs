@@ -371,7 +371,19 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
 
-                flags = (MethodSignatureFlags)signatureCallConv;
+                // If skipEmbeddedSignatureData is true, we're building the signature for the purposes of building a type.
+                // We normalize unmanaged calling convention into a single value - "unmanaged".
+                if (skipEmbeddedSignatureData)
+                {
+                    flags = MethodSignatureFlags.UnmanagedCallingConvention;
+
+                    // But we still need to remember this signature is different, so add this to the EmbeddedSignatureData of the owner signature.
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack) + "|" + ((int)signatureCallConv).ToString(), kind = EmbeddedSignatureDataKind.UnmanagedCallConv, type = null });
+                }
+                else
+                {
+                    flags = (MethodSignatureFlags)signatureCallConv;
+                }
             }
 
             if (!header.IsInstance)

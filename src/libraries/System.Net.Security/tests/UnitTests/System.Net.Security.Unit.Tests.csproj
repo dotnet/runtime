@@ -50,6 +50,8 @@
              Link="Common\System\Net\Security\RC4.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs"
+             Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"

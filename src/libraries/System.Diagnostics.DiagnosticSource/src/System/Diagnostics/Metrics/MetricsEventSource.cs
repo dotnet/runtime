@@ -102,12 +102,12 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues)]
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version=1)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
+        public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value)
         {
-            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
+            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value);
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues)]
@@ -191,12 +191,12 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues)]
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version=1)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
+        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value)
         {
-            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value);
         }
 
         /// <summary>
@@ -413,17 +413,19 @@ namespace System.Diagnostics.Metrics
 
             private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
             {
-                if (stats.AggregationStatistics is RateStatistics rateStats)
+                if (stats.AggregationStatistics is CounterStatistics rateStats)
                 {
                     if (rateStats.IsMonotonic)
                     {
                         Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "",
+                            rateStats.Value.ToString(CultureInfo.InvariantCulture));
                     }
                     else
                     {
                         Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "",
+                            rateStats.Value.ToString(CultureInfo.InvariantCulture));
                     }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)

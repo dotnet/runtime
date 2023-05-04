@@ -22,6 +22,10 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export const exportedRuntimeAPI: RuntimeAPI = {} as any;
 export const moduleExports: ModuleAPI = {} as any;
 export let emscriptenEntrypoint: CreateDotnetRuntimeType;
+
+// this is when we link with workload tools. The consts:WasmEnableLegacyJsInterop is when we compile with rollup.
+export let disableLegacyJsInterop = false;
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function set_imports_exports(
     imports: EarlyImports,
@@ -36,6 +40,7 @@ export function set_imports_exports(
     ENVIRONMENT_IS_WEB = imports.isWeb;
     ENVIRONMENT_IS_WORKER = imports.isWorker;
     ENVIRONMENT_IS_PTHREAD = imports.isPThread;
+    disableLegacyJsInterop = imports.disableLegacyJsInterop;
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;

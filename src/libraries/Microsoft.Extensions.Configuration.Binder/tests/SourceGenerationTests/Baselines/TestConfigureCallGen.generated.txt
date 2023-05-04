@@ -30,7 +30,7 @@ internal static class GeneratedConfigurationBinder
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     using System;
-    using System.Linq;
+    using System.Globalization;
     using Microsoft.Extensions.Configuration;
     using System.Collections.Generic;
 
@@ -43,13 +43,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            int element;
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string stringValue1)
+                if (HasValueOrChildren(section))
                 {
-                    element = int.Parse(stringValue1);
-                    obj.Add(element);
+                    int element;
+                    if (section.Value is string stringValue1)
+                    {
+                        element = ParseInt(stringValue1, () => section.Path);
+                        obj.Add(element);
+                    }
                 }
             }
         }
@@ -61,17 +64,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            string key;
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Key is string stringValue2)
+                if (HasValueOrChildren(section))
                 {
-                    key = stringValue2;
-                    string element;
-                    if (section.Value is string stringValue3)
+                    string key = section.Key;
+                    if (section.Value is string stringValue2)
                     {
-                        element = stringValue3;
-                        obj[key] = element;
+                        obj[key] = stringValue2;
                     }
                 }
             }
@@ -84,32 +84,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            if (configuration["MyString"] is string stringValue4)
+            if (configuration["MyString"] is string stringValue3)
             {
-                obj.MyString = stringValue4;
+                obj.MyString = stringValue3;
             }
 
-            if (configuration["MyInt"] is string stringValue5)
+            if (configuration["MyInt"] is string stringValue4)
             {
-                obj.MyInt = int.Parse(stringValue5);
+                obj.MyInt = ParseInt(stringValue4, () => configuration.GetSection("MyInt").Path);
             }
 
-            IConfigurationSection section6 = configuration.GetSection("MyList");
-            if (HasChildren(section6))
+            IConfigurationSection section5 = configuration.GetSection("MyList");
+            if (HasChildren(section5))
             {
-                List<int> temp7 = obj.MyList;
-                temp7 ??= new List<int>();
-                BindCore(section6, ref temp7);
-                obj.MyList = temp7;
+                List<int> temp6 = obj.MyList;
+                temp6 ??= new List<int>();
+                BindCore(section5, ref temp6);
+                obj.MyList = temp6;
             }
 
-            IConfigurationSection section8 = configuration.GetSection("MyDictionary");
-            if (HasChildren(section8))
+            IConfigurationSection section7 = configuration.GetSection("MyDictionary");
+            if (HasChildren(section7))
             {
-                Dictionary<string, string> temp9 = obj.MyDictionary;
-                temp9 ??= new Dictionary<string, string>();
-                BindCore(section8, ref temp9);
-                obj.MyDictionary = temp9;
+                Dictionary<string, string> temp8 = obj.MyDictionary;
+                temp8 ??= new Dictionary<string, string>();
+                BindCore(section7, ref temp8);
+                obj.MyDictionary = temp8;
             }
         }
 
@@ -129,6 +129,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
             return false;
+        }
+
+        public static int ParseInt(string stringValue, Func<string?> getPath)
+        {
+            try
+            {
+                return int.Parse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+            }
         }
     }
 }

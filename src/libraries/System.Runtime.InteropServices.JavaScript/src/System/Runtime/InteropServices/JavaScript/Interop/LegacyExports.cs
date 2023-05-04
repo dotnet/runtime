@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -9,9 +10,26 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // the public methods are protected from trimming by ILLink.Descriptors.LegacyJsInterop.xml
+    internal static unsafe partial class LegacyExportsTrimmingRoot
+    {
+        // the public methods are used from JavaScript, but the trimmer doesn't know about it.
+        // It's protected by DynamicDependencyAttribute on JSFunctionBinding.BindJSFunction.
+        public static void TrimWhenNotWasmEnableLegacyJsInterop()
+        {
+            // if MSBuild property WasmEnableLegacyJsInterop==false this call would be substituted away and LegacyExports would be trimmed.
+            LegacyExports.PreventTrimming();
+        }
+    }
+
     internal static unsafe partial class LegacyExports
     {
+        // the public methods of this class are used from JavaScript, but the trimmer doesn't know about it.
+        // They are protected by LegacyExportsTrimmingRoot.PreventTrimming and JSFunctionBinding.BindJSFunction.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(LegacyExports))]
+        internal static void PreventTrimming()
+        {
+        }
+
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (JSHostImplementation.s_csOwnedObjects)
@@ -53,6 +71,10 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void CreateCSOwnedProxyRef(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
+
             JSObject? res = null;
 
             lock (JSHostImplementation.s_csOwnedObjects)
@@ -126,6 +148,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
             //  on the stack that can be captured by our local functions below
             var task = _task;
@@ -207,6 +232,9 @@ namespace System.Runtime.InteropServices.JavaScript
         [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2057", Justification = "Done on purpose, see comment above.")]
         public static void CreateUriRef(string uri, out object? result)
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             if (uriType == null)
             {
                 // StringBuilder to confuse ILLink, which is too smart otherwise

@@ -5,8 +5,8 @@
         AddRuntimeFilesToPackage;
         AddFrameworkFilesToPackage
     </GetSharedFrameworkFilesForReadyToRunDependsOn>
-    <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono'">true</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono'">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono' or '$(BuildNativeAOTRuntimePack)' == 'true'">false</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris'">false</PublishReadyToRun>
     <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
@@ -17,6 +17,9 @@
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>NativeAOT</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">
     <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
@@ -38,7 +41,7 @@
     We add the entries here to ensure that we don't fail the validation that every file included in the runtime pack is in the platform manifest
     without adding the entries to the manifest in the ref pack.
   -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true'">
     <PlatformManifestFileEntry Include="hostpolicy.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostpolicy.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostpolicy.dylib" IsNative="true" />
@@ -47,14 +50,18 @@
     <PlatformManifestFileEntry Include="libhostfxr.dylib" IsNative="true" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+    <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
+  </ItemGroup>
+
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup>
       <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
     </ItemGroup>
   </Target>
 
-  <!-- Mobile uses a different hosting model, so we don't include the .NET host components. -->
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+  <!-- Mobile and NativeAOT use a different hosting model, so we don't include the .NET host components. -->
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)hostfxr$(LibSuffix)" PackOnly="true" />
   </ItemGroup>
@@ -64,7 +71,8 @@
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
       </RuntimeFiles>
-
+    </ItemGroup>
+    <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true'">
       <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
         <TargetPath>tools</TargetPath>
       </RuntimeFiles>
@@ -87,7 +95,7 @@
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.debug.framework/%(RecursiveDir)</TargetPath>
       </RuntimeFiles>
 
-      <RuntimeFiles Condition="'$(RuntimeFlavor)' == 'mono'"
+      <RuntimeFiles Condition="'$(RuntimeFlavor)' == 'Mono'"
                     Include="$(MonoArtifactsPath)\build\**\*.*"
                     ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/build/%(RecursiveDir)</TargetPath>
@@ -110,6 +118,8 @@
                                 Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
         <TargetPath>tools</TargetPath>
       </CoreCLROptimizationFiles>
+    </ItemGroup>
+    <ItemGroup>
       <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);@(CoreCLROptimizationFiles)" />
     </ItemGroup>
   </Target>
@@ -123,7 +133,7 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(TargetOS)' == 'windows'">
     <!-- DiaSymReader for the host architecture, which is used for [cross-]compilation -->
     <_diaSymArch>$(_hostArch)</_diaSymArch>
     <_diaSymReaderPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymArch).dll</_diaSymReaderPath>
@@ -134,7 +144,7 @@
     <_diaSymReaderTargetArchPath>$(PkgMicrosoft_DiaSymReader_Native)/runtimes/win/native/Microsoft.DiaSymReader.Native.$(_diaSymTargetArch).dll</_diaSymReaderTargetArchPath>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+  <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(TargetOS)' == 'windows'">
     <NativeRuntimeAsset Include="$(_diaSymReaderTargetArchPath)" />
     <NativeRuntimeAsset Include="$(_diaSymReaderPath)" Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">
       <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -160,10 +170,10 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(Crossgen2SdkOverridePropsPath)' != ''" />
+  <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(Crossgen2SdkOverrideTargetsPath)' != ''" />
+  <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''" />
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>

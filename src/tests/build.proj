@@ -8,7 +8,7 @@
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -126,8 +126,8 @@
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(OutputRid)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRid)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(OutputRID)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRID)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -277,12 +277,23 @@
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
+      <RunAOTCompilation>True</RunAOTCompilation>
     </PropertyGroup>
 
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.iossimulator-$(TargetArchitecture)/$(Configuration)/runtimes/iossimulator-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <!-- FIXME: Currently, tracing/eventpipe tests only work with the Mono Interpreter. Mono interpreter should be only enabled for simulator targets. -->
+      <MonoForceInterpreter>True</MonoForceInterpreter>
     </PropertyGroup>
     <ItemGroup>
       <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
@@ -331,24 +342,115 @@
         SourceFiles="%(ExtraDlls.Identity)"
         DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
+    <ItemGroup>
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=arm64-ios" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=x86_64-ios" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
+      <MonoAOTCompilerDefaultAotArguments Include="static" />
+      <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
+      <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
+
+      <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
+      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
+      <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
+      <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=40000" />
+
+      <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_AOTMode Condition="'$(MonoForceInterpreter)' != 'true'">Full</_AOTMode>
+      <_AOTMode Condition="'$(MonoForceInterpreter)' == 'true'">JustInterp</_AOTMode>
+      <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
+      <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+      <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <_AppleAssembliesInternal Include="$(BuildDir)/**/*.dll" />
+
+        <_AppleAssembliesInternal>
+            <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+            <_IsNative>false</_IsNative>
+        </_AppleAssembliesInternal>
+
+        <_AotInputAssemblies Include="@(_AppleAssembliesInternal)"
+                            Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
+            <AotArguments>$(AotArguments)</AotArguments>
+            <ProcessArguments>$(ProcessArguments)</ProcessArguments>
+        </_AotInputAssemblies>
+
+        <_AOT_InternalForceInterpretAssemblies Include="@(_AppleAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
+        <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
+
+    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+      <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
+      <DevTeamProvisioning>-</DevTeamProvisioning>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
+      <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+    </ItemGroup>
+
+    <RemoveDuplicates
+        Inputs="@(_AotInputAssemblies)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AotInputAssembliesDedup"/>
+    </RemoveDuplicates>
+    <Message Text="RunAOTCompilation $(RunAOTCompilation)" Importance="High"/>
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        OutputDir="$(_MobileIntermediateOutputPath)"
+        Mode="$(_AOTMode)"
+        OutputType="AsmOnly"
+        Assemblies="@(_AotInputAssembliesDedup)"
+        AotModulesTablePath="$(BundleDir)\modules.m"
+        AotModulesTableLanguage="ObjC"
+        IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        AdditionalAssemblySearchPaths="$(CORE_ROOT)">
+        <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
+    </MonoAOTCompiler>
+
+    <ItemGroup>
+      <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
+    </ItemGroup>
+
+    <RemoveDuplicates
+        Inputs="@(_AppleAssembliesInternal)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AppleAssembliesInternalDedup"/>
+    </RemoveDuplicates>
+
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
-        Arch="$(TargetArchitecture)"
         ProjectName="$(AssemblyName)"
+        AppDir="$(BuildDir)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
-        RuntimeComponents="$(RuntimeComponents)"
-        Assemblies="@(BundleAssemblies)"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)"
-        UseConsoleUITemplate="True"
-        GenerateXcodeProject="True"
-        BuildAppBundle="True"
+        Assemblies="@(_AppleAssembliesInternalDedup)"
+        Arch="$(TargetArchitecture)"
+        OutputDirectory="$(BundleDir)"
         Optimized="True"
         DevTeamProvisioning="$(DevTeamProvisioning)"
-        OutputDirectory="$(BundleDir)"
-        AppDir="$(BuildDir)"
+        BuildAppBundle="True"
+        GenerateXcodeProject="True"
+        UseConsoleUITemplate="True"
+        ForceAOT="$(RunAOTCompilation)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         InvariantGlobalization="true"
-    >
+        ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)">
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
@@ -435,8 +537,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">"$(DotNetTool)" restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore -r $(PackageRID) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
@@ -476,7 +577,8 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeOS=$(RuntimeOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:ToolsOS=$(ToolsOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
@@ -485,7 +587,9 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(CrossBuild)' == 'true'">$(GroupBuildCmd) "/p:CrossBuild=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(GroupBuildCmd) "/p:BuildNativeAotFrameworkObjects=true"</GroupBuildCmd>
@@ -526,9 +630,7 @@
 
     <PropertyGroup>
       <CrossgenDir>$(__BinDir)</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm'">$(CrossgenDir)\x64</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm64'">$(CrossgenDir)\x64</CrossgenDir>
-      <CrossgenDir Condition="'$(TargetArchitecture)' == 'x86'">$(CrossgenDir)\x64</CrossgenDir>
+      <CrossgenDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(CrossgenDir)\$(BuildArchitecture)</CrossgenDir>
 
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
 
@@ -572,7 +674,7 @@
   <Target Name="CreateIosApps"
       DependsOnTargets="BuildAlliOSApp"
       AfterTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator')" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(RunWithiOS)' == 'true'" />
 
   <Target Name="BuildMonoAot"
       DependsOnTargets="MonoAotCompileTests"

@@ -15,7 +15,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TypeMembers()
         {
             // Get an arbitrary function pointer
@@ -118,7 +117,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void NonFunctionPointerThrows()
         {
             Assert.Throws<InvalidOperationException>(() => typeof(int).GetFunctionPointerCallingConventions());
@@ -128,7 +126,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void TestToString()
         {
             // Function pointer types are inline in metadata and can't be loaded independently so they do not support the
@@ -150,7 +147,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void FunctionPointerReturn()
         {
             Type t = typeof(FunctionPointerHolder).Project();

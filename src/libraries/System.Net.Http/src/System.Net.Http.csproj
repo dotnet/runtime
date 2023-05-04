@@ -27,7 +27,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
-    <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="System\Net\Http\CancellationHelper.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
@@ -152,6 +151,8 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <!-- SocketsHttpHandler implementation -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'browser'">

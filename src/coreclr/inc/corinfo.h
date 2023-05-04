@@ -317,8 +317,8 @@ private:
     }
 };
 
-// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
-// to convey struct argument passing information.
+// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
+// `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
 //
 // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
 //
@@ -519,7 +519,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_SETFIELDDOUBLE,
 
     CORINFO_HELP_GETFIELDADDR,
-
+    CORINFO_HELP_GETSTATICFIELDADDR,
     CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
     // There are a variety of specialized helpers for accessing static fields. The JIT should use
@@ -546,6 +546,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
     /* Debugger */
 
@@ -653,6 +654,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_DELEGATEPROFILE64,         // Update 64-bit method profile for a delegate call site
     CORINFO_HELP_VTABLEPROFILE32,           // Update 32-bit method profile for a vtable call site
     CORINFO_HELP_VTABLEPROFILE64,           // Update 64-bit method profile for a vtable call site
+    CORINFO_HELP_COUNTPROFILE32,            // Update 32-bit block or edge count profile
+    CORINFO_HELP_COUNTPROFILE64,            // Update 64-bit block or edge count profile
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
@@ -1130,7 +1133,8 @@ struct CORINFO_SIG_INFO
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + (hasThis() ? 1 : 0)); }
+    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
@@ -1684,6 +1688,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+    CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
     CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -1721,6 +1726,17 @@ struct CORINFO_FIELD_INFO
     CORINFO_HELPER_DESC     accessCalloutHelper;
 
     CORINFO_CONST_LOOKUP    fieldLookup;        // Used by Ready-to-Run
+};
+
+//----------------------------------------------------------------------------
+// getThreadLocalStaticBlocksInfo and CORINFO_THREAD_STATIC_BLOCKS_INFO: The EE instructs the JIT about how to access a thread local field
+
+struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+{
+    CORINFO_CONST_LOOKUP tlsIndex;
+    uint32_t offsetOfThreadLocalStoragePointer;
+    uint32_t offsetOfMaxThreadStaticBlocks;
+    uint32_t offsetOfThreadStaticBlocks;
 };
 
 //----------------------------------------------------------------------------
@@ -2377,6 +2393,18 @@ public:
             void **ppIndirection
             ) = 0;
 
+    virtual bool getIsClassInitedFlagAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            CORINFO_CONST_LOOKUP* addr,
+            int*                  offset
+            ) = 0;
+
+    virtual bool getStaticBaseAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            bool                  isGc,
+            CORINFO_CONST_LOOKUP* addr
+            ) = 0;
+
     // return the number of bytes needed by an instance of the class
     virtual unsigned getClassSize (
             CORINFO_CLASS_HANDLE        cls
@@ -2729,6 +2757,12 @@ public:
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
 
+    virtual uint32_t getThreadLocalFieldInfo (
+                        CORINFO_FIELD_HANDLE  field) = 0;
+
+    virtual void getThreadLocalStaticBlocksInfo (
+                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) = 0;
+
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 
@@ -2998,6 +3032,7 @@ public:
         ) = 0;
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************
@@ -3190,7 +3225,7 @@ public:
                     ) = 0;
 
     //------------------------------------------------------------------------------
-    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    // getStaticFieldContent: returns true and the actual field's value if the given
     //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
@@ -3202,12 +3237,19 @@ public:
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
                     int                     valueOffset = 0,
                     bool                    ignoreMovableObjects = true
+                    ) = 0;
+
+    virtual bool getObjectContent(
+                    CORINFO_OBJECT_HANDLE   obj,
+                    uint8_t*                buffer,
+                    int                     bufferSize,
+                    int                     valueOffset
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

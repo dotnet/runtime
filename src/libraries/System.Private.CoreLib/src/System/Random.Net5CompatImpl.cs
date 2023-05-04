@@ -83,7 +83,17 @@ namespace System
 
             public override double NextDouble() => _prng.Sample();
 
-            public override float NextSingle() => (float)_prng.Sample();
+            public override float NextSingle()
+            {
+                while (true)
+                {
+                    float f = (float)_prng.Sample();
+                    if (f < 1.0f) // reject 1.0f, which is rare but possible due to rounding
+                    {
+                        return f;
+                    }
+                }
+            }
 
             public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
 
@@ -197,7 +207,14 @@ namespace System
             public override float NextSingle()
             {
                 _prng.EnsureInitialized(_seed);
-                return (float)_parent.Sample();
+                while (true)
+                {
+                    float f = (float)_parent.Sample();
+                    if (f < 1.0f) // reject 1.0f, which is rare but possible due to rounding
+                    {
+                        return f;
+                    }
+                }
             }
 
             public override void NextBytes(byte[] buffer)

@@ -64,20 +64,16 @@ namespace System.IO.Compression
 
             ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;
 
-            ZLibNative.ZLibStreamHandle? zlibStream = null;
             ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out zlibStream, zlibCompressionLevel,
+                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
                                                              windowBits, memLevel, strategy);
             }
             catch (Exception cause)
             {
-                zlibStream?.Dispose();
                 throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
             }
-
-            _zlibStream = zlibStream;
 
             switch (errC)
             {

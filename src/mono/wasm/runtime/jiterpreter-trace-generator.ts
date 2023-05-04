@@ -16,6 +16,7 @@ import {
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
+    getOpcodeTableValue
 } from "./jiterpreter-support";
 import {
     sizeOfDataItem,
@@ -143,6 +144,12 @@ function is_backward_branch_target (
     return false;
 }
 
+const knownConstantValues = new Map<number, number>();
+
+function get_known_constant_value (localOffset: number) : number | undefined {
+    return knownConstantValues.get(localOffset);
+}
+
 export function generateWasmBody (
     frame: NativePointer, traceName: string, ip: MintOpcodePtr,
     startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
@@ -214,8 +221,8 @@ export function generateWasmBody (
             //  a given exit
             exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
                 builder.branchTargets.size;
-        let isLowValueOpcode = false,
-            skipDregInvalidation = false;
+        let skipDregInvalidation = false,
+            opcodeValue = getOpcodeTableValue(opcode);
 
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
@@ -243,6 +250,10 @@ export function generateWasmBody (
             //  of that by only counting how far we are from the most recent branch target
             conditionalOpcodeCounter = 0;
         }
+
+        // Handle the _OUTSIDE_BRANCH_BLOCK table entries
+        if ((opcodeValue < -1) && isConditionallyExecuted)
+            opcodeValue = (opcodeValue === -2) ? 2 : 0;
 
         isFirstInstruction = false;
 
@@ -277,49 +288,74 @@ export function generateWasmBody (
                 break;
             }
             case MintOpcode.MINT_CPBLK: {
-                // size (FIXME: uint32 not int32)
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                builder.local("math_rhs32", WasmOpcode.tee_local);
-                // if size is 0 then don't do anything
-                builder.block(WasmValtype.void, WasmOpcode.if_); // if #1
+                const sizeOffset = getArgU16(ip, 3),
+                    srcOffset = getArgU16(ip, 2),
+                    destOffset = getArgU16(ip, 1),
+                    constantSize = get_known_constant_value(sizeOffset);
 
-                // stash dest then check for null
-                append_ldloc(builder, getArgU16(ip, 1), WasmOpcode.i32_load);
-                builder.local("temp_ptr", WasmOpcode.tee_local);
-                builder.appendU8(WasmOpcode.i32_eqz);
-                // stash src then check for null
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.local("math_lhs32", WasmOpcode.tee_local);
-                builder.appendU8(WasmOpcode.i32_eqz);
+                if (constantSize !== 0) {
+                    if (typeof (constantSize) !== "number") {
+                        // size (FIXME: uint32 not int32)
+                        append_ldloc(builder, sizeOffset, WasmOpcode.i32_load);
+                        builder.local("math_rhs32", WasmOpcode.tee_local);
+                        // if size is 0 then don't do anything
+                        builder.block(WasmValtype.void, WasmOpcode.if_); // if size
+                    }
 
-                // now we memmove if both dest and src are valid. The stack currently has
-                //  the eqz result for each pointer so we can stash a bailout inside of an if
-                builder.appendU8(WasmOpcode.i32_or);
-                builder.block(WasmValtype.void, WasmOpcode.if_); // if #2
-                append_bailout(builder, ip, BailoutReason.NullCheck);
-                builder.endBlock(); // if #2
+                    // stash dest then check for null
+                    append_ldloc(builder, destOffset, WasmOpcode.i32_load);
+                    builder.local("temp_ptr", WasmOpcode.tee_local);
+                    builder.appendU8(WasmOpcode.i32_eqz);
+                    // stash src then check for null
+                    append_ldloc(builder, srcOffset, WasmOpcode.i32_load);
+                    builder.local("math_lhs32", WasmOpcode.tee_local);
+                    builder.appendU8(WasmOpcode.i32_eqz);
 
-                // We passed the null check so now prepare the stack
-                builder.local("temp_ptr");
-                builder.local("math_lhs32");
-                builder.local("math_rhs32");
-                // wasm memmove with stack layout dest, src, count
-                builder.appendU8(WasmOpcode.PREFIX_sat);
-                builder.appendU8(10);
-                builder.appendU8(0);
-                builder.appendU8(0);
-                builder.endBlock(); // if #1
+                    // now we memmove if both dest and src are valid. The stack currently has
+                    //  the eqz result for each pointer so we can stash a bailout inside of an if
+                    builder.appendU8(WasmOpcode.i32_or);
+                    builder.block(WasmValtype.void, WasmOpcode.if_); // if null
+                    append_bailout(builder, ip, BailoutReason.NullCheck);
+                    builder.endBlock(); // if null
+
+                    if (
+                        (typeof (constantSize) !== "number") ||
+                        !try_append_memmove_fast(builder, 0, 0, constantSize, false, "temp_ptr", "math_lhs32")
+                    ) {
+                        // We passed the null check so now prepare the stack
+                        builder.local("temp_ptr");
+                        builder.local("math_lhs32");
+                        builder.local("math_rhs32");
+                        // wasm memmove with stack layout dest, src, count
+                        builder.appendU8(WasmOpcode.PREFIX_sat);
+                        builder.appendU8(10);
+                        builder.appendU8(0);
+                        builder.appendU8(0);
+                    }
+
+                    if (typeof (constantSize) !== "number")
+                        builder.endBlock(); // if size
+                }
                 break;
             }
             case MintOpcode.MINT_INITBLK: {
+                const sizeOffset = getArgU16(ip, 3),
+                    valueOffset = getArgU16(ip, 2),
+                    destOffset = getArgU16(ip, 1);
+                    /*
+                    constantSize = get_known_constant_value(sizeOffset),
+                    constantValue = get_known_constant_value(valueOffset);
+                    */
+
+                // TODO: Handle constant size initblks. Not sure if they matter though
                 // FIXME: This will cause an erroneous bailout if dest and size are both 0
                 //  but that really shouldn't ever happen, and it will only cause a slowdown
                 // dest
-                append_ldloc_cknull(builder, getArgU16(ip, 1), ip, true);
+                append_ldloc_cknull(builder, destOffset, ip, true);
                 // value
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                append_ldloc(builder, valueOffset, WasmOpcode.i32_load);
                 // size (FIXME: uint32 not int32)
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+                append_ldloc(builder, sizeOffset, WasmOpcode.i32_load);
                 // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
                 builder.appendU8(WasmOpcode.PREFIX_sat);
                 builder.appendU8(11);
@@ -393,7 +429,7 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_TIER_ENTER_JITERPRETER:
-                isLowValueOpcode = true;
+                opcodeValue = 0;
                 // If we hit an enter opcode and we're not currently in a branch block
                 //  or the enter opcode is the first opcode in a branch block, this likely
                 //  indicates that we've reached a loop body that was already jitted before
@@ -406,7 +442,7 @@ export function generateWasmBody (
                 //  and leaves us in the interp.
                 if (
                     abortAtJittedLoopBodies &&
-                    (result >= builder.options.minimumTraceLength) &&
+                    (result >= builder.options.minimumTraceValue) &&
                     // This is an unproductive heuristic if backward branches are on
                     !builder.options.noExitBackwardBranches
                 ) {
@@ -427,21 +463,6 @@ export function generateWasmBody (
                         ip = abort;
                     }
                 }
-                break;
-
-            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
-            case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
-            case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
-            case MintOpcode.MINT_NOP:
-            case MintOpcode.MINT_DEF:
-            case MintOpcode.MINT_DUMMY_USE:
-            case MintOpcode.MINT_IL_SEQ_POINT:
-            case MintOpcode.MINT_TIER_PATCHPOINT_DATA:
-            case MintOpcode.MINT_MONO_MEMORY_BARRIER:
-            case MintOpcode.MINT_SDB_BREAKPOINT:
-            case MintOpcode.MINT_SDB_INTR_LOC:
-            case MintOpcode.MINT_SDB_SEQ_POINT:
-                isLowValueOpcode = true;
                 break;
 
             case MintOpcode.MINT_SAFEPOINT:
@@ -868,7 +889,7 @@ export function generateWasmBody (
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
                     append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
-                    isLowValueOpcode = true;
+                    opcodeValue = 0;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
                     //  executed before now so the trace will always need to bail out into the
@@ -892,7 +913,6 @@ export function generateWasmBody (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
-                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -908,7 +928,6 @@ export function generateWasmBody (
                 // See comments for MINT_CALL
                 if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
-                    isLowValueOpcode = true;
                 } else {
                     ip = abort;
                 }
@@ -921,7 +940,6 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
-                isLowValueOpcode = true;
                 break;
 
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
@@ -929,7 +947,6 @@ export function generateWasmBody (
             case MintOpcode.MINT_LEAVE_CHECK:
             case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
-                isLowValueOpcode = true;
                 break;
 
             case MintOpcode.MINT_ENDFINALLY: {
@@ -1198,7 +1215,6 @@ export function generateWasmBody (
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
-                        isLowValueOpcode = true;
                     } else
                         ip = abort;
                 } else if (
@@ -1207,6 +1223,8 @@ export function generateWasmBody (
                 ) {
                     if (!emit_ldc(builder, ip, opcode))
                         ip = abort;
+                    else
+                        skipDregInvalidation = true;
                 } else if (
                     (opcode >= MintOpcode.MINT_MOV_I4_I1) &&
                     (opcode <= MintOpcode.MINT_MOV_8_4)
@@ -1273,17 +1291,23 @@ export function generateWasmBody (
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
                         append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
-                        isLowValueOpcode = true;
                     } else
                         ip = abort;
+                } else if (opcodeValue === 0) {
+                    // This means it was explicitly marked as no-value in the opcode value table
+                    //  so we can just skip over it. This is done for things like nops.
                 } else {
+                    /*
+                    if (opcodeValue > 0)
+                        console.log(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
+                    */
                     ip = abort;
                 }
                 break;
         }
 
         if (ip) {
-            if (!skipDregInvalidation && builder.allowNullCheckOptimization) {
+            if (!skipDregInvalidation) {
                 // Invalidate cached values for all the instruction's destination registers.
                 // This should have already happened, but it's possible there are opcodes where
                 //  our invalidation is incorrect so it's best to do this for safety reasons
@@ -1317,12 +1341,14 @@ export function generateWasmBody (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode) {
+            if (opcodeValue > 0) {
                 if (isConditionallyExecuted)
                     conditionalOpcodeCounter++;
                 else
                     prologueOpcodeCounter++;
-                result++;
+                result += opcodeValue;
+            } else if (opcodeValue < 0) {
+                // console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
             ip += <any>(info[1] * 2);
@@ -1359,12 +1385,14 @@ let cknullOffset = -1;
 function eraseInferredState () {
     cknullOffset = -1;
     notNullSince.clear();
+    knownConstantValues.clear();
 }
 
 function invalidate_local (offset: number) {
     if (cknullOffset === offset)
         cknullOffset = -1;
     notNullSince.delete(offset);
+    knownConstantValues.delete(offset);
 }
 
 function invalidate_local_range (start: number, bytes: number) {
@@ -1509,21 +1537,25 @@ const ldcTable : { [opcode: number]: [WasmOpcode, number] } = {
 
 function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
     let storeType = WasmOpcode.i32_store;
+    let value : number | undefined;
 
     const tableEntry = ldcTable[opcode];
     if (tableEntry) {
         builder.local("pLocals");
         builder.appendU8(tableEntry[0]);
-        builder.appendLeb(tableEntry[1]);
+        value = tableEntry[1];
+        builder.appendLeb(value);
     } else {
         switch (opcode) {
             case MintOpcode.MINT_LDC_I4_S:
                 builder.local("pLocals");
-                builder.i32_const(getArgI16(ip, 2));
+                value = getArgI16(ip, 2);
+                builder.i32_const(value);
                 break;
             case MintOpcode.MINT_LDC_I4:
                 builder.local("pLocals");
-                builder.i32_const(getArgI32(ip, 2));
+                value = getArgI32(ip, 2);
+                builder.i32_const(value);
                 break;
             case MintOpcode.MINT_LDC_I8_0:
                 builder.local("pLocals");
@@ -1566,6 +1598,11 @@ function emit_ldc (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) 
     const localOffset = getArgU16(ip, 1);
     builder.appendMemarg(localOffset, 2);
     invalidate_local(localOffset);
+
+    if (typeof (value) === "number")
+        knownConstantValues.set(localOffset, value);
+    else
+        knownConstantValues.delete(localOffset);
 
     return true;
 }

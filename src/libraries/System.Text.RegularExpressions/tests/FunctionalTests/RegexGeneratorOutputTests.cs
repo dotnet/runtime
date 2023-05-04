@@ -660,7 +660,7 @@ namespace System.Text.RegularExpressions.Tests
                                                 // Match a character in the set [^>\s] atomically at least once.
                                                 {
                                                     int iteration3 = 0;
-                                                    while ((uint)iteration3 < (uint)slice.Length && ((ch = slice[iteration3]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) != 0 : Utilities.Base.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
+                                                    while ((uint)iteration3 < (uint)slice.Length && ((ch = slice[iteration3]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
                                                     {
                                                         iteration3++;
                                                     }
@@ -702,16 +702,6 @@ namespace System.Text.RegularExpressions.Tests
 
                     }
 
-                    /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
-                    file static class Utilities
-                    {
-                        internal class Base : RegexRunner
-                        {
-                            /// <summary>Determines whether the specified character in is in the specified character class.</summary>
-                            internal static new bool CharInClass(char ch, string charClass) => RegexRunner.CharInClass(ch, charClass);
-                        }
-                    }
                 }
                 """
             };

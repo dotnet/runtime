@@ -8,7 +8,7 @@ namespace Internal.Runtime
         TypeMap                                     = 1,
         ArrayMap                                    = 2,
         // unused                                   = 3,
-        // unused                                   = 4,
+        FunctionPointerTypeMap                      = 4,
         BlockReflectionTypeMap                      = 5,
         InvokeMap                                   = 6,
         VirtualInvokeMap                            = 7,

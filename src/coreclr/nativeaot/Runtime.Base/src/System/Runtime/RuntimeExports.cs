@@ -30,6 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
+                !pEEType->IsPointerType &&
+                !pEEType->IsFunctionPointerType &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -394,7 +396,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfArray;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfInterface;
-                    else if (pEEType->IsParameterizedType)
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOf; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfClass;
@@ -404,7 +406,7 @@ namespace System.Runtime
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastArray;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;
-                    else if (pEEType->IsParameterizedType)
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCast; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastClass;

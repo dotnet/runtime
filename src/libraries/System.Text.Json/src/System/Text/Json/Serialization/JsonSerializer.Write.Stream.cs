@@ -117,7 +117,7 @@ namespace System.Text.Json
             }
 
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
             return jsonTypeInfo.SerializeAsObjectAsync(utf8Json, value, cancellationToken);
         }
 
@@ -152,7 +152,7 @@ namespace System.Text.Json
             }
 
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
             jsonTypeInfo.SerializeAsObject(utf8Json, value);
         }
 

@@ -22,10 +22,16 @@
 ////////////////////////////////////////////////////////////////
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint() => Run(new string[0]);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Run(string[] args)
     {
         int retCode = 100;
 
@@ -42,7 +48,7 @@ public class Test
         return retCode;
     }
 
-    public static void Check(int i)
+    internal static void Check(int i)
     {
         int nav = i;
         int[] av = new int[8];

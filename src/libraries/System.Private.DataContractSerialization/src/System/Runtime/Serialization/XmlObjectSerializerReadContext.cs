@@ -402,9 +402,10 @@ namespace System.Runtime.Serialization
             return retObj;
         }
 
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
         public object GetRealObject(IObjectReference obj, string id)
         {
-            object? realObj = SurrogateDataContract.GetRealObject(obj, this.GetStreamingContext());
+            object? realObj = obj.GetRealObject(this.GetStreamingContext());
             // If GetRealObject returns null, it indicates that the object could not resolve itself because
             // it is missing information. This may occur in a case where multiple IObjectReference instances
             // depend on each other. BinaryFormatter supports this by fixing up the references later. These
@@ -416,6 +417,7 @@ namespace System.Runtime.Serialization
             ReplaceDeserializedObject(id, obj, realObj);
             return realObj;
         }
+#pragma warning restore SYSLIB0050
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
@@ -540,7 +542,9 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public SerializationInfo ReadSerializationInfo(XmlReaderDelegator xmlReader, Type type)
         {
+#pragma warning disable SYSLIB0050 // SerializationInfo ctor is obsolete
             var serInfo = new SerializationInfo(type, XmlObjectSerializer.FormatterConverter);
+#pragma warning restore SYSLIB0050
             XmlNodeType nodeType;
             while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
             {

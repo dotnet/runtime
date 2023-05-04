@@ -740,7 +740,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         // This is perhaps temporary -- maybe should be done elsewhere.  Label GT_INDs on LHS of assignments, so we
         // can skip these during (at least) value numbering.
         GenTree* lhs = defNode->gtGetOp1()->gtEffectiveVal(/*commaOnly*/ true);
-        if (lhs->OperIs(GT_IND, GT_OBJ, GT_BLK))
+        if (lhs->OperIs(GT_IND, GT_BLK))
         {
             lhs->gtFlags |= GTF_IND_ASG_LHS;
         }

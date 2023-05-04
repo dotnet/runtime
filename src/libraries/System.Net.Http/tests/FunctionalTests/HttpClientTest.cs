@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1476,6 +1477,98 @@ namespace System.Net.Http.Functional.Tests
                     await client.SendAsync(TestAsync, request);
                     await content.ReadAsStringAsync(); // no exception
                 }
+            }
+
+            public enum ExceptionScenario
+            {
+                OperationCanceledException_WithOriginalCancellationToken,
+                OperationCanceledException_UnknownCancellationToken,
+                HttpRequestException,
+                HttpRequestException_DuringCancellation,
+                UnknownException,
+                UnknownException_DuringCancellation,
+            }
+
+            public static IEnumerable<object[]> Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData() =>
+                Enum.GetValues<ExceptionScenario>().Select(e => new object[] { e });
+
+            [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+            [MemberData(nameof(Send_InnerHandlerThrows_OuterExceptionIsCaptured_MemberData))]
+            public async Task Send_InnerHandlerThrows_OriginalExceptionInformationIsCaptured(ExceptionScenario scenario)
+            {
+                const string InterestingExceptionMessage = "Useful information";
+                const string InterestingInnerExceptionMessage = "Useful inner exception information";
+
+                var reachedCustomHandler = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                bool shouldWaitForCancellation = scenario
+                    is ExceptionScenario.OperationCanceledException_WithOriginalCancellationToken
+                    or ExceptionScenario.OperationCanceledException_UnknownCancellationToken
+                    or ExceptionScenario.HttpRequestException_DuringCancellation
+                    or ExceptionScenario.UnknownException_DuringCancellation;
+
+                using var handler = new CustomResponseHandler(async (_, cancellationToken) =>
+                {
+                    reachedCustomHandler.SetResult();
+
+                    if (shouldWaitForCancellation)
+                    {
+                        try
+                        {
+                            await Task.Delay(-1, cancellationToken);
+                        }
+                        catch { }
+                    }
+
+                    var innerEx = new Exception(InterestingInnerExceptionMessage);
+
+                    if (scenario == ExceptionScenario.OperationCanceledException_WithOriginalCancellationToken)
+                    {
+                        InterestingMethodInTheStackTrace(() => new OperationCanceledException(InterestingExceptionMessage, innerEx, cancellationToken));
+                    }
+
+                    if (scenario == ExceptionScenario.OperationCanceledException_UnknownCancellationToken)
+                    {
+                        InterestingMethodInTheStackTrace(() => new OperationCanceledException(InterestingExceptionMessage, innerEx, new CancellationTokenSource().Token));
+                    }
+
+                    if (scenario == ExceptionScenario.HttpRequestException ||
+                        scenario == ExceptionScenario.HttpRequestException_DuringCancellation)
+                    {
+                        InterestingMethodInTheStackTrace(() => new HttpRequestException(InterestingExceptionMessage, innerEx));
+                    }
+
+                    if (scenario == ExceptionScenario.UnknownException ||
+                        scenario == ExceptionScenario.UnknownException_DuringCancellation)
+                    {
+                        InterestingMethodInTheStackTrace(() => new Exception(InterestingExceptionMessage, innerEx));
+                    }
+
+                    throw new UnreachableException();
+                });
+
+                using var client = new HttpClient(handler);
+
+                using var cts = new CancellationTokenSource();
+
+                Task sendAsyncTask = client.SendAsync(TestAsync, new HttpRequestMessage(HttpMethod.Get, "http://foo"), cts.Token);
+
+                if (shouldWaitForCancellation)
+                {
+                    await reachedCustomHandler.Task;
+                    cts.Cancel();
+                }
+
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => sendAsyncTask);
+
+                string exceptionText = ex.ToString();
+
+                Assert.Contains(InterestingExceptionMessage, exceptionText);
+                Assert.Contains(InterestingInnerExceptionMessage, exceptionText);
+                Assert.Contains(nameof(InterestingMethodInTheStackTrace), exceptionText);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void InterestingMethodInTheStackTrace(Func<Exception> exceptionFactory) => throw exceptionFactory();
             }
         }
     }

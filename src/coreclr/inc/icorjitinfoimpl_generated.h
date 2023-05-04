@@ -229,6 +229,16 @@ size_t getClassModuleIdForStatics(
           CORINFO_MODULE_HANDLE* pModule,
           void** ppIndirection) override;
 
+bool getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset) override;
+
+bool getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr) override;
+
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -404,6 +414,12 @@ void getFieldInfo(
           CORINFO_ACCESS_FLAGS flags,
           CORINFO_FIELD_INFO* pResult) override;
 
+uint32_t getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field) override;
+
+void getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
@@ -524,6 +540,9 @@ bool getSystemVAmd64PassStructInRegisterDescriptor(
 uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd) override;
 
+uint32_t getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
@@ -617,12 +636,18 @@ unsigned getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection) override;
 
-bool getReadonlyStaticFieldValue(
+bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects) override;
+
+bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

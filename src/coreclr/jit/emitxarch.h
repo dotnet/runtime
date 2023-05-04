@@ -183,6 +183,8 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
+insTupleType insTupleTypeInfo(instruction ins) const;
+
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
 // be Evex encoded but require Opmask(KMask) register support.
@@ -199,6 +201,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 bool HasKMaskRegisterDest(instruction ins) const
 {
     assert(UseEvexEncoding() == true);
+
     switch (ins)
     {
         // Requires KMask.
@@ -403,6 +406,7 @@ void SetContains256bitOrMoreAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins) const;
 bool IsDstSrcSrcAVXInstruction(instruction ins) const;
+bool IsThreeOperandAVXInstruction(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
@@ -413,11 +417,6 @@ static bool IsRexW0Instruction(instruction ins);
 static bool IsRexW1Instruction(instruction ins);
 static bool IsRexWXInstruction(instruction ins);
 static bool IsRexW1EvexInstruction(instruction ins);
-
-bool IsThreeOperandAVXInstruction(instruction ins)
-{
-    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
-}
 
 bool isAvxBlendv(instruction ins)
 {

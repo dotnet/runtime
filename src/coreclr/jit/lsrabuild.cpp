@@ -597,7 +597,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // The LoongArch64's ABI which the float args maybe passed by integer register
         // when no float register left but free integer register.
         assert((regType(theInterval->registerType) == FloatRegisterType) ||
@@ -925,52 +925,53 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
     assert(blkNode->OperIsStore());
     regMaskTP killMask = RBM_NONE;
 
-    if ((blkNode->OperGet() == GT_STORE_OBJ) && blkNode->OperIsCopyBlkOp())
+    bool isCopyBlk = varTypeIsStruct(blkNode->Data());
+    switch (blkNode->gtBlkOpKind)
     {
-        assert(blkNode->AsObj()->GetLayout()->HasGCPtr());
-        killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
-    }
-    else
-    {
-        bool isCopyBlk = varTypeIsStruct(blkNode->Data());
-        switch (blkNode->gtBlkOpKind)
-        {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+#ifdef TARGET_XARCH
+        case GenTreeBlk::BlkOpKindCpObjRepInstr:
+#endif // TARGET_XARCH
+            assert(isCopyBlk && blkNode->AsBlk()->GetLayout()->HasGCPtr());
+            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
+            break;
+
 #ifndef TARGET_X86
-            case GenTreeBlk::BlkOpKindHelper:
-                if (isCopyBlk)
-                {
-                    killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
-                }
-                else
-                {
-                    killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
-                }
-                break;
+        case GenTreeBlk::BlkOpKindHelper:
+            if (isCopyBlk)
+            {
+                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
+            }
+            else
+            {
+                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
+            }
+            break;
 #endif
 #ifdef TARGET_XARCH
-            case GenTreeBlk::BlkOpKindRepInstr:
-                if (isCopyBlk)
-                {
-                    // rep movs kills RCX, RDI and RSI
-                    killMask = RBM_RCX | RBM_RDI | RBM_RSI;
-                }
-                else
-                {
-                    // rep stos kills RCX and RDI.
-                    // (Note that the Data() node, if not constant, will be assigned to
-                    // RCX, but it's find that this kills it, as the value is not available
-                    // after this node in any case.)
-                    killMask = RBM_RDI | RBM_RCX;
-                }
-                break;
+        case GenTreeBlk::BlkOpKindRepInstr:
+            if (isCopyBlk)
+            {
+                // rep movs kills RCX, RDI and RSI
+                killMask = RBM_RCX | RBM_RDI | RBM_RSI;
+            }
+            else
+            {
+                // rep stos kills RCX and RDI.
+                // (Note that the Data() node, if not constant, will be assigned to
+                // RCX, but it's find that this kills it, as the value is not available
+                // after this node in any case.)
+                killMask = RBM_RDI | RBM_RCX;
+            }
+            break;
 #endif
-            case GenTreeBlk::BlkOpKindUnrollMemmove:
-            case GenTreeBlk::BlkOpKindUnroll:
-            case GenTreeBlk::BlkOpKindInvalid:
-                // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
-                break;
-        }
+        case GenTreeBlk::BlkOpKindUnrollMemmove:
+        case GenTreeBlk::BlkOpKindUnroll:
+        case GenTreeBlk::BlkOpKindInvalid:
+            // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
+            break;
     }
+
     return killMask;
 }
 
@@ -1081,7 +1082,6 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
             killMask = getKillSetForModDiv(tree->AsOp());
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
             killMask = getKillSetForBlockStore(tree->AsBlk());
@@ -1805,7 +1805,21 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 {
                     minRegCount++;
                 }
-#endif
+#ifdef TARGET_ARM64
+                else if (newRefPosition->needsConsecutive)
+                {
+                    assert(newRefPosition->refType == RefTypeUpperVectorRestore);
+                    minRegCount++;
+                }
+#endif // TARGET_ARM64
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+#ifdef TARGET_ARM64
+                if (newRefPosition->needsConsecutive)
+                {
+                    consecutiveRegistersLocation = newRefPosition->nodeLocation;
+                }
+#endif // TARGET_ARM64
                 if (newRefPosition->getInterval()->isSpecialPutArg)
                 {
                     minRegCount++;
@@ -1857,21 +1871,45 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 Interval* interval       = newRefPosition->getInterval();
                 regMaskTP oldAssignment  = newRefPosition->registerAssignment;
                 regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
-                newRefPosition->registerAssignment =
-                    getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
 #ifdef TARGET_ARM64
-                if (newRefPosition->isFirstRefPositionOfConsecutiveRegisters())
+                if (newRefPosition->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
                 {
-                    newRefPosition->registerAssignment |= LsraLimitFPSetForConsecutive;
+                    // If we are assigning to refPositions that has consecutive registers requirements, skip the
+                    // limit stress for them, because there are high chances that many registers are busy for
+                    // consecutive requirements and
+                    // we do not have enough remaining for other refpositions (like operands). Likewise, skip for the
+                    // definition node that comes after that, for which, all the registers are in "delayRegFree" state.
                 }
-#endif
+                else
+#endif // TARGET_ARM64
+                {
+                    newRefPosition->registerAssignment =
+                        getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
+                }
+
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
-                    checkConflictingDefUse(newRefPosition);
+#ifdef TARGET_ARM64
+                    RefPosition* defRefPos = interval->firstRefPosition;
+                    assert(defRefPos->treeNode != nullptr);
+                    if (defRefPos->isLiveAtConsecutiveRegistersLoc(consecutiveRegistersLocation))
+                    {
+                        // If a method has consecutive registers and we are assigning to use refPosition whose
+                        // definition was from a location that has consecutive registers, skip the limit stress for
+                        // them, because there are high chances that many registers are busy for consecutive
+                        // requirements and marked as "delayRegFree" state. We do not have enough remaining for other
+                        // refpositions.
+                    }
+                    else
+#endif // TARGET_ARM64
+                    {
+                        checkConflictingDefUse(newRefPosition);
+                    }
                 }
             }
         }
+        consecutiveRegistersLocation = MinLocation;
     }
 #endif // DEBUG
     JITDUMP("\n");
@@ -2020,7 +2058,7 @@ void LinearScan::insertZeroInitRefPositions()
     }
 }
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
 // UpdateRegStateForStructArg:
 //    Sets the register state for an argument of type STRUCT.
@@ -2068,7 +2106,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
     }
 }
 
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 //------------------------------------------------------------------------
 // updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
@@ -2086,7 +2124,7 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 //
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For SystemV-AMD64 and LoongArch64 calls the argDsc
     // can have 2 registers (for structs.). Handle them here.
     if (varTypeIsStruct(argDsc))
@@ -2094,7 +2132,7 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
         UpdateRegStateForStructArg(argDsc);
     }
     else
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;
@@ -4155,9 +4193,9 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 int LinearScan::BuildCmp(GenTree* tree)
 {
 #if defined(TARGET_XARCH)
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_BT));
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_CCMP));
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
 #else
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
 #endif

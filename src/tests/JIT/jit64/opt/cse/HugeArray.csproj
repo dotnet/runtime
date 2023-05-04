@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- NOTE: this test simply takes too long to complete under GC stress; it is not fundamentally incompatible -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>

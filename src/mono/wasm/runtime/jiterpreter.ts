@@ -692,7 +692,7 @@ function generate_wasm (
         builder.generateTypeSection();
 
         let keep = true,
-            opcodesProcessed = 0;
+            traceValue = 0;
         builder.defineFunction(
             {
                 type: "trace",
@@ -708,6 +708,7 @@ function generate_wasm (
                     "math_rhs64": WasmValtype.i64,
                     "temp_f32": WasmValtype.f32,
                     "temp_f64": WasmValtype.f64,
+                    "backbranched": WasmValtype.i32,
                 }
             }, () => {
                 if (emitPadding) {
@@ -726,12 +727,12 @@ function generate_wasm (
                 // This will allow us to do things like dynamically vary the number of locals, in addition
                 //  to using global constants and figuring out how many constant slots we need in advance
                 //  since a long trace might need many slots and that bloats the header.
-                opcodesProcessed = generateWasmBody(
+                traceValue = generateWasmBody(
                     frame, traceName, ip, startOfBody, endOfBody,
                     builder, instrumentedTraceId, backwardBranchTable
                 );
 
-                keep = (opcodesProcessed >= mostRecentOptions!.minimumTraceLength);
+                keep = (traceValue >= mostRecentOptions!.minimumTraceValue);
 
                 return builder.cfg.generate();
             }
@@ -744,8 +745,8 @@ function generate_wasm (
             if (ti && (ti.abortReason === "end-of-body"))
                 ti.abortReason = "trace-too-small";
 
-            if (traceTooSmall && (opcodesProcessed > 1))
-                console.log(`${traceName} too small: ${opcodesProcessed} opcodes, ${builder.current.size} wasm bytes`);
+            if (traceTooSmall && (traceValue > 1))
+                console.log(`${traceName} too small: value=${traceValue}, ${builder.current.size} wasm bytes`);
             return 0;
         }
 

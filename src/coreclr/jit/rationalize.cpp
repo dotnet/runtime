@@ -28,82 +28,6 @@ void copyFlags(GenTree* dst, GenTree* src, GenTreeFlags mask)
     dst->gtFlags |= (src->gtFlags & mask);
 }
 
-// RewriteIndir: Rewrite an indirection and clear the flags that should not be set after rationalize.
-//
-// Arguments:
-//    use - A use of an indirection node.
-//
-void Rationalizer::RewriteIndir(LIR::Use& use)
-{
-    GenTreeIndir* indir = use.Def()->AsIndir();
-    assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
-
-    if (varTypeIsSIMD(indir))
-    {
-        if (indir->OperIs(GT_BLK, GT_OBJ))
-        {
-            indir->SetOper(GT_IND);
-        }
-
-        RewriteSIMDIndir(use);
-    }
-}
-
-// RewriteSIMDIndir: Rewrite a SIMD indirection as a simple lclVar if possible.
-//
-// Arguments:
-//    use - A use of a GT_IND node of SIMD type
-//
-// TODO-ADDR: today this only exists because the xarch backend does not handle
-// IND<simd12>(LCL_VAR_ADDR/LCL_FLD_ADDR) when the address is contained correctly.
-//
-void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
-{
-#ifdef FEATURE_SIMD
-    GenTreeIndir* indir = use.Def()->AsIndir();
-    assert(indir->OperIs(GT_IND));
-    var_types simdType = indir->TypeGet();
-    assert(varTypeIsSIMD(simdType));
-
-    GenTree* addr = indir->Addr();
-
-    if (addr->IsLclVarAddr() && varTypeIsSIMD(comp->lvaGetDesc(addr->AsLclFld())))
-    {
-        // If we have GT_IND(GT_LCL_ADDR<0>) and the var is a SIMD type,
-        // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
-        BlockRange().Remove(indir);
-
-        const unsigned lclNum = addr->AsLclFld()->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(lclNum);
-
-        var_types lclType = varDsc->TypeGet();
-
-        if (lclType == simdType)
-        {
-            addr->SetOper(GT_LCL_VAR);
-        }
-        else
-        {
-            addr->SetOper(GT_LCL_FLD);
-
-            if (((addr->gtFlags & GTF_VAR_DEF) != 0) && (genTypeSize(simdType) < genTypeSize(lclType)))
-            {
-                addr->gtFlags |= GTF_VAR_USEASG;
-            }
-
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-        }
-        if (varDsc->lvPromoted)
-        {
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-
-        addr->gtType = simdType;
-        use.ReplaceWith(addr);
-    }
-#endif // FEATURE_SIMD
-}
-
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
 //
 // Arguments:
@@ -413,25 +337,12 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
         break;
 
         case GT_BLK:
-        case GT_OBJ:
         {
             assert(varTypeIsStruct(location));
+            JITDUMP("Rewriting GT_ASG(%s(X), Y) to STORE_BLK(X,Y):\n", GenTree::OpName(location->gtOper));
+
             GenTreeBlk* storeBlk = location->AsBlk();
-            genTreeOps  storeOper;
-            switch (location->gtOper)
-            {
-                case GT_BLK:
-                    storeOper = GT_STORE_BLK;
-                    break;
-                case GT_OBJ:
-                    storeOper = GT_STORE_OBJ;
-                    break;
-                default:
-                    unreached();
-            }
-            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::OpName(location->gtOper),
-                    GenTree::OpName(storeOper));
-            storeBlk->SetOperRaw(storeOper);
+            storeBlk->SetOperRaw(GT_STORE_BLK);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
             storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_DONT_CSE));
             storeBlk->AsBlk()->Data() = value;
@@ -478,12 +389,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     {
         case GT_ASG:
             RewriteAssignment(use);
-            break;
-
-        case GT_IND:
-        case GT_BLK:
-        case GT_OBJ:
-            RewriteIndir(use);
             break;
 
         case GT_CALL:
