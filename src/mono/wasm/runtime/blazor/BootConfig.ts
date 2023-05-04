@@ -11,14 +11,16 @@ export class BootConfigResult {
     }
 
     static async initAsync(loadBootResource?: LoadBootResourceCallback, environment?: string): Promise<BootConfigResult> {
+        const defaultBootJsonLocation = "_framework/blazor.boot.json";
+
         const loaderResponse = loadBootResource !== undefined ?
-            loadBootResource("manifest", "blazor.boot.json", "_framework/blazor.boot.json", "") :
-            defaultLoadBlazorBootJson("_framework/blazor.boot.json");
+            loadBootResource("manifest", "blazor.boot.json", defaultBootJsonLocation, "") :
+            defaultLoadBlazorBootJson(defaultBootJsonLocation);
 
         let bootConfigResponse: Response;
 
         if (!loaderResponse) {
-            bootConfigResponse = await defaultLoadBlazorBootJson("_framework/blazor.boot.json");
+            bootConfigResponse = await defaultLoadBlazorBootJson(defaultBootJsonLocation);
         } else if (typeof loaderResponse === "string") {
             bootConfigResponse = await defaultLoadBlazorBootJson(loaderResponse);
         } else {
