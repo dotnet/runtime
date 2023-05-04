@@ -21,12 +21,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
+		class TrimmedEntity
+		{
+			public TypeSystemEntity Entity { get; init; }
+
+			public TrimmedEntity(TypeSystemEntity entity) => Entity = entity;
+		}
+
+		class TrimmedMethodEntity : TrimmedEntity
+		{
+			public bool IsReflected { get; init; }
+
+			public MethodDesc Method { get => (MethodDesc) Entity; }
+
+			public TrimmedMethodEntity (MethodDesc method, bool isReflected) : base (method) => IsReflected = isReflected;
+		}
+
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
 		private readonly AssemblyDefinition originalAssembly;
 		private readonly ILCompilerTestCaseResult testResult;
 
-		private readonly Dictionary<AssemblyQualifiedToken, TypeSystemEntity> linkedMembers;
+		private readonly Dictionary<AssemblyQualifiedToken, TrimmedEntity> linkedMembers;
 		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
 		private readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
 		private readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
@@ -95,9 +111,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 					linkedMembers.TryGetValue (
 						token,
-						out TypeSystemEntity? linkedMember);
+						out TrimmedEntity? linkedMember);
 
-					VerifyTypeDefinition (td, linkedMember as TypeDesc);
+					VerifyTypeDefinition (td, linkedMember);
 					linkedMembers.Remove (token);
 
 					continue;
@@ -109,7 +125,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// Filter out all members which are not from the main assembly
 			// The Kept attributes are "optional" for non-main assemblies
 			string mainModuleName = originalAssembly.Name.Name;
-			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value) != mainModuleName).Select (m => m.Key).ToList ();
+			List<AssemblyQualifiedToken> externalMembers = linkedMembers.Where (m => GetModuleName (m.Value.Entity) != mainModuleName).Select (m => m.Key).ToList ();
 			foreach (var externalMember in externalMembers) {
 				linkedMembers.Remove (externalMember);
 			}
@@ -118,7 +134,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.True (
 					false,
 					"Linked output includes unexpected member:\n  " +
-					string.Join ("\n  ", linkedMembers.Values.Select (e => e.GetDisplayName ())));
+					string.Join ("\n  ", linkedMembers.Values.Select (e => e.Entity.GetDisplayName ())));
 		}
 
 		private void PopulateLinkedMembers ()
@@ -132,10 +148,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach (MethodDesc method in testResult.TrimmingResults.ReflectedMethods) {
-				AddMethod (method);
+				AddMethod (method, isReflected: true);
 			}
 
-			void AddMethod (MethodDesc method)
+			void AddMethod (MethodDesc method, bool isReflected = false)
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
 
@@ -149,7 +165,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (owningType?.IsDelegate == true)
 					return;
 
-				if (!AddMember (methodDef))
+				if (!AddTrimmedMethod (methodDef, isReflected))
 					return;
 
 				if (owningType is not null) {
@@ -182,7 +198,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
 					foreach (MethodDesc m in typeDef.GetMethods ()) {
 						if (ShouldIncludeEntityByDisplayName (m)) {
-							AddMember (m);
+							AddTrimmedMethod (m, isReflected: false);
 						}
 					}
 				}
@@ -208,7 +224,28 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddMember (@event);
 			}
 
-			bool AddMember (TypeSystemEntity entity) => linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), entity);
+			bool AddMember (TypeSystemEntity entity)
+			{
+				Assert.False (entity is MethodDesc, "Use AddTrimmedMethod for all methods instead");
+				return linkedMembers.TryAdd (new AssemblyQualifiedToken (entity), new TrimmedEntity(entity));
+			}
+
+			bool AddTrimmedMethod (MethodDesc method, bool isReflected = false)
+			{
+				var token = new AssemblyQualifiedToken (method);
+				bool addedNew = true;
+				if (linkedMembers.TryGetValue(token, out var existingValue)) {
+					addedNew = false;
+					TrimmedMethodEntity existingMethod = (TrimmedMethodEntity) existingValue;
+					if (existingMethod.IsReflected || !isReflected)
+						return addedNew;
+
+					linkedMembers.Remove (token);
+				}
+
+				linkedMembers.Add (token, new TrimmedMethodEntity (method, isReflected));
+				return addedNew;
+			}
 
 			static bool ShouldIncludeEntityByDisplayName (TypeSystemEntity entity) => !ExcludeDisplayNames.Contains (entity.GetDisplayName ());
 
@@ -268,8 +305,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (original, linked);
 		}
 
-		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDesc? linked)
+		void VerifyTypeDefinition (TypeDefinition original, TrimmedEntity? linkedEntity)
 		{
+			TypeDesc? linked = linkedEntity?.Entity as TypeDesc;
 			if (linked != null && NameUtils.GetActualOriginDisplayName (linked) is string linkedDisplayName && verifiedGeneratedTypes.Contains (linkedDisplayName))
 				return;
 
@@ -341,9 +379,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AssemblyQualifiedToken token = new (td);
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
+					out TrimmedEntity? linkedMember);
 
-				VerifyTypeDefinition (td, linkedMember as TypeDesc);
+				VerifyTypeDefinition (td, linkedMember);
 				linkedMembers.Remove (token);
 			}
 
@@ -353,8 +391,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
-				VerifyProperty (p, linkedMember as PropertyPseudoDesc, linked);
+					out TrimmedEntity? linkedMember);
+				VerifyProperty (p, linkedMember, linked);
 				linkedMembers.Remove (token);
 			}
 			// Need to check events before fields so that the KeptBackingFieldAttribute is handled correctly
@@ -363,8 +401,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
-				VerifyEvent (e, linkedMember as EventPseudoDesc, linked);
+					out TrimmedEntity? linkedMember);
+				VerifyEvent (e, linkedMember, linked);
 				linkedMembers.Remove (token);
 			}
 
@@ -387,9 +425,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AssemblyQualifiedToken token = new (m);
 				linkedMembers.TryGetValue (
 					token,
-					out TypeSystemEntity? linkedMember);
+					out TrimmedEntity? linkedMember);
 
-				VerifyMethod (m, linkedMember as MethodDesc);
+				VerifyMethod (m, linkedMember);
 				linkedMembers.Remove (token);
 			}
 		}
@@ -488,8 +526,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 		}
 
-		private void VerifyProperty (PropertyDefinition src, PropertyPseudoDesc? linked, TypeDesc linkedType)
+		private void VerifyProperty (PropertyDefinition src, TrimmedEntity? linkedEntity, TypeDesc linkedType)
 		{
+			PropertyPseudoDesc? linked = linkedEntity?.Entity as PropertyPseudoDesc;
 			VerifyMemberBackingField (src, linkedType);
 
 			bool expectedKept = ShouldBeKept (src);
@@ -520,8 +559,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 		}
 
-		private void VerifyEvent (EventDefinition src, EventPseudoDesc? linked, TypeDesc linkedType)
+		private void VerifyEvent (EventDefinition src, TrimmedEntity? linkedEntity, TypeDesc linkedType)
 		{
+			EventPseudoDesc? linked = linkedEntity?.Entity as EventPseudoDesc;
 			VerifyMemberBackingField (src, linkedType);
 
 			bool expectedKept = ShouldBeKept (src);
@@ -539,13 +579,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				// TODO: This is wrong - we can't validate that the method is present by looking at linked (as that is not actually linked)
+				//   we need to look into linkedMembers to see if the method was actually preserved by the compiler (and has an entry point)
+				VerifyMethodInternal (src.AddMethod, new TrimmedMethodEntity(linked.AddMethod, false), true);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (new AssemblyQualifiedToken (src.AddMethod));
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				// TODO: This is wrong - we can't validate that the method is present by looking at linked (as that is not actually linked)
+				//   we need to look into linkedMembers to see if the method was actually preserved by the compiler (and has an entry point)
+				VerifyMethodInternal (src.RemoveMethod, new TrimmedMethodEntity(linked.RemoveMethod, false), true);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (new AssemblyQualifiedToken (src.RemoveMethod));
 			}
@@ -556,13 +600,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 		}
 
-		private void VerifyMethod (MethodDefinition src, MethodDesc? linked)
+		private void VerifyMethod (MethodDefinition src, TrimmedEntity? linkedEntity)
 		{
+			TrimmedMethodEntity? linked = linkedEntity as TrimmedMethodEntity;
 			bool expectedKept = ShouldMethodBeKept (src);
 			VerifyMethodInternal (src, linked, expectedKept);
 		}
 
-		private void VerifyMethodInternal (MethodDefinition src, MethodDesc? linked, bool expectedKept)
+		private void VerifyMethodInternal (MethodDefinition src, TrimmedMethodEntity? linked, bool expectedKept)
 		{
 			if (!expectedKept) {
 				if (linked != null)
@@ -603,7 +648,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			linkedMembers.Remove (new AssemblyQualifiedToken (srcField));
 		}
 
-		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDesc? linked)
+		void VerifyMethodKept (MethodDefinition src, TrimmedMethodEntity? linked)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Method `{NameUtils.GetExpectedOriginDisplayName (src)}' should have been kept");
@@ -615,7 +660,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
 			VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+#endif
 			VerifyParameters (src, linked);
+#if false
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
 
@@ -1117,21 +1164,23 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		private void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		private void VerifyParameters (IMethodSignature src, TrimmedMethodEntity linked)
 		{
-			Assert.Equal (src.HasParameters, linked.HasParameters);
+			Assert.Equal (src.HasParameters, linked.Method.Signature.Length > 0);
 			if (src.HasParameters) {
 				for (int i = 0; i < src.Parameters.Count; ++i) {
 					var srcp = src.Parameters[i];
-					var lnkp = linked.Parameters[i];
+					//var lnkp = linked.Parameters[i];
 
+#if false
 					VerifyCustomAttributes (srcp, lnkp);
+#endif
 
 					if (checkNames) {
 						if (srcp.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (RemovedNameValueAttribute)))
-							lnkp.Name.Should ().BeEmpty ("Expected empty parameter name");
+							linked.IsReflected.Should ().BeFalse ($"Expected no parameter name (non-reflectable). Parameter {i} of {(src as MethodDefinition)}");
 						else
-							lnkp.Name.Should ().Be (srcp.Name, "Mismatch in parameter name");
+							linked.IsReflected.Should ().BeTrue ($"Expected accessible parameter name (reflectable). Parameter {i} of {(src as MethodDefinition)}");
 					}
 				}
 			}

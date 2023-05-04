@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestClassParameters ()
 		{
-			var type = Type.GetType ("Mono.Linker.Tests.Cases.Reflection.ParametersUsedViaReflection/GenericClass1`1");
+			var type = Type.GetType ("Mono.Linker.Tests.Cases.Reflection.ParametersUsedViaReflection+GenericClass1`1");
 
 			var type2 = new GenericClass2<int> ();
 		}
