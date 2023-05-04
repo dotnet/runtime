@@ -2588,6 +2588,8 @@
   <ItemGroup Condition="'$(FeatureCoreCLR)' != 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\WaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Win32ThreadPoolBoundHandle.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Win32ThreadPoolRegisteredWaitHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\IParsable.cs" />

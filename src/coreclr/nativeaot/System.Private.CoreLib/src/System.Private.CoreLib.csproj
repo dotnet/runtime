@@ -296,8 +296,6 @@
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(FeaturePortableThreadPool)' != 'true'">
     <Compile Include="System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolRegisteredWaitHandle.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
