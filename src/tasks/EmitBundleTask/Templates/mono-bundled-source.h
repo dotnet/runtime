@@ -4,6 +4,7 @@
 #ifndef __MONO_BUNDLED_SOURCE_H__
 #define __MONO_BUNDLED_SOURCE_H__
 
+#include <assert.h>
 #include <stdbool.h>
 
 #include <mono/metadata/assembly.h>
@@ -63,6 +64,39 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 
 MonoBundledResource *
 mono_bundled_resources_get (const char *name);
+
+static inline MonoBundledAssemblyResource *
+mono_bundled_resources_get_assembly_resource (const char *name)
+{
+	MonoBundledAssemblyResource *assembly =
+		(MonoBundledAssemblyResource*)mono_bundled_resources_get (name);
+	if (!assembly)
+		return NULL;
+	assert (assembly->resource.type == MONO_BUNDLED_ASSEMBLY);
+	return assembly;
+}
+
+static inline MonoBundledSatelliteAssemblyResource *
+mono_bundled_resources_get_satellite_assembly_resource (const char *name)
+{
+	MonoBundledSatelliteAssemblyResource *satellite_assembly =
+		(MonoBundledSatelliteAssemblyResource*)mono_bundled_resources_get (name);
+	if (!satellite_assembly)
+		return NULL;
+	assert (satellite_assembly->resource.type == MONO_BUNDLED_SATELLITE_ASSEMBLY);
+	return satellite_assembly;
+}
+
+static inline MonoBundledDataResource *
+mono_bundled_resources_get_data_resource (const char *name)
+{
+	MonoBundledDataResource *data =
+		(MonoBundledDataResource*)mono_bundled_resources_get (name);
+	if (!data)
+		return NULL;
+	assert (data->resource.type == MONO_BUNDLED_DATA);
+	return data;
+}
 
 bool
 mono_bundled_resources_contains_assemblies (void);
