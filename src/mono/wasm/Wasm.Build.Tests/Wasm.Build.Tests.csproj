@@ -45,7 +45,8 @@
            Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
 
     <PropertyGroup>
-      <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetDirectoryName($(SdkWithWorkloadForTestingPath)))</_SdkWithWorkloadForTestingDirName>
+      <_SdkWithWorkloadForTestingDirName Condition="'$(TestUsingWorkloads)' == 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithWorkloadForTestingPath)))</_SdkWithWorkloadForTestingDirName>
+      <_SdkWithWorkloadForTestingDirName Condition="'$(TestUsingWorkloads)' != 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithNoWorkloadForTestingPath)))</_SdkWithWorkloadForTestingDirName>
       <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetFilename($(_SdkWithWorkloadForTestingDirName)))</_SdkWithWorkloadForTestingDirName>
     </PropertyGroup>
 
@@ -81,7 +82,7 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />
 
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export XUnitTraitArg=&quot;$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
