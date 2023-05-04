@@ -2126,21 +2126,8 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
     }
 }
 
-//------------------------------------------------------------------------
-// buildIntervals: The main entry point for building the data structures over
-//                 which we will do register allocation.
-//
-void LinearScan::buildIntervals()
-{
-    if (enregisterLocalVars)
-    {
-        buildIntervals<true>();
-    }
-    else
-    {
-        buildIntervals<false>();
-    }
-}
+template void LinearScan::buildIntervals<true>();
+template void LinearScan::buildIntervals<false>();
 
 //------------------------------------------------------------------------
 // buildIntervals: The main entry point for building the data structures over
@@ -2185,7 +2172,7 @@ void           LinearScan::buildIntervals()
     doDoubleAlign = false;
 #endif
 
-    identifyCandidates();
+    identifyCandidates<localVarsEnregistered>();
 
     // Figure out if we're going to use a frame pointer. We need to do this before building
     // the ref positions, because those objects will embed the frame register in various register masks

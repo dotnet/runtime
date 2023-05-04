@@ -1299,7 +1299,14 @@ PhaseStatus LinearScan::doLinearScan()
     nextConsecutiveRefPositionMap = nullptr;
 #endif
 
-    buildIntervals();
+    if (enregisterLocalVars)
+    {
+        buildIntervals<true>();
+    }
+    else
+    {
+        buildIntervals<false>();
+    }
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_REFPOS));
     compiler->EndPhase(PHASE_LINEAR_SCAN_BUILD);
@@ -1650,17 +1657,8 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     return true;
 }
 
-void LinearScan::identifyCandidates()
-{
-    if (enregisterLocalVars)
-    {
-        identifyCandidates<true>();
-    }
-    else
-    {
-        identifyCandidates<false>();
-    }
-}
+template void LinearScan::identifyCandidates<true>();
+template void LinearScan::identifyCandidates<false>();
 
 // Identify locals & compiler temps that are register candidates
 // TODO-Cleanup: This was cloned from Compiler::lvaSortByRefCount() in lclvars.cpp in order
