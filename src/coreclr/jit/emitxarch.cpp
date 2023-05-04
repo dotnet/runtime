@@ -552,26 +552,30 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                         return PEEPHOLE_ABORT;
 
                     case INS_movzx:
-                        // movzx always zeroes the upper 32 bits.
-                        if (size == EA_4BYTE)
-                        {
-                            result = true;
-                        }
-                        else if (size == EA_1BYTE || size == EA_2BYTE)
+                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
                         {
                             result = (id->idOpSize() <= size);
                         }
+#ifdef TARGET_64BIT
+                        // movzx always zeroes the upper 32 bits.
+                        else if (size == EA_4BYTE)
+                        {
+                            result = true;
+                        }
+#endif // TARGET_64BIT
                         return PEEPHOLE_ABORT;
 
                     default:
                         break;
                 }
 
+#ifdef TARGET_64BIT
                 // otherwise rely on operation size.
                 if (size == EA_4BYTE)
                 {
                     result = (id->idOpSize() == EA_4BYTE);
                 }
+#endif // TARGET_64BIT
                 return PEEPHOLE_ABORT;
             }
             else
@@ -609,63 +613,52 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 
     instrDesc* id = emitLastIns;
 
+    bool result = false;
+
+    emitPeepholeIterateLastInstrs(
+        [&](instrDesc* id)
+        {
+            if (emitIsInstrWritingToReg(id, reg))
+            {
+                switch (id->idIns())
+                {
+                    // Conservative.
+                    case INS_call:
+                        return PEEPHOLE_ABORT;
+
+                    case INS_cwde:
+                    case INS_cdq:
+                    case INS_movsx:
 #ifdef TARGET_64BIT
-    if (size == EA_4BYTE)
-    {
-        if (id->idReg1() != reg)
-        {
-            return false;
-        }
-
-        // movsx always sign extends to 8 bytes. W-bit is set.
-        if (id->idIns() == INS_movsx)
-        {
-            return true;
-        }
-
-        // movsxd is always an 8 byte operation. W-bit is set.
-        if (id->idIns() == INS_movsxd)
-        {
-            return true;
-        }
-    }
+                    case INS_movsxd:
 #endif // TARGET_64BIT
-
-    return false;
-}
-
+                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                        {
+                            result = (id->idOpSize() <= size);
+                        }
 #ifdef TARGET_64BIT
-//------------------------------------------------------------------------
-// AreUpper32BitsZero: check if some previously emitted
-//     instruction set the upper 32 bits of reg to zero.
-//
-// Arguments:
-//    reg - register of interest
-//
-// Return Value:
-//    true if previous instruction zeroed reg's upper 32 bits.
-//    false if it did not, or if we can't safely determine.
-//
-bool emitter::AreUpper32BitsZero(regNumber reg)
-{
-    return AreUpperBitsZero(reg, EA_4BYTE);
-}
-
-//------------------------------------------------------------------------
-// AreUpper32BitsSignExtended: check if some previously emitted
-//     instruction sign-extended the upper 32 bits.
-//
-// Arguments:
-//    reg - register of interest
-//
-// Return Value:
-//    true if previous instruction upper 32 bits are sign-extended.
-//    false if it did not, or if we can't safely determine.
-bool emitter::AreUpper32BitsSignExtended(regNumber reg)
-{
-    return AreUpperBitsSignExtended(reg, EA_4BYTE);
-}
+                        // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
+                        else if (size == EA_4BYTE)
+                        {
+                            result = true;
+                        }
 #endif // TARGET_64BIT
+                        break;
+
+                    default:
+                        break;
+                }
+
+                return PEEPHOLE_ABORT;
+            }
+            else
+            {
+                return PEEPHOLE_CONTINUE;
+            }
+        });
+
+    return result;
+}
 
 //------------------------------------------------------------------------
 // emitDoesInsModifyFlags: checks if the given instruction modifies flags
@@ -6271,10 +6264,39 @@ bool emitter::IsRedundantMov(
         return false;
     }
 
-    // Peephole optimization to eliminate redundant 'movzx' instructions.
-    if (emitComp->opts.OptimizationEnabled() && (dst == src) && (ins == INS_movzx) && AreUpperBitsZero(src, size))
+    // Peephole optimization to eliminate redundant 'mov' instructions.
+    if (emitComp->opts.OptimizationEnabled() && (dst == src))
     {
-        return true;
+        switch (ins)
+        {
+            case INS_movzx:
+                if (AreUpperBitsZero(src, size))
+                {
+                    return true;
+                }
+                break;
+
+            case INS_movsx:
+#ifdef TARGET_64BIT
+            case INS_movsxd:
+#endif // TARGET_64BIT
+                if (AreUpperBitsSignExtended(src, size))
+                {
+                    return true;
+                }
+                break;
+
+#ifdef TARGET_64BIT
+            case INS_mov:
+                if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
+                {
+                    return true;
+                }
+                break;
+#endif // TARGET_64BIT
+            default:
+                break;
+        }
     }
 
     bool hasSideEffect = HasSideEffect(ins, size);
