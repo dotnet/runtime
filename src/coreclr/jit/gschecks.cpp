@@ -167,7 +167,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         case GT_ARR_OFFSET:
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
-        case GT_FIELD:
 
             newState.isUnderIndir = true;
             {
@@ -493,7 +492,7 @@ void Compiler::gsParamsToShadows()
         {
             GenTree* tree = *use;
 
-            if (tree->OperIsLocal() || tree->OperIs(GT_LCL_ADDR))
+            if (tree->OperIsAnyLocal())
             {
                 unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
                 unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;

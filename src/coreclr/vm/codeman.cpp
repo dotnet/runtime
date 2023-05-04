@@ -1433,6 +1433,9 @@ void EEJitManager::SetCpuInfo()
     //   CORJIT_FLAG_USE_AVX_512DQ_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F_VL
     //      CORJIT_FLAG_USE_AVX_512DQ
+    //   CORJIT_FLAG_USE_AVX_512VBMI if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+    //      CORJIT_FLAG_USE_AVX512F
+    //      AVX512VBMI - ECX bit 1
     //   CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      BMI1 - EBX bit 3
     //   CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
@@ -1554,10 +1557,20 @@ void EEJitManager::SetCpuInfo()
                                                             CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
                                                         }
                                                     }
+
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
+                                                    {
+                                                        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+                                                        if (isAVX512_VLSupported)                          // AVX512VBMI_VL
+                                                        {
+                                                            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
+                                                        }
+                                                    }
                                                 }
                                             }
 
                                             __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+
                                             if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                           // AVX-VNNI
                                             {
                                                 CPUCompileFlags.Set(InstructionSet_AVXVNNI);
@@ -1759,6 +1772,16 @@ void EEJitManager::SetCpuInfo()
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
     {
         CPUCompileFlags.Clear(InstructionSet_AVX512DQ_VL);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AVX512VBMI);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
+    {
+        CPUCompileFlags.Clear(InstructionSet_AVX512VBMI_VL);
     }
 
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
@@ -5076,7 +5099,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
+    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; //
 
     PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pModule, &lockState);
     if (pRange == NULL)
@@ -5100,7 +5123,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
+    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; //
 
     PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pHp, &lockState);
 
@@ -5125,7 +5148,7 @@ void ExecutionManager::AddCodeRange(TADDR          pStartRange,
     } CONTRACTL_END;
 
     ReaderLockHolder rlh;
-    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; // 
+    RangeSectionLockState lockState = RangeSectionLockState::ReaderLocked; //
 
     PTR_RangeSection pRange = GetCodeRangeMap()->AllocateRange(Range(pStartRange, pEndRange), pJit, flags, pRangeList, &lockState);
 
@@ -5157,7 +5180,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         WriterLockHolder wlh;
 
         RangeSectionLockState lockState = RangeSectionLockState::WriteLocked;
-        
+
         GetCodeRangeMap()->CleanupRangeSections(&lockState);
         // Unlike the previous implementation, we no longer attempt to avoid freeing
         // the memory behind the RangeSection here, as we do not support the hosting

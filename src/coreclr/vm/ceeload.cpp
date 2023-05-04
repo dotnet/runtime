@@ -545,6 +545,25 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 }
 
 #ifndef DACCESS_COMPILE
+static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembly)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(pAssembly != NULL && pPEAssembly != NULL);
+
+    // Some modules are never EnC-capable
+    return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
+              pPEAssembly->IsSystem() ||
+              pPEAssembly->IsDynamic());
+}
+
 /* static */
 Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
@@ -566,7 +585,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     // Create the module
 
 #ifdef EnC_SUPPORTED
-    if (IsEditAndContinueCapable(pAssembly, pPEAssembly))
+    if (::IsEditAndContinueCapable(pAssembly, pPEAssembly))
     {
         // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
         // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
@@ -598,7 +617,7 @@ void Module::ApplyMetaData()
     }
     CONTRACTL_END;
 
-    LOG((LF_CLASSLOADER, LL_INFO100, "Module::ApplyNewMetaData %x\n", this));
+    LOG((LF_CLASSLOADER, LL_INFO100, "Module::ApplyNewMetaData this:%p\n", this));
 
     HRESULT hr = S_OK;
     ULONG ulCount;
@@ -833,26 +852,6 @@ MethodTable *Module::GetGlobalMethodTable()
 
 
 #endif // !DACCESS_COMPILE
-
-/*static*/
-BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembly)
-{
-    CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SUPPORTS_DAC;
-        }
-    CONTRACTL_END;
-
-    _ASSERTE(pAssembly != NULL && pPEAssembly != NULL);
-
-    // Some modules are never EnC-capable
-    return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
-              pPEAssembly->IsSystem() ||
-              pPEAssembly->IsDynamic());
-}
 
 BOOL Module::IsManifest()
 {
@@ -5187,6 +5186,23 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     }
 
     ECall::EnumFCallMethods();
+
+#ifdef EnC_SUPPORTED
+    m_ClassList.EnumMemoryRegions();
+
+    DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
+    DPTR(PTR_EnCEEClassData) classLast = classData + m_ClassList.Count();
+
+    while (classData.IsValid() && classData < classLast)
+    {
+        if ((*classData).IsValid())
+        {
+            (*classData)->EnumMemoryRegions(flags);
+        }
+
+        classData++;
+    }
+#endif // EnC_SUPPORTED
 }
 
 FieldDesc *Module::LookupFieldDef(mdFieldDef token)

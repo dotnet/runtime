@@ -227,6 +227,10 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD
     set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
+if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_RISCV64)
+    add_linker_flag(-Wl,-z,notext)
+endif()
+
 if(CLR_CMAKE_TARGET_APPLE)
     # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -force_load)

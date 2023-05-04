@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include <dbgtargetcontext.h>
 
 #if defined(HOST_ARM64)
 // Flag to check if atomics feature is available on
@@ -181,7 +182,7 @@ DumpDataTarget::GetThreadContext(
     /* [in] */ ULONG32 contextSize,
     /* [out, size_is(contextSize)] */ PBYTE context)
 {
-    if (contextSize < sizeof(CONTEXT))
+    if (contextSize < sizeof(DT_CONTEXT))
     {
         assert(false);
         return E_INVALIDARG;

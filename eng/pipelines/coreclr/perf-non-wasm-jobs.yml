@@ -316,25 +316,44 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perftiger'
 
-  # Uncomment to reenable package replacement
-  ## build maui runtime packs
-  #- template: /eng/pipelines/common/platform-matrix.yml
-  #  parameters:
-  #    jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #    buildConfig: release
-  #    runtimeFlavor: mono
-  #    platforms:
-  #    - android_x86
-  #    - android_x64
-  #    - android_arm
-  #    - android_arm64
-  #    - maccatalyst_x64
-  #    - iossimulator_x64
-  #    - ios_arm64
-  #    jobParameters:
-  #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-  #      nameSuffix: Maui_Packs_Mono
-  #      isOfficialBuild: false
-  #      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-  #      extraStepsParameters:
-  #        name: MonoRuntimePacks
+  # build mono runtime packs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - android_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: Mono_Packs
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  # build PerfBDN app
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - ios_arm64
+      jobParameters:
+        dependsOn:
+         - Build_android_arm64_release_Mono_Packs
+        buildArgs: -s mono -c $(_BuildConfig)
+        nameSuffix: PerfBDNApp
+        isOfficialBuild: false
+        pool:
+          vmImage: 'macos-12'
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Android BDN App Artifacts
+          artifactName: PerfBDNAppArm
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz

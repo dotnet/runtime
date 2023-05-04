@@ -274,7 +274,7 @@ namespace System.Runtime.CompilerServices
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
-            return (IntPtr)NativeMemory.Alloc((uint)size);
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         public static void PrepareDelegate(Delegate d)
@@ -304,7 +304,7 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            if (type.HasElementType || type.IsGenericParameter)
+            if (type.HasElementType || type.IsGenericParameter || type.IsFunctionPointer)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
             }
@@ -317,6 +317,11 @@ namespace System.Runtime.CompilerServices
             if (type.IsCOMObject)
             {
                 throw new NotSupportedException(SR.NotSupported_ManagedActivation);
+            }
+
+            if (type.IsAbstract)
+            {
+                throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
             MethodTable* mt = type.TypeHandle.ToMethodTable();
@@ -335,11 +340,6 @@ namespace System.Runtime.CompilerServices
             if (RuntimeImports.AreTypesAssignable(mt, MethodTable.Of<Delegate>()))
             {
                 throw new MemberAccessException();
-            }
-
-            if (mt->IsAbstract)
-            {
-                throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
             if (mt->IsByRefLike)

@@ -99,6 +99,26 @@ namespace System.Reflection.Runtime.General
                         return targetType.GetPointerType();
                     }
 
+                case HandleType.FunctionPointerSignature:
+                    {
+                        FunctionPointerSignature sig = typeHandle.ToFunctionPointerSignatureHandle(reader).GetFunctionPointerSignature(reader);
+                        MethodSignature methodSig = sig.Signature.GetMethodSignature(reader);
+                        RuntimeTypeInfo? returnType = methodSig.ReturnType.TryResolve(reader, typeContext, ref exception);
+                        if (returnType == null)
+                            return null;
+                        var parameterTypes = new RuntimeTypeInfo[methodSig.Parameters.Count];
+                        int i = 0;
+                        foreach (Handle paramTypeHandle in methodSig.Parameters)
+                        {
+                            RuntimeTypeInfo? parameterType = paramTypeHandle.TryResolve(reader, typeContext, ref exception);
+                            if (parameterType == null)
+                                return null;
+                            parameterTypes[i++] = parameterType;
+                        }
+                        bool isUnmanaged = (methodSig.CallingConvention & Internal.Metadata.NativeFormat.SignatureCallingConvention.UnmanagedCallingConventionMask) != 0;
+                        return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged);
+                    }
+
                 case HandleType.SZArraySignature:
                     {
                         SZArraySignature sig = typeHandle.ToSZArraySignatureHandle(reader).GetSZArraySignature(reader);

@@ -213,7 +213,9 @@ namespace System.Text.RegularExpressions.Tests
             public DerivedRegex() { }
             public DerivedRegex(string pattern) : base(pattern) { }
 
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
             public new void InitializeReferences() => base.InitializeReferences();
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
 
             public new IDictionary Caps { get => base.Caps; set => base.Caps = value; }
             public new IDictionary CapNames { get => base.CapNames; set => base.CapNames = value; }

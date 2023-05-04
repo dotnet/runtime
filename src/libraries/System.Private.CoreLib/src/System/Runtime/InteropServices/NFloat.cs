@@ -631,7 +631,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="s" /> is <c>null</c>.</exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
@@ -661,7 +661,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="s" /> is <c>null</c>.</exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
@@ -679,7 +679,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
         public static NFloat Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultNumberStyles, IFormatProvider? provider = null)
@@ -717,7 +717,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
@@ -734,7 +734,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {

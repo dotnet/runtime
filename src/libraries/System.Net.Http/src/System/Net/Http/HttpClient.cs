@@ -227,7 +227,7 @@ namespace System.Net.Http
             }
             finally
             {
-                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+                FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
 
@@ -306,7 +306,7 @@ namespace System.Net.Http
             }
             finally
             {
-                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+                FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
 
@@ -352,7 +352,7 @@ namespace System.Net.Http
             }
             finally
             {
-                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted: false);
+                FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted: false);
             }
         }
 
@@ -496,7 +496,7 @@ namespace System.Net.Http
             }
             finally
             {
-                FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+                FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
             }
         }
 
@@ -551,7 +551,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    FinishSend(cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
+                    FinishSend(response, cts, disposeCts, telemetryStarted, responseContentTelemetryStarted);
                 }
             }
         }
@@ -583,8 +583,6 @@ namespace System.Net.Http
 
         private void HandleFailure(Exception e, bool telemetryStarted, HttpResponseMessage? response, CancellationTokenSource cts, CancellationToken cancellationToken, CancellationTokenSource pendingRequestsCts)
         {
-            LogRequestFailed(telemetryStarted);
-
             response?.Dispose();
 
             Exception? toThrow = null;
@@ -623,6 +621,8 @@ namespace System.Net.Http
                 e = toThrow = CancellationHelper.CreateOperationCanceledException(e, cancellationToken.IsCancellationRequested ? cancellationToken : cts.Token);
             }
 
+            LogRequestFailed(e, telemetryStarted);
+
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
             if (toThrow != null)
@@ -642,7 +642,7 @@ namespace System.Net.Http
             return false;
         }
 
-        private static void FinishSend(CancellationTokenSource cts, bool disposeCts, bool telemetryStarted, bool responseContentTelemetryStarted)
+        private static void FinishSend(HttpResponseMessage? response, CancellationTokenSource cts, bool disposeCts, bool telemetryStarted, bool responseContentTelemetryStarted)
         {
             // Log completion.
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
@@ -652,7 +652,7 @@ namespace System.Net.Http
                     HttpTelemetry.Log.ResponseContentStop();
                 }
 
-                HttpTelemetry.Log.RequestStop();
+                HttpTelemetry.Log.RequestStop(response);
             }
 
             // Dispose of the CancellationTokenSource if it was created specially for this request

@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void Import([NotNullIfNotNull("_elements")] out List<XmlQualifiedName>? elementTypeNames)
+        internal void Import([NotNullIfNotNull(nameof(_elements))] out List<XmlQualifiedName>? elementTypeNames)
         {
             elementTypeNames = null!;
 

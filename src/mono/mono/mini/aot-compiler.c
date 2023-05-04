@@ -4317,10 +4317,11 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 {
 	// Check if the dedup is enabled, and if the current method can be deduplicated
 	if ((acfg->dedup_phase == DEDUP_SKIP || acfg->dedup_phase == DEDUP_COLLECT) && mono_aot_can_dedup (method)) {
+		if (acfg->dedup_phase == DEDUP_SKIP)
+			return TRUE;
 		// Remember for later
 		if (acfg->dedup_phase == DEDUP_COLLECT && !g_hash_table_lookup (dedup_methods, method))
-				g_hash_table_insert (dedup_methods, method, method);
-		return TRUE;
+			g_hash_table_insert (dedup_methods, method, method);
 	}
 	return FALSE;
 }
@@ -7267,7 +7268,8 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE: {
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				encode_patch (acfg, &tmp, p, &p);

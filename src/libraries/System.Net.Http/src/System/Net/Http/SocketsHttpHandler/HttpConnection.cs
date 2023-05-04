@@ -696,7 +696,7 @@ namespace System.Net.Http
                     await FillForHeadersAsync(async).ConfigureAwait(false);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)response.StatusCode);
 
                 if (allowExpect100ToContinue != null)
                 {
@@ -1079,7 +1079,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && ByteArrayHelpers.EqualsOrdinalAscii(knownReasonPhrase, reasonBytes))
+                if (knownReasonPhrase != null && Ascii.Equals(reasonBytes, knownReasonPhrase))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }

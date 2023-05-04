@@ -264,4 +264,10 @@
   <data name="TarSizeFieldTooLargeForEntryFormat" xml:space="preserve">
     <value>The value of the size field for the current entry of format '{0}' is greater than the format allows.</value>
   </data>
+  <data name="TarExtAttrDisallowedKeyChar" xml:space="preserve">
+    <value>The extended attribute key '{0}' contains a disallowed '{1}' character.</value>
+  </data>
+  <data name="TarExtAttrDisallowedValueChar" xml:space="preserve">
+    <value>The value of the extended attribute key '{0}' contains a disallowed '{1}' character.</value>
+  </data>
 </root>

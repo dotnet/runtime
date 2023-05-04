@@ -196,7 +196,7 @@ bool IntegralRange::Contains(int64_t value) const
                          ForNode(node->AsQmark()->ElseNode(), compiler));
 
         case GT_CAST:
-            return ForCastOutput(node->AsCast());
+            return ForCastOutput(node->AsCast(), compiler);
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
@@ -226,15 +226,6 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
-
-        case GT_FIELD:
-        {
-            if (node->AsField()->IsSpanLength())
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-            break;
-        }
 
         default:
             break;
@@ -369,12 +360,13 @@ bool IntegralRange::Contains(int64_t value) const
 // Unlike ForCastInput, this method supports casts from floating point types.
 //
 // Arguments:
-//   cast - the cast node for which the range will be computed
+//   cast     - the cast node for which the range will be computed
+//   compiler - Compiler object
 //
 // Return Value:
 //   The range this cast produces - see description.
 //
-/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast)
+/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast, Compiler* compiler)
 {
     var_types fromType     = genActualType(cast->CastOp());
     var_types toType       = cast->CastToType();
@@ -405,6 +397,13 @@ bool IntegralRange::Contains(int64_t value) const
     if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
     {
         return ForCastInput(cast);
+    }
+
+    // if we're upcasting and the cast op is a known non-negative - consider
+    // this cast unsigned
+    if (!fromUnsigned && (genTypeSize(toType) >= genTypeSize(fromType)))
+    {
+        fromUnsigned = cast->CastOp()->IsNeverNegative(compiler);
     }
 
     // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
@@ -3794,8 +3793,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    // Bail out if tree is not side effect free.
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+    // Bail out if op1 is not side effect free. Note we'll be bashing it below, unlike op2.
+    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return nullptr;
     }

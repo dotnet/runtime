@@ -60,6 +60,11 @@ namespace Internal.Reflection.Execution
             return _executionDomain.GetPointerTypeForHandle(typeHandle);
         }
 
+        public sealed override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetFunctionPointerTypeForHandle(typeHandle);
+        }
+
         public sealed override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             return _executionDomain.GetByRefTypeForHandle(typeHandle);
