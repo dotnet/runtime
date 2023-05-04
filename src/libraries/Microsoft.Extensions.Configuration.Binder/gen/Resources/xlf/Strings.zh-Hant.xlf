@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AbstractOrInterfaceNotSupported">
         <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="new">Abstract or interface types are not supported: '{0}'.</target>
+        <target state="translated">不支援抽象或介面類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
-        <target state="new">The collection type is not supported: '{0}'.</target>
+        <target state="translated">不支援集合類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
-        <target state="new">The dictionary key type is not supported: '{0}'.</target>
+        <target state="translated">不支援字典索引鍵類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypeNotSupported">
         <source>The collection element type is not supported: '{0}'.</source>
-        <target state="new">The collection element type is not supported: '{0}'.</target>
+        <target state="translated">不支援集合元素類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
@@ -34,17 +34,17 @@
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
-        <target state="new">Multidimensional arrays are not supported: '{0}'.</target>
+        <target state="translated">不支援多維陣列: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="NeedPublicParameterlessConstructor">
         <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="new">Only objects with public parameterless constructors are supported: '{0}'.</target>
+        <target state="translated">僅支援具有公用無參數建構函式的物件: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
         <source>Nullable underlying type is not supported: '{0}'.</source>
-        <target state="new">Nullable underlying type is not supported: '{0}'.</target>
+        <target state="translated">不支援可為 Null 的基礎類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
-        <target state="new">The type is not supported: '{0}'.</target>
+        <target state="translated">不支援類型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
