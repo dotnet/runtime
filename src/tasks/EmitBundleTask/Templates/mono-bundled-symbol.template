@@ -1,0 +1,2 @@
+    .symbol_data = { .data = &%SymfileSymbol%_data,
+                 .size = %SymLen% }

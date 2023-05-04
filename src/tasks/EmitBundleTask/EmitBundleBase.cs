@@ -81,12 +81,12 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         var files = filesToBundleByRegisteredName.Select(group => {
             var registeredFile = group.First();
             var outputFile = registeredFile.GetMetadata("DestinationFile");
-            var registeredName = group.Key;
-            var symbolName = ToSafeSymbolName(outputFile);
-            string? symfileSymbolName = null;
-            if (File.Exists(registeredFile.GetMetadata("Symfile")))
-                symfileSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("Symfile"));
-            return (registeredName, symbolName, symfileSymbolName);
+            var registeredFilename = group.Key;
+            var resourceName = ToSafeSymbolName(outputFile);
+            string? resourceSymbolName = null;
+            if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
+                resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
+            return (registeredFilename, resourceName, resourceSymbolName);
         }).ToList();
 
         Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
@@ -241,9 +241,9 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             string preloadedSymfile = "";
             if (!string.IsNullOrEmpty(tuple.symfileSymbol))
             {
-                preloadedSymfile = Utils.GetEmbeddedResource("mono-bundled-symfile.template")
-                                            .Replace("%SymfileSymbol%", tuple.symfileSymbol)
-                                            .Replace("%SymLen%", symbolDataLen[tuple.symfileSymbol].ToString());
+                preloadedSymfile = Utils.GetEmbeddedResource("mono-bundled-symbol.template")
+                                            .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
+                                            .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
             }
             preallocatedSource.AppendLine(preloadedStruct.Replace("%RegisteredName%", tuple.registeredName)
                                          .Replace("%Symbol%", tuple.symbol)

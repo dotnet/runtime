@@ -3,4 +3,4 @@ const MonoBundledAssemblyResource %Symbol% = {
     .assembly = { .name = "%RegisteredName%",
                   .data = %Symbol%_data,
                   .size = %Len% },
-%MonoBundledSymfile%};
+%MonoBundledSymbolData%};

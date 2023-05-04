@@ -31,15 +31,15 @@ typedef struct _MonoBundledDataResource {
 	MonoBundledData data;
 } MonoBundledDataResource;
 
-typedef struct _MonoBundledSymfile {
+typedef struct _MonoBundledSymbolData {
 	const unsigned char *data;
 	unsigned int size;
-} MonoBundledSymfile;
+} MonoBundledSymbolData;
 
 typedef struct _MonoBundledAssemblyResource {
 	MonoBundledResource resource;
 	MonoBundledAssembly assembly;
-	MonoBundledSymfile symfile;
+	MonoBundledSymbolData symbol_data;
 } MonoBundledAssemblyResource;
 
 typedef struct _MonoBundledSatelliteAssembly {

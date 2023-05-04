@@ -1122,8 +1122,8 @@ open_symfile_from_bundle (MonoImage *image)
 	BundledSymfile *bsymfile;
 
 	MonoBundledAssemblyResource *assembly = (MonoBundledAssemblyResource *)mono_bundled_resources_get (image->module_name);
-	if (assembly && assembly->symfile.data)
-		return mono_debug_open_image (image, assembly->symfile.data, assembly->symfile.size);
+	if (assembly && assembly->symbol_data.data)
+		return mono_debug_open_image (image, assembly->symbol_data.data, assembly->symbol_data.size);
 
 #ifdef ENABLE_WEBCIL
 	int len = strlen (image->module_name);
