@@ -12000,12 +12000,24 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     OBJECTREF objRef = getObjectFromJitHandle(handle);
     _ASSERTE(objRef != NULL);
 
-    // TODO: support types containing GC pointers
-    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
+    if (bufferSize + valueOffset <= (int)objRef->GetSize())
     {
         Object* obj = OBJECTREFToObject(objRef);
-        memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
-        result = true;
+        if (objRef->GetMethodTable()->ContainsPointers())
+        {
+            // Only allow access to Delegate's IntPtr _methodPtr field
+            if (objRef->GetMethodTable()->IsDelegate() && (bufferSize == TARGET_POINTER_SIZE) &&
+                (valueOffset == TARGET_POINTER_SIZE * 3))
+            {
+                memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+                result = true;
+            }
+        }
+        else
+        {
+            memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+            result = true;
+        }
     }
 
     EE_TO_JIT_TRANSITION();

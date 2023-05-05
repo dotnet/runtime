@@ -2442,6 +2442,85 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 resultVN = VNForIntCon(knownSize);
             }
         }
+        // Case 4: Now we try to fold a field load on "static readonly object" field
+        // the object does not have to be frozen (but needs to be immutable)
+        //
+        //  *  IND       long
+        //  \--*  ADD       byref
+        //     |--*  IND       ref
+        //     |   \--*  CNS_INT(h) long   0x21992001d08 const ptr Fseq[MyField]
+        //     \--*  CNS_INT   long   24 $140
+        //
+        // TODO: remove Case 2 and unify with this (and remove getArrayOrStringLength API)
+        //
+        else if ((func == VNF_InvariantLoad) &&
+                 (varTypeIsSIMD(typ) || varTypeIsIntegral(typ) || varTypeIsFloating(typ)))
+        {
+            VNFuncApp funcApp;
+            // Check that we have ADD(objectFromStaticField, fieldOffset)
+            if (GetVNFunc(arg0VN, &funcApp) && funcApp.m_func == VNFunc(GT_ADD))
+            {
+                ValueNum objVN    = funcApp.m_args[0];
+                ValueNum offsetVN = funcApp.m_args[1];
+                // Offset is a plain constant and objVN is TYP_REF (object)
+                if (IsVNConstant(offsetVN) && !IsVNHandle(offsetVN) && (TypeOfVN(objVN) == TYP_REF))
+                {
+                    VNFuncApp staticFldFunc;
+                    // objVN is a static field load
+                    if (GetVNFunc(objVN, &staticFldFunc) && (staticFldFunc.m_func == VNF_InvariantNonNullLoad))
+                    {
+                        assert(staticFldFunc.m_arity == 1);
+
+                        // Its arg is a field sequence handle
+                        if (IsVNHandle(staticFldFunc.m_args[0]) &&
+                            GetHandleFlags(staticFldFunc.m_args[0]) == GTF_ICON_FIELD_SEQ)
+                        {
+                            FieldSeq* fseq = FieldSeqVNToFieldSeq(staticFldFunc.m_args[0]);
+                            if ((fseq != nullptr) && (fseq->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress))
+                            {
+                                CORINFO_FIELD_HANDLE fldHandle = fseq->GetFieldHandle();
+
+                                uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+
+                                // Load objectHandle from the static field. It doesn't have to be frozen.
+                                if (m_pComp->info.compCompHnd->getStaticFieldContent(fldHandle, buffer,
+                                                                                     TARGET_POINTER_SIZE, 0,
+                                                                                     /*ignoreMovableObjects*/ false))
+                                {
+                                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                                    // It's done to match the current crossgen/ILC behavior.
+                                    CORINFO_OBJECT_HANDLE objHandle = NULL;
+                                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+
+                                    // We check that the whole object is immutable here, but we can
+                                    // relax this to check only the field we are accessing (e.g. array.Length)
+                                    if ((objHandle != nullptr) &&
+                                        m_pComp->info.compCompHnd->isObjectImmutable(objHandle))
+                                    {
+                                        ssize_t offsetVal                 = CoercedConstantValue<ssize_t>(offsetVN);
+                                        uint8_t objBuffer[sizeof(simd_t)] = {0};
+                                        if ((offsetVal >= 0) && (offsetVal <= INT_MAX) &&
+                                            m_pComp->info.compCompHnd->getObjectContent(objHandle, objBuffer,
+                                                                                        genTypeSize(typ),
+                                                                                        (int)offsetVal))
+                                        {
+                                            ValueNum vn = VNForGenericCon(typ, objBuffer);
+                                            if (IsVNObjHandle(vn))
+                                            {
+                                                // We have a handle to a frozen object, let compiler object know.
+                                                m_pComp->setMethodHasFrozenObjects();
+                                            }
+                                            resultVN = vn;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Try to perform constant-folding.
         //
