@@ -6403,5 +6403,35 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<nint>   CompareGreaterThanOrEqual(Vector128<nint>   left, Vector128<nint>   right) { throw null; }
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw null; }
+        public static Vector128<float>  Negate(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Negate(Vector128<double> value) { throw null; }
+        public static Vector128<float>  Abs(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Abs(Vector128<double> value) { throw null; }
+        public static Vector128<float>  Min(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Max(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  PseudoMin(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> PseudoMin(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  PseudoMax(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> PseudoMax(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Add(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Subtract(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Divide(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Multiply(Vector128<float>  left, Vector128<float>  right) { throw null; }
+        public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw null; }
+        public static Vector128<float>  Sqrt(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Sqrt(Vector128<double> value) { throw null; }
+        public static Vector128<float>  Ceiling(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Ceiling(Vector128<double> value) { throw null; }
+        public static Vector128<float>  Floor(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Floor(Vector128<double> value) { throw null; }
+        public static Vector128<float>  Truncate(Vector128<float>  value) { throw null; }
+        public static Vector128<double> Truncate(Vector128<double> value) { throw null; }
+        public static Vector128<float>  RoundToNearest(Vector128<float>  value) { throw null; }
+        public static Vector128<double> RoundToNearest(Vector128<double> value) { throw null; }
     }
 }

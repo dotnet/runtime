@@ -11583,20 +11583,31 @@ static const char* InsCflagsToString(insCflags flags)
 //
 void Compiler::gtDispSsaName(unsigned lclNum, unsigned ssaNum, bool isDef)
 {
-    if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+    if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
     {
-        if (isDef)
+        return;
+    }
+
+    LclVarDsc* const lclDsc  = lvaGetDesc(lclNum);
+    bool const       isValid = lclDsc->IsValidSsaNum(ssaNum);
+
+    if (isDef)
+    {
+        if (!isValid)
         {
-            unsigned oldDefSsaNum = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
-            if (oldDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-            {
-                printf("ud:%d->%d", oldDefSsaNum, ssaNum);
-                return;
-            }
+            printf("?d:%d", ssaNum);
+            return;
         }
 
-        printf("%s:%d", isDef ? "d" : "u", ssaNum);
+        unsigned oldDefSsaNum = lclDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+        if (oldDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
+        {
+            printf("ud:%d->%d", oldDefSsaNum, ssaNum);
+            return;
+        }
     }
+
+    printf("%s%s:%d", isValid ? "" : "?", isDef ? "d" : "u", ssaNum);
 }
 
 //------------------------------------------------------------------------

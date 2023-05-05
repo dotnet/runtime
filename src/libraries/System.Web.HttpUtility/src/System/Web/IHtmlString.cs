@@ -8,6 +8,6 @@ namespace System.Web
     {
         /// <summary>Returns an HTML-encoded string.</summary>
         /// <returns>An HTML-encoded string.</returns>
-        string ToHtmlString();
+        string? ToHtmlString();
     }
 }

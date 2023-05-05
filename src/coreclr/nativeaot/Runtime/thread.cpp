@@ -284,7 +284,8 @@ void Thread::Construct()
 
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
-    ASSERT(m_pThreadLocalModuleStatics == NULL);
+    ASSERT(m_pThreadLocalStatics == NULL);
+    ASSERT(m_pInlinedThreadLocalStatics == NULL);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
@@ -1266,13 +1267,31 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
 
 Object** Thread::GetThreadStaticStorage()
 {
-    return &m_pThreadLocalModuleStatics;
+    return &m_pThreadLocalStatics;
 }
 
 COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
-    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
+}
+
+InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
+{
+    return m_pInlinedThreadLocalStatics;
+}
+
+void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot)
+{
+    ASSERT(newRoot->m_next == NULL);
+    newRoot->m_next = m_pInlinedThreadLocalStatics;
+    m_pInlinedThreadLocalStatics = newRoot;
+}
+
+COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root))
+{
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
+    pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root);
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread
