@@ -53,6 +53,16 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// <summary>
     public string OutputDirectory {get; set; } = default!;
 
+    /// <summary>
+    /// Resources that were bundled
+    ///
+    /// Successful bundling will set the following metadata on the items:
+    ///   - DataSymbol
+    ///   - LenSymbol
+    /// <summary>
+    [Output]
+    public ITaskItem[] BundledResources { get; set; } = default!;
+
     public override bool Execute()
     {
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
@@ -92,6 +102,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
 
+        List<ITaskItem> bundledResources = new(remainingDestinationFilesToBundle.Length);
         // Generate source file(s) containing each resource's byte data and size
         if (remainingDestinationFilesToBundle.Length > 0)
         {
@@ -133,8 +144,13 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 {
                     state.Stop();
                 }
+                contentSourceFile.SetMetadata("DataSymbol", $"{symbolName}_data");
+                contentSourceFile.SetMetadata("LenSymbol", $"{symbolName}_len");
+                contentSourceFile.SetMetadata("LenSymbolValue", symbolDataLen[symbolName]);
+                bundledResources.Add(contentSourceFile);
             });
         }
+        BundledResources = bundledResources.ToArray();
 
         if (!string.IsNullOrEmpty(BundleFile)) {
             // Generate header containing MonoBundled*Resource typedefs

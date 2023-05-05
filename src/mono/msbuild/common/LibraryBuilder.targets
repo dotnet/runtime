@@ -79,8 +79,9 @@
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
       CombinedResourceSource="$(BundleResourceFile)"
       BundleFile="$(BundleSourceFile)"
-      OutputDirectory="$(BundleOutputDirectory)"
-      />
+      OutputDirectory="$(BundleOutputDirectory)">
+      <Output TaskParameter="BundledResources" ItemName="_BundledResources" />
+     </EmitBundleSourceFiles>
   </Target>
 
 </Project>
