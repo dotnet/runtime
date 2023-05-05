@@ -428,13 +428,19 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
 #elif defined(TARGET_WASM)
+	int op = -1;
 	switch (id)
 	{
+	case SN_Negate:
+		op = OP_NEGATION;
+		break;
 	case SN_OnesComplement:
-		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_ONESCOMPLEMENT, -1, arg_type, fsig, args);
+		op = OP_WASM_ONESCOMPLEMENT;
+		break;
 	default:
 		return NULL;
 	}
+	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
 #else
 	return NULL;
 #endif
@@ -1467,7 +1473,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
 #ifdef TARGET_ARM64
-		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
+		int ceil_or_floor = id == SN_Ceiling ? INTRINS_SIMD_CEIL : INTRINS_SIMD_FLOOR;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)
 		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
@@ -2045,8 +2051,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
-#elif defined(TARGET_AMD64)
-		int instc0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SSE_SQRT_PS : INTRINS_SSE_SQRT_PD;
+#elif defined(TARGET_AMD64) || defined(TARGET_WASM)
+		int instc0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SIMD_SQRT_R4 : INTRINS_SIMD_SQRT_R8;
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, instc0, arg0_type, fsig, args);
 #else
@@ -2662,9 +2668,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_SquareRoot: {
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, MONO_TYPE_R4, fsig, args);
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_WASM)
 		ins = emit_simd_ins (cfg, klass, OP_XOP_X_X, args [0]->dreg, -1);
-		ins->inst_c0 = (IntrinsicId)INTRINS_SSE_SQRT_PS;
+		ins->inst_c0 = (IntrinsicId)INTRINS_SIMD_SQRT_R4;
 		return ins;
 #else
 		return NULL;
@@ -3223,8 +3229,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
 	{SN_BitwiseClear, OP_ARM64_BIC},
 	{SN_BitwiseSelect, OP_BSL},
-	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
-	{SN_CeilingScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
+	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_SIMD_CEIL},
+	{SN_CeilingScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_CEIL},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE_FP, CMP_EQ},
 	{SN_CompareEqualScalar, OP_XCOMPARE_SCALAR, CMP_EQ, OP_XCOMPARE_SCALAR, CMP_EQ, OP_XCOMPARE_FP_SCALAR, CMP_EQ},
 	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT, OP_XCOMPARE, CMP_GT_UN, OP_XCOMPARE_FP, CMP_GT},
@@ -3303,8 +3309,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ExtractNarrowingUpper, OP_ARM64_XTN2},
 	{SN_ExtractVector128, OP_ARM64_EXT},
 	{SN_ExtractVector64, OP_ARM64_EXT},
-	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
-	{SN_FloorScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
+	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_FloorScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_FLOOR},
 	{SN_FusedAddHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UHADD},
 	{SN_FusedAddRoundedHalving, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRHADD, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URHADD},
 	{SN_FusedMultiplyAdd, OP_ARM64_FMADD},
@@ -3446,8 +3452,8 @@ static SimdIntrinsic advsimd_methods [] = {
 #else
 	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_RBIT},
 #endif
-	{SN_RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
-	{SN_RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
+	{SN_RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_SIMD_ROUND},
+	{SN_RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_ROUND},
 #if LLVM_API_VERSION >= 1400
 	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_ROUNDEVEN},
 	{SN_RoundToNearestScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_ROUNDEVEN},
@@ -3455,12 +3461,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTN},
 	{SN_RoundToNearestScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTN},
 #endif
-	{SN_RoundToNegativeInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
-	{SN_RoundToNegativeInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
-	{SN_RoundToPositiveInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
-	{SN_RoundToPositiveInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
-	{SN_RoundToZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTZ},
-	{SN_RoundToZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTZ},
+	{SN_RoundToNegativeInfinity, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_RoundToNegativeInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_RoundToPositiveInfinity, OP_XOP_OVR_X_X, INTRINS_SIMD_CEIL},
+	{SN_RoundToPositiveInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_CEIL},
+	{SN_RoundToZero, OP_XOP_OVR_X_X, INTRINS_SIMD_TRUNC},
+	{SN_RoundToZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_SIMD_TRUNC},
 	{SN_ShiftArithmetic, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftArithmeticRounded, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SRSHL},
 	{SN_ShiftArithmeticRoundedSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SQRSHL},
@@ -4061,7 +4067,7 @@ static SimdIntrinsic sse_methods [] = {
 	{SN_ReciprocalSqrt, OP_XOP_X_X, INTRINS_SSE_RSQRT_PS},
 	{SN_ReciprocalSqrtScalar},
 	{SN_Shuffle},
-	{SN_Sqrt, OP_XOP_X_X, INTRINS_SSE_SQRT_PS},
+	{SN_Sqrt, OP_XOP_X_X, INTRINS_SIMD_SQRT_R4},
 	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
@@ -4171,7 +4177,7 @@ static SimdIntrinsic sse2_methods [] = {
 	{SN_Shuffle},
 	{SN_ShuffleHigh},
 	{SN_ShuffleLow},
-	{SN_Sqrt, OP_XOP_X_X, INTRINS_SSE_SQRT_PD},
+	{SN_Sqrt, OP_XOP_X_X, INTRINS_SIMD_SQRT_R8},
 	{SN_SqrtScalar},
 	{SN_Store, OP_SSE_STORE, 1 /* alignment */},
 	{SN_StoreAligned, OP_SSE_STORE, 16 /* alignment */},
@@ -5062,7 +5068,7 @@ static SimdIntrinsic wasmbase_methods [] = {
 };
 
 static SimdIntrinsic packedsimd_methods [] = {
-	{SN_Abs, OP_VECTOR_IABS},
+	{SN_Abs},
 	{SN_Add},
 	{SN_AddPairwiseWidening},
 	{SN_AddSaturate},
@@ -5073,6 +5079,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_BitwiseSelect, OP_BSL},
+	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_SIMD_CEIL},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE_FP, CMP_EQ},
 	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT, OP_XCOMPARE, CMP_GT_UN, OP_XCOMPARE_FP, CMP_GT},
 	{SN_CompareGreaterThanOrEqual, OP_XCOMPARE, CMP_GE, OP_XCOMPARE, CMP_GE_UN, OP_XCOMPARE_FP, CMP_GE},
@@ -5081,10 +5088,12 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
 	{SN_ConvertNarrowingSignedSaturate},
 	{SN_ConvertNarrowingUnsignedSaturate},
+	{SN_Divide},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
-	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN},
-	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN},
+	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
+	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN, OP_XBINOP, OP_FMIN},
+	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN, OP_XBINOP, OP_FMAX},
 	{SN_Multiply},
 	{SN_MultiplyRoundedSaturateQ15, OP_XOP_X_X_X, INTRINS_WASM_Q15MULR_SAT_SIGNED},
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
@@ -5093,15 +5102,20 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Not, OP_WASM_ONESCOMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
+	{SN_PseudoMax, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMAX},
+	{SN_PseudoMin, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMIN},
 	{SN_ReplaceLane},
+	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_SIMD_NEAREST},
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
 	{SN_ShiftRightLogical, OP_SIMD_USHR},
 	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
 	{SN_Splat},
+	{SN_Sqrt},
 	{SN_Subtract},
 	{SN_SubtractSaturate},
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
+	{SN_Truncate, OP_XOP_OVR_X_X, INTRINS_SIMD_TRUNC},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_get_IsSupported},
 };
@@ -5170,15 +5184,26 @@ emit_wasm_supported_intrinsics (
 	}
 
 	if (feature == MONO_CPU_WASM_SIMD) {
-		if (id != SN_Splat && !is_element_type_primitive (fsig->params [0]) ||
-		    id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0]))
+		if ((id != SN_Splat && !is_element_type_primitive (fsig->params [0])) ||
+		    (id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0])))
 			return NULL;
 
 		uint16_t op = info->default_op;
 		uint16_t c0 = info->default_instc0;
 
 		switch (id) {
+			case SN_Abs: {
+				if (type_enum_is_float(arg0_type)) {
+					op = OP_XOP_X_X;
+					c0 = arg0_type == MONO_TYPE_R8 ? INTRINS_WASM_FABS_V2 : INTRINS_WASM_FABS_V4;
+				} else {
+					op = OP_VECTOR_IABS;
+				}
+				// continue with default emit
+				break;
+			}
 			case SN_Add:
+			case SN_Divide:
 			case SN_Subtract:
 			case SN_Multiply:
 				return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
@@ -5316,10 +5341,6 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
-			case SN_CompareEqual:
-				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
-			case SN_CompareNotEqual:
-				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 			case SN_ConvertNarrowingSignedSaturate: {
 				op = OP_XOP_X_X_X;
 
@@ -5371,6 +5392,12 @@ emit_wasm_supported_intrinsics (
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
+			}
+			case SN_Sqrt: {
+				op = OP_XOP_X_X;
+				c0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SIMD_SQRT_R4 : INTRINS_SIMD_SQRT_R8;
+				// continue with default emit
+				break;
 			}
 			case SN_SubtractSaturate: {
 				op = OP_XOP_X_X_X;
