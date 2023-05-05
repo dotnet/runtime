@@ -34,7 +34,6 @@ namespace Internal.Runtime.Augments
     using BinderBundle = System.Reflection.BinderBundle;
     using Pointer = System.Reflection.Pointer;
 
-    [ReflectionBlocked]
     public static class RuntimeAugments
     {
         /// <summary>
@@ -446,15 +445,6 @@ namespace Internal.Runtime.Augments
         }
 
         //
-        // Returns the name of a virtual assembly we dump types private class library-Reflectable ty[es for internal class library use.
-        // The assembly binder visible to apps will never reveal this assembly.
-        //
-        // Note that this is not versionable as it is exposed as a const (and needs to be a const so we can used as a custom attribute argument - which
-        // is the other reason this string is not versionable.)
-        //
-        public const string HiddenScopeAssemblyName = "HiddenScope, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-
-        //
         // This implements the "IsAssignableFrom()" api for runtime-created types. By policy, we let the underlying runtime decide assignability.
         //
         public static bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
@@ -504,9 +494,6 @@ namespace Internal.Runtime.Augments
             {
                 EETypePtr ifcEEType = eeType.Interfaces[i];
                 RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
-                if (Callbacks.IsReflectionBlocked(ifcrth))
-                    continue;
-
                 implementedInterfaces.Add(ifcrth);
             }
             return implementedInterfaces.ToArray();
