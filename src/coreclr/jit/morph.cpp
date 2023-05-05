@@ -4898,23 +4898,6 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree)
         var_types lclVarType  = varDsc->TypeGet();
         bool      isBoolQuirk = lclVarType == TYP_BOOL;
 
-        // Assertion prop can tell us to omit adding a cast here. This is
-        // useful when the local is a small-typed parameter that is passed in a
-        // register: in that case, the ABI specifies that the upper bits might
-        // be invalid, but the assertion guarantees us that we have normalized
-        // when we wrote it.
-        if (optLocalAssertionProp && !isBoolQuirk &&
-            optAssertionIsSubrange(tree, IntegralRange::ForType(lclVarType), apFull) != NO_ASSERTION_INDEX)
-        {
-            // The previous assertion can guarantee us that if this node gets
-            // assigned a register, it will be normalized already. It is still
-            // possible that this node ends up being in memory, in which case
-            // normalization will still be needed, so we better have the right
-            // type.
-            assert(tree->TypeGet() == varDsc->TypeGet());
-            return tree;
-        }
-
         // Small-typed arguments and aliased locals are normalized on load.
         // Other small-typed locals are normalized on store.
         // Also, under the debugger as the debugger could write to the variable.
