@@ -202,7 +202,7 @@ namespace System.Threading
             }
             else
             {
-                return PortableThreadPool.ThreadPoolInstance.RegisterWaitForSingleObject(waitObject, callback, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+                return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
             }
         }
     }
