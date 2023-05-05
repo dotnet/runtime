@@ -274,7 +274,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_lclNum;
         }
 
-        // Get the addesses' byte offset.
+        // Get the address's byte offset.
         unsigned Offset() const
         {
             assert(IsAddress());
