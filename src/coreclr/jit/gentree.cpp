@@ -24322,6 +24322,20 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(0xCC)) || // B
                            (control == static_cast<uint8_t>(0xAA)));  // C
 
+                    assert(op1 != value1);
+                    assert(op2 != value1);
+                    assert(op3 == value1);
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
+                    if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op2, value1);
+                    }
+
                     return value1;
                 }
 
@@ -24337,6 +24351,21 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 
                     assert(control == static_cast<uint8_t>(0xFF));
 
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
+                    if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op2, value1);
+                    }
+
+                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op3, value1);
+                    }
+
                     return gtNewAllBitsSetConNode(type);
                 }
 
@@ -24351,6 +24380,21 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                     assert(info.oper2Use == TernaryLogicUseFlags::None);
 
                     assert(control == static_cast<uint8_t>(0x00));
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
+                    if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op2, value1);
+                    }
+
+                    if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op3, value1);
+                    }
 
                     return gtNewZeroConNode(type);
                 }
@@ -24369,21 +24413,39 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                                (control == static_cast<uint8_t>(~0xCC)) || // ~B
                                (control == static_cast<uint8_t>(~0xAA)));  // ~C
 
+                        assert(op1 != value1);
+                        assert(op2 != value1);
+                        assert(op3 == value1);
+
                         if (!op1->IsVectorZero())
                         {
-                            assert(op1 != value1);
-                            op1 = gtNewZeroConNode(type);
+                            GenTree* zero = gtNewZeroConNode(type);
+
+                            if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                            {
+                                op1 = gtNewOperNode(GT_COMMA, type, op1, zero);
+                            }
+                            else
+                            {
+                                op1 = zero;
+                            }
                         }
 
                         if (!op2->IsVectorZero())
                         {
-                            assert(op2 != value1);
-                            op2 = gtNewZeroConNode(type);
+                            GenTree* zero = gtNewZeroConNode(type);
+
+                            if ((op2->gtFlags & GTF_SIDE_EFFECT) != 0)
+                            {
+                                op2 = gtNewOperNode(GT_COMMA, type, op2, zero);
+                            }
+                            else
+                            {
+                                op2 = zero;
+                            }
                         }
 
-                        assert(value1 == op3);
                         op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xAA);
-
                         break;
                     }
 
@@ -24399,11 +24461,43 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                                (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
                                (control == static_cast<uint8_t>(~0xAA & 0xCC)));  // ~C & B
 
+                        assert(op1 != value1);
+                        assert(op1 != value2);
+
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                        }
+
                         return gtNewSimdBinOpNode(GT_AND_NOT, type, value2, value1, simdBaseJitType, simdSize);
                     }
                     else
                     {
                         assert(info.oper2 == TernaryLogicOperKind::Or);
+
+                        assert((control == static_cast<uint8_t>(~0xF0 | 0xCC)) || // ~A | B
+                               (control == static_cast<uint8_t>(~0xF0 | 0xAA)) || // ~A | C
+                               (control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
+                               (control == static_cast<uint8_t>(~0xCC | 0xAA)) || // ~B | C
+                               (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
+                               (control == static_cast<uint8_t>(~0xAA | 0xCC)));  // ~C | B
+
+                        assert(op1 != value1);
+                        assert(op1 != value2);
+
+                        if (!op1->IsVectorZero())
+                        {
+                            GenTree* zero = gtNewZeroConNode(type);
+
+                            if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                            {
+                                op1 = gtNewOperNode(GT_COMMA, type, op1, zero);
+                            }
+                            else
+                            {
+                                op1 = zero;
+                            }
+                        }
                     }
                     break;
                 }
@@ -24421,6 +24515,14 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(0xF0 & 0xAA)) || // A & C
                            (control == static_cast<uint8_t>(0xCC & 0xAA)));  // B & C
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
                     return gtNewSimdBinOpNode(GT_AND, type, value1, value2, simdBaseJitType, simdSize);
                 }
 
@@ -24437,11 +24539,21 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(~(0xF0 & 0xAA))) || // ~(A & C)
                            (control == static_cast<uint8_t>(~(0xCC & 0xAA))));  // ~(B & C)
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
                     if (!op1->IsVectorZero())
                     {
-                        assert(op1 != value1);
-                        assert(op1 != value2);
-                        op1 = gtNewZeroConNode(type);
+                        GenTree* zero = gtNewZeroConNode(type);
+
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            op1 = gtNewOperNode(GT_COMMA, type, op1, zero);
+                        }
+                        else
+                        {
+                            op1 = zero;
+                        }
                     }
 
                     op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC & 0xAA));
@@ -24461,6 +24573,14 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(0xF0 | 0xAA)) || // A | C
                            (control == static_cast<uint8_t>(0xCC | 0xAA)));  // B | C
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
                     return gtNewSimdBinOpNode(GT_OR, type, value1, value2, simdBaseJitType, simdSize);
                 }
 
@@ -24477,11 +24597,21 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(~(0xF0 | 0xAA))) || // ~(A | C)
                            (control == static_cast<uint8_t>(~(0xCC | 0xAA))));  // ~(B | C)
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
                     if (!op1->IsVectorZero())
                     {
-                        assert(op1 != value1);
-                        assert(op1 != value2);
-                        op1 = gtNewZeroConNode(type);
+                        GenTree* zero = gtNewZeroConNode(type);
+
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            op1 = gtNewOperNode(GT_COMMA, type, op1, zero);
+                        }
+                        else
+                        {
+                            op1 = zero;
+                        }
                     }
 
                     op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC | 0xAA));
@@ -24501,6 +24631,14 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(0xF0 ^ 0xAA)) || // A ^ C
                            (control == static_cast<uint8_t>(0xCC ^ 0xAA)));  // B ^ C
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
+                    }
+
                     return gtNewSimdBinOpNode(GT_XOR, type, value1, value2, simdBaseJitType, simdSize);
                 }
 
@@ -24517,11 +24655,21 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                            (control == static_cast<uint8_t>(~(0xF0 ^ 0xAA))) || // ~(A ^ C)
                            (control == static_cast<uint8_t>(~(0xCC ^ 0xAA))));  // ~(B ^ C)
 
+                    assert(op1 != value1);
+                    assert(op1 != value2);
+
                     if (!op1->IsVectorZero())
                     {
-                        assert(op1 != value1);
-                        assert(op1 != value2);
-                        op1 = gtNewZeroConNode(type);
+                        GenTree* zero = gtNewZeroConNode(type);
+
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            op1 = gtNewOperNode(GT_COMMA, type, op1, zero);
+                        }
+                        else
+                        {
+                            op1 = zero;
+                        }
                     }
 
                     op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC ^ 0xAA));

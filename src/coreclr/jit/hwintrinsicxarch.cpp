@@ -2979,7 +2979,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (!op1->IsVectorZero())
                 {
-                    retNode->AsHWIntrinsic()->Op(1) = gtNewZeroConNode(retType);
+                    GenTree* zero = gtNewZeroConNode(retType);
+
+                    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                    {
+                        op1 = gtNewOperNode(GT_COMMA, retType, op1, zero);
+                    }
+                    else
+                    {
+                        op1 = zero;
+                    }
+
+                    retNode->AsHWIntrinsic()->Op(1) = op1;
                 }
             }
             break;
