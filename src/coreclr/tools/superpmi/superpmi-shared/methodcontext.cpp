@@ -3628,29 +3628,29 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
-void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+void MethodContext::recGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
 {
-    if (GetThreadLocalFieldInfo == nullptr)
-        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetNonGCThreadLocalFieldInfo == nullptr)
+        GetNonGCThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = 0;
 
     key = CastHandle(field);
-    GetThreadLocalFieldInfo->Add(key, result);
-    DEBUG_REC(dmpGetThreadLocalFieldInfo(key, result));
+    GetNonGCThreadLocalFieldInfo->Add(key, result);
+    DEBUG_REC(dmpGetNonGCThreadLocalFieldInfo(key, result));
 }
 
-void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetNonGCThreadLocalFieldInfo(DWORDLONG key, DWORD value)
 {
-    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+    printf("GetNonGCThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
 }
 
-uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MethodContext::repGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
     DWORDLONG key   = CastHandle(field);
-    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+    DWORD     value = LookupByKeyOrMiss(GetNonGCThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
+    DEBUG_REP(dmpGetNonGCThreadLocalFieldInfo(key, value));
 
     return value;
 }

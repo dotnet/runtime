@@ -7827,7 +7827,7 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
-    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    uint32_t eeGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 

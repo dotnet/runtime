@@ -1096,11 +1096,11 @@ void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     mc->recGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t interceptor_ICJI::getNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
-    mc->cr->AddCall("getThreadLocalFieldInfo");
-    uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field);
-    mc->recGetThreadLocalFieldInfo(field, result);
+    mc->cr->AddCall("getNonGCThreadLocalFieldInfo");
+    uint32_t result = original_ICorJitInfo->getNonGCThreadLocalFieldInfo(field);
+    mc->recGetNonGCThreadLocalFieldInfo(field, result);
     return result;
 }
 

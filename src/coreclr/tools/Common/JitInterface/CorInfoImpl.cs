@@ -2859,7 +2859,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
+        private uint getNonGCThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.

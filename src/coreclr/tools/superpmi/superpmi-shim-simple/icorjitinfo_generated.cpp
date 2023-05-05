@@ -695,10 +695,10 @@ void interceptor_ICJI::getFieldInfo(
     original_ICorJitInfo->getFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
+uint32_t interceptor_ICJI::getNonGCThreadLocalFieldInfo(
           CORINFO_FIELD_HANDLE field)
 {
-    return original_ICorJitInfo->getThreadLocalFieldInfo(field);
+    return original_ICorJitInfo->getNonGCThreadLocalFieldInfo(field);
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(

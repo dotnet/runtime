@@ -666,11 +666,11 @@ void BaseDomain::InitVSD()
 }
 
 #ifdef HOST_WINDOWS
-void BaseDomain::InitThreadStaticBlockTypeMap()
+void BaseDomain::InitNonGCThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
 
-    m_threadStaticBlockTypeIDMap.Init();
+    m_NonGCThreadStaticBlockTypeIDMap.Init();
 }
 #endif // HOST_WINDOWS
 
@@ -1772,7 +1772,7 @@ void AppDomain::Create()
 
 #ifdef HOST_WINDOWS
     // allocate a thread static block to index map
-    pDomain->InitThreadStaticBlockTypeMap();
+    pDomain->InitNonGCThreadStaticBlockTypeMap();
 #endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
@@ -4680,7 +4680,7 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
 
 #ifdef HOST_WINDOWS
 //------------------------------------------------------------------------
-UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
+UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
 {
     CONTRACTL {
         THROWS;
@@ -4688,18 +4688,18 @@ UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_threadStaticBlockTypeIDMap.GetTypeID(pMT, false);
+    return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
 }
 
 //------------------------------------------------------------------------
-PTR_MethodTable BaseDomain::LookupThreadStaticBlockType(UINT32 id) {
+PTR_MethodTable BaseDomain::LookupNonGCThreadStaticBlockType(UINT32 id) {
         CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
         CONSISTENCY_CHECK(id != TYPE_ID_THIS_CLASS);
     } CONTRACTL_END;
 
-    PTR_MethodTable pMT = m_threadStaticBlockTypeIDMap.LookupType(id);
+    PTR_MethodTable pMT = m_NonGCThreadStaticBlockTypeIDMap.LookupType(id);
 
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;

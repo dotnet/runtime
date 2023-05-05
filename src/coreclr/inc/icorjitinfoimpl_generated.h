@@ -410,7 +410,7 @@ void getFieldInfo(
           CORINFO_ACCESS_FLAGS flags,
           CORINFO_FIELD_INFO* pResult) override;
 
-uint32_t getThreadLocalFieldInfo(
+uint32_t getNonGCThreadLocalFieldInfo(
           CORINFO_FIELD_HANDLE field) override;
 
 void getThreadLocalStaticBlocksInfo(

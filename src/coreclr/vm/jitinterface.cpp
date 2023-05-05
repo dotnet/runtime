@@ -1573,13 +1573,13 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 #ifdef HOST_WINDOWS
 #ifndef TARGET_ARM
-                bool canOptimizeHelper =
-                    ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_VALUETYPE)) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_OBJECT) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_ARRAY) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_I) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_U) ||
-                    (pField->GetFieldType() == ELEMENT_TYPE_SZARRAY);
+                bool canOptimizeHelper = true;
+                    //((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_VALUETYPE)) ||
+                    //(pField->GetFieldType() == ELEMENT_TYPE_OBJECT) ||
+                    //(pField->GetFieldType() == ELEMENT_TYPE_ARRAY) ||
+                    //(pField->GetFieldType() == ELEMENT_TYPE_I) ||
+                    //(pField->GetFieldType() == ELEMENT_TYPE_U) ||
+                    //(pField->GetFieldType() == ELEMENT_TYPE_SZARRAY);
 
                 // Only check if the field type is non-generic.
                 if (canOptimizeHelper)
@@ -1787,7 +1787,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef HOST_WINDOWS
 
 /*********************************************************************/
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
         THROWS;
@@ -1802,7 +1802,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
 
-    typeIndex = AppDomain::GetCurrentDomain()->GetThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
     
@@ -1833,7 +1833,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
         NOTHROW;

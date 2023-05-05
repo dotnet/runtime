@@ -1845,7 +1845,7 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupNonGCThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     // Get the TLM
@@ -1943,7 +1943,7 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupNonGCThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     // Get the TLM

@@ -971,12 +971,12 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
-uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+uint32_t WrapICorJitInfo::getNonGCThreadLocalFieldInfo(
           CORINFO_FIELD_HANDLE field)
 {
-    API_ENTER(getThreadLocalFieldInfo);
-    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
-    API_LEAVE(getThreadLocalFieldInfo);
+    API_ENTER(getNonGCThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getNonGCThreadLocalFieldInfo(field);
+    API_LEAVE(getNonGCThreadLocalFieldInfo);
     return temp;
 }
 

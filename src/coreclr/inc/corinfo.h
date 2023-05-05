@@ -2754,7 +2754,7 @@ public:
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
 
-    virtual uint32_t getThreadLocalFieldInfo (
+    virtual uint32_t getNonGCThreadLocalFieldInfo (
                         CORINFO_FIELD_HANDLE  field) = 0;
 
     virtual void getThreadLocalStaticBlocksInfo (

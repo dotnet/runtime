@@ -1465,12 +1465,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static uint _getThreadLocalFieldInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field)
+        private static uint _getNonGCThreadLocalFieldInfo(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getThreadLocalFieldInfo(field);
+                return _this.getNonGCThreadLocalFieldInfo(field);
             }
             catch (Exception ex)
             {
@@ -2830,7 +2830,7 @@ namespace Internal.JitInterface
             callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_**, CORINFO_CLASS_STRUCT_*, CorInfoType>)&_getFieldType;
             callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint>)&_getFieldOffset;
             callbacks[97] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_ACCESS_FLAGS, CORINFO_FIELD_INFO*, void>)&_getFieldInfo;
-            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint>)&_getThreadLocalFieldInfo;
+            callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, uint>)&_getNonGCThreadLocalFieldInfo;
             callbacks[99] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, void>)&_getThreadLocalStaticBlocksInfo;
             callbacks[100] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte>)&_isFieldStatic;
             callbacks[101] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int>)&_getArrayOrStringLength;
