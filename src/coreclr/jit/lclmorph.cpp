@@ -267,7 +267,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_lclNum != BAD_VAR_NUM;
         }
 
-        // Get the address' variable number.
+        // Get the address's variable number.
         unsigned LclNum() const
         {
             assert(IsAddress());
