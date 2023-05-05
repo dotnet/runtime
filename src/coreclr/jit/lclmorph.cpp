@@ -1652,21 +1652,20 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     GenTree* tree = stmt->GetRootNode();
     assert(tree->OperGet() == GT_ASG);
 
-    GenTree*    originalLHS     = tree->AsOp()->gtOp1;
-    GenTree*    prevLHS         = tree->AsOp()->gtOp1;
-    GenTree*    prevRHS         = tree->AsOp()->gtOp2;
-    unsigned    index           = 0;
-    CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-    unsigned    simdSize        = 0;
-    GenTree*    simdLclAddr     = getSIMDStructFromField(prevRHS, &simdBaseJitType, &index, &simdSize, true);
+    GenTree*  originalLHS  = tree->AsOp()->gtOp1;
+    GenTree*  prevLHS      = tree->AsOp()->gtOp1;
+    GenTree*  prevRHS      = tree->AsOp()->gtOp2;
+    unsigned  index        = 0;
+    var_types simdBaseType = prevRHS->TypeGet();
+    unsigned  simdSize     = 0;
+    GenTree*  simdLclAddr  = getSIMDStructFromField(prevRHS, &index, &simdSize, true);
 
-    if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseJitType != CORINFO_TYPE_FLOAT))
+    if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseType != TYP_FLOAT))
     {
         // if the RHS is not from a SIMD vector field X, then there is no need to check further.
         return false;
     }
 
-    var_types  simdBaseType         = JitType2PreciseVarType(simdBaseJitType);
     var_types  simdType             = getSIMDTypeForSize(simdSize);
     int        assignmentsCount     = simdSize / genTypeSize(simdBaseType) - 1;
     int        remainingAssignments = assignmentsCount;

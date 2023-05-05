@@ -3514,6 +3514,10 @@ void Compiler::fgFindBasicBlocks()
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
                 lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
+                if (varTypeIsStruct(info.compRetType))
+                {
+                    lvaSetStruct(lvaInlineeReturnSpillTemp, info.compMethodInfo->args.retTypeClass, false);
+                }
 
                 // The return spill temp is single def only if the method has a single return block.
                 if (fgReturnCount == 1)
