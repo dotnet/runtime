@@ -233,9 +233,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call =
-                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                                isTailCall, opcode == CEE_CALLVIRT, pConstrainedResolvedToken, callInfo->thisTransform,
+                                &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -2304,6 +2304,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
+                                bool                    callvirt,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                                 NamedIntrinsic*         pIntrinsicName,
@@ -3100,8 +3101,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 // Try to avoid ClsHandle -> Type object -> ClsHandle roundtrip:
                 GenTree* op1 = impStackTop(0).val;
-                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) &&
-                    (methodFlags & CORINFO_FLG_VIRTUAL))
+                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) && callvirt)
                 {
                     // struct RuntimeTypeHandle { IntPtr _value; }
                     assert(info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass) == 1);
