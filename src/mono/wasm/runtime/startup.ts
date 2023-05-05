@@ -36,7 +36,7 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/globals";
 import { init_globalization } from "./icu";
-import { BootConfigResult } from "./blazor/BootConfig";
+import { BootConfigResult, BootJsonData } from "./blazor/BootConfig";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -684,7 +684,7 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
             const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
-                await initializeBootConfig(loadedAnyConfig as BootConfigResult);
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData));
             } else {
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;
 
