@@ -87,5 +87,9 @@ static unsafe partial class CoreCLRHost
             .AggregateWithCommaSpace();
 
     static string FormatMethodParameters(IMethodSymbol methodSymbol)
-        => $"{methodSymbol.Parameters.Select(p => p.Type.ToString()).AggregateWithCommaSpace()}, {methodSymbol.ReturnType}";
+    {
+        if (methodSymbol.Parameters.Length == 0)
+            return $"{methodSymbol.ReturnType}";
+        return $"{methodSymbol.Parameters.Select(p => p.Type.ToString()).Concat(new[] { methodSymbol.ReturnType.ToString() }).AggregateWithCommaSpace()}";
+    }
 }

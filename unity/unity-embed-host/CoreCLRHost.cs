@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -14,11 +18,12 @@ static unsafe partial class CoreCLRHost
 {
     static ALCWrapper alcWrapper;
     static FieldInfo assemblyHandleField;
+    private static Dictionary<Assembly, IntPtr> m_assemblies = new Dictionary<Assembly, IntPtr>();
 
     internal static int InitMethod(HostStruct* functionStruct, int structSize)
     {
         if (Marshal.SizeOf<HostStruct>() != structSize)
-            throw new Exception("Invalid struct size");
+            throw new Exception($"Invalid struct size, Managed was {Marshal.SizeOf<HostStruct>()} and Native was {structSize}");
 
         InitState();
 
@@ -41,15 +46,139 @@ static unsafe partial class CoreCLRHost
     public static IntPtr /*Assembly*/ load_assembly_from_data(byte* data, long size)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyData(data, size);
-        return (IntPtr)assemblyHandleField.GetValue(assembly);
+        var ptr = GetHandleForAssembly(assembly);
+        return ptr;
     }
 
     [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
     public static IntPtr /*Assembly*/ load_assembly_from_path(byte* path, int length)
     {
         var assembly = alcWrapper.CallLoadFromAssemblyPath(Encoding.UTF8.GetString(path, length));
-        return (IntPtr)assemblyHandleField.GetValue(assembly);
+        var ptr = GetHandleForAssembly(assembly);
+        return ptr;
+    }
 
+    private static IntPtr GetHandleForAssembly(Assembly assembly)
+    {
+        if (!m_assemblies.TryGetValue(assembly, out var ptr))
+        {
+            ptr = GCHandle.ToIntPtr(GCHandle.Alloc(assembly));
+            m_assemblies.Add(assembly, ptr);
+        }
+
+        return ptr;
+    }
+
+    private static Assembly GetAssemblyForHandle(IntPtr ptr)
+    {
+        return (Assembly)GCHandle.FromIntPtr(ptr).Target;
+    }
+
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr class_from_name(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        [NativeCallbackType("const char*")] sbyte* name_space,
+        [NativeCallbackType("const char*")] sbyte* name,
+        bool ignoreCase)
+    {
+        Assembly assembly = GetAssemblyForHandle(image);
+        var ns = new string(name_space);
+        var klass_name = new string(name);
+        string assemblyQualified = $"{ns}.{klass_name}";
+        assemblyQualified = assemblyQualified.Replace('/', '+');
+
+        return assembly.GetType(assemblyQualified, false, ignoreCase).TypeHandleIntPtr();
+    }
+
+    public static int image_get_table_rows([NativeCallbackType("MonoImage*")] IntPtr image, int table_id)
+    {
+        const int MONO_TABLE_TYPEDEF = 2;
+        if (table_id == MONO_TABLE_TYPEDEF)
+        {
+            Assembly assembly = GetAssemblyForHandle(image);
+            return assembly.GetTypes().Length;
+        }
+
+        return 0;
+    }
+
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr unity_class_get([NativeCallbackType("MonoImage*")] IntPtr image, uint type_token)
+    {
+        Assembly assembly = GetAssemblyForHandle(image);
+        return RuntimeTypeHandle.ToIntPtr(assembly.Modules.Single().ModuleHandle.GetRuntimeTypeHandleFromMetadataToken((int)type_token));
+    }
+
+    [return: NativeCallbackType("MonoImage*")]
+    public static IntPtr class_get_image([NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        var type = klass.TypeFromHandleIntPtr();
+        return GetHandleForAssembly(type.Assembly);
+    }
+
+    [return: NativeCallbackType("MonoImage*")]
+    public static IntPtr image_loaded([NativeCallbackType("const char*")] sbyte* name)
+    {
+        string sname = new(name);
+
+        // Use reflection to get the assembly name?
+
+        foreach (var context in AssemblyLoadContext.All)
+        {
+            foreach (var asm in context.Assemblies)
+            {
+                if (Path.GetFileNameWithoutExtension(asm.Modules.Single().Name).Equals(sname))
+                    return GetHandleForAssembly(asm);
+            }
+        }
+
+        //Do we need to search and get the loaded instance?
+        foreach (var asm in alcWrapper.Assemblies)
+        {
+            if (Path.GetFileNameWithoutExtension(asm.Modules.Single().Name).Equals(sname))
+                return GetHandleForAssembly(asm);
+        }
+
+        foreach (var asm in AssemblyLoadContext.Default.Assemblies)
+        {
+            if (Path.GetFileNameWithoutExtension(asm.Modules.Single().Name).Equals(sname))
+                return GetHandleForAssembly(asm);
+        }
+
+        return nint.Zero;
+    }
+
+    public unsafe struct MonoAssemblyName
+    {
+        public sbyte* name;
+        public sbyte* culture;
+        public sbyte* hash_value;
+        public byte* public_key;
+        // string of 16 hex chars + 1 NULL
+        public fixed byte public_key_token[17];
+        public uint hash_alg;
+        public uint hash_len;
+        public uint flags;
+        public UInt16 major, minor, build, revision;
+        // only used and populated by newer Mono
+        public UInt16 arch;
+        public byte without_version;
+        public byte without_culture;
+        public byte without_public_key_token;
+    }
+
+    [return: NativeCallbackType("MonoAssembly*")]
+    public static IntPtr assembly_loaded([NativeCallbackType("MonoAssemblyName*")] MonoAssemblyName* aname)
+    {
+        return image_loaded(aname->name);
+    }
+
+    [return: NativeCallbackType("MonoImage*")]
+    [NativeFunction(NativeFunctionOptions.DoNotGenerate)]
+    public static IntPtr get_corlib()
+    {
+        return GetHandleForAssembly(typeof(Object).Assembly);
     }
 
     [return: NativeWrapperType("MonoString*")]
@@ -163,9 +292,15 @@ static unsafe partial class CoreCLRHost
         => FormatterServices.GetUninitializedObject(klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoException*")]
-    public static IntPtr exception_from_class_msg([NativeCallbackType("MonoClass*")] IntPtr klass,
+    public static IntPtr exception_from_name_msg(
+        [NativeCallbackType("MonoImage*")] IntPtr image,
+        [NativeCallbackType("const char*")] sbyte* name_space,
+        [NativeCallbackType("const char*")] sbyte* name,
         [NativeCallbackType("const char*")] sbyte* msg)
-        => Activator.CreateInstance(klass.TypeFromHandleIntPtr(), new string(msg)).ToNativeRepresentation();
+    {
+        Type type = class_from_name(image, name_space, name, false).TypeFromHandleIntPtr();
+        return Activator.CreateInstance(type, new string(msg)).ToNativeRepresentation();
+    }
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr type_get_object(

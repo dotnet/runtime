@@ -21,7 +21,11 @@ static class Extensions
         => obj.GetType().TypeHandleIntPtr();
 
     public static nint TypeHandleIntPtr(this Type type)
-        => RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
+    {
+        if (type != null)
+            return RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
+        return IntPtr.Zero;
+    }
 
     public static nint MethodHandleIntPtr(this RuntimeMethodHandle handle)
         => RuntimeMethodHandle.ToIntPtr(handle);
