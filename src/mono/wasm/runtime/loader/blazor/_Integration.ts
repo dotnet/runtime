@@ -89,10 +89,10 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
-    moduleConfig = {
+    // FIXME this mix of both formats is ugly temporary hack
+    Object.assign(moduleConfig, {
         ...resourceLoader.bootConfig,
-        ...moduleConfig
-    };
+    });
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
         moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
