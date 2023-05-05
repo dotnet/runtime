@@ -764,7 +764,7 @@
   <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
   <PropertyGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
     <_WorkaroundForNuGetMigrations>(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true</_WorkaroundForNuGetMigrations>
-    <_WorkaroundForNuGetMigrationsForPrepending>$(_WorkaroundForNuGetMigrationsForPrepending) &amp;&amp;</_WorkaroundForNuGetMigrationsForPrepending>
+    <_WorkaroundForNuGetMigrationsForPrepending>$(_WorkaroundForNuGetMigrations) &amp;&amp;</_WorkaroundForNuGetMigrationsForPrepending>
   </PropertyGroup>
 
   <PropertyGroup>
