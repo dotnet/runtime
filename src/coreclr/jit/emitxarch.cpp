@@ -531,58 +531,56 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
         {
-            if (emitIsInstrWritingToReg(id, reg))
+            switch (id->idIns())
             {
-                switch (id->idIns())
-                {
-                    // Conservative.
-                    case INS_call:
-                        return PEEPHOLE_ABORT;
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-                    // These instructions sign-extend.
-                    case INS_cwde:
-                    case INS_cdq:
-                    case INS_movsx:
+                // These instructions sign-extend.
+                case INS_cwde:
+                case INS_cdq:
+                case INS_movsx:
 #ifdef TARGET_64BIT
-                    case INS_movsxd:
+                case INS_movsxd:
 #endif // TARGET_64BIT
-                        return PEEPHOLE_ABORT;
+                    return PEEPHOLE_ABORT;
 
-                    case INS_movzx:
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = (id->idOpSize() <= size);
-                        }
+                case INS_movzx:
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
 #ifdef TARGET_64BIT
-                        // movzx always zeroes the upper 32 bits.
-                        else if (size == EA_4BYTE)
-                        {
-                            result = true;
-                        }
+                    // movzx always zeroes the upper 32 bits.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
 #endif // TARGET_64BIT
-                        return PEEPHOLE_ABORT;
+                    return PEEPHOLE_ABORT;
 
-                    default:
-                        break;
-                }
-
-#ifdef TARGET_64BIT
-                // otherwise rely on operation size.
-                if (size == EA_4BYTE)
-                {
-                    result = (id->idOpSize() == EA_4BYTE);
-                }
-#endif // TARGET_64BIT
-                return PEEPHOLE_ABORT;
+                default:
+                    break;
             }
-            else
+
+#ifdef TARGET_64BIT
+            // otherwise rely on operation size.
+            if (size == EA_4BYTE)
             {
-                return PEEPHOLE_CONTINUE;
+                result = (id->idOpSize() == EA_4BYTE);
             }
-        });
+#endif // TARGET_64BIT
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
 
     return result;
 }
@@ -615,47 +613,45 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
         {
-            if (emitIsInstrWritingToReg(id, reg))
+            switch (id->idIns())
             {
-                switch (id->idIns())
-                {
-                    // Conservative.
-                    case INS_call:
-                        return PEEPHOLE_ABORT;
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-                    case INS_cwde:
-                    case INS_cdq:
-                    case INS_movsx:
+                case INS_cwde:
+                case INS_cdq:
+                case INS_movsx:
 #ifdef TARGET_64BIT
-                    case INS_movsxd:
+                case INS_movsxd:
 #endif // TARGET_64BIT
-                        if ((size == EA_1BYTE) || (size == EA_2BYTE))
-                        {
-                            result = (id->idOpSize() <= size);
-                        }
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
 #ifdef TARGET_64BIT
-                        // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
-                        else if (size == EA_4BYTE)
-                        {
-                            result = true;
-                        }
+                    // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
 #endif // TARGET_64BIT
-                        break;
+                    break;
 
-                    default:
-                        break;
-                }
+                default:
+                    break;
+            }
 
-                return PEEPHOLE_ABORT;
-            }
-            else
-            {
-                return PEEPHOLE_CONTINUE;
-            }
-        });
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
 
     return result;
 }
