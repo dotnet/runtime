@@ -1220,6 +1220,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
         }
     }
+
+    // Notify visitor of remaining blocks
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        {
+            visitor->VisitBlock(block);
+        }
+    }
 }
 
 // Map a block into its schema key we will use for storing basic blocks.

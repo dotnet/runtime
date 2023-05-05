@@ -4496,6 +4496,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
+    // If we're going to instrument code, we may need to prepare before
+    // we import. Also do this before we read in any profile data.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
+
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
@@ -4504,14 +4512,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
     activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-    // If we're going to instrument code, we may need to prepare before
-    // we import.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
-    }
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
