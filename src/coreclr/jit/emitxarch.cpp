@@ -16449,11 +16449,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -16465,8 +16467,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
-
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
                 //
@@ -16684,11 +16684,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -16700,8 +16702,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
-
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
                 //
@@ -16894,11 +16894,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
+                code    = AddSimdPrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -16910,8 +16912,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
-
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
                 //
