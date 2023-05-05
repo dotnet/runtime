@@ -12,7 +12,7 @@ struct ReadyToRunHeaderConstants
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
     static const uint32_t CurrentMajorVersion = 9;
-    static const uint32_t CurrentMinorVersion = 0;
+    static const uint32_t CurrentMinorVersion = 1;
 };
 
 struct ReadyToRunHeader
@@ -43,7 +43,7 @@ enum class ReadyToRunSectionType
     StringTable                 = 200,
     GCStaticRegion              = 201,
     ThreadStaticRegion          = 202,
-    InterfaceDispatchTable      = 203,
+    // unused                   = 203,
     TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
     FrozenObjectRegion          = 206,

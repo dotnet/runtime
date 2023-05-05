@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -338,7 +339,7 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the keys in the dictionary is unspecified, but it is the same order as the associated values returned by the <see cref="Values"/> property.
         /// </remarks>
-        public ImmutableArray<TKey> Keys => ImmutableArrayFactory.Create(KeysCore);
+        public ImmutableArray<TKey> Keys => ImmutableCollectionsMarshal.AsImmutableArray(KeysCore);
 
         /// <inheritdoc cref="Keys" />
         private protected abstract TKey[] KeysCore { get; }
@@ -360,7 +361,7 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the values in the dictionary is unspecified, but it is the same order as the associated keys returned by the <see cref="Keys"/> property.
         /// </remarks>
-        public ImmutableArray<TValue> Values => ImmutableArrayFactory.Create(ValuesCore);
+        public ImmutableArray<TValue> Values => ImmutableCollectionsMarshal.AsImmutableArray(ValuesCore);
 
         /// <inheritdoc cref="Values" />
         private protected abstract TValue[] ValuesCore { get; }

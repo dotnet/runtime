@@ -388,7 +388,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
 //
 // Arguments:
 //    data         - Pointer (LCL_VAR) to a data to vectorize
-//    lengthFld    - Pointer (LCL_VAR or GT_FIELD) to Length field
+//    lengthFld    - Pointer (LCL_VAR or GT_IND) to Length field
 //    checkForNull - Check data for null
 //    startsWith   - Is it StartsWith or Equals?
 //    cns          - Constant data (array of 2-byte chars)
@@ -787,15 +787,17 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
     GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
-    GenTreeField* spanLength = gtNewFieldRef(TYP_INT, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTreeField* spanData   = gtNewFieldRef(TYP_BYREF, pointerHnd, spanObjRefLcl);
+    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(TYP_BYREF, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTree*          spanLength     = gtNewFieldIndirNode(TYP_INT, nullptr, spanLengthAddr);
+    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(TYP_BYREF, pointerHnd, spanObjRefLcl);
+    GenTree*          spanData       = gtNewFieldIndirNode(TYP_BYREF, nullptr, spanDataAddr);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, CHECK_SPILL_NONE, true));
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, CHECK_SPILL_NONE, true));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {

@@ -759,13 +759,6 @@ bool MyICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends parent)
     return jitInstance->mc->repCanCast(child, parent);
 }
 
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool MyICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    jitInstance->mc->cr->AddCall("areTypesEquivalent");
-    return jitInstance->mc->repAreTypesEquivalent(cls1, cls2);
-}
-
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState MyICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
@@ -1515,10 +1508,16 @@ unsigned MyICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection
     return jitInstance->mc->repGetClassDomainID(cls, ppIndirection);
 }
 
-bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool MyICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
-    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    jitInstance->mc->cr->AddCall("getStaticFieldContent");
+    return jitInstance->mc->repGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool MyICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    jitInstance->mc->cr->AddCall("getObjectContent");
+    return jitInstance->mc->repGetObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 // return the class handle for the current value of a static field

@@ -297,13 +297,6 @@ namespace System.Runtime
         //
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesEquivalent")]
-        private static extern unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2);
-
-        internal static unsafe bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
-            => AreTypesEquivalent(pType1.ToPointer(), pType2.ToPointer());
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
         internal static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
@@ -565,6 +558,14 @@ namespace System.Runtime
         internal static extern ref object[][] RhGetThreadStaticStorage();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetInlinedThreadStaticStorage")]
+        internal static extern ref object? RhGetInlinedThreadStaticStorage();
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhRegisterInlinedThreadStaticRoot")]
+        internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         internal static extern unsafe IntPtr RhCurrentNativeThreadId();
 
@@ -588,6 +589,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]
         public static extern IntPtr RhGetTargetOfUnboxingAndInstantiatingStub(IntPtr pCode);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetSingleTypeManager")]
+        public static extern TypeManagerHandle RhGetSingleTypeManager();
+
         //
         // EH helpers
         //
@@ -598,10 +603,6 @@ namespace System.Runtime
 #else
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
 #endif
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetExceptionsForCurrentThread")]
-        internal static extern unsafe bool RhGetExceptionsForCurrentThread(Exception[] outputArray, out int writtenCountOut);
 
         // returns the previous value.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

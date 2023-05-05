@@ -23,7 +23,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <BootstrapperName>bootstrapper</BootstrapperName>
     <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
     <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
-    <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(IlcOptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
+    <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
     <LinkerSubsystem Condition="'$(OutputType)' == 'WinExe' and '$(LinkerSubsystem)' == ''">WINDOWS</LinkerSubsystem>
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>

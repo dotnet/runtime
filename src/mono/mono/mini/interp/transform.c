@@ -146,6 +146,7 @@ interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_
 	else
 		new_inst->next->prev = new_inst;
 
+	new_inst->il_offset = -1;
 	return new_inst;
 }
 
@@ -6034,9 +6035,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			} else if (!td->optimized) {
 				int tos = get_tos_offset (td);
-				td->sp -= csignature->param_count;
-				int param_offset = get_tos_offset (td);
-				int param_size = tos - param_offset;
+				int param_offset, param_size;
+				if (csignature->param_count) {
+					td->sp -= csignature->param_count;
+					param_offset = td->sp [0].offset;
+					param_size = tos - param_offset;
+				} else {
+					param_offset = tos;
+					param_size = 0;
+				}
 
 				td->cbb->contains_call_instruction = TRUE;
 				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
@@ -10863,6 +10870,9 @@ retry:
 
 	generate_code (td, method, header, generic_context, error);
 	goto_if_nok (error, exit);
+
+	// Any newly created instructions will have undefined il_offset
+	td->current_il_offset = -1;
 
 	g_assert (td->inline_depth == 0);
 

@@ -91,7 +91,6 @@ struct JitInterfaceCallbacks
     CorInfoType (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
-    bool (* areTypesEquivalent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     CORINFO_CLASS_HANDLE (* mergeClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
@@ -166,7 +165,8 @@ struct JitInterfaceCallbacks
     bool (* canAccessFamily)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
-    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool (* getStaticFieldContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -991,16 +991,6 @@ public:
     return temp;
 }
 
-    virtual bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->areTypesEquivalent(_thisHandle, &pException, cls1, cls2);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -1702,7 +1692,7 @@ public:
     return temp;
 }
 
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
@@ -1710,7 +1700,19 @@ public:
           bool ignoreMovableObjects)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    bool temp = _callbacks->getStaticFieldContent(_thisHandle, &pException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getObjectContent(_thisHandle, &pException, obj, buffer, bufferSize, valueOffset);
     if (pException != nullptr) throw pException;
     return temp;
 }

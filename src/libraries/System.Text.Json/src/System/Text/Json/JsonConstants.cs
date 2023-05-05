@@ -70,7 +70,6 @@ namespace System.Text.Json
 
         public const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         public const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
-        public const int MaxBase64ValueTokenSize = (MaxEscapedTokenSize >> 2) * 3 / MaxExpansionFactorWhileEscaping;  // 125_000_000 bytes
         public const int MaxCharacterTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping; // 166_666_666 characters
 
         public const int MaximumFormatBooleanLength = 5;

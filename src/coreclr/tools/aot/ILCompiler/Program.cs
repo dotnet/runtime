@@ -485,6 +485,15 @@ namespace ILCompiler
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
                 }
+
+                // If we have a scanner, we can inline threadstatics storage using the information
+                // we collected at scanning time.
+                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
+                // This could be a command line switch if we really wanted to.
+                if (!multiFile)
+                {
+                    builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
+                }
             }
 
             string ilDump = Get(_command.IlDump);

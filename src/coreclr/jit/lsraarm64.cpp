@@ -67,6 +67,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
+    assert(consecutiveRegsInUseThisLocation == RBM_NONE);
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
@@ -75,7 +76,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    regMaskTP busyConsecutiveRegMask = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -95,7 +96,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
                 // RefTypeUpperVectorRestore positions of corresponding variables for which (another criteria)
                 // we are trying to find consecutive registers.
 
-                consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
+                consecutiveRefPosition->registerAssignment &= ~consecutiveRegsInUseThisLocation;
             }
             consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         }
@@ -937,6 +938,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_TEST:
         case GT_CCMP:
         case GT_JCMP:
+        case GT_JTEST:
             srcCount = BuildCmp(tree);
             break;
 
