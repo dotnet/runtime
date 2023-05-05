@@ -43,8 +43,6 @@ public class ComputeWasmBuildAssets : Task
     [Required]
     public bool CopySymbols { get; set; }
 
-    public bool FingerprintDotNetJs { get; set; }
-
     public bool EnableThreads { get; set; }
 
     [Output]
@@ -107,11 +105,11 @@ public class ComputeWasmBuildAssets : Task
                 }
 
                 string candidateFileName = candidate.GetMetadata("FileName");
-                if ((candidateFileName == "dotnet" || candidateFileName == "dotnet.worker") && candidate.GetMetadata("Extension") == ".js")
+                if (candidateFileName.StartsWith("dotnet") && candidate.GetMetadata("Extension") == ".js")
                 {
                     string newDotnetJSFileName = null;
                     string newDotNetJSFullPath = null;
-                    if (FingerprintDotNetJs)
+                    if (candidateFileName != "dotnet")
                     {
                         var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
                         newDotnetJSFileName = $"{candidateFileName}.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";

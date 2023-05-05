@@ -55,7 +55,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_AggressiveAttributeTrimming Condition="'$(_AggressiveAttributeTrimming)' == ''">true</_AggressiveAttributeTrimming>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
     <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
-    <WasmFingerprintDotnetJs Condition="'$(WasmFingerprintDotnetJs)' == ''">false</WasmFingerprintDotnetJs>
 
     <!-- Turn off parts of the build that do not apply to WASM projects -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -203,7 +202,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(_WasmInvariantGlobalization)"
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
-      FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
       EnableThreads="$(_WasmEnableThreads)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />

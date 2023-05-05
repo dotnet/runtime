@@ -165,11 +165,10 @@ public class ComputeWasmPublishAssets : Task
         {
             var key = kvp.Key;
             var asset = kvp.Value;
-            var isDotNetJs = IsDotNetJs(key);
-            var isDotNetWorkerJs = IsDotNetWorkerJs(key);
+            var isDotNetJs = IsAnyDotNetJs(key);
             var isDotNetWasm = IsDotNetWasm(key);
 
-            if (!isDotNetJs && !isDotNetWasm && !isDotNetWorkerJs)
+            if (!isDotNetJs && !isDotNetWasm)
             {
                 if (resolvedNativeAssetToPublish.TryGetValue(Path.GetFileName(asset.GetMetadata("OriginalItemSpec")), out var existing))
                 {
@@ -198,9 +197,17 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (isDotNetJs || isDotNetWorkerJs)
+            if (isDotNetJs)
             {
-                var baseName = isDotNetWorkerJs ? "dotnet.worker" : "dotnet";
+                var baseName = Path.GetFileNameWithoutExtension(key);
+                if (baseName.StartsWith("dotnet.native"))
+                    baseName = "dotnet.native";
+                else if (baseName.StartsWith("dotnet.runtime"))
+                    baseName = "dotnet.runtime";
+                else if (baseName.StartsWith("dotnet.worker"))
+                    baseName = "dotnet.worker";
+                else if (baseName.StartsWith("dotnet"))
+                    baseName = "dotnet";
 
                 var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}.js");
                 ITaskItem newDotNetJs = null;
@@ -268,16 +275,10 @@ public class ComputeWasmPublishAssets : Task
 
         return nativeStaticWebAssets;
 
-        static bool IsDotNetJs(string key)
+        static bool IsAnyDotNetJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.native.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal) && !fileName.Contains("worker");
-        }
-
-        static bool IsDotNetWorkerJs(string key)
-        {
-            var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.native.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
+            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
         }
 
         static bool IsDotNetWasm(string key) => string.Equals("dotnet.native.wasm", Path.GetFileName(key), StringComparison.Ordinal);
