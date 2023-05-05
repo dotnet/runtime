@@ -29,6 +29,18 @@ namespace System.Linq
             return source is IIListProvider<TSource> listProvider ? listProvider.ToList() : new List<TSource>(source);
         }
 
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull =>
+            source.ToDictionary(kv => kv.Key, kv => kv.Value, null);
+
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey> comparer) where TKey : notnull =>
+            source.ToDictionary(kv => kv.Key, kv => kv.Value, comparer);
+
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<(TKey Key, TValue Value)> source) where TKey : notnull =>
+            source.ToDictionary(vt => vt.Key, vt => vt.Value, null);
+
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<(TKey Key, TValue Value)> source, IEqualityComparer<TKey> comparer) where TKey : notnull =>
+            source.ToDictionary(vt => vt.Key, vt => vt.Value, comparer);
+
         public static Dictionary<TKey, TSource> ToDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) where TKey : notnull =>
             ToDictionary(source, keySelector, null);
 
