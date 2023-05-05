@@ -142,7 +142,7 @@ namespace Microsoft.Workload.Build.Tasks
             string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
 
             string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
-            string nupkg = Directory.EnumerateFiles(localNugetsPath, $"{nupkgName}.*.nupkg").Single();
+            string nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").Single();
             string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
 
             var document = XDocument.Load(bundledVersions);
