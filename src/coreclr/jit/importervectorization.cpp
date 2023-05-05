@@ -178,7 +178,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
     }
 
-    // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
+// ((v1 ^ cns1) | (v2 ^ cns2)) == zero
 
 #if defined(TARGET_XARCH)
     if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))

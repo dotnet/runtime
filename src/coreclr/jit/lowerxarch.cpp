@@ -8403,7 +8403,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        
                         case NI_AVX512F_TernaryLogic:
                         case NI_AVX512F_VL_TernaryLogic:
                         {
