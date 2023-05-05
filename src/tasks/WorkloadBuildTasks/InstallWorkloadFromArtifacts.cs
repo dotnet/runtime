@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -117,7 +118,7 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
-                    OverrideWebAssemblySdkPack(req.TargetPath);
+                    OverrideWebAssemblySdkPack(req.TargetPath, LocalNuGetsPath);
 
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
@@ -136,16 +137,21 @@ namespace Microsoft.Workload.Build.Tasks
             }
         }
 
-        private static void OverrideWebAssemblySdkPack(string targetPath)
+        private static void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
         {
-            string path = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
+            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
 
-            var document = XDocument.Load(path);
+            string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
+            string nupkg = Directory.EnumerateFiles(localNugetsPath, $"{nupkgName}.*.nupkg").Single();
+            string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
+
+            var document = XDocument.Load(bundledVersions);
             if (document != null)
             {
-                var element = document.Descendants("KnownWebAssemblySdkPack").First(e => e.Attribute("TargetFramework")?.Value == "net8.0");
-                element.SetAttributeValue("WebAssemblySdkPackVersion", "8.0.0-dev");
-                document.Save(path);
+                foreach (var element in document.Descendants("KnownWebAssemblySdkPack"))
+                    element.SetAttributeValue("WebAssemblySdkPackVersion", nupkgVersion);
+
+                document.Save(bundledVersions);
             }
         }
 
