@@ -2595,6 +2595,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_op_Inequality:
 
             // These may lead to early dead code elimination
+            case NI_System_Type_get_TypeHandle:
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsEnum:
             case NI_System_Type_get_IsByRefLike:
@@ -3090,6 +3091,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* typeFrom = impStackTop(1).val;
 
                 retNode = impTypeIsAssignable(typeTo, typeFrom);
+                break;
+            }
+
+            case NI_System_Type_get_TypeHandle:
+            {
+                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+                // Try to avoid ClsHandle -> Type object -> ClsHandle roundtrip:
+                GenTree* op1 = impStackTop(0).val;
+                if (op1->IsCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
+                {
+                    unsigned structLcl = lvaGrabTemp(true DEBUGARG("RuntimeTypeHandle"));
+                    lvaSetStruct(structLcl, sig->retTypeClass, false);
+                    GenTreeLclFld* handleFld    = gtNewLclFldNode(structLcl, TYP_I_IMPL, 0);
+                    GenTree*       realHandle   = op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTree*       asgHandleFld = gtNewAssignNode(handleFld, realHandle);
+                    impAppendTree(asgHandleFld, CHECK_SPILL_NONE, impCurStmtDI);
+                    retNode = impCreateLocalNode(structLcl DEBUGARG(0));
+                    impPopStack();
+                }
                 break;
             }
 
@@ -8210,6 +8231,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "op_Inequality") == 0)
                         {
                             result = NI_System_Type_op_Inequality;
+                        }
+                        else if (strcmp(methodName, "get_TypeHandle") == 0)
+                        {
+                            result = NI_System_Type_get_TypeHandle;
                         }
                     }
                     break;
