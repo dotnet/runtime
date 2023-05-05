@@ -67,6 +67,6 @@ namespace System.Web
     }
     public partial interface IHtmlString
     {
-        string ToHtmlString();
+        string? ToHtmlString();
     }
 }

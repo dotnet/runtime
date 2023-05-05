@@ -453,6 +453,7 @@
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
+    <Compile Include="Compiler\InlinedThreadStatics.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
