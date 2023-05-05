@@ -4,6 +4,7 @@
 using System.IO;
 using System.Security;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -81,6 +82,11 @@ namespace System.Diagnostics.Tests
         [InlineData(ProcessWindowStyle.Maximized, false)]
         public void TestWindowStyle(ProcessWindowStyle windowStyle, bool useShellExecute)
         {
+            if (useShellExecute && !PlatformDetection.SupportsComInterop)
+            {
+                throw new SkipTestException("ShellExecute uses COM interop which is not supported by this platform/runtime.");
+            }
+
             // "x y" where x is the expected dwFlags & 0x1 result and y is the wShowWindow value
             (int expectedDwFlag, int expectedWindowFlag) = windowStyle switch
             {
