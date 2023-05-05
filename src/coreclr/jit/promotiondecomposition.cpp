@@ -490,14 +490,13 @@ private:
     //   For an init block operation, get the pattern to init with.
     //
     // Returns:
-    //   Byte pattern broadcast into every byte of a 64-bit int.
+    //   Byte pattern.
     //
-    int64_t GetInitPattern()
+    uint8_t GetInitPattern()
     {
         assert(IsInit());
-        GenTree* cns     = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
-        int64_t  pattern = int64_t(cns->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
-        return pattern;
+        GenTree* cns = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
+        return uint8_t(cns->AsIntCon()->IconValue() & 0xFF);
     }
 
     //------------------------------------------------------------------------
@@ -669,29 +668,33 @@ private:
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
-            switch (size)
+            // For
+            if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
             {
-                case 1:
-                    primitiveType = TYP_UBYTE;
-                    break;
-                case 2:
-                    primitiveType = TYP_USHORT;
-                    break;
+                ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
+                primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                switch (size)
+                {
+                    case 1:
+                        primitiveType = TYP_UBYTE;
+                        break;
+                    case 2:
+                        primitiveType = TYP_USHORT;
+                        break;
+                    case 4:
+                        primitiveType = TYP_INT;
+                        break;
 #ifdef TARGET_64BIT
-                case 4:
-                    primitiveType = TYP_INT;
-                    break;
+                    case 8:
+                        primitiveType = TYP_LONG;
+                        break;
 #endif
-                case TARGET_POINTER_SIZE:
-                    primitiveType = TYP_I_IMPL;
-                    if ((segment.Start % TARGET_POINTER_SIZE) == 0)
-                    {
-                        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
-                        primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
-                    }
-                    break;
 
-                    // TODO-CQ: SIMD sizes
+                        // TODO-CQ: SIMD sizes
+                }
             }
 
             if (primitiveType != TYP_UNDEF)
@@ -722,14 +725,14 @@ private:
     void FinalizeInit(DecompositionStatementList* statements)
     {
         GenTree* cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
-        int64_t  initPattern = GetInitPattern();
+        uint8_t  initPattern = GetInitPattern();
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
-            GenTree* src = CreateInitValue(entry.Type, initPattern);
+            GenTree* src = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
             GenTree* dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
             entry.ToReplacement->NeedsWriteBack = true;
@@ -744,72 +747,12 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree*             src    = CreateInitValue(remainderStrategy.PrimitiveType, initPattern);
+            GenTree*             src    = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
             GenTreeLclVarCommon* dstLcl = m_dst->AsLclVarCommon();
             GenTree*             dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
                                                        dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
             m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // CreateInitValue:
-    //   Create an IR node representing a constant value with the specified init pattern.
-    //
-    // Parameters:
-    //   type        - The primitive type
-    //   initPattern - Pattern to init with
-    //
-    // Returns:
-    //   A constant.
-    //
-    // Remarks:
-    //   Should only be called when that pattern can actually be represented;
-    //   for example, SIMD types and GC pointers only support an init pattern
-    //   of zero.
-    //
-    GenTree* CreateInitValue(var_types type, int64_t initPattern)
-    {
-        switch (type)
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-            case TYP_INT:
-            {
-                int64_t mask = (int64_t(1) << (genTypeSize(type) * 8)) - 1;
-                return m_compiler->gtNewIconNode(static_cast<int32_t>(initPattern & mask));
-            }
-            case TYP_LONG:
-                return m_compiler->gtNewLconNode(initPattern);
-            case TYP_FLOAT:
-                float floatPattern;
-                memcpy(&floatPattern, &initPattern, sizeof(floatPattern));
-                return m_compiler->gtNewDconNode(floatPattern, TYP_FLOAT);
-            case TYP_DOUBLE:
-                double doublePattern;
-                memcpy(&doublePattern, &initPattern, sizeof(doublePattern));
-                return m_compiler->gtNewDconNode(doublePattern);
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-            {
-                assert(initPattern == 0);
-                return m_compiler->gtNewZeroConNode(type);
-            }
-            default:
-                unreached();
         }
     }
 
@@ -829,7 +772,42 @@ private:
         // If the remainder is a full block and is going to incur write barrier
         // then avoid incurring multiple write barriers for each source
         // replacement that is a GC pointer -- write them back to the struct
-        // first instead.
+        // first instead. That is, instead of:
+        //
+        //   ▌  COMMA     void
+        //   ├──▌  ASG       struct (copy)                      <- write barrier
+        //   │  ├──▌  BLK       struct<Program+S, 32>
+        //   │  │  └──▌  LCL_VAR   byref  V01 arg1
+        //   │  └──▌  LCL_VAR   struct<Program+S, 32> V00 arg0
+        //   └──▌  COMMA     void
+        //      ├──▌  ASG       ref                             <- write barrier
+        //      │  ├──▌  IND       ref
+        //      │  │  └──▌  ADD       byref
+        //      │  │     ├──▌  LCL_VAR   byref  V01 arg1
+        //      │  │     └──▌  CNS_INT   long   8
+        //      │  └──▌  LCL_VAR   ref    V05 tmp3
+        //      └──▌  ASG       ref                             <- write barrier
+        //         ├──▌  IND       ref
+        //         │  └──▌  ADD       byref
+        //         │     ├──▌  LCL_VAR   byref  V01 arg1
+        //         │     └──▌  CNS_INT   long   24
+        //         └──▌  LCL_VAR   ref    V06 tmp4
+        //
+        // Produce:
+        //
+        //   ▌  COMMA     void
+        //   ├──▌  ASG       ref                                <- no write barrier
+        //   │  ├──▌  LCL_FLD   ref    V00 arg0         [+8]
+        //   │  └──▌  LCL_VAR   ref    V05 tmp3
+        //   └──▌  COMMA     void
+        //      ├──▌  ASG       ref                             <- no write barrier
+        //      │  ├──▌  LCL_FLD   ref    V00 arg0         [+24]
+        //      │  └──▌  LCL_VAR   ref    V06 tmp4
+        //      └──▌  ASG       struct (copy)                   <- write barrier
+        //         ├──▌  BLK       struct<Program+S, 32>
+        //         │  └──▌  LCL_VAR   byref  V01 arg1          (last use)
+        //         └──▌  LCL_VAR   struct<Program+S, 32> V00 arg0
+        //
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_dst->OperIs(GT_BLK) &&
             m_dst->GetLayout(m_compiler)->HasGCPtr())
         {
@@ -847,6 +825,9 @@ private:
                         JITDUMP("  Will write back V%02u (%s) to avoid an additional write barrier\n", rep->LclNum,
                                 rep->Description);
 
+                        // The loop below will skip these replacements as an
+                        // optimization if it is going to copy the struct
+                        // anyway.
                         rep->NeedsWriteBack = false;
                     }
                 }
@@ -903,7 +884,7 @@ private:
                             continue;
                         }
 
-                        const Entry& entry = m_entries.BottomRef(0);
+                        const Entry& entry = m_entries.BottomRef(i);
 
                         assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
                         needsNullCheck = m_compiler->fgIsBigOffset(entry.Offset);
