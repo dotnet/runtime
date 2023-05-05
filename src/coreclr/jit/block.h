@@ -1089,15 +1089,13 @@ struct BasicBlock : private LIR::Range
     BlockSet bbReach; // Set of all blocks that can reach this one
 
     union {
-        BasicBlock* bbIDom;   // Represent the closest dominator to this block (called the Immediate
-                              // Dominator) used to compute the dominance tree.
-        FlowEdge* bbLastPred; // Used early on by fgLinkBasicBlock/fgAddRefPred
+        BasicBlock* bbIDom;          // Represent the closest dominator to this block (called the Immediate
+                                     // Dominator) used to compute the dominance tree.
+        FlowEdge* bbLastPred;        // Used early on by fgLinkBasicBlock/fgAddRefPred
+        void*     bbSparseProbeList; // Used early on by fgInstrument
     };
 
-    union {
-        void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
-        void* bbSparseProbeList; // Used early on by fgInstrument
-    };
+    void* bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
 
     unsigned bbPreorderNum;  // the block's  preorder number in the graph (1...fgMaxBBNum]
     unsigned bbPostorderNum; // the block's postorder number in the graph (1...fgMaxBBNum]
