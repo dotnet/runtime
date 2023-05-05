@@ -242,7 +242,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
 
                         currentTestExecutor++;
-                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(System.IO.StreamWriter tempLogSw, System.IO.StreamWriter statsCsvSw)");
+                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                                                       + "System.IO.StreamWriter tempLogSw, "
+                                                       + "System.IO.StreamWriter statsCsvSw)");
                         testExecutorBuilder.AppendLine("{");
                         testExecutorBuilder.PushIndent();
 
@@ -340,7 +342,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         builder.AppendLine();
 
-        builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
         using (builder.NewBracesScope())
         {
             builder.AppendLine("Initialize();");
@@ -382,7 +384,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             }
 
                             currentTestExecutor++;
-                            testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}("
+                            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
                                                            + "XUnitWrapperLibrary.TestFilter filter, "
                                                            + "System.IO.StreamWriter tempLogSw, "
                                                            + "System.IO.StreamWriter statsCsvSw)");
