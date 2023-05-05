@@ -94,7 +94,7 @@ inline RoundLevel getRoundFloatLevel()
 template <typename T>
 inline T genFindLowestBit(T value)
 {
-    return (value & (0 - value));
+    return BitOperations::BitScanForward(value);
 }
 
 /*****************************************************************************
@@ -116,7 +116,7 @@ inline bool genMaxOneBit(T value)
 template <typename T>
 inline bool genExactlyOneBit(T value)
 {
-    return ((value != 0) && genMaxOneBit(value));
+    return BitOperations::PopCount(value) == 1;
 }
 
 /*****************************************************************************
