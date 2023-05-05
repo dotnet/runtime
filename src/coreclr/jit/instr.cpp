@@ -1201,6 +1201,8 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
         return false;
     }
 
+    insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[ins] & Input_Mask));
+
     // Embedded broadcast can be applied when operands are in the following forms.
     // 1. Broadcast -> CreateScalar -> LCL_VAR
     // 2. CnsVec
@@ -1218,7 +1220,43 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
         case GT_CNS_VEC:
         {
-            if (op->IsCreatedFromScalar())
+            var_types simdType = op->TypeGet();
+            bool IsIdentical = true;
+            switch(inputSize)
+            {
+                case Input_32Bit:
+                {
+                    uint32_t FirstElement = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[0]);
+                    for(unsigned i = 1; i < genTypeSize(simdType) / 4; i++)
+                    {
+                        uint32_t ElementToCheck = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[i]);
+                        if(FirstElement != ElementToCheck)
+                        {
+                            IsIdentical = false;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case Input_64Bit:
+                {
+                    uint64_t FirstElement = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[0]);
+                    for(unsigned i = 1; i < genTypeSize(simdType) / 8; i++)
+                    {
+                        uint64_t ElementToCheck = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[i]);
+                        if(FirstElement != ElementToCheck)
+                        {
+                            IsIdentical = false;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default:
+                    unreached();
+            }
+
+            if(IsIdentical)
             {
                 IsEmbBroadcastEnabled = true;
             }
