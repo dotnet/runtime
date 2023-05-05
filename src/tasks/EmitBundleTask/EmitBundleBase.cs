@@ -33,7 +33,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     /// The filename for the generated source file that registers
     /// the bundled resources.
     /// </summary>
-    public string BundleFile { get; set; } = "mono-bundled-source.c";
+    public string? BundleFile { get; set; }
 
     /// <summary>
     /// The filename for the generated header file that declares
@@ -136,17 +136,19 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             });
         }
 
-        // Generate header containing MonoBundled*Resource typedefs
-        File.WriteAllText(Path.Combine(OutputDirectory, BundleHeader), Utils.GetEmbeddedResource("mono-bundled-source.h"));
+        if (!string.IsNullOrEmpty(BundleFile)) {
+            // Generate header containing MonoBundled*Resource typedefs
+            File.WriteAllText(Path.Combine(OutputDirectory, BundleHeader), Utils.GetEmbeddedResource("mono-bundled-source.h"));
 
-        // Generate source file to preallocate resources and register bundled resources
-        Emit(Path.Combine(OutputDirectory, BundleFile), (inputStream) =>
-        {
-            using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateBundledResourcePreallocationAndRegistration(BundleRegistrationFunctionName, files, outputUtf8Writer);
-        });
+            // Generate source file to preallocate resources and register bundled resources
+            Emit(Path.Combine(OutputDirectory, BundleFile), (inputStream) =>
+            {
+                using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
+                GenerateBundledResourcePreallocationAndRegistration(BundleRegistrationFunctionName, files, outputUtf8Writer);
+            });
+        }
 
-        return true;
+        return !Log.HasLoggedErrors;
     }
 
     public void Cancel()
