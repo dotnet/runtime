@@ -1631,6 +1631,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerFusedMultiplyAdd(node);
             break;
 
+        case NI_AVX_BroadcastScalarToVector256:
+        case NI_AVX_BroadcastScalarToVector128:
+        {
+            GenTree* op = node->Op(1);
+            assert(op->OperIs(GT_LCL_ADDR));
+            LIR::Use use;
+            bool foundUse = BlockRange().TryGetUse(node, &use);
+            if(foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
+            {
+                if(node == use.User()->AsHWIntrinsic()->Op(1))
+                {
+                    std::swap(use.User()->AsHWIntrinsic()->Op(1), use.User()->AsHWIntrinsic()->Op(2));
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -7619,9 +7636,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         }
 
         case NI_SSE3_MoveAndDuplicate:
-        case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
-        case NI_AVX_BroadcastScalarToVector256:
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512F_BroadcastScalarToVector512:
         {
@@ -7685,6 +7700,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 return false;
             }
         }
+
+        case NI_AVX_BroadcastScalarToVector128:
+        case NI_AVX_BroadcastScalarToVector256:
+        {
+            assert(childNode->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_ADDR));
+            if(parentNode->OperIsEmbBroadcastCompatible())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }        
 
         default:
         {

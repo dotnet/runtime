@@ -801,12 +801,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
             switch (intrinsicId)
             {
                 case NI_SSE3_MoveAndDuplicate:
-                case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector128:
-                case NI_AVX_BroadcastScalarToVector256:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512F_BroadcastScalarToVector512:
+                // NI_AVX_BroadcastScalarToVector* will use the defult path and emit LCL_ADDR directly.
                 {
+                    assert(op->isContained());
                     if (intrinsicId == NI_SSE3_MoveAndDuplicate)
                     {
                         assert(simdBaseType == TYP_DOUBLE);
@@ -824,7 +824,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                             // a special case is when the operand of CreateScalarUnsafe is in integer type,
                             // CreateScalarUnsafe node will be fold, so we directly match a pattern of
                             // broadcast -> LCL_VAR(TYP_(U)INT)
-                            assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_LCL_VAR));
+                            assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR));
                             op = hwintrinsic->Op(1);
                             assert(op->isContained());
                             return genOperandDesc(op);
@@ -833,7 +833,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                         case TYP_FLOAT:
                         case TYP_DOUBLE:
                         {
-                            assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
+                            assert(hwintrinsic->Op(1)->OperIs(GT_HWINTRINSIC));
                             op = hwintrinsic->Op(1);
                             assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
                             assert(op->isContained());
