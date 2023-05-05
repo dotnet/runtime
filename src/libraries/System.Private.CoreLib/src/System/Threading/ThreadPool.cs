@@ -8,17 +8,6 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        void IThreadPoolWorkItem.Execute() => CompleteWait();
-
-        // Entry point from unmanaged code
-        private void CompleteWait()
-        {
-            PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
-        }
-    }
-
     public static partial class ThreadPool
     {
         internal static readonly bool UseWindowsThreadPool =
@@ -213,18 +202,7 @@ namespace System.Threading
             }
             else
             {
-                ArgumentNullException.ThrowIfNull(waitObject);
-                ArgumentNullException.ThrowIfNull(callBack);
-
-                RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
-                    waitObject,
-                    new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
-                    (int)millisecondsTimeOutInterval,
-                    !executeOnlyOnce);
-
-                PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
-
-                return registeredWaitHandle;
+                return PortableThreadPool.ThreadPoolInstance.RegisterWaitForSingleObject(waitObject, callback, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
             }
         }
     }

@@ -8,6 +8,16 @@ namespace System.Threading
 {
     public sealed partial class ThreadPoolBoundHandle
     {
+        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
+        {
+            ArgumentNullException.ThrowIfNull(handle);
+
+            if (handle.IsClosed || handle.IsInvalid)
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
+
+            return BindHandleWindowsCore(handle);
+        }
+
         private static ThreadPoolBoundHandle BindHandleWindowsCore(SafeHandle handle)
         {
             Debug.Assert(handle != null);

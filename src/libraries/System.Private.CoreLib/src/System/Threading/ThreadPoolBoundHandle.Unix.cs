@@ -8,7 +8,7 @@ namespace System.Threading
 {
     public sealed partial class ThreadPoolBoundHandle
     {
-        private static ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
+        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
         {
             Debug.Assert(handle != null);
             Debug.Assert(!handle.IsClosed);

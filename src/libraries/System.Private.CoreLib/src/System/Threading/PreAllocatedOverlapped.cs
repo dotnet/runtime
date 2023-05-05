@@ -67,6 +67,8 @@ namespace System.Threading
             }
             else
             {
+                // This construction is duplicated in PreAllocatedOverlapped.Unix.cs
+                // It has to either be duplicated or remove the 'readonly' part of _overlappedPortableCore
                 ArgumentNullException.ThrowIfNull(callback);
 
                 _overlappedPortableCore = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);

@@ -16,16 +16,6 @@ namespace System.Threading
     /// </summary>
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
-        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
-        {
-            ArgumentNullException.ThrowIfNull(handle);
-
-            if (handle.IsClosed || handle.IsInvalid)
-                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
-
-            return BindHandleWindowsCore(handle);
-        }
-
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
             AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: true);
 
