@@ -48,6 +48,9 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
+    - container: linux_x64_dev_innerloop
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
+
     # CentOS 8 Stream is the closest image to RHEL8, which has the oldest toolsets we support building against
     # for our source-build partners.
     - container: SourceBuild_linux_x64
