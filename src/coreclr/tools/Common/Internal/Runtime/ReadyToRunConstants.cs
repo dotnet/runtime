@@ -165,8 +165,6 @@ namespace Internal.ReadyToRunConstants
         Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
         Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
 
-        RvaFieldAddress            = 0x37, /* Used in Crossgen2 to address RVA fields in their original MSIL images */
-
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or

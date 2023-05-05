@@ -13812,7 +13812,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // PROFILING_SUPPORTED
 
-    case ENCODE_RVA_FIELD_ADDRESS:
+    case ENCODE_FIELD_ADDRESS:
         {
             FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
 
@@ -13822,20 +13822,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             _ASSERTE(pField->IsRVA());
 
             result = (size_t)pField->GetStaticAddressHandle(NULL);
-        }
-        break;
-
-    case ENCODE_STATIC_FIELD_ADDRESS:
-        {
-            FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
-
-            pField->GetEnclosingMethodTable()->CheckRestore();
-
-            // We can take address of RVA field only since ngened code is domain neutral
-            _ASSERTE(pField->IsRVA());
-
-            // Field address is not aligned thus we can not store it in the same location as token.
-            *(entry+1) = (size_t)pField->GetStaticAddressHandle(NULL);
         }
         break;
 

@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
-                    new FieldFixupSignature(ReadyToRunFixupKind.RvaFieldAddress, key, _codegenNodeFactory)
+                    new FieldFixupSignature(ReadyToRunFixupKind.FieldAddress, key, _codegenNodeFactory)
                 );
             });
 

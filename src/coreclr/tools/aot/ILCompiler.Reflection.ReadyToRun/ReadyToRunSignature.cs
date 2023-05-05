@@ -1470,11 +1470,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append(" (VERIFY_IL_BODY)");
                     break;
 
-                case ReadyToRunFixupKind.RvaFieldAddress:
-                    ParseField(builder);
-                    builder.Append(" (RVA_FIELD_ADDRESS)");
-                    break;
-
                 default:
                     throw new BadImageFormatException();
             }

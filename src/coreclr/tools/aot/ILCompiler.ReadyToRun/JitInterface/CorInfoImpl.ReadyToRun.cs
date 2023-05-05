@@ -1586,7 +1586,7 @@ namespace Internal.JitInterface
                     {
                         PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
-                        // Static fields outside of the version bubble need to be accessed using the ENCODE_RVA_FIELD_ADDRESS
+                        // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
                         pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
