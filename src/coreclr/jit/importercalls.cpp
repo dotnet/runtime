@@ -410,8 +410,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
-                thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("LDVIRTFTN this pointer"));
+                thisPtr =
+                    impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
@@ -1404,7 +1404,7 @@ DONE_CALL:
                         unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
 
-                        impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), CHECK_SPILL_NONE);
+                        impAssignTempGen(calliSlot, call, CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
@@ -1581,10 +1581,10 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         if (call->IsUnmanaged())
         {
             // Native ABIs do not allow retbufs to alias anything.
-            // This is allowed by the managed ABI and impAssignStructPtr will
+            // This is allowed by the managed ABI and impAssignStruct will
             // never introduce copies due to this.
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Retbuf for unmanaged call"));
-            impAssignTempGen(tmpNum, call, retClsHnd, CHECK_SPILL_ALL);
+            impAssignTempGen(tmpNum, call, CHECK_SPILL_ALL);
             return gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
         }
 
@@ -2783,10 +2783,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (fgAddrCouldBeNull(array))
                 {
                     GenTree* arrayClone;
-                    array = impCloneExpr(array, &arrayClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                    array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
 
-                    impAppendTree(gtNewNullCheck(array, compCurBB), (unsigned)CHECK_SPILL_ALL, impCurStmtDI);
+                    impAppendTree(gtNewNullCheck(array, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
                     array = arrayClone;
                 }
 
@@ -2823,7 +2823,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 noway_assert(genTypeSize(rawHandle->TypeGet()) == genTypeSize(TYP_I_IMPL));
 
                 unsigned rawHandleSlot = lvaGrabTemp(true DEBUGARG("rawHandle"));
-                impAssignTempGen(rawHandleSlot, rawHandle, clsHnd, CHECK_SPILL_NONE);
+                impAssignTempGen(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
 
                 GenTree*  lclVarAddr = gtNewLclVarAddrNode(rawHandleSlot);
                 var_types resultType = JITtype2varType(sig->retType);
@@ -2881,8 +2881,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #endif // defined(DEBUG)
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
-                index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                     nullptr DEBUGARG("Span.get_Item index"));
+                index = impCloneExpr(index, &indexClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.get_Item index"));
 
                 if (impIsAddressInLocal(ptrToSpan))
                 {
@@ -2890,7 +2889,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 else
                 {
-                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("Span.get_Item ptrToSpan"));
                 }
 
@@ -3694,7 +3693,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 GenTree* gtArrClone = nullptr;
                                 if (((gtArr->gtFlags & GTF_GLOB_EFFECT) != 0) || (ni == NI_System_Array_GetUpperBound))
                                 {
-                                    gtArr = impCloneExpr(gtArr, &gtArrClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                    gtArr = impCloneExpr(gtArr, &gtArrClone, CHECK_SPILL_ALL,
                                                          nullptr DEBUGARG("MD intrinsics array"));
                                 }
 
@@ -4609,8 +4608,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 // * 64-bit lzcnt: (value == 0) ? 64 : (63 ^ BSR(value))
 
                 GenTree* op1Dup;
-                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Cloning op1 for LeadingZeroCount"));
+                op1 = impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for LeadingZeroCount"));
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
                 op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
@@ -4943,8 +4941,8 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 // * 64-bit tzcnt: (value == 0) ? 64 : BSF(value)
 
                 GenTree* op1Dup;
-                op1 = impCloneExpr(op1, &op1Dup, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Cloning op1 for TrailingZeroCount"));
+                op1 =
+                    impCloneExpr(op1, &op1Dup, CHECK_SPILL_ALL, nullptr DEBUGARG("Cloning op1 for TrailingZeroCount"));
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
                 op1Dup      = gtNewScalarHWIntrinsicNode(baseType, op1Dup, hwintrinsic);
@@ -5099,7 +5097,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             JITDUMP("Calling impNormStructVal on:\n");
             DISPTREE(argNode);
 
-            argNode = impNormStructVal(argNode, classHnd, CHECK_SPILL_ALL);
+            argNode = impNormStructVal(argNode, CHECK_SPILL_ALL);
             // For SIMD types the normalization can normalize TYP_STRUCT to
             // e.g. TYP_SIMD16 which we keep (along with the class handle) in
             // the CallArgs.
@@ -5483,7 +5481,7 @@ private:
         assert(retExpr->OperGet() == GT_RET_EXPR);
         const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
         JITDUMP("Storing return expression [%06u] to a local var V%02u.\n", comp->dspTreeID(retExpr), tmp);
-        comp->impAssignTempGen(tmp, retExpr, (unsigned)Compiler::CHECK_SPILL_NONE);
+        comp->impAssignTempGen(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
         *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
 
         assert(comp->lvaTable[tmp].lvSingleDef == 0);

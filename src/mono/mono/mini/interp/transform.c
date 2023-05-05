@@ -6035,9 +6035,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 			} else if (!td->optimized) {
 				int tos = get_tos_offset (td);
-				td->sp -= csignature->param_count;
-				int param_offset = get_tos_offset (td);
-				int param_size = tos - param_offset;
+				int param_offset, param_size;
+				if (csignature->param_count) {
+					td->sp -= csignature->param_count;
+					param_offset = td->sp [0].offset;
+					param_size = tos - param_offset;
+				} else {
+					param_offset = tos;
+					param_size = 0;
+				}
 
 				td->cbb->contains_call_instruction = TRUE;
 				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);

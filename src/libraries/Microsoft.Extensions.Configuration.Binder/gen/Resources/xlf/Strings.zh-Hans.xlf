@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AbstractOrInterfaceNotSupported">
         <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="new">Abstract or interface types are not supported: '{0}'.</target>
+        <target state="translated">不支持此抽象类型或接口类型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
-        <target state="new">The collection type is not supported: '{0}'.</target>
+        <target state="translated">不支持此集合类型 '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
-        <target state="new">The dictionary key type is not supported: '{0}'.</target>
+        <target state="translated">不支持此字典密钥类型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypeNotSupported">
         <source>The collection element type is not supported: '{0}'.</source>
-        <target state="new">The collection element type is not supported: '{0}'.</target>
+        <target state="translated">不支持此集合元素类型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
@@ -34,17 +34,17 @@
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
-        <target state="new">Multidimensional arrays are not supported: '{0}'.</target>
+        <target state="translated">不支持多维数组: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="NeedPublicParameterlessConstructor">
         <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="new">Only objects with public parameterless constructors are supported: '{0}'.</target>
+        <target state="translated">仅支持具有公共无参数构造函数的对象: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
         <source>Nullable underlying type is not supported: '{0}'.</source>
-        <target state="new">Nullable underlying type is not supported: '{0}'.</target>
+        <target state="translated">不支持可为 Null 的基础类型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
-        <target state="new">The type is not supported: '{0}'.</target>
+        <target state="translated">不支持此类型: '{0}'。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
