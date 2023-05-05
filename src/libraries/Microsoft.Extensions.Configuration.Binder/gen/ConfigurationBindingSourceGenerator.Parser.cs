@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -20,10 +19,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly SourceProductionContext _context;
             private readonly KnownTypeSymbols _typeSymbols;
 
-            private readonly HashSet<TypeSpec> _typesForBindMethodGen = new();
-            private readonly HashSet<TypeSpec> _typesForGetMethodGen = new();
-            private readonly HashSet<TypeSpec> _typesForConfigureMethodGen = new();
-            private readonly HashSet<TypeSpec> _typesForBindCoreMethodGen = new();
+            private readonly Dictionary<MethodSpecifier, HashSet<TypeSpec>> _rootConfigTypes = new();
 
             private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
@@ -53,11 +49,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (BinderInvocationOperation operation in operations)
                 {
-                    switch (operation.BinderMethodKind)
+                    IInvocationOperation invocationOperation = operation.InvocationOperation!;
+                    ImmutableArray<IArgumentOperation> arguments = invocationOperation.Arguments;
+                    int argLength = arguments.Length;
+
+                    if (!invocationOperation.TargetMethod.IsExtensionMethod ||
+                        argLength < 1 ||
+                        !TypesAreEqual(_typeSymbols.IConfiguration, arguments[0].Parameter.Type))
                     {
-                        case BinderMethodKind.Configure:
+                        continue;
+                    }
+
+                    switch (operation.Kind)
+                    {
+                        case BinderMethodKind.Bind:
                             {
-                                ProcessConfigureCall(operation);
+                                ProcessBindCall(operation);
                             }
                             break;
                         case BinderMethodKind.Get:
@@ -65,9 +72,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 ProcessGetCall(operation);
                             }
                             break;
-                        case BinderMethodKind.Bind:
+                        case BinderMethodKind.Configure:
                             {
-                                ProcessBindCall(operation);
+                                ProcessConfigureCall(operation);
                             }
                             break;
                         default:
@@ -75,76 +82,138 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                Dictionary<MethodSpecifier, HashSet<TypeSpec>> rootConfigTypes = new()
-                {
-                    [MethodSpecifier.Bind] = _typesForBindMethodGen,
-                    [MethodSpecifier.Get] = _typesForGetMethodGen,
-                    [MethodSpecifier.Configure] = _typesForConfigureMethodGen,
-                    [MethodSpecifier.BindCore] = _typesForBindCoreMethodGen,
-                };
-
-                return new SourceGenerationSpec(rootConfigTypes, _methodsToGen, _primitivesForHelperGen, _namespaces);
+                return new SourceGenerationSpec(_rootConfigTypes, _methodsToGen, _primitivesForHelperGen, _namespaces);
             }
 
             private void ProcessBindCall(BinderInvocationOperation binderOperation)
             {
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
+                ImmutableArray<IArgumentOperation> arguments = operation.Arguments;
+                int argLength = arguments.Length;
 
-                // We're looking for IConfiguration.Bind(object).
-                if (operation is IInvocationOperation { Arguments: { Length: 2 } arguments } &&
-                    operation.TargetMethod.IsExtensionMethod &&
-                    TypesAreEqual(_typeSymbols.IConfiguration, arguments[0].Parameter.Type) &&
-                    arguments[1].Parameter.Type.SpecialType == SpecialType.System_Object)
+                MethodSpecifier bindMethod = MethodSpecifier.None;
+
+                if (argLength is 2)
                 {
-                    IConversionOperation argument = arguments[1].Value as IConversionOperation;
-                    ITypeSymbol? type = ResolveType(argument)?.WithNullableAnnotation(NullableAnnotation.None);
-
-                    if (type is not INamedTypeSymbol { } namedType ||
-                        namedType.SpecialType == SpecialType.System_Object ||
-                        namedType.SpecialType == SpecialType.System_Void ||
-                        // Binding to root-level struct is a no-op.
-                        namedType.IsValueType)
-                    {
-                        return;
-                    }
-
-                    AddRootConfigType(MethodSpecifier.Bind, namedType, binderOperation.Location);
-
-                    static ITypeSymbol? ResolveType(IOperation argument) =>
-                        argument switch
-                        {
-                            IConversionOperation c => ResolveType(c.Operand),
-                            IInstanceReferenceOperation i => i.Type,
-                            ILocalReferenceOperation l => l.Local.Type,
-                            IFieldReferenceOperation f => f.Field.Type,
-                            IMethodReferenceOperation m when m.Method.MethodKind == MethodKind.Constructor => m.Method.ContainingType,
-                            IMethodReferenceOperation m => m.Method.ReturnType,
-                            IAnonymousFunctionOperation f => f.Symbol.ReturnType,
-                            _ => null
-                        };
+                    bindMethod = MethodSpecifier.Bind_object;
                 }
+                else if (argLength is 3)
+                {
+                    ITypeSymbol secondArgType = arguments[1].Type;
+
+                    if (secondArgType.SpecialType is SpecialType.System_String)
+                    {
+                        bindMethod = MethodSpecifier.Bind_key_object;
+                    }
+                    else if (TypesAreEqual(secondArgType, _typeSymbols.ActionOfBinderOptions))
+                    {
+                        bindMethod = MethodSpecifier.Bind_object_BinderOptions;
+                    }
+                }
+
+                if (bindMethod is MethodSpecifier.None)
+                {
+                    return;
+                }
+
+                int objectIndex = bindMethod switch
+                {
+                    MethodSpecifier.Bind_object => 1,
+                    MethodSpecifier.Bind_object_BinderOptions => 1,
+                    MethodSpecifier.Bind_key_object => 2,
+                    _ => throw new InvalidOperationException()
+                };
+
+                IArgumentOperation objectArg = arguments[objectIndex];
+                if (objectArg.Parameter.Type.SpecialType != SpecialType.System_Object)
+                {
+                    return;
+                }
+
+                IConversionOperation conversionOperation = objectArg.Value as IConversionOperation;
+                ITypeSymbol? type = ResolveType(conversionOperation)?.WithNullableAnnotation(NullableAnnotation.None);
+                INamedTypeSymbol? namedType;
+
+                if ((namedType = type as INamedTypeSymbol) is null ||
+                    namedType.SpecialType == SpecialType.System_Object ||
+                    namedType.SpecialType == SpecialType.System_Void ||
+                    // Binding to root-level struct is a no-op.
+                    namedType.IsValueType)
+                {
+                    return;
+                }
+
+                AddRootConfigType(bindMethod, namedType, binderOperation.Location);
+
+                static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
+                    conversionOperation switch
+                    {
+                        IConversionOperation c => ResolveType(c.Operand),
+                        IInstanceReferenceOperation i => i.Type,
+                        ILocalReferenceOperation l => l.Local.Type,
+                        IFieldReferenceOperation f => f.Field.Type,
+                        IMethodReferenceOperation m when m.Method.MethodKind == MethodKind.Constructor => m.Method.ContainingType,
+                        IMethodReferenceOperation m => m.Method.ReturnType,
+                        IAnonymousFunctionOperation f => f.Symbol.ReturnType,
+                        _ => null
+                    };
             }
 
             private void ProcessGetCall(BinderInvocationOperation binderOperation)
             {
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
+                ImmutableArray<IArgumentOperation> arguments = operation.Arguments;
+                int argLength = arguments.Length;
 
-                // We're looking for IConfiguration.Get<T>().
-                if (operation is IInvocationOperation { Arguments.Length: 1 } invocationOperation &&
-                    invocationOperation.TargetMethod.IsExtensionMethod &&
-                    invocationOperation.TargetMethod.IsGenericMethod &&
-                    TypesAreEqual(_typeSymbols.IConfiguration, invocationOperation.TargetMethod.Parameters[0].Type))
+                MethodSpecifier binderMethod = MethodSpecifier.None;
+                INamedTypeSymbol? namedType;
+
+                if (operation.TargetMethod.IsGenericMethod)
                 {
-                    ITypeSymbol? type = invocationOperation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
-                    if (type is not INamedTypeSymbol { } namedType ||
-                        namedType.SpecialType == SpecialType.System_Object ||
-                        namedType.SpecialType == SpecialType.System_Void)
+                    if (argLength > 2)
                     {
                         return;
                     }
 
-                    AddRootConfigType(MethodSpecifier.Get, namedType, binderOperation.Location);
+                    namedType = operation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
+
+                    if (argLength is 1)
+                    {
+                        binderMethod = MethodSpecifier.Get_T;
+                    }
+                    else if (TypesAreEqual(arguments[1].Type, _typeSymbols.ActionOfBinderOptions))
+                    {
+                        binderMethod = MethodSpecifier.Get_T_BinderOptions;
+                    }
                 }
+                else if (argLength > 3)
+                {
+                    return;
+                }
+                else
+                {
+                    ITypeOfOperation? typeOfOperation = arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
+                    namedType = typeOfOperation?.ChildOperations.ElementAtOrDefault(1) as INamedTypeSymbol;
+
+                    if (argLength is 2)
+                    {
+                        binderMethod = MethodSpecifier.Get_TypeOf;
+                    }
+                    else if (TypesAreEqual(arguments[1].Type, _typeSymbols.ActionOfBinderOptions))
+                    {
+                        binderMethod = MethodSpecifier.Get_TypeOf_BinderOptions;
+                    }
+                }
+
+                if (binderMethod is MethodSpecifier.None ||
+                    namedType is null ||
+                    namedType.SpecialType == SpecialType.System_Object ||
+                    namedType.SpecialType == SpecialType.System_Void)
+                {
+                    return;
+                }
+
+                AddRootConfigType(binderMethod, namedType, binderOperation.Location);
             }
 
             private void ProcessConfigureCall(BinderInvocationOperation binderOperation)
@@ -177,20 +246,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 TypeSpec? spec = GetOrCreateTypeSpec(namedType, location);
-                HashSet<TypeSpec> types = method switch
-                {
-                    MethodSpecifier.Configure => _typesForConfigureMethodGen,
-                    MethodSpecifier.Get => _typesForGetMethodGen,
-                    MethodSpecifier.Bind => _typesForBindMethodGen,
-                    MethodSpecifier.BindCore => _typesForBindCoreMethodGen,
-                    _ => throw new InvalidOperationException($"Invalid method for config binding method generation: {method}")
-                };
-
                 if (spec != null)
                 {
-                    types.Add(spec);
+                    GetRootConfigTypeCache(method).Add(spec);
                     _methodsToGen |= method;
-                    if (method is not MethodSpecifier.Bind)
+                    if (method is not MethodSpecifier.Bind_object)
                     {
                         _methodsToGen |= MethodSpecifier.HasValueOrChildren;
                     }
@@ -210,7 +270,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     genericType.ConstructUnboundGenericType() is INamedTypeSymbol { } unboundGeneric &&
                     unboundGeneric.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
-                    return TryGetTypeSpec(genericType.TypeArguments[0], NotSupportedReason.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingType)
+                    return TryGetTypeSpec(genericType.TypeArguments[0], NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingType)
                         ? CacheSpec(new NullableSpec(type) { Location = location, UnderlyingType = underlyingType })
                         : null;
                 }
@@ -266,7 +326,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return CacheSpec(spec);
                 }
 
-                ReportUnsupportedType(type, NotSupportedReason.TypeNotSupported, location);
+                ReportUnsupportedType(type, TypeNotSupported, location);
                 return null;
 
                 T CacheSpec<T>(T? s) where T : TypeSpec
@@ -296,8 +356,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterTypeForBindCoreMethodGen(MethodSpecifier method, TypeSpec spec)
             {
-                _typesForBindCoreMethodGen.Add(spec);
+                GetRootConfigTypeCache(MethodSpecifier.BindCore).Add(spec);
                 _methodsToGen |= method;
+            }
+
+            private HashSet<TypeSpec> GetRootConfigTypeCache(MethodSpecifier method)
+            {
+                if (!_rootConfigTypes.TryGetValue(method, out HashSet<TypeSpec> types))
+                {
+                    _rootConfigTypes[method] = types = new HashSet<TypeSpec>();
+                }
+
+                return types;
             }
 
             private bool IsParsableFromString(ITypeSymbol type, out StringParsableTypeKind typeKind)
@@ -326,10 +396,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case SpecialType.System_Boolean:
                     case SpecialType.System_Char:
-                       {
+                        {
                             typeKind = StringParsableTypeKind.Parse;
                             return true;
-                       }
+                        }
                     case SpecialType.System_Single:
                     case SpecialType.System_Double:
                     case SpecialType.System_Decimal:
@@ -398,13 +468,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private bool TryGetTypeSpec(ITypeSymbol type, string unsupportedReason, out TypeSpec? spec)
+            private bool TryGetTypeSpec(ITypeSymbol type, DiagnosticDescriptor descriptor, out TypeSpec? spec)
             {
                 spec = GetOrCreateTypeSpec(type);
 
                 if (spec == null)
                 {
-                    ReportUnsupportedType(type, unsupportedReason);
+                    ReportUnsupportedType(type, descriptor);
                     return false;
                 }
 
@@ -413,7 +483,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private ArraySpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
             {
-                if (!TryGetTypeSpec(arrayType.ElementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(arrayType.ElementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -441,7 +511,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (arrayType.Rank > 1)
                 {
-                    ReportUnsupportedType(arrayType, NotSupportedReason.MultiDimArraysNotSupported, location);
+                    ReportUnsupportedType(arrayType, MultiDimArraysNotSupported, location);
                     elementType = null;
                     return false;
                 }
@@ -466,15 +536,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, Location? location, ITypeSymbol keyType, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(keyType, NotSupportedReason.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
-                    !TryGetTypeSpec(elementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(keyType, DictionaryKeyNotSupported, out TypeSpec keySpec) ||
+                    !TryGetTypeSpec(elementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
 
                 if (keySpec.SpecKind != TypeSpecKind.ParsableFromString)
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.DictionaryKeyNotSupported, location);
+                    ReportUnsupportedType(type, DictionaryKeyNotSupported, location);
                     return null;
                 }
 
@@ -487,7 +557,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType, keyType))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, CollectionNotSupported, location);
                     return null;
                 }
 
@@ -504,12 +574,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private TypeSpec? ConstructAndCacheGenericTypeForBind(INamedTypeSymbol type, params ITypeSymbol[] parameters)
             {
                 Debug.Assert(type.IsGenericType);
-                return AddRootConfigType(MethodSpecifier.Bind, type.Construct(parameters), location: null);
+                return AddRootConfigType(MethodSpecifier.Bind_object, type.Construct(parameters), location: null);
             }
 
             private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(elementType, NotSupportedReason.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(elementType, ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -526,7 +596,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, CollectionNotSupported, location);
                     return null;
                 }
 
@@ -687,12 +757,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (type.IsAbstract || type.TypeKind == TypeKind.Interface)
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.AbstractOrInterfaceNotSupported, location);
+                    ReportUnsupportedType(type, AbstractOrInterfaceNotSupported, location);
                     return false;
                 }
                 else if (!HasPublicParameterlessCtor(type))
                 {
-                    ReportUnsupportedType(type, NotSupportedReason.NeedPublicParameterlessConstructor, location);
+                    ReportUnsupportedType(type, NeedPublicParameterlessConstructor, location);
                     return false;
                 }
 
@@ -752,12 +822,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
 
-            private void ReportUnsupportedType(ITypeSymbol type, string reason, Location? location = null)
+            private void ReportUnsupportedType(ITypeSymbol type, DiagnosticDescriptor descriptor, Location? location = null)
             {
                 if (!_unsupportedTypes.Contains(type))
                 {
                     _context.ReportDiagnostic(
-                        Diagnostic.Create(TypeNotSupported, location, new string[] { type.ToDisplayString(), reason }));
+                        Diagnostic.Create(descriptor, location, new string[] { type.ToDisplayString() }));
                     _unsupportedTypes.Add(type);
                 }
             }

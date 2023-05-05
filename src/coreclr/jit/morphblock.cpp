@@ -160,7 +160,7 @@ GenTree* MorphInitBlockHelper::Morph()
             commaPool      = commaPool->gtNext;
 
             assert(comma->OperIs(GT_COMMA));
-            comma->gtType        = m_result->TypeGet();
+            comma->gtType        = TYP_VOID;
             comma->AsOp()->gtOp1 = sideEffects;
             comma->AsOp()->gtOp2 = m_result;
             comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
@@ -169,7 +169,7 @@ GenTree* MorphInitBlockHelper::Morph()
         }
         else
         {
-            m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+            m_result = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, sideEffects, m_result);
         }
         INDEBUG(m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
@@ -768,11 +768,6 @@ void MorphCopyBlockHelper::PrepareSrc()
     {
         assert(ClassLayout::AreCompatible(m_blockLayout, m_src->GetLayout(m_comp)));
     }
-    // TODO-1stClassStructs: produce simple "IND<simd>" nodes in importer.
-    else if (m_src->OperIsBlk())
-    {
-        m_src->SetOper(GT_IND);
-    }
 }
 
 // TrySpecialCases: check special cases that require special transformations.
@@ -922,14 +917,11 @@ void MorphCopyBlockHelper::MorphStructCases()
         // A struct with 8 bool fields will require 8 moves instead of one if we do this transformation.
         // A simple heuristic when field by field copy is preferred:
         // - if fields can be enregistered;
-        // - if the struct has GCPtrs (block copy would be done via helper that is expensive);
         // - if the struct has only one field.
         bool dstFldIsProfitable =
-            ((m_dstVarDsc != nullptr) &&
-             (!m_dstVarDsc->lvDoNotEnregister || m_dstVarDsc->HasGCPtr() || (m_dstVarDsc->lvFieldCnt == 1)));
+            ((m_dstVarDsc != nullptr) && (!m_dstVarDsc->lvDoNotEnregister || (m_dstVarDsc->lvFieldCnt == 1)));
         bool srcFldIsProfitable =
-            ((m_srcVarDsc != nullptr) &&
-             (!m_srcVarDsc->lvDoNotEnregister || m_srcVarDsc->HasGCPtr() || (m_srcVarDsc->lvFieldCnt == 1)));
+            ((m_srcVarDsc != nullptr) && (!m_srcVarDsc->lvDoNotEnregister || (m_srcVarDsc->lvFieldCnt == 1)));
         // Are both dest and src promoted structs?
         if (m_dstDoFldAsg && m_srcDoFldAsg && (dstFldIsProfitable || srcFldIsProfitable))
         {
@@ -1624,7 +1616,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
+            GenTree*     dst    = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();

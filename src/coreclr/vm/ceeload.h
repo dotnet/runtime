@@ -62,11 +62,14 @@ class Module;
 class SString;
 class Pending;
 class MethodTable;
-class AppDomain;
 class DynamicMethodTable;
 class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
+
+#ifdef EnC_SUPPORTED
+class EnCEEClassData;
+#endif // EnC_SUPPORTED
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -936,8 +939,11 @@ protected:
 
     BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
     BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
+
+    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
     BOOL IsEditAndContinueEnabled()
     {
@@ -947,21 +953,22 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-    virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
+#ifdef EnC_SUPPORTED
+    // Holds a table of EnCEEClassData object for classes in this module that have been modified
+    CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
+#endif // EnC_SUPPORTED
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
-
-    static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *file);
-
+private:
     void EnableEditAndContinue()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         _ASSERTE(IsEditAndContinueCapable());
-        LOG((LF_ENC, LL_INFO100, "EnableEditAndContinue: this:0x%x, %s\n", this, GetDebugName()));
+        LOG((LF_ENC, LL_INFO100, "M:EnableEditAndContinue: this:%p, %s\n", this, GetDebugName()));
         m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
     }
 
+public:
     BOOL IsTenured()
     {
         LIMITED_METHOD_CONTRACT;

@@ -1919,6 +1919,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
+    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -2326,10 +2327,12 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
 
 #ifdef TARGET_AMD64
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
@@ -2340,6 +2343,8 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
         instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
 #endif // TARGET_AMD64
     }
 #elif defined(TARGET_ARM64)
@@ -5064,6 +5069,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
 #ifdef DEBUG
     // Stash the current estimate of the function's size if necessary.
     if (verbose)
@@ -6092,6 +6099,16 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVX512DQ_VL() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
+        }
+
+        if (JitConfig.EnableAVX512VBMI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
+        }
+
+        if (JitConfig.EnableAVX512VBMI_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI_VL);
         }
 #endif
 
@@ -9752,6 +9769,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_NONNULL]");
                 }
+                if (tree->gtFlags & GTF_IND_INITCLASS)
+                {
+                    chars += printf("[IND_INITCLASS]");
+                }
                 break;
 
             case GT_MUL:
@@ -9937,13 +9958,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
             }
             break;
-
-            case GT_STORE_OBJ:
-                if (tree->AsBlk()->GetLayout()->HasGCPtr())
-                {
-                    chars += printf("[BLK_HASGCPTR]");
-                }
-                FALLTHROUGH;
 
             case GT_BLK:
             case GT_STORE_BLK:
@@ -10319,8 +10333,7 @@ void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
     assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
-    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
-    tree->gtFlags |= GTF_EXCEPT;
+    tree->SetIndirExceptionFlags(this);
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }

@@ -102,13 +102,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
                 }
 
-                Emit_NotSupportedException_UnableToBindType(NotSupportedReason.TypeNotDetectedAsInput);
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 _writer.WriteBlockEnd();
             }
 
             private void EmitGetMethod()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Get))
+                if (!IncludeMethodsForGen(MethodSpecifier.Get_T))
                 {
                     return;
                 }
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck();
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get_T])
                 {
                     string typeDisplayString = type.FullyQualifiedDisplayString;
 
@@ -135,23 +135,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
                 }
 
-                Emit_NotSupportedException_UnableToBindType(NotSupportedReason.TypeNotDetectedAsInput);
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
                 _writer.WriteBlockEnd();
             }
 
             private void EmitBindMethods()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Bind))
+                if (!IncludeMethodsForGen(MethodSpecifier.Bind_object))
                 {
                     return;
                 }
 
-                if (IncludeMethodsForGen(MethodSpecifier.Configure | MethodSpecifier.Get))
+                if (IncludeMethodsForGen(MethodSpecifier.Configure | MethodSpecifier.Get_T))
                 {
                     _writer.WriteBlankLine();
                 }
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind_object])
                 {
                     EmitBindMethod(type);
                     _writer.WriteBlankLine();
@@ -833,8 +833,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void Emit_NotSupportedException_UnableToBindType(string reason, string typeDisplayString = "{typeof(T)}") =>
-                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotSupported, typeDisplayString, reason)}"");");
+            private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>
+                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{typeof(T)}")}"");");
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {

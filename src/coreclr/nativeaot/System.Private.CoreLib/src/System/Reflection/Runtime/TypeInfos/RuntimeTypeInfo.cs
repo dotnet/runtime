@@ -238,6 +238,30 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type GetFunctionPointerReturnType()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override IEnumerable<Type> ImplementedInterfaces

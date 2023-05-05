@@ -37,6 +37,7 @@ namespace System.Threading
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;
+        internal bool external_eventloop; // browser-wasm: thread will return to the JS eventloop
         /* These are used from managed code */
         internal byte apartment_state;
         internal int managed_id;
@@ -352,5 +353,17 @@ namespace System.Threading
         private static extern void SetPriority(Thread thread, int priority);
 
         internal int GetSmallId() => small_id;
+
+        internal bool HasExternalEventLoop
+        {
+            get
+            {
+                return external_eventloop;
+            }
+            set
+            {
+                external_eventloop = value;
+            }
+        }
     }
 }

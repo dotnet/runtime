@@ -2298,26 +2298,17 @@ major_report_pinned_memory_usage (void)
 	g_assert_not_reached ();
 }
 
+static void
+increment_used_size (GCObject *obj, size_t obj_size, gpointer data)
+{
+	*((gint64*)data) += obj_size;
+}
+
 static gint64
 major_get_used_size (void)
 {
 	gint64 size = 0;
-	MSBlockInfo *block;
-
-	/*
-	 * We're holding the GC lock, but the sweep thread might be running.  Make sure it's
-	 * finished, then we can iterate over the block array.
-	 */
-	major_finish_sweep_checking ();
-
-	FOREACH_BLOCK_NO_LOCK (block) {
-		int count = MS_BLOCK_FREE / block->obj_size;
-		void **iter;
-		size += count * block->obj_size;
-		for (iter = block->free_list; iter; iter = (void**)*iter)
-			size -= block->obj_size;
-	} END_FOREACH_BLOCK_NO_LOCK;
-
+	major_iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, increment_used_size, &size);
 	return size;
 }
 

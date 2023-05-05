@@ -208,7 +208,7 @@ namespace System.Tests
             {
                 string s = "";
                 UInt128 result = 0U;
-                for (int i = 1; i <= 20; i++)
+                for (int i = 1; i <= 39; i++)
                 {
                     result = (result * 10U) + (UInt128)(i % 10);
                     s += (i % 10).ToString();
@@ -220,11 +220,23 @@ namespace System.Tests
             {
                 string s = "";
                 UInt128 result = 0U;
-                for (int i = 1; i <= 16; i++)
+                for (int i = 1; i <= 32; i++)
                 {
                     result = (result * 16U) + (UInt128)(i % 16);
                     s += (i % 16).ToString("X");
                     yield return new object[] { s, NumberStyles.HexNumber, null, result };
+                }
+            }
+
+            // All lengths binary
+            {
+                string s = "";
+                UInt128 result = 0U;
+                for (int i = 1; i <= 128; i++)
+                {
+                    result = (result * 2U) + (UInt128)(i % 2);
+                    s += (i % 2).ToString("b");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, result };
                 }
             }
 
@@ -234,6 +246,8 @@ namespace System.Tests
             yield return new object[] { "    +340282366920938463463374607431768211455  ", NumberStyles.Integer, null, UInt128.MaxValue };
             yield return new object[] { "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, UInt128.MaxValue };
             yield return new object[] { "   FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF   ", NumberStyles.HexNumber, null, UInt128.MaxValue };
+            yield return new object[] { "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111", NumberStyles.BinaryNumber, null, UInt128.MaxValue };
+            yield return new object[] { "   11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111   ", NumberStyles.BinaryNumber, null, UInt128.MaxValue };
         }
 
         [Theory]
@@ -279,7 +293,9 @@ namespace System.Tests
             foreach (object[] objs in Int128Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (!BigInteger.TryParse((string)objs[0], out BigInteger bi) || bi <= UInt128.MaxValue))
+                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
+                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                     bi <= UInt128.MaxValue))
                 {
                     continue;
                 }
@@ -297,6 +313,7 @@ namespace System.Tests
             // > max value
             yield return new object[] { "340282366920938463463374607431768211456", NumberStyles.Integer, null, typeof(OverflowException) };
             yield return new object[] { "100000000000000000000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -337,16 +354,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             UInt128 result = 0U;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UInt128.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => UInt128.TryParse("1", style, null, out result));
             Assert.Equal(default(UInt128), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UInt128.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => UInt128.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => UInt128.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => UInt128.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -361,6 +380,8 @@ namespace System.Tests
             yield return new object[] { "  123  ", 1, 2, NumberStyles.Integer, null, (UInt128)1 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (UInt128)0x1 };
             yield return new object[] { "ABC", 1, 1, NumberStyles.HexNumber, null, (UInt128)0xb };
+            yield return new object[] { "12", 0, 1, NumberStyles.BinaryNumber, null, (UInt128)0b1 };
+            yield return new object[] { "A0C", 1, 1, NumberStyles.BinaryNumber, null, (UInt128)0b0 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (UInt128)10 };
         }
 

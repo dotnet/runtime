@@ -1230,7 +1230,7 @@ struct BasicBlock : private LIR::Range
 #endif // DEBUG
 
     unsigned bbStackDepthOnEntry() const;
-    void bbSetStack(void* stackBuffer);
+    void bbSetStack(StackEntry* stack);
     StackEntry* bbStackOnEntry() const;
 
     // "bbNum" is one-based (for unknown reasons); it is sometimes useful to have the corresponding

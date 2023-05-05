@@ -286,6 +286,7 @@ METHOD(CarrylessMultiply)
 // ArmBase
 METHOD(LeadingSignCount)
 METHOD(ReverseElementBits)
+METHOD(Yield)
 // Crc32
 METHOD(ComputeCrc32)
 METHOD(ComputeCrc32C)
@@ -634,10 +635,14 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
 // Wasm
+METHOD(AllTrue)
+METHOD(AnyTrue)
+METHOD(AverageRounded)
 METHOD(Bitmask)
 METHOD(ConvertNarrowingSignedSaturate)
 METHOD(ConvertNarrowingUnsignedSaturate)
 METHOD(ExtractLane)
+METHOD(MultiplyRoundedSaturateQ15)
 METHOD(ReplaceLane)
 METHOD(ShiftLeft)
 METHOD(Splat)

@@ -73,7 +73,7 @@ jobs:
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-bionic
+          value: -os linux-bionic
 
       - name: crossArg
         value: ''

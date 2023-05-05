@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.Tests
@@ -12,9 +13,6 @@ namespace System.Text.Tests
         public void NullArgument_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("format", () => CompositeFormat.Parse(null));
-
-            Assert.False(CompositeFormat.TryParse(null, out CompositeFormat? compositeFormat));
-            Assert.Null(compositeFormat);
 
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, (CompositeFormat)null, 0));
             AssertExtensions.Throws<ArgumentNullException>("format", () => string.Format(null, (CompositeFormat)null, 0, 0));
@@ -56,16 +54,36 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("", 0)]
+        [InlineData("testing 123", 0)]
+        [InlineData("testing {{123}}", 0)]
+        [InlineData("{0}", 1)]
+        [InlineData("{0} {1}", 2)]
+        [InlineData("{2}", 3)]
+        [InlineData("{2} {0}", 3)]
+        [InlineData("{1} {34} {3}", 35)]
+        public static void MinimumArgumentCount_MatchesExpectedValue(string format, int expected)
+        {
+            CompositeFormat cf = CompositeFormat.Parse(format);
+
+            Assert.Equal(expected, cf.MinimumArgumentCount);
+
+            string s = string.Format(null, cf, Enumerable.Repeat((object)"arg", expected).ToArray());
+            Assert.NotNull(s);
+
+            if (expected != 0)
+            {
+                Assert.Throws<FormatException>(() => string.Format(null, cf, Enumerable.Repeat((object)"arg", expected - 1).ToArray()));
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(System.Tests.StringTests.Format_Valid_TestData), MemberType = typeof(System.Tests.StringTests))]
         public static void StringFormat_Valid(IFormatProvider provider, string format, object[] values, string expected)
         {
             CompositeFormat cf = CompositeFormat.Parse(format);
             Assert.NotNull(cf);
             Assert.Same(format, cf.Format);
-
-            Assert.True(CompositeFormat.TryParse(format, out CompositeFormat? cf2));
-            Assert.NotNull(cf2);
-            Assert.Same(format, cf2.Format);
 
             Assert.Equal(expected, string.Format(provider, cf, values));
 
@@ -94,10 +112,6 @@ namespace System.Text.Tests
             CompositeFormat cf = CompositeFormat.Parse(format);
             Assert.NotNull(cf);
             Assert.Same(format, cf.Format);
-
-            Assert.True(CompositeFormat.TryParse(format, out CompositeFormat? cf2));
-            Assert.NotNull(cf2);
-            Assert.Same(format, cf2.Format);
 
             var sb = new StringBuilder();
 
@@ -134,10 +148,6 @@ namespace System.Text.Tests
             CompositeFormat cf = CompositeFormat.Parse(format);
             Assert.NotNull(cf);
             Assert.Same(format, cf.Format);
-
-            Assert.True(CompositeFormat.TryParse(format, out CompositeFormat? cf2));
-            Assert.NotNull(cf2);
-            Assert.Same(format, cf2.Format);
 
             char[] dest = new char[expected.Length];
             int charsWritten;
@@ -189,9 +199,6 @@ namespace System.Text.Tests
             _ = args;
 
             Assert.Throws<FormatException>(() => CompositeFormat.Parse(format));
-
-            Assert.False(CompositeFormat.TryParse(format, out CompositeFormat? compositeFormat));
-            Assert.Null(compositeFormat);
         }
 
         [Theory]

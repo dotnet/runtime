@@ -67,6 +67,9 @@ public class Program
 		IConfigurationRoot config = configurationBuilder.Build();
 
 		MyClass options = config.Get<MyClass>();
+        options = config.Get(typeof(MyClass2));
+        options = config.Get<MyClass>(options => { });
+        options = config.Get(typeof(MyClass2), options => { });
 	}
 	
 	public class MyClass
@@ -76,6 +79,21 @@ public class Program
 		public List<int> MyList { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
 	}
+
+    public class MyClass2
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass3
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass4
+    {
+        public int MyInt { get; set; }
+    }
 }";
 
             await VerifyAgainstBaselineUsingFile("TestGetCallGen.generated.txt", testSourceCode);
