@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#define LAUNCH_DEBUGGER
+#define LAUNCH_DEBUGGER
 using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -21,6 +21,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+#if LAUNCH_DEBUGGER
+            if (!System.Diagnostics.Debugger.IsAttached)
+            {
+                System.Diagnostics.Debugger.Launch();
+            }
+#endif
             IncrementalValueProvider<CompilationData?> compilationData =
                 context.CompilationProvider
                     .Select((compilation, _) => compilation.Options is CSharpCompilationOptions options
@@ -43,12 +49,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// </summary>
         private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
         {
-#if LAUNCH_DEBUGGER
-            if (!System.Diagnostics.Debugger.IsAttached)
-            {
-                System.Diagnostics.Debugger.Launch();
-            }
-#endif
             if (inputCalls.IsDefaultOrEmpty)
             {
                 return;
@@ -56,16 +56,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (compilationData?.LanguageVersionIsSupported != true)
             {
-                context.ReportDiagnostic(Diagnostic.Create(LanguageVersionNotSupported, location: null));
+                context.ReportDiagnostic(Diagnostic.Create(Helpers.LanguageVersionNotSupported, location: null));
                 return;
             }
 
-            Parser parser = new(context, compilationData.TypeSymbols!);
-            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
-            if (spec is not null)
+            try
             {
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
+                Parser parser = new(context, compilationData.TypeSymbols!);
+                SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
+                if (spec is not null)
+                {
+                    Emitter emitter = new(context, spec);
+                    emitter.Emit();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ex.ToString();
             }
         }
 
@@ -90,6 +97,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Configure = 1,
             Get = 2,
             Bind = 3,
+            GetValue = 4,
         }
 
         private sealed record BinderInvocationOperation()
@@ -101,9 +109,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public static BinderInvocationOperation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
             {
                 BinderMethodKind kind;
-                if (context.Node is not MemberAccessExpressionSyntax syntax ||
-                    (kind = IsBindingMethodName(syntax.Name.Identifier.ValueText)) is BinderMethodKind.None ||
-                    context.SemanticModel.GetOperation(syntax, cancellationToken) is not IInvocationOperation operation)
+                if (context.Node is not InvocationExpressionSyntax invocationSyntax ||
+                    invocationSyntax.Expression is not MemberAccessExpressionSyntax memberAccessSyntax ||
+                    (kind = GetBindingMethodKind(memberAccessSyntax.Name.Identifier.ValueText)) is BinderMethodKind.None ||
+                    context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation operation)
                 {
                     return null;
                 }
@@ -112,15 +121,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     InvocationOperation = operation,
                     Kind = kind,
-                    Location = syntax.GetLocation()
+                    Location = invocationSyntax.GetLocation()
                 };
             }
 
-            private static BinderMethodKind IsBindingMethodName(string name) =>
+            private static BinderMethodKind GetBindingMethodKind(string name) =>
                 name switch
                 {
                     "Bind" => BinderMethodKind.Bind,
                     "Get" => BinderMethodKind.Get,
+                    "GetValue" => BinderMethodKind.GetValue,
                     "Configure" => BinderMethodKind.Configure,
                     _ => default,
 

@@ -15,17 +15,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>
         /// ConfiguationBinder.Bind(IConfiguration, object).
         /// </summary>
-        Bind_object = 0x1,
+        Bind_instance = 0x1,
 
         /// <summary>
         /// ConfiguationBinder.Bind(IConfiguration, object, Action<BinderOptions>).
         /// </summary>
-        Bind_object_BinderOptions = 0x2,
+        Bind_instance_BinderOptions = 0x2,
 
         /// <summary>
         /// ConfiguationBinder.Bind(IConfiguration, string, object).
         /// </summary>
-        Bind_key_object = 0x4,
+        Bind_key_instance = 0x4,
 
         /// <summary>
         /// ConfiguationBinder.Get<T>(IConfiguration).
@@ -47,13 +47,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// </summary>
         Get_TypeOf_BinderOptions = 0x40,
 
+        /// <summary>
+        /// ConfiguationBinder.GetValue<T>(IConfiguration).
+        /// </summary>
+        GetValue_TypeOf_key = 0x80,
+
+        /// <summary>
+        /// ConfiguationBinder.GetValue<T>(IConfiguration, Action<BinderOptions>).
+        /// </summary>
+        GetValue_TypeOf_key_defaultValue = 0x100,
+
+        /// <summary>
+        /// ConfiguationBinder.GetValue<T>(IConfiguration, Type).
+        /// </summary>
+        GetValue_T_key = 0x200,
+
+        /// <summary>
+        /// ConfiguationBinder.GetValue<T>(IConfiguration, Type, Action<BinderOptions>).
+        /// </summary>
+        GetValue_T_key_defaultValue = 0x400,
+
         // Higher level binding methods from Microsoft.Extensions.DependencyInjection
 
-        Configure = 0x80,
+        Configure = 0x800,
 
         // Helper methods
-        BindCore = 0x100,
-        HasValueOrChildren = 0x200,
-        HasChildren = 0x400,
+        BindCore = 0x1000,
+        HasValueOrChildren = 0x2000,
+        HasChildren = 0x4000,
     }
 }

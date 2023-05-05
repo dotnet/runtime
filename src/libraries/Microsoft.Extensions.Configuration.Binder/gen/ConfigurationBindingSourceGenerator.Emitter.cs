@@ -18,15 +18,81 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string sectionKey = "section.Key";
                 public const string sectionPath = "section.Path";
                 public const string sectionValue = "section.Value";
+
+                public const string GetBinderOptions = $"{FullyQualifiedDisplayName.Helpers}.{Identifier.GetBinderOptions}";
             }
 
             private static class FullyQualifiedDisplayName
             {
+                public const string ActionOfBinderOptions = $"global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>";
                 public const string Helpers = $"global::{GeneratorProjectName}.{Identifier.Helpers}";
                 public const string IConfiguration = "global::Microsoft.Extensions.Configuration.IConfiguration";
                 public const string IConfigurationSection = IConfiguration + "Section";
                 public const string InvalidOperationException = "global::System.InvalidOperationException";
                 public const string IServiceCollection = "global::Microsoft.Extensions.DependencyInjection.IServiceCollection";
+                public const string NotSupportedException = "global::System.NotSupportedException";
+                public const string Type = $"global::System.Type";
+            }
+
+            public static class Identifier
+            {
+                public const string binderOptions = nameof(binderOptions);
+                public const string configureActions = nameof(configureActions);
+                public const string configuration = nameof(configuration);
+                public const string element = nameof(element);
+                public const string enumValue = nameof(enumValue);
+                public const string exception = nameof(exception);
+                public const string getPath = nameof(getPath);
+                public const string key = nameof(key);
+                public const string obj = nameof(obj);
+                public const string originalCount = nameof(originalCount);
+                public const string path = nameof(path);
+                public const string section = nameof(section);
+                public const string services = nameof(services);
+                public const string stringValue = nameof(stringValue);
+                public const string temp = nameof(temp);
+                public const string type = nameof(type);
+
+                public const string Add = nameof(Add);
+                public const string Any = nameof(Any);
+                public const string Array = nameof(Array);
+                public const string Bind = nameof(Bind);
+                public const string BindCore = nameof(BindCore);
+                public const string BinderOptions = nameof(BinderOptions);
+                public const string Configure = nameof(Configure);
+                public const string CopyTo = nameof(CopyTo);
+                public const string ContainsKey = nameof(ContainsKey);
+                public const string Count = nameof(Count);
+                public const string CultureInfo = nameof(CultureInfo);
+                public const string CultureNotFoundException = nameof(CultureNotFoundException);
+                public const string Enum = nameof(Enum);
+                public const string ErrorOnUnknownConfiguration = nameof(ErrorOnUnknownConfiguration);
+                public const string GeneratedConfigurationBinder = nameof(GeneratedConfigurationBinder);
+                public const string Get = nameof(Get);
+                public const string GetBinderOptions = nameof(GetBinderOptions);
+                public const string GetCore = nameof(GetCore);
+                public const string GetChildren = nameof(GetChildren);
+                public const string GetSection = nameof(GetSection);
+                public const string GetValue = nameof(GetValue);
+                public const string GetValueCore = nameof(GetValueCore);
+                public const string HasChildren = nameof(HasChildren);
+                public const string HasValueOrChildren = nameof(HasValueOrChildren);
+                public const string HasValue = nameof(HasValue);
+                public const string Helpers = nameof(Helpers);
+                public const string IConfiguration = nameof(IConfiguration);
+                public const string IConfigurationSection = nameof(IConfigurationSection);
+                public const string Int32 = "int";
+                public const string InvalidOperationException = nameof(InvalidOperationException);
+                public const string InvariantCulture = nameof(InvariantCulture);
+                public const string Length = nameof(Length);
+                public const string Parse = nameof(Parse);
+                public const string Path = nameof(Path);
+                public const string Resize = nameof(Resize);
+                public const string TryCreate = nameof(TryCreate);
+                public const string TryGetValue = nameof(TryGetValue);
+                public const string TryParse = nameof(TryParse);
+                public const string Uri = nameof(Uri);
+                public const string Value = nameof(Value);
             }
 
             private enum InitializationKind
@@ -43,6 +109,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             // Postfix for stringValueX variables used to save config value indexer
             // results e.g. if (configuration["Key"] is string stringValue0) { ... }
             private int _parseValueCount;
+
+            private bool _wrotePreceding;
 
             private readonly SourceWriter _writer = new();
 
@@ -65,8 +133,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // Generated binder for user consumption.
                 _writer.WriteBlockStart($"internal static class {Identifier.GeneratedConfigurationBinder}");
                 EmitConfigureMethod();
-                EmitGetMethod();
+
+                // ConfigurationBinder ext. methods.
+                EmitGetMethods();
+                EmitGetValueMethods();
                 EmitBindMethods();
+
                 _writer.WriteBlockEnd();
 
                 _writer.WriteBlankLine();
@@ -78,7 +150,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitConfigureMethod()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Configure))
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.Configure))
                 {
                     return;
                 }
@@ -104,74 +176,120 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 Emit_NotSupportedException_TypeNotDetectedAsInput();
                 _writer.WriteBlockEnd();
+                _wrotePreceding = true;
             }
 
-            private void EmitGetMethod()
+            private void EmitGetMethods()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Get_T))
+                const string expressionForGetCore = $"{FullyQualifiedDisplayName.Helpers}.{Identifier.GetCore}";
+
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_T))
                 {
-                    return;
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}) => " +
+                        $"(T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}: null);");
                 }
 
-                if (IncludeMethodsForGen(MethodSpecifier.Configure))
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_T_BinderOptions))
                 {
-                    _writer.WriteBlankLine();
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
+                        $"(T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions});");
                 }
 
-                _writer.WriteBlockStart($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration})");
-
-                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, useFullyQualifiedNames: true);
-
-                EmitIConfigurationHasValueOrChildrenCheck();
-
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get_T])
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_TypeOf))
                 {
-                    string typeDisplayString = type.FullyQualifiedDisplayString;
-
-                    _writer.WriteBlockStart($"if (typeof(T) == typeof({typeDisplayString}))");
-                    EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
-                    _writer.WriteLine($"return (T)(object){Identifier.obj};");
-                    _writer.WriteBlockEnd();
-                    _writer.WriteBlankLine();
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}) => " +
+                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureActions}: null);");
                 }
 
-                Emit_NotSupportedException_TypeNotDetectedAsInput();
-                _writer.WriteBlockEnd();
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_TypeOf_BinderOptions))
+                {
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) =>" +
+                        $"{expressionForGetCore}({Identifier.configuration}, type, {Identifier.configureActions});");
+                }
+            }
+
+            private void EmitGetValueMethods()
+            {
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_T_key))
+                {
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, string {Identifier.key}) => " +
+                        $"throw new {FullyQualifiedDisplayName.NotSupportedException}();");
+                }
+
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_T_key_defaultValue))
+                {
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
+                        $"throw new NotSupportedException();");
+                }
+
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_TypeOf_key))
+                {
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}) => " +
+                        $"throw new NotSupportedException();");
+                }
+
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_TypeOf_key_defaultValue))
+                {
+                    EmitBlankLineIfRequired();
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) =>" +
+                        $"throw new NotSupportedException();");
+                }
             }
 
             private void EmitBindMethods()
             {
-                if (!IncludeMethodsForGen(MethodSpecifier.Bind_object))
+                if (!_generationSpec.ShouldEmitMethods(Helpers.BindMethods))
                 {
                     return;
                 }
 
-                if (IncludeMethodsForGen(MethodSpecifier.Configure | MethodSpecifier.Get_T))
+                Dictionary<MethodSpecifier, HashSet<TypeSpec>> rootConfigTypes = _generationSpec.RootConfigTypes;
+
+                if (rootConfigTypes.TryGetValue(MethodSpecifier.Bind_instance, out HashSet<TypeSpec>? typeSpecs))
                 {
-                    _writer.WriteBlankLine();
+                    foreach (TypeSpec type in typeSpecs)
+                    {
+                        EmitBlankLineIfRequired();
+                        _writer.WriteLine(
+                            $"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {type.FullyQualifiedDisplayString} {Identifier.obj}) => " +
+                                $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}, ref {Identifier.obj}, {Identifier.binderOptions}: null);");
+                    }
                 }
 
-                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind_object])
+                if (rootConfigTypes.TryGetValue(MethodSpecifier.Bind_instance_BinderOptions, out typeSpecs))
                 {
-                    EmitBindMethod(type);
-                    _writer.WriteBlankLine();
+                    foreach (TypeSpec type in typeSpecs)
+                    {
+                        EmitBlankLineIfRequired();
+                        _writer.WriteLine(
+                            $"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {type.FullyQualifiedDisplayString} {Identifier.obj}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
+                                $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}, ref {Identifier.obj}, {Expression.GetBinderOptions}({Identifier.configureActions}));");
+                    }
                 }
 
-                _writer.RemoveBlankLine();
-            }
-
-            private void EmitBindMethod(TypeSpec type)
-            {
-                _writer.WriteLine(
-                    @$"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {type.FullyQualifiedDisplayString} {Identifier.obj}) => " +
-                        $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}, ref {Identifier.obj});");
+                if (rootConfigTypes.TryGetValue(MethodSpecifier.Bind_key_instance, out typeSpecs))
+                {
+                    foreach (TypeSpec type in typeSpecs)
+                    {
+                        EmitBlankLineIfRequired();
+                        _writer.WriteLine($"public static void {Identifier.Bind}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, string {Identifier.key}, {type.FullyQualifiedDisplayString} {Identifier.obj}) => " +
+                            $"{FullyQualifiedDisplayName.Helpers}.{Identifier.BindCore}({Identifier.configuration}.{Identifier.GetSection}({Identifier.key}), ref {Identifier.obj}, {Identifier.binderOptions}: null);");
+                    }
+                }
             }
 
             private void EmitGenerationNamespaceAndHelpers()
             {
                 _useFullyQualifiedNames = false;
 
-                if (IncludeMethodsForGen(MethodSpecifier.BindCore | MethodSpecifier.HasValueOrChildren | MethodSpecifier.HasChildren))
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.BindCore | MethodSpecifier.HasValueOrChildren | MethodSpecifier.HasChildren))
                 {
                     // Helper class in source-generation namespace.
                     _writer.WriteBlockStart($"namespace {GeneratorProjectName}");
@@ -180,6 +298,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
 
                     _writer.WriteBlockStart($"internal static class {Identifier.Helpers}");
+                    EmitGetCoreMethod();
                     EmitBindCoreMethods();
                     EmitHelperMethods();
                     _writer.WriteBlockEnd();
@@ -196,19 +315,49 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
+            private void EmitGetCoreMethod()
+            {
+                if (!_generationSpec.ShouldEmitMethods(Helpers.GetMethods))
+                {
+                    return;
+                }
+
+                _writer.WriteBlockStart($"public static object {Identifier.GetCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureActions})");
+
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+
+                _writer.WriteLine($"{Identifier.BinderOptions}? {Identifier.binderOptions} = {Identifier.GetBinderOptions}({Identifier.configureActions});");
+                _writer.WriteBlankLine();
+
+                EmitIConfigurationHasValueOrChildrenCheck();
+
+                foreach (TypeSpec type in _generationSpec.GetTypesForRootMethodGen(Helpers.GetMethods))
+                {
+                    _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
+                    EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
+                    _writer.WriteLine($"return {Identifier.obj};");
+                    _writer.WriteBlockEnd();
+                    _writer.WriteBlankLine();
+                }
+
+                Emit_NotSupportedException_TypeNotDetectedAsInput();
+                _writer.WriteBlockEnd();
+                _wrotePreceding = true;
+            }
+
             private void EmitBindCoreMethods()
             {
                 foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.BindCore])
                 {
+                    EmitBlankLineIfRequired();
                     EmitBindCoreMethod(type);
-                    _writer.WriteBlankLine();
                 }
             }
 
             private void EmitBindCoreMethod(TypeSpec type)
             {
                 string objParameterExpression = $"ref {type.MinimalDisplayString} {Identifier.obj}";
-                _writer.WriteBlockStart(@$"public static void {Identifier.BindCore}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression})");
+                _writer.WriteBlockStart(@$"public static void {Identifier.BindCore}({Identifier.IConfiguration} {Identifier.configuration}, {objParameterExpression}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 EmitBindCoreImpl(type);
                 _writer.WriteBlockEnd();
             }
@@ -385,7 +534,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreImplForObject(ObjectSpec type)
             {
-                List<PropertySpec> properties = type.Properties;
+                Dictionary<string, PropertySpec> properties = type.Properties;
                 if (properties.Count == 0)
                 {
                     return;
@@ -393,15 +542,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
-                foreach (PropertySpec property in type.Properties)
+                string listOfStringDisplayName = "List<string>";
+                _writer.WriteLine($"{listOfStringDisplayName}? {Identifier.temp} = null;");
+
+                _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
+                _writer.WriteBlockStart($"switch ({Expression.sectionKey})");
+
+                foreach (PropertySpec property in properties.Values)
                 {
+                    _writer.WriteBlockStart($@"case ""{property.ConfigurationKeyName}"":");
+
                     TypeSpec propertyType = property.Type;
 
                     EmitBindCoreImplForProperty(property, propertyType, parentType: type);
-                    _writer.WriteBlankLine();
+                    _writer.WriteBlockEnd();
+                    _writer.WriteLine("break;");
                 }
 
-                _writer.RemoveBlankLine();
+                _writer.WriteBlock($$"""
+                    default:
+                    {
+                        if ({{Identifier.binderOptions}}?.ErrorOnUnknownConfiguration == true)
+                        {
+                            ({{Identifier.temp}} ??= new {{listOfStringDisplayName}}()).Add($"'{{{Expression.sectionKey}}}'");
+                        }
+                    }
+                    break;
+                    """);
+
+                // End switch on config child key.
+                _writer.WriteBlockEnd();
+
+                // End foreach on config.GetChildren().
+                _writer.WriteBlockEnd();
+
+                _writer.WriteBlankLine();
+
+                string exceptionMessage = string.Format(ExceptionMessages.MissingConfig, Identifier.ErrorOnUnknownConfiguration, Identifier.BinderOptions, $"{{typeof({type.MinimalDisplayString})}}", $@"{{string.Join("", "", {Identifier.temp})}}");
+                _writer.WriteBlock($$"""
+                    if ({{Identifier.temp}} is not null)
+                    {
+                        throw new InvalidOperationException($"{{exceptionMessage}}");
+                    }
+                    """);
+
             }
 
             private void EmitBindCoreImplForProperty(PropertySpec property, TypeSpec propertyType, TypeSpec parentType)
@@ -411,7 +595,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string propertyParentReference = property.IsStatic ? parentType.MinimalDisplayString : Identifier.obj;
                 string expressionForPropertyAccess = $"{propertyParentReference}.{property.Name}";
 
-                string expressionForConfigSectionAccess = $@"{Identifier.configuration}.{Identifier.GetSection}(""{configurationKeyName}"")";
                 string expressionForConfigValueIndexer = $@"{Identifier.configuration}[""{configurationKeyName}""]";
 
                 bool canSet = property.CanSet;
@@ -426,7 +609,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     (ParsableFromStringTypeSpec)propertyType,
                                     expressionForPropertyAccess,
                                     expressionForConfigValueIndexer,
-                                    expressionForConfigValuePath: $@"{expressionForConfigSectionAccess}.{Identifier.Path}");
+                                    expressionForConfigValuePath: Expression.sectionPath);
                             }
                         }
                         break;
@@ -435,13 +618,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitBindCoreCallForProperty(
                                 property,
                                 propertyType,
-                                expressionForPropertyAccess,
-                                expressionForConfigSectionAccess);
+                                expressionForPropertyAccess);
                         }
                         break;
                     case TypeSpecKind.IConfigurationSection:
                         {
-                            EmitAssignment(expressionForPropertyAccess, expressionForConfigSectionAccess);
+                            EmitAssignment(expressionForPropertyAccess, Identifier.section);
                         }
                         break;
                     case TypeSpecKind.Nullable:
@@ -455,8 +637,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitBindCoreCallForProperty(
                                 property,
                                 propertyType,
-                                expressionForPropertyAccess,
-                                expressionForConfigSectionAccess);
+                                expressionForPropertyAccess);
                         }
                         break;
                 }
@@ -464,12 +645,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindLogicFromRootMethod(TypeSpec type, string expressionForMemberAccess, InitializationKind initKind)
             {
-                if (type.SpecKind is TypeSpecKind.ParsableFromString)
+                TypeSpecKind kind = type.SpecKind;
+
+                if (kind is TypeSpecKind.Nullable)
+                {
+                    EmitBindLogicFromRootMethod(((NullableSpec)type).UnderlyingType, expressionForMemberAccess, initKind);
+                }
+                else if (kind is TypeSpecKind.ParsableFromString)
                 {
                     if (initKind is InitializationKind.Declaration)
                     {
                         EmitCastToIConfigurationSection();
-                        EmitAssignment($"{GetTypeDisplayString(type)} {expressionForMemberAccess}", "default");
+                        _writer.WriteLine($"{GetTypeDisplayString(type)} {expressionForMemberAccess} = default!;");
                     }
                     else
                     {
@@ -499,7 +686,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 else if (initKind is InitializationKind.None && type.IsValueType)
                 {
                     EmitObjectInit(type, tempVarName, InitializationKind.Declaration);
-                    _writer.WriteLine($@"{Identifier.BindCore}({expressionForConfigArg}, ref {tempVarName});");
+                    _writer.WriteLine($@"{Identifier.BindCore}({expressionForConfigArg}, ref {tempVarName}, {Identifier.binderOptions});");
                     EmitAssignment(expressionForMemberAccess, tempVarName);
                 }
                 else
@@ -510,7 +697,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitBindCoreCall(string varName)
                 {
-                    string bindCoreCall = $@"{GetHelperMethodDisplayString(Identifier.BindCore)}({expressionForConfigArg}, ref {varName});";
+                    string bindCoreCall = $@"{GetHelperMethodDisplayString(Identifier.BindCore)}({expressionForConfigArg}, ref {varName}, {Identifier.binderOptions});";
                     _writer.WriteLine(bindCoreCall);
                 }
             }
@@ -518,12 +705,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitBindCoreCallForProperty(
                 PropertySpec property,
                 TypeSpec effectivePropertyType,
-                string expressionForPropertyAccess,
-                string expressionForConfigSectionAccess)
+                string expressionForPropertyAccess)
             {
-                string bindCoreConfigArg = GetIncrementalVarName(Identifier.section);
-                EmitAssignment($"{Identifier.IConfigurationSection} {bindCoreConfigArg}", expressionForConfigSectionAccess);
-                _writer.WriteBlockStart($"if ({Identifier.HasChildren}({bindCoreConfigArg}))");
+                _writer.WriteBlockStart($"if ({Identifier.HasChildren}({Identifier.section}))");
 
                 bool canGet = property.CanGet;
                 bool canSet = property.CanSet;
@@ -556,7 +740,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
                         }
 
-                        _writer.WriteLine($@"{Identifier.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
+                        _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
                         EmitAssignment(expressionForPropertyAccess, tempVarName);
                     }
                 }
@@ -564,7 +748,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitAssignment($"{effectivePropertyTypeDisplayString} {tempVarName}", $"{expressionForPropertyAccess}");
                     EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.AssignmentWithNullCheck);
-                    _writer.WriteLine($@"{Identifier.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
+                    _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
 
                     if (canSet)
                     {
@@ -575,7 +759,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     Debug.Assert(canSet);
                     EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
-                    _writer.WriteLine($@"{Identifier.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
+                    _writer.WriteLine($@"{Identifier.BindCore}({Identifier.section}, ref {tempVarName}, {Identifier.binderOptions});");
                     EmitAssignment(expressionForPropertyAccess, tempVarName);
                 }
 
@@ -653,7 +837,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.WriteBlock($$"""
                     if (!{{GetHelperMethodDisplayString(Identifier.HasValueOrChildren)}}({{Identifier.configuration}}))
                     {
-                        return default;
+                        return default!;
                     }
                     """);
                 _writer.WriteBlankLine();
@@ -661,15 +845,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitHelperMethods()
             {
-                if (IncludeMethodsForGen(MethodSpecifier.HasValueOrChildren))
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.HasValueOrChildren))
                 {
                     EmitHasValueOrChildrenMethod();
                     _writer.WriteBlankLine();
                     EmitHasChildrenMethod();
                 }
-                else if (IncludeMethodsForGen(MethodSpecifier.HasChildren))
+                else if (_generationSpec.ShouldEmitMethods(MethodSpecifier.HasChildren))
                 {
                     EmitHasChildrenMethod();
+                }
+
+                if (_generationSpec.ShouldEmitMethods(Helpers.RootMethodTakingConfigureOptions))
+                {
+                    _writer.WriteBlankLine();
+                    EmitGetBinderOptionsHelper();
                 }
 
                 if (_generationSpec.PrimitivesForHelperGen.Count > 0)
@@ -706,6 +896,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             return true;
                         }
                         return false;
+                    }
+                    """);
+            }
+
+            private void EmitGetBinderOptionsHelper()
+            {
+                _writer.WriteBlock($$"""
+                    public static {{Identifier.BinderOptions}}? {{Identifier.GetBinderOptions}}(System.Action<BinderOptions>? {{Identifier.configureActions}})
+                    {
+                        if ({{Identifier.configureActions}} is null)
+                        {
+                            return null;
+                        }
+
+                        {{Identifier.BinderOptions}} {{Identifier.binderOptions}} = new();
+                        {{Identifier.configureActions}}({{Identifier.binderOptions}});
+
+                        if ({{Identifier.binderOptions}}.BindNonPublicProperties)
+                        {
+                            throw new global::System.NotSupportedException($"{{string.Format(ExceptionMessages.CannotSpecifyBindNonPublicProperties)}}");
+                        }
+
+                        return {{Identifier.binderOptions}};
                     }
                     """);
             }
@@ -806,6 +1019,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
+            private void EmitBlankLineIfRequired()
+            {
+                if (_wrotePreceding)
+                {
+                    _writer.WriteBlankLine();
+                }
+                {
+                    _wrotePreceding = true;
+                }
+            }
+
             private void EmitVarDeclaration(TypeSpec type, string varName) => _writer.WriteLine($"{type.MinimalDisplayString} {varName};");
 
             private void EmitAssignment(string lhsSource, string rhsSource) => _writer.WriteLine($"{lhsSource} = {rhsSource};");
@@ -834,7 +1058,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>
-                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{typeof(T)}")}"");");
+                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{type}")}"");");
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {
@@ -859,9 +1083,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlankLine();
             }
-
-            private bool IncludeMethodsForGen(MethodSpecifier method)
-                => (_generationSpec.MethodsToGen & method) != 0;
 
             private string GetIncrementalVarName(string prefix) => $"{prefix}{_parseValueCount++}";
 
