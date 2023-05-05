@@ -161,6 +161,7 @@ enum CORCOMPILE_FIXUP_BLOB_KIND
 
     ENCODE_CHECK_IL_BODY,                           /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
     ENCODE_VERIFY_IL_BODY,                          /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
     ENCODE_MODULE_HANDLE                = 0x50,     /* Module token */
     ENCODE_MODULE_ID_FOR_GENERIC_STATICS,           /* For accessing static fields */
     ENCODE_CLASS_ID_FOR_STATICS,                    /* For accessing static fields */
