@@ -764,6 +764,7 @@
   <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
   <PropertyGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
     <_WorkaroundForNuGetMigrations>(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true</_WorkaroundForNuGetMigrations>
+    <_WorkaroundForNuGetMigrationsForPrepending>$(_WorkaroundForNuGetMigrationsForPrepending) &amp;&amp;</_WorkaroundForNuGetMigrationsForPrepending>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -903,7 +904,7 @@
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
+      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
       <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
@@ -937,7 +938,7 @@
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
       <PayloadArchive>$(LegacyPayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
-      <Command>./runpaltestshelix.sh</Command>
+      <Command>$(_WorkaroundForNuGetMigrationsForPrepending) ./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
   </ItemGroup>
