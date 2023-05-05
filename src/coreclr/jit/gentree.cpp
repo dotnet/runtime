@@ -7715,9 +7715,9 @@ GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
         case TYP_USHORT:
             return gtNewIconNode((uint16_t)(pattern * 0x0101));
         case TYP_INT:
-            return gtNewIconNode((int32_t)(pattern * 0x01010101));
+            return gtNewIconNode(pattern * 0x01010101);
         case TYP_LONG:
-            return gtNewIconNode((int64_t)(pattern * 0x0101010101010101LL), TYP_LONG);
+            return gtNewLconNode(pattern * 0x0101010101010101LL);
         case TYP_FLOAT:
             float floatPattern;
             memset(&floatPattern, pattern, sizeof(floatPattern));
