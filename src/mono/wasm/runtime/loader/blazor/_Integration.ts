@@ -147,9 +147,11 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         } else if (behavior === "dotnetwasm") {
             continue;
         }
+
+        const resolvedUrl = name.endsWith(".js") ? `./${name}` : `_framework/${name}`;
         const asset: AssetEntry = {
             name,
-            resolvedUrl: `_framework/${name}`,
+            resolvedUrl,
             hash: resources.runtime[name],
             behavior,
         };
