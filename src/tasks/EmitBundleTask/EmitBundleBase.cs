@@ -83,15 +83,11 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             var outputFile = registeredFile.GetMetadata("DestinationFile");
             var registeredFilename = group.Key;
             var resourceName = ToSafeSymbolName(outputFile);
+            string culture = registeredFile.GetMetadata("Culture");
             string? resourceSymbolName = null;
-<<<<<<< HEAD
             if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
                 resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
-=======
-            if (File.Exists(registeredFile.GetMetadata("Symfile")))
-                resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("Symfile"));
->>>>>>> 5a56c0e2b21 (Differentiate resource name and symbol)
-            return (registeredFilename, resourceName, resourceSymbolName);
+            return (registeredFilename, resourceName, culture, resourceSymbolName);
         }).ToList();
 
         Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
@@ -192,7 +188,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static Dictionary<string, int> symbolDataLen = new();
 
-    private static void GenerateBundledResourcePreallocationAndRegistration(string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
+    private static void GenerateBundledResourcePreallocationAndRegistration(string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
     {
         StringBuilder preallocatedSource = new();
 
@@ -231,6 +227,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             }
             case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
                 preloadedStruct = satelliteAssemblyTemplate;
+                preloadedStruct.Replace("%Culture%", tuple.culture);
                 resourceId = $"{tuple.culture}/{tuple.registeredFilename}";
                 preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 satelliteAssembliesCount += 1;
