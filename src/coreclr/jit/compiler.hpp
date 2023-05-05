@@ -94,7 +94,7 @@ inline RoundLevel getRoundFloatLevel()
 template <typename T>
 inline T genFindLowestBit(T value)
 {
-    return BitOperations::BitScanForward(value);
+    return (value & (0 - value));
 }
 
 /*****************************************************************************
