@@ -3100,12 +3100,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 // Try to avoid ClsHandle -> Type object -> ClsHandle roundtrip:
                 GenTree* op1 = impStackTop(0).val;
-                if (op1->IsCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
+                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
                 {
+                    // struct RuntimeTypeHandle { IntPtr _value; }
+                    assert(info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass) == 1);
+
                     unsigned structLcl = lvaGrabTemp(true DEBUGARG("RuntimeTypeHandle"));
                     lvaSetStruct(structLcl, sig->retTypeClass, false);
-                    GenTreeLclFld* handleFld    = gtNewLclFldNode(structLcl, TYP_I_IMPL, 0);
                     GenTree*       realHandle   = op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTreeLclFld* handleFld    = gtNewLclFldNode(structLcl, realHandle->TypeGet(), 0);
                     GenTree*       asgHandleFld = gtNewAssignNode(handleFld, realHandle);
                     impAppendTree(asgHandleFld, CHECK_SPILL_NONE, impCurStmtDI);
                     retNode = impCreateLocalNode(structLcl DEBUGARG(0));
