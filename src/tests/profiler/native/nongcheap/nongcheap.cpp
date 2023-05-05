@@ -67,13 +67,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     COR_PRF_GC_GENERATION_RANGE gc_segments[MAX_SEGMENTS];
     ULONG segCount;
     ObjectID firstObj = 0;
-    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, frozen_segments);
+    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_SEGMENTS, &segCount, nongc_segments);
     if (FAILED(hr))
     {
         printf("GetNonGCHeapBounds returned an error\n!");
         _failures++;
     }
-    else if (segCount == 0 || segCount > MAX_NON_GC_HEAP_SEGMENTS)
+    else if (segCount == 0 || segCount > MAX_SEGMENTS)
     {
         printf("GetNonGCHeapBounds: invalid segCount (%u)\n!", segCount);
         _failures++;
@@ -81,61 +81,62 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     else
     {
         // Save very first object ID to compare with EnumerateNonGCObjects
-        firstObj = frozen_segments[0].rangeStart;
+        firstObj = nongc_segments[0].rangeStart;
 
         printf("\nGetNonGCHeapBounds (segCount = %u):\n", segCount);
         for (ULONG i = 0; i < segCount; i++)
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
-                i, (void*)frozen_segments[i].rangeStart, (ULONG)frozen_segments[i].rangeLength, (ULONG)frozen_segments[i].rangeLengthReserved);
+                i, (void*)nongc_segments[i].rangeStart, (ULONG)nongc_segments[i].rangeLength, (ULONG)nongc_segments[i].rangeLengthReserved);
 
-            if ((ULONG)frozen_segments[i].rangeLength > (ULONG)frozen_segments[i].rangeLengthReserved)
+            if ((ULONG)nongc_segments[i].rangeLength > (ULONG)nongc_segments[i].rangeLengthReserved)
             {
                 printf("GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
                 _failures++;
             }
 
-            if (!frozen_segments[i].rangeStart)
+            if (!nongc_segments[i].rangeStart)
             {
                 printf("GetNonGCHeapBounds: rangeStart is null");
                 _failures++;
             }
-            segment_starts.emplace_back((ULONG)frozen_segments[i].rangeStart);
-            segment_ends.emplace_back((ULONG)frozen_segments[i].rangeStart + (ULONG)frozen_segments[i].rangeLengthReserved);
+            segment_starts.emplace_back((ULONG)nongc_segments[i].rangeStart);
+            segment_ends.emplace_back((ULONG)nongc_segments[i].rangeStart + (ULONG)nongc_segments[i].rangeLengthReserved);
         }
         printf("\n");
     }
-    hr = pCorProfilerInfo->GetGenerationBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, normal_segments);
+    hr = pCorProfilerInfo->GetGenerationBounds(MAX_SEGMENTS, &segCount, gc_segments);
     if (FAILED(hr))
     {
         printf("GetGenerationBounds returned an error\n!");
         _failures++;
     }
-    else if (segCount == 0 || segCount > MAX_NON_GC_HEAP_SEGMENTS)
+    else if (segCount == 0 || segCount > MAX_SEGMENTS)
     {
         printf("GetGenerationBounds: invalid segCount (%u)\n!", segCount);
         _failures++;
     }
     else
     {
+        printf("\nGetGenerationBounds (segCount = %u):\n", segCount);
         for (ULONG i = 0; i < segCount; i++)
         {
             printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
-                i, (void*)normal_segments[i].rangeStart, (ULONG)normal_segments[i].rangeLength, (ULONG)normal_segments[i].rangeLengthReserved);
+                i, (void*)gc_segments[i].rangeStart, (ULONG)gc_segments[i].rangeLength, (ULONG)gc_segments[i].rangeLengthReserved);
                 
-            if ((ULONG)normal_segments[i].rangeLength > (ULONG)normal_segments[i].rangeLengthReserved)
+            if ((ULONG)gc_segments[i].rangeLength > (ULONG)gc_segments[i].rangeLengthReserved)
             {
                 printf("GetGenerationBounds: rangeLength > rangeLengthReserved");
                 _failures++;
             }
 
-            if (!normal_segments[i].rangeStart)
+            if (!gc_segments[i].rangeStart)
             {
                 printf("GetGenerationBounds: rangeStart is null");
                 _failures++;
             }
-            segment_starts.emplace_back((ULONG)normal_segments[i].rangeStart);
-            segment_ends.emplace_back((ULONG)normal_segments[i].rangeStart + (ULONG)normal_segments[i].rangeLengthReserved);
+            segment_starts.emplace_back((ULONG)gc_segments[i].rangeStart);
+            segment_ends.emplace_back((ULONG)gc_segments[i].rangeStart + (ULONG)gc_segments[i].rangeLengthReserved);
         }
         printf("\n");
     }
@@ -153,9 +154,9 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
             printf("Duplicated segment ends");
             _failures++;
         }
-        if (segment_ends[i] >= segment_starts[i+1])
+        if (segment_ends[i] > segment_starts[i+1])
         {
-            printf("Overlapping segments");
+            printf("Overlapping segments\n");
             _failures++;
         }
     }
