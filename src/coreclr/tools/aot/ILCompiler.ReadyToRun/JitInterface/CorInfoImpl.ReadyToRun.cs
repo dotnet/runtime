@@ -1588,7 +1588,7 @@ namespace Internal.JitInterface
 
                         // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
+                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
                         fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
                         fieldOffset = 0;
