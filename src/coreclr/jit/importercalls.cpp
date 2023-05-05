@@ -3100,7 +3100,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 // Try to avoid ClsHandle -> Type object -> ClsHandle roundtrip:
                 GenTree* op1 = impStackTop(0).val;
-                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
+                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) &&
+                    (methodFlags & CORINFO_FLG_VIRTUAL))
                 {
                     // struct RuntimeTypeHandle { IntPtr _value; }
                     assert(info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass) == 1);
