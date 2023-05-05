@@ -64,7 +64,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     std::vector<ULONG> segment_ends;
     const int MAX_NON_GC_HEAP_SEGMENTS = 16;
     COR_PRF_NONGC_HEAP_RANGE nongc_segments[MAX_SEGMENTS];
-    COR_PRF_GC_GENERATION_RANGE normal_segments[MAX_NON_GC_HEAP_SEGMENTS];
+    COR_PRF_GC_GENERATION_RANGE gc_segments[MAX_SEGMENTS];
     ULONG segCount;
     ObjectID firstObj = 0;
     HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, frozen_segments);
