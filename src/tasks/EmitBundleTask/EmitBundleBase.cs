@@ -209,6 +209,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         int dataCount = 0;
         foreach (var tuple in files)
         {
+            string resourceId = tuple.registeredFilename;
+
             // extern symbols
             StringBuilder preallocatedResourceData = new();
             preallocatedResourceData.AppendLine($"extern const unsigned char {tuple.resourceName}_data[];");
@@ -229,6 +231,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             }
             case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
                 preloadedStruct = satelliteAssemblyTemplate;
+                resourceId = $"{tuple.culture}/{tuple.registeredFilename}";
                 preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 satelliteAssembliesCount += 1;
                 break;
@@ -250,8 +253,9 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                                             .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
                                             .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
             }
-            preallocatedSource.AppendLine(preloadedStruct.Replace("%RegisteredFilename%", tuple.registeredFilename)
-                                         .Replace("%ResourceName%", tuple.resourceName)
+            preallocatedSource.AppendLine(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
+                                         .Replace("%ResourceID%", resourceId)
+                                         .Replace("%RegisteredFilename%", tuple.registeredFilename)
                                          .Replace("%Len%", symbolDataLen[tuple.resourceName].ToString())
                                          .Replace("%MonoBundledSymbolData%", preloadedSymfile));
         }

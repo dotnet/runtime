@@ -18,6 +18,7 @@ typedef enum {
 
 typedef struct _MonoBundledResource {
 	MonoBundledResourceType type;
+	const char *id;
 	void (*free_bundled_resource_func)(void *);
 } MonoBundledResource;
 

@@ -1,5 +1,6 @@
 const MonoBundledDataResource %ResourceName% = {
-    .resource = { .type = MONO_BUNDLED_DATA },
+    .resource = { .type = MONO_BUNDLED_DATA,
+                  .id = "%ResourceID%" },
     .data = { .name = "%RegisteredFilename%",
               .data = %ResourceName%_data,
               .size = %Len% },

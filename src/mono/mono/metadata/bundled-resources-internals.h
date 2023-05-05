@@ -22,6 +22,7 @@ typedef enum {
 
 typedef struct _MonoBundledResource {
 	MonoBundledResourceType type;
+	const char *id;
 	void (*free_bundled_resource_func)(void *);
 } MonoBundledResource;
 
@@ -60,13 +61,13 @@ void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
 
 MonoBundledResource *
-mono_bundled_resources_get (const char *name);
+mono_bundled_resources_get (const char *id);
 
 static inline MonoBundledAssemblyResource *
-mono_bundled_resources_get_assembly_resource (const char *name)
+mono_bundled_resources_get_assembly_resource (const char *id)
 {
 	MonoBundledAssemblyResource *assembly =
-		(MonoBundledAssemblyResource*)mono_bundled_resources_get (name);
+		(MonoBundledAssemblyResource*)mono_bundled_resources_get (id);
 	if (!assembly)
 		return NULL;
 	assert (assembly->resource.type == MONO_BUNDLED_ASSEMBLY);
@@ -74,10 +75,10 @@ mono_bundled_resources_get_assembly_resource (const char *name)
 }
 
 static inline MonoBundledSatelliteAssemblyResource *
-mono_bundled_resources_get_satellite_assembly_resource (const char *name)
+mono_bundled_resources_get_satellite_assembly_resource (const char *id)
 {
 	MonoBundledSatelliteAssemblyResource *satellite_assembly =
-		(MonoBundledSatelliteAssemblyResource*)mono_bundled_resources_get (name);
+		(MonoBundledSatelliteAssemblyResource*)mono_bundled_resources_get (id);
 	if (!satellite_assembly)
 		return NULL;
 	assert (satellite_assembly->resource.type == MONO_BUNDLED_SATELLITE_ASSEMBLY);
@@ -85,10 +86,10 @@ mono_bundled_resources_get_satellite_assembly_resource (const char *name)
 }
 
 static inline MonoBundledDataResource *
-mono_bundled_resources_get_data_resource (const char *name)
+mono_bundled_resources_get_data_resource (const char *id)
 {
 	MonoBundledDataResource *data =
-		(MonoBundledDataResource*)mono_bundled_resources_get (name);
+		(MonoBundledDataResource*)mono_bundled_resources_get (id);
 	if (!data)
 		return NULL;
 	assert (data->resource.type == MONO_BUNDLED_DATA);

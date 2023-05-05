@@ -1,5 +1,6 @@
 const MonoBundledAssemblyResource %ResourceName% = {
-    .resource = { .type = MONO_BUNDLED_ASSEMBLY },
+    .resource = { .type = MONO_BUNDLED_ASSEMBLY,
+                  .id = "%ResourceID%" },
     .assembly = { .name = "%RegisteredFilename%",
                   .data = %ResourceName%_data,
                   .size = %Len% },

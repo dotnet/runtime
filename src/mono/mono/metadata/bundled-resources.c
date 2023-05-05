@@ -63,20 +63,20 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 		switch (resource_to_bundle->type) {
 		case MONO_BUNDLED_ASSEMBLY: {
 			MonoBundledAssemblyResource *assembly = (MonoBundledAssemblyResource *)resource_to_bundle;
-			g_hash_table_insert (bundled_resources, (gpointer) assembly->assembly.name, assembly);
+			g_hash_table_insert (bundled_resources, (gpointer) assembly->resource.id, assembly);
 			assemblyAdded = true;
 			break;
 		}
 		case MONO_BUNDLED_SATELLITE_ASSEMBLY: {
 			MonoBundledSatelliteAssemblyResource *satellite_assembly = (MonoBundledSatelliteAssemblyResource *)resource_to_bundle;
-			g_hash_table_insert (bundled_resources, (gpointer) satellite_assembly->satellite_assembly.name, satellite_assembly);
+			g_hash_table_insert (bundled_resources, (gpointer) satellite_assembly->resource.id, satellite_assembly);
 			satelliteAssemblyAdded = true;
 			break;
 		}
 		case MONO_BUNDLED_DATA:
 		default: {
 			MonoBundledDataResource *data = (MonoBundledDataResource *)resource_to_bundle;
-			g_hash_table_insert (bundled_resources, (gpointer) data->data.name, data);
+			g_hash_table_insert (bundled_resources, (gpointer) data->resource.id, data);
 			break;
 		}
 		}
@@ -92,24 +92,24 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_get retrieves the pointer of the MonoBundledResource associated
-// with a key equivalent to the requested resource name. If the requested bundled resource's
+// with a key equivalent to the requested resource id. If the requested bundled resource's
 // name has been added via mono_bundled_resources_add, a MonoBundled*Resource had been
 // preallocated, typically through EmitBundleTask.
 //
 // Arguments:
-//  * name - Unique name of the resource
+//  * id - Unique name of the resource
 //
 // Returns:
-//  MonoBundledResource * - Pointer to the resource in the hashmap with the key `name`
+//  MonoBundledResource * - Pointer to the resource in the hashmap with the key `id`
 //
 
 MonoBundledResource *
-mono_bundled_resources_get (const char *name)
+mono_bundled_resources_get (const char *id)
 {
 	if (!bundled_resources)
 		return NULL;
 
-	return g_hash_table_lookup (bundled_resources, name);
+	return g_hash_table_lookup (bundled_resources, id);
 }
 
 //---------------------------------------------------------------------------------------
