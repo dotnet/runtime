@@ -210,15 +210,35 @@ namespace
 
         pal::string_t selected_fx_dir;
         pal::string_t selected_fx_version;
-        fx_ver_t selected_ver;
 
+        fx_ver_t selected_ver;
+        bool fake_fxr_path = false;
+
+        // Try searching where our module is, assume self-contained
+        pal::string_t host_path, out_fxr_path;
+        pal::get_own_module_path(&host_path);
+
+        pal::string_t lib_dir = get_directory(host_path);
+        remove_trailing_dir_separator(&lib_dir);
+
+        if (library_exists_in_dir(lib_dir, LIBFXR_NAME, &out_fxr_path))
+        {
+            trace::info(_X("Using locally deployed runtime found at [%s]."), out_fxr_path.c_str());
+            fake_fxr_path = true; // Fake DOTNET_ROOT using previously self-deployed dotnet
+            selected_fx_dir = lib_dir; // Overwrite the selection with the pre-selected one
+        }
+
+        if (fake_fxr_path) goto select;
         for (pal::string_t dir : hive_dir)
         {
             auto fx_dir = dir;
             trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
 
-            append_path(&fx_dir, _X("shared"));
-            append_path(&fx_dir, fx_ref.get_fx_name().c_str());
+            if (!fake_fxr_path)
+            {
+                append_path(&fx_dir, _X("shared"));
+                append_path(&fx_dir, fx_ref.get_fx_name().c_str());
+            }
 
             // Roll forward is disabled when:
             //   roll_forward is set to Disable
@@ -282,6 +302,7 @@ namespace
             }
         }
 
+      select:
         if (selected_fx_dir.empty())
         {
             trace::verbose(_X("It was not possible to find any compatible framework version"));
