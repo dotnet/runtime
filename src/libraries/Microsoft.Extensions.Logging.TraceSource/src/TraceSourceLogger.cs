@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using DiagnosticsTraceSource = System.Diagnostics.TraceSource;
 
@@ -10,7 +11,8 @@ namespace Microsoft.Extensions.Logging.TraceSource
     /// <summary>
     /// A logger that writes a trace source log message.
     /// </summary>
-    internal sealed class TraceSourceLogger : ILogger
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public sealed class TraceSourceLogger : ILogger
     {
         private readonly DiagnosticsTraceSource _traceSource;
 

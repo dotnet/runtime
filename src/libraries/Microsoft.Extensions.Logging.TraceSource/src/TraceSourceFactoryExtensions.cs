@@ -13,6 +13,18 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class TraceSourceFactoryExtensions
     {
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch, System.Diagnostics.TraceListener listener) { throw new NotImplementedException(); }
+
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, System.Diagnostics.SourceSwitch sourceSwitch) { throw new NotImplementedException(); }
+
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName, System.Diagnostics.TraceListener listener) { throw new NotImplementedException(); }
+
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddTraceSource(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddTraceSource(this ILoggerFactory factory, string switchName) { throw new NotImplementedException(); }
+
         /// <summary>
         /// Adds a TraceSource logger named 'TraceSource' to the factory.
         /// </summary>

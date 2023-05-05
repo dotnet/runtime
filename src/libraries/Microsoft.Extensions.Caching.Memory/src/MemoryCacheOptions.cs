@@ -42,6 +42,9 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        [System.Obsolete("This is obsolete and will be removed in a future version.")]
+        public bool CompactOnMemoryPressure { get; set; }
+
         /// <summary>
         /// Gets or sets the amount to compact the cache by when the maximum size is exceeded.
         /// </summary>

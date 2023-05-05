@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging.Debug
@@ -9,7 +10,8 @@ namespace Microsoft.Extensions.Logging.Debug
     /// <summary>
     /// A logger that writes messages in the debug output window only when a debugger is attached.
     /// </summary>
-    internal sealed partial class DebugLogger : ILogger
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public sealed partial class DebugLogger : ILogger
     {
         private readonly string _name;
 

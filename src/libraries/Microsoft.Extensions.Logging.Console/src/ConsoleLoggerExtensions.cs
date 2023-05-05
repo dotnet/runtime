@@ -20,6 +20,30 @@ namespace Microsoft.Extensions.Logging
         internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
         internal const string TrimmingRequiresUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";
 
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Extensions.Configuration.IConfiguration configuration) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Console.IConsoleLoggerSettings settings) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel, bool includeScopes) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, bool includeScopes) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter) { throw new NotImplementedException(); }
+
+        [System.Obsolete("TODO")]
+        public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory) { throw new NotImplementedException(); }
+
         /// <summary>
         /// Adds a console logger named 'Console' to the factory.
         /// </summary>

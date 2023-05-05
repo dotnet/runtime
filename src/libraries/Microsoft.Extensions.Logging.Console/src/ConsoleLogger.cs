@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
@@ -13,7 +14,8 @@ namespace Microsoft.Extensions.Logging.Console
     /// A logger that writes messages in the console.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    internal sealed class ConsoleLogger : ILogger
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public sealed class ConsoleLogger : ILogger
     {
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;

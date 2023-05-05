@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Debug;
+using System;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -12,6 +13,14 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class DebugLoggerFactoryExtensions
     {
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddDebug(this ILoggerFactory factory, LogLevel minLevel) { throw new NotImplementedException(); }
+
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddDebug(this ILoggerFactory factory, Func<string, LogLevel, bool> filter) { throw new NotImplementedException(); }
+
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddDebug(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddDebug(this ILoggerFactory factory) { throw new NotImplementedException(); }
         /// <summary>
         /// Adds a debug logger named 'Debug' to the factory.
         /// </summary>

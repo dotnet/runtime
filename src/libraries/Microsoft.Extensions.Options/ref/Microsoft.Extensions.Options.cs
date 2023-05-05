@@ -218,6 +218,12 @@ namespace Microsoft.Extensions.Options
     public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
+        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version.")]
+        public void Add(string name, TOptions options) { }
+        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version.")]
+        public TOptions Get(string name) { throw null; }
+        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version.")]
+        public bool Remove(string name) { throw null; }
         public TOptions Value { get { throw null; } }
     }
     public partial class PostConfigureOptions<TOptions> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class

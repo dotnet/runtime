@@ -196,3 +196,41 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
 }
+namespace Microsoft.Extensions.Logging.Abstractions.Internal
+{
+    [System.ObsoleteAttribute("TODO")]
+    public partial class NullScope
+    {
+        internal NullScope() { }
+        public static Microsoft.Extensions.Logging.Abstractions.Internal.NullScope Instance { get { throw null; } }
+        public void Dispose() { }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class TypeNameHelper
+    {
+        public TypeNameHelper() { }
+        public static string GetTypeDisplayName(System.Type type) { throw null; }
+    }
+}
+namespace Microsoft.Extensions.Logging.Internal
+{
+    [System.ObsoleteAttribute("TODO")]
+    public partial class FormattedLogValues
+    {
+        public FormattedLogValues(string format, params object[] values) { }
+        public int Count { get { throw null; } }
+        public System.Collections.Generic.KeyValuePair<string, object> this[int index] { get { throw null; } }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class LogValuesFormatter
+    {
+        public LogValuesFormatter(string format) { }
+        public string OriginalFormat { get { throw null; } }
+        public System.Collections.Generic.List<string> ValueNames { get { throw null; } }
+        public string Format(object[] values) { throw null; }
+        public System.Collections.Generic.KeyValuePair<string, object> GetValue(object[] values, int index) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> GetValues(object[] values) { throw null; }
+    }
+}

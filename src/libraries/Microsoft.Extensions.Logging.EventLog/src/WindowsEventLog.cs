@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Security;
 using System.Runtime.Versioning;
@@ -12,7 +13,8 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// The windows event log.
     /// </summary>
     [SupportedOSPlatform("windows")]
-    internal sealed class WindowsEventLog : IEventLog
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public sealed class WindowsEventLog : Internal.IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx
         private const int MaximumMessageSize = 31839;

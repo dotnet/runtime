@@ -92,6 +92,7 @@ namespace Microsoft.Extensions.Configuration
     }
     public partial class ConfigurationSection : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationSection
     {
+        public ConfigurationSection(Microsoft.Extensions.Configuration.ConfigurationRoot root, string path) { }
         public ConfigurationSection(Microsoft.Extensions.Configuration.IConfigurationRoot root, string path) { }
         public string? this[string key] { get { throw null; } set { } }
         public string Key { get { throw null; } }

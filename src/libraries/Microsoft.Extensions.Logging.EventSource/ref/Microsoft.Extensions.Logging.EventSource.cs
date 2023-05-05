@@ -8,6 +8,8 @@ namespace Microsoft.Extensions.Logging
 {
     public static partial class EventSourceLoggerFactoryExtensions
     {
+        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddEventSourceLogger(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddEventSourceLogger(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
     }
 }

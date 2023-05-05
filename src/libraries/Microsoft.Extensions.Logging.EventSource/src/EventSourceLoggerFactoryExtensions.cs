@@ -14,6 +14,9 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class EventSourceLoggerFactoryExtensions
     {
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory) { throw new NotImplementedException(); }
+
         /// <summary>
         /// Adds an event logger named 'EventSource' to the factory.
         /// </summary>

@@ -42,6 +42,8 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCacheOptions() { }
         public Microsoft.Extensions.Internal.ISystemClock? Clock { get { throw null; } set { } }
         public double CompactionPercentage { get { throw null; } set { } }
+        [System.Obsolete("This is obsolete and will be removed in a future version.")]
+        public bool CompactOnMemoryPressure { get; set; }
         public System.TimeSpan ExpirationScanFrequency { get { throw null; } set { } }
         Microsoft.Extensions.Caching.Memory.MemoryCacheOptions Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions>.Value { get { throw null; } }
         public long? SizeLimit { get { throw null; } set { } }

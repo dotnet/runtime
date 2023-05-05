@@ -9,6 +9,22 @@ namespace Microsoft.Extensions.Logging
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public static partial class ConsoleLoggerExtensions
     {
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel, bool includeScopes) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, bool includeScopes) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { throw null; }
+        [System.ObsoleteAttribute("TODO")]
+        public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> configure) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Binding TOptions to configuration values may require generating dynamic code at runtime.")]
@@ -27,6 +43,15 @@ namespace Microsoft.Extensions.Logging
 }
 namespace Microsoft.Extensions.Logging.Console
 {
+    [System.ObsoleteAttribute("TODO")]
+    public partial class ConfigurationConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
+    {
+        public ConfigurationConsoleLoggerSettings(Microsoft.Extensions.Configuration.IConfiguration configuration) { }
+        public Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get { throw null; } }
+        public bool IncludeScopes { get { throw null; } }
+        public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
+        public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
+    }
     public abstract partial class ConsoleFormatter
     {
         protected ConsoleFormatter(string name) { }
@@ -46,6 +71,15 @@ namespace Microsoft.Extensions.Logging.Console
         [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")]
         public string? TimestampFormat { get { throw null; } set { } }
         public bool UseUtcTimestamp { get { throw null; } set { } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    public sealed partial class ConsoleLogger : Microsoft.Extensions.Logging.ILogger
+    {
+        internal ConsoleLogger() { }
+        public System.IDisposable BeginScope<TState>(TState state) where TState : notnull { throw null; }
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
+        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
     }
     [System.ObsoleteAttribute("ConsoleLoggerFormat has been deprecated.")]
     public enum ConsoleLoggerFormat
@@ -75,8 +109,14 @@ namespace Microsoft.Extensions.Logging.Console
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
+        [System.ObsoleteAttribute("TODO")]
+        public ConsoleLoggerProvider(Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Console.ConsoleFormatter>? formatters) { }
+        [System.ObsoleteAttribute("TODO")]
+        public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { }
+        [System.ObsoleteAttribute("TODO")]
+        public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes, bool disableColors) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
         public void SetScopeProvider(Microsoft.Extensions.Logging.IExternalScopeProvider scopeProvider) { }
@@ -85,6 +125,34 @@ namespace Microsoft.Extensions.Logging.Console
     {
         Wait = 0,
         DropWrite = 1,
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class ConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
+    {
+        public ConsoleLoggerSettings() { }
+        public Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get { throw null; } set { } }
+        public bool DisableColors { get { throw null; } set { } }
+        public bool IncludeScopes { get { throw null; } set { } }
+        public System.Collections.Generic.IDictionary<string, Microsoft.Extensions.Logging.LogLevel> Switches { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
+        public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class ConsoleLogScope
+    {
+        internal ConsoleLogScope() { }
+        public static Microsoft.Extensions.Logging.Console.ConsoleLogScope Current { get { throw null; } set { } }
+        public Microsoft.Extensions.Logging.Console.ConsoleLogScope Parent { get { throw null; } }
+        public static System.IDisposable Push(string name, object state) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial interface IConsoleLoggerSettings
+    {
+        Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get; }
+        bool IncludeScopes { get; }
+        Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload();
+        bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level);
     }
     public partial class JsonConsoleFormatterOptions : Microsoft.Extensions.Logging.Console.ConsoleFormatterOptions
     {
@@ -102,5 +170,55 @@ namespace Microsoft.Extensions.Logging.Console
         public SimpleConsoleFormatterOptions() { }
         public Microsoft.Extensions.Logging.Console.LoggerColorBehavior ColorBehavior { get { throw null; } set { } }
         public bool SingleLine { get { throw null; } set { } }
+    }
+}
+namespace Microsoft.Extensions.Logging.Console.Internal
+{
+    [System.ObsoleteAttribute("TODO")]
+    public partial class AnsiLogConsole : Microsoft.Extensions.Logging.Console.Internal.IConsole
+    {
+        public AnsiLogConsole(Microsoft.Extensions.Logging.Console.Internal.IAnsiSystemConsole systemConsole) { }
+        public void Flush() { }
+        public void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
+        public void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class ConsoleLoggerProcessor
+    {
+        public Microsoft.Extensions.Logging.Console.Internal.IConsole Console;
+        public ConsoleLoggerProcessor() { }
+        public void Dispose() { }
+        public virtual void EnqueueMessage(Microsoft.Extensions.Logging.Console.Internal.LogMessageEntry message) { }
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial interface IAnsiSystemConsole
+    {
+        void Write(string message);
+        void WriteLine(string message);
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial interface IConsole
+    {
+        void Flush();
+        void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground);
+        void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground);
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public sealed partial class LogMessageEntry
+    {
+        internal LogMessageEntry() { }
+        public System.ConsoleColor? LevelBackground;
+        public System.ConsoleColor? LevelForeground;
+        public string LevelString;
+        public string Message;
+        public System.ConsoleColor? MessageColor;
+    }
+    [System.ObsoleteAttribute("TODO")]
+    public partial class WindowsLogConsole : Microsoft.Extensions.Logging.Console.Internal.IConsole
+    {
+        public WindowsLogConsole() { }
+        public void Flush() { }
+        public void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
+        public void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
     }
 }

@@ -13,6 +13,17 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class EventLoggerFactoryExtensions
     {
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory, EventLog.EventLogSettings settings) { throw new NotImplementedException(); }
+
+
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory, LogLevel minLevel) { throw new NotImplementedException(); }
+
+
+        [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
+        public static ILoggerFactory AddEventLog(this ILoggerFactory factory) { throw new NotImplementedException(); }
+
         /// <summary>
         /// Adds an event logger named 'EventLog' to the factory.
         /// </summary>

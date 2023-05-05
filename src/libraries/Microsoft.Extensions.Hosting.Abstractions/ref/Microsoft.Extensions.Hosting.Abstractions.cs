@@ -84,12 +84,8 @@ namespace Microsoft.Extensions.Hosting
         public static bool IsStaging(this Microsoft.Extensions.Hosting.IHostingEnvironment hostingEnvironment) { throw null; }
     }
     [System.ObsoleteAttribute("IApplicationLifetime has been deprecated. Use Microsoft.Extensions.Hosting.IHostApplicationLifetime instead.")]
-    public partial interface IApplicationLifetime
+    public partial interface IApplicationLifetime : Microsoft.Extensions.Hosting.IHostApplicationLifetime
     {
-        System.Threading.CancellationToken ApplicationStarted { get; }
-        System.Threading.CancellationToken ApplicationStopped { get; }
-        System.Threading.CancellationToken ApplicationStopping { get; }
-        void StopApplication();
     }
     public partial interface IHost : System.IDisposable
     {
@@ -128,12 +124,8 @@ namespace Microsoft.Extensions.Hosting
         string EnvironmentName { get; set; }
     }
     [System.ObsoleteAttribute("IHostingEnvironment has been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment instead.")]
-    public partial interface IHostingEnvironment
+    public partial interface IHostingEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
     {
-        string ApplicationName { get; set; }
-        Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; }
-        string ContentRootPath { get; set; }
-        string EnvironmentName { get; set; }
     }
     public partial interface IHostLifetime
     {
