@@ -97,11 +97,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged)
-                    {
-                        return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
-                    }
-                    break;
+                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 default:
                     break;
             }

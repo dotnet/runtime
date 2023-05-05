@@ -395,15 +395,17 @@ namespace Microsoft.Interop
                 .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
                 .WithExplicitInterfaceSpecifier(
                     ExplicitInterfaceSpecifier(ParseName(definingType.FullTypeName))));
+            var inheritedStubs = interfaceGroup.InheritedMethods.Select(m => m.GenerateUnreachableExceptionStub());
             return ImplementationInterfaceTemplate
                 .AddBaseListTypes(SimpleBaseType(definingType.Syntax))
                 .WithMembers(
                     List<MemberDeclarationSyntax>(
-                        interfaceGroup.Methods
+                        interfaceGroup.DeclaredMethods
                         .Select(m => m.ManagedToUnmanagedStub)
                         .OfType<GeneratedStubCodeContext>()
                         .Select(ctx => ctx.Stub.Node)
-                        .Concat(shadowImplementations)))
+                        .Concat(shadowImplementations)
+                        .Concat(inheritedStubs)))
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(Attribute(ParseName(TypeNames.System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute)))));
         }
         private static InterfaceDeclarationSyntax GenerateImplementationVTableMethods(ComInterfaceAndMethodsContext comInterfaceAndMethods, CancellationToken _)

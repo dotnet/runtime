@@ -66,8 +66,9 @@ public partial class GeneratedComInterfaceTests
         IDerivedComInterface iface = (IDerivedComInterface)obj;
 
         Assert.Equal(3, iface.GetData());
-        iface.SetData(5);
-        Assert.Equal(5, iface.GetData());
+        // https://github.com/dotnet/runtime/issues/85795
+        //iface.SetData(5);
+        //Assert.Equal(5, iface.GetData());
 
         Assert.Equal("myName", iface.GetName());
         // https://github.com/dotnet/runtime/issues/85795

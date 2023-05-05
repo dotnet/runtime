@@ -44,6 +44,20 @@ namespace Microsoft.Interop
                 }
             }
 
+            public MethodDeclarationSyntax GenerateUnreachableExceptionStub()
+            {
+                // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
+                return MethodInfo.Syntax
+                    .WithAttributeLists(List<AttributeListSyntax>())
+                    .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
+                        ParseName(DeclaringInterface.Info.Type.FullTypeName)))
+                    .WithExpressionBody(ArrowExpressionClause(
+                        ThrowExpression(
+                            ObjectCreationExpression(
+                                ParseTypeName(TypeNames.UnreachableException))
+                                .WithArgumentList(ArgumentList()))));
+            }
+
             public MethodDeclarationSyntax GenerateShadow()
             {
                 // DeclarationCopiedFromBaseDeclaration(<Arguments>)

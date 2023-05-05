@@ -136,5 +136,6 @@ namespace Microsoft.Interop
         public const string GeneratedComClassAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComClassAttribute";
         public const string ComExposedClassAttribute = "System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute";
         public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
+        public const string UnreachableException = "System.Diagnostics.UnreachableException";
     }
 }
