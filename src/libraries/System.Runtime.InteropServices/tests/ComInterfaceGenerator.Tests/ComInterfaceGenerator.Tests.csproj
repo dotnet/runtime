@@ -8,11 +8,14 @@
     <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <ReferencesNativeExports>true</ReferencesNativeExports>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(MSBuildThisFileDirectory)Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
+    <Compile Remove="Generated\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
