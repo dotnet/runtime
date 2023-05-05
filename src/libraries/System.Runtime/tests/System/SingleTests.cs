@@ -798,13 +798,13 @@ namespace System.Tests
                 }
                 if (isDefaultProvider)
                 {
-                    Assert.Equal(expected, f.ToString(format.ToUpperInvariant()), true);
-                    Assert.Equal(expected, f.ToString(format.ToLowerInvariant()), true);
-                    Assert.Equal(expected, f.ToString(format.ToUpperInvariant(), null), true);
-                    Assert.Equal(expected, f.ToString(format.ToLowerInvariant(), null), true);
+                    Assert.Equal(expected, f.ToString(format.ToUpperInvariant()), ignoreCase: true);
+                    Assert.Equal(expected, f.ToString(format.ToLowerInvariant()), ignoreCase: true);
+                    Assert.Equal(expected, f.ToString(format.ToUpperInvariant(), null), ignoreCase: true);
+                    Assert.Equal(expected, f.ToString(format.ToLowerInvariant(), null), ignoreCase: true);
                 }
-                Assert.Equal(expected, f.ToString(format.ToUpperInvariant(), provider), true);
-                Assert.Equal(expected, f.ToString(format.ToLowerInvariant(), provider), true);
+                Assert.Equal(expected, f.ToString(format.ToUpperInvariant(), provider), ignoreCase: true);
+                Assert.Equal(expected, f.ToString(format.ToLowerInvariant(), provider), ignoreCase: true);
             }
         }
 
