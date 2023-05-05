@@ -3,15 +3,15 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
+import type { DotnetModuleConfigImports, EmscriptenReplacements } from "./types";
+import type { TypedArray } from "./types/emscripten";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WORKER, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
-import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
-import { TypedArray } from "./types/emscripten";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 
-export function init_polyfills(replacements: EarlyReplacements): void {
+export function init_polyfills(): void {
 
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
@@ -119,7 +119,9 @@ export function init_polyfills(replacements: EarlyReplacements): void {
             }
         };
     }
+}
 
+export function initializeReplacements(replacements: EmscriptenReplacements): void {
     // require replacement
     const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
@@ -150,7 +152,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
     if (Module.__locateFile === Module.locateFile) {
-        // above it's our early version from dotnet.es6.pre.js, we could replace it with better
+        // above it's our early version, we could replace it with better
         Module.locateFile = runtimeHelpers.locateFile = (path) => {
             if (isPathAbsolute(path)) return path;
             return runtimeHelpers.scriptDirectory + path;
@@ -188,6 +190,9 @@ export async function init_polyfills_async(): Promise<void> {
             const { performance } = INTERNAL.require("perf_hooks");
             globalThis.performance = performance;
         }
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore:
+        INTERNAL.process = await import(/* webpackIgnore: true */"process");
 
         if (!globalThis.crypto) {
             globalThis.crypto = <any>{};
@@ -292,7 +297,7 @@ function normalizeDirectoryUrl(dir: string) {
     return dir.slice(0, dir.lastIndexOf("/")) + "/";
 }
 
-export function detectScriptDirectory(replacements: EarlyReplacements): string {
+export function detectScriptDirectory(replacements: EmscriptenReplacements): string {
     if (ENVIRONMENT_IS_WORKER) {
         // Check worker, not web, since window could be polyfilled
         replacements.scriptUrl = self.location.href;

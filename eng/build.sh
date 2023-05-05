@@ -45,6 +45,7 @@ usage()
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
+  echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo ""
@@ -367,6 +368,11 @@ while [[ $# > 0 ]]; do
       esac
       arguments="$arguments /p:RuntimeFlavor=$val"
       shift 2
+      ;;
+
+     -usemonoruntime)
+      arguments="$arguments /p:PrimaryRuntimeFlavor=Mono"
+      shift 1
       ;;
 
      -librariesconfiguration|-lc)

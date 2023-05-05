@@ -55,7 +55,7 @@ public:
         CORJIT_FLAG_OSR                     = 13, // Generate alternate method for On Stack Replacement
 
         CORJIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
-        CORJIT_FLAG_UNUSED8                 = 15,
+        CORJIT_FLAG_FROZEN_ALLOC_ALLOWED    = 15, // JIT is allowed to use *_MAYBEFROZEN allocators
         CORJIT_FLAG_UNUSED9                 = 16,
         CORJIT_FLAG_UNUSED10                = 17,
 

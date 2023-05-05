@@ -18,8 +18,8 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 using MethodTable = Internal.Runtime.MethodTable;
+using MethodTableList = Internal.Runtime.MethodTableList;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
-using EETypeRef = Internal.Runtime.EETypeRef;
 using CorElementType = System.Reflection.CorElementType;
 
 namespace System
@@ -60,12 +60,7 @@ namespace System
 
         public static bool operator ==(EETypePtr value1, EETypePtr value2)
         {
-            if (value1.IsNull)
-                return value2.IsNull;
-            else if (value2.IsNull)
-                return false;
-            else
-                return RuntimeImports.AreTypesEquivalent(value1, value2);
+            return value1._value == value2._value;
         }
 
         public static bool operator !=(EETypePtr value1, EETypePtr value2)
@@ -451,10 +446,10 @@ namespace System
 
         public struct GenericArgumentCollection
         {
-            private EETypeRef* _arguments;
+            private MethodTableList _arguments;
             private uint _argumentCount;
 
-            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
+            internal GenericArgumentCollection(uint argumentCount, MethodTableList arguments)
             {
                 _argumentCount = argumentCount;
                 _arguments = arguments;
@@ -473,7 +468,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr(_arguments[index].Value);
+                    return new EETypePtr(_arguments[index]);
                 }
             }
         }

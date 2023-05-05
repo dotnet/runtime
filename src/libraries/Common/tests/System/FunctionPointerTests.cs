@@ -164,7 +164,6 @@ namespace System.Tests.Types
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void RequiredModifiers()
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -190,7 +189,6 @@ namespace System.Tests.Types
             "System.Double(System.String, System.Boolean*&, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass, System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyStruct&)",
             "String", "Boolean*&", "MyClass", "MyStruct&")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void MethodInfo(
             string methodName,
             string methodToStringPostfix,
@@ -219,7 +217,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Prop_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Prop_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Property(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
@@ -239,7 +236,6 @@ namespace System.Tests.Types
         [InlineData(nameof(FunctionPointerHolder.Field_Int), "System.Int32()")]
         [InlineData(nameof(FunctionPointerHolder.Field_MyClass), "System.Tests.Types.FunctionPointerTests+FunctionPointerHolder+MyClass()")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static unsafe void Field(string name, string expectedToString)
         {
             Type t = typeof(FunctionPointerHolder).Project();
