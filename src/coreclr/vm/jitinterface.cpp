@@ -12005,9 +12005,16 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
         Object* obj = OBJECTREFToObject(objRef);
         if (objRef->GetMethodTable()->ContainsPointers())
         {
-            // Only allow access to Delegate's IntPtr _methodPtr field
-            if (objRef->GetMethodTable()->IsDelegate() && (bufferSize == TARGET_POINTER_SIZE) &&
-                (valueOffset == TARGET_POINTER_SIZE * 3))
+            // Allow access to Delegate's IntPtr _methodPtr field
+            if (objRef->GetMethodTable()->IsDelegate() &&
+                (bufferSize == TARGET_POINTER_SIZE) && (valueOffset == TARGET_POINTER_SIZE * 3))
+            {
+                memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+                result = true;
+            }
+            // Also, allow access to RuntimeType's IntPtr m_handle field
+            else if (objRef->GetMethodTable() == g_pRuntimeTypeClass &&
+                (bufferSize == TARGET_POINTER_SIZE) && (valueOffset == TARGET_POINTER_SIZE * 3))
             {
                 memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
                 result = true;
