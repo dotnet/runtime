@@ -19875,7 +19875,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
 
             // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
+            // We expect op1 to have already been spilled
+
+            assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
             std::swap(op1, op2);
+
             break;
         }
 
@@ -24234,27 +24238,38 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
             {
                 case TernaryLogicUseFlags::A:
                 {
-                    // One operand. We swap it with C so it can be contained where possible
-                    value1 = op1;
-                    value2 = nullptr;
+                    // We'll swap from 'A, B, C' to 'B, C, A'
+                    // We expect A to have been spilled
 
-                    std::swap(op1, op3);
+                    assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
+
+                    std::swap(op1, op2); // B, A, C
+                    std::swap(op2, op3); // B, C, A
+
+                    value1 = op3;
+                    value2 = nullptr;
                     break;
                 }
 
                 case TernaryLogicUseFlags::B:
                 {
-                    // One operand. We swap it with C so it can be contained where possible
-                    value1 = op2;
-                    value2 = nullptr;
+                    // We'll swap from 'A, B, C' to 'A, C, B'
+                    // We expect A and B to have been spilled
 
-                    std::swap(op2, op3);
+                    assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
+                    assert((op2->gtFlags & GTF_SIDE_EFFECT) == 0);
+
+                    std::swap(op2, op3); // A, C, B
+
+                    value1 = op3;
+                    value2 = nullptr;
                     break;
                 }
 
                 case TernaryLogicUseFlags::C:
                 {
-                    // One operand. It is already in the ideal position
+                    // We don't require any operands to have been spilled
+
                     value1 = op3;
                     value2 = nullptr;
                     break;
@@ -24262,30 +24277,37 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
 
                 case TernaryLogicUseFlags::AB:
                 {
-                    // Two operands. We swap A with C so it can be contained where possible
-                    // and so we aren't RMW
+                    // We'll swap from 'A, B, C' to 'C, A, B'
+                    // We expect A and B to have been spilled
 
-                    value1 = op1;
-                    value2 = op2;
+                    assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
+                    assert((op2->gtFlags & GTF_SIDE_EFFECT) == 0);
 
-                    std::swap(op1, op3);
+                    std::swap(op1, op3); // C, B, A
+                    std::swap(op2, op3); // C, A, B
+
+                    value1 = op2;
+                    value2 = op3;
                     break;
                 }
 
                 case TernaryLogicUseFlags::AC:
                 {
-                    // Two operands. We swap A with B so we aren't RMW
+                    // We'll swap from 'A, B, C' to 'B, C, A'
+                    // We expect A to have been spilled
 
-                    value1 = op1;
+                    assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
+
+                    std::swap(op1, op2); // B, A, C
+
+                    value1 = op2;
                     value2 = op3;
-
-                    std::swap(op1, op2);
                     break;
                 }
 
                 case TernaryLogicUseFlags::BC:
                 {
-                    // Two operands. They are already in the ideal positions
+                    // We don't require any operands to have been spilled
 
                     value1 = op2;
                     value2 = op3;
@@ -24468,6 +24490,9 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                         {
                             value1 = gtNewOperNode(GT_COMMA, type, op1, value1);
                         }
+
+                        // GT_AND_NOT takes them as `op1 & ~op2` and x86 reorders them back to `~op1 & op2`
+                        // since the underlying andnps/andnpd/pandn instructions take them as such
 
                         return gtNewSimdBinOpNode(GT_AND_NOT, type, value2, value1, simdBaseJitType, simdSize);
                     }

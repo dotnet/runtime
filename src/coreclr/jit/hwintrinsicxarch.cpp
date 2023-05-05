@@ -3002,6 +3002,96 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 4);
 
             op4 = impPopStack().val;
+
+            bool spillOp1 = false;
+            bool spillOp2 = false;
+
+            if (op4->IsIntegralConst())
+            {
+                uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                if (useFlags != TernaryLogicUseFlags::ABC)
+                {
+                    switch (useFlags)
+                    {
+                        case TernaryLogicUseFlags::A:
+                        {
+                            // We'll swap from 'A, B, C' to 'B, C, A'
+                            // so just spill A
+
+                            spillOp1 = true;
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::B:
+                        {
+                            // We'll swap from 'A, B, C' to 'A, C, B'
+                            // so spill A and B
+
+                            spillOp1 = true;
+                            spillOp2 = true;
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::C:
+                        {
+                            // No operands will be swapped
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::AB:
+                        {
+                            // We'll swap from 'A, B, C' to 'C, A, B'
+                            // so spill A and B
+
+                            spillOp1 = true;
+                            spillOp2 = true;
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::AC:
+                        {
+                            // We'll swap from 'A, B, C' to 'B, C, A'
+                            // so just spill A
+
+                            spillOp1 = true;
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::BC:
+                        {
+                            // No operands will be swapped
+                            break;
+                        }
+
+                        case TernaryLogicUseFlags::None:
+                        {
+                            // No operands.
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+                }
+            }
+
+            if (spillOp1)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            }
+
+            if (spillOp2)
+            {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
+            }
+
             op3 = impSIMDPopStack();
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
