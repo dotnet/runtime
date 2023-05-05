@@ -31,6 +31,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			action = instance.OnlyUseViaDelegateVirt;
 
 			Expression<Action> ex = () => GetMethod_Name.OnlyUsedViaLdToken (42);
+
+			TestLambdaUsage ((int firstName) => { firstName.ToString (); });
 		}
 
 		[Kept]
@@ -81,6 +83,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void OnlyUsedViaLdToken (int firstName)
 			{
 			}
+		}
+
+		[Kept]
+		public static void TestLambdaUsage ([RemovedNameValue] Delegate action)
+		{
+			var n = action.Method.GetParameters ()[0].Name;
 		}
 
 		[Kept]

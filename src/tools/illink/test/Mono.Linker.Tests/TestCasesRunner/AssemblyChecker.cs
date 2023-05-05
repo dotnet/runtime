@@ -50,7 +50,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyReferences (originalAssembly, linkedAssembly);
 			VerifyKeptByAttributes (originalAssembly, originalAssembly.FullName);
 
-			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Where(m => !IsCompilerGeneratedMember(m)).Select (s => {
+			linkedMembers = new HashSet<string> (linkedAssembly.MainModule.AllMembers ().Select (s => {
 				return s.FullName;
 			}), StringComparer.Ordinal);
 
@@ -66,6 +66,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
 				if (originalMember is TypeDefinition td) {
+					if (td.Name == "<Module>") {
+						linkedMembers.Remove (td.Name);
+						continue;
+					}
+
 					TypeDefinition linkedType = linkedAssembly.MainModule.GetType (originalMember.FullName);
 					VerifyTypeDefinition (td, linkedType);
 					linkedMembers.Remove (td.FullName);
@@ -95,6 +100,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return false;
 		}
 
+		static bool IsBackingField (FieldDefinition field) => field.Name.StartsWith ("<") && field.Name.EndsWith (">k__BackingField");
+
 		protected virtual void VerifyModule (ModuleDefinition original, ModuleDefinition linked)
 		{
 			// We never link away a module today so let's make sure the linked one isn't null
@@ -116,9 +123,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual void VerifyTypeDefinition (TypeDefinition original, TypeDefinition linked)
 		{
-			if (IsCompilerGeneratedMember (original))
-				return;
-
 			if (linked != null && verifiedGeneratedTypes.Contains (linked.FullName))
 				return;
 
@@ -136,10 +140,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				original.AllMembers ().Any (HasActiveKeptDerivedAttribute);
 
 			if (!expectedKept) {
-				if (linked != null)
-					Assert.Fail ($"Type `{original}' should have been removed");
+				if (linked == null)
+					return;
 
-				return;
+				if (!IsCompilerGeneratedMember (original))
+					Assert.Fail ($"Type `{original}' should have been removed");
 			}
 
 			bool prev = checkNames;
@@ -227,17 +232,20 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (linked == null)
 				Assert.Fail ($"Type `{original}' should have been kept");
 
-			VerifyKeptByAttributes (original, linked);
-			if (!original.IsInterface)
-				VerifyBaseType (original, linked);
+			// Skip verification of type metadata for compiler generated types (we don't currently need it yet)
+			if (!IsCompilerGeneratedMember (original)) {
+				VerifyKeptByAttributes (original, linked);
+				if (!original.IsInterface)
+					VerifyBaseType (original, linked);
 
-			VerifyInterfaces (original, linked);
-			VerifyPseudoAttributes (original, linked);
-			VerifyGenericParameters (original, linked);
-			VerifyCustomAttributes (original, linked);
-			VerifySecurityAttributes (original, linked);
+				VerifyInterfaces (original, linked);
+				VerifyPseudoAttributes (original, linked);
+				VerifyGenericParameters (original, linked);
+				VerifyCustomAttributes (original, linked);
+				VerifySecurityAttributes (original, linked);
 
-			VerifyFixedBufferFields (original, linked);
+				VerifyFixedBufferFields (original, linked);
+			}
 
 			// Need to check delegate cache fields before the normal field check
 			VerifyDelegateBackingFields (original, linked);
@@ -378,7 +386,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyField (FieldDefinition src, FieldDefinition linked)
 		{
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) ||
+				(compilerGenerated ? !IsBackingField (src) : false);
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -387,10 +397,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			VerifyFieldKept (src, linked);
+			VerifyFieldKept (src, linked, compilerGenerated);
 		}
 
-		void VerifyFieldKept (FieldDefinition src, FieldDefinition linked)
+		void VerifyFieldKept (FieldDefinition src, FieldDefinition linked, bool compilerGenerated)
 		{
 			if (linked == null)
 				Assert.Fail ($"Field `{src}' should have been kept");
@@ -399,14 +409,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 		}
 
 		void VerifyProperty (PropertyDefinition src, PropertyDefinition linked, TypeDefinition linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -422,14 +434,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 		}
 
 		void VerifyEvent (EventDefinition src, EventDefinition linked, TypeDefinition linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
-			bool expectedKept = ShouldBeKept (src);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldBeKept (src) || compilerGenerated;
 
 			if (!expectedKept) {
 				if (linked != null)
@@ -442,30 +456,31 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				Assert.Fail ($"Event `{src}' should have been kept");
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventAddMethodAttribute))) {
-				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true);
+				VerifyMethodInternal (src.AddMethod, linked.AddMethod, true, compilerGenerated);
 				verifiedEventMethods.Add (src.AddMethod.FullName);
 				linkedMembers.Remove (src.AddMethod.FullName);
 			}
 
 			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptEventRemoveMethodAttribute))) {
-				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true);
+				VerifyMethodInternal (src.RemoveMethod, linked.RemoveMethod, true, compilerGenerated);
 				verifiedEventMethods.Add (src.RemoveMethod.FullName);
 				linkedMembers.Remove (src.RemoveMethod.FullName);
 			}
 
 			VerifyKeptByAttributes (src, linked);
 			VerifyPseudoAttributes (src, linked);
-			VerifyCustomAttributes (src, linked);
+			if (!compilerGenerated)
+				VerifyCustomAttributes (src, linked);
 		}
 
 		void VerifyMethod (MethodDefinition src, MethodDefinition linked)
 		{
-			bool expectedKept = ShouldMethodBeKept (src);
-			VerifyMethodInternal (src, linked, expectedKept);
+			bool compilerGenerated = IsCompilerGeneratedMember (src);
+			bool expectedKept = ShouldMethodBeKept (src) || compilerGenerated;
+			VerifyMethodInternal (src, linked, expectedKept, compilerGenerated);
 		}
 
-
-		void VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept)
+		void VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
 		{
 			if (!expectedKept) {
 				if (linked != null)
@@ -474,7 +489,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			}
 
-			VerifyMethodKept (src, linked);
+			VerifyMethodKept (src, linked, compilerGenerated);
 		}
 
 		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
@@ -499,20 +514,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (srcField == null)
 				Assert.Fail ($"{src.MetadataToken.TokenType} `{src}', could not locate the expected backing field {backingFieldName}");
 
-			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name));
+			VerifyFieldKept (srcField, linkedType?.Fields.FirstOrDefault (l => srcField.Name == l.Name), compilerGenerated: true);
 			verifiedGeneratedFields.Add (srcField.FullName);
 			linkedMembers.Remove (srcField.FullName);
 		}
 
-		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDefinition linked)
+		protected virtual void VerifyMethodKept (MethodDefinition src, MethodDefinition linked, bool compilerGenerated)
 		{
 			if (linked == null)
 				Assert.Fail ($"Method `{src.FullName}' should have been kept");
 
 			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
-			VerifyCustomAttributes (src, linked);
-			VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+			if (!compilerGenerated) {
+				VerifyCustomAttributes (src, linked);
+				VerifyCustomAttributes (src.MethodReturnType, linked.MethodReturnType);
+			}
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
@@ -823,7 +840,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.Fail ($"Could not locate original private implementation details method {methodName}");
 
 				var linkedMethod = linkedImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
-				VerifyMethodKept (originalMethod, linkedMethod);
+				VerifyMethodKept (originalMethod, linkedMethod, compilerGenerated: true);
 				linkedMembers.Remove (linkedMethod.FullName);
 			}
 			verifiedGeneratedTypes.Add (srcImplementationDetails.FullName);
@@ -886,7 +903,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyInitializerField (FieldDefinition src, FieldDefinition linked)
 		{
-			VerifyFieldKept (src, linked);
+			VerifyFieldKept (src, linked, compilerGenerated: true);
 			verifiedGeneratedFields.Add (linked.FullName);
 			linkedMembers.Remove (linked.FullName);
 			VerifyTypeDefinitionKept (src.FieldType.Resolve (), linked.FieldType.Resolve ());
@@ -986,7 +1003,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					Assert.Fail ($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
 
 				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault ();
-				VerifyFieldKept (originalElementField, linkedField);
+				VerifyFieldKept (originalElementField, linkedField, compilerGenerated: true);
 				verifiedGeneratedFields.Add (originalElementField.FullName);
 				linkedMembers.Remove (linkedField.FullName);
 
@@ -1017,7 +1034,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						Assert.Fail ($"Invalid expected delegate backing field {expectedFieldName} in {src}. This member was not in the unlinked assembly");
 
 					var linkedField = linkedNestedType?.Fields.FirstOrDefault (f => f.Name == expectedFieldName);
-					VerifyFieldKept (originalField, linkedField);
+					VerifyFieldKept (originalField, linkedField, compilerGenerated: true);
 					verifiedGeneratedFields.Add (linkedField.FullName);
 					linkedMembers.Remove (linkedField.FullName);
 				}
