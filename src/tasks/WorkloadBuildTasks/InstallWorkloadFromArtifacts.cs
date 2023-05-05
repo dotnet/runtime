@@ -117,6 +117,8 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
+                    OverrideWebAssemblySdkPack(req.TargetPath);
+
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
 
@@ -131,6 +133,19 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 if (!string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
                     Directory.Delete(_tempDir, recursive: true);
+            }
+        }
+
+        private static void OverrideWebAssemblySdkPack(string targetPath)
+        {
+            string path = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
+
+            var document = XDocument.Load(path);
+            if (document != null)
+            {
+                var element = document.Descendants("KnownWebAssemblySdkPack").First(e => e.Attribute("TargetFramework")?.Value == "net8.0");
+                element.SetAttributeValue("WebAssemblySdkPackVersion", "8.0.0-dev");
+                document.Save(path);
             }
         }
 
