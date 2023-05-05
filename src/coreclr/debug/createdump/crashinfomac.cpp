@@ -245,7 +245,7 @@ void CrashInfo::VisitModule(MachOModule& module)
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
-        else if (m_singleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             uint64_t symbolOffset;
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))

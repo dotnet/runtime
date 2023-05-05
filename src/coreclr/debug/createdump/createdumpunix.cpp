@@ -53,7 +53,7 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
     // Write the crash report json file if enabled and createdump isn't statically linked into the runtime
-    if (options.CrashReport && !options.SingleFile && !options.NativeAOT)
+    if (options.CrashReport && options.AppModel != AppModelType::SingleFile && options.AppModel != AppModelType::NativeAOT)
     {
         CrashReportWriter crashReportWriter(*crashInfo);
         crashReportWriter.WriteCrashReport(dumpPath);

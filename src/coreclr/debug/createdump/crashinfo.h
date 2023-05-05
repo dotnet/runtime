@@ -51,8 +51,7 @@ private:
     void* m_dacModule;                              // dac module pointer when loaded
     ICLRDataEnumMemoryRegions* m_pClrDataEnumRegions; // dac enumerate memory interface instance
     IXCLRDataProcess* m_pClrDataProcess;            // dac process interface instance
-    bool m_singleFile;                              // if true, single-file app. Checks for the single-file export in every module.
-    bool m_nativeAOT;                               // if true, native AOT app.
+    AppModelType m_appModel;                        // Normal, single-file or native AOT app.
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
     uint32_t m_signal;                              // crash signal code or 0 if none

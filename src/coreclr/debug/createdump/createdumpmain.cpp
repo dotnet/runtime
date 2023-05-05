@@ -64,8 +64,7 @@ int createdump_main(const int argc, const char* argv[])
     CreateDumpOptions options;
     options.DumpType = DumpType::Heap;
     options.DumpPathTemplate = nullptr;
-    options.SingleFile = false;
-    options.NativeAOT = false;
+    options.AppModel = AppModelType::Normal;
     options.CrashReport = false;
     options.CreateDump = true;
     options.Signal = 0;
@@ -125,7 +124,7 @@ int createdump_main(const int argc, const char* argv[])
             }
             else if (strcmp(*argv, "--singlefile") == 0)
             {
-                options.SingleFile = true;
+                options.AppModel = AppModelType::SingleFile;
             }
             else if (strcmp(*argv, "--code") == 0)
             {

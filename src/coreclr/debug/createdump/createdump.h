@@ -98,12 +98,18 @@ enum DumpType
     Full
 };
 
+enum AppModelType
+{
+    Normal,
+    SingleFile,
+    NativeAOT
+};
+
 typedef struct
 {
     const char* DumpPathTemplate;
     enum DumpType DumpType;
-    bool SingleFile;
-    bool NativeAOT;
+    enum AppModelType AppModel;
     bool CreateDump;
     bool CrashReport;
     int Pid;

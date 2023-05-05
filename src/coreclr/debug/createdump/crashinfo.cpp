@@ -18,8 +18,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_dacModule(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
-    m_singleFile(options.SingleFile),
-    m_nativeAOT(options.NativeAOT),
+    m_appModel(options.AppModel),
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
@@ -287,8 +286,7 @@ bool
 CrashInfo::InitializeDAC()
 {
     // Don't attempt to load the DAC if createdump is statically linked into the runtime
-    //if (m_singleFile || m_nativeAOT)
-    if (m_nativeAOT)
+    if (m_appModel == AppModelType::NativeAOT)
     {
         return true;
     }
@@ -309,12 +307,13 @@ CrashInfo::InitializeDAC()
     dacPath.append(m_coreclrPath);
     dacPath.append(MAKEDLLNAME_A("mscordaccore"));
 
-    // Load and initialize the DAC
+    // Load and initialize the DAC. We don't use the LoadLibraryA here because the PAL may not be
+    // initialized properly in the forked process for the statically linked single-file scenario.
     m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
     if (m_dacModule == nullptr)
     {
         // Don't fail for single-file apps when the DAC can't be found. Will fall back to full dump.
-        if (m_singleFile)
+        if (m_appModel == AppModelType::SingleFile)
         {
             result = true;
         }
