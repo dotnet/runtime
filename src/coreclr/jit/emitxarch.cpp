@@ -622,8 +622,6 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
                 case INS_call:
                     return PEEPHOLE_ABORT;
 
-                case INS_cwde:
-                case INS_cdq:
                 case INS_movsx:
 #ifdef TARGET_64BIT
                 case INS_movsxd:
