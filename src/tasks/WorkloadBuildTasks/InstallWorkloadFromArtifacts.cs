@@ -139,12 +139,14 @@ namespace Microsoft.Workload.Build.Tasks
 
         private static void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
         {
-            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
-
             string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
-            string nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").Single();
+            string? nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").FirstOrDefault();
+            if (nupkg == null)
+                return;
+
             string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
 
+            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
             var document = XDocument.Load(bundledVersions);
             if (document != null)
             {
