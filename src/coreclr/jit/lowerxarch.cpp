@@ -1954,6 +1954,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
+    assert(!comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
     var_types   simdBaseType    = node->GetSimdBaseType();
@@ -6985,6 +6987,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_ShiftRightArithmetic:
                 case NI_AVX512F_ShiftRightLogical:
                 case NI_AVX512F_Shuffle:
+                case NI_AVX512F_TernaryLogic:
                 case NI_AVX512F_VL_AlignRight32:
                 case NI_AVX512F_VL_AlignRight64:
                 case NI_AVX512F_VL_Fixup:
@@ -6993,6 +6996,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_VL_RotateRight:
                 case NI_AVX512F_VL_RoundScale:
                 case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX512F_VL_TernaryLogic:
                 case NI_AVX512BW_AlignRight:
                 case NI_AVX512BW_ShiftLeftLogical:
                 case NI_AVX512BW_ShiftRightArithmetic:
@@ -8395,6 +8399,52 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // non-RMW based codegen.
 
                                 MakeSrcContained(node, op1);
+                            }
+                            break;
+                        }
+
+                        
+                        case NI_AVX512F_TernaryLogic:
+                        case NI_AVX512F_VL_TernaryLogic:
+                        {
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
+                            if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op3);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                MakeSrcRegOptional(node, op3);
+                            }
+
+                            uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                            const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                            TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                            if (useFlags != TernaryLogicUseFlags::ABC)
+                            {
+                                assert(!node->isRMWHWIntrinsic(comp));
+
+                                // op1, and possibly op2, are never selected
+                                // by the table so we can contain and ignore
+                                // any register allocated to it resulting in
+                                // better non-RMW based codegen.
+
+                                MakeSrcContained(node, op1);
+
+                                if (useFlags == TernaryLogicUseFlags::C)
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else
+                                {
+                                    assert(useFlags == TernaryLogicUseFlags::BC);
+                                }
                             }
                             break;
                         }

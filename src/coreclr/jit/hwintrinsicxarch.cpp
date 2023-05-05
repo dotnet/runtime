@@ -2962,6 +2962,43 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX512F_Fixup:
+        case NI_AVX512F_FixupScalar:
+        case NI_AVX512F_VL_Fixup:
+        {
+            assert(sig->numArgs == 4);
+
+            op4 = impPopStack().val;
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+
+            if (!retNode->isRMWHWIntrinsic(this))
+            {
+                if (!op1->IsVectorZero())
+                {
+                    retNode->AsHWIntrinsic()->Op(1) = gtNewZeroConNode(retType);
+                }
+            }
+            break;
+        }
+
+        case NI_AVX512F_TernaryLogic:
+        case NI_AVX512F_VL_TernaryLogic:
+        {
+            assert(sig->numArgs == 4);
+
+            op4 = impPopStack().val;
+            op3 = impSIMDPopStack();
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            retNode = gtNewSimdTernaryLogicNode(retType, op1, op2, op3, op4, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
         {

@@ -18510,6 +18510,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpsrlvq:
         case INS_vpsrlvw:
         case INS_vpternlogd:
+        case INS_vpternlogq:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_1C;

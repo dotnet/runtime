@@ -845,6 +845,119 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPSRAVQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<long> ShiftRightArithmeticVariable(Vector256<long> value, Vector256<ulong> count) => ShiftRightArithmeticVariable(value, count);
+
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<sbyte> TernaryLogic(Vector128<sbyte> a, Vector128<sbyte> b, Vector128<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<byte> TernaryLogic(Vector128<byte> a, Vector128<byte> b, Vector128<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<short> TernaryLogic(Vector128<short> a, Vector128<short> b, Vector128<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, short imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<ushort> TernaryLogic(Vector128<ushort> a, Vector128<ushort> b, Vector128<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<int> TernaryLogic(Vector128<int> a, Vector128<int> b, Vector128<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi32 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<uint> TernaryLogic(Vector128<uint> a, Vector128<uint> b, Vector128<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<long> TernaryLogic(Vector128<long> a, Vector128<long> b, Vector128<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128i _mm_ternarylogic_epi64 (__m128i a, __m128i b, __m128i c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<ulong> TernaryLogic(Vector128<ulong> a, Vector128<ulong> b, Vector128<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128 _mm_ternarylogic_ps (__m128 a, __m128 b, __m128 c, int imm)
+            ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<float> TernaryLogic(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m128d _mm_ternarylogic_pd (__m128d a, __m128d b, __m128d c, int imm)
+            ///   VPTERNLOGQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector128<double> TernaryLogic(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<sbyte> TernaryLogic(Vector256<sbyte> a, Vector256<sbyte> b, Vector256<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, byte imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<byte> TernaryLogic(Vector256<byte> a, Vector256<byte> b, Vector256<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<short> TernaryLogic(Vector256<short> a, Vector256<short> b, Vector256<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_si256 (__m256i a, __m256i b, __m256i c, short imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<ushort> TernaryLogic(Vector256<ushort> a, Vector256<ushort> b, Vector256<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> TernaryLogic(Vector256<int> a, Vector256<int> b, Vector256<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi32 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> TernaryLogic(Vector256<uint> a, Vector256<uint> b, Vector256<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> TernaryLogic(Vector256<long> a, Vector256<long> b, Vector256<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256i _mm256_ternarylogic_epi64 (__m256i a, __m256i b, __m256i c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> TernaryLogic(Vector256<ulong> a, Vector256<ulong> b, Vector256<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256 _mm256_ternarylogic_ps (__m256 a, __m256 b, __m256 c, int imm)
+            ///   VPTERNLOGD ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<float> TernaryLogic(Vector256<float> a, Vector256<float> b, Vector256<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+            /// <summary>
+            /// __m256d _mm256_ternarylogic_pd (__m256d a, __m256d b, __m256d c, int imm)
+            ///   VPTERNLOGQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+            /// </summary>
+            public static Vector256<double> TernaryLogic(Vector256<double> a, Vector256<double> b, Vector256<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
         }
 
         [Intrinsic]
@@ -2785,6 +2898,63 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
         /// </summary>
         public static Vector512<double> Subtract(Vector512<double> left, Vector512<double> right) => Subtract(left, right);
+
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<sbyte> TernaryLogic(Vector512<sbyte> a, Vector512<sbyte> b, Vector512<sbyte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, byte imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<byte> TernaryLogic(Vector512<byte> a, Vector512<byte> b, Vector512<byte> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<short> TernaryLogic(Vector512<short> a, Vector512<short> b, Vector512<short> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_si512 (__m512i a, __m512i b, __m512i c, short imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<ushort> TernaryLogic(Vector512<ushort> a, Vector512<ushort> b, Vector512<ushort> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> TernaryLogic(Vector512<int> a, Vector512<int> b, Vector512<int> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi32 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> TernaryLogic(Vector512<uint> a, Vector512<uint> b, Vector512<uint> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> TernaryLogic(Vector512<long> a, Vector512<long> b, Vector512<long> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512i _mm512_ternarylogic_epi64 (__m512i a, __m512i b, __m512i c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> TernaryLogic(Vector512<ulong> a, Vector512<ulong> b, Vector512<ulong> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512 _mm512_ternarylogic_ps (__m512 a, __m512 b, __m512 c, int imm)
+        ///   VPTERNLOGD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<float> TernaryLogic(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
+        /// <summary>
+        /// __m512d _mm512_ternarylogic_pd (__m512d a, __m512d b, __m512d c, int imm)
+        ///   VPTERNLOGQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
+        /// </summary>
+        public static Vector512<double> TernaryLogic(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected] byte control) => TernaryLogic(a, b, c, control);
 
         /// <summary>
         /// __m512i _mm512_unpackhi_epi32 (__m512i a, __m512i b)
