@@ -1183,8 +1183,9 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	mono_class_setup_supertypes (klass);
 
-	if (mono_class_is_ginst (eclass))
-		mono_class_init_internal (eclass);
+	//if (mono_class_is_ginst (eclass))
+	//	mono_class_init_internal (eclass);
+	// NOTE: this is also probably too aggressive if eclass is not a valuetype
 	if (!eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
