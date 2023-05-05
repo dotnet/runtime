@@ -37,7 +37,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle ElementType
         {
@@ -182,7 +182,7 @@ namespace Internal.Metadata.NativeFormat
                 return _handle;
             }
         } // Handle
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public Handle Type
         {
@@ -4901,7 +4901,7 @@ namespace Internal.Metadata.NativeFormat
         } // Method
 
         internal Handle _method;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {
@@ -7756,7 +7756,7 @@ namespace Internal.Metadata.NativeFormat
         } // GenericType
 
         internal Handle _genericType;
-        /// One of: TypeDefinition, TypeReference, TypeSpecification
+        /// One of: TypeDefinition, TypeReference, TypeSpecification, ModifiedType
 
         public HandleCollection GenericTypeArguments
         {

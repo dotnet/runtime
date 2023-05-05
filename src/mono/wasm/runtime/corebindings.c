@@ -46,6 +46,8 @@ extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *ca
 extern void mono_wasm_change_case_invariant(MonoString **exceptionMessage, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
 extern void mono_wasm_change_case(MonoString **exceptionMessage, MonoString **culture, const uint16_t* src, int32_t srcLength, uint16_t* dst, int32_t dstLength, mono_bool bToUpper);
 extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
+extern mono_bool mono_wasm_starts_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
+extern mono_bool mono_wasm_ends_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
 
 void bindings_initialize_internals (void)
 {
@@ -77,4 +79,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
+	mono_add_internal_call ("Interop/JsGlobalization::StartsWith", mono_wasm_starts_with);
+	mono_add_internal_call ("Interop/JsGlobalization::EndsWith", mono_wasm_ends_with);
 }

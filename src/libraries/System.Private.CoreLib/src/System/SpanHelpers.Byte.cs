@@ -342,7 +342,6 @@ namespace System
 
         // IndexOfNullByte processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static unsafe int IndexOfNullByte(byte* searchSpace)
         {
             const int Length = int.MaxValue;
@@ -789,7 +788,6 @@ namespace System
             return i * 8 + LocateFirstFoundByte(candidate);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);

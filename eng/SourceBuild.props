@@ -31,14 +31,15 @@
       <InnerBuildArgs>$(InnerBuildArgs) --nodereuse false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --warnAsError false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
-      <!-- RuntimeOS is the build host rid OS. -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(RuntimeOS)</InnerBuildArgs>
+      <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
+           They are set to RuntimeOS so they match with the build SDK rid. -->
+      <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
-         It's used to add TargetRid in the graph if the parent can't be detected. -->
+           It's used to add TargetRid in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) /p:PrimaryRuntimeFlavor=Mono /p:RuntimeFlavor=Mono</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) --usemonoruntime</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 

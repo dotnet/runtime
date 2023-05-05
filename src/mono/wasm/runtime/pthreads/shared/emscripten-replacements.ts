@@ -8,7 +8,7 @@ import { afterThreadInitTLS } from "../worker";
 import Internals from "./emscripten-internals";
 import { resolve_asset_path } from "../../assets";
 import { mono_assert } from "../../types";
-import { runtimeHelpers } from "../../imports";
+import { runtimeHelpers } from "../../globals";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with

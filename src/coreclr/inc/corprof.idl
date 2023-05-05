@@ -2035,6 +2035,17 @@ typedef struct COR_PRF_GC_GENERATION_RANGE
 }   COR_PRF_GC_GENERATION_RANGE;
 
 
+/*
+ * COR_PRF_NONGC_GENERATION_RANGE describes a range of memory in the GetNonGCHeapBounds function.
+ */
+typedef struct COR_PRF_NONGC_HEAP_RANGE
+{
+    ObjectID                rangeStart;             // the start of the range
+    UINT_PTR                rangeLength;            // the used length of the range
+    UINT_PTR                rangeLengthReserved;    // the amount of memory reserved for the range (including rangeLength)
+
+}   COR_PRF_NONGC_HEAP_RANGE;
+
 
 /*
  * COR_PRF_CLAUSE_TYPE defines the various clause codes for the EX clauses
@@ -4243,6 +4254,22 @@ interface ICorProfilerInfo13 : ICorProfilerInfo12
     HRESULT GetObjectIDFromHandle(
         [in] ObjectHandleID handle,
         [out] ObjectID* pObject);
+}
+
+[
+    object,
+    uuid(F460E352-D76D-4FE9-835F-F6AF9D6E862D),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo14 : ICorProfilerInfo13
+{
+    HRESULT EnumerateNonGCObjects([out] ICorProfilerObjectEnum** ppEnum);
+
+    HRESULT GetNonGCHeapBounds(
+                    [in] ULONG cObjectRanges,
+                    [out] ULONG *pcObjectRanges,
+                    [out, size_is(cObjectRanges), length_is(*pcObjectRanges)] COR_PRF_NONGC_HEAP_RANGE ranges[]);
 }
 
 /*

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
@@ -64,7 +64,7 @@ export function mono_on_abort(error: any): void {
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_exit(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.config.asyncFlushOnExit && exit_code === 0) {
+    if (runtimeHelpers.config && runtimeHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
             try {
@@ -127,7 +127,11 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     logErrorOnExit(exit_code, reason);
     appendElementOnExit(exit_code);
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (runtimeHelpers.quit) {
+        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
+            INTERNAL.process.exit(exit_code);
+            throw reason;
+        }
+        else if (runtimeHelpers.quit) {
             runtimeHelpers.quit(exit_code, reason);
         } else {
             throw reason;
@@ -136,7 +140,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && runtimeHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && runtimeHelpers.config && runtimeHelpers.config.appendElementOnExit) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
@@ -147,7 +151,7 @@ function appendElementOnExit(exit_code: number) {
 }
 
 function logErrorOnExit(exit_code: number, reason?: any) {
-    if (runtimeHelpers.config.logExitCode) {
+    if (runtimeHelpers.config && runtimeHelpers.config.logExitCode) {
         if (exit_code != 0 && reason) {
             if (reason instanceof Error)
                 console.error(mono_wasm_stringify_as_error_with_stack(reason));

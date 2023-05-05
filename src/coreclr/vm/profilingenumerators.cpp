@@ -15,6 +15,7 @@
 //
 
 #include "common.h"
+#include "frozenobjectheap.h"
 
 #ifdef PROFILING_SUPPORTED
 
@@ -85,6 +86,42 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
         }
     }
 
+    return TRUE;
+}
+
+// ---------------------------------------------------------------------------------------
+//  ProfilerObjectEnum/ICorProfilerObjectEnum implementation
+// ---------------------------------------------------------------------------------------
+
+BOOL ProfilerObjectEnum::Init()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    CrstHolder ch(&foh->m_Crst);
+
+    const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
+    FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
+    if (segments != nullptr)
+    {
+        for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
+        {
+            const FrozenObjectSegment* segment = segments[segmentIdx];
+
+            Object* currentObj = segment->GetFirstObject();
+            while (currentObj != nullptr)
+            {
+                *m_elements.Append() = reinterpret_cast<size_t>(currentObj);
+                currentObj = segment->GetNextObject(currentObj);
+            }
+        }
+    }
     return TRUE;
 }
 

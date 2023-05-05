@@ -1078,12 +1078,10 @@ namespace System.IO
             {
                 foreach (string line in contents)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await writer.WriteLineAsync(line).ConfigureAwait(false);
+                    await writer.WriteLineAsync(line.AsMemory(), cancellationToken).ConfigureAwait(false);
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-                await writer.FlushAsync().ConfigureAwait(false);
+                await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 

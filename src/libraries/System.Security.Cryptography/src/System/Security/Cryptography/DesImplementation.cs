@@ -10,6 +10,14 @@ namespace System.Security.Cryptography
     {
         private const int BitsPerByte = 8;
 
+        public DesImplementation()
+        {
+            // Default CFB to CFB8. .NET Framework uses 8 as the default for DESCryptoServiceProvider which
+            // was used for DES.Create(), and .NET doesn't support anything other than 8 for the feedback size for DES,
+            // so also default it to the only value that works.
+            FeedbackSizeValue = 8;
+        }
+
         public override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);

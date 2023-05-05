@@ -306,7 +306,9 @@ namespace Internal.Reflection.Execution
         //
         public override void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged)
         {
-            TypeLoaderEnvironment.Instance.GetFunctionPointerTypeComponents(functionPointerHandle, out returnTypeHandle, out parameterHandles, out isUnmanaged);
+            returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(functionPointerHandle);
+            parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(functionPointerHandle);
+            isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(functionPointerHandle);
         }
 
         //

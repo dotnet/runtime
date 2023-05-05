@@ -81,7 +81,6 @@ __Compiler=clang
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
-__DistroRid=""
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=0

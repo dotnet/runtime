@@ -274,16 +274,9 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_typeBuilder.SetCustomAttribute(con, binaryAttribute);
-        }
-
-        // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_typeBuilder.SetCustomAttribute(customBuilder);
         }
 
         // Return the class that declared this Field.
@@ -292,7 +285,6 @@ namespace System.Reflection.Emit
         // Return the class that was used to obtain this field.
 
         public override Type? ReflectedType => m_typeBuilder.ReflectedType;
-
 
         // Returns true if one or more instance of attributeType is defined on this member.
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -328,7 +320,6 @@ namespace System.Reflection.Emit
             string s = GetRankString(rank);
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
-
 
         // Constructs a EnumBuilder.
         // EnumBuilder can only be a top-level (not nested) enum type.

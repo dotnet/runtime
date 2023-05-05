@@ -47,6 +47,5 @@ namespace rh {
 #endif // FEATURE_RWX_MEMORY
 
 // inc
-FWD_DECL(EEInterfaceInfo)
 FWD_DECL(MethodTable)
 

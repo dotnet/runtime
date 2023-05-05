@@ -1230,6 +1230,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             break;
 #endif
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetLayout(nullptr);
             break;
@@ -1241,7 +1242,12 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
@@ -1285,8 +1291,8 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
 {
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object);
-    result->gtFlags |= GTF_IND_INVARIANT;
+    assert(object->TypeIs(TYP_REF));
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
 
@@ -3985,7 +3991,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
-        case GT_FIELD:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4361,10 +4366,9 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 // Notes:
 //    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
-
+//
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
 {
-
 #if defined(DEBUG)
     assert(state != RCS_INVALID);
     Compiler* compiler = JitTls::GetCompiler();
@@ -4374,6 +4378,25 @@ inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
     unsigned short oldRefCnt = m_lvRefCnt;
     m_lvRefCnt += delta;
     assert(m_lvRefCnt >= oldRefCnt);
+}
+
+//------------------------------------------------------------------------------
+// incLvRefCntSaturating: increment reference count for this local var (with saturating semantics)
+//
+// Arguments:
+//    delta: the amount of the increment
+//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
+//
+inline void LclVarDsc::incLvRefCntSaturating(unsigned short delta, RefCountState state)
+{
+#if defined(DEBUG)
+    assert(state != RCS_INVALID);
+    Compiler* compiler = JitTls::GetCompiler();
+    assert(compiler->lvaRefCountState == state);
+#endif
+
+    int newRefCnt = m_lvRefCnt + delta;
+    m_lvRefCnt    = static_cast<unsigned short>(min(USHRT_MAX, newRefCnt));
 }
 
 //------------------------------------------------------------------------------

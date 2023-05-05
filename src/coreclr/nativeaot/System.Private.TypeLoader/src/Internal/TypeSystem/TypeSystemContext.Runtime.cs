@@ -71,6 +71,65 @@ namespace Internal.TypeSystem
             }
         }
 
+        internal readonly struct FunctionPointerTypeKey
+        {
+            public readonly RuntimeTypeHandle ReturnType;
+            public readonly RuntimeTypeHandle[] ParameterTypes;
+            public readonly bool IsUnmanaged;
+            public FunctionPointerTypeKey(RuntimeTypeHandle returnType, RuntimeTypeHandle[] parameterTypes, bool isUnmanaged)
+                => (ReturnType, ParameterTypes, IsUnmanaged) = (returnType, parameterTypes, isUnmanaged);
+        }
+
+        internal class FunctionPointerRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<FunctionPointerTypeKey, RuntimeTypeHandle>
+        {
+            protected override bool CompareKeyToValue(FunctionPointerTypeKey key, RuntimeTypeHandle value)
+            {
+                if (key.IsUnmanaged != RuntimeAugments.IsUnmanagedFunctionPointerType(value)
+                    || key.ParameterTypes.Length != RuntimeAugments.GetFunctionPointerParameterCount(value)
+                    || !key.ReturnType.Equals(RuntimeAugments.GetFunctionPointerReturnType(value)))
+                    return false;
+
+                for (int i = 0; i < key.ParameterTypes.Length; i++)
+                    if (!key.ParameterTypes[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(value, i)))
+                        return false;
+
+                return true;
+            }
+
+            protected override bool CompareValueToValue(RuntimeTypeHandle value1, RuntimeTypeHandle value2)
+            {
+                return value1.Equals(value2);
+            }
+
+            protected override RuntimeTypeHandle ConvertIntPtrToValue(IntPtr pointer)
+            {
+                unsafe
+                {
+                    return ((MethodTable*)pointer.ToPointer())->ToRuntimeTypeHandle();
+                }
+            }
+
+            protected override IntPtr ConvertValueToIntPtr(RuntimeTypeHandle value)
+            {
+                return value.ToIntPtr();
+            }
+
+            protected override RuntimeTypeHandle CreateValueFromKey(FunctionPointerTypeKey key)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override int GetKeyHashCode(FunctionPointerTypeKey key)
+            {
+                return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(key.ReturnType.GetHashCode(), key.ParameterTypes);
+            }
+
+            protected override int GetValueHashCode(RuntimeTypeHandle value)
+            {
+                return value.GetHashCode();
+            }
+        }
+
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[] s_ArrayTypesCaches = new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[MDArray.MaxRank + 1];
         /// <summary>
         ///  Cache of array types created by the builder to prevent duplication
@@ -100,7 +159,10 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
-        private TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
+        internal static FunctionPointerRuntimeTypeHandleHashtable FunctionPointerTypesCache { get; }
+            = new FunctionPointerRuntimeTypeHandleHashtable();
+
+        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)
@@ -135,7 +197,7 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
                     for (int i = 0; i < genericParameters.Length; i++)
@@ -183,9 +245,9 @@ namespace Internal.TypeSystem
             }
             else if (RuntimeAugments.IsFunctionPointerType(rtth))
             {
-                TypeLoaderEnvironment.Instance.GetFunctionPointerTypeComponents(rtth, out RuntimeTypeHandle returnTypeHandle,
-                                                                                      out RuntimeTypeHandle[] parameterHandles,
-                                                                                      out bool isUnmanaged);
+                RuntimeTypeHandle returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(rtth);
+                RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(rtth);
+                bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(rtth);
 
                 var sig = new MethodSignature(
                     isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
