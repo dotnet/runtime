@@ -2945,7 +2945,8 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             }
             else if (wasAssigned)
             {
-                updatePreviousInterval(availablePhysRegRecord, assignedInterval, assignedInterval->registerType);
+                updatePreviousInterval(availablePhysRegRecord,
+                                       assignedInterval ARM_ARG(assignedInterval->registerType));
             }
             else
             {
@@ -3284,7 +3285,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
     }
 #endif
 
-    updateAssignedInterval(regRec, interval, interval->registerType);
+    updateAssignedInterval(regRec, interval ARM_ARG(interval->registerType));
 }
 
 // Assign the given physical register interval to the given interval
@@ -3781,7 +3782,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     else
     {
         clearAssignedInterval(regRec ARM_ARG(assignedInterval->registerType));
-        updatePreviousInterval(regRec, nullptr, assignedInterval->registerType);
+        updatePreviousInterval(regRec, nullptr ARM_ARG(assignedInterval->registerType));
     }
 }
 
@@ -5990,8 +5991,8 @@ void LinearScan::clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regTy
 #ifdef TARGET_ARM
     if (regType == TYP_DOUBLE)
     {
-        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
-        regNumber  doubleReg             = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+        regNumber  doubleReg      = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
 
         reg->assignedInterval            = nullptr;
         anotherHalfReg->assignedInterval = nullptr;
@@ -6024,8 +6025,10 @@ void LinearScan::clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regTy
 //    For ARM32, two float registers consisting a double register are updated
 //    together when "regType" is TYP_DOUBLE.
 //
-void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
+void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType))
 {
+    assert(interval != nullptr);
+
 #ifdef TARGET_ARM
     // Update overlapping floating point register for TYP_DOUBLE.
     Interval* oldAssignedInterval = reg->assignedInterval;
@@ -6050,25 +6053,17 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
     }
 #endif
     reg->assignedInterval = interval;
-    if (interval != nullptr)
+    setRegInUse(reg->regNum ARM_ARG(interval->registerType));
+    if (interval->isConstant)
     {
-        setRegInUse(reg->regNum ARM_ARG(interval->registerType));
-        if (interval->isConstant)
-        {
-            setConstantReg(reg->regNum ARM_ARG(interval->registerType));
-        }
-        else
-        {
-            clearConstantReg(reg->regNum ARM_ARG(interval->registerType));
-        }
-        updateNextIntervalRef(reg->regNum, interval);
-        updateSpillCost(reg->regNum, interval);
+        setConstantReg(reg->regNum ARM_ARG(interval->registerType));
     }
     else
     {
-        clearNextIntervalRef(reg->regNum ARM_ARG(reg->registerType));
-        clearSpillCost(reg->regNum ARM_ARG(reg->registerType));
+        clearConstantReg(reg->regNum ARM_ARG(interval->registerType));
     }
+    updateNextIntervalRef(reg->regNum, interval);
+    updateSpillCost(reg->regNum, interval);
 }
 
 //-----------------------------------------------------------------------------
@@ -6090,7 +6085,7 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
 //    For ARM32, two float registers consisting a double register are updated
 //    together when "regType" is TYP_DOUBLE.
 //
-void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType)
+void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType))
 {
     reg->previousInterval = interval;
 
@@ -6474,7 +6469,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreeLclVar* treeNode, Ref
         interval->isActive    = true;
         interval->assignedReg = physRegRecord;
 
-        updateAssignedInterval(physRegRecord, interval, interval->registerType);
+        updateAssignedInterval(physRegRecord, interval ARM_ARG(interval->registerType));
     }
 }
 
