@@ -9471,9 +9471,14 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
         }
 
-        bool IsInstrumentedOptimized() const
+        bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+        }
+
+        bool IsInstrumentedOrOptimized() const
+        {
+            return IsInstrumented() || jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
