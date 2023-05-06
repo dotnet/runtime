@@ -705,12 +705,12 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
 
-	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
+	if (mono_opt_interp_simd_v128 && !strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
 			return emit_sri_vector128 (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
-	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+	} else if (mono_opt_interp_simd_packedsimd && !strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd")) {
 			gboolean res = emit_sri_packedsimd (td, cmethod, csignature);
 #if HOST_BROWSER
