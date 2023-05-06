@@ -2589,7 +2589,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
             // We need these to be able to fold "typeof(...) == typeof(...)"
-            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_RuntimeTypeHandle_ToIntPtr:
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
@@ -2967,7 +2967,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 return lengthField;
             }
 
-            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_RuntimeTypeHandle_ToIntPtr:
             {
                 GenTree* op1 = impStackTop(0).val;
                 if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
@@ -8112,9 +8112,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     }
                     else if (strcmp(className, "RuntimeTypeHandle") == 0)
                     {
-                        if (strcmp(methodName, "GetValueInternal") == 0)
+                        if (strcmp(methodName, "ToIntPtr") == 0)
                         {
-                            result = NI_System_RuntimeTypeHandle_GetValueInternal;
+                            result = NI_System_RuntimeTypeHandle_ToIntPtr;
                         }
                     }
                     break;
