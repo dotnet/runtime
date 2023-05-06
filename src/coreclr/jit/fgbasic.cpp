@@ -1826,7 +1826,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 if ((jmpDist == 0) &&
                     (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
-                    opts.IsInstrumentedOrOptimized())
+                    opts.CanBeInstrumentedOrIsOptimized())
                 {
                     break; /* NOP */
                 }
@@ -2975,7 +2975,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.IsInstrumentedOrOptimized())
+                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.CanBeInstrumentedOrIsOptimized())
                 {
                     continue; /* NOP */
                 }
