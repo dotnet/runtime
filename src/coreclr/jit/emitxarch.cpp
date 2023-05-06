@@ -5997,6 +5997,18 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+        case INS_vmovdqa64:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
+        case INS_vmovdqu64:
+        {
+            // These EVEX instructions merges/masks based on k-register
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            assert(UseEvexEncoding());
+            hasSideEffect = (size != EA_64BYTE);
+            break;
+        }
+
         case INS_movd:
         {
             // Clears the upper bits
@@ -6025,18 +6037,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Clears the upper bits
             hasSideEffect = true;
-            break;
-        }
-
-        case INS_vmovdqa64:
-        case INS_vmovdqu8:
-        case INS_vmovdqu16:
-        case INS_vmovdqu64:
-        {
-            // These EVEX instructions merges/masks based on k-register
-            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
-            assert(UseEvexEncoding());
-            hasSideEffect = (size != EA_64BYTE);
             break;
         }
 
