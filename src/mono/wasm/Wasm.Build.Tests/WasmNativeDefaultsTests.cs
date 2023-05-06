@@ -18,43 +18,55 @@ namespace Wasm.Build.Tests
         {
         }
 
-        public static TheoryData<string, string, bool, bool, bool> DefaultsTestData() => new()
+        public static TheoryData<string, string, bool, bool, bool> DefaultsTestData(bool forPublish)
         {
-            // ******** TODO - this is the case only when *building* and not publishing ***********
-            /* Debug by default makes WasmNativeStrip=false, which requires relinking */
-            //[InlineData("Debug",     "",                                         [>aot*/ false,   /*build*/ true,  /*publish<]      true)]
+            TheoryData<string, string, bool, bool, bool> data = new()
+            {
+                /* relink by default for publish+Release */
+                { "Release",   "",                                         /*aot*/ false,   /*build*/ false, /*publish*/      true },
+                /* NO relink by default for publish+Release, when not trimming */
+                { "Release",   "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ false,   /*build*/ false, /*publish*/      false },
 
-            /* NO relink by default for publish+Debug */
-            { "Debug",   "",                                           /*aot*/ false,   /*build*/ false, /*publish*/        false },
-            /* relink by default for publish+Release */
-            { "Release",   "",                                         /*aot*/ false,   /*build*/ false, /*publish*/      true },
-            /* NO relink by default for publish+Release, when not trimming */
-            { "Release",   "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ false,   /*build*/ false, /*publish*/      false },
+                /* WasmNativeStrip=false should cause relink */
+                { "Debug",     "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true },
+                { "Release",   "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true },
+                /* WasmNativeStrip=true should not trigger relinking */
+                { "Debug",     "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      false },
+                { "Release",   "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      true },
+                /* When not trimming, and no-aot, we don't relink. But WasmNativeStrip=false should still trigger it*/
+                { "Release",   "<WasmNativeStrip>false</WasmNativeStrip><PublishTrimmed>false</PublishTrimmed>",
+                                                                       /*aot*/ false,   /*build*/ true,  /*publish*/      true }
+            };
 
-            /* WasmNativeStrip=false should cause relink */
-            { "Debug",     "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true },
-            { "Release",   "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true },
-            /* WasmNativeStrip=true should not trigger relinking */
-            { "Debug",     "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      false },
-            { "Release",   "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      true },
-            /* When not trimming, and no-aot, we don't relink. But WasmNativeStrip=false should still trigger it*/
-            { "Release",   "<WasmNativeStrip>false</WasmNativeStrip><PublishTrimmed>false</PublishTrimmed>", 
-                                                                       /*aot*/ false,   /*build*/ true,  /*publish*/      true },
+            if (!forPublish)
+            {
+                /* Debug by default makes WasmNativeStrip=false, which requires relinking */
+                data.Add("Debug",     "",                                         /*aot*/ false,   /*build*/ true,  /*publish*/      true);
+            }
 
-            /* AOT */
-            { "Release",   "",                                         /*aot*/ true,    /*build*/ false, /*publish*/      true },
-            { "Debug",     "",                                         /*aot*/ true,    /*build*/ false, /*publish*/      true },
-            // FIXME: separate test
-            //     { "Release",   "<RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>",
-                                                                            //  /*aot*/ true,    /*build*/ true, /*publish*/      true },
+            if (forPublish)
+            {
+                /* NO relink by default for publish+Debug */
+                data.Add("Debug",   "",                                           /*aot*/ false,   /*build*/ false, /*publish*/      false);
 
-            /* AOT not affected by trimming */
-            { "Release",   "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ true,    /*build*/ false, /*publish*/      true },
-            { "Debug",     "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ true,    /*build*/ false, /*publish*/      true }
-        };
+                /* AOT */
+                data.Add( "Release",   "",                                         /*aot*/ true,    /*build*/ false, /*publish*/      true);
+                data.Add( "Debug",     "",                                         /*aot*/ true,    /*build*/ false, /*publish*/      true);
+
+                // FIXME: separate test
+                //     { "Release",   "<RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>",
+                //  /*aot*/ true,    /*build*/ true, /*publish*/      true },
+
+                /* AOT not affected by trimming */
+                data.Add("Release",   "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ true,    /*build*/ false, /*publish*/      true);
+                data.Add("Debug",     "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ true,    /*build*/ false, /*publish*/      true);
+            }
+
+            return data;
+        }
 
         [Theory]
-        [MemberData(nameof(DefaultsTestData))]
+        [MemberData(nameof(DefaultsTestData), parameters: true)]
         public void DefaultsWithPublish(string config, string extraProperties, bool aot, bool buildValue, bool publishValue)
         {
             string output = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue, publish: true);
@@ -67,15 +79,13 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [MemberData(nameof(DefaultsTestData))]
+        [MemberData(nameof(DefaultsTestData), parameters: false)]
         public void DefaultsWithBuild(string config, string extraProperties, bool aot, bool buildValue, bool publishValue)
         {
             string output = CheckWasmNativeDefaultValue("native_defaults_publish", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue, publish: false);
 
             // for build
             Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
-            // for publish
-            //Assert.Contains($"** WasmBuildNative: '{publishValue.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }
 
