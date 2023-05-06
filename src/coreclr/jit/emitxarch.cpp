@@ -6142,10 +6142,10 @@ bool emitter::IsRedundantMov(
         return true;
     }
 
-    if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
+    if (!emitCanPeepholeLastIns() || // Don't optimize if unsafe
         // or if the move is not equivalent to the last instruction
         !IsMovEquivalentTo(ins, size, emitLastIns->idIns(), emitLastIns->idOpSize()) ||
-        (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
+        (emitLastIns->idInsFmt() != fmt)) // or if the format is different from the last instruction
     {
         return false;
     }
@@ -8919,7 +8919,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
         return false;
     }
 
-    if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
+    if (!emitCanPeepholeLastIns() || // Don't optimize if unsafe
         // or if the move is not equivalent to the last instruction
         !IsMovEquivalentTo(ins, size, emitLastIns->idIns(), emitLastIns->idOpSize()))
     {
