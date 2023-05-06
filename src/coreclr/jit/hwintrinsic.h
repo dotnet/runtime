@@ -319,14 +319,14 @@ struct HWIntrinsicInfo
     // 32-bit: 36-bytes (34+2 trailing padding)
     // 64-bit: 40-bytes (38+2 trailing padding)
 
-    const char*            name;        // 4 or 8-bytes
-    HWIntrinsicFlag        flags;       // 4-bytes
-    NamedIntrinsic         id;          // 2-bytes
-    uint16_t               ins[10];     // 10 * 2-bytes
-    uint8_t                isa;         // 1-byte
-    int8_t                 simdSize;    // 1-byte
-    int8_t                 numArgs;     // 1-byte
-    HWIntrinsicCategory    category;    // 1-byte
+    const char*         name;     // 4 or 8-bytes
+    HWIntrinsicFlag     flags;    // 4-bytes
+    NamedIntrinsic      id;       // 2-bytes
+    uint16_t            ins[10];  // 10 * 2-bytes
+    uint8_t             isa;      // 1-byte
+    int8_t              simdSize; // 1-byte
+    int8_t              numArgs;  // 1-byte
+    HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
