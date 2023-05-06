@@ -19,12 +19,26 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        // ******** TODO - this is the case only when *building* and not publishing ***********
+        /* Debug by default makes WasmNativeStrip=false, which requires relinking */
+        //[InlineData("Debug",     "",                                         [>aot*/ false,   /*build*/ true,  /*publish<]      true)]
+
+        /* NO relink by default for publish+Debug */
+        [InlineData("Debug",   "",                                           /*aot*/ false,   /*build*/ false, /*publish*/        false)]
         /* relink by default for publish+Release */
         [InlineData("Release",   "",                                         /*aot*/ false,   /*build*/ false, /*publish*/      true)]
-        /* NO relink by default for publish+Release, even when not trimming */
+        /* NO relink by default for publish+Release, when not trimming */
         [InlineData("Release",   "<PublishTrimmed>false</PublishTrimmed>",   /*aot*/ false,   /*build*/ false, /*publish*/      false)]
 
-        [InlineData("Debug",     "",                                         /*aot*/ false,   /*build*/ false, /*publish*/      false)]
+        /* WasmNativeStrip=false should cause relink */
+        [InlineData("Debug",     "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true)]
+        [InlineData("Release",   "<WasmNativeStrip>false</WasmNativeStrip>", /*aot*/ false,   /*build*/ true, /*publish*/       true)]
+        /* WasmNativeStrip=true should not trigger relinking */
+        [InlineData("Debug",     "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      false)]
+        [InlineData("Release",   "<WasmNativeStrip>true</WasmNativeStrip>",  /*aot*/ false,   /*build*/ false, /*publish*/      true)]
+        /* When not trimming, and no-aot, we don't relink. But WasmNativeStrip=false should still trigger it*/
+        [InlineData("Release",   "<WasmNativeStrip>false</WasmNativeStrip><PublishTrimmed>false</PublishTrimmed>", 
+                                                                             /*aot*/ false,   /*build*/ true,  /*publish*/      true)]
 
         /* AOT */
         [InlineData("Release",   "",                                         /*aot*/ true,    /*build*/ false, /*publish*/      true)]
@@ -82,6 +96,7 @@ namespace Wasm.Build.Tests
 
             string printValueTarget = @"
                 <Target Name=""PrintWasmBuildNative"" AfterTargets=""_SetWasmBuildNativeDefaults"">
+                    <Message Text=""** WasmNativeStrip=$(WasmNativeStrip)"" Importance=""High"" />
                     <Message Text=""** WasmBuildNative: '$(WasmBuildNative)', WasmBuildingForNestedPublish: '$(WasmBuildingForNestedPublish)'"" Importance=""High"" />
                     <Error Text=""Stopping the build"" Condition=""$(WasmBuildingForNestedPublish) == 'true'"" />
                 </Target>";
@@ -99,7 +114,8 @@ namespace Wasm.Build.Tests
                                                     DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
                                                     ExpectSuccess: false,
                                                     UseCache: false,
-                                                    BuildOnlyAfterPublish: false));
+                                                    BuildOnlyAfterPublish: false,
+                                                    EnvironmentVariablesToRemove: new[] { "WasmNativeStrip" }));
 
             return output;
         }

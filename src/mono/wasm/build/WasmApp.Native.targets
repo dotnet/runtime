@@ -108,6 +108,7 @@
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
+    <Message Importance="High" Text="WasmNativeStrip: $(WasmNativeStrip), WasmBuildNative: $(WasmBuildNative), WasmBuildingForNestedPublish: $(WasmBuildingForNestedPublish)" />
     <!-- When Building -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       <!-- build AOT, only if explicitly requested -->
@@ -117,6 +118,10 @@
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
+
+      <!-- Runtime pack has a stripped runtime. To preserve symbols with WasmNativeStrip=false,
+           relinking is needed -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmNativeStrip)' == 'false'" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
@@ -129,6 +134,10 @@
 
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
+
+      <!-- Runtime pack has a stripped runtime. To preserve symbols with WasmNativeStrip=false,
+           relinking is needed -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmNativeStrip)' == 'false'" >true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -158,8 +167,6 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','browser-wasm'))</_MonoAotCrossCompilerPath>
       <_EmccDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_EmccDefaultFlagsRsp>
       <_EmccDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_EmccDefaultLinkFlagsRsp>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">false</WasmNativeStrip>
-      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
       <WasmNativeDebugSymbols Condition="'$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 

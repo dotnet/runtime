@@ -234,13 +234,7 @@ namespace Wasm.Build.Tests
             (int exitCode, string buildOutput) result;
             try
             {
-                var envVars = s_buildEnv.EnvVars;
-                if (options.ExtraBuildEnvironmentVariables is not null)
-                {
-                    envVars = new Dictionary<string, string>(s_buildEnv.EnvVars);
-                    foreach (var kvp in options.ExtraBuildEnvironmentVariables!)
-                        envVars[kvp.Key] = kvp.Value;
-                }
+                var envVars = options.CombineEnvironmentVariables(s_buildEnv.EnvVars);
                 envVars["NUGET_PACKAGES"] = _nugetPackagesDir;
                 result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
@@ -688,25 +682,6 @@ namespace Wasm.Build.Tests
     public record BuildProduct(string ProjectDir, string LogFile, bool Result);
     internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
     internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
-
-    public record BuildProjectOptions
-    (
-        Action? InitProject               = null,
-        bool?   DotnetWasmFromRuntimePack = null,
-        bool    HasIcudt                  = true,
-        bool    UseCache                  = true,
-        bool    ExpectSuccess             = true,
-        bool    AssertAppBundle           = true,
-        bool    CreateProject             = true,
-        bool    Publish                   = true,
-        bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
-        string? Verbosity                 = null,
-        string? Label                     = null,
-        string? TargetFramework           = null,
-        string? MainJS                    = null,
-        IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
-    );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
