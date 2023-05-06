@@ -176,7 +176,7 @@ namespace System.Collections.Generic
         /// <param name="capacity">The new capacity.</param>
         public void TrimExcess(int capacity)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
             ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
 
             if (capacity == _size)

@@ -1010,7 +1010,7 @@ namespace System.Collections.Generic
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the actual number of elements it contains,
         /// rounded up to a nearby, implementation-specific value.
         /// </summary>
-        public void TrimExcess() => TrimExcess(Count);
+        public void TrimExcess() => SetCapacity(Count);
 
         /// <summary>
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the specified number of entries,
@@ -1018,6 +1018,16 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="capacity">The new capacity.</param>
         public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _size)
+                return;
+
+            SetCapacity(capacity);
+        }
+        private void SetCapacity(int capacity)
         {
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[]? oldEntries = _entries;
