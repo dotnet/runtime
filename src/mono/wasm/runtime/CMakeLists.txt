@@ -40,6 +40,7 @@ set_target_properties(dotnet PROPERTIES
 
 set(ignoreMeWasmOptFlags "${CONFIGURATION_WASM_OPT_FLAGS}")
 set(ignoreMeWasmOptAdditionalFlags "${WASM_OPT_ADDITIONAL_FLAGS}")
+set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet

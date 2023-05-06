@@ -3353,8 +3353,6 @@ function emit_simd (
     }
 
     // Fall back to a mix of non-vectorized wasm and the interpreter's implementation of the opcodes
-    // The ideal way to call the intrinsic implementations would be statically via the import table,
-    //  but we don't have a way to add entries to the import table at compile time yet.
     switch (opcode) {
         case MintOpcode.MINT_SIMD_V128_LDC: {
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
@@ -3426,7 +3424,7 @@ function emit_simd (
             return true;
         }
         default:
-            console.log(`emit_simd failed for ${opname}`);
+            console.log(`MONO_WASM: jiterpreter emit_simd failed for ${opname}`);
             return false;
     }
 }
@@ -3444,6 +3442,7 @@ function append_simd_2_load (builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: W
 function append_simd_3_load (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+    // FIXME: Can rhs be a scalar? We handle shifts separately already
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
@@ -3470,15 +3469,12 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function append_stloc_simd_zero (builder: WasmBuilder, offset: number) {
     builder.local("pLocals");
     builder.appendSimd(WasmSimdOpcode.v128_const);
     builder.appendBytes(new Uint8Array(sizeOfV128));
     append_stloc_tail(builder, offset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
-
-// FIXME: One of the custom implementations causes xharness to break
 
 function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2) : boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
@@ -3585,8 +3581,6 @@ function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
         append_simd_store(builder, ip);
         return true;
     }
-
-    return false;
 
     switch (index) {
         case SimdIntrinsic4.V128_CONDITIONAL_SELECT:
