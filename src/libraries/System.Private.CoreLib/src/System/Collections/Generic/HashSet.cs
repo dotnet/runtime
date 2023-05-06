@@ -353,6 +353,8 @@ namespace System.Collections.Generic
         /// <summary>Gets the number of elements that are contained in the set.</summary>
         public int Count => _count - _freeCount;
 
+        public int Capacity => _count;
+
         bool ICollection<T>.IsReadOnly => false;
 
         #endregion
@@ -1005,10 +1007,10 @@ namespace System.Collections.Generic
         /// Sets the capacity of a <see cref="HashSet{T}"/> object to the actual number of elements it contains,
         /// rounded up to a nearby, implementation-specific value.
         /// </summary>
-        public void TrimExcess()
-        {
-            int capacity = Count;
+        public void TrimExcess() => TrimExcess(Count);
 
+        public void TrimExcess(int capacity)
+        {
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[]? oldEntries = _entries;
             int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
