@@ -54,15 +54,11 @@ namespace System.Collections.Generic
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        public int Capacity => _array.Length;
+
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
 
@@ -168,6 +164,17 @@ namespace System.Collections.Generic
             {
                 Array.Resize(ref _array, _size);
             }
+        }
+
+        public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _size)
+                return;
+
+            Array.Resize(ref _array, capacity);
         }
 
         // Returns the top object on the stack without removing it.  If the stack

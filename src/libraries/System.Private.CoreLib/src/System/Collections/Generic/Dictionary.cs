@@ -208,6 +208,8 @@ namespace System.Collections.Generic
 
         public int Count => _count - _freeCount;
 
+        public int Capacity => _count;
+
         public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
         ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;

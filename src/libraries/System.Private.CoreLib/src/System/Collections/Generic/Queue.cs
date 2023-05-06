@@ -52,15 +52,11 @@ namespace System.Collections.Generic
             if (_size != _array.Length) _tail = _size;
         }
 
-        public int Count
-        {
-            get { return _size; }
-        }
+        public int Count => _size;
 
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
+        public int Capacity => _array.Length;
+
+        bool ICollection.IsSynchronized => false;
 
         object ICollection.SyncRoot => this;
 
@@ -356,6 +352,17 @@ namespace System.Collections.Generic
             {
                 SetCapacity(_size);
             }
+        }
+
+        public void TrimExcess(int capacity)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+
+            if (capacity == _size)
+                return;
+
+            SetCapacity(capacity);
         }
 
         /// <summary>
