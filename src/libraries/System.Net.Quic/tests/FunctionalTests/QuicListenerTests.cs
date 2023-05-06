@@ -372,5 +372,63 @@ namespace System.Net.Quic.Tests
                     await connection.DisposeAsync();
                 }).WaitAsync(TimeSpan.FromSeconds(5)));
         }
+
+        [Fact]
+        public async Task Listener_AlpnChange_Success() {
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>()
+                {
+                    new SslApplicationProtocol("foo"),
+                    new SslApplicationProtocol("bar"),
+                    new SslApplicationProtocol("test"),
+                },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var options = CreateQuicServerOptions();
+                    options.ServerAuthenticationOptions.ApplicationProtocols = new()
+                    {
+                        new SslApplicationProtocol("bar"),
+                        new SslApplicationProtocol("test"),
+                    };
+                    return ValueTask.FromResult(options);
+                }
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            QuicClientConnectionOptions clientOptions1 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions1.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("bar"),
+            };
+            ValueTask<QuicConnection> connectTask1 = CreateQuicConnection(clientOptions1);
+            await using QuicConnection serverConnection1 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection clientConnection1 = await connectTask1.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(clientConnection1.NegotiatedApplicationProtocol, new SslApplicationProtocol("bar"));
+
+            QuicClientConnectionOptions clientOptions2 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions2.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("test"),
+            };
+            ValueTask<QuicConnection> connectTask2 = CreateQuicConnection(clientOptions2);
+            await using QuicConnection serverConnection2 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection clientConnection2 = await connectTask1.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(clientConnection2.NegotiatedApplicationProtocol, new SslApplicationProtocol("test"));
+
+            QuicClientConnectionOptions clientOptions3 = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions3.ClientAuthenticationOptions.ApplicationProtocols = new()
+            {
+                new SslApplicationProtocol("foo"),
+            };
+            ValueTask<QuicConnection> connectTask3 = CreateQuicConnection(clientOptions3);
+            await using QuicConnection serverConnection3 = await listener.AcceptConnectionAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+            await using QuicConnection clientConnection3 = await connectTask1.AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.NotEqual(clientConnection3.NegotiatedApplicationProtocol, new SslApplicationProtocol("foo"));
+        }
     }
 }
