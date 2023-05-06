@@ -4797,6 +4797,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // GS security checks for unsafe buffers
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
@@ -5032,8 +5034,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDomsComputed            = false;
     optLoopTableValid         = false;
     optLoopsRequirePreHeaders = false;
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -9743,10 +9743,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_REQ_ADDR_IN_REG)
                 {
                     chars += printf("[IND_REQ_ADDR_IN_REG]");
-                }
-                if (tree->gtFlags & GTF_IND_ASG_LHS)
-                {
-                    chars += printf("[IND_ASG_LHS]");
                 }
                 if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {

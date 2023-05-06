@@ -213,9 +213,9 @@ class LclSsaVarDsc
     // SsaBuilder and changed to fgFirstBB during value numbering. It would be useful to
     // investigate and perhaps eliminate this rather unexpected behavior.
     BasicBlock* m_block = nullptr;
-    // The GT_ASG node that generates the definition, or nullptr for definitions
+    // The store node that generates the definition, or nullptr for definitions
     // of uninitialized variables.
-    GenTreeOp* m_asg = nullptr;
+    GenTreeLclVarCommon* m_defNode = nullptr;
     // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
     unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
     // Number of uses of this SSA def (may be an over-estimate).
@@ -238,9 +238,9 @@ public:
     {
     }
 
-    LclSsaVarDsc(BasicBlock* block, GenTreeOp* asg) : m_block(block), m_asg(asg)
+    LclSsaVarDsc(BasicBlock* block, GenTreeLclVarCommon* defNode) : m_block(block)
     {
-        assert((asg == nullptr) || asg->OperIs(GT_ASG));
+        SetAssignment(defNode);
     }
 
     BasicBlock* GetBlock() const
@@ -253,15 +253,17 @@ public:
         m_block = block;
     }
 
-    GenTreeOp* GetAssignment() const
+    // TODO-ASG: rename to "GetDefNode".
+    GenTreeLclVarCommon* GetAssignment() const
     {
-        return m_asg;
+        return m_defNode;
     }
 
-    void SetAssignment(GenTreeOp* asg)
+    // TODO-ASG: rename to "SetDefNode".
+    void SetAssignment(GenTreeLclVarCommon* defNode)
     {
-        assert((asg == nullptr) || asg->OperIs(GT_ASG));
-        m_asg = asg;
+        assert((defNode == nullptr) || defNode->OperIsLocalStore());
+        m_defNode = defNode;
     }
 
     unsigned GetUseDefSsaNum() const
@@ -5091,7 +5093,7 @@ public:
     // assignment.)
     void fgValueNumberTree(GenTree* tree);
 
-    void fgValueNumberAssignment(GenTreeOp* tree);
+    void fgValueNumberStore(GenTree* tree);
 
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
@@ -5981,8 +5983,9 @@ public:
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
+    GenTree* fgOptimizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
-    GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
+    GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);

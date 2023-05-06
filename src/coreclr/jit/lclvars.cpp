@@ -4085,73 +4085,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    if (!isRecompute)
-    {
-        /* Is this an assignment? */
-
-        if (tree->OperIs(GT_ASG))
-        {
-            GenTree* op1 = tree->AsOp()->gtOp1;
-            GenTree* op2 = tree->AsOp()->gtOp2;
-
-            /* Is this an assignment to a local variable? */
-
-            if (op1->gtOper == GT_LCL_VAR)
-            {
-                LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon());
-
-                if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
-                {
-                    if (!op2->IsNotGcDef())
-                    {
-                        varDsc->lvAllDefsAreNoGc = false;
-                    }
-                }
-
-                if (op2->gtType != TYP_BOOL)
-                {
-                    /* Only simple assignments allowed for booleans */
-
-                    if (tree->gtOper != GT_ASG)
-                    {
-                        goto NOT_BOOL;
-                    }
-
-                    /* Is the RHS clearly a boolean value? */
-
-                    switch (op2->gtOper)
-                    {
-                        case GT_CNS_INT:
-
-                            if (op2->AsIntCon()->gtIconVal == 0)
-                            {
-                                break;
-                            }
-                            if (op2->AsIntCon()->gtIconVal == 1)
-                            {
-                                break;
-                            }
-
-                            // Not 0 or 1, fall through ....
-                            FALLTHROUGH;
-
-                        default:
-
-                            if (op2->OperIsCompare())
-                            {
-                                break;
-                            }
-
-                        NOT_BOOL:
-
-                            varDsc->lvIsBoolean = false;
-                            break;
-                    }
-                }
-            }
-        }
-    }
-
     if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
@@ -4160,7 +4093,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         return;
     }
 
-    if ((tree->gtOper != GT_LCL_VAR) && (tree->gtOper != GT_LCL_FLD))
+    if (!tree->OperIsLocal())
     {
         return;
     }
@@ -4178,9 +4111,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-
+    unsigned   lclNum = tree->AsLclVarCommon()->GetLclNum();
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     /* Increment the reference counts */
@@ -4199,13 +4130,13 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     if (!isRecompute)
     {
-        if (lvaVarAddrExposed(lclNum))
+        if (varDsc->IsAddressExposed())
         {
             varDsc->lvIsBoolean      = false;
             varDsc->lvAllDefsAreNoGc = false;
         }
 
-        if (tree->gtOper == GT_LCL_FLD)
+        if (!tree->OperIsScalarLocal())
         {
             return;
         }
@@ -4215,16 +4146,49 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             SetVolatileHint(varDsc);
         }
 
-        /* Record if the variable has a single def or not */
-
-        if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
+        if (tree->OperIs(GT_STORE_LCL_VAR))
         {
-            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
+            GenTree* value = tree->AsLclVar()->Data();
+
+            if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
+            {
+                varDsc->lvAllDefsAreNoGc = false;
+            }
+
+            if (value->gtType != TYP_BOOL)
+            {
+                // Is the value clearly a boolean one?
+                switch (value->gtOper)
+                {
+                    case GT_CNS_INT:
+                        if (value->AsIntCon()->gtIconVal == 0)
+                        {
+                            break;
+                        }
+                        if (value->AsIntCon()->gtIconVal == 1)
+                        {
+                            break;
+                        }
+
+                        // Not 0 or 1, fall through ....
+                        FALLTHROUGH;
+                    default:
+                        if (value->OperIsCompare())
+                        {
+                            break;
+                        }
+
+                        varDsc->lvIsBoolean = false;
+                        break;
+                }
+            }
+
+            if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
                 bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
-                // we filter lot of interesting variables that would benefit otherwise with EH var enregistration.
+                // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
                 // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
                 // varTypeIsGC(varDsc->TypeGet()));
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);

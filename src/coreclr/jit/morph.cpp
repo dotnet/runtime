@@ -9305,16 +9305,32 @@ DONE_MORPHING_CHILDREN:
 
             if (op2->OperIs(GT_CAST))
             {
-                tree = fgOptimizeCastOnAssignment(tree->AsOp());
+                tree = fgOptimizeCastOnStore(tree);
 
                 assert(tree->OperIs(GT_ASG));
-
                 op1 = tree->gtGetOp1();
                 op2 = tree->gtGetOp2();
             }
 
             // Location nodes cannot be CSEd.
             op1->gtFlags |= GTF_DONT_CSE;
+            break;
+
+        case GT_STOREIND:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            tree = fgOptimizeCastOnStore(tree);
+            op1  = tree->gtGetOp1();
+            op2  = tree->gtGetOp2IfPresent();
+
+            if (tree->OperIs(GT_STOREIND))
+            {
+                GenTree* optimizedTree = fgOptimizeIndir(tree->AsIndir());
+                if (optimizedTree != nullptr)
+                {
+                    return optimizedTree;
+                }
+            }
             break;
 
         case GT_CAST:
@@ -9653,37 +9669,17 @@ DONE_MORPHING_CHILDREN:
             fgSetRngChkTarget(tree);
             break;
 
-        case GT_BLK:
         case GT_IND:
         {
-            if (!tree->OperIs(GT_IND))
-            {
-                break;
-            }
-
             if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
-            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_LCL_ADDR) &&
-                !optValnumCSE_phase)
+            GenTree* optimizedTree = fgOptimizeIndir(tree->AsIndir());
+            if (optimizedTree != nullptr)
             {
-                unsigned loadSize   = tree->AsIndir()->Size();
-                unsigned offset     = op1->AsLclVarCommon()->GetLclOffs();
-                unsigned loadExtent = offset + loadSize;
-                unsigned lclSize    = lvaLclExactSize(op1->AsLclVarCommon()->GetLclNum());
-
-                if ((loadExtent <= lclSize) && (loadExtent < UINT16_MAX))
-                {
-                    op1->ChangeType(tree->TypeGet());
-                    op1->SetOper(GT_LCL_FLD);
-                    op1->AsLclFld()->SetLclOffs(offset);
-                    op1->SetVNsFromNode(tree);
-                    op1->AddAllEffectsFlags(tree->gtFlags & GTF_GLOB_REF);
-
-                    return op1;
-                }
+                return optimizedTree;
             }
 
 #ifdef TARGET_ARM
@@ -10017,6 +10013,61 @@ void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// fgOptimizeIndir: Optimize an indirection.
+//
+// Turns indirections off of local addresses into local field nodes.
+//
+// Arguments:
+//    indir - The indirection to optimize (can be a store)
+//
+// Return Value:
+//    The optimized tree or "nullptr" if no transformations were performed.
+//
+GenTree* Compiler::fgOptimizeIndir(GenTreeIndir* indir)
+{
+    assert(indir->isIndir());
+    GenTree* addr = indir->Addr();
+
+    if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR) && !optValnumCSE_phase)
+    {
+        unsigned size    = indir->Size();
+        unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
+        unsigned extent  = offset + size;
+        unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
+
+        if ((extent <= lclSize) && (extent < UINT16_MAX))
+        {
+            addr->ChangeType(indir->TypeGet());
+            if (indir->OperIs(GT_STOREIND))
+            {
+                GenTree* data = indir->Data();
+                addr->SetOper(GT_STORE_LCL_FLD);
+                addr->AsLclFld()->Data() = data;
+                addr->gtFlags |= (GTF_ASG | GTF_VAR_DEF);
+                addr->AddAllEffectsFlags(data);
+            }
+            else
+            {
+                assert(indir->OperIs(GT_IND));
+                addr->SetOper(GT_LCL_FLD);
+            }
+            addr->AsLclFld()->SetLclOffs(offset);
+            addr->SetVNsFromNode(indir);
+            addr->AddAllEffectsFlags(indir->gtFlags & GTF_GLOB_REF);
+
+            if (addr->OperIs(GT_STORE_LCL_FLD) && addr->IsPartialLclFld(this))
+            {
+                addr->gtFlags |= GTF_VAR_USEASG;
+            }
+
+            return addr;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // fgOptimizeCast: Optimizes the supplied GT_CAST tree.
 //
 // Tries to get rid of the cast, its operand, the GTF_OVERFLOW flag, calls
@@ -10119,64 +10170,61 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeCastOnAssignment: Optimizes the supplied GT_ASG tree with a GT_CAST node.
+// fgOptimizeCastOnAssignment: Optimizes the supplied store tree with a GT_CAST node.
 //
 // Arguments:
-//    tree - the cast tree to optimize
+//    tree - the store to optimize
 //
 // Return Value:
-//    The optimized tree (must be GT_ASG).
+//    The optimized store tree.
 //
-GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
+GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
 {
-    assert(asg->OperIs(GT_ASG));
+    assert(store->OperIs(GT_ASG) || store->OperIsStore());
 
-    GenTree* const op1 = asg->gtGetOp1();
-    GenTree* const op2 = asg->gtGetOp2();
+    GenTree* const src = store->Data();
 
-    assert(op2->OperIs(GT_CAST));
+    if (!src->OperIs(GT_CAST))
+        return store;
 
-    GenTree* const effectiveOp1 = op1->gtEffectiveVal();
+    GenTree* const dst = store->GetStoreDestination();
 
-    if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD))
-        return asg;
+    // TODO-ASG-Cleanup: delete the GT_LCL_VAR check.
+    if (dst->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && !lvaGetDesc(dst->AsLclVarCommon())->lvNormalizeOnLoad())
+        return store;
 
-    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
-        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
-        return asg;
+    if (src->gtOverflow())
+        return store;
 
-    if (op2->gtOverflow())
-        return asg;
+    if (gtIsActiveCSE_Candidate(src))
+        return store;
 
-    if (gtIsActiveCSE_Candidate(op2))
-        return asg;
-
-    GenTreeCast* cast         = op2->AsCast();
+    GenTreeCast* cast         = src->AsCast();
     var_types    castToType   = cast->CastToType();
     var_types    castFromType = cast->CastFromType();
 
     if (gtIsActiveCSE_Candidate(cast->CastOp()))
-        return asg;
+        return store;
 
-    if (!varTypeIsSmall(effectiveOp1))
-        return asg;
+    if (!varTypeIsSmall(dst))
+        return store;
 
     if (!varTypeIsSmall(castToType))
-        return asg;
+        return store;
 
     if (!varTypeIsIntegral(castFromType))
-        return asg;
+        return store;
 
     // If we are performing a narrowing cast and
     // castToType is larger or the same as op1's type
     // then we can discard the cast.
-    if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
-        return asg;
+    if (genTypeSize(castToType) < genTypeSize(dst))
+        return store;
 
     if (genActualType(castFromType) == genActualType(castToType))
     {
         // Removes the cast.
-        asg->gtOp2 = cast->CastOp();
+        store->Data() = cast->CastOp();
     }
     else
     {
@@ -10184,7 +10232,7 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
         cast->gtCastType = genActualType(castToType);
     }
 
-    return asg;
+    return store;
 }
 
 //------------------------------------------------------------------------
@@ -11645,51 +11693,47 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 }
             }
 
-            if (!tree->OperIs(GT_ASG))
-            {
-                break;
-            }
-
-            if (typ == TYP_LONG)
-            {
-                break;
-            }
-
-            if (op2->gtFlags & GTF_ASG)
-            {
-                break;
-            }
-
-            if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
-            {
-                break;
-            }
-
             /* Special case: a cast that can be thrown away */
 
             // TODO-Cleanup: fgMorphSmp does a similar optimization. However, it removes only
             // one cast and sometimes there is another one after it that gets removed by this
             // code. fgMorphSmp should be improved to remove all redundant casts so this code
             // can be removed.
-
-            if (op1->gtOper == GT_IND && op2->gtOper == GT_CAST && !op2->gtOverflow())
+            if ((tree->OperIs(GT_ASG) && op1->OperIs(GT_IND)) || tree->OperIs(GT_STOREIND))
             {
-                var_types srct;
-                var_types cast;
-                var_types dstt;
-
-                srct = op2->AsCast()->CastOp()->TypeGet();
-                cast = (var_types)op2->CastToType();
-                dstt = op1->TypeGet();
-
-                /* Make sure these are all ints and precision is not lost */
-
-                if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
+                if (typ == TYP_LONG)
                 {
-                    op2 = tree->gtOp2 = op2->AsCast()->CastOp();
+                    break;
+                }
+
+                if (op2->gtFlags & GTF_ASG)
+                {
+                    break;
+                }
+
+                if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
+                {
+                    break;
+                }
+
+                if (op2->gtOper == GT_CAST && !op2->gtOverflow())
+                {
+                    var_types srct;
+                    var_types cast;
+                    var_types dstt;
+
+                    srct = op2->AsCast()->CastOp()->TypeGet();
+                    cast = (var_types)op2->CastToType();
+                    dstt = tree->TypeGet();
+
+                    /* Make sure these are all ints and precision is not lost */
+
+                    if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
+                    {
+                        op2 = tree->gtOp2 = op2->AsCast()->CastOp();
+                    }
                 }
             }
-
             break;
 
         case GT_MUL:
@@ -15652,8 +15696,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 // |  |  |  \--*  ADD       int
 // |  |  |     +--*  MUL       int
 // |  |  |     |  +--*  COMMA     int
-// |  |  |     |  |  +--*  ASG       int
-// |  |  |     |  |  |  +--*  LCL_VAR   int    V04 tmp1
+// |  |  |     |  |  +--*  STORE_LCL_VAR   int    V04 tmp1
 // |  |  |     |  |  |  \--*  SUB       int
 // |  |  |     |  |  |     +--*  LCL_VAR   int    V01 arg1
 // |  |  |     |  |  |     \--*  MDARR_LOWER_BOUND int    (0)
@@ -15667,8 +15710,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 // |  |  |     |  \--*  MDARR_LENGTH int    (1)
 // |  |  |     |     \--*  LCL_VAR   ref    V00 arg0
 // |  |  |     \--*  COMMA     int
-// |  |  |        +--*  ASG       int
-// |  |  |        |  +--*  LCL_VAR   int    V05 tmp2
+// |  |  |        +--*  STORE_LCL_VAR   int    V05 tmp2
 // |  |  |        |  \--*  SUB       int
 // |  |  |        |     +--*  LCL_VAR   int    V02 arg2
 // |  |  |        |     \--*  MDARR_LOWER_BOUND int    (1)
