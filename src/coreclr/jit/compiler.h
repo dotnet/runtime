@@ -8656,29 +8656,6 @@ private:
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
     GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
 
-    // Get the type for the hardware SIMD vector.
-    // This is the maximum SIMD type supported for this target.
-    var_types getSIMDVectorType()
-    {
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
-            return TYP_SIMD32;
-        }
-        else
-        {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            return TYP_SIMD16;
-        }
-#elif defined(TARGET_ARM64)
-        return TYP_SIMD16;
-#else
-        assert(!"getSIMDVectorType() unimplemented on target arch");
-        unreached();
-#endif
-    }
-
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
     {
@@ -8701,14 +8678,13 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        if (compExactlyDependsOn(InstructionSet_AVX2))
         {
             // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8739,13 +8715,11 @@ private:
             }
             else
             {
-                compVerifyInstructionSetUnusable(InstructionSet_AVX512F);
                 return YMM_REGSIZE_BYTES;
             }
         }
         else
         {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8969,44 +8943,12 @@ public:
         return threshold;
     }
 
-    //------------------------------------------------------------------------
-    // largestEnregisterableStruct: The size in bytes of the largest struct that can be enregistered.
-    //
-    // Notes: It is not guaranteed that the struct of this size or smaller WILL be a
-    //        candidate for enregistration.
-
-    unsigned largestEnregisterableStructSize()
-    {
-#ifdef FEATURE_SIMD
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (opts.IsReadyToRun())
-        {
-            // Return constant instead of maxSIMDStructBytes, as maxSIMDStructBytes performs
-            // checks that are effected by the current level of instruction set support would
-            // otherwise cause the highest level of instruction set support to be reported to crossgen2.
-            // and this api is only ever used as an optimization or assert, so no reporting should
-            // ever happen.
-            return ZMM_REGSIZE_BYTES;
-        }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned vectorRegSize = maxSIMDStructBytes();
-        assert(vectorRegSize >= TARGET_POINTER_SIZE);
-        return vectorRegSize;
-#else  // !FEATURE_SIMD
-        return TARGET_POINTER_SIZE;
-#endif // !FEATURE_SIMD
-    }
-
     // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
     // structs will fit the criteria.
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        // Do not use maxSIMDStructBytes as that api in R2R on X86 and X64 may notify the JIT
-        // about the size of a struct under the assumption that the struct size needs to be recorded.
-        // By using largestEnregisterableStructSize here, the detail of whether or not Vector256<T> is
-        // enregistered or not will not be messaged to the R2R compiler.
-        return (structSize >= minSIMDStructBytes()) && (structSize <= largestEnregisterableStructSize());
+        return (structSize >= minSIMDStructBytes()) && (structSize <= maxSIMDStructBytes());
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9103,17 +9045,6 @@ private:
 #else
         return false;
 #endif
-    }
-
-    // Ensure that code will not execute if an instruction set is usable. Call only
-    // if the instruction set has previously reported as unusable, but the status
-    // has not yet been recorded to the AOT compiler.
-    void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa) const
-    {
-        // use compExactlyDependsOn to capture are record the use of the ISA.
-        bool isaUsable = compExactlyDependsOn(isa);
-        // Assert that the is unusable. If true, this function should never be called.
-        assert(!isaUsable);
     }
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?

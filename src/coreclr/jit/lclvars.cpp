@@ -2241,7 +2241,7 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
         // We will only promote fields of SIMD types that fit into a SIMD register.
         if (simdBaseJitType != CORINFO_TYPE_UNDEF)
         {
-            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
+            if (compiler->structSizeMightRepresentSIMDType(simdSize))
             {
                 fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
                 fieldInfo.fldSize = simdSize;
