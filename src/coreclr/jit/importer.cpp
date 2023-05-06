@@ -1007,7 +1007,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         GenTreeFlags indirFlags = GTF_EMPTY;
         GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
         GenTree*     destAddrClone;
-        destAddr = impCloneExpr(destAddr, NO_CLASS_HANDLE, curLevel,
+        destAddr = impCloneExpr(destAddr, &destAddrClone, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
