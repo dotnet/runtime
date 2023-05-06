@@ -56,6 +56,10 @@ namespace System.Collections.Generic
 
         public int Count => _size;
 
+
+        /// <summary>
+        /// Gets the total numbers of elements the internal data structure can hold without resizing.
+        /// </summary>
         public int Capacity => _array.Length;
 
         bool ICollection.IsSynchronized => false;
@@ -166,6 +170,10 @@ namespace System.Collections.Generic
             }
         }
 
+        /// <summary>
+        /// Sets the capacity of a <see cref="Stack{T}"/> object to a specified number of entries.
+        /// </summary>
+        /// <param name="capacity">The new capacity.</param>
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
