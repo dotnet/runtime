@@ -788,7 +788,6 @@ namespace System
             return i * 8 + LocateFirstFoundByte(candidate);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref byte first, int firstLength, ref byte second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);

@@ -355,7 +355,6 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);

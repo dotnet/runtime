@@ -2212,7 +2212,7 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
 
     // Try to find if all phi arguments are known to be non-null.
     bool isNonNull = true;
-    for (GenTreePhi::Use& use : tree->AsOp()->gtGetOp2()->AsPhi()->Uses())
+    for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
     {
         if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
         {
@@ -2269,14 +2269,16 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2, OAK_EQUAL);
             }
-            else
-            {
-                assertionInfo = optAssertionGenPhiDefn(tree);
-            }
+            break;
+
+        case GT_STORE_LCL_VAR:
+            assertionInfo = optAssertionGenPhiDefn(tree);
             break;
 
         case GT_BLK:
         case GT_IND:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
             // R-value indirections create non-null assertions, but not all indirections are R-values.
             // Those under ADDR nodes or on the LHS of ASGs are "locations", and will not end up
             // dereferencing their operands. We cannot reliably detect them here, however, and so
@@ -4739,6 +4741,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_BLK:
         case GT_IND:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
         case GT_NULLCHECK:
         case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
@@ -5720,7 +5724,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);
-            if ((tree->gtFlags & GTF_IND_ASG_LHS) || (vnStore->VNNormalValue(vn) != vn))
+            if (vnStore->VNNormalValue(vn) != vn)
             {
                 return WALK_CONTINUE;
             }
@@ -5740,11 +5744,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-            // Make sure the local variable is an R-value.
-            if ((tree->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF | GTF_DONT_CSE)) != GTF_EMPTY)
-            {
-                return WALK_CONTINUE;
-            }
             // Let's not conflict with CSE (to save the movw/movt).
             if (lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
             {
