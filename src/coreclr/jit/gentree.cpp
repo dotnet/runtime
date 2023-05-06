@@ -16308,17 +16308,6 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
         {
             return true;
         }
-
-        // TODO-FIELD: delete this zero-diff quirk.
-        if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
-        {
-            GenTreeFieldAddr* addr = tree->AsIndir()->Addr()->AsFieldAddr();
-            if (addr->IsInstance() && ((addr->gtFlags & GTF_FLD_DEREFERENCED) != 0) &&
-                fgAddrCouldBeNull(addr->GetFldObj()))
-            {
-                return true;
-            }
-        }
     }
 
     // Expressions declared as CSE by (e.g.) hoisting code are considered to have relevant side
