@@ -1015,9 +1015,9 @@ namespace System.Collections.Generic
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);
-            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _size);
+            ArgumentOutOfRangeException.ThrowIfLessThan(capacity, _count);
 
-            if (capacity == _size)
+            if (capacity == _count)
                 return;
 
             SetCapacity(capacity);
