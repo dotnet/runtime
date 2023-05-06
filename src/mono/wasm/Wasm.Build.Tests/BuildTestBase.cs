@@ -1219,12 +1219,5 @@ namespace Wasm.Build.Tests
         bool ExpectRelinkDirWhenPublishing=false
     );
 
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
-    };
-
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
