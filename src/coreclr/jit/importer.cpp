@@ -1007,8 +1007,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         GenTreeFlags indirFlags = GTF_EMPTY;
         GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
         GenTree*     destAddrClone;
-        destAddr = impCloneExpr(destAddr, &destAddrClone, curLevel,
-                                pAfterStmt DEBUGARG("MKREFANY assignment"));
+        destAddr = impCloneExpr(destAddr, &destAddrClone, curLevel, pAfterStmt DEBUGARG("MKREFANY assignment"));
 
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
@@ -3528,8 +3527,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // TODO: deal with flags
         GenTreeFlags indirFlags = GTF_EMPTY;
-        op1                     = gtNewHelperCallNode(boxHelper, TYP_REF, op2,
-                                  impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
     }
 
     /* Push the result back on the stack, */
