@@ -528,11 +528,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 
         case GT_EQ:
         {
+#ifdef _MSC_VER
+            // Floating point is not supported
+            assert(&typeid(TBase) != &typeid(float));
+            assert(&typeid(TBase) != &typeid(double));
+#endif // _MSC_VER
             return arg0 == arg1 ? GetAllBitsSetScalar<TBase>() : 0;
         }
 
         case GT_NE:
         {
+#ifdef _MSC_VER
+            // Floating point is not supported
+            assert(&typeid(TBase) != &typeid(float));
+            assert(&typeid(TBase) != &typeid(double));
+#endif // _MSC_VER
             return arg0 != arg1 ? GetAllBitsSetScalar<TBase>() : 0;
         }
 
