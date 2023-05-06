@@ -2406,7 +2406,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
             {
                 ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                if (IsVNFieldSeqHandle(fieldSeqVN))
                 {
                     FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
                     if (fieldSeq != nullptr)
@@ -5304,7 +5304,7 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeq* fieldSeq)
 //
 FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 {
-    assert(IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ));
+    assert(IsVNFieldSeqHandle(vn));
 
     return reinterpret_cast<FieldSeq*>(ConstantValue<ssize_t>(vn));
 }
@@ -5923,6 +5923,11 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
     Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
     return c->m_attribs == CEA_Handle;
+}
+
+bool ValueNumStore::IsVNFieldSeqHandle(ValueNum vn)
+{
+    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ;
 }
 
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
@@ -8393,7 +8398,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         printf("NoVN");
     }
-    else if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ))
+    else if (IsVNFieldSeqHandle(vn))
     {
         comp->gtDispFieldSeq(FieldSeqVNToFieldSeq(vn), 0);
         printf(" ");
@@ -10484,11 +10489,41 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     }
 
     // Is given VN representing a frozen object handle
-    auto isCnsObjHandle = [](ValueNumStore* vnStore, ValueNum vn, CORINFO_OBJECT_HANDLE* handle) -> bool {
+    auto isCnsObjHandle = [](Compiler* comp, ValueNumStore* vnStore, ValueNum vn,
+                             CORINFO_OBJECT_HANDLE* handle) -> bool {
         if (vnStore->IsVNObjHandle(vn))
         {
             *handle = vnStore->ConstantObjHandle(vn);
             return true;
+        }
+
+        // Let's also handle static readonly fields and return movable CORINFO_OBJECT_HANDLE handles
+        // (we're not going to bake them into codegen anyway).
+        VNFuncApp funcApp;
+        if (vnStore->GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad) &&
+            (vnStore->TypeOfVN(vn) == TYP_REF))
+        {
+            if (vnStore->IsVNFieldSeqHandle(funcApp.m_args[0]))
+            {
+                FieldSeq* fseq                        = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[0]);
+                uint8_t   buffer[TARGET_POINTER_SIZE] = {0};
+                if (comp->info.compCompHnd->getStaticFieldContent(fseq->GetFieldHandle(), buffer, TARGET_POINTER_SIZE,
+                                                                  0, /*ignoreMovableObjects*/ false))
+                {
+                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                    // It's done to match the current crossgen/ILC behavior.
+                    CORINFO_OBJECT_HANDLE objHandle = NULL;
+                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                    if ((objHandle != nullptr) &&
+                        (comp->info.compCompHnd->getObjectType(objHandle) == comp->impGetStringClass()))
+                    {
+                        assert(comp->info.compCompHnd->isObjectImmutable(objHandle));
+                        *handle = objHandle;
+                        return true;
+                    }
+                }
+            }
         }
         return false;
     };
@@ -10504,7 +10539,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         ValueNum inxVN  = funcApp.m_args[2];
         ssize_t  offset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[3]);
 
-        if (isCnsObjHandle(vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
+        if (isCnsObjHandle(this, vnStore, arrVN, &objHandle) && (offset == 0) && vnStore->IsVNConstant(inxVN))
         {
             index = vnStore->CoercedConstantValue<size_t>(inxVN);
         }
@@ -10522,13 +10557,13 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             ValueNum op2VN = funcApp.m_args[1];
 
             if (vnStore->IsVNConstant(op1VN) && varTypeIsIntegral(vnStore->TypeOfVN(op1VN)) &&
-                !isCnsObjHandle(vnStore, op1VN, &objHandle))
+                !isCnsObjHandle(this, vnStore, op1VN, &objHandle))
             {
                 dataOffset += vnStore->CoercedConstantValue<ssize_t>(op1VN);
                 baseVN = op2VN;
             }
             else if (vnStore->IsVNConstant(op2VN) && varTypeIsIntegral(vnStore->TypeOfVN(op2VN)) &&
-                     !isCnsObjHandle(vnStore, op2VN, &objHandle))
+                     !isCnsObjHandle(this, vnStore, op2VN, &objHandle))
             {
                 dataOffset += vnStore->CoercedConstantValue<ssize_t>(op2VN);
                 baseVN = op1VN;
@@ -10540,8 +10575,8 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         } while (vnStore->GetVNFunc(baseVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD));
 
-        if (isCnsObjHandle(vnStore, baseVN, &objHandle) && (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) &&
-            ((dataOffset % 2) == 0))
+        if (isCnsObjHandle(this, vnStore, baseVN, &objHandle) &&
+            (dataOffset >= (ssize_t)OFFSETOF__CORINFO_String__chars) && ((dataOffset % 2) == 0))
         {
             static_assert_no_msg((OFFSETOF__CORINFO_String__chars % 2) == 0);
             index = (dataOffset - OFFSETOF__CORINFO_String__chars) / 2;
