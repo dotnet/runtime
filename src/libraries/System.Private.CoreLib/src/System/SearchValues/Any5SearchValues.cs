@@ -6,13 +6,11 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // address of managed types
-
 namespace System.Buffers
 {
     internal sealed class Any5SearchValues<T, TImpl> : SearchValues<T>
-        where T : struct, IEquatable<T>
-        where TImpl : struct, INumber<TImpl>
+        where T : unmanaged, IEquatable<T>
+        where TImpl : unmanaged, INumber<TImpl>
     {
         private readonly TImpl _e0, _e1, _e2, _e3, _e4;
 
@@ -23,19 +21,18 @@ namespace System.Buffers
             (_e0, _e1, _e2, _e3, _e4) = (values[0], values[1], values[2], values[3], values[4]);
         }
 
-        internal override unsafe T[] GetValues()
+        internal override T[] GetValues()
         {
-            TImpl e0 = _e0, e1 = _e1, e2 = _e2, e3 = _e3, e4 = _e4;
-            return new[] { *(T*)&e0, *(T*)&e1, *(T*)&e2, *(T*)&e3, *(T*)&e4 };
+            return new[] { Unsafe.BitCast<TImpl, T>(_e0), Unsafe.BitCast<TImpl, T>(_e1), Unsafe.BitCast<TImpl, T>(_e2), Unsafe.BitCast<TImpl, T>(_e3), Unsafe.BitCast<TImpl, T>(_e4) };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal override unsafe bool ContainsCore(T value) =>
-            *(TImpl*)&value == _e0 ||
-            *(TImpl*)&value == _e1 ||
-            *(TImpl*)&value == _e2 ||
-            *(TImpl*)&value == _e3 ||
-            *(TImpl*)&value == _e4;
+        internal override bool ContainsCore(T value) =>
+            Unsafe.BitCast<T, TImpl>(value) == _e0 ||
+            Unsafe.BitCast<T, TImpl>(value) == _e1 ||
+            Unsafe.BitCast<T, TImpl>(value) == _e2 ||
+            Unsafe.BitCast<T, TImpl>(value) == _e3 ||
+            Unsafe.BitCast<T, TImpl>(value) == _e4;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override int IndexOfAny(ReadOnlySpan<T> span) =>
