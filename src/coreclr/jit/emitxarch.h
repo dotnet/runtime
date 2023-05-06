@@ -125,6 +125,7 @@ code_t AddEvexVPrimePrefix(code_t code);
 code_t AddEvexRPrimePrefix(code_t code);
 
 static bool IsMovInstruction(instruction ins);
+static bool IsMovEquivalentTo(instruction mov, emitAttr movSize, instruction ins, emitAttr size);
 bool HasSideEffect(instruction ins, emitAttr size);
 bool IsRedundantMov(
     instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);

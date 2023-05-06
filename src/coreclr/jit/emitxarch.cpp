@@ -5860,23 +5860,63 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
-        {
-            return true;
-        }
-
 #if defined(TARGET_AMD64)
         case INS_movq:
         case INS_movsxd:
+#endif // TARGET_AMD64
         {
             return true;
         }
-#endif // TARGET_AMD64
 
         default:
         {
             return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsMovEquivalentTo: Determines a move performs the same operation
+//    as the other instruction
+//
+// Arguments:
+//    mov       -- The move being checked
+//    movSize   -- The move operand size
+//    ins       -- The instruction being checked
+//    size      -- The instruction operand size
+//
+// Return Value:
+//    true if the move performs the same operation, false otherwise
+//
+bool emitter::IsMovEquivalentTo(instruction mov, emitAttr movSize, instruction ins, emitAttr size)
+{
+    assert(IsMovInstruction(mov));
+
+    auto isFullSimdMove = [&](instruction potentialMov) -> bool {
+        switch (potentialMov)
+        {
+            case INS_movapd:
+            case INS_movaps:
+            case INS_movdqa:
+            case INS_vmovdqa64:
+            case INS_movdqu:
+            case INS_vmovdqu8:
+            case INS_vmovdqu16:
+            case INS_vmovdqu64:
+            case INS_movupd:
+            case INS_movups:
+            {
+                return true;
+            }
+
+            default
+            {
+                return false;
+            }
+        }
+    };
+
+    return movSize == size && (mov == ins || (isFullSimdMove(mov) && isFullSimdMove(ins)));
 }
 
 //------------------------------------------------------------------------
@@ -6102,12 +6142,9 @@ bool emitter::IsRedundantMov(
         return true;
     }
 
-    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
-    // functionality even if their actual identifier differs and we should optimize these
-
     if (!emitCanPeepholeLastIns() ||         // Don't optimize if unsafe
-        (emitLastIns->idIns() != ins) ||     // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size) || // or if the operand size is different from the last instruction
+        // or if the move is not equivalent to the last instruction
+        !IsMovEquivalentTo(ins, size, emitLastIns->idIns(), emitLastIns->idOpSize()) ||
         (emitLastIns->idInsFmt() != fmt))    // or if the format is different from the last instruction
     {
         return false;
@@ -8882,12 +8919,9 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
         return false;
     }
 
-    // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
-    // functionality even if their actual identifier differs and we should optimize these
-
     if (!emitCanPeepholeLastIns() ||       // Don't optimize if unsafe
-        (emitLastIns->idIns() != ins) ||   // or if the instruction is different from the last instruction
-        (emitLastIns->idOpSize() != size)) // or if the operand size is different from the last instruction
+        // or if the move is not equivalent to the last instruction
+        !IsMovEquivalentTo(ins, size, emitLastIns->idIns(), emitLastIns->idOpSize()))
     {
         return false;
     }
