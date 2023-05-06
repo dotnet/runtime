@@ -4047,7 +4047,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
 
             if ((fromTypeHnd == toTypeHnd) || (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType)) ||
-                (fromLayout != nullptr && toLayout != nullptr && ClassLayout::AreCompatible(fromLayout, toLayout)))
+                ClassLayout::AreCompatible(fromLayout, toLayout))
             {
                 // Handle matching handles, integrals or compatible struct layouts where we can simply return op1
                 return op1;
