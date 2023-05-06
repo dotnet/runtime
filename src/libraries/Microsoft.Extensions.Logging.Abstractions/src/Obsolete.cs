@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging.Abstractions.Internal
 {
     [System.Obsolete("TODO")]
-    public partial class NullScope
+    public partial class NullScope : IDisposable
     {
         internal NullScope() { }
 
-        public static NullScope Instance { get { throw new NotImplementedException(); } }
+        public static NullScope Instance { get; } = new NullScope();
 
         public void Dispose() { }
     }
@@ -20,22 +22,25 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
     {
         public TypeNameHelper() { }
 
-        public static string GetTypeDisplayName(System.Type type) { throw new NotImplementedException(); }
+        public static string GetTypeDisplayName(System.Type type) =>
+            Microsoft.Extensions.Internal.TypeNameHelper.GetTypeDisplayName(type);
     }
 }
 
 namespace Microsoft.Extensions.Logging.Internal
 {
     [System.Obsolete("TODO")]
-    public partial class FormattedLogValues
+    public partial class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
     {
         public FormattedLogValues(string format, params object[] values) { }
 
         public int Count { get { throw new NotImplementedException(); } }
 
-        public System.Collections.Generic.KeyValuePair<string, object> this[int index] { get { throw new NotImplementedException(); } }
+        public KeyValuePair<string, object> this[int index] { get { throw new NotImplementedException(); } }
 
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator() { throw new NotImplementedException(); }
+        public IEnumerator<KeyValuePair<string, object>> GetEnumerator() { throw new NotImplementedException(); }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public override string ToString() { throw new NotImplementedException(); }
     }
@@ -47,12 +52,12 @@ namespace Microsoft.Extensions.Logging.Internal
 
         public string OriginalFormat { get { throw new NotImplementedException(); } }
 
-        public System.Collections.Generic.List<string> ValueNames { get { throw new NotImplementedException(); } }
+        public List<string> ValueNames { get { throw new NotImplementedException(); } }
 
         public string Format(object[] values) { throw new NotImplementedException(); }
 
-        public System.Collections.Generic.KeyValuePair<string, object> GetValue(object[] values, int index) { throw new NotImplementedException(); }
+        public KeyValuePair<string, object> GetValue(object[] values, int index) { throw new NotImplementedException(); }
 
-        public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>> GetValues(object[] values) { throw new NotImplementedException(); }
+        public IEnumerable<KeyValuePair<string, object>> GetValues(object[] values) { throw new NotImplementedException(); }
     }
 }

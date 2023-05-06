@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
 namespace Microsoft.Extensions.Logging.Abstractions.Internal
 {
     [System.ObsoleteAttribute("TODO")]
-    public partial class NullScope
+    public partial class NullScope : System.IDisposable
     {
         internal NullScope() { }
         public static Microsoft.Extensions.Logging.Abstractions.Internal.NullScope Instance { get { throw null; } }
@@ -215,12 +215,13 @@ namespace Microsoft.Extensions.Logging.Abstractions.Internal
 namespace Microsoft.Extensions.Logging.Internal
 {
     [System.ObsoleteAttribute("TODO")]
-    public partial class FormattedLogValues
+    public partial class FormattedLogValues : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object>>, System.Collections.IEnumerable
     {
         public FormattedLogValues(string format, params object[] values) { }
         public int Count { get { throw null; } }
         public System.Collections.Generic.KeyValuePair<string, object> this[int index] { get { throw null; } }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, object>> GetEnumerator() { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ObsoleteAttribute("TODO")]
