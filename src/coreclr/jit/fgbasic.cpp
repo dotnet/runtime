@@ -1825,8 +1825,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // Compute jump target address
                 signed jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if (compIsForInlining() && jmpDist == 0 &&
-                    (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S))
+                if ((jmpDist == 0) &&
+                    (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
+                    opts.IsInstrumentedOrOptimized())
                 {
                     break; /* NOP */
                 }
@@ -2975,7 +2976,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if (compIsForInlining() && jmpDist == 0 && (opcode == CEE_BR || opcode == CEE_BR_S))
+                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.IsInstrumentedOrOptimized())
                 {
                     continue; /* NOP */
                 }
@@ -3515,6 +3516,10 @@ void Compiler::fgFindBasicBlocks()
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
                 lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
+                if (varTypeIsStruct(info.compRetType))
+                {
+                    lvaSetStruct(lvaInlineeReturnSpillTemp, info.compMethodInfo->args.retTypeClass, false);
+                }
 
                 // The return spill temp is single def only if the method has a single return block.
                 if (fgReturnCount == 1)

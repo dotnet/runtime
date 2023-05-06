@@ -1041,7 +1041,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsByte(simdBaseType) && (simdSize == 16))
             {
-                op1 = impCloneExpr(op1, &op2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
 
                 op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
@@ -1066,7 +1066,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
                     {
-                        op1 = impCloneExpr(op1, &op2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                        op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
                         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
                                                        simdSize);

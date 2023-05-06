@@ -418,6 +418,8 @@ void LinearScan::updateRegsFreeBusyState(RefPosition& refPosition,
 
 regMaskTP LinearScan::internalFloatRegCandidates()
 {
+    needNonIntegerRegisters = true;
+
     if (compiler->compFloatingPointUsed)
     {
         return availableFloatRegs;
@@ -686,13 +688,15 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+    availableRegCount       = ACTUAL_REG_COUNT;
+    needNonIntegerRegisters = false;
+
 #if defined(TARGET_XARCH)
-    availableRegCount = ACTUAL_REG_COUNT;
 
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-#endif
+#endif // TARGET_AMD64
 
     if (!compiler->canUseEvexEncoding())
     {

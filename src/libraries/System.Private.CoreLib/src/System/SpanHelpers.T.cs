@@ -1315,7 +1315,6 @@ namespace System
             return NonPackedContainsValueType(ref searchSpace, value, length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static bool NonPackedContainsValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
@@ -1463,7 +1462,6 @@ namespace System
             return NonPackedIndexOfValueType<TValue, TNegator>(ref searchSpace, value, length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static int NonPackedIndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -1621,7 +1619,6 @@ namespace System
         }
 
         // having INumber<T> constraint here allows to use == operator and get better perf compared to .Equals
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static int NonPackedIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -1797,7 +1794,6 @@ namespace System
             return NonPackedIndexOfAnyValueType<TValue, TNegator>(ref searchSpace, value0, value1, value2, length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         internal static int NonPackedIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -1958,7 +1954,6 @@ namespace System
         internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2087,7 +2082,6 @@ namespace System
         internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, T value4, int length) where T : struct, INumber<T>
             => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, value4, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, TValue value4, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2219,7 +2213,6 @@ namespace System
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
             => LastIndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2354,7 +2347,6 @@ namespace System
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2510,7 +2502,6 @@ namespace System
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2667,7 +2658,6 @@ namespace System
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
@@ -2882,7 +2872,6 @@ namespace System
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, T value4, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, value4, length);
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, TValue value4, int length)
             where TValue : struct, INumber<TValue>
             where TNegator : struct, INegator<TValue>
