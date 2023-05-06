@@ -4024,12 +4024,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
             CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
 
-            if (fromTypeHnd == toTypeHnd)
-            {
-                // Handle the easy case of matching type handles, such as `int` to `int`
-                return impPopStack().val;
-            }
-
             unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
             unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
 
@@ -4048,45 +4042,20 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             ClassLayout* toLayout = nullptr;
             var_types    toType   = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            if (fromLayout != nullptr && toLayout != nullptr && ClassLayout::AreCompatible(fromLayout, toLayout))
+            assert((fromType != TYP_REF) && (toType != TYP_REF));
+
+            GenTree* op1 = impPopStack().val;
+
+            if ((fromTypeHnd == toTypeHnd) || (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType)) ||
+                (fromLayout != nullptr && toLayout != nullptr && ClassLayout::AreCompatible(fromLayout, toLayout)))
             {
-                // Handle compatible struct layouts where we can simply return op1
-                return impPopStack().val;
+                // Handle matching handles, integrals or compatible struct layouts where we can simply return op1
+                return op1;
             }
 
-            if (varTypeIsStruct(fromType) || varTypeIsStruct(toType))
+            // Handle bitcasting between floating and same sized integral, such as `float` to `int`
+            if (varTypeIsFloating(fromType) && varTypeIsIntegral(toType))
             {
-                GenTree*     addr;
-                GenTreeFlags indirFlags = GTF_EMPTY;
-                GenTree*     val        = impPopStack().val;
-                if (val->OperIsIndir() && (fromSize != val->AsIndir()->Size()))
-                {
-                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
-                    impAssignTempGen(lclNum, val, fromTypeHnd, CHECK_SPILL_ALL);
-                    addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
-                }
-                else
-                {
-                    addr = impGetNodeAddr(val, fromTypeHnd, CHECK_SPILL_ALL, &indirFlags);
-                }
-                return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
-            }
-
-            if (varTypeIsFloating(fromType))
-            {
-                // Handle bitcasting from floating to same sized integral, such as `float` to `int`
-                assert(varTypeIsIntegral(toType));
-
-#if !TARGET_64BIT
-                if ((fromType == TYP_DOUBLE) && !impStackTop().val->IsCnsFltOrDbl())
-                {
-                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
-                    return nullptr;
-                }
-#endif // !TARGET_64BIT
-
-                GenTree* op1 = impPopStack().val;
-
                 if (op1->IsCnsFltOrDbl())
                 {
                     if (fromType == TYP_DOUBLE)
@@ -4101,30 +4070,16 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                         return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
                     }
                 }
-                else
+                // TODO-CQ: We should support this on 32-bit via decomposition
+                else if (TargetArchitecture::Is64Bit || (fromType == TYP_FLOAT))
                 {
                     toType = varTypeToSigned(toType);
                     op1    = impImplicitR4orR8Cast(op1, fromType);
                     return gtNewBitCastNode(toType, op1);
                 }
-                break;
             }
-
-            if (varTypeIsFloating(toType))
+            else if (varTypeIsIntegral(fromType) && varTypeIsFloating(toType))
             {
-                // Handle bitcasting from integral to same sized floating, such as `int` to `float`
-                assert(varTypeIsIntegral(fromType));
-
-#if !TARGET_64BIT
-                if ((toType == TYP_DOUBLE) && !impStackTop().val->IsIntegralConst())
-                {
-                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
-                    return nullptr;
-                }
-#endif // !TARGET_64BIT
-
-                GenTree* op1 = impPopStack().val;
-
                 if (op1->IsIntegralConst())
                 {
                     if (toType == TYP_DOUBLE)
@@ -4140,14 +4095,26 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                         return gtNewDconNode(BitOperations::UInt32BitsToSingle(u32Cns), TYP_FLOAT);
                     }
                 }
-                else
+                // TODO-CQ: We should support this on 32-bit via decomposition
+                else if (TargetArchitecture::Is64Bit || (toType == TYP_FLOAT))
                 {
                     return gtNewBitCastNode(toType, op1);
                 }
             }
 
-            // Handle bitcasting for same sized integrals, such as `int` to `uint`
-            return impPopStack().val;
+            GenTree*     addr;
+            GenTreeFlags indirFlags = GTF_EMPTY;
+            if (op1->OperIsIndir() && (fromSize != op1->AsIndir()->Size()))
+            {
+                unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
+                impAssignTempGen(lclNum, op1, fromTypeHnd, CHECK_SPILL_ALL);
+                addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+            }
+            else
+            {
+                addr = impGetNodeAddr(op1, fromTypeHnd, CHECK_SPILL_ALL, &indirFlags);
+            }
+            return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
         }
 
         case NI_SRCS_UNSAFE_ByteOffset:
