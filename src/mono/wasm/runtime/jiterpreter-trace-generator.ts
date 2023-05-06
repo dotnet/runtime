@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_assert, MonoMethod } from "./types";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import { NativePointer } from "./types/emscripten";
 import {
     getU16, getI16,
