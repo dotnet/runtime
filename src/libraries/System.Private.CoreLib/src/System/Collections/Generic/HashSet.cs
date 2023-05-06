@@ -356,7 +356,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the total numbers of elements the internal data structure can hold without resizing.
         /// </summary>
-        public int Capacity => _count;
+        public int Capacity => _entries?.Length ?? 0;
 
         bool ICollection<T>.IsReadOnly => false;
 
@@ -1012,11 +1012,6 @@ namespace System.Collections.Generic
         /// </summary>
         public void TrimExcess() => SetCapacity(Count);
 
-        /// <summary>
-        /// Sets the capacity of a <see cref="HashSet{T}"/> object to the specified number of entries,
-        /// rounded up to a nearby, implementation-specific value.
-        /// </summary>
-        /// <param name="capacity">The new capacity.</param>
         public void TrimExcess(int capacity)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(capacity);

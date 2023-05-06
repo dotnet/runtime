@@ -211,7 +211,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the total numbers of elements the internal data structure can hold without resizing.
         /// </summary>
-        public int Capacity => _count;
+        public int Capacity => _entries?.Length ?? 0;
 
         public KeyCollection Keys => _keys ??= new KeyCollection(this);
 
