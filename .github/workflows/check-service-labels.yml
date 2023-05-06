@@ -19,6 +19,6 @@ jobs:
         if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
           exit 0
         else
-          echo "::error 'Servicing-approved' label not applied to the PR yet. More information: https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md"
+          echo "::error:: 'Servicing-approved' label not applied to the PR yet. More information: https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md"
           exit 1
         fi
