@@ -443,8 +443,7 @@ TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
 template <typename TBase>
 TBase GetAllBitsSetScalar()
 {
-    uint8_t bitWidth = (sizeof(TBase) * 8);
-    return static_cast<TBase>((1ULL << bitWidth) - 1);
+    return ~static_cast<TBase>(0);
 }
 
 template <>
