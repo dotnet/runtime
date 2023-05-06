@@ -4107,12 +4107,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             if (op1->OperIsIndir() && (fromSize != op1->AsIndir()->Size()))
             {
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
-                impAssignTempGen(lclNum, op1, fromTypeHnd, CHECK_SPILL_ALL);
+                impAssignTempGen(lclNum, op1, CHECK_SPILL_ALL);
                 addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
             }
             else
             {
-                addr = impGetNodeAddr(op1, fromTypeHnd, CHECK_SPILL_ALL, &indirFlags);
+                addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
             }
             return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
         }
