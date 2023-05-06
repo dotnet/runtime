@@ -410,7 +410,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    const int64_t initPattern = (initVal->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
+    const uint8_t initPattern = (uint8_t)(initVal->AsIntCon()->IconValue() & 0xFF);
 
     if (initPattern != 0)
     {
@@ -418,14 +418,11 @@ void MorphInitBlockHelper::TryInitFieldByField()
         {
             LclVarDsc* fieldDesc = m_comp->lvaGetDesc(destLclVar->lvFieldLclStart + i);
 
-            if (varTypeIsSIMD(fieldDesc) || varTypeIsGC(fieldDesc))
+            if (varTypeIsGC(fieldDesc))
             {
-                // Cannot initialize GC or SIMD types with a non-zero constant.
-                // The former is completely bogus. The later restriction could be
-                // lifted by supporting non-zero SIMD constants or by generating
-                // field initialization code that converts an integer constant to
-                // the appropriate SIMD value. Unlikely to be very useful, though.
-                JITDUMP(" dest contains GC and/or SIMD fields and source constant is not 0.\n");
+                // Cannot initialize GC types with a non-zero constant. The
+                // former is completely bogus.
+                JITDUMP(" dest contains GC fields and source constant is not 0.\n");
                 return;
             }
         }
@@ -448,58 +445,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         LclVarDsc* fieldDesc = m_comp->lvaGetDesc(fieldLclNum);
         var_types  fieldType = fieldDesc->TypeGet();
 
-        GenTree* src;
-        switch (fieldType)
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-                // Promoted fields are expected to be "normalize on load". If that changes then
-                // we may need to adjust this code to widen the constant correctly.
-                assert(fieldDesc->lvNormalizeOnLoad());
-                FALLTHROUGH;
-            case TYP_INT:
-            {
-                int64_t mask = (int64_t(1) << (genTypeSize(fieldType) * 8)) - 1;
-                src          = m_comp->gtNewIconNode(static_cast<int32_t>(initPattern & mask));
-                break;
-            }
-            case TYP_LONG:
-                src = m_comp->gtNewLconNode(initPattern);
-                break;
-            case TYP_FLOAT:
-                float floatPattern;
-                memcpy(&floatPattern, &initPattern, sizeof(floatPattern));
-                src = m_comp->gtNewDconNode(floatPattern, TYP_FLOAT);
-                break;
-            case TYP_DOUBLE:
-                double doublePattern;
-                memcpy(&doublePattern, &initPattern, sizeof(doublePattern));
-                src = m_comp->gtNewDconNode(doublePattern);
-                break;
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-            {
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
-            }
-
-            default:
-                unreached();
-        }
-
+        GenTree* src   = m_comp->gtNewConWithPattern(fieldType, initPattern);
         GenTree* store = m_comp->gtNewTempAssign(fieldLclNum, src);
 
         if (m_comp->optLocalAssertionProp)

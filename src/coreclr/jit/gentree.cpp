@@ -7689,6 +7689,71 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
     }
 }
 
+//------------------------------------------------------------------------
+// CreateInitValue:
+//   Create an IR node representing a constant value with the specified 8
+//   byte character broadcast into all of its bytes.
+//
+// Parameters:
+//   type    - The primitive type. For small types the constant will be
+//             zero/sign-extended and a TYP_INT node will be returned.
+//   pattern - A byte pattern.
+//
+// Returns:
+//   An IR node representing the constant.
+//
+// Remarks:
+//   Should only be called when that pattern can actually be represented; for
+//   example, GC pointers only support an init pattern of zero.
+//
+GenTree* Compiler::gtNewConWithPattern(var_types type, uint8_t pattern)
+{
+    switch (type)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return gtNewIconNode(pattern);
+        case TYP_BYTE:
+            return gtNewIconNode((int8_t)pattern);
+        case TYP_SHORT:
+            return gtNewIconNode((int16_t)(pattern * 0x0101));
+        case TYP_USHORT:
+            return gtNewIconNode((uint16_t)(pattern * 0x0101));
+        case TYP_INT:
+            return gtNewIconNode(pattern * 0x01010101);
+        case TYP_LONG:
+            return gtNewLconNode(pattern * 0x0101010101010101LL);
+        case TYP_FLOAT:
+            float floatPattern;
+            memset(&floatPattern, pattern, sizeof(floatPattern));
+            return gtNewDconNode(floatPattern, TYP_FLOAT);
+        case TYP_DOUBLE:
+            double doublePattern;
+            memset(&doublePattern, pattern, sizeof(doublePattern));
+            return gtNewDconNode(doublePattern);
+        case TYP_REF:
+        case TYP_BYREF:
+            assert(pattern == 0);
+            return gtNewZeroConNode(type);
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+        {
+            GenTreeVecCon* node = gtNewVconNode(type);
+            memset(&node->gtSimdVal, pattern, sizeof(node->gtSimdVal));
+            return node;
+        }
+        default:
+            unreached();
+    }
+}
+
 GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
 {
     LclVarDsc*     varDsc = lvaGetDesc(lclNum);
