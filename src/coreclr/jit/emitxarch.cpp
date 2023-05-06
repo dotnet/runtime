@@ -5909,7 +5909,7 @@ bool emitter::IsMovEquivalentTo(instruction mov, emitAttr movSize, instruction i
                 return true;
             }
 
-            default
+            default:
             {
                 return false;
             }
