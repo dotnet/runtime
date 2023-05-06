@@ -59,10 +59,51 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
     _garbageCollections++;
 
+    const int MAX_NON_GC_HEAP_SEGMENTS = 16;
+    COR_PRF_NONGC_HEAP_RANGE segments[MAX_NON_GC_HEAP_SEGMENTS];
+    ULONG segCount;
+    ObjectID firstObj = 0;
+    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(MAX_NON_GC_HEAP_SEGMENTS, &segCount, segments);
+    if (FAILED(hr))
+    {
+        printf("GetNonGCHeapBounds returned an error\n!");
+        _failures++;
+    }
+    else if (segCount == 0 || segCount > MAX_NON_GC_HEAP_SEGMENTS)
+    {
+        printf("GetNonGCHeapBounds: invalid segCount (%u)\n!", segCount);
+        _failures++;
+    }
+    else
+    {
+        // Save very first object ID to compare with EnumerateNonGCObjects
+        firstObj = segments[0].rangeStart;
+
+        printf("\nGetNonGCHeapBounds (segCount = %u):\n", segCount);
+        for (ULONG i = 0; i < segCount; i++)
+        {
+            printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
+                i, (void*)segments[i].rangeStart, (ULONG)segments[i].rangeLength, (ULONG)segments[i].rangeLengthReserved);
+
+            if ((ULONG)segments[i].rangeLength > (ULONG)segments[i].rangeLengthReserved)
+            {
+                printf("GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
+                _failures++;
+            }
+
+            if (!segments[i].rangeStart)
+            {
+                printf("GetNonGCHeapBounds: rangeStart is null");
+                _failures++;
+            }
+        }
+        printf("\n");
+    }
+
     // Let's make sure we got the same number of objects as we got from the callback
     // by testing the EnumerateNonGCObjects API.
     ICorProfilerObjectEnum* pEnum = NULL;
-    HRESULT hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
+    hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
     if (FAILED(hr))
     {
         printf("EnumerateNonGCObjects returned an error\n!");
@@ -72,8 +113,29 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     {
         int nonGcObjectsEnumerated = 0;
         ObjectID obj;
+        bool isFirstObj = true;
         while (pEnum->Next(1, &obj, NULL) == S_OK)
         {
+            if (isFirstObj)
+            {
+                if (firstObj != obj)
+                {
+                    printf("EnumerateNonGCObjects: firstObj != obj\n!");
+                    _failures++;
+                }
+            }
+
+            // Add test coverage for IsFrozenObject API, currently, it is expected to return true
+            // for objects from non-GC heap (it might also return true for frozen segments we don't track)
+            BOOL isFrozen;
+            hr = pCorProfilerInfo->IsFrozenObject(obj, &isFrozen);
+            if (FAILED(hr) || !isFrozen)
+            {
+                printf("EnumerateNonGCObjects: IsFrozenObject failed\n!");
+                _failures++;
+            }
+
+            isFirstObj = false;
             nonGcObjectsEnumerated++;
         }
 

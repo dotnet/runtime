@@ -17,7 +17,7 @@ namespace System
         // IDEOGRAPHIC FULL STOP '\u3002'
         // FULLWIDTH FULL STOP '\uFF0E'
         // HALFWIDTH IDEOGRAPHIC FULL STOP '\uFF61'
-        // Using IndexOfAnyValues isn't beneficial here as it would defer to IndexOfAny(char, char, char, char) anyway
+        // Using SearchValues isn't beneficial here as it would defer to IndexOfAny(char, char, char, char) anyway
         private const string IriDotCharacters = ".\u3002\uFF0E\uFF61";
 
         // The Unicode specification allows certain code points to be normalized not to
@@ -28,22 +28,22 @@ namespace System
         // This means that a host containing Unicode characters can be normalized to contain
         // URI reserved characters, changing the meaning of a URI only when certain properties
         // such as IdnHost are accessed. To be safe, disallow control characters in normalized hosts.
-        private static readonly IndexOfAnyValues<char> s_unsafeForNormalizedHostChars =
-            IndexOfAnyValues.Create(@"\/?@#:[]");
+        private static readonly SearchValues<char> s_unsafeForNormalizedHostChars =
+            SearchValues.Create(@"\/?@#:[]");
 
         // Takes into account the additional legal domain name characters '-' and '_'
         // Note that '_' char is formally invalid but is historically in use, especially on corpnets
-        private static readonly IndexOfAnyValues<char> s_validChars =
-            IndexOfAnyValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.");
+        private static readonly SearchValues<char> s_validChars =
+            SearchValues.Create("-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz.");
 
         // For IRI, we're accepting anything non-ascii, so invert the condition to just check for invalid ascii characters
-        private static readonly IndexOfAnyValues<char> s_iriInvalidAsciiChars = IndexOfAnyValues.Create(
+        private static readonly SearchValues<char> s_iriInvalidAsciiChars = SearchValues.Create(
             "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
             "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
             " !\"#$%&'()*+,/:;<=>?@[\\]^`{|}~\u007F");
 
-        private static readonly IndexOfAnyValues<char> s_asciiLetterUpperOrColonChars =
-            IndexOfAnyValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ:");
+        private static readonly SearchValues<char> s_asciiLetterUpperOrColonChars =
+            SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ:");
 
         private static readonly IdnMapping s_idnMapping = new IdnMapping();
 

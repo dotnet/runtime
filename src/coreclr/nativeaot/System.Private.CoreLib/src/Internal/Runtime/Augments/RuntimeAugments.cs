@@ -778,11 +778,6 @@ namespace Internal.Runtime.Augments
             return modulePath;
         }
 
-        public static IntPtr GetRuntimeTypeHandleRawValue(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return runtimeTypeHandle.RawValue;
-        }
-
         // if functionPointer points at an import or unboxing stub, find the target of the stub
         public static IntPtr GetCodeTarget(IntPtr functionPointer)
         {

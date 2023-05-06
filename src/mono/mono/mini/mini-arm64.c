@@ -3823,6 +3823,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		case OP_XOP_OVR_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_TBL1:
+				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
@@ -5335,6 +5347,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (int i = 0; i < MONO_MAX_IREGS; i++)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
+			break;
+
+		/**** Arm.ArmBase ****/
+		case OP_LZCNT32:
+			arm_clzw (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT32:
+			arm_clsw (code, dreg, sreg1);
+			break;
+
+		case OP_LZCNT64:
+			arm_clzx (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT64:
+			arm_clsx (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_SMULH:
+			arm_smulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_ARM64_UMULH:
+			arm_umulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XOP_I8_I8:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I64);
+			arm_rbitx (code, dreg, sreg1);
+			break;
+
+		case OP_XOP_I4_I4:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
+			arm_rbitw (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
 			break;
 
 		default:

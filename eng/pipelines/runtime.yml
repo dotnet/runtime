@@ -271,6 +271,9 @@ extends:
           - linux_x64
           - windows_x64
           - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
@@ -313,7 +316,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests

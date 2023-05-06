@@ -252,6 +252,11 @@ namespace ILCompiler
             return new ScannedPreinitializationPolicy(_factory.PreinitializationManager, MarkedNodes);
         }
 
+        public InlinedThreadStatics GetInlinedThreadStatics()
+        {
+            return new ScannedInlinedThreadStatics(_factory, MarkedNodes);
+        }
+
         private sealed class ScannedVTableProvider : VTableSliceProvider
         {
             private Dictionary<TypeDesc, IReadOnlyList<MethodDesc>> _vtableSlices = new Dictionary<TypeDesc, IReadOnlyList<MethodDesc>>();
@@ -672,6 +677,75 @@ namespace ILCompiler
 
             public override TypeSystemException GetCompilationError(MethodDesc method)
                 => _importationErrors.TryGetValue(method, out var exception) ? exception : null;
+        }
+
+        private sealed class ScannedInlinedThreadStatics : InlinedThreadStatics
+        {
+            private readonly List<MetadataType> _types;
+            private readonly Dictionary<MetadataType, int> _offsets;
+            private readonly int _size;
+
+            internal override bool IsComputed() => true;
+            internal override List<MetadataType> GetTypes() => _types;
+            internal override Dictionary<MetadataType, int> GetOffsets() => _offsets;
+            internal override int GetSize() => _size;
+
+            public ScannedInlinedThreadStatics(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            {
+                List<ThreadStaticsNode> threadStaticNodes = new List<ThreadStaticsNode>();
+                foreach (var markedNode in markedNodes)
+                {
+                    if (markedNode is ThreadStaticsNode threadStaticNode)
+                    {
+                        threadStaticNodes.Add(threadStaticNode);
+                    }
+                }
+
+                // skip MT pointer
+                int nextDataOffset = factory.Target.PointerSize;
+
+                List<MetadataType> types = new List<MetadataType>();
+                Dictionary<MetadataType, int> offsets = new Dictionary<MetadataType, int>();
+
+                if (threadStaticNodes.Count > 0)
+                {
+                    threadStaticNodes.Sort(CompilerComparer.Instance);
+                    for (int i = 0; i < threadStaticNodes.Count; i++)
+                    {
+                        ThreadStaticsNode threadStaticNode = threadStaticNodes[i];
+                        MetadataType t = threadStaticNode.Type;
+
+                        // do not inline storage for shared generics
+                        if (t.ConvertToCanonForm(CanonicalFormKind.Specific) != t)
+                            continue;
+
+#if DEBUG
+                        // do not inline storage for some types in debug - for test coverage
+                        if (i % 8 == 0)
+                            continue;
+#endif
+
+                        types.Add(t);
+
+                        // N.B. for ARM32, we would need to deal with > PointerSize alignments.
+                        //      GCStaticEEType does not currently set RequiresAlign8Flag
+                        Debug.Assert(t.ThreadGcStaticFieldAlignment.AsInt <= factory.Target.PointerSize);
+                        nextDataOffset = nextDataOffset.AlignUp(t.ThreadGcStaticFieldAlignment.AsInt);
+
+                        // reported offset is from the MT pointer, adjust for that
+                        offsets.Add(t, nextDataOffset - factory.Target.PointerSize);
+
+                        // ThreadGcStaticFieldSize includes MT pointer, we will not need space for it
+                        int dataSize = t.ThreadGcStaticFieldSize.AsInt - factory.Target.PointerSize;
+                        nextDataOffset += dataSize;
+                    }
+                }
+
+                _types = types;
+                _offsets = offsets;
+                // the size is at least MIN_OBJECT_SIZE
+                _size = Math.Max(nextDataOffset, factory.Target.PointerSize * 3);
+            }
         }
 
         private sealed class ScannedPreinitializationPolicy : TypePreinit.TypePreinitializationPolicy

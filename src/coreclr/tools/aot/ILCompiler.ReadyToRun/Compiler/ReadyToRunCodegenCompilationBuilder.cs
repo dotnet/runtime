@@ -291,6 +291,10 @@ namespace ILCompiler
                     break;
             }
 
+            // Always allow frozen allocators for R2R (NativeAOT is able to preinitialize objects on
+            // frozen segments without JIT's help)
+            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
+
             if (!_isJitInitialized)
             {
                 JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);

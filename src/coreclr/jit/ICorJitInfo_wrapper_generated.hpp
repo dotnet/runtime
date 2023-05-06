@@ -793,16 +793,6 @@ bool WrapICorJitInfo::canCast(
     return temp;
 }
 
-bool WrapICorJitInfo::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    API_ENTER(areTypesEquivalent);
-    bool temp = wrapHnd->areTypesEquivalent(cls1, cls2);
-    API_LEAVE(areTypesEquivalent);
-    return temp;
-}
-
 TypeCompareState WrapICorJitInfo::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
