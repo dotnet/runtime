@@ -2979,43 +2979,12 @@ GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
     {
         store->SetReverseOp();
     }
+    store->ClearDoNotCSE();
     store->CopyRawCosts(assignment);
 
     if (storeOp == GT_STOREIND)
     {
         store->AsStoreInd()->SetRMWStatusDefault();
-    }
-
-    // [..., LHS, ..., RHS, ASG] -> [..., ..., RHS, LHS<STORE>] (normal)
-    // [..., RHS, ..., LHS, ASG] -> [..., RHS, ..., LHS<STORE>] (reversed)
-    if (assignment->gtPrev != nullptr)
-    {
-        assert(fgNodeThreading == NodeThreading::AllTrees);
-        if (isReverseOp)
-        {
-            GenTree* nextNode = assignment->gtNext;
-            store->gtNext     = nextNode;
-            if (nextNode != nullptr)
-            {
-                nextNode->gtPrev = store;
-            }
-        }
-        else
-        {
-            if (store->gtPrev != nullptr)
-            {
-                store->gtPrev->gtNext = store->gtNext;
-            }
-            store->gtNext->gtPrev = store->gtPrev;
-
-            store->gtPrev         = assignment->gtPrev;
-            store->gtNext         = assignment->gtNext;
-            store->gtPrev->gtNext = store;
-            if (store->gtNext != nullptr)
-            {
-                store->gtNext->gtPrev = store;
-            }
-        }
     }
 
     DISPNODE(store);

@@ -787,10 +787,10 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
     GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
-    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(TYP_BYREF, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTree*          spanLength     = gtNewFieldIndirNode(TYP_INT, nullptr, spanLengthAddr);
-    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(TYP_BYREF, pointerHnd, spanObjRefLcl);
-    GenTree*          spanData       = gtNewFieldIndirNode(TYP_BYREF, nullptr, spanDataAddr);
+    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTree*          spanLength     = gtNewIndir(TYP_INT, spanLengthAddr);
+    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(pointerHnd, spanObjRefLcl, 0);
+    GenTree*          spanData       = gtNewIndir(TYP_BYREF, spanDataAddr);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);
@@ -799,7 +799,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         // We succeeded, fill the placeholders:
         // TODO: deal with flags
         GenTreeFlags indirFlags = GTF_EMPTY;
-        impAssignTempGen(spanObjRef, impGetNodeAddr(spanObj, spanCls, CHECK_SPILL_NONE, &indirFlags));
+        impAssignTempGen(spanObjRef, impGetNodeAddr(spanObj, CHECK_SPILL_NONE, &indirFlags));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {

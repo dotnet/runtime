@@ -159,6 +159,7 @@ set( JIT_SOURCES
   patchpoint.cpp
   phase.cpp
   promotion.cpp
+  promotiondecomposition.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
