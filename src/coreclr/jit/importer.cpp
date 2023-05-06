@@ -7476,7 +7476,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BR_S:
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if (compIsForInlining() && jmpDist == 0)
+                if ((jmpDist == 0) && opts.IsInstrumentedOrOptimized())
                 {
                     break; /* NOP */
                 }
