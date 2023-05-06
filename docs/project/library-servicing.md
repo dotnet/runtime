@@ -42,7 +42,7 @@ For both cases, you must:
 - Bring it to the attention of the [engineering lead responsible for the area](~/docs/area-owners.md).
 - If the fix is a product change, the area owner will:
   - Add the `Servicing-consider` label.
-  - Request approval to merge this servicing change.
+  - Ask the area owner to champion your PR in the .NET Tactics meeting to request merge approval.
   - If the change is approved, they will replace the `Servicing-consider` label by `Servicing-approved` and sign-off the PR.
 - If the fix is a test-only or infra-only change, the area owner will:
   - Review the PR and sign-off if they approve it.
