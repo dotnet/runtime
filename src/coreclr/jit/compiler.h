@@ -626,21 +626,8 @@ public:
 
 #ifdef FEATURE_SIMD
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
+#endif                                       // FEATURE_SIMD
 
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)lvSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        assert(simdBaseJitType < (1 << 5));
-        lvSimdBaseJitType = (unsigned char)simdBaseJitType;
-    }
-
-    var_types GetSimdBaseType() const;
-#endif                             // FEATURE_SIMD
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
     unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
@@ -953,11 +940,6 @@ public:
         return lvUsedInSIMDIntrinsic;
     }
 #else
-    // If feature_simd not enabled, return false
-    bool lvIsSIMDType() const
-    {
-        return false;
-    }
     bool lvIsUsedInSIMDIntrinsic() const
     {
         return false;
