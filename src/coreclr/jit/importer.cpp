@@ -1005,7 +1005,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
         GenTreeFlags indirFlags = GTF_EMPTY;
-        GenTree*     destAddr   = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &indirFlags);
+        GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
         GenTree*     destAddrClone;
         destAddr = impCloneExpr(destAddr, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
@@ -1113,7 +1113,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree* destAddr, GenTree* src, unsigned 
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree*             val, unsigned curLevel, GenTreeFlags* pDerefFlags)
+GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags)
 {
     switch (val->OperGet())
     {
