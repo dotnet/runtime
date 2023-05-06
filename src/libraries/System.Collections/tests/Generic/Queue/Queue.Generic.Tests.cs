@@ -97,6 +97,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Queue<T>(int.MinValue));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Queue_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var queue = new Queue<T>(capacity);
+            Assert.Equal(capacity, queue.Capacity);
+        }
+
         #endregion
 
         #region Dequeue
@@ -202,6 +211,26 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void Queue_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            Queue<T> queue = GenericQueueFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => queue.TrimExcess(newCapacity));
+        }
+
+        public void Queue_TrimAccessCurrentCapacity_DoesNothing()
+        {
+            var queue = new Queue<T>(10);
+            var initialCapacity = queue.Capacity;
+            queue.TrimExcess(initialCapacity);
+            var afterTrimCapacity = queue.Capacity;
+
+            Assert.Equal(initialCapacity, afterTrimCapacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

@@ -108,6 +108,15 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(int.MinValue));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Stack_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var stack = new Stack<T>(capacity);
+            Assert.Equal(capacity, stack.Capacity);
+        }
+
         #endregion
 
         #region Pop
@@ -166,6 +175,26 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void Stack_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            Stack<T> stack = GenericStackFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => stack.TrimExcess(newCapacity));
+        }
+
+        public void Stack_TrimAccessCurrentCapacity_DoesNothing()
+        {
+            var stack = new Stack<T>(10);
+            var initialCapacity = stack.Capacity;
+            stack.TrimExcess(initialCapacity);
+            var afterTrimCapacity = stack.Capacity;
+
+            Assert.Equal(initialCapacity, afterTrimCapacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]

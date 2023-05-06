@@ -83,6 +83,15 @@ namespace System.Collections.Tests
             Assert.Equal(comparer, dictionary.Comparer);
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Stack_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            Dictionary<TKey, TValue> dict = new Dictionary<TKey, TValue>(capacity);
+            Assert.Equal(capacity, dict.Capacity);
+        }
+
         #endregion
 
         #region ContainsValue

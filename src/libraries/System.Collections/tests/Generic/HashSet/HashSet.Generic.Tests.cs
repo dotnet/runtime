@@ -126,6 +126,15 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(enumerable));
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Stack_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var hashSet = new HashSet<T>(capacity);
+            Assert.Equal(capacity, hashSet.Capacity);
+        }
+
         #endregion
 
         #region RemoveWhere
@@ -174,6 +183,26 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void HashSet_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            HashSet<T> hashSet = (HashSet<T>)GenericISetFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => hashSet.TrimExcess(newCapacity));
+        }
+
+        public void HashSet_TrimAccessCurrentCapacity_DoesNothing()
+        {
+            var hashSet = new HashSet<T>(10);
+            var initialCapacity = hashSet.Capacity;
+            hashSet.TrimExcess(initialCapacity);
+            var afterTrimCapacity = hashSet.Capacity;
+
+            Assert.Equal(initialCapacity, afterTrimCapacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
