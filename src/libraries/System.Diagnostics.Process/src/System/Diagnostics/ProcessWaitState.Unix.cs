@@ -544,7 +544,7 @@ namespace System.Diagnostics
                         _waitInProgress = null;
                     }
                 }
-            }, cancellationToken);
+            }, CancellationToken.None);
         }
 
         private void ChildReaped(int exitCode, bool configureConsole)
