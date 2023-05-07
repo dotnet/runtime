@@ -6250,7 +6250,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         // Fold ADD(CNS1, CNS2) we mainly target a very specific pattern - ADD(CNS_INT(ref), CNS_INT) where
         // the first icon handle is a frozen object, we could do this folding earlier but that is not trivial
         // as we'll have to introduce a way to restore original object from a byref constant for optimizations.
-        if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+        if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() && node->TypeIs(TYP_I_IMPL, TYP_BYREF) &&
             // Make sure both constants don't need relocs. TODO-CQ: we should allow this for AOT too.
             // For that we need to guarantee that the new constant will be lowered as the original handle
             // with offset in a reloc.
