@@ -1195,6 +1195,7 @@ private:
 // Arguments:
 //   addr   - [in, out] The address node.
 //   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
+//   fldSeq - [out] The combined field sequence for all the peeled offsets.
 //
 void Compiler::gtPeelOffsets(GenTree** addr, ssize_t* offset, FieldSeq** fldSeq)
 {
