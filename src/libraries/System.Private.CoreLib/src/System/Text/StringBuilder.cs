@@ -730,7 +730,7 @@ namespace System.Text
         {
             if (value is not null)
             {
-                Append(valueCount: value.Length, value: ref value.GetRawStringData());
+                Append(ref value.GetRawStringData(), value.Length);
             }
 
             return this;
@@ -2115,19 +2115,10 @@ namespace System.Text
 
                 if (((uint)chunkLength + (uint)valueCount) <= (uint)chunkChars.Length)
                 {
-                    ref char destination = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(chunkChars), chunkLength);
-                    if (valueCount <= 2)
-                    {
-                        destination = value;
-                        if (valueCount == 2)
-                        {
-                            Unsafe.Add(ref destination, 1) = Unsafe.Add(ref value, 1);
-                        }
-                    }
-                    else
-                    {
-                        Buffer.Memmove(ref destination, ref value, (nuint)valueCount);
-                    }
+                    Buffer.Memmove(
+                        destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(chunkChars), chunkLength),
+                        source: ref value,
+                        elementCount: (nuint)valueCount);
 
                     m_ChunkLength = chunkLength + valueCount;
                 }
