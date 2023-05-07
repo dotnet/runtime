@@ -158,3 +158,8 @@ void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
 {
     original_ICorJitCompiler->getVersionIdentifier(versionIdentifier);
 }
+
+unsigned interceptor_ICJC::getMaxVectorTBitWidth(CORJIT_FLAGS cpuCompileFlags)
+{
+    return original_ICorJitCompiler->getMaxVectorTBitWidth(cpuCompileFlags);
+}

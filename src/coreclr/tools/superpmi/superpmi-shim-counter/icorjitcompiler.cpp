@@ -40,3 +40,9 @@ void interceptor_ICJC::getVersionIdentifier(GUID* versionIdentifier /* OUT */)
     mcs->AddCall("getVersionIdentifier");
     original_ICorJitCompiler->getVersionIdentifier(versionIdentifier);
 }
+
+unsigned interceptor_ICJC::getMaxVectorTBitWidth(CORJIT_FLAGS cpuCompileFlags)
+{
+    mcs->AddCall("getMaxVectorTBitWidth");
+    return original_ICorJitCompiler->getMaxVectorTBitWidth(cpuCompileFlags);
+}
