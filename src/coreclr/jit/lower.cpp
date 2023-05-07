@@ -6247,15 +6247,15 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-        // Fold ADD(CNS1, CNS2) we mainly target a very specific pattern - ADD(CNS_INT(ref), CNS_INT) where
-        // the first icon handle is a frozen object, we could do this folding earlier but that is not trivial
-        // as we'll have to introduce a way to restore original object from a byref constant for optimizations.
-        if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() && node->TypeIs(TYP_I_IMPL, TYP_BYREF) &&
-            // Make sure both constants don't need relocs. TODO-CQ: we should allow this for AOT too.
-            // For that we need to guarantee that the new constant will be lowered as the original handle
-            // with offset in a reloc.
-            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+        // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
+        // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
+        // the original object from a byref constant for optimizations.
+        if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
+            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp) &&
+            node->TypeIs(TYP_I_IMPL, TYP_BYREF))
         {
+            // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
+            // will be lowered as the original handle with offset in a reloc.
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
             node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
