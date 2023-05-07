@@ -104,6 +104,8 @@ public:
     }
 
     PhaseStatus Run();
+
+    static bool CanReuseAddressForDecomposedStore(Compiler* comp, GenTree* storeDst, GenTree* addr);
 };
 
 class DecompositionStatementList;
