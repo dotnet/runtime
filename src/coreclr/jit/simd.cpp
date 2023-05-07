@@ -233,8 +233,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     {
                         JITDUMP(" Found type Vector\n");
                         m_simdHandleCache->VectorHandle = typeHnd;
-
-                        size = getSIMDVectorRegisterByteLength();
                         break;
                     }
 
@@ -299,8 +297,12 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
+                        size = getVectorTByteLength();
 
-                        size = getSIMDVectorRegisterByteLength();
+                        if (size == 0)
+                        {
+                            return CORINFO_TYPE_UNDEF;
+                        }
                         break;
                     }
 

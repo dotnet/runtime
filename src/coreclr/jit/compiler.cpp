@@ -2295,6 +2295,10 @@ void Compiler::compSetProcessor()
 // don't actually exist. The JIT is in charge of adding those and ensuring
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
+    // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
+    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -2305,50 +2309,66 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-    // These have been shipped together historically and at the time of this writing
-    // there exists no hardware which doesn't support the entire feature set. To simplify
-    // the overall JIT implementation, we currently require the entire set of ISAs to be
-    // supported and disable AVX512 support otherwise.
-
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
     {
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+        // These have been shipped together historically and at the time of this writing
+        // there exists no hardware which doesn't support the entire feature set. To simplify
+        // the overall JIT implementation, we currently require the entire set of ISAs to be
+        // supported and disable AVX512 support otherwise.
+
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-    }
-    else
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
 
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
-#endif // TARGET_AMD64
+        if (preferredVectorByteLength == 0)
+        {
+            CORINFO_XARCH_CPU xarchCpuInfo;
+            eeGetXarchCpuInfo(&xarchCpuInfo);
+
+            if (xarchCpuInfo.IsGenuineIntel)
+            {
+                // Some architectures can experience frequency throttling when executing
+                // executing 512-bit width instructions. To account for this we set the
+                // default preferred vector width to 256-bits in some scenarios. Power
+                // users can override this with `DOTNET_PreferredVectorBitWith=512` to
+                // allow using such instructions where hardware support is available.
+
+                if (xarchCpuInfo.FamilyId == 0x06)
+                {
+                    if (xarchCpuInfo.ExtendedModelId == 0x05)
+                    {
+                        if (xarchCpuInfo.Model == 0x05)
+                        {
+                            // * Skylake (Server)
+                            // * Cascade Lake
+                            // * Cooper Lake
+
+                            preferredVectorByteLength = 32;
+                        }
+                    }
+                    else if (xarchCpuInfo.ExtendedModelId == 0x06)
+                    {
+                        if (xarchCpuInfo.Model == 0x06)
+                        {
+                            // * Cannon Lake
+
+                            preferredVectorByteLength = 32;
+                        }
+                    }
+                }
+            }
+        }
     }
+
+    opts.preferredVectorByteLength = preferredVectorByteLength;
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {

@@ -936,7 +936,7 @@ class RangeSectionMap
             {
                 // Upgrade to non-collectible
 #ifdef _DEBUG
-                TADDR initialValue = 
+                TADDR initialValue =
 #endif
                 InterlockedCompareExchangeT(&_ptr, ptr - 1, ptr);
                 assert(initialValue == ptr || initialValue == (ptr - 1));
@@ -1052,7 +1052,7 @@ class RangeSectionMap
             auto levelNew = static_cast<decltype(&(outerLevel->VolatileLoad(NULL))[0])>(AllocateLevel());
             if (levelNew == NULL)
                 return NULL;
-            
+
             if (!outerLevel->Install(levelNew, collectible))
             {
                 // Handle race where another thread grew the table
@@ -1118,7 +1118,7 @@ class RangeSectionMap
         auto rangeSectionL3 = rangeSectionL3Ptr->VolatileLoadWithoutBarrier(pLockState);
         if (rangeSectionL3 == NULL)
             return NULL;
-        
+
         auto rangeSectionL2Ptr = &((*rangeSectionL3)[EffectiveBitsForLevel(address, 3)]);
         if (level == 2)
             return rangeSectionL2Ptr;
@@ -1172,7 +1172,7 @@ class RangeSectionMap
 
         // Account for the range not starting at the beginning of a last level fragment
         rangeSize += pRangeSection->_range.RangeStart() & (bytesAtLastLevel - 1);
-        
+
         uintptr_t fragmentCount = ((rangeSize - 1) / bytesAtLastLevel) + 1;
         return fragmentCount;
     }
@@ -1415,7 +1415,7 @@ public:
                     else
                     {
                         // Since the fragment linked lists are sorted such that the collectible ones are always after the non-collectible ones, this should never happen.
-                        assert(!seenCollectibleRangeList); 
+                        assert(!seenCollectibleRangeList);
                     }
 #endif
                     entryInMapToUpdate = &(entryInMapToUpdate->VolatileLoadWithoutBarrier(pLockState))->pRangeSectionFragmentNext;
@@ -1456,7 +1456,7 @@ public:
 
                         if (foundMeaningfulValue)
                             break;
-                        
+
                         // This level is completely empty. Free it, and then null out the pointer to it.
                         pointerToLevelData->Uninstall();
                         free((void*)rawData);
@@ -1999,6 +1999,10 @@ public:
 private:
     CORJIT_FLAGS m_CPUCompileFlags;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CORINFO_XARCH_CPU m_xarchCpuInfo;
+#endif // TARGET_X86 || TARGET_AMD64
+
 #if !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
@@ -2009,6 +2013,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CPUCompileFlags;
     }
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    inline void getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfo)
+    {
+        LIMITED_METHOD_CONTRACT;
+        *xarchCpuInfo = m_xarchCpuInfo;
+    }
+#endif // TARGET_X86 || TARGET_AMD64
 
 private:
     bool m_storeRichDebugInfo;

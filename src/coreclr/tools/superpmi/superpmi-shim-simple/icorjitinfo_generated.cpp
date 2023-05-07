@@ -929,6 +929,12 @@ uint32_t interceptor_ICJI::getThreadTLSIndex(
     return original_ICorJitInfo->getThreadTLSIndex(ppIndirection);
 }
 
+void interceptor_ICJI::getXarchCpuInfo(
+          CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+{
+    original_ICorJitInfo->getXarchCpuInfo(xarchCpuInfoPtr);
+}
+
 const void* interceptor_ICJI::getInlinedCallFrameVptr(
           void** ppIndirection)
 {

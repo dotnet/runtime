@@ -42,6 +42,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Atomics: return ReadyToRunInstructionSet.Atomics;
                             case InstructionSet.ARM64_Vector64: return null;
                             case InstructionSet.ARM64_Vector128: return null;
+                            case InstructionSet.ARM64_VectorT128: return null;
                             case InstructionSet.ARM64_Dczva: return null;
                             case InstructionSet.ARM64_Rcpc: return ReadyToRunInstructionSet.Rcpc;
 
@@ -88,6 +89,9 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_Vector128: return null;
                             case InstructionSet.X64_Vector256: return null;
                             case InstructionSet.X64_Vector512: return null;
+                            case InstructionSet.X64_VectorT128: return null;
+                            case InstructionSet.X64_VectorT256: return null;
+                            case InstructionSet.X64_VectorT512: return null;
                             case InstructionSet.X64_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_AVXVNNI_X64: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_MOVBE: return ReadyToRunInstructionSet.Movbe;
@@ -158,6 +162,9 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_Vector128: return null;
                             case InstructionSet.X86_Vector256: return null;
                             case InstructionSet.X86_Vector512: return null;
+                            case InstructionSet.X86_VectorT128: return null;
+                            case InstructionSet.X86_VectorT256: return null;
+                            case InstructionSet.X86_VectorT512: return null;
                             case InstructionSet.X86_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X86_AVXVNNI_X64: return null;
                             case InstructionSet.X86_MOVBE: return ReadyToRunInstructionSet.Movbe;

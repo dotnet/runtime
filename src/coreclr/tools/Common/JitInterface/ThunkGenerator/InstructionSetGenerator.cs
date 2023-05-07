@@ -94,7 +94,7 @@ namespace Thunkerator
         private Dictionary<string, string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string, string>();
 
         // This represents the number of flags fields we currently track
-        private const int FlagsFieldCount = 1;
+        private const int FlagsFieldCount = 2;
 
         private void ArchitectureEncountered(string arch)
         {

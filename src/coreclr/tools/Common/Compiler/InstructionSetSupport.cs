@@ -96,18 +96,33 @@ namespace ILCompiler
         {
             if ((_targetArchitecture == TargetArchitecture.X64) || (_targetArchitecture == TargetArchitecture.X86))
             {
-                Debug.Assert(InstructionSet.X64_AVX2 == InstructionSet.X86_AVX2);
-                Debug.Assert(InstructionSet.X64_SSE2 == InstructionSet.X86_SSE2);
-                if (IsInstructionSetSupported(InstructionSet.X86_AVX2))
+                Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
+                Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
+                Debug.Assert(InstructionSet.X64_VectorT128 == InstructionSet.X86_VectorT128);
+
+                if (IsInstructionSetSupported(InstructionSet.X64_VectorT256))
+                {
                     return SimdVectorLength.Vector256Bit;
-                else if (IsInstructionSetExplicitlyUnsupported(InstructionSet.X86_AVX2) && IsInstructionSetSupported(InstructionSet.X64_SSE2))
+                }
+                else if (IsInstructionSetSupported(InstructionSet.X64_VectorT128))
+                {
                     return SimdVectorLength.Vector128Bit;
+                }
                 else
+                {
                     return SimdVectorLength.None;
+                }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                return SimdVectorLength.Vector128Bit;
+                if (IsInstructionSetSupported(InstructionSet.ARM64_VectorT128))
+                {
+                    return SimdVectorLength.Vector128Bit;
+                }
+                else
+                {
+                    return SimdVectorLength.None;
+                }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM)
             {
@@ -245,9 +260,10 @@ namespace ILCompiler
         /// Seal modifications to instruction set support
         /// </summary>
         /// <returns>returns "false" if instruction set isn't valid on this architecture</returns>
-        public bool ComputeInstructionSetFlags(out InstructionSetFlags supportedInstructionSets,
-                                                              out InstructionSetFlags unsupportedInstructionSets,
-                                                              Action<string, string> invalidInstructionSetImplication)
+        public bool ComputeInstructionSetFlags(int maxVectorTBitWidth,
+                                               out InstructionSetFlags supportedInstructionSets,
+                                               out InstructionSetFlags unsupportedInstructionSets,
+                                               Action<string, string> invalidInstructionSetImplication)
         {
             supportedInstructionSets = new InstructionSetFlags();
             unsupportedInstructionSets = new InstructionSetFlags();
@@ -287,6 +303,55 @@ namespace ILCompiler
                     }
                 }
             }
+
+            switch (_architecture)
+            {
+                case TargetArchitecture.X64:
+                case TargetArchitecture.X86:
+                {
+                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+                    Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
+                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+
+                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
+                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
+                    Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
+
+                    // Unlike for the JIT, we cannot default to enabling Vector<T> to the below sizes
+                    // as it may fail to launch in the case where `--verify-type-and-field-layout`
+                    // was specified. So instead, only enable Vector<T> when we have an explicit width.
+
+                    if (maxVectorTBitWidth >= 128)
+                    {
+                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
+                    }
+
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2))
+                    {
+                        if (maxVectorTBitWidth >= 256)
+                        {
+                            supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
+                        }
+
+                        if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F))
+                        {
+                            if (maxVectorTBitWidth >= 512)
+                            {
+                                supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                case TargetArchitecture.ARM64:
+                {
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.ARM64_AdvSimd));
+                    supportedInstructionSets.AddInstructionSet(InstructionSet.ARM64_VectorT128);
+                    break;
+                }
+            }
+
 
             return true;
         }

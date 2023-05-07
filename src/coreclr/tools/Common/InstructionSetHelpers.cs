@@ -11,7 +11,7 @@ namespace System.CommandLine
 {
     internal static partial class Helpers
     {
-        public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, TargetArchitecture targetArchitecture, TargetOS targetOS,
+        public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, TargetArchitecture targetArchitecture, TargetOS targetOS,
             string mustNotBeMessage, string invalidImplicationMessage)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
@@ -74,7 +74,7 @@ namespace System.CommandLine
                 }
             }
 
-            instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
+            instructionSetSupportBuilder.ComputeInstructionSetFlags(maxVectorTBitWidth, out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
                     throw new CommandLineException(string.Format(invalidImplicationMessage, specifiedInstructionSet, impliedInstructionSet)));
 
@@ -93,15 +93,32 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("serialize");
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+                }
+
+                Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F))
+                {
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD_VL));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ));
+                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ_VL));
+
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
@@ -111,9 +128,12 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
             }
 
-            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
+            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(maxVectorTBitWidth, out var optimisticInstructionSet, out _,
                 (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);

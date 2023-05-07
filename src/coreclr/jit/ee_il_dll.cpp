@@ -315,35 +315,37 @@ void CILJit::setTargetOS(CORINFO_OS os)
 }
 
 /*****************************************************************************
- * Determine the maximum length of SIMD vector supported by this JIT.
+ * Get the maximum width, in bytes, that Vector<T> is allowed to be.
  */
-
-unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
+unsigned CILJit::getMaxVectorTBitWidth(CORJIT_FLAGS cpuCompileFlags)
 {
     JitFlags jitFlags;
     jitFlags.SetFromFlags(cpuCompileFlags);
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD)
+    CORINFO_InstructionSetFlags instructionSetFlags = cpuCompileFlags.GetInstructionSetFlags();
+
 #if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-        jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
     {
-        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+        if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
         {
-            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
+            JITDUMP("getMaxVectorTBitWidth: returning 256\n");
         }
-        return 32;
+        return 256;
     }
 #endif // defined(TARGET_XARCH)
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+    assert(instructionSetFlags.HasInstructionSet(InstructionSet_VectorT128));
+
+    if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
     {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
+        JITDUMP("getMaxVectorTBitWidth: returning 128\n");
     }
-    return 16;
+    return 128;
 #else  // !FEATURE_SIMD
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
+    if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
     {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 0\n");
+        JITDUMP("getMaxVectorTBitWidth: returning 0\n");
     }
     return 0;
 #endif // !FEATURE_SIMD
@@ -1430,3 +1432,17 @@ unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 #endif // !DEBUG
+
+#if defined(TARGET_XARCH)
+    //------------------------------------------------------------------------
+    // eeGetXarchCpuInfo: Gets the XARCH CPU information for the JIT
+    //
+    // Arguments:
+    //    xarchCpuInfoPtr -- pointer to the struct that recieves the cpu info
+    //
+    void Compiler::eeGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+    {
+        info.compCompHnd->getXarchCpuInfo(xarchCpuInfoPtr);
+    }
+#endif // TARGET_XARCH
+

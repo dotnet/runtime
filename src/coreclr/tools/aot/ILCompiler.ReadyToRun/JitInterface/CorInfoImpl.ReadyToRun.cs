@@ -3053,7 +3053,7 @@ namespace Internal.JitInterface
         {
             return false;
         }
-        
+
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             return null;

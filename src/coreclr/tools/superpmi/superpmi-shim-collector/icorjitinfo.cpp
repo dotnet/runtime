@@ -1488,6 +1488,13 @@ uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HAN
     return temp;
 }
 
+void interceptor_ICJI::getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+{
+    mc->cr->AddCall("getXarchCpuInfo");
+    original_ICorJitInfo->getXarchCpuInfo(xarchCpuInfoPtr);
+    mc->recgetXarchCpuInfo(xarchCpuInfoPtr);
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {

@@ -149,7 +149,7 @@ namespace Internal.JitInterface
             ref CORINFO_METHOD_INFO info, uint flags, out IntPtr nativeEntry, out uint codeSize);
 
         [DllImport(JitSupportLibrary)]
-        private static extern uint GetMaxIntrinsicSIMDVectorLength(IntPtr jit, CORJIT_FLAGS* flags);
+        private static extern uint GetMaxVectorTBitWidth(IntPtr jit, CORJIT_FLAGS* flags);
 
         [DllImport(JitSupportLibrary)]
         private static extern IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
@@ -3262,6 +3262,14 @@ namespace Internal.JitInterface
             TypeDesc typeDesc = HandleToObject(cls);
             return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getXarchCpuInfo(ref CORINFO_XARCH_CPU xarchCpuInfoPtr)
+        {
+            // We can't assume a CPU for AOT compilation so return the default
+            xarchCpuInfoPtr = default;
+        }
+#pragma warning restore CA1822 // Mark members as static
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }

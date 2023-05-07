@@ -1135,31 +1135,38 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     LPCUTF8 className;
     LPCUTF8 nameSpace;
+
     if (FAILED(GetMDImport()->GetNameOfTypeDef(bmtInternal->pType->GetTypeDefToken(), &className, &nameSpace)))
         return false;
 
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    if (!TargetHasAVXSupport())
-        return false;
-
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
+
     if (jitMgr->LoadJIT())
     {
         CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-        if (intrinsicSIMDVectorLength != 0)
+
+        uint32_t maxVectorTBitWidth    = jitMgr->m_jit->getMaxVectorTBitWidth(cpuCompileFlags);
+        uint32_t numInstanceFieldBytes = maxVectorTBitWidth / 8;
+
+        if (numInstanceFieldBytes != 0)
         {
-            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
+            _ASSERTE((numInstanceFieldBytes * 8) == maxVectorTBitWidth);
+            _ASSERTE((numInstanceFieldBytes >= 16) && ((numInstanceFieldBytes % 16) == 0));
+
+            bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+
             if (HasLayout())
             {
-                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
+                GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
             }
-            return true;
         }
+        return true;
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+
     return false;
 }
 

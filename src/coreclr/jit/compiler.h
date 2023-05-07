@@ -8110,6 +8110,10 @@ public:
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
+#if defined(TARGET_XARCH)
+    void eeGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfo);
+#endif // TARGET_XARCH
+
     // Utility functions
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
@@ -8675,36 +8679,50 @@ private:
 
     // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
     // Note - cannot be used for System.Runtime.Intrinsic
-    unsigned getSIMDVectorRegisterByteLength()
+    unsigned getVectorTByteLength()
     {
+        // We need to report the ISA dependency to the VM so that scenarios
+        // such as R2R work correctly for larger vector sizes, so we always
+        // do `compExactlyDependsOn` for such cases.
+
 #if defined(TARGET_XARCH)
-        if (compExactlyDependsOn(InstructionSet_AVX2))
+        if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
-            // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
             return YMM_REGSIZE_BYTES;
         }
-        else
+        else if (compOpportunisticallyDependsOn(InstructionSet_VectorT128))
         {
             return XMM_REGSIZE_BYTES;
         }
+        else
+        {
+            return 0;
+        }
 #elif defined(TARGET_ARM64)
-        return FP_REGSIZE_BYTES;
+        if (compOpportunisticallyDependsOn(InstructionSet_VectorT128))
+        {
+            return FP_REGSIZE_BYTES;
+        }
+        else
+        {
+            return 0;
+        }
 #else
-        assert(!"getSIMDVectorRegisterByteLength() unimplemented on target arch");
+        assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
 #endif
     }
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
 
-    // maxSIMDStructBytes
+    // getMaxVectorByteLength
     // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
     // X86.SSE:      16-byte Vector<T> and Vector128<T>
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
-    unsigned int maxSIMDStructBytes() const
+    unsigned int getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -8720,14 +8738,33 @@ private:
         }
         else
         {
+            assert(compIsaSupportedDebugOnly(InstructionSet_SSE));
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
+        assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"maxSIMDStructBytes() unimplemented on target arch");
+        assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();
 #endif
+    }
+
+    //------------------------------------------------------------------------
+    // getPreferredVectorByteLength: Gets the preferred length, in bytes, to use for vectorization
+    //
+    unsigned int getPreferredVectorByteLength() const
+    {
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength = opts.preferredVectorByteLength;
+
+        if (preferredVectorByteLength != 0)
+        {
+            return min(getMaxVectorByteLength(), preferredVectorByteLength);
+        }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
+        return getMaxVectorByteLength();
     }
 
     //------------------------------------------------------------------------
@@ -8748,19 +8785,22 @@ private:
     unsigned int roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size <= XMM_REGSIZE_BYTES && maxSimdSize > XMM_REGSIZE_BYTES)
+        unsigned maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if ((size <= XMM_REGSIZE_BYTES) && (maxSize > XMM_REGSIZE_BYTES))
         {
             return XMM_REGSIZE_BYTES;
         }
-        if (size <= YMM_REGSIZE_BYTES && maxSimdSize > YMM_REGSIZE_BYTES)
+
+        if ((size <= YMM_REGSIZE_BYTES) && (maxSize > YMM_REGSIZE_BYTES))
         {
             return YMM_REGSIZE_BYTES;
         }
-        return maxSimdSize;
+
+        return maxSize;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
         assert(!"roundUpSIMDSize() unimplemented on target arch");
@@ -8783,30 +8823,33 @@ private:
     unsigned int roundDownSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size >= maxSimdSize)
+        unsigned maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if (size >= maxSize)
         {
             // Size is bigger than max SIMD size the current target supports
-            return maxSimdSize;
+            return maxSize;
         }
-        if (size >= YMM_REGSIZE_BYTES && maxSimdSize >= YMM_REGSIZE_BYTES)
+
+        if ((size >= YMM_REGSIZE_BYTES) && (maxSize >= YMM_REGSIZE_BYTES))
         {
             // Size is >= YMM but not enough for ZMM -> YMM
             return YMM_REGSIZE_BYTES;
         }
+
         // Return 0 if size is even less than XMM, otherwise - XMM
-        return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
+        return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
-        return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
         unreached();
 #endif
     }
 
-    unsigned int minSIMDStructBytes()
+    unsigned int getMinVectorByteLength()
     {
         return emitTypeSize(TYP_SIMD8);
     }
@@ -8889,8 +8932,10 @@ public:
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            maxRegSize = maxSIMDStructBytes();
+            maxRegSize = getPreferredVectorByteLength();
+
 #if defined(TARGET_XARCH)
+            assert(maxRegSize <= ZMM_REGSIZE_BYTES);
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8948,7 +8993,7 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        return (structSize >= minSIMDStructBytes()) && (structSize <= maxSIMDStructBytes());
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9250,7 +9295,8 @@ public:
 
     struct Options
     {
-        JitFlags* jitFlags; // all flags passed from the EE
+        // all flags passed from the EE
+        JitFlags* jitFlags;
 
         // The instruction sets that the compiler is allowed to emit.
         CORINFO_InstructionSetFlags compSupportsISA;
@@ -9275,6 +9321,10 @@ public:
         codeOptimize compCodeOpt; // what type of code optimizations
 
         bool compUseCMOV;
+
+#if defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength;
+#endif // TARGET_XARCH
 
 // optimize maximally and/or favor speed over size?
 

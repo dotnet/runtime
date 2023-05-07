@@ -745,23 +745,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            uint32_t vectorTByteLength = getVectorTByteLength();
+
+            if (vectorTByteLength == YMM_REGSIZE_BYTES)
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
                 return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
                                            simdSize);
             }
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
+            {
+                // We fold away the cast here, as it only exists to satisfy
+                // the type system. It is safe to do this here since the retNode type
+                // and the signature return type are both the same TYP_SIMD.
 
-            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
-
-            // We fold away the cast here, as it only exists to satisfy
-            // the type system. It is safe to do this here since the retNode type
-            // and the signature return type are both the same TYP_SIMD.
-
-            retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
-            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
-
+                retNode = impSIMDPopStack();
+                SetOpLclRelatedToSIMDIntrinsic(retNode);
+                assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            }
+            else
+            {
+                assert(vectorTByteLength == 0);
+            }
             break;
         }
 
@@ -873,7 +878,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            uint32_t vectorTByteLength = getVectorTByteLength();
+
+            if (vectorTByteLength == YMM_REGSIZE_BYTES)
             {
                 // We fold away the cast here, as it only exists to satisfy
                 // the type system. It is safe to do this here since the retNode type
@@ -885,27 +892,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 break;
             }
-
-            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
-
-            if (compExactlyDependsOn(InstructionSet_AVX))
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
-                // We support Vector256 but Vector<T> is only 16-bytes, so we should
-                // treat this method as a call to Vector256.GetLower or Vector128.ToVector256
+                if (compExactlyDependsOn(InstructionSet_AVX))
+                {
+                    // We support Vector256 but Vector<T> is only 16-bytes, so we should
+                    // treat this method as a call to Vector256.GetLower or Vector128.ToVector256
 
-                if (intrinsic == NI_Vector256_AsVector)
-                {
-                    return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize);
-                }
-                else
-                {
-                    assert(intrinsic == NI_Vector256_AsVector256);
-                    return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
-                                               16);
+                    if (intrinsic == NI_Vector256_AsVector)
+                    {
+                        return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
+                                                   simdSize);
+                    }
+                    else
+                    {
+                        assert(intrinsic == NI_Vector256_AsVector256);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
+                                                   16);
+                    }
                 }
             }
-
+            else
+            {
+                assert(vectorTByteLength == 0);
+            }
             break;
         }
 
@@ -914,7 +924,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            uint32_t vectorTByteLength = getVectorTByteLength();
+
+            if (vectorTByteLength == YMM_REGSIZE_BYTES)
             {
                 assert(IsBaselineVector512IsaSupported());
                 // We support Vector512 but Vector<T> is only 32-bytes, so we should
@@ -933,24 +945,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 break;
             }
-
-            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
-            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
-                // We support Vector512 but Vector<T> is only 16-bytes, so we should
-                // treat this method as a call to Vector512.GetLower128 or Vector128.ToVector512
+                if (compExactlyDependsOn(InstructionSet_AVX512F))
+                {
+                    // We support Vector512 but Vector<T> is only 16-bytes, so we should
+                    // treat this method as a call to Vector512.GetLower128 or Vector128.ToVector512
 
-                if (intrinsic == NI_Vector512_AsVector)
-                {
-                    return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize);
+                    if (intrinsic == NI_Vector512_AsVector)
+                    {
+                        return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType, retType,
+                                                   simdSize);
+                    }
+                    else
+                    {
+                        assert(intrinsic == NI_Vector512_AsVector512);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
+                                                   16);
+                    }
                 }
-                else
-                {
-                    assert(intrinsic == NI_Vector512_AsVector512);
-                    return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
-                                               16);
-                }
+            }
+            else
+            {
+                assert(vectorTByteLength == 0);
             }
             break;
         }

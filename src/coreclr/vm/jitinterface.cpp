@@ -1786,7 +1786,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     typeIndex = AppDomain::GetCurrentDomain()->GetThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-    
+
     EE_TO_JIT_TRANSITION();
     return typeIndex;
 }
@@ -1808,7 +1808,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
     pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
-    
+
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
@@ -1838,7 +1838,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadLocalStoragePointer = 0;
     pInfo->offsetOfThreadStaticBlocks = 0;
     pInfo->offsetOfMaxThreadStaticBlocks = 0;
-    
+
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #endif // HOST_WINDOWS
@@ -2516,6 +2516,33 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 }
 
 /*********************************************************************/
+void CEEInfo::getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    *xarchCpuInfoPtr = m_xarchCpuInfo;
+#else
+    *xarchCpuInfoPtr = {};
+#endif
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
+void CEEInfo::setXarchCpuInfo(const CORINFO_XARCH_CPU& xarchCpuInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_xarchCpuInfo = xarchCpuInfo;
+}
+
+/*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
@@ -2544,7 +2571,6 @@ unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 
     return result;
 }
-
 
 CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
 {
@@ -12567,6 +12593,12 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     static ConfigDWORD s_stackSamplingEnabled;
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CORINFO_XARCH_CPU xarchCpuInfo;
+    ExecutionManager::GetEEJitManager()->getXarchCpuInfo(&xarchCpuInfo);
+    comp->setXarchCpuInfo(xarchCpuInfo);
+#endif // TARGET_X86 || TARGET_AMD64
 
 #if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit

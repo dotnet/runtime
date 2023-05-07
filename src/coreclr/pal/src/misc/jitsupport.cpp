@@ -235,7 +235,10 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
+    {
         flags->Set(InstructionSet_AdvSimd);
+        flags->Set(InstructionSet_VectorT128);
+    }
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)

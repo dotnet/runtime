@@ -6388,12 +6388,10 @@ void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HAN
     GetLoongArch64PassStructInRegisterFlags->Add(key, value);
     DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
 }
-
 void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
 {
     printf("GetLoongArch64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
 }
-
 DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
@@ -6413,12 +6411,10 @@ void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE 
     GetRISCV64PassStructInRegisterFlags->Add(key, value);
     DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
 }
-
 void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
 {
     printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
 }
-
 DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
@@ -6426,6 +6422,34 @@ DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE
     DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
     DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
     return value;
+}
+
+void MethodContext::recgetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+{
+    if (GetXarchCpuInfo == nullptr)
+        GetXarchCpuInfo = new LightWeightMap<DWORD, DWORD>();
+
+    DWORD key   = 0;
+    DWORD value = static_cast<DWORD>(xarchCpuInfoPtr->Value);
+
+    GetXarchCpuInfo->Add(key, value);
+    DEBUG_REC(dmpGetXarchCpuInfo(key, value));
+}
+void MethodContext::dmpGetXarchCpuInfo(DWORD key, DWORD value)
+{
+    printf("getXarchCpuInfo key %u, value %u", key, value);
+}
+void MethodContext::repGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
+{
+    DWORD key;
+    DWORD value;
+
+    key   = 0;
+    value = LookupByKeyOrMissNoMessage(GetXarchCpuInfo, key);
+
+    DEBUG_REP(dmpGetXarchCpuInfo(key, value));
+
+    xarchCpuInfoPtr->Value = static_cast<uint32_t>(value);
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)
