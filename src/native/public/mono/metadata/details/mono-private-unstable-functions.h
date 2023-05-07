@@ -23,7 +23,7 @@ MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_install_assembly_preload_hook
 // This can point at NULL before the default ALC is initialized
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoAssemblyLoadContextGCHandle, mono_alc_get_default_gchandle, (void))
 
-MONO_API_FUNCTION(void, mono_register_bundled_satellite_assemblies, (const MonoBundledSatelliteAssembly **assemblies))
+MONO_API_FUNCTION(void, mono_register_bundled_satellite_assemblies, (const MonoBundledSatelliteAssembly **assemblies) /* MONO_DEPRECATED */)
 
 MONO_API_FUNCTION(MonoBundledSatelliteAssembly *, mono_create_new_bundled_satellite_assembly, (const char *name, const char *culture, const unsigned char *data, unsigned int size))
 

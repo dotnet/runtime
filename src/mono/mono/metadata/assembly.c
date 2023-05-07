@@ -81,10 +81,6 @@ mono_assemblies_unlock (void)
 	mono_os_mutex_unlock (&assemblies_mutex);
 }
 
-/* If defined, points to the bundled assembly information */
-static const MonoBundledAssembly **bundles;
-static const MonoBundledSatelliteAssembly **satellite_bundles;
-
 /* Class lazy loading functions */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
 
@@ -710,8 +706,8 @@ mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *an
 static MonoAssembly *
 search_bundle_for_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname)
 {
-	if (bundles == NULL && !mono_bundled_resources_contains_assemblies () &&
-		satellite_bundles == NULL && !mono_bundled_resources_contains_satellite_assemblies ())
+	if (!mono_bundled_resources_contains_assemblies () &&
+		!mono_bundled_resources_contains_satellite_assemblies ())
 		return NULL;
 
 	MonoImageOpenStatus status;
@@ -794,7 +790,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 		}
 	}
 
-	if ((bundles != NULL || mono_bundled_resources_contains_assemblies ()) && !is_satellite) {
+	if (mono_bundled_resources_contains_assemblies () && !is_satellite) {
 		reference = search_bundle_for_assembly (mono_alc_get_default (), aname);
 		if (reference) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly found in the bundle: '%s'.", aname->name);
@@ -802,7 +798,7 @@ netcore_load_reference (MonoAssemblyName *aname, MonoAssemblyLoadContext *alc, M
 		}
 	}
 
-	if ((satellite_bundles != NULL || mono_bundled_resources_contains_satellite_assemblies ()) && is_satellite) {
+	if (mono_bundled_resources_contains_satellite_assemblies () && is_satellite) {
 		// Satellite assembly byname requests should be loaded in the same ALC as their parent assembly
 		size_t name_len = strlen (aname->name);
 		char *parent_name = NULL;
@@ -1473,45 +1469,25 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 static MonoImage *
 open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status)
 {
-	if (!bundles && !mono_bundled_resources_contains_assemblies ())
+	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (filename);
+	if (!assembly)
 		return NULL;
 
-	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (filename);
-	if (assembly)
-		return mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, filename, NULL);
-
-	for (int i = 0; bundles [i]; ++i) {
-		if (bundled_assembly_match (bundles[i]->name, filename)) {
-			// Since bundled images don't exist on disk, don't give them a legit filename
-			return mono_image_open_from_data_internal (alc, (char*)bundles [i]->data, bundles [i]->size, FALSE, status, FALSE, filename, NULL);
-		}
-	}
-
-	return NULL;
+	return mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, filename, NULL);
 }
 
 static MonoImage *
 open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
-	if (!satellite_bundles && !mono_bundled_resources_contains_satellite_assemblies ())
-		return NULL;
-
-	MonoImage *image = NULL;
 	char *bundle_name = g_strconcat (culture, "/", filename, (const char *)NULL);
 
-	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (filename);
-	if (satellite_assembly)
-		image = mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
-
-	for (int i = 0; !image && satellite_bundles [i]; ++i) {
-		if (bundled_assembly_match (satellite_bundles[i]->name, filename) && strcmp (satellite_bundles [i]->culture, culture) == 0) {
-			// Since bundled images don't exist on disk, don't give them a legit filename
-			image = mono_image_open_from_data_internal (alc, (char *)satellite_bundles [i]->data, satellite_bundles [i]->size, FALSE, status, FALSE, bundle_name, NULL);
-		}
-	}
-
+	MonoBundledSatelliteAssemblyResource *satellite_assembly = mono_bundled_resources_get_satellite_assembly_resource (bundle_name);
 	g_free (bundle_name);
-	return image;
+	if (!satellite_assembly)
+		return NULL;
+
+	return mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
+
 }
 
 /**
@@ -1520,7 +1496,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
  * \param status return status code
  *
  * This routine tries to open the assembly specified by \p filename from the
- * defined bundles, if found, returns the MonoImage for it, if not found
+ * bundles hashtable in bundled-resources.c, if found, returns the MonoImage for it, if not found
  * returns NULL
  */
 MonoImage *
@@ -1616,7 +1592,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 
 	// If VM built with mkbundle
 	loaded_from_bundle = FALSE;
-	if (bundles != NULL || mono_bundled_resources_contains_assemblies ()) {
+	if (mono_bundled_resources_contains_assemblies ()) {
 		/* We don't know the culture of the filename we're loading here, so this call is not culture aware. */
 		image = mono_assembly_open_from_bundle (load_req.alc, fname, status, NULL);
 		loaded_from_bundle = image != NULL;
@@ -3163,10 +3139,26 @@ mono_assembly_get_name_internal (MonoAssembly *assembly)
 /**
  * mono_register_bundled_assemblies:
  */
+MONO_DEPRECATED
 void
 mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
-	bundles = assemblies;
+	for (int i = 0; assemblies [i]; ++i) {
+		const char *id = assemblies [i]->name;
+		MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (id);
+		if (!assembly_resource) {
+			assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
+			assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
+			assembly_resource->resource.id = id;
+		} else {
+			g_assert (assembly_resource->resource.type == MONO_BUNDLED_ASSEMBLY);
+			g_assert (!strcmp(assembly_resource->resource.id, id));
+			// Ensure the MonoBundledAssemblyData has not been initialized
+			g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
+		}
+		assembly_resource->assembly = *(MonoBundledAssemblyData *)assemblies [i];
+		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
+	}
 }
 
 /**
@@ -3188,10 +3180,20 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 /**
  * mono_register_bundled_satellite_assemblies:
  */
+MONO_DEPRECATED
 void
-mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **assemblies)
+mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **satellite_assemblies)
 {
-	satellite_bundles = assemblies;
+	for (int i = 0; satellite_assemblies [i]; ++i) {
+		const MonoBundledSatelliteAssembly *satellite_assembly = satellite_assemblies [i];
+		char *id = g_strconcat (satellite_assembly->culture, "/", satellite_assembly->name, (const char*)NULL);
+		MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
+		g_assert (!satellite_assembly_resource);
+		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
+		satellite_assembly_resource->resource.id = id;
+		satellite_assembly_resource->satellite_assembly = *satellite_assembly;
+		mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
+	}
 }
 
 /**
