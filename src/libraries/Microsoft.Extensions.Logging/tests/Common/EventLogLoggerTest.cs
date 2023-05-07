@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.EventLog;
+using Microsoft.Extensions.Logging.EventLog.Internal;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging
