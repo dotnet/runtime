@@ -1397,11 +1397,12 @@ namespace System.Text
         /// <summary>
         /// Stores to lower 64bits of <paramref name="byteVector"/> to memory destination of <paramref name="bytePtr"/>[<paramref name="elementOffset"/>]
         /// </summary>
+        /// <remarks>
+        /// Uses double instead of long to get a single instruction instead of storing temps on general porpose register (or stack)
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void StoreLower(Vector128<byte> byteVector, ref byte bytePtr, nuint elementOffset)
         {
-            // Below code translates to a single write on x86 (for both 32 and 64 bit)
-            // - we use double instead of long so that the JIT writes directly to memory without intermediate (register or stack in case of 32 bit)
             Unsafe.WriteUnaligned<double>(ref Unsafe.Add(ref bytePtr, elementOffset), byteVector.AsDouble().ToScalar());
         }
 
