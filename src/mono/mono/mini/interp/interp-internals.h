@@ -102,7 +102,7 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
-#if !HOST_BROWSER && __GNUC__
+#if __GNUC__
 #define INTERP_ENABLE_SIMD
 #endif
 
@@ -341,6 +341,12 @@ mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *da
 
 gpointer
 mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+gpointer
+mono_jiterp_get_simd_intrinsic (int arity, int index);
+
+int
+mono_jiterp_get_simd_opcode (int arity, int index);
 
 #endif
 

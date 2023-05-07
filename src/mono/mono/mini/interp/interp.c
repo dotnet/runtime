@@ -8907,4 +8907,42 @@ mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackva
 	*dest = mono_interp_enum_hasflag (sp1, sp2, klass);
 }
 
+EMSCRIPTEN_KEEPALIVE gpointer
+mono_jiterp_get_simd_intrinsic (int arity, int index)
+{
+#ifdef INTERP_ENABLE_SIMD
+	switch (arity) {
+		case 1:
+			return interp_simd_p_p_table [index];
+		case 2:
+			return interp_simd_p_pp_table [index];
+		case 3:
+			return interp_simd_p_ppp_table [index];
+		default:
+			g_assert_not_reached();
+	}
+#else
+	g_assert_not_reached();
+#endif
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_simd_opcode (int arity, int index)
+{
+#ifdef INTERP_ENABLE_SIMD
+	switch (arity) {
+		case 1:
+			return interp_simd_p_p_wasm_opcode_table [index];
+		case 2:
+			return interp_simd_p_pp_wasm_opcode_table [index];
+		case 3:
+			return interp_simd_p_ppp_wasm_opcode_table [index];
+		default:
+			g_assert_not_reached();
+	}
+#else
+	g_assert_not_reached();
+#endif
+}
+
 #endif
