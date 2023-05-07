@@ -10956,7 +10956,19 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         break;
                     }
                 }
-                FALLTHROUGH;
+                if (tree->gtFlags & GTF_IND_VOLATILE)
+                {
+                    printf("V");
+                    --msgLength;
+                    break;
+                }
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
+                {
+                    printf("U");
+                    --msgLength;
+                    break;
+                }
+                goto DASH;
 
             case GT_ASG:
                 if (tree->OperIsInitBlkOp())
