@@ -111,7 +111,7 @@ public:
         // do not check if there is a series of COMMAs. See above.
         // Importer and FlowGraph will not generate such a tree, so just
         // leaving an assert in here. This can be fixed by looking ahead
-        // when we visit stores similar to AttachStructInlineeToAsg.
+        // when we visit stores similar to AttachStructInlineeToStore.
         //
         if (tree->OperIsStore())
         {
@@ -318,7 +318,7 @@ private:
 
 #if FEATURE_MULTIREG_RET
     //------------------------------------------------------------------------
-    // AttachStructInlineeToAsg: Update a "STORE(..., inlinee)" tree.
+    // AttachStructInlineeToStore: Update a "STORE(..., inlinee)" tree.
     //
     // Morphs inlinees that are multi-reg nodes into the (only) supported shape
     // of "lcl = node()", either by marking the store local "lvIsMultiRegRet" or
@@ -1641,7 +1641,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 else
                 {
                     // We're going to assign the argument value to the temp we use for it in the inline body.
-                    GenTree* store = gtNewTempAssign(argInfo.argTmpNum, argNode);
+                    GenTree* store = gtNewTempStore(argInfo.argTmpNum, argNode);
 
                     newStmt = gtNewStmt(store, callDI);
                     fgInsertStmtAfter(block, afterStmt, newStmt);
@@ -1839,7 +1839,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 var_types lclTyp = tmpDsc->TypeGet();
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                tree = gtNewTempAssign(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
+                tree = gtNewTempStore(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
 
                 newStmt = gtNewStmt(tree, callDI);
                 fgInsertStmtAfter(block, afterStmt, newStmt);
@@ -1934,7 +1934,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         }
 
         // Assign null to the local.
-        GenTree*   nullExpr = gtNewTempAssign(tmpNum, gtNewZeroConNode(lclTyp));
+        GenTree*   nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
         Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
         if (stmtAfter == nullptr)

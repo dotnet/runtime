@@ -929,8 +929,8 @@ unsigned JitPtrKeyFuncs<BasicBlock>::GetHashCode(const BasicBlock* ptr)
 // isEmpty: check if block is empty or contains only ignorable statements
 //
 // Return Value:
-//    True if block is empty, or contains only PHI assignments,
-//    or contains zero or more PHI assignments followed by NOPs.
+//    True if block is empty, or contains only PHI stores,
+//    or contains zero or more PHI stores followed by NOPs.
 //
 bool BasicBlock::isEmpty() const
 {
@@ -995,7 +995,7 @@ Statement* BasicBlock::FirstNonPhiDef() const
     return stmt;
 }
 
-Statement* BasicBlock::FirstNonPhiDefOrCatchArgAsg() const
+Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
 {
     Statement* stmt = FirstNonPhiDef();
     if (stmt == nullptr)

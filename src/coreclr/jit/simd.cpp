@@ -731,14 +731,14 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
 }
 
 //-------------------------------------------------------------------------------
-// impMarkContiguousSIMDFieldAssignments: Try to identify if there are contiguous
+// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous
 // assignments from SIMD field to memory. If there are, then mark the related
 // lclvar so that it won't be promoted.
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.
 //
-void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
+void Compiler::impMarkContiguousSIMDFieldStores(Statement* stmt)
 {
     if (opts.OptimizationDisabled())
     {
@@ -755,21 +755,21 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 
         if (srcSimdLclAddr == nullptr || simdBaseType != TYP_FLOAT)
         {
-            fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+            fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
         }
         else if (index == 0)
         {
-            fgPreviousCandidateSIMDFieldAsgStmt = stmt;
+            fgPreviousCandidateSIMDFieldStoreStmt = stmt;
         }
-        else if (fgPreviousCandidateSIMDFieldAsgStmt != nullptr)
+        else if (fgPreviousCandidateSIMDFieldStoreStmt != nullptr)
         {
             assert(index > 0);
             GenTree* curStore  = expr;
-            GenTree* prevStore = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
+            GenTree* prevStore = fgPreviousCandidateSIMDFieldStoreStmt->GetRootNode();
             GenTree* prevValue = prevStore->Data();
             if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
             {
-                fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+                fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
             }
             else
             {
@@ -793,14 +793,14 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                 }
                 else
                 {
-                    fgPreviousCandidateSIMDFieldAsgStmt = stmt;
+                    fgPreviousCandidateSIMDFieldStoreStmt = stmt;
                 }
             }
         }
     }
     else
     {
-        fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+        fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
     }
 }
 #endif // FEATURE_SIMD

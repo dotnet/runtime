@@ -236,7 +236,7 @@ public:
 
     LclSsaVarDsc(BasicBlock* block, GenTreeLclVarCommon* defNode) : m_block(block)
     {
-        SetAssignment(defNode);
+        SetDefNode(defNode);
     }
 
     BasicBlock* GetBlock() const
@@ -249,14 +249,12 @@ public:
         m_block = block;
     }
 
-    // TODO-ASG: rename to "GetDefNode".
-    GenTreeLclVarCommon* GetAssignment() const
+    GenTreeLclVarCommon* GetDefNode() const
     {
         return m_defNode;
     }
 
-    // TODO-ASG: rename to "SetDefNode".
-    void SetAssignment(GenTreeLclVarCommon* defNode)
+    void SetDefNode(GenTreeLclVarCommon* defNode)
     {
         assert((defNode == nullptr) || defNode->OperIsLocalStore());
         m_defNode = defNode;
@@ -1836,7 +1834,7 @@ struct FuncInfoDsc
 
 struct TempInfo
 {
-    GenTree* asg;
+    GenTree* store;
     GenTree* load;
 };
 
@@ -2064,7 +2062,7 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-    GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
+    GenTree* impStoreMultiRegValueToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 
 #ifdef TARGET_X86
@@ -2881,12 +2879,12 @@ public:
     var_types gtTypeForNullCheck(GenTree* tree);
     void gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block);
 
-    GenTree* gtNewTempAssign(unsigned         tmp,
-                             GenTree*         val,
-                             unsigned         curLevel   = CHECK_SPILL_NONE,
-                             Statement**      pAfterStmt = nullptr,
-                             const DebugInfo& di         = DebugInfo(),
-                             BasicBlock*      block      = nullptr);
+    GenTree* gtNewTempStore(unsigned         tmp,
+                            GenTree*         val,
+                            unsigned         curLevel   = CHECK_SPILL_NONE,
+                            Statement**      pAfterStmt = nullptr,
+                            const DebugInfo& di         = DebugInfo(),
+                            BasicBlock*      block      = nullptr);
 
     GenTree* gtNewRefCOMfield(GenTree*                objPtr,
                               CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -4048,23 +4046,23 @@ public:
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
-    void impAssignTempGen(unsigned         lclNum,
-                          GenTree*         val,
-                          unsigned         curLevel,
-                          Statement**      pAfterStmt = nullptr,
-                          const DebugInfo& di         = DebugInfo(),
-                          BasicBlock*      block      = nullptr);
+    void impStoreTemp(unsigned         lclNum,
+                      GenTree*         val,
+                      unsigned         curLevel,
+                      Statement**      pAfterStmt = nullptr,
+                      const DebugInfo& di         = DebugInfo(),
+                      BasicBlock*      block      = nullptr);
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
-    GenTree* impAssignStruct(GenTree*         store,
+    GenTree* impStoreStruct(GenTree*         store,
                              unsigned         curLevel,
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impAssignStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
+    GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
 
     GenTree* impGetStructAddr(GenTree* structVal, unsigned curLevel, bool willDeref);
 
@@ -5893,11 +5891,11 @@ private:
                                     unsigned* simdSizeOut,
                                     bool      ignoreUsedInSIMDIntrinsic = false);
     bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldAssignments(Statement* stmt);
+    void impMarkContiguousSIMDFieldStores(Statement* stmt);
 
-    // fgPreviousCandidateSIMDFieldAsgStmt is only used for tracking previous simd field assignment
-    // in function: Compiler::impMarkContiguousSIMDFieldAssignments.
-    Statement* fgPreviousCandidateSIMDFieldAsgStmt;
+    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field assignment
+    // in function: Compiler::impMarkContiguousSIMDFieldStores.
+    Statement* fgPreviousCandidateSIMDFieldStoreStmt;
 
 #endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
@@ -6398,7 +6396,7 @@ public:
         GenTree*   lpIterTree;          // The "i = i <op> const" tree
         unsigned   lpIterVar() const;   // iterator variable #
         int        lpIterConst() const; // the constant with which the iterator is incremented
-        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ASG_ADD, ASG_SUB, etc.)
+        genTreeOps lpIterOper() const;  // the type of the operation on the iterator (ADD, SUB, etc.)
         void       VERIFY_lpIterTree() const;
 
         var_types lpIterOperType() const; // For overflow instructions
@@ -6972,7 +6970,7 @@ public:
     // VN based copy propagation.
 
     // In DEBUG builds, we'd like to know the tree that the SSA definition was pushed for.
-    // While for ordinary SSA defs it will be available (as an ASG) in the SSA descriptor,
+    // While for ordinary SSA defs it will be available (as a store) in the SSA descriptor,
     // for locals which will use "definitions from uses", it will not be, so we store it
     // in this class instead.
     class CopyPropSsaDef

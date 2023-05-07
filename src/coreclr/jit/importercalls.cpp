@@ -319,7 +319,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                         return TYP_UNDEF;
                     }
 
-                    impAssignTempGen(lclNum, stubAddr, CHECK_SPILL_NONE);
+                    impStoreTemp(lclNum, stubAddr, CHECK_SPILL_NONE);
                     stubAddr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                     // Create the actual call node
@@ -413,7 +413,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impAssignTempGen(lclNum, fptr, CHECK_SPILL_ALL);
+                impStoreTemp(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call->AsCall()->gtCallAddr = fptr;
@@ -484,7 +484,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // Now make an indirect call through the function pointer
 
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("Indirect call through function pointer"));
-                impAssignTempGen(lclNum, fptr, CHECK_SPILL_ALL);
+                impStoreTemp(lclNum, fptr, CHECK_SPILL_ALL);
                 fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
 
                 call = gtNewIndCallNode(fptr, callRetTyp, di);
@@ -1389,8 +1389,8 @@ DONE_CALL:
                         unsigned   calliSlot = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc    = lvaGetDesc(calliSlot);
 
-                        impAssignTempGen(calliSlot, call, CHECK_SPILL_NONE);
-                        // impAssignTempGen can change src arg list and return type for call that returns struct.
+                        impStoreTemp(calliSlot, call, CHECK_SPILL_NONE);
+                        // impStoreTemp can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
                     }
@@ -1566,10 +1566,10 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         if (call->IsUnmanaged())
         {
             // Native ABIs do not allow retbufs to alias anything.
-            // This is allowed by the managed ABI and impAssignStruct will
+            // This is allowed by the managed ABI and impStoreStruct will
             // never introduce copies due to this.
             unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Retbuf for unmanaged call"));
-            impAssignTempGen(tmpNum, call, CHECK_SPILL_ALL);
+            impStoreTemp(tmpNum, call, CHECK_SPILL_ALL);
             return gtNewLclvNode(tmpNum, lvaGetDesc(tmpNum)->TypeGet());
         }
 
@@ -1601,7 +1601,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         // No need to assign a multi-reg struct to a local var if:
         //  - It is a tail call or
         //  - The call is marked for in-lining later
-        return impAssignMultiRegTypeToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
+        return impStoreMultiRegValueToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
     }
     return call;
 #endif // FEATURE_MULTIREG_RET
@@ -2804,7 +2804,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 noway_assert(genTypeSize(rawHandle->TypeGet()) == genTypeSize(TYP_I_IMPL));
 
                 unsigned rawHandleSlot = lvaGrabTemp(true DEBUGARG("rawHandle"));
-                impAssignTempGen(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
+                impStoreTemp(rawHandleSlot, rawHandle, CHECK_SPILL_NONE);
 
                 GenTree*  lclVarAddr = gtNewLclVarAddrNode(rawHandleSlot);
                 var_types resultType = JITtype2varType(sig->retType);
@@ -4042,7 +4042,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 // In order to change the class handle of the object we need to spill it to a temp
                 // and update class info for that temp.
                 unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
-                impAssignTempGen(localNum, op, CHECK_SPILL_ALL);
+                impStoreTemp(localNum, op, CHECK_SPILL_ALL);
 
                 // NOTE: we still can't say for sure that it is the exact type of the argument
                 lvaSetClass(localNum, inst, /*isExact*/ false);
@@ -4694,7 +4694,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewQmarkNode(baseType, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for LeadingZeroCount Qmark"));
-                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                impStoreTemp(tmp, result, CHECK_SPILL_NONE);
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
@@ -5025,7 +5025,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 result = gtNewQmarkNode(baseType, cond, colon);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for TrailingZeroCount Qmark"));
-                impAssignTempGen(tmp, result, CHECK_SPILL_NONE);
+                impStoreTemp(tmp, result, CHECK_SPILL_NONE);
                 result = gtNewLclvNode(tmp, baseType);
             }
 #elif defined(TARGET_ARM64)
@@ -5540,7 +5540,7 @@ private:
         assert(retExpr->OperGet() == GT_RET_EXPR);
         const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
         JITDUMP("Storing return expression [%06u] to a local var V%02u.\n", comp->dspTreeID(retExpr), tmp);
-        comp->impAssignTempGen(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
+        comp->impStoreTemp(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
         *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
 
         assert(comp->lvaTable[tmp].lvSingleDef == 0);
@@ -8983,10 +8983,10 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
             }
             else
             {
-                boxTempNum            = lvaGrabTemp(true DEBUGARG("Temp for the box source"));
-                GenTree*   boxTempAsg = gtNewTempAssign(boxTempNum, boxSrc);
-                Statement* boxAsgStmt = objToKeepAlive->AsBox()->gtCopyStmtWhenInlinedBoxValue;
-                boxAsgStmt->SetRootNode(boxTempAsg);
+                boxTempNum              = lvaGrabTemp(true DEBUGARG("Temp for the box source"));
+                GenTree*   boxTempStore = gtNewTempStore(boxTempNum, boxSrc);
+                Statement* boxStoreStmt = objToKeepAlive->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+                boxStoreStmt->SetRootNode(boxTempStore);
             }
 
             JITDUMP("\nImporting KEEPALIVE(BOX) as KEEPALIVE(LCL_VAR_ADDR V%02u)", boxTempNum);

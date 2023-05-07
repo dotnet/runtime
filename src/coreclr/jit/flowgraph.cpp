@@ -1790,7 +1790,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
 
             retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
-            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.asg, retExpr);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
             retNode->gtOp1 = retExpr;
             retNode->AddAllEffectsFlags(retExpr);
         }

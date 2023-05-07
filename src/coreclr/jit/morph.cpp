@@ -270,8 +270,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 //     types, especially checked ones. Refer to the implementation for
 //     what specific casts need to be handled - it is a complex matrix.
 //  3. "Casts away" the GC-ness of a tree (for CAST(nint <- byref)) via
-//     assigning the GC tree to an inline - COMMA(ASG, LCL_VAR) - non-GC
-//     temporary.
+//     storing the GC tree to an inline non-GC temporary.
 //  3. "Pushes down" truncating long -> int casts for some operations:
 //     CAST(int <- MUL(long, long)) => MUL(CAST(int <- long), CAST(int <- long)).
 //     The purpose of this is to allow "optNarrowTree" in the post-order
@@ -534,14 +533,14 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // the gc problem and we allow casts to bytes, longs,  etc...
         unsigned lclNum = lvaGrabTemp(true DEBUGARG("Cast away GC"));
         oper->gtType    = TYP_I_IMPL;
-        GenTree* asg    = gtNewTempAssign(lclNum, oper);
+        GenTree* store  = gtNewTempStore(lclNum, oper);
         oper->gtType    = srcType;
 
         // do the real cast
         GenTree* cast = gtNewCastNode(tree->TypeGet(), gtNewLclvNode(lclNum, TYP_I_IMPL), false, dstType);
 
         // Generate the comma tree
-        oper = gtNewOperNode(GT_COMMA, tree->TypeGet(), asg, cast);
+        oper = gtNewOperNode(GT_COMMA, tree->TypeGet(), store, cast);
 
         return fgMorphTree(oper);
     }
@@ -1687,7 +1686,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
                         // In the early argument evaluation, place an assignment to the temp
                         // from the source operand of the mkrefany
-                        setupArg = comp->gtNewTempAssign(tmpVarNum, operand);
+                        setupArg = comp->gtNewTempStore(tmpVarNum, operand);
 
                         // Replace the operand for the mkrefany with the new temp.
                         argx->AsOp()->gtOp1 = comp->gtNewLclvNode(tmpVarNum, operand->TypeGet());
@@ -1698,7 +1697,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 
                         // In the early argument evaluation, place an assignment to the temp
                         // from the source operand of the mkrefany
-                        setupArg = comp->gtNewTempAssign(tmpVarNum, operand);
+                        setupArg = comp->gtNewTempStore(tmpVarNum, operand);
 
                         // Replace the operand for the mkrefany with the new temp.
                         argx->AsOp()->gtOp2 = comp->gtNewLclvNode(tmpVarNum, operand->TypeGet());
@@ -1715,7 +1714,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 }
                 else
                 {
-                    setupArg = comp->gtNewTempAssign(tmpVarNum, argx);
+                    setupArg = comp->gtNewTempStore(tmpVarNum, argx);
 
                     LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
                     var_types  lclVarType = genActualType(argx->gtType);
@@ -1861,12 +1860,12 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 TempInfo Compiler::fgMakeTemp(GenTree* rhs)
 {
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgMakeTemp is creating a new local variable"));
-    GenTree* asg    = gtNewTempAssign(lclNum, rhs);
+    GenTree* store  = gtNewTempStore(lclNum, rhs);
     GenTree* load   = gtNewLclvNode(lclNum, genActualType(rhs));
 
     TempInfo tempInfo{};
-    tempInfo.asg  = asg;
-    tempInfo.load = load;
+    tempInfo.store = store;
+    tempInfo.load  = load;
 
     return tempInfo;
 }
@@ -1902,7 +1901,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
 
 //------------------------------------------------------------------------------
 // fgInsertCommaFormTemp: Create a new temporary variable to hold the result of *ppTree,
-//                        and replace *ppTree with comma(asg(newLcl, *ppTree), newLcl)
+//                        and replace *ppTree with comma(store<newLcl>(*ppTree)), newLcl)
 //
 // Arguments:
 //    ppTree     - a pointer to the child node we will be replacing with the comma expression that
@@ -1917,10 +1916,10 @@ GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree)
     GenTree* subTree = *ppTree;
 
     TempInfo tempInfo = fgMakeTemp(subTree);
-    GenTree* asg      = tempInfo.asg;
+    GenTree* store    = tempInfo.store;
     GenTree* load     = tempInfo.load;
 
-    *ppTree = gtNewOperNode(GT_COMMA, subTree->TypeGet(), asg, load);
+    *ppTree = gtNewOperNode(GT_COMMA, subTree->TypeGet(), store, load);
 
     return gtClone(load);
 }
@@ -4444,7 +4443,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
             (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
-            arrRefDefn            = gtNewTempAssign(arrRefTmpNum, arrRef);
+            arrRefDefn            = gtNewTempStore(arrRefTmpNum, arrRef);
             arrRef                = gtNewLclvNode(arrRefTmpNum, lvaGetDesc(arrRefTmpNum)->TypeGet());
             arrRef2               = gtNewLclvNode(arrRefTmpNum, lvaGetDesc(arrRefTmpNum)->TypeGet());
         }
@@ -4459,7 +4458,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
-            indexDefn            = gtNewTempAssign(indexTmpNum, index);
+            indexDefn            = gtNewTempStore(indexTmpNum, index);
             index                = gtNewLclvNode(indexTmpNum, lvaGetDesc(indexTmpNum)->TypeGet());
             index2               = gtNewLclvNode(indexTmpNum, lvaGetDesc(indexTmpNum)->TypeGet());
         }
@@ -5139,15 +5138,13 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         DISPTREE(tree);
 
         // Create the "comma" subtree.
-        GenTree* asg = nullptr;
+        GenTree* store = nullptr;
         unsigned lclNum;
 
         if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
         {
             lclNum = fgGetFieldMorphingTemp(tree->AsFieldAddr());
-
-            // Create the "asg" node
-            asg = gtNewTempAssign(lclNum, objRef);
+            store  = gtNewTempStore(lclNum, objRef);
         }
         else
         {
@@ -5159,10 +5156,10 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
         nullchk->gtFlags |= GTF_ORDER_SIDEEFF;
 
-        if (asg != nullptr)
+        if (store != nullptr)
         {
             // Create the "comma" node.
-            comma = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullchk);
+            comma = gtNewOperNode(GT_COMMA, TYP_VOID, store, nullchk);
         }
         else
         {
@@ -6386,7 +6383,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         {
             // We have replaced the root node of this stmt and deleted the rest,
             // but we still have the deleted, dead nodes on the `fgMorph*` stack
-            // if the root node was an `ASG`, `RET` or `CAST`.
+            // if the root node was a store, `RET` or `CAST`.
             // Return a zero con node to exit morphing of the old trees without asserts
             // and forbid POST_ORDER morphing doing something wrong with our call.
             var_types zeroType = (origCallType == TYP_STRUCT) ? TYP_INT : genActualType(origCallType);
@@ -6643,7 +6640,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
                 const unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
 
                 // tmp = "this"
-                doBeforeStoreArgsStub = gtNewTempAssign(lclNum, objp);
+                doBeforeStoreArgsStub = gtNewTempStore(lclNum, objp);
 
                 if (callNeedsNullCheck)
                 {
@@ -6984,7 +6981,7 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
 
         unsigned temp = lvaGrabTemp(true DEBUGARG(reason));
-        stmts.Push(gtNewTempAssign(temp, *tree));
+        stmts.Push(gtNewTempStore(temp, *tree));
         *tree = gtNewLclvNode(temp, lvaGetActualType(temp));
         return gtNewLclvNode(temp, lvaGetActualType(temp));
     };
@@ -7168,12 +7165,12 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         {
             // tmp = "this"
             unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
-            GenTree* asg    = gtNewTempAssign(lclNum, objp);
+            GenTree* store  = gtNewTempStore(lclNum, objp);
 
             // COMMA(tmp = "this", tmp)
             var_types vt  = objp->TypeGet();
             GenTree*  tmp = gtNewLclvNode(lclNum, vt);
-            thisPtr       = gtNewOperNode(GT_COMMA, vt, asg, tmp);
+            thisPtr       = gtNewOperNode(GT_COMMA, vt, store, tmp);
 
             objp = thisPtr;
         }
@@ -7193,15 +7190,15 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
 
                 // tmp = "this"
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("tail call thisptr"));
-                GenTree* asg    = gtNewTempAssign(lclNum, objp);
+                GenTree* store  = gtNewTempStore(lclNum, objp);
 
                 // COMMA(tmp = "this", deref(tmp))
                 GenTree* tmp       = gtNewLclvNode(lclNum, vt);
                 GenTree* nullcheck = gtNewNullCheck(tmp, compCurBB);
-                asg                = gtNewOperNode(GT_COMMA, TYP_VOID, asg, nullcheck);
+                store              = gtNewOperNode(GT_COMMA, TYP_VOID, store, nullcheck);
 
                 // COMMA(COMMA(tmp = "this", deref(tmp)), tmp)
-                thisPtr = gtNewOperNode(GT_COMMA, vt, asg, gtNewLclvNode(lclNum, vt));
+                thisPtr = gtNewOperNode(GT_COMMA, vt, store, gtNewLclvNode(lclNum, vt));
             }
             else
             {
@@ -7976,9 +7973,9 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
             // var2 = var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [var1 + vtabOffsOfIndirection]
             // result = [var2] + var2
             //
-            unsigned varNum1 = lvaGrabTemp(true DEBUGARG("var1 - vtab"));
-            unsigned varNum2 = lvaGrabTemp(true DEBUGARG("var2 - relative"));
-            GenTree* asgVar1 = gtNewTempAssign(varNum1, vtab); // var1 = vtab
+            unsigned varNum1   = lvaGrabTemp(true DEBUGARG("var1 - vtab"));
+            unsigned varNum2   = lvaGrabTemp(true DEBUGARG("var2 - relative"));
+            GenTree* storeVar1 = gtNewTempStore(varNum1, vtab); // var1 = vtab
 
             // [tmp + vtabOffsOfIndirection]
             GenTree* tmpTree1 = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewLclvNode(varNum1, TYP_I_IMPL),
@@ -7991,8 +7988,8 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
                               gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_I_IMPL));
 
             // var1 + vtabOffsOfIndirection + vtabOffsAfterIndirection + [var1 + vtabOffsOfIndirection]
-            tmpTree2         = gtNewOperNode(GT_ADD, TYP_I_IMPL, tmpTree2, tmpTree1);
-            GenTree* asgVar2 = gtNewTempAssign(varNum2, tmpTree2); // var2 = <expression>
+            tmpTree2           = gtNewOperNode(GT_ADD, TYP_I_IMPL, tmpTree2, tmpTree1);
+            GenTree* storeVar2 = gtNewTempStore(varNum2, tmpTree2); // var2 = <expression>
 
             // This last indirection is not invariant, but is non-faulting
             result = gtNewIndir(TYP_I_IMPL, gtNewLclvNode(varNum2, TYP_I_IMPL), GTF_IND_NONFAULTING); // [var2]
@@ -8000,8 +7997,8 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
             result = gtNewOperNode(GT_ADD, TYP_I_IMPL, result, gtNewLclvNode(varNum2, TYP_I_IMPL)); // [var2] + var2
 
             // Now stitch together the two assignment and the calculation of result into a single tree
-            GenTree* commaTree = gtNewOperNode(GT_COMMA, TYP_I_IMPL, asgVar2, result);
-            result             = gtNewOperNode(GT_COMMA, TYP_I_IMPL, asgVar1, commaTree);
+            GenTree* commaTree = gtNewOperNode(GT_COMMA, TYP_I_IMPL, storeVar2, result);
+            result             = gtNewOperNode(GT_COMMA, TYP_I_IMPL, storeVar1, commaTree);
         }
         else
         {
@@ -9118,7 +9115,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     (memcmp(thenAssertionTab, optAssertionTabPrivate, tabSize) != 0))
                 {
                     // Yes they are different so we have to find the merged set
-                    // Iterate over the copy asgn table removing any entries
+                    // Iterate over the assertion table removing any entries
                     // that do not have an exact match in the thenAssertionTab
                     AssertionIndex index = 1;
                     while (index <= optAssertionCount)
@@ -9932,8 +9929,8 @@ void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
         return;
     }
 
-    // With a `genReturnBB` this `RETURN(src)` tree will be replaced by a `ASG(genReturnLocal, src)`
-    // and `ASG` will be transformed into field by field copy without parent local referencing if
+    // With a `genReturnBB` this `RETURN(src)` tree will be replaced by a `STORE_LCL_VAR<genReturnLocal>(src)`
+    // and `STORE_LCL_VAR` will be transformed into field by field copy without parent local referencing if
     // possible.
     GenTreeLclVar* lclVar = tree->AsLclVar();
     unsigned       lclNum = lclVar->GetLclNum();
@@ -11494,7 +11491,7 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
 #endif
 
         // TODO: support `genReturnBB != nullptr`, it requires #11413 to avoid `Incompatible types for
-        // gtNewTempAssign`.
+        // gtNewTempStore`.
         if (canFold && (genReturnBB == nullptr))
         {
             // Fold even if types do not match, lowering will handle it. This allows the local
@@ -11831,7 +11828,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 
         // Promoted structs after morph must be in one of two states:
         //  a) Fully eliminated from the IR (independent promotion) OR only be
-        //     used by "special" nodes (e. g. LHS of ASGs for multi-reg structs).
+        //     used by "special" nodes (e. g. multi-reg stores).
         //  b) Marked as do-not-enregister (dependent promotion).
         //
         // So here we preserve this invariant and mark any promoted structs as do-not-enreg.
@@ -12000,8 +11997,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
 //    After:
 //        *  RETURN    int
 //        \--*  COMMA     int
-//           +--*  ASG       int
-//           |  +--*  LCL_VAR   int    V03 tmp1
+//           +--*  STORE_LCL_VAR int    V03 tmp1
 //           |  \--*  MUL       int
 //           |     +--*  LCL_VAR   int    V00 arg0
 //           |     \--*  LCL_VAR   int    V00 arg0
@@ -12093,7 +12089,7 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     // within one another for their sequence order.
     for (int i = tempInfoCount - 1; i >= 0; i--)
     {
-        result = gtNewOperNode(GT_COMMA, type, tempInfos[i].asg, result);
+        result = gtNewOperNode(GT_COMMA, type, tempInfos[i].store, result);
     }
 
 #ifdef DEBUG
@@ -13832,7 +13828,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             Statement*       pAfterStatement = lastStmt;
             const DebugInfo& di              = lastStmt->GetDebugInfo();
             GenTree*         tree =
-                gtNewTempAssign(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
+                gtNewTempStore(genReturnLocal, ret->gtGetOp1(), CHECK_SPILL_NONE, &pAfterStatement, di, block);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
@@ -13848,7 +13844,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             }
             else
             {
-                // gtNewTempAssign inserted additional statements after last
+                // gtNewTempStore inserted additional statements after last
                 fgRemoveStmt(block, lastStmt);
                 Statement* newStmt = gtNewStmt(tree, di);
                 fgInsertStmtAfter(block, pAfterStatement, newStmt);
@@ -15435,9 +15431,9 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 GenTreeMDArr* const mdArrLowerBound =
                     m_compiler->gtNewMDArrLowerBound(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 // unsigned       effIdxLcl = m_compiler->lvaGrabTemp(true DEBUGARG("MD array effective index"));
-                unsigned            effIdxLcl = m_pTempCache->GrabTemp(TYP_INT);
-                GenTree* const      effIndex  = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
-                GenTree* const      asgNode   = m_compiler->gtNewTempAssign(effIdxLcl, effIndex);
+                unsigned            effIdxLcl    = m_pTempCache->GrabTemp(TYP_INT);
+                GenTree* const      effIndex     = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, idx, mdArrLowerBound);
+                GenTree* const      effIdxLclDef = m_compiler->gtNewTempStore(effIdxLcl, effIndex);
                 GenTreeMDArr* const mdArrLength =
                     m_compiler->gtNewMDArrLen(m_compiler->gtNewLclvNode(arrLcl, TYP_REF), i, rank, m_block);
                 GenTreeBoundsChk* const arrBndsChk = new (m_compiler, GT_BOUNDS_CHECK)
@@ -15445,7 +15441,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 GenTree* const boundsCheckComma =
                     m_compiler->gtNewOperNode(GT_COMMA, TYP_INT, arrBndsChk,
                                               m_compiler->gtNewLclvNode(effIdxLcl, TYP_INT));
-                GenTree* const idxComma = m_compiler->gtNewOperNode(GT_COMMA, TYP_INT, asgNode, boundsCheckComma);
+                GenTree* const idxComma = m_compiler->gtNewOperNode(GT_COMMA, TYP_INT, effIdxLclDef, boundsCheckComma);
 
                 // If it's not the first index, accumulate with the previously created calculation.
                 if (i > 0)
@@ -15492,10 +15488,10 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
                 {
                     if (idxToCopy[i - 1] != BAD_VAR_NUM)
                     {
-                        GenTree* const idxLclAsg =
-                            m_compiler->gtNewTempAssign(idxToCopy[i - 1], arrElem->gtArrInds[i - 1]);
+                        GenTree* const idxLclStore =
+                            m_compiler->gtNewTempStore(idxToCopy[i - 1], arrElem->gtArrInds[i - 1]);
                         fullExpansion =
-                            m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclAsg, fullExpansion);
+                            m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), idxLclStore, fullExpansion);
                     }
                 }
             }
@@ -15503,8 +15499,9 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
             // If we needed to create a new local for the array object, copy that before everything.
             if (newArrLcl != BAD_VAR_NUM)
             {
-                GenTree* const arrLclAsg = m_compiler->gtNewTempAssign(newArrLcl, arrObj);
-                fullExpansion = m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclAsg, fullExpansion);
+                GenTree* const arrLclStore = m_compiler->gtNewTempStore(newArrLcl, arrObj);
+                fullExpansion =
+                    m_compiler->gtNewOperNode(GT_COMMA, fullExpansion->TypeGet(), arrLclStore, fullExpansion);
             }
 
             JITDUMP("fgMorphArrayOpsStmt (before remorph):\n");

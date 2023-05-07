@@ -910,7 +910,7 @@ private:
             else
             {
                 unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
-                statements->AddStatement(m_compiler->gtNewTempAssign(addrLcl, addr));
+                statements->AddStatement(m_compiler->gtNewTempStore(addrLcl, addr));
                 addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
             }
         }
@@ -1477,7 +1477,7 @@ void ReplaceVisitor::EliminateCommasInBlockOp(GenTree* store, DecompositionState
             {
                 unsigned dstAddrLclNum = m_compiler->lvaGrabTemp(true DEBUGARG("Block morph store addr"));
 
-                result->AddStatement(m_compiler->gtNewTempAssign(dstAddrLclNum, addr));
+                result->AddStatement(m_compiler->gtNewTempStore(dstAddrLclNum, addr));
                 store->AsIndir()->Addr() = m_compiler->gtNewLclvNode(dstAddrLclNum, genActualType(addr));
                 m_compiler->gtUpdateNodeSideEffects(store);
                 m_madeChanges = true;

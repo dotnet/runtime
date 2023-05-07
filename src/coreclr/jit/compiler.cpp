@@ -241,7 +241,6 @@ unsigned argTotalDeferred;
 unsigned argTotalConst;
 
 unsigned argTotalObjPtr;
-unsigned argTotalGTF_ASGinArgs;
 
 unsigned argMaxTempsPerMethod;
 
@@ -4731,7 +4730,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Promote struct locals based on primitive access patterns
     //
-    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);    
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
     // Run a simple forward substitution pass.
     //

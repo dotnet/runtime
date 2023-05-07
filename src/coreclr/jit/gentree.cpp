@@ -8127,7 +8127,7 @@ GenTree* Compiler::gtNewStoreValueNode(
 // FixupInitBlkValue: Fixup the init value for an initBlk operation
 //
 // Arguments:
-//    asgType - The type of assignment that the initBlk is being transformed into
+//    type - The type of store that the initBlk is being transformed into
 //
 // Return Value:
 //    Modifies the constant value on this node to be the appropriate "fill"
@@ -8139,10 +8139,10 @@ GenTree* Compiler::gtNewStoreValueNode(
 //    to an assignment of a primitive type.
 //    This performs the appropriate extension.
 //
-void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
+void GenTreeIntCon::FixupInitBlkValue(var_types type)
 {
-    assert(varTypeIsIntegralOrI(asgType));
-    unsigned size = genTypeSize(asgType);
+    assert(varTypeIsIntegralOrI(type));
+    unsigned size = genTypeSize(type);
     if (size > 1)
     {
         size_t cns = gtIconVal;
@@ -8159,10 +8159,10 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
 #endif // TARGET_64BIT
 
             // Make the type match for evaluation types.
-            gtType = asgType;
+            gtType = type;
 
             // if we are initializing a GC type the value being assigned must be zero (null).
-            assert(!varTypeIsGC(asgType) || (cns == 0));
+            assert(!varTypeIsGC(type) || (cns == 0));
         }
 
         gtIconVal = cns;
@@ -8937,7 +8937,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_BOX:
                 copy = new (this, GT_BOX)
-                    GenTreeBox(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsBox()->gtAsgStmtWhenInlinedBoxValue,
+                    GenTreeBox(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsBox()->gtDefStmtWhenInlinedBoxValue,
                                tree->AsBox()->gtCopyStmtWhenInlinedBoxValue);
                 tree->AsBox()->SetCloned();
                 copy->AsBox()->SetCloned();
@@ -14089,7 +14089,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
     // grab related parts for the optimization
     GenTreeBox* box       = op->AsBox();
-    Statement*  allocStmt = box->gtAsgStmtWhenInlinedBoxValue;
+    Statement*  allocStmt = box->gtDefStmtWhenInlinedBoxValue;
     Statement*  copyStmt  = box->gtCopyStmtWhenInlinedBoxValue;
 
     JITDUMP("gtTryRemoveBoxUpstreamEffects: %s to %s of BOX (valuetype)"
@@ -14467,10 +14467,10 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
     }
     else
     {
-        const unsigned thisTmp     = lvaGrabTemp(true DEBUGARG("Enum:HasFlag this temp"));
-        GenTree*       thisAsg     = gtNewTempAssign(thisTmp, thisVal);
-        Statement*     thisAsgStmt = thisOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
-        thisAsgStmt->SetRootNode(thisAsg);
+        const unsigned thisTmp       = lvaGrabTemp(true DEBUGARG("Enum:HasFlag this temp"));
+        GenTree*       thisStore     = gtNewTempStore(thisTmp, thisVal);
+        Statement*     thisStoreStmt = thisOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+        thisStoreStmt->SetRootNode(thisStore);
         thisValOpt = gtNewLclvNode(thisTmp, type);
     }
 
@@ -14483,10 +14483,10 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
     }
     else
     {
-        const unsigned flagTmp     = lvaGrabTemp(true DEBUGARG("Enum:HasFlag flag temp"));
-        GenTree*       flagAsg     = gtNewTempAssign(flagTmp, flagVal);
-        Statement*     flagAsgStmt = flagOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
-        flagAsgStmt->SetRootNode(flagAsg);
+        const unsigned flagTmp       = lvaGrabTemp(true DEBUGARG("Enum:HasFlag flag temp"));
+        GenTree*       flagStore     = gtNewTempStore(flagTmp, flagVal);
+        Statement*     flagStoreStmt = flagOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
+        flagStoreStmt->SetRootNode(flagStore);
         flagValOpt     = gtNewLclvNode(flagTmp, type);
         flagValOptCopy = gtNewLclvNode(flagTmp, type);
     }
@@ -15667,7 +15667,7 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 }
 
 //------------------------------------------------------------------------
-// gtNewTempAssign: Create an assignment of the given value to a temp.
+// gtNewTempStore: Create an assignment of the given value to a temp.
 //
 // Arguments:
 //    tmp         - local number for a compiler temp
@@ -15688,7 +15688,7 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 //
 //    May set compFloatingPointUsed.
 //
-GenTree* Compiler::gtNewTempAssign(
+GenTree* Compiler::gtNewTempStore(
     unsigned tmp, GenTree* val, unsigned curLevel, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
 {
     // Self-assignment is a nop.
@@ -15753,7 +15753,7 @@ GenTree* Compiler::gtNewTempAssign(
         if (!ok)
         {
             gtDispTree(val);
-            assert(!"Incompatible types for gtNewTempAssign");
+            assert(!"Incompatible types for gtNewTempStore");
         }
     }
 #endif
@@ -15762,7 +15762,7 @@ GenTree* Compiler::gtNewTempAssign(
     //
     if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_REF))
     {
-        noway_assert(!"Incompatible types for gtNewTempAssign");
+        noway_assert(!"Incompatible types for gtNewTempStore");
     }
 
     // Floating Point assignments can be created during inlining
@@ -15781,7 +15781,7 @@ GenTree* Compiler::gtNewTempAssign(
 
     if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
-        store = impAssignStruct(store, curLevel, pAfterStmt, di, block);
+        store = impStoreStruct(store, curLevel, pAfterStmt, di, block);
     }
 
     return store;
@@ -15916,7 +15916,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                                             : gtNewStoreIndNode(lclTyp, result, assg);
             if (varTypeIsStruct(lclTyp))
             {
-                result = impAssignStruct(result, CHECK_SPILL_ALL);
+                result = impStoreStruct(result, CHECK_SPILL_ALL);
             }
         }
         else
@@ -16288,7 +16288,7 @@ bool Compiler::gtSplitTree(
                 // CALL
                 //   LCL_VAR V00
                 //   CALL
-                //     ASG(V00, ...) (setup)
+                //     STORE_LCL_VAR<V00>(...) (setup)
                 //     LCL_VAR V00
                 //
                 return;
@@ -16350,10 +16350,10 @@ bool Compiler::gtSplitTree(
                     m_compiler->lvaGetDesc(lclNum)->lvIsMultiRegRet = true;
                 }
 
-                GenTree* asg = m_compiler->gtNewTempAssign(lclNum, *use);
-                stmt         = m_compiler->fgNewStmtFromTree(asg, m_splitStmt->GetDebugInfo());
-                *use         = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
-                MadeChanges  = true;
+                GenTree* store = m_compiler->gtNewTempStore(lclNum, *use);
+                stmt           = m_compiler->fgNewStmtFromTree(store, m_splitStmt->GetDebugInfo());
+                *use           = m_compiler->gtNewLclvNode(lclNum, genActualType(*use));
+                MadeChanges    = true;
             }
 
             if (stmt != nullptr)

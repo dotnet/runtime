@@ -2599,11 +2599,8 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    that escape to calls leave the local in question address-exposed. For this very special case of
 //    a return buffer, however, it is known that the callee will not do anything with it except write
 //    to it, once. As such, we handle addresses of locals that represent return buffers specially: we
-//    *do not* mark the local address-exposed, instead saving the address' "Use*" in the call node, and
-//    treat the call much like an "ASG(IND(addr), ...)" node throughout the compilation. A complicating
-//    factor here is that the address can be moved to the late args list, and we have to fetch it from
-//    the ASG setup node in that case. In the future, we should make it such that these addresses do
-//    not ever need temps (currently they may because of conservative GLOB_REF setting on FIELD nodes).
+//    *do not* mark the local address-exposed and treat the call much like a local store node throughout
+//    the compilation.
 //
 //    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
 //    outside of the buffer address argument itself, as liveness - currently - treats the location node
@@ -2611,7 +2608,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
 //    enable this optimization for "!lvIsTemp" locals.
 //
-
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);

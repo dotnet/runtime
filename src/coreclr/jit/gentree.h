@@ -1801,7 +1801,7 @@ public:
 
     inline GenTree* gtEffectiveVal(bool commaOnly = false);
 
-    inline GenTree* gtCommaAssignVal();
+    inline GenTree* gtCommaStoreVal();
 
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
@@ -3129,7 +3129,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
     {
     }
 
-    void FixupInitBlkValue(var_types asgType);
+    void FixupInitBlkValue(var_types type);
 
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
@@ -3836,16 +3836,16 @@ struct GenTreeBox : public GenTreeUnOp
     }
     // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
     // type
-    Statement* gtAsgStmtWhenInlinedBoxValue;
+    Statement* gtDefStmtWhenInlinedBoxValue;
     // And this is the statement that copies from the value being boxed to the box payload
     Statement* gtCopyStmtWhenInlinedBoxValue;
 
     GenTreeBox(var_types  type,
                GenTree*   boxOp,
-               Statement* asgStmtWhenInlinedBoxValue,
+               Statement* defStmtWhenInlinedBoxValue,
                Statement* copyStmtWhenInlinedBoxValue)
         : GenTreeUnOp(GT_BOX, type, boxOp)
-        , gtAsgStmtWhenInlinedBoxValue(asgStmtWhenInlinedBoxValue)
+        , gtDefStmtWhenInlinedBoxValue(defStmtWhenInlinedBoxValue)
         , gtCopyStmtWhenInlinedBoxValue(copyStmtWhenInlinedBoxValue)
     {
     }
@@ -9120,7 +9120,7 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped store
+// gtCommaStoreVal - find value being assigned to a comma wrapped store
 //
 // Returns:
 //    tree representing value being stored if this tree represents a
@@ -9128,7 +9128,7 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 //
 //    original tree, if not.
 //
-inline GenTree* GenTree::gtCommaAssignVal()
+inline GenTree* GenTree::gtCommaStoreVal()
 {
     GenTree* result = this;
 

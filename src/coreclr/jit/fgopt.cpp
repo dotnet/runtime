@@ -1753,12 +1753,12 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 // Zero the entry state at method entry.
                 //
-                GenTree* const initEntryState = gtNewTempAssign(entryStateVar, gtNewZeroConNode(TYP_INT));
+                GenTree* const initEntryState = gtNewTempStore(entryStateVar, gtNewZeroConNode(TYP_INT));
                 fgNewStmtAtBeg(fgFirstBB, initEntryState);
 
                 // Set the state variable once control flow reaches the OSR entry.
                 //
-                GenTree* const setEntryState = gtNewTempAssign(entryStateVar, gtNewOneConNode(TYP_INT));
+                GenTree* const setEntryState = gtNewTempStore(entryStateVar, gtNewOneConNode(TYP_INT));
                 fgNewStmtAtBeg(osrEntry, setEntryState);
 
                 // Helper method to add flow
