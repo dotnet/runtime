@@ -129,7 +129,7 @@ namespace System.Collections.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(100)]
-        public void Stack_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        public void HashSet_CreateWithCapacity_EqualsCapacityProperty(int capacity)
         {
             var hashSet = new HashSet<T>(capacity);
             Assert.Equal(capacity, hashSet.Capacity);
