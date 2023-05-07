@@ -6247,6 +6247,22 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
+        // Fold "FrozenObjectHandle(REF) + CNS" to a byref constant:
+        //
+        //  *  ADD       byref
+        //  +--*  CNS_INT(h) ref
+        //  \--*  CNS_INT    long
+        //
+        // We can do this earlier but that will need some efforts (e.g. to restore original object from a
+        // byref constant for optimizations, be careful with "base constant" CSEs, etc). Also, it can't be
+        // just enabled for AOT, it needs some way to use reloc + offset then.
+        if (!comp->opts.IsReadyToRun() && op1->IsIconHandle(GTF_ICON_OBJ_HDL) && op2->IsCnsIntOrI())
+        {
+            BlockRange().Remove(op1);
+            BlockRange().Remove(op2);
+            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), TYP_BYREF);
+        }
+
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
         {
