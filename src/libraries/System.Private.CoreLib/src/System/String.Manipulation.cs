@@ -38,7 +38,20 @@ namespace System
         internal const int StackallocIntBufferSizeLimit = 128;
         internal const int StackallocCharBufferSizeLimit = 256;
 
-        private static void FillStringChecked(string dest, int destPos, string src)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CopyStringContent(string dest, int destPos, string src)
+        {
+            Debug.Assert(dest != null);
+            Debug.Assert(src != null);
+            Debug.Assert(src.Length <= dest.Length - destPos);
+
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
+                source: ref src._firstChar,
+                elementCount: (uint)src.Length);
+        }
+
+        private static void CopyStringContentChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
@@ -47,10 +60,7 @@ namespace System
                 throw new IndexOutOfRangeException();
             }
 
-            Buffer.Memmove(
-                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
-                source: ref src._firstChar,
-                elementCount: (uint)src.Length);
+            CopyStringContent(dest, destPos, src);
         }
 
         public static string Concat(object? arg0) =>
@@ -117,7 +127,7 @@ namespace System
                 Debug.Assert(s != null);
                 Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
-                FillStringChecked(result, position, s);
+                CopyStringContentChecked(result, position, s);
                 position += s.Length;
             }
 
@@ -255,10 +265,14 @@ namespace System
 
             int str0Length = str0.Length;
 
-            string result = FastAllocateString(str0Length + str1.Length);
+            // totalLength will never overflow to a non-negative number
+            // and the negative number will trigger OOM in FastAllocateString.
+            int totalLength = str0Length + str1.Length;
 
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0Length, str1);
+            string result = FastAllocateString(totalLength);
+
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0Length, str1);
 
             return result;
         }
@@ -283,9 +297,9 @@ namespace System
             int totalLength = str0.Length + str1.Length + str2.Length;
 
             string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
+            CopyStringContentChecked(result, 0, str0);
+            CopyStringContentChecked(result, str0.Length, str1);
+            CopyStringContentChecked(result, str0.Length + str1.Length, str2);
 
             return result;
         }
@@ -315,10 +329,10 @@ namespace System
             int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
 
             string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
-            FillStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            CopyStringContentChecked(result, 0, str0);
+            CopyStringContentChecked(result, str0.Length, str1);
+            CopyStringContentChecked(result, str0.Length + str1.Length, str2);
+            CopyStringContentChecked(result, str0.Length + str1.Length + str2.Length, str3);
 
             return result;
         }
@@ -470,7 +484,7 @@ namespace System
                         break;
                     }
 
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContentChecked(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
             }
@@ -970,7 +984,7 @@ namespace System
                     }
 
                     // Fill in the value.
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContentChecked(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
 
