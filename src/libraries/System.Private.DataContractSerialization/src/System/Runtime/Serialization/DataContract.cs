@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal class DataContractCriticalHelper
         {
-            private static readonly ConcurrentDictionary<RuntimeTypeHandle, int> s_typeToIDCache = new();
+            private static readonly ConcurrentDictionary<nint, int> s_typeToIDCache = new();
             private static DataContract[] s_dataContractCache = new DataContract[32];
             private static int s_dataContractID;
             private static readonly ConcurrentDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
@@ -392,14 +392,14 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 typeHandle = GetDataContractAdapterTypeHandle(typeHandle);
 
-                if (s_typeToIDCache.TryGetValue(typeHandle, out int id))
+                if (s_typeToIDCache.TryGetValue(typeHandle.Value, out int id))
                     return id;
 
                 try
                 {
                     lock (s_cacheLock)
                     {
-                        return s_typeToIDCache.GetOrAdd(typeHandle, static _ =>
+                        return s_typeToIDCache.GetOrAdd(typeHandle.Value, static _ =>
                         {
                             int nextId = s_dataContractID++;
                             if (nextId >= s_dataContractCache.Length)
@@ -953,7 +953,7 @@ namespace System.Runtime.Serialization.DataContracts
                 if (type != null)
                 {
                     RuntimeTypeHandle runtimeTypeHandle = GetDataContractAdapterTypeHandle(type.TypeHandle);
-                    s_typeToIDCache.TryRemove(runtimeTypeHandle, out _);
+                    s_typeToIDCache.TryRemove(runtimeTypeHandle.Value, out _);
                 }
 
                 throw new InvalidDataContractException(message);
