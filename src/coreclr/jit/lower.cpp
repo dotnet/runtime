@@ -6256,7 +6256,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         // We can do this earlier but that will need some efforts (e.g. to restore original object from a
         // byref constant for optimizations, be careful with "base constant" CSEs, etc). Also, it can't be
         // just enabled for AOT, it needs some way to use reloc + offset then.
-        if (!comp->opts.IsReadyToRun() && op1->IsIconHandle(GTF_ICON_OBJ_HDL) && op2->IsCnsIntOrI())
+        if (op1->IsIconHandle(GTF_ICON_OBJ_HDL) && !op1->AsIntCon()->ImmedValNeedsReloc(comp) && op2->IsCnsIntOrI() &&
+            !op2->IsIconHandle())
         {
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
