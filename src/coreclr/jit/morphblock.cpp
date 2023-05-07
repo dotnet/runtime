@@ -1128,10 +1128,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 {
     GenTree* result = nullptr;
 
-    GenTree* dstAddr       = nullptr;
-    GenTree* srcAddr       = nullptr;
-    GenTree* addrSpill     = nullptr;
-    unsigned addrSpillTemp = BAD_VAR_NUM;
+    GenTree*  dstAddr            = nullptr;
+    GenTree*  srcAddr            = nullptr;
+    ssize_t   addrBaseOffs       = 0;
+    FieldSeq* addrBaseOffsFldSeq = nullptr;
+    GenTree*  addrSpill          = nullptr;
+    unsigned  addrSpillTemp      = BAD_VAR_NUM;
 
     GenTree* addrSpillStore = nullptr;
 
@@ -1166,6 +1168,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         {
             srcAddr = m_src->AsIndir()->Addr();
 
+            m_comp->gtPeelOffsets(&srcAddr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
             // "srcAddr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
             if (fieldCnt - dyingFieldCnt > 1)
@@ -1197,6 +1201,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         if (!m_dstUseLclFld)
         {
             dstAddr = m_dst->AsIndir()->Addr();
+
+            m_comp->gtPeelOffsets(&dstAddr, &addrBaseOffs, &addrBaseOffsFldSeq);
 
             // "dstAddr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
@@ -1234,13 +1240,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     {
         // 'addrSpill' is already morphed
 
-        // Spill the (complex) address to a BYREF temp.
+        // Spill the (complex) address to a temp.
         // Note, at most one address may need to be spilled.
         addrSpillTemp = m_comp->lvaGrabTemp(true DEBUGARG("BlockOp address local"));
 
         LclVarDsc* addrSpillDsc = m_comp->lvaGetDesc(addrSpillTemp);
-        addrSpillDsc->lvType    = TYP_BYREF; // TODO-ASG: zero-diff quirk, delete.
-        addrSpillStore          = m_comp->gtNewTempAssign(addrSpillTemp, addrSpill);
+        addrSpillDsc->lvType = addrSpill->TypeIs(TYP_REF) ? TYP_REF : TYP_BYREF; // TODO-ASG: zero-diff quirk, delete.
+        addrSpillStore       = m_comp->gtNewTempAssign(addrSpillTemp, addrSpill);
     }
 
     // We may have allocated a temp above, and that may have caused the lvaTable to be expanded.
@@ -1286,7 +1292,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     if (addrSpill)
                     {
                         assert(addrSpillTemp != BAD_VAR_NUM);
-                        srcAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
+                        srcAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, addrSpill->TypeGet());
                     }
                     else
                     {
@@ -1343,9 +1349,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     if (!m_srcUseLclFld)
                     {
                         assert(srcAddrClone != nullptr);
-                        if (fldOffset != 0)
+                        ssize_t fullOffs = addrBaseOffs + (ssize_t)fldOffset;
+                        if (fullOffs != 0)
                         {
-                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, TYP_I_IMPL);
+                            // Avoid using unsigned overload of gtNewIconNode
+                            // that takes field seq to get correct overflow
+                            // handling.
+                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                            fldOffsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
                             srcAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
                         }
 
@@ -1415,7 +1426,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     if (addrSpill)
                     {
                         assert(addrSpillTemp != BAD_VAR_NUM);
-                        dstAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
+                        dstAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, addrSpill->TypeGet());
                     }
                     else
                     {
@@ -1449,9 +1460,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
                 if (!m_dstUseLclFld)
                 {
-                    if (srcFieldOffset != 0)
+                    ssize_t fullOffs = addrBaseOffs + (ssize_t)srcFieldOffset;
+                    if (fullOffs != 0)
                     {
-                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldOffset, TYP_I_IMPL);
+                        GenTreeIntCon* fieldOffsetNode = m_comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                        fieldOffsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
                         dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
                     }
 

@@ -10272,7 +10272,7 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
     {
         FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        if ((fseq != nullptr) && (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
             *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
             *pFseq      = fseq;

@@ -834,8 +834,10 @@ private:
             }
         }
 
-        GenTree*     addr       = nullptr;
-        GenTreeFlags indirFlags = GTF_EMPTY;
+        GenTree*     addr               = nullptr;
+        ssize_t      addrBaseOffs       = 0;
+        FieldSeq*    addrBaseOffsFldSeq = nullptr;
+        GenTreeFlags indirFlags         = GTF_EMPTY;
 
         if (m_dst->OperIs(GT_BLK))
         {
@@ -901,6 +903,8 @@ private:
 
         if ((addr != nullptr) && (numAddrUses > 1))
         {
+            m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
             if (addr->OperIsLocal() && (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
                                         (addr->AsLclVarCommon()->GetLclNum() != m_dst->AsLclVarCommon()->GetLclNum())))
             {
@@ -921,7 +925,7 @@ private:
             }
         }
 
-        auto grabAddr = [&numAddrUses, addr, this](unsigned offs) {
+        auto grabAddr = [&numAddrUses, addr, addrBaseOffs, addrBaseOffsFldSeq, this](unsigned offs) {
             assert(numAddrUses > 0);
             numAddrUses--;
 
@@ -937,11 +941,14 @@ private:
                 UpdateEarlyRefCount(m_compiler, addrUse);
             }
 
-            if (offs != 0)
+            ssize_t fullOffs = addrBaseOffs + (ssize_t)offs;
+            if (fullOffs != 0)
             {
+                GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
+
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
-                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse,
-                                                    m_compiler->gtNewIconNode((ssize_t)offs, TYP_I_IMPL));
+                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
             }
 
             return addrUse;
@@ -1180,6 +1187,42 @@ private:
         varDsc->incLvRefCntSaturating(1, RCS_EARLY);
     }
 };
+
+//------------------------------------------------------------------------
+// gtPeelOffsets: Peel all ADD(addr, CNS_INT(x)) nodes off the specified address
+// nodes and return the base node and sum of offsets peeled.
+//
+// Arguments:
+//   addr   - [in, out] The address node.
+//   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
+//
+void Compiler::gtPeelOffsets(GenTree** addr, ssize_t* offset, FieldSeq** fldSeq)
+{
+    *offset = 0;
+    *fldSeq = nullptr;
+    while ((*addr)->OperIs(GT_ADD))
+    {
+        if ((*addr)->gtGetOp2()->IsCnsIntOrI())
+        {
+            GenTreeIntCon* intCon = (*addr)->gtGetOp2()->AsIntCon();
+            *offset += intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+            (*addr) = (*addr)->gtGetOp1();
+        }
+        else if ((*addr)->gtGetOp1()->IsCnsIntOrI())
+        {
+            GenTreeIntCon* intCon = (*addr)->gtGetOp2()->AsIntCon();
+            *offset += intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+            (*addr) = (*addr)->gtGetOp2();
+            *offset += (*addr)->gtGetOp1()->AsIntConCommon()->IconValue();
+        }
+        else
+        {
+            break;
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // HandleAssignment:
