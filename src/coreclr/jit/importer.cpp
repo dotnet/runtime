@@ -7159,7 +7159,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* Special case: "int+0", "int-0", "int*1", "int/1" */
 
-                if (op2->gtOper == GT_CNS_INT)
+                if (op2->IsCnsIntOrI())
                 {
                     if ((op2->IsIntegralConst(0) && (oper == GT_ADD || oper == GT_SUB)) ||
                         (op2->IsIntegralConst(1) && (oper == GT_MUL || oper == GT_DIV)))
@@ -7376,7 +7376,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Try to fold the really simple cases like 'iconst *, ifne/ifeq'*/
                 /* Don't make any blocks unreachable in import only mode */
 
-                if (op1->gtOper == GT_CNS_INT)
+                if (op1->IsCnsIntOrI())
                 {
                     /* gtFoldExpr() should prevent this as we don't want to make any blocks
                        unreachable under compDbgCode */
@@ -7638,7 +7638,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
                 // Fold Switch for GT_CNS_INT
-                if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
+                if (opts.OptimizationEnabled() && op1->IsCnsIntOrI())
                 {
                     // Find the jump target
                     size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
@@ -7880,7 +7880,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op2 = op1->AsOp()->gtOp2;
 
-                    if (op2->gtOper == GT_CNS_INT)
+                    if (op2->IsCnsIntOrI())
                     {
                         ssize_t ival = op2->AsIntCon()->gtIconVal;
                         ssize_t mask, umask;
@@ -12737,7 +12737,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
-        if (inlCurArgInfo->argIsThis && (curArgVal->gtOper == GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (inlCurArgInfo->argIsThis && curArgVal->IsCnsIntOrI() && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -13643,7 +13643,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     }
 
     // Check for assignment of NULL.
-    if (value->OperIs(GT_CNS_INT))
+    if (value->IsCnsIntOrI())
     {
         assert(value->gtType == TYP_REF);
         if (value->AsIntCon()->gtIconVal == 0)

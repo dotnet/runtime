@@ -1114,7 +1114,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.op2.kind = O2K_CONST_INT;
             }
 
-            if (op2->gtOper != GT_CNS_INT)
+            if (!op2->IsCnsIntOrI())
             {
                 goto DONE_ASSERTION; // Don't make an assertion
             }
@@ -1200,7 +1200,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     assertion.op2.lconVal = 0;
                     assertion.op2.vn      = optConservativeNormalVN(op2);
 
-                    if (op2->gtOper == GT_CNS_INT)
+                    if (op2->IsCnsIntOrI())
                     {
                         ssize_t iconVal = op2->AsIntCon()->gtIconVal;
 
@@ -1462,7 +1462,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     // Is Local assertion prop?
     if (!vnBased)
     {
-        if (tree->OperGet() == GT_CNS_INT)
+        if (tree->IsCnsIntOrI())
         {
             *pConstant = tree->AsIntCon()->IconValue();
             *pFlags    = tree->GetIconHandleFlag();
@@ -2180,13 +2180,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
-    if ((op2->gtOper != GT_CNS_INT) && (op1->gtOper == GT_CNS_INT))
+    if (!op2->IsCnsIntOrI() && op1->IsCnsIntOrI())
     {
         std::swap(op1, op2);
     }
     // Validate op1 and op2
     if ((op1->gtOper != GT_CALL) || (op1->AsCall()->gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1
-        (op2->gtOper != GT_CNS_INT) || (op2->AsIntCon()->gtIconVal != 0))                                      // op2
+        !op2->IsCnsIntOrI() || (op2->AsIntCon()->gtIconVal != 0))                                              // op2
     {
         return NO_ASSERTION_INDEX;
     }
@@ -4040,7 +4040,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     }
 
     // For Local AssertionProp we only can fold when op2 is a GT_CNS_INT
-    if (op2->gtOper != GT_CNS_INT)
+    if (!op2->IsCnsIntOrI())
     {
         return nullptr;
     }

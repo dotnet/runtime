@@ -843,7 +843,7 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     assert(dividendHi->isUsedFromReg());
 
     GenTree* const divisor = node->gtOp2;
-    assert(divisor->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
+    assert(divisor->gtSkipReloadOrCopy()->IsCnsIntOrI());
     assert(divisor->gtSkipReloadOrCopy()->isUsedFromReg());
     assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal >= 2);
     assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal <= 0x3fffffff);

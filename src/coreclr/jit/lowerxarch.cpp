@@ -318,7 +318,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
         {
-            if (!src->OperIs(GT_CNS_INT))
+            if (!src->IsCnsIntOrI())
             {
                 // TODO-CQ: We could unroll even when the initialization value is not a constant
                 // by inserting a MUL init, 0x01010101 instruction. We need to determine if the

@@ -523,7 +523,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         if (hashDsc->csdHashKey == key)
         {
             // Check for mismatched types on GT_CNS_INT nodes
-            if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
+            if ((tree->IsCnsIntOrI()) && (tree->TypeGet() != hashDsc->csdTree->TypeGet()))
             {
                 continue;
             }

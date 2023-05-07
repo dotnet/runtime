@@ -1197,7 +1197,7 @@ public:
 
     bool IsConstInitVal() const
     {
-        return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
+        return IsCnsIntOrI() || (OperIsInitVal() && gtGetOp1()->IsCnsIntOrI());
     }
 
     bool OperIsBlkOp();
@@ -2208,7 +2208,7 @@ public:
 
     bool IsIconHandle() const
     {
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
+        return (IsCnsIntOrI()) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
@@ -2216,7 +2216,7 @@ public:
         // check that handleType is one of the valid GTF_ICON_* values
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+        return IsCnsIntOrI() && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
     template <typename... T>
@@ -2229,13 +2229,13 @@ public:
     // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
+        return (IsCnsIntOrI()) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
-        assert(gtOper == GT_CNS_INT);
+        assert(IsCnsIntOrI());
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
 
@@ -3232,13 +3232,13 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 
 inline ssize_t GenTreeIntConCommon::IconValue() const
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
 }
 
 inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
     AsIntCon()->gtIconVal = val;
 }
 
@@ -8881,9 +8881,8 @@ inline bool GenTree::OperIsCopyBlkOp()
 //    long constants in a target-independent way.
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
-
 {
-    if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
+    if (IsCnsIntOrI() && (AsIntConCommon()->IconValue() == constVal))
     {
         return true;
     }
@@ -9728,7 +9727,7 @@ inline bool GenTree::IsIntegralConst() const
 #ifdef TARGET_64BIT
     return IsCnsIntOrI();
 #else  // !TARGET_64BIT
-    return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
+    return (IsCnsIntOrI() || (gtOper == GT_CNS_LNG));
 #endif // !TARGET_64BIT
 }
 

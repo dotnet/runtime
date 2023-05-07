@@ -1021,7 +1021,7 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         }
 
         // The third block is Return with "CNS_INT int 0/1"
-        if (testTree3->AsOp()->gtOp1->gtOper != GT_CNS_INT)
+        if (!testTree3->AsOp()->gtOp1->IsCnsIntOrI())
         {
             return nullptr;
         }
@@ -1540,7 +1540,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
 
     // Comparand type is already checked, and we have const int, there is no harm
     // morphing it into a TYP_I_IMPL.
-    noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
+    noway_assert(relop->AsOp()->gtOp2->IsCnsIntOrI());
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
 
     // Recost/rethread the tree if necessary
@@ -1597,7 +1597,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     GenTree* opr1 = cond->AsOp()->gtOp1;
     GenTree* opr2 = cond->AsOp()->gtOp2;
 
-    if (opr2->gtOper != GT_CNS_INT)
+    if (!opr2->IsCnsIntOrI())
     {
         return nullptr;
     }
@@ -1616,7 +1616,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     {
         pOptTest->isBool = true;
     }
-    else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    else if (opr1->IsCnsIntOrI() && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
     }

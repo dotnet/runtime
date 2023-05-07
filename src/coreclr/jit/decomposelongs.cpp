@@ -1657,8 +1657,8 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
     GenTree* loOp2 = op2->gtGetOp1();
     GenTree* hiOp2 = op2->gtGetOp2();
 
-    assert(loOp2->OperGet() == GT_CNS_INT);
-    assert(hiOp2->OperGet() == GT_CNS_INT);
+    assert(loOp2->IsCnsIntOrI());
+    assert(hiOp2->IsCnsIntOrI());
     assert((loOp2->AsIntCon()->gtIconVal >= 2) && (loOp2->AsIntCon()->gtIconVal <= 0x3fffffff));
     assert(hiOp2->AsIntCon()->gtIconVal == 0);
 

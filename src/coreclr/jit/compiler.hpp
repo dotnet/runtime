@@ -3711,7 +3711,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
     assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
     assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
     assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
-    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
+    assert(value->AsOp()->gtOp2->IsCnsIntOrI());
 #endif
 }
 

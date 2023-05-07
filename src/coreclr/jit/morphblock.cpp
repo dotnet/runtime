@@ -379,7 +379,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
 
     GenTree* initVal = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
 
-    if (!initVal->OperIs(GT_CNS_INT))
+    if (!initVal->IsCnsIntOrI())
     {
         JITDUMP(" source is not constant.\n");
         return;

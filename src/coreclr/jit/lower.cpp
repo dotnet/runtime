@@ -739,7 +739,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     GenTree* addr;
     noway_assert(arr->gtNext == node);
 
-    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    if (arr->IsIntegralConst(0))
     {
         // If the array is NULL, then we should get a NULL reference
         // exception when computing its length.  We need to maintain
@@ -2911,7 +2911,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 2);
     assert(argEntry != nullptr);
     GenTree* arg1 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg1->gtOper == GT_CNS_INT);
+    assert(arg1->IsCnsIntOrI());
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
@@ -2921,7 +2921,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
     assert(argEntry != nullptr);
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg2->gtOper == GT_CNS_INT);
+    assert(arg2->IsCnsIntOrI());
 
     arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
 
@@ -2930,7 +2930,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 4);
     assert(argEntry != nullptr);
     GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg3->gtOper == GT_CNS_INT);
+    assert(arg3->IsCnsIntOrI());
 #endif // DEBUG
 
     // Transform this call node into a call to Jit tail call helper.
@@ -3311,7 +3311,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         // then hiSrc1 would be 0.
         //
 
-        if (loSrc1->OperIs(GT_CNS_INT))
+        if (loSrc1->IsCnsIntOrI())
         {
             std::swap(loSrc1, loSrc2);
         }
@@ -3328,7 +3328,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             ContainCheckBinary(loCmp->AsOp());
         }
 
-        if (hiSrc1->OperIs(GT_CNS_INT))
+        if (hiSrc1->IsCnsIntOrI())
         {
             std::swap(hiSrc1, hiSrc2);
         }
@@ -3380,7 +3380,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
         {
             bool mustSwap = true;
 
-            if (loSrc2->OperIs(GT_CNS_INT) && hiSrc2->OperIs(GT_CNS_INT))
+            if (loSrc2->IsCnsIntOrI() && hiSrc2->IsCnsIntOrI())
             {
                 uint32_t loValue  = static_cast<uint32_t>(loSrc2->AsIntCon()->IconValue());
                 uint32_t hiValue  = static_cast<uint32_t>(hiSrc2->AsIntCon()->IconValue());
@@ -4386,7 +4386,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             convertToStoreObj = true;
         }
-        else if (src->OperIs(GT_CNS_INT))
+        else if (src->IsCnsIntOrI())
         {
             assert(src->IsIntegralConst(0) && "expected an INIT_VAL for non-zero init.");
 

@@ -1341,7 +1341,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             assert(argx != nullptr);
             // put constants at the end of the table
             //
-            if (argx->gtOper == GT_CNS_INT)
+            if (argx->IsCnsIntOrI())
             {
                 noway_assert(curInx <= endTab);
 
@@ -1502,7 +1502,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 
                 // We should have already handled these kinds of args
                 assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
-                       !argx->OperIs(GT_CNS_INT));
+                       !argx->IsCnsIntOrI());
 
                 // This arg should either have no persistent side effects or be the last one in our table
                 // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
@@ -4408,7 +4408,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // Widen 'index' on 64-bit targets
     if (index->TypeGet() != TYP_I_IMPL)
     {
-        if (index->OperGet() == GT_CNS_INT)
+        if (index->IsCnsIntOrI())
         {
             index->gtType = TYP_I_IMPL;
         }
@@ -7777,7 +7777,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         GenTree* value = call->gtArgs.GetArgByIndex(2)->GetNode();
         if (value->IsIntegralConst(0))
         {
-            assert(value->OperGet() == GT_CNS_INT);
+            assert(value->IsCnsIntOrI());
 
             GenTree* arr   = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* index = call->gtArgs.GetArgByIndex(1)->GetNode();
@@ -8396,7 +8396,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->gtOper == GT_CNS_INT) &&
+                noway_assert((effOp1->IsCnsIntOrI()) &&
                              (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
@@ -9258,7 +9258,7 @@ DONE_MORPHING_CHILDREN:
                     if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
                     {
                         tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                        if (tree->OperIs(GT_CNS_INT))
+                        if (tree->IsCnsIntOrI())
                         {
                             return tree;
                         }
@@ -11873,7 +11873,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             /* Check for the case "(val + icon) * icon" */
 
-            if (op2->gtOper == GT_CNS_INT && op1->gtOper == GT_ADD)
+            if (op2->IsCnsIntOrI() && op1->gtOper == GT_ADD)
             {
                 GenTree* add = op1->AsOp()->gtOp2;
 
@@ -13132,7 +13132,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->IsCnsIntOrI());
             noway_assert((block->Next()->countOfInEdges() > 0) && (block->GetJumpDest()->countOfInEdges() > 0));
 
             if (condTree != cond)
@@ -13365,7 +13365,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // Yupee - we folded the conditional!
             // Remove the conditional statement
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->IsCnsIntOrI());
 
             if (condTree != cond)
             {
