@@ -233,9 +233,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform,
-                                &ni, &isSpecialIntrinsic);
+            call =
+                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -2992,7 +2992,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
                 else if (op1->OperIs(GT_RET_EXPR))
                 {
-                    // Skip roundtrip "handle -> RuntimeType -> handle" for RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
+                    // Skip roundtrip "handle -> RuntimeType -> handle" for
+                    // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
                     GenTreeCall* call = op1->AsRetExpr()->gtInlineCandidate;
                     if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
                     {
