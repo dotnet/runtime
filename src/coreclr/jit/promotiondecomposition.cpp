@@ -942,7 +942,7 @@ private:
             }
 
             ssize_t fullOffs = addrBaseOffs + (ssize_t)offs;
-            if (fullOffs != 0)
+            if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
             {
                 GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
                 offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
@@ -1203,20 +1203,22 @@ void Compiler::gtPeelOffsets(GenTree** addr, ssize_t* offset, FieldSeq** fldSeq)
     *fldSeq = nullptr;
     while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
     {
-        if ((*addr)->gtGetOp2()->IsCnsIntOrI())
+        GenTree* op1 = (*addr)->gtGetOp1();
+        GenTree* op2 = (*addr)->gtGetOp2();
+
+        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
         {
-            GenTreeIntCon* intCon = (*addr)->gtGetOp2()->AsIntCon();
+            GenTreeIntCon* intCon = op2->AsIntCon();
             *offset += intCon->IconValue();
             *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
-            (*addr) = (*addr)->gtGetOp1();
+            *addr   = op1;
         }
-        else if ((*addr)->gtGetOp1()->IsCnsIntOrI())
+        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
         {
-            GenTreeIntCon* intCon = (*addr)->gtGetOp2()->AsIntCon();
+            GenTreeIntCon* intCon = op1->AsIntCon();
             *offset += intCon->IconValue();
             *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
-            (*addr) = (*addr)->gtGetOp2();
-            *offset += (*addr)->gtGetOp1()->AsIntConCommon()->IconValue();
+            *addr   = op2;
         }
         else
         {

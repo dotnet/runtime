@@ -1350,7 +1350,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         assert(srcAddrClone != nullptr);
                         ssize_t fullOffs = addrBaseOffs + (ssize_t)fldOffset;
-                        if (fullOffs != 0)
+                        if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
                         {
                             // Avoid using unsigned overload of gtNewIconNode
                             // that takes field seq to get correct overflow
@@ -1461,7 +1461,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 if (!m_dstUseLclFld)
                 {
                     ssize_t fullOffs = addrBaseOffs + (ssize_t)srcFieldOffset;
-                    if (fullOffs != 0)
+                    if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
                     {
                         GenTreeIntCon* fieldOffsetNode = m_comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
                         fieldOffsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
