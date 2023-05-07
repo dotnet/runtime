@@ -1201,7 +1201,7 @@ void Compiler::gtPeelOffsets(GenTree** addr, ssize_t* offset, FieldSeq** fldSeq)
 {
     *offset = 0;
     *fldSeq = nullptr;
-    while ((*addr)->OperIs(GT_ADD))
+    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
     {
         if ((*addr)->gtGetOp2()->IsCnsIntOrI())
         {
