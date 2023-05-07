@@ -79,6 +79,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Object_MemberwiseClone,
     NI_System_Object_GetType,
     NI_System_RuntimeTypeHandle_ToIntPtr,
+    NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
