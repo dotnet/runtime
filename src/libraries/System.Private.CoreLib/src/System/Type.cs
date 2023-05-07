@@ -425,7 +425,6 @@ namespace System
         public virtual MemberInfo[] GetDefaultMembers() => throw NotImplemented.ByDesign;
 
         public virtual RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
-
         public static RuntimeTypeHandle GetTypeHandle(object o)
         {
             ArgumentNullException.ThrowIfNull(o);
