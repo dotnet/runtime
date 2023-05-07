@@ -6247,21 +6247,18 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-        // Fold "FrozenObjectHandle(REF) + CNS" to a byref constant:
-        //
-        //  *  ADD       byref
-        //  +--*  CNS_INT(h) ref
-        //  \--*  CNS_INT    long
-        //
-        // We can do this earlier but that will need some efforts (e.g. to restore original object from a
-        // byref constant for optimizations, be careful with "base constant" CSEs, etc). Also, it can't be
-        // just enabled for AOT, it needs some way to use reloc + offset then.
-        if (op1->IsIconHandle(GTF_ICON_OBJ_HDL) && !op1->AsIntCon()->ImmedValNeedsReloc(comp) && op2->IsCnsIntOrI() &&
-            !op2->IsIconHandle())
+        // Fold ADD(CNS1, CNS2) we mainly target a very specific pattern - ADD(CNS_INT(ref), CNS_INT) where
+        // the first icon handle is a frozen object, we could do this folding earlier but that is not trivial
+        // as we'll have to introduce a way to restore original object from a byref constant for optimizations.
+        if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
+            // Make sure both constants don't need relocs. TODO-CQ: we should allow this for AOT too.
+            // For that we need to guarantee that the new constant will be lowered as the original handle
+            // with offset in a reloc.
+            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
         {
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
-            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), TYP_BYREF);
+            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
         }
 
 #ifdef TARGET_XARCH
