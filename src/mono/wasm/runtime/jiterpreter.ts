@@ -12,7 +12,8 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getRawCwrap, importDef,
+    _now, elapsedTimes,
+    counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure,
     JiterpMember, getMemberOffset,
     BailoutReasonNames, BailoutReason
@@ -138,6 +139,8 @@ export const traceInfo: { [key: string]: TraceInfo } = {};
 export const
     sizeOfDataItem = 4,
     sizeOfObjectHeader = 8,
+    sizeOfV128 = 16,
+    sizeOfStackval = 8,
     // While stats are enabled, dump concise stats every N traces so that it's clear a long-running
     //  task isn't frozen if it's jitting lots of traces
     autoDumpInterval = 500;
@@ -261,7 +264,7 @@ function getTraceImports() {
 
     traceImports = [
         importDef("bailout", recordBailout),
-        importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
+        importDef("copy_ptr", getRawCwrap("mono_wasm_copy_managed_pointer")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
@@ -376,8 +379,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "copy_pointer",
-        {
+        "copy_ptr", {
             "dest": WasmValtype.i32,
             "src": WasmValtype.i32
         },
@@ -693,13 +695,34 @@ function initialize_builder(builder: WasmBuilder) {
         },
         WasmValtype.i32, true
     );
+    builder.defineType(
+        "simd_p_p", {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "simd_p_pp", {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+            "arg2": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
+    builder.defineType(
+        "simd_p_ppp", {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+            "arg2": WasmValtype.i32,
+            "arg3": WasmValtype.i32,
+        }, WasmValtype.void, true
+    );
 
     const traceImports = getTraceImports();
 
     // Pre-define function imports as persistent
     for (let i = 0; i < traceImports.length; i++) {
         mono_assert(traceImports[i], () => `trace #${i} missing`);
-        builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], false, true, traceImports[i][2]);
+        builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], true, traceImports[i][2]);
     }
 }
 
@@ -836,17 +859,15 @@ function generate_wasm(
         if (trace > 0)
             console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
+
         if (buffer.length >= maxModuleSize) {
             console.warn(`MONO_WASM: Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
-        const traceModule = new WebAssembly.Module(buffer);
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-        });
+        const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         // Get the exported trace function
         const fn = traceInstance.exports[traceName];
@@ -907,7 +928,7 @@ function generate_wasm(
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
@@ -1194,7 +1215,10 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             console.log(`// ${keys[i]}: ${abortCounts[keys[i]]} abort(s)`);
     }
 
-    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
+    for (const k in counters.simdFallback)
+        console.log(`// simd ${k}: ${counters.simdFallback[k]} fallback insn(s)`);
+
+    if ((typeof(globalThis.setTimeout) === "function") && (b !== undefined))
         setTimeout(
             () => jiterpreter_dump_stats(b),
             15000

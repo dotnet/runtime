@@ -289,7 +289,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, trampImports[i][2]);
         }
 
         builder._generateImportSection();
@@ -343,12 +343,9 @@ function flush_wasm_entry_trampoline_jit_queue() {
             console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-        });
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         // Now that we've jitted the trampolines, go through and fix up the function pointers
         //  to point to the new jitted trampolines instead of the default implementations
