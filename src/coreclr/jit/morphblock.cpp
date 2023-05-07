@@ -1540,22 +1540,19 @@ bool MorphCopyBlockHelper::CanReuseAddressForDecomposedStore(GenTree* addrNode)
 
         // The store can also directly write to the address. For example:
         //
-        //  ▌  ASG       struct (copy)
-        //  ├──▌  LCL_VAR   struct<Program+ListElement, 16>(P) V00 loc0
-        //  ├──▌    long   V00.Program+ListElement:Next (offs=0x00) -> V03 tmp1
-        //  ├──▌    int    V00.Program+ListElement:Value (offs=0x08) -> V04 tmp2
+        //  ▌  STORE_LCL_VAR struct<Program+ListElement, 16>(P) V00 loc0
+        //  ▌    long   V00.Program+ListElement:Next (offs=0x00) -> V03 tmp1
+        //  ▌    int    V00.Program+ListElement:Value (offs=0x08) -> V04 tmp2
         //  └──▌  BLK       struct<Program+ListElement, 16>
         //     └──▌  LCL_VAR   long   V03 tmp1          (last use)
         //
         // If we reused the address we would produce
         //
         //  ▌  COMMA     void
-        //  ├──▌  ASG       long
-        //  │  ├──▌  LCL_VAR   long   V03 tmp1
+        //  ├──▌  STORE_LCL_VAR long   V03 tmp1
         //  │  └──▌  IND       long
         //  │     └──▌  LCL_VAR   long   V03 tmp1          (last use)
-        //  └──▌  ASG       int
-        //     ├──▌  LCL_VAR   int    V04 tmp2
+        //  └──▌  STORE_LCL_VAR int    V04 tmp2
         //     └──▌  IND       int
         //        └──▌  ADD       byref
         //           ├──▌  LCL_VAR   long   V03 tmp1          (last use)
