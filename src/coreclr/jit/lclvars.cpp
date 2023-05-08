@@ -1118,7 +1118,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #elif defined(TARGET_RISCV64)
                 if (varTypeIsStruct(argType))
                 {
-                    if (argRegTypeInStruct1 != TYP_UNKNOWN)
+                    if (argRegTypeInStruct1 == TYP_UNKNOWN)
                     {
                         printf("first: <not used>");
                     }
@@ -1127,7 +1127,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         printf("first: %s",
                                getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1)));
                     }
-                    if (argRegTypeInStruct2 != TYP_UNKNOWN)
+                    if (argRegTypeInStruct2 == TYP_UNKNOWN)
                     {
                         printf(", second: <not used>");
                     }
