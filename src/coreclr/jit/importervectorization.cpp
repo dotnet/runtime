@@ -797,7 +797,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        // TODO: deal with flags
+        // TODO: verify if flags matter here
         GenTreeFlags indirFlags = GTF_EMPTY;
         impAssignTempGen(spanObjRef, impGetNodeAddr(spanObj, CHECK_SPILL_NONE, &indirFlags));
         impAssignTempGen(spanDataTmp, spanData);

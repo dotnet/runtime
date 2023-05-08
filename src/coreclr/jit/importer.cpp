@@ -881,7 +881,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // TODO: deal with flags
+            // TODO: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
@@ -985,7 +985,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // TODO: deal with flags
+            // TODO: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
             call->gtArgs.InsertAfterThisOrFirst(this,
@@ -3172,7 +3172,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
-                                        // TODO: deal with flags
+                                        // TODO: verify if flags matter here
                                         GenTreeFlags indirFlags = GTF_EMPTY;
                                         objToBox = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
 
@@ -3527,7 +3527,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // TODO: deal with flags
+        // TODO: verify if flags matter here
         GenTreeFlags indirFlags = GTF_EMPTY;
         op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
     }
@@ -9160,7 +9160,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 BADCODE("top of stack must be a value type");
                             }
 
-                            // TODO: deal with flags
+                            // TODO: verify if flags matter here
                             GenTreeFlags indirFlags = GTF_EMPTY;
                             obj                     = impGetNodeAddr(obj, CHECK_SPILL_ALL, &indirFlags);
                         }
