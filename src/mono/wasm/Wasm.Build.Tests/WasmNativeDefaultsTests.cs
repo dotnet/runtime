@@ -147,8 +147,7 @@ namespace Wasm.Build.Tests
                                                     ExpectSuccess: false,
                                                     UseCache: false,
                                                     BuildOnlyAfterPublish: false,
-                                                    Publish: publish,
-                                                    EnvironmentVariablesToRemove: new[] { "WasmNativeStrip" }));
+                                                    Publish: publish));
 
             return output;
         }

@@ -112,9 +112,6 @@ namespace Wasm.Build.Tests
             EnvVars["PATH"] = $"{sdkForWorkloadPath}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
             EnvVars["EM_WORKAROUND_PYTHON_BUG_34780"] = "1";
 
-            // helps with debugging
-            EnvVars["WasmNativeStrip"] = "false";
-
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";
