@@ -2107,7 +2107,7 @@ namespace System.Text
         /// <summary>Appends a specified number of chars starting from the specified reference.</summary>
         private void Append(ref char value, int valueCount)
         {
-            Debug.Assert(valueCount >= 0, $"Invalid length; should have been validated by caller.");
+            Debug.Assert(valueCount >= 0, "Invalid length; should have been validated by caller.");
             if (valueCount != 0)
             {
                 char[] chunkChars = m_ChunkChars;
@@ -2115,10 +2115,20 @@ namespace System.Text
 
                 if (((uint)chunkLength + (uint)valueCount) <= (uint)chunkChars.Length)
                 {
-                    Buffer.Memmove(
-                        destination: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(chunkChars), chunkLength),
-                        source: ref value,
-                        elementCount: (nuint)valueCount);
+                    ref char destination = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(chunkChars), chunkLength);
+                    if (valueCount <= 2)
+                    {
+                        destination = value;
+                        if (valueCount == 2)
+                        {
+                            Unsafe.Add(ref destination, 1) = Unsafe.Add(ref value, 1);
+                        }
+                    }
+                    else
+                    {
+                        // Use intrinsic so the JIT can unroll for constant length
+                        Buffer.Memmove(ref Unsafe.As<char, byte>(ref destination), ref Unsafe.As<char, byte>(ref value), (nuint)valueCount * 2);
+                    }
 
                     m_ChunkLength = chunkLength + valueCount;
                 }
