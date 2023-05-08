@@ -550,7 +550,7 @@ namespace Microsoft.Interop
                 {
                     if (baseInterface is not null)
                     {
-                        return Diagnostic.Create(GeneratorDiagnostics.MultipleComInterfaceBaseTypesAttribute, syntax.Identifier.GetLocation(), type.ToDisplayString());
+                        return Diagnostic.Create(GeneratorDiagnostics.MultipleComInterfaceBaseTypes, syntax.Identifier.GetLocation(), type.ToDisplayString());
                     }
                     baseInterface = implemented;
                 }
