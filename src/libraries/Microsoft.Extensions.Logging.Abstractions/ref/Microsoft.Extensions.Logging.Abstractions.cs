@@ -6,6 +6,18 @@
 
 namespace Microsoft.Extensions.Logging
 {
+    public ref partial struct BufferWriter<T>
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public BufferWriter(System.Buffers.IBufferWriter<T> bufferWriter) { throw null; }
+        public System.Span<T> CurrentSpan { get { throw null; } }
+        public System.Buffers.IBufferWriter<T> Writer { get { throw null; } }
+        public void Advance(int len) { }
+        public void EnsureSize(int minSize) { }
+        public void Flush() { }
+        public void Grow(int minSize) { }
+    }
     public readonly partial struct EventId : System.IEquatable<Microsoft.Extensions.Logging.EventId>
     {
         private readonly object _dummy;
@@ -21,10 +33,22 @@ namespace Microsoft.Extensions.Logging
         public static bool operator !=(Microsoft.Extensions.Logging.EventId left, Microsoft.Extensions.Logging.EventId right) { throw null; }
         public override string ToString() { throw null; }
     }
+    public delegate void FormatPropertyAction<PropType>(PropType propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
+    public delegate void FormatPropertyListAction<TState>(ref TState state, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
+    public delegate void FormatSpanPropertyAction(System.ReadOnlySpan<char> propertyValue, ref Microsoft.Extensions.Logging.BufferWriter<byte> bufferWriter);
     public partial interface IExternalScopeProvider
     {
         void ForEachScope<TState>(System.Action<object?, TState> callback, TState state);
         System.IDisposable Push(object? state);
+    }
+    public partial interface ILogEntryProcessor
+    {
+        Microsoft.Extensions.Logging.LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
+        bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel);
+    }
+    public partial interface ILogEntryProcessorFactory
+    {
+        Microsoft.Extensions.Logging.ProcessorContext GetProcessor();
     }
     public partial interface ILogger
     {
@@ -41,8 +65,33 @@ namespace Microsoft.Extensions.Logging
     {
         Microsoft.Extensions.Logging.ILogger CreateLogger(string categoryName);
     }
+    public partial interface ILoggerStateWithMetadata<TState>
+    {
+        Microsoft.Extensions.Logging.ILogMetadata<TState> Metadata { get; }
+    }
     public partial interface ILogger<out TCategoryName> : Microsoft.Extensions.Logging.ILogger
     {
+    }
+    public partial interface ILogMetadata<TState>
+    {
+        Microsoft.Extensions.Logging.EventId EventId { get; }
+        Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
+        string OriginalFormat { get; }
+        int PropertyCount { get; }
+        void AppendFormattedMessage(in TState state, System.Buffers.IBufferWriter<char> buffer);
+        System.Action<TState, System.Buffers.IBufferWriter<char>> GetMessageFormatter(Microsoft.Extensions.Logging.PropertyCustomFormatter[] customFormatters);
+        Microsoft.Extensions.Logging.FormatPropertyListAction<TState> GetPropertyListFormatter(Microsoft.Extensions.Logging.IPropertyFormatterFactory propertyFormatterFactory);
+        Microsoft.Extensions.Logging.LogPropertyMetadata GetPropertyMetadata(int index);
+        System.Func<TState, System.Exception?, string> GetStringMessageFormatter();
+    }
+    public partial interface IProcessorFactory
+    {
+        Microsoft.Extensions.Logging.ILogEntryProcessor GetProcessor(Microsoft.Extensions.Logging.ILogEntryProcessor nextProcessor);
+    }
+    public partial interface IPropertyFormatterFactory
+    {
+        Microsoft.Extensions.Logging.FormatPropertyAction<PropType> GetPropertyFormatter<PropType>(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyMetadata metadata);
+        Microsoft.Extensions.Logging.FormatSpanPropertyAction GetSpanPropertyFormatter(int propertyIndex, Microsoft.Extensions.Logging.LogPropertyMetadata metadata);
     }
     public partial interface ISupportExternalScope
     {
@@ -52,6 +101,24 @@ namespace Microsoft.Extensions.Logging
     {
         public LogDefineOptions() { }
         public bool SkipEnabledCheck { get { throw null; } set { } }
+    }
+    public abstract partial class LogEntryHandler<TState, TEnrichmentProperties>
+    {
+        protected LogEntryHandler() { }
+        public abstract void HandleLogEntry(ref Microsoft.Extensions.Logging.LogEntry<TState, TEnrichmentProperties> logEntry);
+        public abstract bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level);
+    }
+    public readonly ref partial struct LogEntry<TState, TEnrichmentProperties>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public LogEntry(Microsoft.Extensions.Logging.LogLevel level, Microsoft.Extensions.Logging.EventId eventId, ref TState state, ref TEnrichmentProperties enrichmentProperties, System.Exception? exception, System.Func<TState, System.Exception?, string>? formatter) { throw null; }
+        public ref TEnrichmentProperties EnrichmentProperties { get { throw null; } }
+        public Microsoft.Extensions.Logging.EventId EventId { get { throw null; } }
+        public System.Exception? Exception { get { throw null; } }
+        public System.Func<TState, System.Exception?, string>? Formatter { get { throw null; } }
+        public Microsoft.Extensions.Logging.LogLevel LogLevel { get { throw null; } }
+        public ref TState State { get { throw null; } }
     }
     public static partial class LoggerExtensions
     {
@@ -134,9 +201,9 @@ namespace Microsoft.Extensions.Logging
     public partial class Logger<T> : Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         public Logger(Microsoft.Extensions.Logging.ILoggerFactory factory) { }
-        System.IDisposable? Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
+        System.IDisposable Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
         bool Microsoft.Extensions.Logging.ILogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
-        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
+        void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception, string> formatter) { }
     }
     public enum LogLevel
     {
@@ -147,6 +214,36 @@ namespace Microsoft.Extensions.Logging
         Error = 4,
         Critical = 5,
         None = 6,
+    }
+    public partial struct LogPropertyMetadata
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public LogPropertyMetadata(string name, string? formatSpecifier, System.Attribute[]? attributes) { throw null; }
+        public readonly System.Attribute[]? Attributes { get { throw null; } }
+        public readonly string? FormatSpecifier { get { throw null; } }
+        public readonly string Name { get { throw null; } }
+    }
+    public readonly partial struct ProcessorContext
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public ProcessorContext(Microsoft.Extensions.Logging.ILogEntryProcessor processor, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.CancellationToken CancellationToken { get { throw null; } }
+        public Microsoft.Extensions.Logging.ILogEntryProcessor Processor { get { throw null; } }
+    }
+    public partial class ProcessorFactory<T> : Microsoft.Extensions.Logging.IProcessorFactory where T : Microsoft.Extensions.Logging.ILogEntryProcessor
+    {
+        public ProcessorFactory(System.Func<Microsoft.Extensions.Logging.ILogEntryProcessor, T> getProcessor) { }
+        public Microsoft.Extensions.Logging.ILogEntryProcessor GetProcessor(Microsoft.Extensions.Logging.ILogEntryProcessor nextProcessor) { throw null; }
+    }
+    public abstract partial class PropertyCustomFormatter
+    {
+        protected PropertyCustomFormatter() { }
+        public virtual void AppendFormatted(int index, int value, System.Buffers.IBufferWriter<char> buffer) { }
+        public virtual void AppendFormatted(int index, System.ReadOnlySpan<char> value, System.Buffers.IBufferWriter<char> buffer) { }
+        public virtual void AppendFormatted(int index, string value, System.Buffers.IBufferWriter<char> buffer) { }
+        public abstract void AppendFormatted<T>(int index, T value, System.Buffers.IBufferWriter<char> buffer);
     }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
