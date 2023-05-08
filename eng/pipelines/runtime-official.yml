@@ -71,7 +71,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -95,7 +94,6 @@ extends:
             - linux_musl_arm
             - linux_musl_arm64
             - windows_x64
-            - windows_arm
             - windows_arm64
 
       #
@@ -157,7 +155,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
@@ -348,7 +345,6 @@ extends:
           # - linux_musl_arm64
           # - windows_x64
           # - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobTemplates:
           # LLVMJIT
@@ -396,7 +392,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -459,7 +454,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
 
       #
