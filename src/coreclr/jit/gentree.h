@@ -1113,7 +1113,7 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
         return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_VEC);
     }
 
@@ -3049,7 +3049,7 @@ struct GenTreeVal : public GenTree
 };
 
 //
-// This is the GT_CNS_INT/GT_CNS_LNG struct definition.
+// This is the GT_CNS_INT struct definition.
 // It's used to hold for both integral constants and pointer handle constants.
 //
 struct GenTreeIntCon : public GenTree
@@ -3097,13 +3097,13 @@ public:
 
     ssize_t IconValue() const
     {
-        assert(IsCnsIntOrI()); // We should never see a GT_CNS_LNG for a 64-bit target!
+        assert(IsCnsIntOrI());
         return static_cast<ssize_t>(m_value);
     }
 
     void SetIconValue(ssize_t val)
     {
-        assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
+        assert(IsCnsIntOrI());
         m_value = val;
     }
 
@@ -6479,7 +6479,7 @@ struct GenTreeVecCon : public GenTree
 #else
                 if (arg->OperIsLong() && arg->AsOp()->gtOp1->IsCnsIntOrI() && arg->AsOp()->gtOp2->IsCnsIntOrI())
                 {
-                    // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
+                    // 32-bit targets will decompose long constants into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
                     INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->IconValue();
@@ -8768,20 +8768,10 @@ inline bool GenTree::OperIsCopyBlkOp()
 // Notes:
 //    Like IconValue(), the argument is of ssize_t, so cannot check for
 //    long constants in a target-independent way.
-
+//
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 {
-    if (IsCnsIntOrI() && (AsIntCon()->IconValue() == constVal))
-    {
-        return true;
-    }
-
-    if ((gtOper == GT_CNS_LNG) && (AsIntCon()->LngValue() == constVal))
-    {
-        return true;
-    }
-
-    return false;
+    return IsIntegralConst() && (AsIntCon()->IntegralValue() == constVal);
 }
 
 //-------------------------------------------------------------------
@@ -9608,16 +9598,16 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 
 inline bool GenTree::IsCnsIntOrI() const
 {
-    return (gtOper == GT_CNS_INT);
+#ifdef TARGET_64BIT
+    return IsIntegralConst();
+#else  // !TARGET_64BIT
+    return IsIntegralConst() && !TypeIs(TYP_LONG);
+#endif // !TARGET_64BIT
 }
 
 inline bool GenTree::IsIntegralConst() const
 {
-#ifdef TARGET_64BIT
-    return IsCnsIntOrI();
-#else  // !TARGET_64BIT
-    return (IsCnsIntOrI() || (gtOper == GT_CNS_LNG));
-#endif // !TARGET_64BIT
+    return OperIs(GT_CNS_INT);
 }
 
 //-------------------------------------------------------------------------

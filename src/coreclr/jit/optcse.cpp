@@ -3536,11 +3536,15 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
             return (tree->AsOp()->gtOp1->gtOper != GT_ARR_ELEM);
 
-        case GT_CNS_LNG:
-#ifndef TARGET_64BIT
-            return false; // Don't CSE 64-bit constants on 32-bit platforms
-#endif
         case GT_CNS_INT:
+#ifndef TARGET_64BIT
+            if (tree->TypeIs(TYP_LONG))
+            {
+                return false; // Don't CSE 64-bit constants on 32-bit platforms
+            }
+#endif
+            FALLTHROUGH;
+
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:

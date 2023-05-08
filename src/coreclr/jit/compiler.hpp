@@ -1888,7 +1888,7 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 // BashToConst: Bash the node to a constant one.
 //
 // The function will infer the node's new oper from the type: GT_CNS_INT
-// or GT_CNS_LNG for integers and GC types, GT_CNS_DBL for floats/doubles.
+// for integers and GC types, GT_CNS_DBL for floats/doubles.
 //
 // The type is inferred from "value"'s type ("T") unless an explicit
 // one is provided via the second argument, in which case it is checked
@@ -1935,7 +1935,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     }
     else
     {
-        oper = (type == TYP_LONG) ? GT_CNS_NATIVELONG : GT_CNS_INT;
+        oper = GT_CNS_INT;
     }
 
     SetOper(oper);
@@ -1945,25 +1945,15 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
     switch (oper)
     {
         case GT_CNS_INT:
-#if !defined(TARGET_64BIT)
-            assert(type != TYP_LONG);
-#endif
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
             if (genTypeSize(type) <= genTypeSize(TYP_INT))
             {
                 assert(FitsIn<int32_t>(value));
             }
 
-            AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
+            AsIntCon()->SetIntegralValue(static_cast<int64_t>(value));
             AsIntCon()->gtFieldSeq = nullptr;
             break;
-
-#if !defined(TARGET_64BIT)
-        case GT_CNS_LNG:
-            assert(type == TYP_LONG);
-            AsIntCon()->SetLngValue(static_cast<int64_t>(value));
-            break;
-#endif
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
@@ -4435,7 +4425,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
         case GT_CNS_INT:
-        case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:

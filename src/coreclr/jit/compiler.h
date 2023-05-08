@@ -11186,7 +11186,6 @@ public:
             case GT_FTN_ADDR:
             case GT_RET_EXPR:
             case GT_CNS_INT:
-            case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:

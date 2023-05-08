@@ -179,7 +179,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
             nextNode = DecomposeCast(use);
             break;
 
-        case GT_CNS_LNG:
+        case GT_CNS_INT:
             nextNode = DecomposeCnsLng(use);
             break;
 
@@ -656,7 +656,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
 }
 
 //------------------------------------------------------------------------
-// DecomposeCnsLng: Decompose GT_CNS_LNG.
+// DecomposeCnsLng: Decompose GT_CNS_INT.
 //
 // Arguments:
 //    use - the LIR::Use object for the def that needs to be decomposed.
@@ -667,7 +667,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
 GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
 {
     assert(use.IsInitialized());
-    assert(use.Def()->OperGet() == GT_CNS_LNG);
+    assert(use.Def()->OperGet() == GT_CNS_INT);
 
     GenTree* tree  = use.Def();
     INT32    loVal = tree->AsIntCon()->LoVal();

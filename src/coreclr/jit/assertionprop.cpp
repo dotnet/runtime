@@ -214,6 +214,13 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+#ifndef TARGET_64BIT
+            if (node->TypeIs(TYP_LONG))
+            {
+                // TODO-CnsLng: delete this zero-diff quirk.
+                break;
+            }
+#endif // !TARGET_64BIT
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
@@ -1164,14 +1171,16 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         assert(op2->IsIntegralConst(0));
                         op2Kind = O2K_ZEROOBJ;
                     }
+#ifndef TARGET_64BIT
+                    else if (op1->TypeIs(TYP_LONG))
+                    {
+                        op2Kind = O2K_CONST_LONG;
+                    }
+#endif // !TARGET_64BIT
                     else
                     {
                         op2Kind = O2K_CONST_INT;
                     }
-                    goto CNS_COMMON;
-
-                case GT_CNS_LNG:
-                    op2Kind = O2K_CONST_LONG;
                     goto CNS_COMMON;
 
                 case GT_CNS_DBL:
@@ -1222,7 +1231,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         assertion.op2.u1.iconVal = iconVal;
                         assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
                     }
-                    else if (op2->gtOper == GT_CNS_LNG)
+                    else if (op2->gtOper == GT_CNS_INT)
                     {
                         assertion.op2.lconVal = op2->AsIntCon()->IntegralValue();
                     }

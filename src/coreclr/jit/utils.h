@@ -1016,6 +1016,13 @@ bool FitsIn(var_types type, T value)
             return FitsIn<int64_t>(value);
         case TYP_ULONG:
             return FitsIn<uint64_t>(value);
+        case TYP_REF:
+        case TYP_BYREF:
+#ifdef TARGET_64BIT
+            return FitsIn<int64_t>(value);
+#else
+            return FitsIn<int32_t>(value);
+#endif
         default:
             unreached();
     }

@@ -43,7 +43,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
-    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtLconVal, d}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;m_value, d}]</DisplayString>
   </Type>
   <Type Name="GenTreeDblCon">
     <DisplayString>{gtTreeID, d}: [DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>

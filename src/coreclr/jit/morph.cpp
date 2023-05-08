@@ -600,7 +600,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // than 2^{31} for a cast to int.
             int maxWidth = (dstType == TYP_UINT) ? 32 : 31;
 
-            if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntCon()->LngValue() >> maxWidth) == 0))
+            if (andOp2->IsIntegralConst() && ((andOp2->AsIntCon()->LngValue() >> maxWidth) == 0))
             {
                 tree->ClearOverflow();
                 tree->SetAllEffectsFlags(oper);
@@ -8604,7 +8604,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             noway_assert(op2);
             if ((typ == TYP_LONG) && opts.OptimizationEnabled())
             {
-                if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntCon()->LngValue() >= 2 &&
+                if (op2->IsIntegralConst() && op2->AsIntCon()->LngValue() >= 2 &&
                     op2->AsIntCon()->LngValue() <= 0x3fffffff)
                 {
                     tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
@@ -8617,7 +8617,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
                     // If op1 is a constant, then do constant folding of the division operator.
-                    if (op1->OperIs(GT_CNS_NATIVELONG))
+                    if (op1->IsIntegralConst())
                     {
                         tree = gtFoldExpr(tree);
                     }
@@ -10337,7 +10337,7 @@ SKIP:
 
         // Is the result of the mask effectively an INT?
         GenTreeOp* andOp = op1->AsOp();
-        if (!andOp->gtGetOp2()->OperIs(GT_CNS_NATIVELONG))
+        if (!andOp->gtGetOp2()->IsIntegralConst())
         {
             return cmp;
         }

@@ -2693,6 +2693,13 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
+#ifndef TARGET_64BIT
+                // TODO-CnsLng: delete this zero-diff quirk.
+                if (op1->TypeIs(TYP_LONG))
+                {
+                    return false;
+                }
+#endif // !TARGET_64BIT
                 if (op1->AsIntCon()->IconValue() == op2->AsIntCon()->IconValue())
                 {
                     return true;
@@ -2717,13 +2724,8 @@ AGAIN:
             }
 
 #if 0
-            // TODO-CQ: Enable this in the future
-        case GT_CNS_LNG:
-            if  (op1->AsIntCon()->IntegralValue() == op2->AsIntCon()->IntegralValue())
-                return true;
-            break;
-
         case GT_CNS_DBL:
+            // TODO-CQ: Enable this in the future
             if  (op1->AsDblCon()->DconValue() == op2->AsDblCon()->DconValue())
                 return true;
             break;
@@ -3229,9 +3231,6 @@ AGAIN:
                 break;
 
             case GT_CNS_INT:
-                add = tree->AsIntCon()->IconValue();
-                break;
-            case GT_CNS_LNG:
                 bits = (UINT64)tree->AsIntCon()->IntegralValue();
 #ifdef HOST_64BIT
                 add = bits;
@@ -4969,77 +4968,77 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 2;
                 goto COMMON_CNS;
 
-            case GT_CNS_LNG:
+            case GT_CNS_INT:
             {
                 GenTreeIntCon* con = tree->AsIntCon();
 
-                INT64 lngVal = con->LngValue();
-                INT32 loVal  = (INT32)(lngVal & 0xffffffff);
-                INT32 hiVal  = (INT32)(lngVal >> 32);
-
-                if (lngVal == 0)
+                if (con->TypeIs(TYP_LONG))
                 {
-                    costSz = 1;
-                    costEx = 1;
+                    INT64 lngVal = con->LngValue();
+                    INT32 loVal  = (INT32)(lngVal & 0xffffffff);
+                    INT32 hiVal  = (INT32)(lngVal >> 32);
+
+                    if (lngVal == 0)
+                    {
+                        costSz = 1;
+                        costEx = 1;
+                    }
+                    else
+                    {
+                        // Minimum of one instruction to setup hiVal,
+                        // and one instruction to setup loVal
+                        costSz = 4 + 4;
+                        costEx = 1 + 1;
+
+                        if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)hiVal) &&
+                            !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)hiVal))
+                        {
+                            // Needs extra instruction: movw/movt
+                            costSz += 4;
+                            costEx += 1;
+                        }
+
+                        if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal) &&
+                            !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)loVal))
+                        {
+                            // Needs extra instruction: movw/movt
+                            costSz += 4;
+                            costEx += 1;
+                        }
+                    }
                 }
                 else
                 {
-                    // Minimum of one instruction to setup hiVal,
-                    // and one instruction to setup loVal
-                    costSz = 4 + 4;
-                    costEx = 1 + 1;
+                    // If the constant is a handle then it will need to have a relocation
+                    //  applied to it.
+                    // Any constant that requires a reloc must use the movw/movt sequence
+                    //
+                    target_ssize_t conVal = (target_ssize_t)con->IconValue();
 
-                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)hiVal) &&
-                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)hiVal))
+                    if (con->ImmedValNeedsReloc(this))
                     {
-                        // Needs extra instruction: movw/movt
-                        costSz += 4;
-                        costEx += 1;
+                        // Requires movw/movt
+                        costSz = 8;
+                        costEx = 2;
                     }
-
-                    if (!codeGen->validImmForInstr(INS_mov, (target_ssize_t)loVal) &&
-                        !codeGen->validImmForInstr(INS_mvn, (target_ssize_t)loVal))
+                    else if (codeGen->validImmForInstr(INS_add, conVal))
                     {
-                        // Needs extra instruction: movw/movt
-                        costSz += 4;
-                        costEx += 1;
+                        // Typically included with parent oper
+                        costSz = 2;
+                        costEx = 1;
                     }
-                }
-                goto COMMON_CNS;
-            }
-
-            case GT_CNS_INT:
-            {
-                // If the constant is a handle then it will need to have a relocation
-                //  applied to it.
-                // Any constant that requires a reloc must use the movw/movt sequence
-                //
-                GenTreeIntCon* con    = tree->AsIntCon();
-                target_ssize_t       conVal = (target_ssize_t)con->IconValue();
-
-                if (con->ImmedValNeedsReloc(this))
-                {
-                    // Requires movw/movt
-                    costSz = 8;
-                    costEx = 2;
-                }
-                else if (codeGen->validImmForInstr(INS_add, conVal))
-                {
-                    // Typically included with parent oper
-                    costSz = 2;
-                    costEx = 1;
-                }
-                else if (codeGen->validImmForInstr(INS_mov, conVal) || codeGen->validImmForInstr(INS_mvn, conVal))
-                {
-                    // Uses mov or mvn
-                    costSz = 4;
-                    costEx = 1;
-                }
-                else
-                {
-                    // Needs movw/movt
-                    costSz = 8;
-                    costEx = 2;
+                    else if (codeGen->validImmForInstr(INS_mov, conVal) || codeGen->validImmForInstr(INS_mvn, conVal))
+                    {
+                        // Uses mov or mvn
+                        costSz = 4;
+                        costEx = 1;
+                    }
+                    else
+                    {
+                        // Needs movw/movt
+                        costSz = 8;
+                        costEx = 2;
+                    }
                 }
                 goto COMMON_CNS;
             }
@@ -5056,21 +5055,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 #endif
                 goto COMMON_CNS;
 
-            case GT_CNS_LNG:
             case GT_CNS_INT:
             {
                 GenTreeIntCon* con       = tree->AsIntCon();
-                ssize_t              conVal    = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
-                bool                 fitsInVal = true;
+                ssize_t        conVal    = (ssize_t)con->IntegralValue();
+                bool           fitsInVal = true;
 
 #ifdef TARGET_X86
-                if (oper == GT_CNS_LNG)
+                if (tree->TypeIs(TYP_LONG))
                 {
-                    INT64 lngVal = con->LngValue();
-
-                    conVal = (ssize_t)lngVal; // truncate to 32-bits
-
-                    fitsInVal = ((INT64)conVal == lngVal);
+                    // TODO-Bug: this code's behavior is dependent on the host's bitness.
+                    fitsInVal = (conVal == con->LngValue());
                 }
 #endif // TARGET_X86
 
@@ -5107,7 +5102,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = 1;
                 }
 #ifdef TARGET_X86
-                if (oper == GT_CNS_LNG)
+                if (tree->TypeIs(TYP_LONG))
                 {
                     costSz += fitsInVal ? 1 : 4;
                     costEx += 1;
@@ -5118,15 +5113,17 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
 
 #elif defined(TARGET_ARM64)
-
             case GT_CNS_STR:
-            case GT_CNS_LNG:
+                costSz = 8;
+                costEx = 2;
+                goto COMMON_CNS;
+
             case GT_CNS_INT:
             {
                 GenTreeIntCon* con            = tree->AsIntCon();
-                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                INT64                imm            = con->LngValue();
-                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+                bool           iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                INT64          imm            = con->LngValue();
+                emitAttr       size           = EA_SIZE(emitActualTypeSize(tree));
 
                 if (iconNeedsReloc)
                 {
@@ -5177,8 +5174,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costEx = instructionCount;
                     costSz = 4 * instructionCount;
                 }
-            }
                 goto COMMON_CNS;
+            }
 
 #elif defined(TARGET_LOONGARCH64)
             // TODO-LoongArch64-CQ: tune the costs.
@@ -5187,11 +5184,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 4;
                 goto COMMON_CNS;
 
-            case GT_CNS_LNG:
             case GT_CNS_INT:
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+
 #elif defined(TARGET_RISCV64)
             // TODO-RISCV64-CQ: tune the costs.
             case GT_CNS_STR:
@@ -5199,27 +5196,16 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 4;
                 goto COMMON_CNS;
 
-            case GT_CNS_LNG:
             case GT_CNS_INT:
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
 #else
             case GT_CNS_STR:
-            case GT_CNS_LNG:
             case GT_CNS_INT:
 #error "Unknown TARGET"
 #endif
             COMMON_CNS:
-                /*
-                    Note that some code below depends on constants always getting
-                    moved to be the second operand of a binary operator. This is
-                    easily accomplished by giving constants a level of 0, which
-                    we do on the next line. If you ever decide to change this, be
-                    aware that unless you make other arrangements for integer
-                    constants to be moved, stuff will break.
-                 */
-
                 level = 0;
                 break;
 
@@ -6421,7 +6407,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
         case GT_CNS_INT:
-        case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
@@ -7339,7 +7324,7 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
                 assert(!IsExOp(opKind));
                 assert(OperIsSimple(oper) || OperIsLeaf(oper));
                 // Need to provide non-null operands.
-                GenTreeIntCon dummyOp(TYP_INT, 0);
+                GenTreeIntCon dummyOp(TYP_INT, 0, nullptr);
                 GenTreeOp     gt(oper, TYP_INT, &dummyOp, ((opKind & GTK_UNOP) ? nullptr : &dummyOp));
                 s_vtableForOp = *reinterpret_cast<VtablePtr*>(&gt);
             }
@@ -7632,7 +7617,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 GenTree* Compiler::gtNewLconNode(int64_t value)
 {
-    GenTree* node = new (this, GT_CNS_NATIVELONG) GenTreeIntCon(TYP_LONG, value, nullptr);
+    GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value, nullptr);
 
     return node;
 }
@@ -8934,13 +8919,12 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 #endif
             {
                 copy = new (this, GT_CNS_INT)
-                    GenTreeIntCon(tree->gtType, tree->AsIntCon()->IconValue(), tree->AsIntCon()->gtFieldSeq);
+                    GenTreeIntCon(tree->TypeGet(), tree->AsIntCon()->IntegralValue(), tree->AsIntCon()->gtFieldSeq);
                 copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
+#ifdef DEBUG
+                copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
+#endif
             }
-            break;
-
-        case GT_CNS_LNG:
-            copy = gtNewLconNode(tree->AsIntCon()->IntegralValue());
             break;
 
         case GT_CNS_DBL:
@@ -9119,24 +9103,18 @@ GenTree* Compiler::gtCloneExpr(
                 else
 #endif
                 {
-                    copy = gtNewIconNode(tree->AsIntCon()->IconValue(), tree->gtType);
+                    copy = new (this, GT_CNS_INT)
+                        GenTreeIntCon(tree->TypeGet(), tree->AsIntCon()->IntegralValue(), tree->AsIntCon()->gtFieldSeq);
+                    copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
 #ifdef DEBUG
                     copy->AsIntCon()->gtTargetHandle = tree->AsIntCon()->gtTargetHandle;
 #endif
-                    copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
-                    copy->AsIntCon()->gtFieldSeq          = tree->AsIntCon()->gtFieldSeq;
                 }
                 goto DONE;
 
-            case GT_CNS_LNG:
-                copy = gtNewLconNode(tree->AsIntCon()->IntegralValue());
-                goto DONE;
-
             case GT_CNS_DBL:
-            {
                 copy = gtNewDconNode(tree->AsDblCon()->DconValue(), tree->TypeGet());
                 goto DONE;
-            }
 
             case GT_CNS_STR:
                 copy = gtNewSconNode(tree->AsStrCon()->gtSconCPX, tree->AsStrCon()->gtScpHnd);
@@ -10069,7 +10047,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
         case GT_CNS_INT:
-        case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
@@ -11833,6 +11810,12 @@ void Compiler::gtDispConst(GenTree* tree)
             {
                 eePrintObjectDescription(" ", (CORINFO_OBJECT_HANDLE)tree->AsIntCon()->IconValue());
             }
+#ifndef TARGET_64BIT
+            else if (tree->TypeIs(TYP_LONG))
+            {
+                printf(" 0x%016I64x", tree->AsIntCon()->IntegralValue());
+            }
+#endif // !TARGET_64BIT
             else
             {
                 ssize_t dspIconVal =
@@ -11959,10 +11942,6 @@ void Compiler::gtDispConst(GenTree* tree)
                 FieldSeq* fieldSeq = tree->AsIntCon()->gtFieldSeq;
                 gtDispFieldSeq(fieldSeq, tree->AsIntCon()->IconValue() - fieldSeq->GetOffset());
             }
-            break;
-
-        case GT_CNS_LNG:
-            printf(" 0x%016I64x", tree->AsIntCon()->IntegralValue());
             break;
 
         case GT_CNS_DBL:
@@ -15699,10 +15678,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             }
 
             lval1 = op1->AsIntCon()->LngValue();
-
-            // For the shift operators we can have a op2 that is a TYP_INT.
-            // Thus we cannot just use LngValue(), as it will assert on 32 bit if op2 is not GT_CNS_LNG.
-            lval2 = op2->AsIntCon()->IntegralValue();
+            lval2 = op2->AsIntCon()->IntegralValue(); // For the shift operators we can have a op2 that is a TYP_INT.
 
             switch (tree->OperGet())
             {
@@ -15883,17 +15859,11 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             JITDUMP("\nFolding long operator with constant nodes into a constant:\n");
             DISPTREE(tree);
 
-            assert((GenTree::s_gtNodeSizes[GT_CNS_NATIVELONG] == TREE_NODE_SZ_SMALL) ||
-                   (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
-
             tree->BashToConst(lval1);
 #ifdef TARGET_64BIT
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 #endif
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to long constant:\n");
             DISPTREE(tree);

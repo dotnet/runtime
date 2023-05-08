@@ -55,7 +55,7 @@ GTSTRUCT_2(Val         , GT_END_LFIN, GT_JMP)
 #else
 GTSTRUCT_1(Val         , GT_JMP)
 #endif
-GTSTRUCT_2(IntCon      , GT_CNS_INT, GT_CNS_LNG)
+GTSTRUCT_1(IntCon      , GT_CNS_INT)
 GTSTRUCT_1(DblCon      , GT_CNS_DBL)
 GTSTRUCT_1(StrCon      , GT_CNS_STR)
 GTSTRUCT_1(VecCon      , GT_CNS_VEC)

@@ -229,7 +229,6 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                 switch (tree->gtOper)
                 {
                     case GT_CNS_INT:
-                    case GT_CNS_LNG:
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
                     case GT_CNS_VEC:

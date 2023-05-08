@@ -5733,62 +5733,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
         switch (oper)
         {
             /* Constants can usually be narrowed by changing their value */
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifndef TARGET_64BIT
-            __int64 lval;
-            __int64 lmask;
-
-            case GT_CNS_LNG:
-                lval  = tree->AsIntCon()->LngValue();
-                lmask = 0;
-
-                switch (dstt)
-                {
-                    case TYP_BYTE:
-                        lmask = 0x0000007F;
-                        break;
-                    case TYP_UBYTE:
-                        lmask = 0x000000FF;
-                        break;
-                    case TYP_SHORT:
-                        lmask = 0x00007FFF;
-                        break;
-                    case TYP_USHORT:
-                        lmask = 0x0000FFFF;
-                        break;
-                    case TYP_INT:
-                        lmask = 0x7FFFFFFF;
-                        break;
-                    case TYP_UINT:
-                        lmask = 0xFFFFFFFF;
-                        break;
-
-                    default:
-                        return false;
-                }
-
-                if ((lval & lmask) != lval)
-                    return false;
-
-                if (doit)
-                {
-                    tree->BashToConst(static_cast<int32_t>(lval));
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
-                }
-
-                return true;
-#endif
-
             case GT_CNS_INT:
-
-                ssize_t ival;
-                ival = tree->AsIntCon()->IconValue();
-                ssize_t imask;
-                imask = 0;
+            {
+                int64_t value = tree->AsIntCon()->IntegralValue();
+                int64_t imask = 0;
 
                 switch (dstt)
                 {
@@ -5804,33 +5752,30 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     case TYP_USHORT:
                         imask = 0x0000FFFF;
                         break;
-#ifdef TARGET_64BIT
                     case TYP_INT:
                         imask = 0x7FFFFFFF;
                         break;
                     case TYP_UINT:
                         imask = 0xFFFFFFFF;
                         break;
-#endif // TARGET_64BIT
                     default:
                         return false;
                 }
 
-                if ((ival & imask) != ival)
+                if ((value & imask) != value)
                 {
                     return false;
                 }
 
-#ifdef TARGET_64BIT
                 if (doit)
                 {
                     tree->gtType = TYP_INT;
-                    tree->AsIntCon()->SetIconValue((int)ival);
+                    tree->AsIntCon()->SetIconValue((int)value);
                     fgUpdateConstTreeValueNumber(tree);
                 }
-#endif // TARGET_64BIT
 
                 return true;
+            }
 
             /* Operands that are in memory can usually be narrowed
                simply by changing their gtType */
