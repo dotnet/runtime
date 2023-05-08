@@ -7,8 +7,8 @@ import { Module, runtimeHelpers } from "./globals";
 import {
     getU16, getU32_unaligned
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
-import { MintOpcode, OpcodeInfo } from "./mintops";
+import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
@@ -980,7 +980,7 @@ export function trace_operands(a: number, b: number) {
 export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
-        reason = OpcodeInfo[<any>reason][0];
+        reason = getOpcodeName(reason);
     } else {
         let abortCount = abortCounts[reason];
         if (typeof (abortCount) !== "number")
@@ -1201,7 +1201,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
-            const opname = OpcodeInfo[<any>i][0];
+            const opname = getOpcodeName(i);
             const count = cwraps.mono_jiterp_adjust_abort_count(i, 0);
             if (count > 0)
                 abortCounts[opname] = count;

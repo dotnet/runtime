@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -17,21 +18,14 @@ using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
-    public static class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
-        where TAnalyzer : DiagnosticAnalyzer, new()
-        where TCodeFix : CodeFixProvider, new()
+    public static class CSharpSourceGeneratorVerifier<TSourceGenerator>
+        where TSourceGenerator : IIncrementalGenerator, new()
     {
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic()"/>
-        public static DiagnosticResult Diagnostic()
-            => CodeFixVerifier<TAnalyzer, TCodeFix>.Diagnostic();
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic(string)"/>
         public static DiagnosticResult Diagnostic(string diagnosticId)
-            => CodeFixVerifier<TAnalyzer, TCodeFix>.Diagnostic(diagnosticId);
+            => new DiagnosticResult(diagnosticId, DiagnosticSeverity.Error);
 
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.Diagnostic(DiagnosticDescriptor)"/>
         public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
-            => CodeFixVerifier<TAnalyzer, TCodeFix>.Diagnostic(descriptor);
+            => new DiagnosticResult(descriptor);
 
         /// <summary>
         /// Create a <see cref="DiagnosticResult"/> with the diagnostic message created with the provided arguments.
@@ -47,77 +41,77 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             return Diagnostic(descriptor).WithMessage(string.Format(descriptor.MessageFormat.ToString(), arguments)).WithArguments(arguments);
         }
 
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-        public static async Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
+        public static async Task VerifySourceGeneratorAsync(string source, params DiagnosticResult[] expected)
         {
-            var test = new Test
+            var test = new Test(referenceAncillaryInterop: false)
             {
                 TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
 
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource, string? fixEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource, fixEquivalenceKey);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource, string? fixEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource, fixEquivalenceKey);
-
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, string? fixEquivalenceKey = null)
+        public static async Task VerifySourceGeneratorWithAncillaryInteropAsync(string source, params DiagnosticResult[] expected)
         {
-            var test = new Test
+            var test = new Test(referenceAncillaryInterop: true)
             {
                 TestCode = source,
-                FixedCode = fixedSource,
-                CodeActionEquivalenceKey = fixEquivalenceKey,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
 
-        /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource, params DiagnosticResult[] expected)
+        public static async Task VerifySourceGeneratorAsync(string[] sources, params DiagnosticResult[] expected)
         {
-            var test = new Test
+            var test = new Test(referenceAncillaryInterop: false)
             {
-                TestCode = source,
-                FixedCode = fixedSource,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
+
+            foreach (var source in sources)
+            {
+                test.TestState.Sources.Add(source);
+            }
 
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
         }
 
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource,
-            int numIncrementalIterations, int numFixAllIterations)
+        internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
         {
-            var test = new Test
+            public Test(TestTargetFramework targetFramework)
             {
-                TestCode = source,
-                FixedCode = fixedSource,
-                NumberOfIncrementalIterations = numIncrementalIterations,
-                NumberOfFixAllIterations = numFixAllIterations
-            };
-
-            test.ExpectedDiagnostics.AddRange(expected);
-            await test.RunAsync(CancellationToken.None);
-        }
-
-        internal class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
-        {
-            public Test()
+                if (targetFramework == TestTargetFramework.Net)
+                {
+                    // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                    // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                    ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                    TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                }
+                else
+                {
+                    ReferenceAssemblies = targetFramework switch
+                    {
+                        TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
+                        TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
+                        TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
+                        TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
+                        _ => ReferenceAssemblies.Default
+                    };
+                }
+                SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
+            }
+            public Test(bool referenceAncillaryInterop)
+                :this(TestTargetFramework.Net)
             {
-                // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
-                // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
-                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
-                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
-                TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
+                if (referenceAncillaryInterop)
+                {
+                    TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
+                }
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
             }
@@ -152,6 +146,24 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             protected override ParseOptions CreateParseOptions()
             {
                 return new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose);
+            }
+
+            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            {
+                var (compilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
+                VerifyFinalCompilation(compilation);
+                return (compilation, diagnostics);
+            }
+
+            /// <summary>
+            /// Verify any expected invariants on the final compilation after the source generators have been applied.
+            /// </summary>
+            /// <param name="compilation">The compilation.</param>
+            /// <remarks>
+            /// This function is useful for basic semantic testing of the generated code and can be used instead of verification testing of an exact match to the expected source output.
+            /// </remarks>
+            protected virtual void VerifyFinalCompilation(Compilation compilation)
+            {
             }
         }
     }
