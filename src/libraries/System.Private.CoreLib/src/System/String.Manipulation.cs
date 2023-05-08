@@ -326,7 +326,7 @@ namespace System
 
             // It can overflow to a positive number so we accumulate the total length as a long.
             long totalLength64 = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
-            
+
             int totalLength32 = (int)totalLength64;
             if (totalLength64 != totalLength32)
             {
@@ -466,7 +466,7 @@ namespace System
             // If it's too long, fail, or if it's empty, return an empty string.
             if (totalLengthLong > int.MaxValue)
             {
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalLengthLong;
             if (totalLength == 0)
@@ -950,7 +950,7 @@ namespace System
             long totalSeparatorsLength = (long)(values.Length - 1) * separator.Length;
             if (totalSeparatorsLength > int.MaxValue)
             {
-                ThrowHelper.ThrowOutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalSeparatorsLength;
 
@@ -962,7 +962,7 @@ namespace System
                     totalLength += value.Length;
                     if (totalLength < 0) // Check for overflow
                     {
-                        ThrowHelper.ThrowOutOfMemoryException();
+                        ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                     }
                 }
             }
@@ -1314,7 +1314,7 @@ namespace System
 
             long dstLength = this.Length + ((long)(newValue.Length - oldValueLength)) * indices.Length;
             if (dstLength > int.MaxValue)
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             string dst = FastAllocateString((int)dstLength);
 
             Span<char> dstSpan = new Span<char>(ref dst._firstChar, dst.Length);
