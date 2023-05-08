@@ -1231,7 +1231,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     {
         case GT_HWINTRINSIC:
         {
-            if (op->isContained())
+            if (op->isContained() && op->AsHWIntrinsic()->OperIsBroadcastScalar())
             {
                 IsEmbBroadcastEnabled = true;
             }

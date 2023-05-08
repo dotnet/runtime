@@ -6214,6 +6214,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
     bool OperIsEmbBroadcastCompatible() const;
+    bool OperIsBroadcastScalar() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
