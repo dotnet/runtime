@@ -1802,7 +1802,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
-        AsLngCon()->gtLconVal = (INT64)(INT32)AsLngCon()->gtLconVal;
+        AsIntCon()->gtLconVal = (INT64)(INT32)AsIntCon()->gtLconVal;
     }
 #endif // defined(HOST_64BIT) && !defined(TARGET_64BIT)
 
@@ -1970,7 +1970,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 #if !defined(TARGET_64BIT)
         case GT_CNS_LNG:
             assert(type == TYP_LONG);
-            AsLngCon()->SetLngValue(static_cast<int64_t>(value));
+            AsIntCon()->SetLngValue(static_cast<int64_t>(value));
             break;
 #endif
 

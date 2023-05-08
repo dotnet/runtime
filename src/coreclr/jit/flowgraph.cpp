@@ -2161,7 +2161,7 @@ private:
     // Return Value:
     //    The new merged return block.
     //
-    BasicBlock* CreateReturnBB(unsigned index, GenTreeIntConCommon* returnConst = nullptr)
+    BasicBlock* CreateReturnBB(unsigned index, GenTreeIntCon* returnConst = nullptr)
     {
         BasicBlock* newReturnBB = comp->fgNewBBinRegion(BBJ_RETURN);
         comp->fgReturnCount++;
@@ -2285,7 +2285,7 @@ private:
             // Check to see if this is a constant return so that we can search
             // for and/or create a constant return block for it.
 
-            GenTreeIntConCommon* retConst = GetReturnConst(returnBlock);
+            GenTreeIntCon* retConst = GetReturnConst(returnBlock);
             if (retConst != nullptr)
             {
                 // We have a constant.  Now find or create a corresponding return block.
@@ -2386,7 +2386,7 @@ private:
 
     //------------------------------------------------------------------------
     // GetReturnConst: If the given block returns an integral constant, return the
-    //     GenTreeIntConCommon that represents the constant.
+    //     GenTreeIntCon that represents the constant.
     //
     // Arguments:
     //    returnBlock - Block whose return value is to be inspected.
@@ -2395,7 +2395,7 @@ private:
     //    GenTreeIntCommon that is the argument of `returnBlock`'s `GT_RETURN` if
     //    such exists; nullptr otherwise.
     //
-    static GenTreeIntConCommon* GetReturnConst(BasicBlock* returnBlock)
+    static GenTreeIntCon* GetReturnConst(BasicBlock* returnBlock)
     {
         Statement* lastStmt = returnBlock->lastStmt();
         if (lastStmt == nullptr)
@@ -2415,7 +2415,7 @@ private:
             return nullptr;
         }
 
-        return retExpr->AsIntConCommon();
+        return retExpr->AsIntCon();
     }
 
     //------------------------------------------------------------------------
@@ -2433,7 +2433,7 @@ private:
     // Return Value:
     //    A block that returns the same constant, if one is found; otherwise nullptr.
     //
-    BasicBlock* FindConstReturnBlock(GenTreeIntConCommon* constExpr, unsigned searchLimit, unsigned* index)
+    BasicBlock* FindConstReturnBlock(GenTreeIntCon* constExpr, unsigned searchLimit, unsigned* index)
     {
         INT64 constVal = constExpr->IntegralValue();
 

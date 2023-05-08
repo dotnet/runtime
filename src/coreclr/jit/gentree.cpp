@@ -279,10 +279,8 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeUnOp)         <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeOp)           <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeVal)          <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeIntConCommon) <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhysReg)      <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeIntCon)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLngCon)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeDblCon)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeStrCon)       <= TREE_NODE_SZ_SMALL);
 #ifdef TARGET_XARCH
@@ -2334,7 +2332,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
         // if arrLen is nullptr it means it wasn't an array allocator
         if ((arrLen != nullptr) && arrLen->IsIntCnsFitsInI32())
         {
-            ssize_t cns = arrLen->AsIntConCommon()->IconValue();
+            ssize_t cns = arrLen->AsIntCon()->IconValue();
             if ((cns >= 0) && (cns <= CORINFO_Array_MaxLength))
             {
                 return false;
@@ -2721,7 +2719,7 @@ AGAIN:
 #if 0
             // TODO-CQ: Enable this in the future
         case GT_CNS_LNG:
-            if  (op1->AsLngCon()->gtLconVal == op2->AsLngCon()->gtLconVal)
+            if  (op1->AsIntCon()->gtLconVal == op2->AsIntCon()->gtLconVal)
                 return true;
             break;
 
@@ -3234,7 +3232,7 @@ AGAIN:
                 add = tree->AsIntCon()->gtIconVal;
                 break;
             case GT_CNS_LNG:
-                bits = (UINT64)tree->AsLngCon()->gtLconVal;
+                bits = (UINT64)tree->AsIntCon()->gtLconVal;
 #ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
@@ -3745,7 +3743,7 @@ bool GenTreeOp::IsValidLongMul()
     }
 
     if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
-        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
+        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntCon()->IntegralValue())))
     {
         return false;
     }
@@ -3776,7 +3774,7 @@ bool GenTreeOp::IsValidLongMul()
                 return IsUnsigned() ? static_cast<int64_t>(UINT64_MAX) : INT32_MIN;
             }
 
-            return op->AsIntConCommon()->IntegralValue();
+            return op->AsIntCon()->IntegralValue();
         };
 
         int64_t maxOp1 = getMaxValue(op1);
@@ -3789,8 +3787,8 @@ bool GenTreeOp::IsValidLongMul()
     }
 
     // Both operands must extend the same way.
-    bool op1ZeroExtends = op1->IsUnsigned();
-    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
+    bool op1ZeroExtends            = op1->IsUnsigned();
+    bool op2ZeroExtends            = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntCon()->IntegralValue() >= 0;
     bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
     if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
     {
@@ -3833,12 +3831,12 @@ void GenTreeOp::DebugCheckLongMul()
 
     // op2 has to be CAST(long <- int) or a suitably small constant.
     assert((op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) ||
-           (op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())));
+           (op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntCon()->IntegralValue())));
     assert(!op2->gtOverflowEx());
 
     // Both operands must extend the same way.
-    bool op1ZeroExtends = op1->IsUnsigned();
-    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
+    bool op1ZeroExtends            = op1->IsUnsigned();
+    bool op2ZeroExtends            = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntCon()->IntegralValue() >= 0;
     bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
     assert((op1ZeroExtends == op2ZeroExtends) || op2AnyExtensionIsSuitable);
 
@@ -4973,7 +4971,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             {
-                GenTreeIntConCommon* con = tree->AsIntConCommon();
+                GenTreeIntCon* con = tree->AsIntCon();
 
                 INT64 lngVal = con->LngValue();
                 INT32 loVal  = (INT32)(lngVal & 0xffffffff);
@@ -5016,7 +5014,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 //  applied to it.
                 // Any constant that requires a reloc must use the movw/movt sequence
                 //
-                GenTreeIntConCommon* con    = tree->AsIntConCommon();
+                GenTreeIntCon* con    = tree->AsIntCon();
                 target_ssize_t       conVal = (target_ssize_t)con->IconValue();
 
                 if (con->ImmedValNeedsReloc(this))
@@ -5061,7 +5059,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_INT:
             {
-                GenTreeIntConCommon* con       = tree->AsIntConCommon();
+                GenTreeIntCon* con       = tree->AsIntCon();
                 ssize_t              conVal    = (oper == GT_CNS_LNG) ? (ssize_t)con->LngValue() : con->IconValue();
                 bool                 fitsInVal = true;
 
@@ -5086,13 +5084,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 4;
                     costEx = 1;
                 }
-                else if (fitsInVal && GenTreeIntConCommon::FitsInI8(conVal))
+                else if (fitsInVal && FitsIn<int8_t>(conVal))
                 {
                     costSz = 1;
                     costEx = 1;
                 }
 #ifdef TARGET_AMD64
-                else if (!GenTreeIntConCommon::FitsInI32(conVal))
+                else if (!FitsIn<int32_t>(conVal))
                 {
                     costSz = 10;
                     costEx = 2;
@@ -5125,7 +5123,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_INT:
             {
-                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                GenTreeIntCon* con            = tree->AsIntCon();
                 bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
                 INT64                imm            = con->LngValue();
                 emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
@@ -5694,7 +5692,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 if (op2->IsCnsIntOrI())
                 {
-                    size_t ival = op2->AsIntConCommon()->IconValue();
+                    size_t ival = op2->AsIntCon()->IconValue();
 
                     if (ival > 0 && ival == genFindLowestBit(ival))
                     {
@@ -6340,9 +6338,9 @@ bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 
 unsigned GenTree::GetScaleIndexMul()
 {
-    if (IsCnsIntOrI() && jitIsScaleIndexMul(AsIntConCommon()->IconValue()) && AsIntConCommon()->IconValue() != 1)
+    if (IsCnsIntOrI() && jitIsScaleIndexMul(AsIntCon()->IconValue()) && AsIntCon()->IconValue() != 1)
     {
-        return (unsigned)AsIntConCommon()->IconValue();
+        return (unsigned)AsIntCon()->IconValue();
     }
 
     return 0;
@@ -6358,9 +6356,9 @@ unsigned GenTree::GetScaleIndexMul()
 
 unsigned GenTree::GetScaleIndexShf()
 {
-    if (IsCnsIntOrI() && jitIsScaleIndexShift(AsIntConCommon()->IconValue()))
+    if (IsCnsIntOrI() && jitIsScaleIndexShift(AsIntCon()->IconValue()))
     {
-        return (unsigned)(1 << AsIntConCommon()->IconValue());
+        return (unsigned)(1 << AsIntCon()->IconValue());
     }
 
     return 0;
@@ -7632,13 +7630,9 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 /*****************************************************************************/
 
-GenTree* Compiler::gtNewLconNode(__int64 value)
+GenTree* Compiler::gtNewLconNode(int64_t value)
 {
-#ifdef TARGET_64BIT
-    GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
-#else
-    GenTree* node = new (this, GT_CNS_LNG) GenTreeLngCon(value);
-#endif
+    GenTree* node = new (this, GT_CNS_NATIVELONG) GenTreeIntCon(value);
 
     return node;
 }
@@ -8946,7 +8940,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             break;
 
         case GT_CNS_LNG:
-            copy = gtNewLconNode(tree->AsLngCon()->gtLconVal);
+            copy = gtNewLconNode(tree->AsIntCon()->gtLconVal);
             break;
 
         case GT_CNS_DBL:
@@ -9135,7 +9129,7 @@ GenTree* Compiler::gtCloneExpr(
                 goto DONE;
 
             case GT_CNS_LNG:
-                copy = gtNewLconNode(tree->AsLngCon()->gtLconVal);
+                copy = gtNewLconNode(tree->AsIntCon()->gtLconVal);
                 goto DONE;
 
             case GT_CNS_DBL:
@@ -11968,7 +11962,7 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_LNG:
-            printf(" 0x%016I64x", tree->AsLngCon()->gtLconVal);
+            printf(" 0x%016I64x", tree->AsIntCon()->gtLconVal);
             break;
 
         case GT_CNS_DBL:
@@ -13635,7 +13629,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
         cons->gtPrev = tree->gtPrev;
     }
 
-    JITDUMP("Bashed to %s:\n", cons->AsIntConCommon()->IconValue() ? "true" : "false");
+    JITDUMP("Bashed to %s:\n", cons->AsIntCon()->IconValue() ? "true" : "false");
     DISPTREE(cons);
 
     return cons;
@@ -14119,7 +14113,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
     /* Get the constant value */
 
-    val = cons->AsIntConCommon()->IconValue();
+    val = cons->AsIntCon()->IconValue();
 
     // Transforms that would drop op cannot be performed if op has side effects
     bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
@@ -14471,7 +14465,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         return tree;
     }
 
-    ssize_t const val = cons->AsIntConCommon()->IconValue();
+    ssize_t const val = cons->AsIntCon()->IconValue();
 
     if (val != 0)
     {
@@ -15158,12 +15152,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 // Fold constant LONG unary operator.
 
-                if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
+                if (!op1->AsIntCon()->ImmedValCanBeFolded(this, tree->OperGet()))
                 {
                     return tree;
                 }
 
-                lval1 = op1->AsIntConCommon()->LngValue();
+                lval1 = op1->AsIntCon()->LngValue();
 
                 switch (tree->OperGet())
                 {
@@ -15445,8 +15439,8 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
         case TYP_BYREF:
 
-            i1 = op1->AsIntConCommon()->IconValue();
-            i2 = op2->AsIntConCommon()->IconValue();
+            i1 = op1->AsIntCon()->IconValue();
+            i2 = op2->AsIntCon()->IconValue();
 
             switch (tree->OperGet())
             {
@@ -15494,18 +15488,18 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // No GC pointer types should be folded here...
             assert(!varTypeIsGC(op1->TypeGet()) && !varTypeIsGC(op2->TypeGet()));
 
-            if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op1->AsIntCon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            if (!op2->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op2->AsIntCon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            i1 = op1->AsIntConCommon()->IconValue();
-            i2 = op2->AsIntConCommon()->IconValue();
+            i1 = op1->AsIntCon()->IconValue();
+            i2 = op2->AsIntCon()->IconValue();
 
             switch (tree->OperGet())
             {
@@ -15694,21 +15688,21 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // it is a TYP_INT.
             assert(op2->TypeIs(TYP_LONG, TYP_INT));
 
-            if (!op1->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op1->AsIntCon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            if (!op2->AsIntConCommon()->ImmedValCanBeFolded(this, tree->OperGet()))
+            if (!op2->AsIntCon()->ImmedValCanBeFolded(this, tree->OperGet()))
             {
                 return tree;
             }
 
-            lval1 = op1->AsIntConCommon()->LngValue();
+            lval1 = op1->AsIntCon()->LngValue();
 
             // For the shift operators we can have a op2 that is a TYP_INT.
             // Thus we cannot just use LngValue(), as it will assert on 32 bit if op2 is not GT_CNS_LNG.
-            lval2 = op2->AsIntConCommon()->IntegralValue();
+            lval2 = op2->AsIntCon()->IntegralValue();
 
             switch (tree->OperGet())
             {
@@ -16169,7 +16163,7 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
         GenTree*       indexNode  = addr->AsIndexAddr()->Index();
         if (!stringNode->IsStringEmptyField() && indexNode->IsCnsIntOrI())
         {
-            int cnsIndex = static_cast<int>(indexNode->AsIntConCommon()->IconValue());
+            int cnsIndex = static_cast<int>(indexNode->AsIntCon()->IconValue());
             if (cnsIndex >= 0)
             {
                 char16_t chr;
@@ -17938,7 +17932,7 @@ ssize_t GenTreeIndir::Offset()
     }
     else if (Addr()->IsCnsIntOrI() && Addr()->isContained())
     {
-        return Addr()->AsIntConCommon()->IconValue();
+        return Addr()->AsIntCon()->IconValue();
     }
     else
     {
@@ -17953,7 +17947,7 @@ unsigned GenTreeIndir::Size() const
 }
 
 //------------------------------------------------------------------------
-// GenTreeIntConCommon::ImmedValNeedsReloc: does this immediate value needs recording a relocation with the VM?
+// GenTreeIntCon::ImmedValNeedsReloc: does this immediate value needs recording a relocation with the VM?
 //
 // Arguments:
 //    comp - Compiler instance
@@ -17961,7 +17955,7 @@ unsigned GenTreeIndir::Size() const
 // Return Value:
 //    True if this immediate value requires us to record a relocation for it; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+bool GenTreeIntCon::ImmedValNeedsReloc(Compiler* comp)
 {
     return comp->opts.compReloc && IsIconHandle();
 }
@@ -17976,7 +17970,7 @@ bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 // Return Value:
 //    True if this immediate value can be folded for op; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
+bool GenTreeIntCon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
 {
     // In general, immediate values that need relocations can't be folded.
     // There are cases where we do want to allow folding of handle comparisons
@@ -17988,7 +17982,7 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On Amd64 this effectively means, whether an absolute indirect address can
 // be encoded as 32-bit offset relative to IP or zero.
-bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
+bool GenTreeIntCon::FitsInAddrBase(Compiler* comp)
 {
 #ifdef DEBUG
     // Early out if PC-rel encoding of absolute addr is disabled.
@@ -18023,12 +18017,12 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
         // offsets.  Note that JIT will always attempt to relocate code addresses (.e.g call addr).
         // After an overflow, VM will assume any relocation recorded is for a code address and will
         // emit jump thunk if it cannot be encoded as pc-relative offset.
-        return (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue())) || FitsInI32();
+        return (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue())) || FitsIn<int32_t>(IconValue());
     }
 }
 
 // Returns true if this icon value is encoded as addr needs recording a relocation with VM
-bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
+bool GenTreeIntCon::AddrNeedsReloc(Compiler* comp)
 {
     if (comp->opts.compReloc)
     {
@@ -18045,7 +18039,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 #elif defined(TARGET_X86)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On x86 all addresses are 4-bytes and can be directly encoded in an addr mode.
-bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
+bool GenTreeIntCon::FitsInAddrBase(Compiler* comp)
 {
 #ifdef DEBUG
     // Early out if PC-rel encoding of absolute addr is disabled.
@@ -18059,7 +18053,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
 }
 
 // Returns true if this icon value is encoded as addr needs recording a relocation with VM
-bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
+bool GenTreeIntCon::AddrNeedsReloc(Compiler* comp)
 {
     // If generating relocatable code, icons should be reported for recording relocatons.
     return comp->opts.compReloc && IsIconHandle();
@@ -18978,30 +18972,29 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
                 {
                     // If the other arg is an int constant, and is a "not-a-field", choose
                     // that as the multiplier, thus preserving constant index offsets...
-                    if (tree->AsOp()->gtOp2->IsCnsIntOrI() &&
-                        tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
+                    if (tree->AsOp()->gtOp2->IsCnsIntOrI() && tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
                     {
                         assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
+                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                        subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntCon()->IconValue();
                         nonConst = tree->AsOp()->gtOp1;
                     }
                     else
                     {
                         assert(!tree->AsOp()->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp));
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
+                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)tree->AsOp()->gtOp1->AsIntConCommon()->IconValue();
+                        subMul   = (target_ssize_t)tree->AsOp()->gtOp1->AsIntCon()->IconValue();
                         nonConst = tree->AsOp()->gtOp2;
                     }
                 }
                 else if (tree->AsOp()->gtOp2->IsCnsIntOrI())
                 {
                     assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
-                    // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
+                    // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                     // target_ssize_t type.
-                    subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntCon()->IconValue();
                     nonConst = tree->AsOp()->gtOp1;
                 }
                 if (nonConst != nullptr)
@@ -19020,7 +19013,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
                     assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
-                    target_ssize_t shiftVal = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t shiftVal = (target_ssize_t)tree->AsOp()->gtOp2->AsIntCon()->IconValue();
                     target_ssize_t subMul   = target_ssize_t{1} << shiftVal;
                     ParseArrayAddressWork(tree->AsOp()->gtOp1, comp, inputMul * subMul, pArr, pInxVN, pOffset);
                     return;
@@ -22091,7 +22084,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                uint8_t cnsVal = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
+                uint8_t cnsVal = static_cast<uint8_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < simdSize; i++)
                 {
@@ -22103,7 +22096,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                uint16_t cnsVal = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
+                uint16_t cnsVal = static_cast<uint16_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 2); i++)
                 {
@@ -22115,7 +22108,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             case TYP_INT:
             case TYP_UINT:
             {
-                uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
+                uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
@@ -22127,7 +22120,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(var_types   type,
             case TYP_LONG:
             case TYP_ULONG:
             {
-                uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
@@ -22228,7 +22221,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                uint8_t cnsVal          = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
+                uint8_t cnsVal          = static_cast<uint8_t>(op1->AsIntCon()->IntegralValue());
                 vecCon->gtSimdVal.u8[0] = cnsVal;
                 break;
             }
@@ -22236,7 +22229,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                uint16_t cnsVal          = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
+                uint16_t cnsVal          = static_cast<uint16_t>(op1->AsIntCon()->IntegralValue());
                 vecCon->gtSimdVal.u16[0] = cnsVal;
                 break;
             }
@@ -22244,7 +22237,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
             case TYP_INT:
             case TYP_UINT:
             {
-                uint32_t cnsVal          = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
+                uint32_t cnsVal          = static_cast<uint32_t>(op1->AsIntCon()->IntegralValue());
                 vecCon->gtSimdVal.u32[0] = cnsVal;
                 break;
             }
@@ -22252,7 +22245,7 @@ GenTree* Compiler::gtNewSimdCreateScalarNode(var_types   type,
             case TYP_LONG:
             case TYP_ULONG:
             {
-                uint64_t cnsVal          = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t cnsVal          = static_cast<uint64_t>(op1->AsIntCon()->IntegralValue());
                 vecCon->gtSimdVal.u64[0] = cnsVal;
                 break;
             }
@@ -22349,7 +22342,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
             case TYP_BYTE:
             case TYP_UBYTE:
             {
-                uint8_t cnsVal = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
+                uint8_t cnsVal = static_cast<uint8_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < simdSize; i++)
                 {
@@ -22361,7 +22354,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
             case TYP_SHORT:
             case TYP_USHORT:
             {
-                uint16_t cnsVal = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
+                uint16_t cnsVal = static_cast<uint16_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 2); i++)
                 {
@@ -22373,7 +22366,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
             case TYP_INT:
             case TYP_UINT:
             {
-                uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
+                uint32_t cnsVal = static_cast<uint32_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 4); i++)
                 {
@@ -22385,7 +22378,7 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
             case TYP_LONG:
             case TYP_ULONG:
             {
-                uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                uint64_t cnsVal = static_cast<uint64_t>(op1->AsIntCon()->IntegralValue());
 
                 for (unsigned i = 0; i < (simdSize / 8); i++)
                 {
@@ -23859,8 +23852,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         // this down to basically a broadcast equivalent.
     }
 
-    GenTree*             retNode = nullptr;
-    GenTreeIntConCommon* cnsNode = nullptr;
+    GenTree*       retNode = nullptr;
+    GenTreeIntCon* cnsNode = nullptr;
 
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
@@ -26945,7 +26938,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IntegralValue() >= 0;
+        return AsIntCon()->IntegralValue() >= 0;
     }
 
     if (OperIs(GT_LCL_VAR))
@@ -27040,7 +27033,7 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
         {
             return true;
         }
-        else if (this->TypeIs(TYP_LONG) && (op1->AsIntConCommon()->IntegralValue() == INT64_MIN))
+        else if (this->TypeIs(TYP_LONG) && (op1->AsIntCon()->IntegralValue() == INT64_MIN))
         {
             return true;
         }

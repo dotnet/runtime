@@ -10271,7 +10271,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
                     }
 
-                    ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(op3->AsIntConCommon()->IconValue()));
+                    ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(op3->AsIntCon()->IconValue()));
 
                     if (opcode == CEE_INITBLK)
                     {

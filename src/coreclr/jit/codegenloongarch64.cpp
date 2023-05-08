@@ -1936,7 +1936,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (data->IsIntegralConst())
             {
-                ssize_t imm = data->AsIntConCommon()->IconValue();
+                ssize_t imm = data->AsIntCon()->IconValue();
                 emit->emitIns_I_la(EA_PTRSIZE, REG_R21, imm);
                 dataReg = REG_R21;
             }
@@ -5281,7 +5281,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         if (source->isContained())
         {
             assert(source->IsCnsIntOrI());
-            assert(source->AsIntConCommon()->IconValue() == 0);
+            assert(source->AsIntCon()->IconValue() == 0);
 
             emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
         }
@@ -5758,8 +5758,8 @@ void CodeGen::genRangeCheck(GenTree* oper)
     genConsumeRegs(arrIndex);
     genConsumeRegs(arrLen);
 
-    emitter*             emit     = GetEmitter();
-    GenTreeIntConCommon* intConst = nullptr;
+    emitter*       emit     = GetEmitter();
+    GenTreeIntCon* intConst = nullptr;
     if (arrIndex->isContainedIntOrIImmed())
     {
         src1 = arrLen;
@@ -5767,7 +5767,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         reg1 = REG_R21;
         reg2 = src1->GetRegNum();
 
-        intConst    = src2->AsIntConCommon();
+        intConst    = src2->AsIntCon();
         ssize_t imm = intConst->IconValue();
         if (imm == INT64_MAX)
         {
@@ -5788,7 +5788,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         if (src2->isContainedIntOrIImmed())
         {
             reg2        = REG_R21;
-            ssize_t imm = src2->AsIntConCommon()->IconValue();
+            ssize_t imm = src2->AsIntCon()->IconValue();
             emit->emitIns_I_la(EA_PTRSIZE, REG_R21, imm);
         }
         else

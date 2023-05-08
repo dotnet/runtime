@@ -858,7 +858,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
 #ifdef TARGET_ARM64
             assert(source->IsCnsIntOrI());
-            assert(source->AsIntConCommon()->IconValue() == 0);
+            assert(source->AsIntCon()->IconValue() == 0);
 
             emit->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNumOut, argOffsetOut);
 #else  // !TARGET_ARM64
@@ -4699,7 +4699,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 {
                     // Handle LEA with "contained" BFIZ
                     assert(scale == 0);
-                    scale = (DWORD)index->gtGetOp2()->AsIntConCommon()->IconValue();
+                    scale = (DWORD)index->gtGetOp2()->AsIntCon()->IconValue();
                     index = index->gtGetOp1()->gtGetOp1();
                 }
                 else if (index->OperIs(GT_CAST))

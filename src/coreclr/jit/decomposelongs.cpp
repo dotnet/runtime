@@ -670,8 +670,8 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
     assert(use.Def()->OperGet() == GT_CNS_LNG);
 
     GenTree* tree  = use.Def();
-    INT32    loVal = tree->AsLngCon()->LoVal();
-    INT32    hiVal = tree->AsLngCon()->HiVal();
+    INT32    loVal = tree->AsIntCon()->LoVal();
+    INT32    hiVal = tree->AsIntCon()->HiVal();
 
     GenTree* loResult = tree;
     loResult->BashToConst(loVal);

@@ -1541,7 +1541,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 
     if (tree->gtDynamicSize->IsIntegralConst())
     {
-        int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
+        int64_t size = tree->gtDynamicSize->AsIntCon()->IntegralValue();
 
         if ((size != 0) && FitsIn<int32_t>(size))
         {

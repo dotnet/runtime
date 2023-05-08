@@ -937,8 +937,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genCopyRegIfNeeded(dividend, REG_RAX);
 
     // zero or sign extend rax to rdx
-    if (oper == GT_UMOD || oper == GT_UDIV ||
-        (dividend->IsIntegralConst() && (dividend->AsIntConCommon()->IconValue() > 0)))
+    if (oper == GT_UMOD || oper == GT_UDIV || (dividend->IsIntegralConst() && (dividend->AsIntCon()->IconValue() > 0)))
     {
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
     }
@@ -1094,8 +1093,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     {
         if (op2->isContainedIntOrIImmed())
         {
-            emit->emitIns_R_AR(INS_lea, emitTypeSize(treeNode), targetReg, op1reg,
-                               (int)op2->AsIntConCommon()->IconValue());
+            emit->emitIns_R_AR(INS_lea, emitTypeSize(treeNode), targetReg, op1reg, (int)op2->AsIntCon()->IconValue());
         }
         else
         {
@@ -1207,7 +1205,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     if (immOp != nullptr)
     {
-        ssize_t imm = immOp->AsIntConCommon()->IconValue();
+        ssize_t imm = immOp->AsIntCon()->IconValue();
 
         if (!requiresOverflowCheck && rmOp->isUsedFromReg() && ((imm == 3) || (imm == 5) || (imm == 9)))
         {
@@ -4682,7 +4680,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
-            int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+            int shiftByValue = (int)shiftBy->AsIntCon()->IconValue();
 
 #if defined(TARGET_64BIT)
             // Try to emit rorx if BMI2 is available instead of mov+rol
@@ -4792,7 +4790,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     assert(shiftBy->isContainedIntOrIImmed());
 
-    unsigned int count = (unsigned int)shiftBy->AsIntConCommon()->IconValue();
+    unsigned int count = (unsigned int)shiftBy->AsIntCon()->IconValue();
 
     if (oper == GT_LSH_HI)
     {
@@ -4895,7 +4893,7 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
     GenTree* shiftBy = data->AsOp()->gtOp2;
     if (shiftBy->isContainedIntOrIImmed())
     {
-        int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+        int shiftByValue = (int)shiftBy->AsIntCon()->IconValue();
         ins              = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
         if (shiftByValue == 1)
         {
@@ -6210,13 +6208,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             {
                 // Note that if gtControlExpr is an indir of an absolute address, we mark it as
                 // contained only if it can be encoded as PC-relative offset.
-                assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
+                assert(target->AsIndir()->Base()->AsIntCon()->FitsInAddrBase(compiler));
 
                 // clang-format off
                 genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
-                            (void*) target->AsIndir()->Base()->AsIntConCommon()->IconValue()
+                            (void*) target->AsIndir()->Base()->AsIntCon()->IconValue()
                             X86_ARG(argSizeForEmitter),
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
@@ -8512,7 +8510,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         if (data->isContainedIntOrIImmed())
         {
             GetEmitter()->emitIns_S_I(ins_Store(targetType), emitTypeSize(targetType), baseVarNum, argOffset,
-                                      (int)data->AsIntConCommon()->IconValue());
+                                      (int)data->AsIntCon()->IconValue());
         }
         else
         {
@@ -11262,7 +11260,7 @@ bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 //
 bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsZeroRelOffset(size_t addr)
 {
-    return GenTreeIntConCommon::FitsInI32((ssize_t)addr);
+    return FitsIn<int32_t>((ssize_t)addr);
 }
 
 // Return true if an absolute indirect code address needs a relocation recorded with VM.

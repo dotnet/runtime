@@ -3832,7 +3832,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             newOper = GT_JTEST;
             cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
             // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
-            relopOp2->AsIntConCommon()->SetIntegralValue(
+            relopOp2->AsIntCon()->SetIntegralValue(
                 (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
@@ -6833,7 +6833,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 #endif // !TARGET_64BIT
         }
 
-        divisor->AsIntConCommon()->SetIconValue(magic);
+        divisor->AsIntCon()->SetIconValue(magic);
 
         // Insert a new GT_MULHI node in front of the existing GT_DIV/GT_MOD node.
         // The existing node will later be transformed into a GT_ADD/GT_SUB that

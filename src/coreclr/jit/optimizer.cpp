@@ -5740,7 +5740,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             __int64 lmask;
 
             case GT_CNS_LNG:
-                lval  = tree->AsIntConCommon()->LngValue();
+                lval  = tree->AsIntCon()->LngValue();
                 lmask = 0;
 
                 switch (dstt)
@@ -9002,7 +9002,7 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
     assert(mul->gtOper == GT_MUL || mul->gtOper == GT_LSH);
     assert(mul->AsOp()->gtOp2->IsCnsIntOrI());
 
-    ssize_t scale = mul->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+    ssize_t scale = mul->AsOp()->gtOp2->AsIntCon()->IconValue();
 
     if (mul->gtOper == GT_LSH)
     {
@@ -9017,7 +9017,7 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
         // When index->gtOper is GT_MUL and index->AsOp()->gtOp2->gtOper is GT_CNS_INT (i.e. * 5),
         //     we can bump up the scale from 4 to 5*4, and then change index to index->AsOp()->gtOp1.
         // Otherwise, we cannot optimize it. We will simply keep the original scale and index.
-        scale *= index->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+        scale *= index->AsOp()->gtOp2->AsIntCon()->IconValue();
         index = index->AsOp()->gtOp1;
     }
 

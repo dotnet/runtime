@@ -1113,10 +1113,10 @@ AGAIN:
 
     /* Check for an addition of a constant */
 
-    if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
+    if (op2->IsIntCnsFitsInI32() && (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntCon()->IconValue()))
     {
         // We should not be building address modes out of non-foldable constants
-        if (!op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
+        if (!op2->AsIntCon()->ImmedValCanBeFolded(compiler, addr->OperGet()))
         {
             assert(compiler->opts.compReloc);
             return false;
@@ -1124,7 +1124,7 @@ AGAIN:
 
         /* We're adding a constant */
 
-        cns += op2->AsIntConCommon()->IconValue();
+        cns += op2->AsIntCon()->IconValue();
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (cns == 0)
@@ -1386,7 +1386,7 @@ FOUND_AM:
             }
             else if (index->IsIntCnsFitsInI32())
             {
-                ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
+                ssize_t constantIndex = index->AsIntCon()->IconValue() * indexScale;
                 if (constantIndex == 0)
                 {
                     // while scale is a non-zero constant, the actual index is zero so drop it

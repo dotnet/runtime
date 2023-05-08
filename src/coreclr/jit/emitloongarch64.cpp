@@ -6249,8 +6249,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
     // find immed (if any) - it cannot be a dst
     // Only one src can be an int.
-    GenTreeIntConCommon* intConst  = nullptr;
-    GenTree*             nonIntReg = nullptr;
+    GenTreeIntCon* intConst  = nullptr;
+    GenTree*       nonIntReg = nullptr;
 
     bool needCheckOv = dst->gtOverflowEx();
 
@@ -6269,7 +6269,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         // Check src2 first as we can always allow it to be a contained immediate
         if (src2->isContainedIntOrIImmed())
         {
-            intConst  = src2->AsIntConCommon();
+            intConst  = src2->AsIntCon();
             nonIntReg = src1;
         }
         // Only for commutative operations do we check src1 and allow it to be a contained immediate
@@ -6282,7 +6282,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             if (src1->isContainedIntOrIImmed())
             {
                 assert(!src2->isContainedIntOrIImmed());
-                intConst  = src1->AsIntConCommon();
+                intConst  = src1->AsIntCon();
                 nonIntReg = src2;
             }
         }

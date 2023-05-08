@@ -144,8 +144,8 @@ GenTree* Lowering::TryLowerMulWithConstant(GenTreeOp* node)
     if (!op2->IsCnsIntOrI())
         return nullptr;
 
-    GenTreeIntConCommon* cns    = op2->AsIntConCommon();
-    ssize_t              cnsVal = cns->IconValue();
+    GenTreeIntCon* cns    = op2->AsIntCon();
+    ssize_t        cnsVal = cns->IconValue();
 
     // Use GT_LEA if cnsVal is 3, 5, or 9.
     // These are handled in codegen.
@@ -1364,7 +1364,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            ssize_t ival = op3->AsIntConCommon()->IconValue();
+            ssize_t ival = op3->AsIntCon()->IconValue();
 
             ssize_t zmask   = (ival & 0x0F);
             ssize_t count_d = (ival & 0x30) >> 4;
@@ -1379,7 +1379,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 zmask &= 0x0F;
 
                 ival = (count_s << 6) | (count_d << 4) | (zmask);
-                op3->AsIntConCommon()->SetIconValue(ival);
+                op3->AsIntCon()->SetIconValue(ival);
             }
             else if (op2IsVectorZero)
             {
@@ -1390,7 +1390,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 zmask &= 0x0F;
 
                 ival = (count_s << 6) | (count_d << 4) | (zmask);
-                op3->AsIntConCommon()->SetIconValue(ival);
+                op3->AsIntCon()->SetIconValue(ival);
             }
 
             if (zmask == 0x0F)
@@ -1465,9 +1465,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 assert(op1Intrinsic->Op(2)->isContained());
 
-                ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
+                ssize_t op1Ival = op1Idx->AsIntCon()->IconValue();
                 ival |= ((op1Ival & 0x0F) & ~(1 << count_d));
-                op3->AsIntConCommon()->SetIconValue(ival);
+                op3->AsIntCon()->SetIconValue(ival);
 
                 // Then we'll just carry the original non-zero input and
                 // remove the now unused constant nodes
@@ -1486,9 +1486,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 // Since this is a later op, direct merging is safe
 
-                ssize_t op1Ival = op1Idx->AsIntConCommon()->IconValue();
+                ssize_t op1Ival = op1Idx->AsIntCon()->IconValue();
                 ival            = op1Ival | zmask;
-                op3->AsIntConCommon()->SetIconValue(ival);
+                op3->AsIntCon()->SetIconValue(ival);
 
                 // Then we'll just carry the inputs from op1 and remove the now
                 // unused constant nodes
@@ -6286,7 +6286,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
     // At this point we know that it is an int const fits within 4-bytes and hence can safely cast to IntConCommon.
     // Icons that need relocation should never be marked as contained immed
-    if (childNode->AsIntConCommon()->ImmedValNeedsReloc(comp))
+    if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
     {
         return false;
     }
@@ -6493,7 +6493,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     }
     else if (addr->IsCnsIntOrI())
     {
-        GenTreeIntConCommon* icon = addr->AsIntConCommon();
+        GenTreeIntCon* icon = addr->AsIntCon();
 
 #if defined(FEATURE_SIMD)
         if (((addr->TypeGet() != TYP_SIMD12) || !icon->ImmedValNeedsReloc(comp)) && icon->FitsInAddrBase(comp))
@@ -6804,9 +6804,9 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     bool     useLeaEncoding        = false;
     GenTree* memOp                 = nullptr;
 
-    bool                 hasImpliedFirstOperand = false;
-    GenTreeIntConCommon* imm                    = nullptr;
-    GenTree*             other                  = nullptr;
+    bool           hasImpliedFirstOperand = false;
+    GenTreeIntCon* imm                    = nullptr;
+    GenTree*       other                  = nullptr;
 
     // Multiply should never be using small types
     assert(!varTypeIsSmall(node->TypeGet()));
@@ -6832,17 +6832,17 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     {
         if (IsContainableImmed(node, op2))
         {
-            imm   = op2->AsIntConCommon();
+            imm   = op2->AsIntCon();
             other = op1;
         }
         else
         {
-            imm   = op1->AsIntConCommon();
+            imm   = op1->AsIntCon();
             other = op2;
         }
 
         // CQ: We want to rewrite this into a LEA
-        ssize_t immVal = imm->AsIntConCommon()->IconValue();
+        ssize_t immVal = imm->AsIntCon()->IconValue();
         if (!requiresOverflowCheck && (immVal == 3 || immVal == 5 || immVal == 9))
         {
             useLeaEncoding = true;
@@ -6997,8 +6997,8 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
 #endif
 
     GenTree* shiftBy = node->gtOp2;
-    if (IsContainableImmed(node, shiftBy) && (shiftBy->AsIntConCommon()->IconValue() <= 255) &&
-        (shiftBy->AsIntConCommon()->IconValue() >= 0))
+    if (IsContainableImmed(node, shiftBy) && (shiftBy->AsIntCon()->IconValue() <= 255) &&
+        (shiftBy->AsIntCon()->IconValue() >= 0))
     {
         MakeSrcContained(node, shiftBy);
     }
@@ -7433,7 +7433,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         {
             indirDst->SetContained();
         }
-        else if (indirCandidateChild->IsCnsIntOrI() && indirCandidateChild->AsIntConCommon()->FitsInAddrBase(comp))
+        else if (indirCandidateChild->IsCnsIntOrI() && indirCandidateChild->AsIntCon()->FitsInAddrBase(comp))
         {
             indirDst->SetContained();
         }
@@ -8525,7 +8525,7 @@ void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* ad
     assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
     TryCreateAddrMode(addr, true, node);
     if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) ||
-         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
+         (addr->IsCnsIntOrI() && addr->AsIntCon()->FitsInAddrBase(comp))) &&
         IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
@@ -9574,7 +9574,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 // ival is already in the correct state to account for it
 
 #if DEBUG
-                                    ssize_t ival = lastOp->AsIntConCommon()->IconValue();
+                                    ssize_t ival = lastOp->AsIntCon()->IconValue();
 
                                     ssize_t zmask   = (ival & 0x0F);
                                     ssize_t count_d = (ival & 0x30) >> 4;
@@ -9595,7 +9595,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 // zmask is already in the correct state to account for it
 
 #if DEBUG
-                                    ssize_t ival = lastOp->AsIntConCommon()->IconValue();
+                                    ssize_t ival = lastOp->AsIntCon()->IconValue();
 
                                     ssize_t zmask   = (ival & 0x0F);
                                     ssize_t count_d = (ival & 0x30) >> 4;

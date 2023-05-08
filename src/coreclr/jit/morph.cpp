@@ -600,7 +600,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // than 2^{31} for a cast to int.
             int maxWidth = (dstType == TYP_UINT) ? 32 : 31;
 
-            if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
+            if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntCon()->LngValue() >> maxWidth) == 0))
             {
                 tree->ClearOverflow();
                 tree->SetAllEffectsFlags(oper);
@@ -1501,8 +1501,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 assert(argx != nullptr);
 
                 // We should have already handled these kinds of args
-                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
-                       !argx->IsCnsIntOrI());
+                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) && !argx->IsCnsIntOrI());
 
                 // This arg should either have no persistent side effects or be the last one in our table
                 // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
@@ -8103,7 +8102,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
                 // Refer to gtNewIconHandleNode() as the template for constructing a constant handle
                 //
                 tree->SetOper(GT_CNS_INT);
-                tree->AsIntConCommon()->SetIconValue(ssize_t(addrInfo.handle));
+                tree->AsIntCon()->SetIconValue(ssize_t(addrInfo.handle));
                 tree->gtFlags |= GTF_ICON_FTN_ADDR;
                 INDEBUG(tree->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
@@ -8606,8 +8605,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             noway_assert(op2);
             if ((typ == TYP_LONG) && opts.OptimizationEnabled())
             {
-                if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
-                    op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
+                if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntCon()->LngValue() >= 2 &&
+                    op2->AsIntCon()->LngValue() <= 0x3fffffff)
                 {
                     tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
                     noway_assert(op1->TypeIs(TYP_LONG));
@@ -8814,8 +8813,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                             JITDUMP("\nTransforming:\n");
                             DISPTREE(tree);
 
-                            op1->SetOper(GT_AND);                                 // Change % => &
-                            op1op2->AsIntConCommon()->SetIconValue(modValue - 1); // Change c => c - 1
+                            op1->SetOper(GT_AND);                           // Change % => &
+                            op1op2->AsIntCon()->SetIconValue(modValue - 1); // Change c => c - 1
                             fgUpdateConstTreeValueNumber(op1op2);
 
                             JITDUMP("\ninto:\n");
@@ -9302,7 +9301,7 @@ DONE_MORPHING_CHILDREN:
                     // Negate the constant and change the node to be "+",
                     // except when `op2` is a const byref.
 
-                    op2->AsIntConCommon()->SetIconValue(-op2->AsIntConCommon()->IconValue());
+                    op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue());
                     op2->AsIntConRef().gtFieldSeq = nullptr;
                     oper                          = GT_ADD;
                     tree->ChangeOper(oper);
@@ -9877,7 +9876,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
         gtPeelOffsets(&effAddr, &offset);
 
         if (((offset % genTypeSize(TYP_FLOAT)) != 0) ||
-            (effAddr->IsCnsIntOrI() && ((effAddr->AsIntConCommon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
+            (effAddr->IsCnsIntOrI() && ((effAddr->AsIntCon()->IconValue() % genTypeSize(TYP_FLOAT)) != 0)))
         {
             indir->gtFlags |= GTF_IND_UNALIGNED;
         }
@@ -10148,8 +10147,8 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
     assert(cmp->gtGetOp2()->IsIntegralConst());
     assert(!optValnumCSE_phase);
 
-    GenTree*             op1 = cmp->gtGetOp1();
-    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+    GenTree*       op1 = cmp->gtGetOp1();
+    GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
     // Check for "(expr +/- icon1) ==/!= (non-zero-icon2)".
     if (op2->IsCnsIntOrI() && (op2->IconValue() != 0))
@@ -10252,7 +10251,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                     goto SKIP;
                 }
 
-                GenTreeIntConCommon* andMask = andOp->gtGetOp2()->AsIntConCommon();
+                GenTreeIntCon* andMask = andOp->gtGetOp2()->AsIntCon();
 
                 if (andOp->TypeIs(TYP_INT) && shiftAmount < 32)
                 {
@@ -10344,7 +10343,7 @@ SKIP:
             return cmp;
         }
 
-        GenTreeIntConCommon* andMask = andOp->gtGetOp2()->AsIntConCommon();
+        GenTreeIntCon* andMask = andOp->gtGetOp2()->AsIntCon();
         if ((andMask->LngValue() >> 32) != 0)
         {
             return cmp;
@@ -10402,7 +10401,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     int64_t lhsMax;
     if (cmp->gtGetOp1()->IsIntegralConst())
     {
-        lhsMin = cmp->gtGetOp1()->AsIntConCommon()->IntegralValue();
+        lhsMin = cmp->gtGetOp1()->AsIntCon()->IntegralValue();
         lhsMax = lhsMin;
     }
     else
@@ -10416,7 +10415,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
     int64_t rhsMax;
     if (cmp->gtGetOp2()->IsIntegralConst())
     {
-        rhsMin = cmp->gtGetOp2()->AsIntConCommon()->IntegralValue();
+        rhsMin = cmp->gtGetOp2()->AsIntCon()->IntegralValue();
         rhsMax = rhsMin;
     }
     else
@@ -10516,8 +10515,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     assert(cmp->gtGetOp2()->IsIntegralConst());
     assert(!gtIsActiveCSE_Candidate(cmp->gtGetOp2()));
 
-    GenTree*             op1 = cmp->gtGetOp1();
-    GenTreeIntConCommon* op2 = cmp->gtGetOp2()->AsIntConCommon();
+    GenTree*       op1 = cmp->gtGetOp1();
+    GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
     assert(genActualType(op1) == genActualType(op2));
 
@@ -11281,7 +11280,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             op1 = mul->gtOp1;
         }
 
-        ssize_t mult = op2->AsIntConCommon()->IconValue();
+        ssize_t mult = op2->AsIntCon()->IconValue();
 
         if (mult == 0)
         {
@@ -11330,7 +11329,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             }
 
             // Change the multiplication into a shift by log2(val) bits.
-            op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
+            op2->AsIntCon()->SetIconValue(genLog2(abs_mult));
             changeToShift = true;
         }
         else if (mulShiftOpt && (lowestBit > 1) && jitIsScaleIndexMul(lowestBit))
@@ -11353,7 +11352,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 mul->gtOp1 = op1;
                 fgMorphTreeDone(op1);
 
-                op2->AsIntConCommon()->SetIconValue(shift);
+                op2->AsIntCon()->SetIconValue(shift);
                 changeToShift = true;
             }
         }
@@ -11485,7 +11484,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     auto isUpperZero = [this](GenTree* op) {
         if (op->IsIntegralConst())
         {
-            int64_t lng = op->AsIntConCommon()->LngValue();
+            int64_t lng = op->AsIntCon()->LngValue();
             return (lng >= 0) && (lng <= UINT_MAX);
         }
 
@@ -11511,7 +11510,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         auto transform = [this](GenTree** use) {
             if ((*use)->IsIntegralConst())
             {
-                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
+                (*use)->BashToConst(static_cast<int>((*use)->AsIntCon()->LngValue()));
                 fgUpdateConstTreeValueNumber(*use);
             }
             else
@@ -11928,8 +11927,8 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
                 if (cns->IsCnsIntOrI() && (op2->GetScaleIndexShf() != 0))
                 {
-                    ssize_t ishf = op2->AsIntConCommon()->IconValue();
-                    ssize_t iadd = cns->AsIntConCommon()->IconValue();
+                    ssize_t ishf = op2->AsIntCon()->IconValue();
+                    ssize_t iadd = cns->AsIntCon()->IconValue();
 
                     // printf("Changing '(val+icon1)<<icon2' into '(val<<icon2+icon1<<icon2)'\n");
 
@@ -11939,9 +11938,9 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
-                    op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
+                    op2->AsIntCon()->SetValueTruncating(iadd << ishf);
                     op1->ChangeOper(GT_LSH);
-                    cns->AsIntConCommon()->SetIconValue(ishf);
+                    cns->AsIntCon()->SetIconValue(ishf);
                 }
             }
 
@@ -12127,7 +12126,7 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    op2->AsIntConCommon()->SetIntegralValue(0);
+    op2->AsIntCon()->SetIntegralValue(0);
     fgUpdateConstTreeValueNumber(op2);
 
     GenTree* const zero = op2;
@@ -12310,7 +12309,7 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
 
     const var_types type = tree->TypeGet();
 
-    const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
+    const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntCon()->IntegralValue())) - 1;
     GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNode(cnsValue, type));
 
     INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);

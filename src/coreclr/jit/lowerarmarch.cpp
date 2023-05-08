@@ -472,7 +472,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
         else
         {
             assert(op2->IsIntegralConst());
-            assert(FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue()));
+            assert(FitsIn<int32_t>(op2->AsIntCon()->IntegralValue()));
 
             op2->ChangeType(TYP_INT);
         }
@@ -853,7 +853,7 @@ void Lowering::LowerModPow2(GenTree* node)
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue());
+    ssize_t divisorCnsValue         = static_cast<ssize_t>(divisor->AsIntCon()->IntegralValue());
     ssize_t divisorCnsValueMinusOne = divisorCnsValue - 1;
 
     BlockRange().Remove(divisor);

@@ -1549,7 +1549,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntCon()->IntegralValue());
                             vecCon->gtSimdVal.u8[simdLength - 1 - index] = cnsVal;
                         }
                         break;
@@ -1562,7 +1562,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntCon()->IntegralValue());
                             vecCon->gtSimdVal.u16[simdLength - 1 - index] = cnsVal;
                         }
                         break;
@@ -1575,7 +1575,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntCon()->IntegralValue());
                             vecCon->gtSimdVal.u32[simdLength - 1 - index] = cnsVal;
                         }
                         break;
@@ -1588,7 +1588,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntCon()->IntegralValue());
                             vecCon->gtSimdVal.u64[simdLength - 1 - index] = cnsVal;
                         }
                         break;

@@ -71,7 +71,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     }
     else if (addr->IsCnsIntOrI() && addr->isContained())
     {
-        GenTreeIntConCommon* icon = addr->AsIntConCommon();
+        GenTreeIntCon* icon = addr->AsIntCon();
         assert(!icon->ImmedValNeedsReloc(compiler));
         icon->SetIconValue(icon->IconValue() + 8);
     }
@@ -152,7 +152,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
     }
     else if (addr->IsCnsIntOrI() && addr->isContained())
     {
-        GenTreeIntConCommon* icon = addr->AsIntConCommon();
+        GenTreeIntCon* icon = addr->AsIntCon();
         assert(!icon->ImmedValNeedsReloc(compiler));
         icon->SetIconValue(icon->IconValue() + 8);
     }
@@ -188,7 +188,7 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
         }
         else if (addr->IsCnsIntOrI() && addr->isContained())
         {
-            GenTreeIntConCommon* icon = addr->AsIntConCommon();
+            GenTreeIntCon* icon = addr->AsIntCon();
             icon->SetIconValue(icon->IconValue() - 8);
         }
         else

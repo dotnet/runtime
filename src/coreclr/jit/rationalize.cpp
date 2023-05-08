@@ -157,8 +157,8 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
         if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
             op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
         {
-            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
-            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            size_t shiftValue = shift->AsIntCon()->IntegralValue();
+            size_t cnsValue   = cns->AsIntCon()->IntegralValue();
             if ((cnsValue >> shiftValue) == 1)
             {
                 node->ChangeOper(GT_MOD);

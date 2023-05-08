@@ -2751,7 +2751,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                 // Update the loop context.
                 //
                 assert(relopOp2->IsIconHandle(GTF_ICON_CLASS_HDL));
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)relopOp2->AsIntConCommon()->IconValue();
+                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)relopOp2->AsIntCon()->IconValue();
 
                 assert(compCurBB->lastStmt() == info->stmt);
                 info->context->EnsureLoopOptInfo(info->loopNum)
@@ -2781,7 +2781,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                     return WALK_CONTINUE;
                 }
 
-                offset    = indirAddr->gtGetOp2()->AsIntConCommon()->IconValue();
+                offset    = indirAddr->gtGetOp2()->AsIntCon()->IconValue();
                 indirAddr = indirAddr->gtGetOp1();
             }
 

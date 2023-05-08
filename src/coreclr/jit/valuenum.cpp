@@ -10503,11 +10503,11 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntCon()->LngValue())));
             }
             else
             {
-                tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntConCommon()->IconValue())));
+                tree->gtVNPair.SetBoth(vnStore->VNForIntCon(int(tree->AsIntCon()->IconValue())));
             }
 
             if (tree->IsCnsIntOrI())
@@ -10580,7 +10580,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         }
 
         case TYP_REF:
-            if (tree->AsIntConCommon()->IconValue() == 0)
+            if (tree->AsIntCon()->IconValue() == 0)
             {
                 tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
             }
@@ -10588,14 +10588,14 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             {
                 assert(doesMethodHaveFrozenObjects());
                 tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                    vnStore->VNForHandle(ssize_t(tree->AsIntCon()->IconValue()), tree->GetIconHandleFlag()));
 
                 fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
             }
             break;
 
         case TYP_BYREF:
-            if (tree->AsIntConCommon()->IconValue() == 0)
+            if (tree->AsIntCon()->IconValue() == 0)
             {
                 tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
             }
@@ -10606,13 +10606,13 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 if (tree->IsIconHandle())
                 {
                     tree->gtVNPair.SetBoth(
-                        vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                        vnStore->VNForHandle(ssize_t(tree->AsIntCon()->IconValue()), tree->GetIconHandleFlag()));
 
                     fgValueNumberRegisterConstFieldSeq(tree->AsIntCon());
                 }
                 else
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon((target_size_t)tree->AsIntConCommon()->IconValue()));
+                    tree->gtVNPair.SetBoth(vnStore->VNForByrefCon((target_size_t)tree->AsIntCon()->IconValue()));
                 }
             }
             break;

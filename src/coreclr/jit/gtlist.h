@@ -43,7 +43,7 @@ GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place
 //-----------------------------------------------------------------------------
 
 GTNODE(CNS_INT          , GenTreeIntCon      ,0,0,GTK_LEAF)
-GTNODE(CNS_LNG          , GenTreeLngCon      ,0,0,GTK_LEAF)
+GTNODE(CNS_LNG          , GenTreeIntCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)

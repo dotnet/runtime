@@ -2649,7 +2649,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         opt = ShiftOpToInsOpts(op2->gtOper);
 
         emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
-                              c->AsIntConCommon()->IconValue(), opt);
+                              c->AsIntCon()->IconValue(), opt);
 
         genProduceReg(tree);
         return;
@@ -3423,7 +3423,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
                 GenTree* b   = op1->gtGetOp2();
                 genConsumeRegs(op1);
                 GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(),
-                                            b->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                                            b->AsIntCon()->IntegralValue(), ShiftOpToInsOpts(oper));
             }
             break;
 
@@ -3892,7 +3892,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
                 {
                     // Even though INS_add is specified here, the encoder will choose either
                     // an INS_add or an INS_sub and encode the immediate as a positive value
-                    genInstrWithConstant(INS_add, dataSize, storeDataReg, loadReg, data->AsIntConCommon()->IconValue(),
+                    genInstrWithConstant(INS_add, dataSize, storeDataReg, loadReg, data->AsIntCon()->IconValue(),
                                          REG_NA);
                 }
                 else
@@ -4021,7 +4021,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
             else
             {
                 GetEmitter()->emitIns_R_I(INS_cmp, emitActualTypeSize(treeNode), targetReg,
-                                          comparand->AsIntConCommon()->IconValue());
+                                          comparand->AsIntCon()->IconValue());
                 GetEmitter()->emitIns_J(INS_bne, labelCompareFail);
             }
         }
@@ -4559,7 +4559,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (op2->isContainedIntOrIImmed())
         {
-            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+            GenTreeIntCon* intConst = op2->AsIntCon();
 
             regNumber op1Reg = op1->GetRegNum();
 
@@ -4599,8 +4599,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                 assert(shiftOp2->isContained());
 
                                 emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
-                                                    shiftOp2->AsIntConCommon()->IntegralValue(),
-                                                    ShiftOpToInsOpts(oper));
+                                                    shiftOp2->AsIntCon()->IntegralValue(), ShiftOpToInsOpts(oper));
                             }
                             break;
 
@@ -4621,7 +4620,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     assert(op2->gtGetOp2()->isContained());
 
                     emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
-                                        op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                                        op2->gtGetOp2()->AsIntCon()->IntegralValue(), ShiftOpToInsOpts(oper));
                     break;
 
                 default:
@@ -4687,7 +4686,7 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 
     if (op2->isContainedIntOrIImmed())
     {
-        GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+        GenTreeIntCon* intConst = op2->AsIntCon();
         emit->emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, (int)intConst->IconValue(), ccmp->gtFlagsVal, insCond);
     }
     else

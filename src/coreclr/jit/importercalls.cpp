@@ -1474,18 +1474,18 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
         StackEntry se  = impPopStack();
         GenTree*   val = se.val;
         assert(val->IsCnsIntOrI());
-        tlAndN.m_tl = (TestLabel)val->AsIntConCommon()->IconValue();
+        tlAndN.m_tl = (TestLabel)val->AsIntCon()->IconValue();
     }
     else if (numArgs == 3)
     {
         StackEntry se  = impPopStack();
         GenTree*   val = se.val;
         assert(val->IsCnsIntOrI());
-        tlAndN.m_num = val->AsIntConCommon()->IconValue();
+        tlAndN.m_num = val->AsIntCon()->IconValue();
         se           = impPopStack();
         val          = se.val;
         assert(val->IsCnsIntOrI());
-        tlAndN.m_tl = (TestLabel)val->AsIntConCommon()->IconValue();
+        tlAndN.m_tl = (TestLabel)val->AsIntCon()->IconValue();
     }
     else
     {
@@ -3643,7 +3643,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             // `rank` is guaranteed to be <=32 (see MAX_RANK in vm\array.h). Any constant argument
                             // is `int` sized.
-                            INT64 dimValue = gtDim->AsIntConCommon()->IntegralValue();
+                            INT64 dimValue = gtDim->AsIntCon()->IntegralValue();
                             assert((unsigned int)dimValue == dimValue);
                             unsigned dim = (unsigned int)dimValue;
                             if (dim < rank)
@@ -3808,7 +3808,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsIntegralConst())
                 {
-                    float f32Cns = BitOperations::UInt32BitsToSingle((uint32_t)op1->AsIntConCommon()->IconValue());
+                    float f32Cns = BitOperations::UInt32BitsToSingle((uint32_t)op1->AsIntCon()->IconValue());
                     retNode      = gtNewDconNodeF(f32Cns);
                 }
                 else
@@ -3827,7 +3827,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     impPopStack();
 
-                    int64_t i64Cns = op1->AsIntConCommon()->LngValue();
+                    int64_t i64Cns = op1->AsIntCon()->LngValue();
                     retNode        = gtNewDconNodeD(*reinterpret_cast<double*>(&i64Cns));
                 }
 #if TARGET_64BIT
@@ -4156,14 +4156,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 {
                     if (toType == TYP_DOUBLE)
                     {
-                        uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                        uint64_t u64Cns = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                         return gtNewDconNodeD(BitOperations::UInt64BitsToDouble(u64Cns));
                     }
                     else
                     {
                         assert(toType == TYP_FLOAT);
 
-                        uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                        uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                         return gtNewDconNodeF(BitOperations::UInt32BitsToSingle(u32Cns));
                     }
                 }
@@ -4606,12 +4606,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                     result       = gtNewLconNode(BitOperations::LeadingZeroCount(cns));
                 }
                 else
                 {
-                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                     result       = gtNewIconNode(BitOperations::LeadingZeroCount(cns), baseType);
                 }
                 break;
@@ -4708,7 +4708,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int64_t>(cns) >= 0))
                     {
@@ -4717,7 +4717,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else
                 {
-                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int32_t>(cns) >= 0))
                     {
@@ -4782,12 +4782,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                     result       = gtNewLconNode(BitOperations::PopCount(cns));
                 }
                 else
                 {
-                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                     result       = gtNewIconNode(BitOperations::PopCount(cns), baseType);
                 }
                 break;
@@ -4842,7 +4842,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             impPopStack();
 
             GenTree* op1  = impPopStack().val;
-            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntCon()->IconValue());
 
             // Mask the offset to ensure deterministic xplat behavior for overshifting
             cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
@@ -4857,18 +4857,18 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                     result        = gtNewLconNode(BitOperations::RotateLeft(cns1, cns2));
                 }
                 else
                 {
-                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                     result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
             }
 
-            op2->AsIntConCommon()->SetIconValue(cns2);
+            op2->AsIntCon()->SetIconValue(cns2);
             result = gtFoldExpr(gtNewOperNode(GT_ROL, baseType, op1, op2));
 
             break;
@@ -4891,7 +4891,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             impPopStack();
 
             GenTree* op1  = impPopStack().val;
-            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntCon()->IconValue());
 
             // Mask the offset to ensure deterministic xplat behavior for overshifting
             cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
@@ -4906,18 +4906,18 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                     result        = gtNewLconNode(BitOperations::RotateRight(cns1, cns2));
                 }
                 else
                 {
-                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                     result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
                 }
                 break;
             }
 
-            op2->AsIntConCommon()->SetIconValue(cns2);
+            op2->AsIntCon()->SetIconValue(cns2);
             result = gtFoldExpr(gtNewOperNode(GT_ROR, baseType, op1, op2));
 
             break;
@@ -4937,12 +4937,12 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (varTypeIsLong(baseType))
                 {
-                    uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+                    uint64_t cns = static_cast<uint64_t>(op1->AsIntCon()->LngValue());
                     result       = gtNewLconNode(BitOperations::TrailingZeroCount(cns));
                 }
                 else
                 {
-                    uint32_t cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+                    uint32_t cns = static_cast<uint32_t>(op1->AsIntCon()->IconValue());
                     result       = gtNewIconNode(BitOperations::TrailingZeroCount(cns), baseType);
                 }
 

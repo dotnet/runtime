@@ -517,7 +517,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
     if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
-        offsetValue += addr->gtGetOp2()->AsIntConCommon()->IconValue();
+        offsetValue += addr->gtGetOp2()->AsIntCon()->IconValue();
         addr = addr->gtGetOp1();
     }
 
@@ -601,7 +601,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             (additionOp1->AsLclVarCommon()->GetLclNum() == nullCheckAddress->AsLclVarCommon()->GetLclNum()) &&
             (additionOp2->IsCnsIntOrI()))
         {
-            offsetValue += additionOp2->AsIntConCommon()->IconValue();
+            offsetValue += additionOp2->AsIntCon()->IconValue();
             nullCheckTree = commaOp1EffectiveValue;
         }
     }

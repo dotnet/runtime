@@ -3048,59 +3048,142 @@ struct GenTreeVal : public GenTree
 #endif
 };
 
-struct GenTreeIntConCommon : public GenTree
+//
+// This is the GT_CNS_INT/GT_CNS_LNG struct definition.
+// It's used to hold for both integral constants and pointer handle constants.
+//
+struct GenTreeIntCon : public GenTree
 {
-    inline INT64 LngValue() const;
-    inline void SetLngValue(INT64 val);
-    inline ssize_t IconValue() const;
-    inline void SetIconValue(ssize_t val);
-    inline INT64 IntegralValue() const;
-    inline void SetIntegralValue(int64_t value);
+    union {
+        ssize_t gtIconVal;
+        int64_t gtLconVal;
+    };
 
-    template <typename T>
-    inline void SetValueTruncating(T value);
+    // In case the Jit is prejitting, handles representing various entities at compile time will
+    // not be the same as those representing the same entities at runtime. Since the compiler is
+    // often interested in the compile-time handle, we store it in this field.
+    ssize_t gtCompileTimeHandle = 0;
 
-    GenTreeIntConCommon(genTreeOps oper, var_types type DEBUGARG(bool largeNode = false))
-        : GenTree(oper, type DEBUGARG(largeNode))
-    {
-    }
+    // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
+    // sequence of fields.
+    FieldSeq* gtFieldSeq = nullptr;
 
-    bool FitsInI8() // IconValue() fits into 8-bit signed storage
-    {
-        return FitsInI8(IconValue());
-    }
-
-    static bool FitsInI8(ssize_t val) // Constant fits into 8-bit signed storage
-    {
-        return (int8_t)val == val;
-    }
-
-    bool FitsInI32() // IconValue() fits into 32-bit signed storage
-    {
-        return FitsInI32(IconValue());
-    }
-
-    static bool FitsInI32(ssize_t val) // Constant fits into 32-bit signed storage
-    {
-#ifdef TARGET_64BIT
-        return (int32_t)val == val;
-#else
-        return true;
+#ifdef DEBUG
+    // If the value represents target address (for a field or call), holds the handle of the field (or call).
+    size_t gtTargetHandle = 0;
 #endif
+
+    GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fieldSeq = nullptr DEBUGARG(bool largeNode = false))
+        : GenTree(GT_CNS_INT, type DEBUGARG(largeNode))
+        , gtLconVal(value)
+        , gtFieldSeq(fieldSeq)
+    {
     }
 
+    GenTreeIntCon(int64_t value)
+        : GenTree(GT_CNS_NATIVELONG, TYP_LONG DEBUGARG(/* largeNode */ false))
+        , gtLconVal(value)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeIntCon() : GenTree()
+    {
+    }
+#endif
+
+    int64_t LngValue() const
+    {
+        assert(TypeIs(TYP_LONG));
+        return gtLconVal;
+    }
+
+    void SetLngValue(INT64 value)
+    {
+        assert(TypeIs(TYP_LONG));
+        gtLconVal = value;
+    }
+
+    ssize_t IconValue() const
+    {
+        assert(IsCnsIntOrI()); // We should never see a GT_CNS_LNG for a 64-bit target!
+        return gtIconVal;
+    }
+
+    void SetIconValue(ssize_t val)
+    {
+        assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
+        gtIconVal = val;
+    }
+
+    int64_t IntegralValue() const
+    {
+        return gtLconVal;
+    }
+
+    void SetIntegralValue(int64_t value)
+    {
+        assert(FitsIn(TypeGet(), value));
+        gtLconVal = value;
+    }
+
+    //------------------------------------------------------------------------
+    // SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
+    //
+    // The function will truncate the supplied value to a 32 bit signed
+    // integer if the node's type is not TYP_LONG, otherwise setting it
+    // as-is. Note that this function intentionally does not check for
+    // small types (such nodes are created in lowering) for TP reasons.
+    //
+    // This function is intended to be used where its truncating behavior is
+    // desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
+    // wider integers, which is typical when compiling on 64 bit hosts, as
+    // most arithmetic is done in ssize_t's aka int64_t's in that case, while
+    // the node itself can be of a narrower type.
+    //
+    // Arguments:
+    //    value - Value to set, truncating to TYP_INT if the node is not of TYP_LONG
+    //
+    // Notes:
+    //    This function is templated so that it works well with compiler warnings of
+    //    the form "Operation may overflow before being assigned to a wider type", in
+    //    case "value" is of type ssize_t, which is common.
+    //
+    template <typename T>
+    void SetValueTruncating(T value)
+    {
+        static_assert_no_msg(
+            (std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
+
+        if (TypeIs(TYP_LONG))
+        {
+            SetLngValue(value);
+        }
+        else
+        {
+            SetIconValue(static_cast<int32_t>(value));
+        }
+    }
+
+    int LoVal() const
+    {
+        assert(TypeIs(TYP_LONG));
+        return (int)(gtLconVal & 0xffffffff);
+    }
+
+    int HiVal() const
+    {
+        assert(TypeIs(TYP_LONG));
+        return (int)(gtLconVal >> 32);
+    }
+
+    void FixupInitBlkValue(var_types asgType);
     bool ImmedValNeedsReloc(Compiler* comp);
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
 #ifdef TARGET_XARCH
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
-#endif
-
-#if DEBUGGABLE_GENTREE
-    GenTreeIntConCommon() : GenTree()
-    {
-    }
 #endif
 };
 
@@ -3120,191 +3203,6 @@ struct GenTreePhysReg : public GenTree
     }
 #endif
 };
-
-/* gtIntCon -- integer constant (GT_CNS_INT) */
-struct GenTreeIntCon : public GenTreeIntConCommon
-{
-    /*
-     * This is the GT_CNS_INT struct definition.
-     * It's used to hold for both int constants and pointer handle constants.
-     * For the 64-bit targets we will only use GT_CNS_INT as it used to represent all the possible sizes
-     * For the 32-bit targets we use a GT_CNS_LNG to hold a 64-bit integer constant and GT_CNS_INT for all others.
-     * In the future when we retarget the JIT for x86 we should consider eliminating GT_CNS_LNG
-     */
-    ssize_t gtIconVal; // Must overlap and have the same offset with the gtIconVal field in GenTreeLngCon below.
-
-    /* The InitializeArray intrinsic needs to go back to the newarray statement
-       to find the class handle of the array so that we can get its size.  However,
-       in ngen mode, the handle in that statement does not correspond to the compile
-       time handle (rather it lets you get a handle at run-time).  In that case, we also
-       need to store a compile time handle, which goes in this gtCompileTimeHandle field.
-    */
-    ssize_t gtCompileTimeHandle;
-
-    // TODO-Cleanup: It's not clear what characterizes the cases where the field
-    // above is used.  It may be that its uses and those of the "gtFieldSeq" field below
-    // are mutually exclusive, and they could be put in a union.  Or else we should separate
-    // this type into three subtypes.
-
-    // If this constant represents the offset of one or more fields, "gtFieldSeq" represents that
-    // sequence of fields.
-    FieldSeq* gtFieldSeq;
-
-#ifdef DEBUG
-    // If the value represents target address (for a field or call), holds the handle of the field (or call).
-    size_t gtTargetHandle = 0;
-#endif
-
-    GenTreeIntCon(var_types type, ssize_t value DEBUGARG(bool largeNode = false))
-        : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
-        , gtIconVal(value)
-        , gtCompileTimeHandle(0)
-        , gtFieldSeq(nullptr)
-    {
-    }
-
-    GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fields DEBUGARG(bool largeNode = false))
-        : GenTreeIntConCommon(GT_CNS_INT, type DEBUGARG(largeNode))
-        , gtIconVal(value)
-        , gtCompileTimeHandle(0)
-        , gtFieldSeq(fields)
-    {
-    }
-
-    void FixupInitBlkValue(var_types type);
-
-#if DEBUGGABLE_GENTREE
-    GenTreeIntCon() : GenTreeIntConCommon()
-    {
-    }
-#endif
-};
-
-/* gtLngCon -- long    constant (GT_CNS_LNG) */
-
-struct GenTreeLngCon : public GenTreeIntConCommon
-{
-    INT64 gtLconVal; // Must overlap and have the same offset with the gtIconVal field in GenTreeIntCon above.
-    INT32 LoVal()
-    {
-        return (INT32)(gtLconVal & 0xffffffff);
-    }
-
-    INT32 HiVal()
-    {
-        return (INT32)(gtLconVal >> 32);
-    }
-
-    GenTreeLngCon(INT64 val) : GenTreeIntConCommon(GT_CNS_NATIVELONG, TYP_LONG)
-    {
-        SetLngValue(val);
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeLngCon() : GenTreeIntConCommon()
-    {
-    }
-#endif
-};
-
-inline INT64 GenTreeIntConCommon::LngValue() const
-{
-#ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
-    return AsLngCon()->gtLconVal;
-#else
-    return IconValue();
-#endif
-}
-
-inline void GenTreeIntConCommon::SetLngValue(INT64 val)
-{
-#ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
-    AsLngCon()->gtLconVal = val;
-#else
-    // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
-    C_ASSERT(offsetof(GenTreeLngCon, gtLconVal) == offsetof(GenTreeIntCon, gtIconVal));
-    C_ASSERT(sizeof(AsLngCon()->gtLconVal) == sizeof(AsIntCon()->gtIconVal));
-
-    SetIconValue(ssize_t(val));
-#endif
-}
-
-inline ssize_t GenTreeIntConCommon::IconValue() const
-{
-    assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
-    return AsIntCon()->gtIconVal;
-}
-
-inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
-{
-    assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
-    AsIntCon()->gtIconVal = val;
-}
-
-inline INT64 GenTreeIntConCommon::IntegralValue() const
-{
-#ifdef TARGET_64BIT
-    return LngValue();
-#else
-    return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
-#endif // TARGET_64BIT
-}
-
-inline void GenTreeIntConCommon::SetIntegralValue(int64_t value)
-{
-#ifdef TARGET_64BIT
-    SetIconValue(value);
-#else
-    if (OperIs(GT_CNS_LNG))
-    {
-        SetLngValue(value);
-    }
-    else
-    {
-        assert(FitsIn<int32_t>(value));
-        SetIconValue(static_cast<int32_t>(value));
-    }
-#endif // TARGET_64BIT
-}
-
-//------------------------------------------------------------------------
-// SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
-//
-// The function will truncate the supplied value to a 32 bit signed
-// integer if the node's type is not TYP_LONG, otherwise setting it
-// as-is. Note that this function intentionally does not check for
-// small types (such nodes are created in lowering) for TP reasons.
-//
-// This function is intended to be used where its truncating behavior is
-// desirable. One example is folding of ADD(CNS_INT, CNS_INT) performed in
-// wider integers, which is typical when compiling on 64 bit hosts, as
-// most arithmetic is done in ssize_t's aka int64_t's in that case, while
-// the node itself can be of a narrower type.
-//
-// Arguments:
-//    value - Value to set, truncating to TYP_INT if the node is not of TYP_LONG
-//
-// Notes:
-//    This function is templated so that it works well with compiler warnings of
-//    the form "Operation may overflow before being assigned to a wider type", in
-//    case "value" is of type ssize_t, which is common.
-//
-template <typename T>
-inline void GenTreeIntConCommon::SetValueTruncating(T value)
-{
-    static_assert_no_msg(
-        (std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
-
-    if (TypeIs(TYP_LONG))
-    {
-        SetLngValue(value);
-    }
-    else
-    {
-        SetIconValue(static_cast<int32_t>(value));
-    }
-}
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
 
@@ -8882,12 +8780,12 @@ inline bool GenTree::OperIsCopyBlkOp()
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 {
-    if (IsCnsIntOrI() && (AsIntConCommon()->IconValue() == constVal))
+    if (IsCnsIntOrI() && (AsIntCon()->IconValue() == constVal))
     {
         return true;
     }
 
-    if ((gtOper == GT_CNS_LNG) && (AsIntConCommon()->LngValue() == constVal))
+    if ((gtOper == GT_CNS_LNG) && (AsIntCon()->LngValue() == constVal))
     {
         return true;
     }
@@ -9743,7 +9641,7 @@ inline bool GenTree::IsIntegralConstPow2() const
 {
     if (IsIntegralConst())
     {
-        return isPow2(AsIntConCommon()->IntegralValue());
+        return isPow2(AsIntCon()->IntegralValue());
     }
 
     return false;
@@ -9766,7 +9664,7 @@ inline bool GenTree::IsIntegralConstUnsignedPow2() const
 {
     if (IsIntegralConst())
     {
-        return isPow2((UINT64)AsIntConCommon()->IntegralValue());
+        return isPow2((UINT64)AsIntCon()->IntegralValue());
     }
 
     return false;
@@ -9784,7 +9682,7 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 {
     if (IsIntegralConst())
     {
-        INT64  svalue = AsIntConCommon()->IntegralValue();
+        INT64  svalue = AsIntCon()->IntegralValue();
         size_t value  = (svalue == SSIZE_T_MIN) ? static_cast<size_t>(svalue) : static_cast<size_t>(abs(svalue));
         return isPow2(value);
     }
@@ -9796,7 +9694,7 @@ inline bool GenTree::IsIntegralConstAbsPow2() const
 inline bool GenTree::IsIntCnsFitsInI32()
 {
 #ifdef TARGET_64BIT
-    return IsCnsIntOrI() && AsIntCon()->FitsInI32();
+    return IsCnsIntOrI() && FitsIn<int32_t>(AsIntCon()->IconValue());
 #else  // !TARGET_64BIT
     return IsCnsIntOrI();
 #endif // !TARGET_64BIT

@@ -44,7 +44,7 @@
 //
 // The "SPECIAL" variants indicate that some or all of the allowed opers exist elsewhere. This is
 // used in the DEBUGGABLE_GENTREE implementation when determining which vtable pointer to use for
-// a given oper. For example, IntConCommon (for the GenTreeIntConCommon type) allows opers
+// a given oper. For example, IntConCommon (for the GenTreeIntCon type) allows opers
 // for all its subtypes. The "SPECIAL" version is attached to the supertypes. "N" is always
 // considered "special".
 
@@ -55,9 +55,7 @@ GTSTRUCT_2(Val         , GT_END_LFIN, GT_JMP)
 #else
 GTSTRUCT_1(Val         , GT_JMP)
 #endif
-GTSTRUCT_2_SPECIAL(IntConCommon, GT_CNS_INT, GT_CNS_LNG)
-GTSTRUCT_1(IntCon      , GT_CNS_INT)
-GTSTRUCT_1(LngCon      , GT_CNS_LNG)
+GTSTRUCT_2(IntCon      , GT_CNS_INT, GT_CNS_LNG)
 GTSTRUCT_1(DblCon      , GT_CNS_DBL)
 GTSTRUCT_1(StrCon      , GT_CNS_STR)
 GTSTRUCT_1(VecCon      , GT_CNS_VEC)

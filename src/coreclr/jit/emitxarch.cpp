@@ -4673,7 +4673,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     else if ((memBase != nullptr) && memBase->IsCnsIntOrI() && memBase->isContained())
     {
         // Absolute addresses marked as contained should fit within the base of addr mode.
-        assert(memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+        assert(memBase->AsIntCon()->FitsInAddrBase(emitComp));
 
         // If we reach here, either:
         // - we are not generating relocatable code, (typically the non-AOT JIT case)
@@ -4684,9 +4684,9 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         //   be contained.
         //
         assert(!emitComp->opts.compReloc || memBase->IsIconHandle() || memBase->IsIntegralConst(0) ||
-               memBase->AsIntConCommon()->FitsInAddrBase(emitComp));
+               memBase->AsIntCon()->FitsInAddrBase(emitComp));
 
-        if (memBase->AsIntConCommon()->AddrNeedsReloc(emitComp))
+        if (memBase->AsIntCon()->AddrNeedsReloc(emitComp))
         {
             id->idSetIsDspReloc();
         }
@@ -4698,7 +4698,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
         // Absolute address must have already been set in the instrDesc constructor.
-        assert(emitGetInsAmdAny(id) == memBase->AsIntConCommon()->IconValue());
+        assert(emitGetInsAmdAny(id) == memBase->AsIntCon()->IconValue());
     }
     else
     {
@@ -4851,7 +4851,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     {
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
+            emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntCon()->IconValue());
         }
 #if defined(FEATURE_HW_INTRINSICS)
         else if (data->OperIsHWIntrinsic() && data->isContained())
@@ -4869,7 +4869,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             {
                 assert(numArgs == 2);
 
-                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntCon()->IconValue());
                 emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
             }
         }
@@ -4889,7 +4889,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntCon()->IconValue());
         }
 #if defined(FEATURE_HW_INTRINSICS)
         else if (data->OperIsHWIntrinsic() && data->isContained())
@@ -4907,7 +4907,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             {
                 assert(numArgs == 2);
 
-                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+                int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntCon()->IconValue());
                 emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
             }
         }
@@ -4929,7 +4929,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
     if (data->isContainedIntOrIImmed())
     {
-        int icon = (int)data->AsIntConCommon()->IconValue();
+        int icon = (int)data->AsIntCon()->IconValue();
         id       = emitNewInstrAmdCns(attr, offset, icon);
         id->idIns(ins);
         emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
@@ -4956,7 +4956,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         else
         {
             assert(numArgs == 2);
-            int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
+            int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntCon()->IconValue());
 
             id = emitNewInstrAmdCns(attr, offset, icon);
             id->idIns(ins);
@@ -5001,7 +5001,7 @@ void emitter::emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommo
 
     if (data->isContainedIntOrIImmed())
     {
-        emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntConCommon()->IconValue());
+        emitIns_S_I(ins, attr, varNode->GetLclNum(), 0, (int)data->AsIntCon()->IconValue());
     }
     else
     {
@@ -5169,7 +5169,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                             // src is an contained immediate
                             // dst is a class static variable
                             emitIns_C_I(ins, attr, memBase->AsClsVar()->gtClsVarHnd, 0,
-                                        (int)src->AsIntConCommon()->IconValue());
+                                        (int)src->AsIntCon()->IconValue());
                         }
                         else
                         {
@@ -5195,7 +5195,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         assert(otherOp == nullptr);
                         assert(src->IsCnsIntOrI());
 
-                        id = emitNewInstrAmdCns(attr, memIndir->Offset(), (int)src->AsIntConCommon()->IconValue());
+                        id = emitNewInstrAmdCns(attr, memIndir->Offset(), (int)src->AsIntCon()->IconValue());
                     }
                     else
                     {
@@ -5278,7 +5278,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                             assert(cnsOp == src);
                             assert(otherOp == nullptr);
 
-                            sz = emitInsSizeAM(id, insCodeMI(ins), (int)src->AsIntConCommon()->IconValue());
+                            sz = emitInsSizeAM(id, insCodeMI(ins), (int)src->AsIntCon()->IconValue());
                         }
                         else
                         {
@@ -5359,7 +5359,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
                 // src is an contained immediate
                 // dst is a stack based local variable
-                emitIns_S_I(ins, attr, varNum, offset, (int)src->AsIntConCommon()->IconValue());
+                emitIns_S_I(ins, attr, varNum, offset, (int)src->AsIntCon()->IconValue());
             }
             else
             {
@@ -5380,7 +5380,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         if (src->IsCnsIntOrI())
         {
             assert(!dst->isContained());
-            GenTreeIntConCommon* intCns = src->AsIntConCommon();
+            GenTreeIntCon* intCns = src->AsIntCon();
             emitIns_R_I(ins, attr, dst->GetRegNum(), intCns->IconValue());
         }
         else
@@ -5450,8 +5450,8 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 
     if (src->isContainedIntOrIImmed())
     {
-        GenTreeIntConCommon* intConst = src->AsIntConCommon();
-        int                  iconVal  = (int)intConst->IconValue();
+        GenTreeIntCon* intConst = src->AsIntCon();
+        int            iconVal  = (int)intConst->IconValue();
         switch (ins)
         {
             case INS_rcl_N:

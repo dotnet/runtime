@@ -43,7 +43,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
     <DisplayString>{gtTreeID, d}: [{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
-    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [IntCon={((GenTreeIntCon*)this)-&gt;gtLconVal, d}]</DisplayString>
   </Type>
   <Type Name="GenTreeDblCon">
     <DisplayString>{gtTreeID, d}: [DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>
@@ -53,9 +53,6 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
   <Type Name="GenTreeVecCon">
     <DisplayString>CNS_VEC</DisplayString>
-  </Type>
-  <Type Name="GenTreeLngCon">
-    <DisplayString>{gtTreeID, d}: [LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
   </Type>
   <Type Name="GenTreeOp">
     <DisplayString Condition="this->gtOper==GT_CAST">{gtTreeID, d}: [{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>

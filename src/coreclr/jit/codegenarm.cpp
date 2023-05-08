@@ -233,8 +233,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             // relocatable values tend to come down as a CNS_INT of native int type
             // so the line between these two opcodes is kind of blurry
-            GenTreeIntConCommon* con    = tree->AsIntConCommon();
-            ssize_t              cnsVal = con->IconValue();
+            GenTreeIntCon* con    = tree->AsIntCon();
+            ssize_t        cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
 
@@ -937,7 +937,7 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     assert(shiftBy->isContainedIntOrIImmed());
 
-    unsigned count = (unsigned)shiftBy->AsIntConCommon()->IconValue();
+    unsigned count = (unsigned)shiftBy->AsIntCon()->IconValue();
 
     regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
 

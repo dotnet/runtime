@@ -1578,7 +1578,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             }
             else if (data->IsIntegralConst())
             {
-                ssize_t imm = data->AsIntConCommon()->IconValue();
+                ssize_t imm = data->AsIntCon()->IconValue();
                 emit->emitLoadImmediate(EA_PTRSIZE, rsGetRsvdReg(), imm);
                 dataReg = rsGetRsvdReg();
             }
@@ -5047,7 +5047,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         if (source->isContained())
         {
             assert(source->IsCnsIntOrI());
-            assert(source->AsIntConCommon()->IconValue() == 0);
+            assert(source->AsIntCon()->IconValue() == 0);
             emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
         }
         else
