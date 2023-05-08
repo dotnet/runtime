@@ -111,6 +111,12 @@ PhaseStatus Compiler::fgForwardSub()
     }
 #endif
 
+    if (!fgDidEarlyLiveness)
+    {
+        JITDUMP("Liveness information not available, skipping forward sub\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool changed = false;
 
     for (BasicBlock* const block : Blocks())
@@ -483,11 +489,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     // Cannot forward sub without liveness information.
     //
-    if (!fgDidEarlyLiveness)
-    {
-        JITDUMP(" liveness information not available\n");
-        return false;
-    }
+    assert(fgDidEarlyLiveness);
 
     // And local is unalised
     //
