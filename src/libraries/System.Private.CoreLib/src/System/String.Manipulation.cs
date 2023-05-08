@@ -51,18 +51,6 @@ namespace System
                 elementCount: (uint)src.Length);
         }
 
-        private static void CopyStringContentChecked(string dest, int destPos, string src)
-        {
-            Debug.Assert(dest != null);
-            Debug.Assert(src != null);
-            if (src.Length > dest.Length - destPos)
-            {
-                throw new IndexOutOfRangeException();
-            }
-
-            CopyStringContent(dest, destPos, src);
-        }
-
         public static string Concat(object? arg0) =>
             arg0?.ToString() ?? Empty;
 
@@ -127,8 +115,14 @@ namespace System
                 Debug.Assert(s != null);
                 Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
-                CopyStringContentChecked(result, position, s);
+                CopyStringContent(result, position, s);
                 position += s.Length;
+
+                // Check for overflow
+                if (position < 0)
+                {
+                    ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+                }
             }
 
             return result;
@@ -265,9 +259,13 @@ namespace System
 
             int str0Length = str0.Length;
 
-            // totalLength will never overflow to a non-negative number
-            // and the negative number will trigger OOM in FastAllocateString.
             int totalLength = str0Length + str1.Length;
+
+            // Can't overflow to a positive number so just check < 0
+            if (totalLength < 0)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
 
             string result = FastAllocateString(totalLength);
 
@@ -294,12 +292,19 @@ namespace System
                 return Concat(str0, str1);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength64 = str0.Length + str1.Length + str2.Length;
 
-            string result = FastAllocateString(totalLength);
-            CopyStringContentChecked(result, 0, str0);
-            CopyStringContentChecked(result, str0.Length, str1);
-            CopyStringContentChecked(result, str0.Length + str1.Length, str2);
+            int totalLength32 = (int)totalLength64;
+            if (totalLength64 != totalLength32)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString(totalLength32);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
 
             return result;
         }
@@ -326,13 +331,20 @@ namespace System
                 return Concat(str0, str1, str2);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength64 = str0.Length + str1.Length + str2.Length + str3.Length;
+            
+            int totalLength32 = (int)totalLength64;
+            if (totalLength64 != totalLength32)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
 
-            string result = FastAllocateString(totalLength);
-            CopyStringContentChecked(result, 0, str0);
-            CopyStringContentChecked(result, str0.Length, str1);
-            CopyStringContentChecked(result, str0.Length + str1.Length, str2);
-            CopyStringContentChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            string result = FastAllocateString(totalLength32);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
+            CopyStringContent(result, str0.Length + str1.Length + str2.Length, str3);
 
             return result;
         }
@@ -484,7 +496,7 @@ namespace System
                         break;
                     }
 
-                    CopyStringContentChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
             }
@@ -984,7 +996,7 @@ namespace System
                     }
 
                     // Fill in the value.
-                    CopyStringContentChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
 
