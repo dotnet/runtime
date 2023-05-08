@@ -1552,7 +1552,6 @@ public:
 
 private:
     Compiler* compiler;
-    int counter;
 
     CompAllocator getAllocator(Compiler* comp)
     {
