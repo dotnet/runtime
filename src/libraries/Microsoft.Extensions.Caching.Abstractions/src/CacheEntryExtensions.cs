@@ -174,7 +174,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             foreach (PostEvictionCallbackRegistration postEvictionCallback in options.PostEvictionCallbacks)
             {
-                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback!, postEvictionCallback.State);
+                ArgumentNullException.ThrowIfNull(postEvictionCallback.EvictionCallback);
+                entry.RegisterPostEvictionCallback(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
             }
 
             return entry;
