@@ -666,6 +666,28 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
     return asg;
 }
 
+//------------------------------------------------------------------------
+// IncrementRefCount:
+//   Increment the ref count for the specified local.
+//
+// Parameters:
+//   comp   - compiler instance
+//   lclNum - the local
+//
+// Remarks:
+//   During physical promotion we make the following assumptions:
+//   1. We never not need to update the weighted ref counts. Those store the
+//      number of times the local appears as an implicit byref argument to a call,
+//      and is only used to undo regular promotion in some cases.
+//   2. The ref counts for normal locals are allowed to be overestimated. We
+//      only use them for forward sub today where that is ok.
+//
+void Promotion::IncrementRefCount(Compiler* compiler, unsigned lclNum)
+{
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    varDsc->incLvRefCntSaturating(1, RCS_EARLY);
+}
+
 Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
     GenTree* tree = *use;
@@ -828,6 +850,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
     *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
 
+    m_compiler->lvaGetDesc(rep.LclNum)->incLvRefCntSaturating(1, RCS_EARLY);
+
     if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
     {
         rep.NeedsWriteBack = true;
@@ -930,6 +954,9 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
                                                          Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
             *use = comma;
             use  = &comma->gtOp2;
+
+            m_compiler->lvaGetDesc(rep.LclNum)->incLvRefCntSaturating(1, RCS_EARLY);
+            m_compiler->lvaGetDesc(lcl)->incLvRefCntSaturating(1, RCS_EARLY);
 
             rep.NeedsWriteBack = false;
             m_madeChanges      = true;
