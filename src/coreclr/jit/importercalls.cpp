@@ -2590,7 +2590,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
             // We need these to be able to fold "typeof(...) == typeof(...)"
-            case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
@@ -2616,6 +2615,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
             case NI_System_Type_GetEnumUnderlyingType:
             case NI_System_Type_get_TypeHandle:
+            case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
 
             // Most atomics are compiled to single instructions
