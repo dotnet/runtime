@@ -286,15 +286,14 @@ namespace System
             }
 
             // It can overflow to a positive number so we accumulate the total length as a long.
-            long totalLength64 = (long)str0.Length + (long)str1.Length + (long)str2.Length;
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length;
 
-            int totalLength32 = (int)totalLength64;
-            if (totalLength64 != totalLength32)
+            if (totalLength > int.MaxValue)
             {
                 ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
 
-            string result = FastAllocateString(totalLength32);
+            string result = FastAllocateString((int)totalLength);
             CopyStringContent(result, 0, str0);
             CopyStringContent(result, str0.Length, str1);
             CopyStringContent(result, str0.Length + str1.Length, str2);
@@ -325,15 +324,14 @@ namespace System
             }
 
             // It can overflow to a positive number so we accumulate the total length as a long.
-            long totalLength64 = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
 
-            int totalLength32 = (int)totalLength64;
-            if (totalLength64 != totalLength32)
+            if (totalLength > int.MaxValue)
             {
                 ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
 
-            string result = FastAllocateString(totalLength32);
+            string result = FastAllocateString((int)totalLength);
             CopyStringContent(result, 0, str0);
             CopyStringContent(result, str0.Length, str1);
             CopyStringContent(result, str0.Length + str1.Length, str2);
