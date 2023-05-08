@@ -8554,7 +8554,7 @@ interp_invalidate_transformed (void)
 			mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
 			jit_mm_unlock (jit_mm);
 		}
-		
+
 		g_ptr_array_free (alcs, TRUE);
 	}
 
@@ -8606,7 +8606,7 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 				g_free (copy_jit_info_data.jit_info_array);
 			}
 		}
-		
+
 		g_ptr_array_free (alcs, TRUE);
 	}
 }
@@ -8894,6 +8894,33 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 #else
 	g_assert_not_reached();
 #endif
+}
+
+#define JITERP_OPINFO_TYPE_NAME 0
+#define JITERP_OPINFO_TYPE_LENGTH 1
+#define JITERP_OPINFO_TYPE_SREGS 2
+#define JITERP_OPINFO_TYPE_DREGS 3
+#define JITERP_OPINFO_TYPE_OPARGTYPE 4
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_opcode_info (int opcode, int type)
+{
+	g_assert ((opcode >= 0) && (opcode <= MINT_LASTOP));
+	switch (type) {
+		case JITERP_OPINFO_TYPE_NAME:
+			// We know this conversion is safe because wasm pointers are 32 bits
+			return (int)(void*)(mono_interp_opname (opcode));
+		case JITERP_OPINFO_TYPE_LENGTH:
+			return mono_interp_oplen [opcode];
+		case JITERP_OPINFO_TYPE_SREGS:
+			return mono_interp_op_sregs [opcode];
+		case JITERP_OPINFO_TYPE_DREGS:
+			return mono_interp_op_dregs [opcode];
+		case JITERP_OPINFO_TYPE_OPARGTYPE:
+			return mono_interp_opargtype [opcode];
+		default:
+			g_assert_not_reached();
+	}
 }
 
 #endif
