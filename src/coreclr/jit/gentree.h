@@ -1020,7 +1020,7 @@ public:
 
     static const unsigned char gtOperKindTable[];
 
-    static unsigned OperKind(unsigned gtOper)
+    static constexpr unsigned OperKind(unsigned gtOper)
     {
         assert(gtOper < GT_COUNT);
 
@@ -1446,7 +1446,7 @@ public:
     }
 #endif // TARGET_XARCH
 
-    static bool OperIsUnary(genTreeOps gtOper)
+    static constexpr bool OperIsUnary(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_UNOP) != 0;
     }
@@ -1508,7 +1508,7 @@ public:
     }
 #endif // FEATURE_HW_INTRINSICS
 
-    static bool OperIsCommutative(genTreeOps gtOper)
+    static constexpr bool OperIsCommutative(genTreeOps gtOper)
     {
         return (OperKind(gtOper) & GTK_COMMUTE) != 0;
     }
