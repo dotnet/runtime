@@ -8,7 +8,10 @@ import {
     getU16, getI16,
     getU32_unaligned, getI32_unaligned, getF32_unaligned, getF64_unaligned,
 } from "./memory";
-import { WasmOpcode, WasmSimdOpcode, getOpcodeInfo } from "./jiterpreter-opcodes";
+import {
+    WasmOpcode, WasmSimdOpcode,
+    getOpcodeName, OpcodeInfoType
+} from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
     SimdIntrinsic2, SimdIntrinsic3, SimdIntrinsic4
@@ -171,8 +174,8 @@ export function generateWasmBody (
     eraseInferredState();
 
     // Skip over the enter opcode
-    const enterInfo = getOpcodeInfo(MintOpcode.MINT_TIER_ENTER_JITERPRETER);
-    ip += <any>(enterInfo.length_u16 * 2);
+    const enterSizeU16 = cwraps.mono_jiterp_get_opcode_info(MintOpcode.MINT_TIER_ENTER_JITERPRETER, OpcodeInfoType.Length);
+    ip += <any>(enterSizeU16 * 2);
     let rip = ip;
 
     builder.cfg.entry(ip);
@@ -207,7 +210,10 @@ export function generateWasmBody (
         }
 
         let opcode = getU16(ip);
-        const info = getOpcodeInfo(opcode);
+        const numSregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+            numDregs = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Dregs),
+            opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+
         const isSimdIntrins = (opcode >= MintOpcode.MINT_SIMD_INTRINS_P_P) &&
             (opcode <= MintOpcode.MINT_SIMD_INTRINS_P_PPP);
         const simdIntrinsArgCount = isSimdIntrins
@@ -217,11 +223,11 @@ export function generateWasmBody (
             ? getArgU16(ip, 1 + simdIntrinsArgCount)
             : 0;
 
-        mono_assert(info, () => `invalid opcode ${opcode}`);
+        mono_assert((opcode >= 0) && (opcode < MintOpcode.MINT_LASTOP), () => `invalid opcode ${opcode}`);
 
         const opname = isSimdIntrins
             ? SimdInfo[simdIntrinsArgCount][simdIntrinsIndex]
-            : info.name;
+            : getOpcodeName(opcode);
         const _ip = ip;
         const isBackBranchTarget = builder.options.noExitBackwardBranches &&
             is_backward_branch_target(ip, startOfBody, backwardBranchTable),
@@ -1336,7 +1342,7 @@ export function generateWasmBody (
                 // This should have already happened, but it's possible there are opcodes where
                 //  our invalidation is incorrect so it's best to do this for safety reasons
                 const firstDreg = <any>ip + 2;
-                for (let r = 0; r < info.dregs; r++) {
+                for (let r = 0; r < numDregs; r++) {
                     const dreg = getU16(firstDreg + (r * 2));
                     invalidate_local(dreg);
                 }
@@ -1345,18 +1351,18 @@ export function generateWasmBody (
             if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
                 let stmtText = `${(<any>ip).toString(16)} ${opname} `;
                 const firstDreg = <any>ip + 2;
-                const firstSreg = firstDreg + (info.dregs * 2);
+                const firstSreg = firstDreg + (numDregs * 2);
                 // print sregs
-                for (let r = 0; r < info.sregs; r++) {
+                for (let r = 0; r < numSregs; r++) {
                     if (r !== 0)
                         stmtText += ", ";
                     stmtText += getU16(firstSreg + (r * 2));
                 }
 
                 // print dregs
-                if (info.dregs > 0)
+                if (numDregs > 0)
                     stmtText += " -> ";
-                for (let r = 0; r < info.dregs; r++) {
+                for (let r = 0; r < numDregs; r++) {
                     if (r !== 0)
                         stmtText += ", ";
                     stmtText += getU16(firstDreg + (r * 2));
@@ -1375,7 +1381,7 @@ export function generateWasmBody (
                 // console.log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
-            ip += <any>(info.length_u16 * 2);
+            ip += <any>(opLengthU16 * 2);
             if (<any>ip <= (<any>endOfBody))
                 rip = ip;
             // For debugging
@@ -2563,7 +2569,6 @@ function emit_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode, displacement?: number
 ) : boolean {
-    const info = getOpcodeInfo(opcode);
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
     eraseInferredState();
@@ -2607,9 +2612,9 @@ function emit_branch (
                 } else {
                     if (destination < builder.cfg.entryIp) {
                         if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                            console.log(`${info.name} target 0x${destination.toString(16)} before start of trace`);
+                            console.log(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
                     } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                        console.log(`0x${(<any>ip).toString(16)} ${info.name} target 0x${destination.toString(16)} not found in list ` +
+                        console.log(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
 
@@ -2665,10 +2670,10 @@ function emit_branch (
             //  so we don't need to load anything. After the condition was loaded, we
             //  treat it like a brtrue
             if (relopbranchTable[opcode] === undefined)
-                throw new Error(`Unsupported relop branch opcode: ${opcode}`);
+                throw new Error(`Unsupported relop branch opcode: ${getOpcodeName(opcode)}`);
 
-            if (info.length_u16 !== 4)
-                throw new Error(`Unsupported long branch opcode: ${info.name}`);
+            if (cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length) !== 4)
+                throw new Error(`Unsupported long branch opcode: ${getOpcodeName(opcode)}`);
 
             builder.appendU8(WasmOpcode.i32_eqz);
             break;
@@ -2678,7 +2683,7 @@ function emit_branch (
     if (!displacement)
         throw new Error("Branch had no displacement");
     else if (traceBranchDisplacements)
-        console.log(`${info.name} @${ip} displacement=${displacement}`);
+        console.log(`${getOpcodeName(opcode)} @${ip} displacement=${displacement}`);
 
     const destination = <any>ip + (displacement * 2);
 
@@ -2701,9 +2706,9 @@ function emit_branch (
         } else {
             if (destination < builder.cfg.entryIp) {
                 if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
-                    console.log(`${info.name} target 0x${destination.toString(16)} before start of trace`);
+                    console.log(`${getOpcodeName(opcode)} target 0x${destination.toString(16)} before start of trace`);
             } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                console.log(`0x${(<any>ip).toString(16)} ${info.name} target 0x${destination.toString(16)} not found in list ` +
+                console.log(`0x${(<any>ip).toString(16)} ${getOpcodeName(opcode)} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );
             // We didn't find a loop to branch to, so bail out

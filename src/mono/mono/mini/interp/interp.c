@@ -8896,20 +8896,31 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 #endif
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_get_opcode_info (int opcode, void *_result)
+#define JITERP_OPINFO_TYPE_NAME 0
+#define JITERP_OPINFO_TYPE_LENGTH 1
+#define JITERP_OPINFO_TYPE_SREGS 2
+#define JITERP_OPINFO_TYPE_DREGS 3
+#define JITERP_OPINFO_TYPE_OPARGTYPE 4
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_get_opcode_info (int opcode, int type)
 {
-	struct {
-		const char *name;
-		int length_u16, num_dregs, num_sregs, opargtype;
-	} *result = _result;
-	g_assert (result);
 	g_assert ((opcode >= 0) && (opcode <= MINT_LASTOP));
-	result->name = mono_interp_opname (opcode);
-	result->length_u16 = mono_interp_oplen [opcode];
-	result->num_sregs = mono_interp_op_sregs [opcode];
-	result->num_dregs = mono_interp_op_dregs [opcode];
-	result->opargtype = mono_interp_opargtype [opcode];
+	switch (type) {
+		case JITERP_OPINFO_TYPE_NAME:
+			// We know this conversion is safe because wasm pointers are 32 bits
+			return (int)(void*)(mono_interp_opname (opcode));
+		case JITERP_OPINFO_TYPE_LENGTH:
+			return mono_interp_oplen [opcode];
+		case JITERP_OPINFO_TYPE_SREGS:
+			return mono_interp_op_sregs [opcode];
+		case JITERP_OPINFO_TYPE_DREGS:
+			return mono_interp_op_dregs [opcode];
+		case JITERP_OPINFO_TYPE_OPARGTYPE:
+			return mono_interp_opargtype [opcode];
+		default:
+			g_assert_not_reached();
+	}
 }
 
 #endif

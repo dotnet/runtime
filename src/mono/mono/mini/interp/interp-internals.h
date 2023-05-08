@@ -357,8 +357,8 @@ mono_jiterp_get_simd_intrinsic (int arity, int index);
 int
 mono_jiterp_get_simd_opcode (int arity, int index);
 
-void
-mono_jiterp_get_opcode_info (int opcode, void *_result);
+int
+mono_jiterp_get_opcode_info (int opcode, int type);
 
 #endif
 

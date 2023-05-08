@@ -3,7 +3,6 @@
 
 // Keep this file in sync with mintops.def. The order and values need to match exactly.
 
-import { getI32_unaligned } from "./memory";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
 
@@ -30,39 +29,25 @@ export const enum MintOpArgType {
 	MintOpPair4
 }
 
-export class OpcodeInfo {
-    opcode: number;
-    name: string;
-    length_u16: number;
-    dregs: number;
-    sregs: number;
-    optype: MintOpArgType;
-
-    constructor (opcode: number, buffer: number) {
-        this.opcode = opcode;
-        const pName = getI32_unaligned(buffer + 0);
-        this.name = Module.UTF8ToString(<any>pName);
-        this.length_u16 = getI32_unaligned(buffer + 4);
-        this.dregs = getI32_unaligned(buffer + 8);
-        this.sregs = getI32_unaligned(buffer + 12);
-        this.optype = <any>getI32_unaligned(buffer + 16);
-    }
+export const enum OpcodeInfoType {
+    Name = 0,
+    Length,
+    Sregs,
+    Dregs,
+    OpArgType
 }
 
-export type OpcodeInfoTable = {
-    [key: number]: OpcodeInfo;
+export type OpcodeNameTable = {
+    [key: number]: string;
 }
 
-const opcodeInfoCache : OpcodeInfoTable = {};
-let opcodeInfoBuffer = 0;
+const opcodeNameCache : OpcodeNameTable = {};
 
-export function getOpcodeInfo (opcode: number) : OpcodeInfo {
-    let result = opcodeInfoCache[opcode];
-    if (!result) {
-        if (!opcodeInfoBuffer)
-            opcodeInfoBuffer = <any>Module._malloc(20);
-        cwraps.mono_jiterp_get_opcode_info(opcode, opcodeInfoBuffer);
-        opcodeInfoCache[opcode] = result = new OpcodeInfo(opcode, opcodeInfoBuffer);
+export function getOpcodeName (opcode: number) : string {
+    let result = opcodeNameCache[opcode];
+    if (typeof (result) !== "string") {
+        const pName = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Name);
+        opcodeNameCache[opcode] = result = Module.UTF8ToString(<any>pName);
     }
     return result;
 }
