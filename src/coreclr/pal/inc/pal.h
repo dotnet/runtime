@@ -117,7 +117,7 @@ extern bool g_arm64_atomics_present;
 #endif // !_MSC_VER
 #endif // !THROW_DECL
 
-#ifdef __sun
+#if defined(__sun) || defined(__HAIKU__)
 #define MATH_THROW_DECL
 #else
 #define MATH_THROW_DECL THROW_DECL
@@ -2760,6 +2760,8 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 #define PAL_CS_NATIVE_DATA_SIZE 96
 #elif defined(__linux__) && defined(__riscv) && __riscv_xlen == 64
 #define PAL_CS_NATIVE_DATA_SIZE 96
+#elif defined(__HAIKU__) && defined(__x86_64__)
+#define PAL_CS_NATIVE_DATA_SIZE 56
 #else
 #error  PAL_CS_NATIVE_DATA_SIZE is not defined for this architecture
 #endif
@@ -4380,7 +4382,26 @@ PALIMPORT void __cdecl srand(unsigned int);
 PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
-#define ERANGE          34
+#ifndef PAL_STDCPP_COMPAT
+
+#ifdef __HAIKU__
+// Haiku uses different errno values
+#define EINVAL ((int)0x80000005)
+#define ERANGE ((int)0x80007011)
+#define EILSEQ ((int)0x80007026)
+#define ENOENT ((int)0x80006003)
+#define EBADF  ((int)0x80006000)
+#define ENOMEM ((int)0x80000000)
+#else // __HAIKU__
+#define EINVAL 22
+#define ERANGE 34
+#define EILSEQ 42
+#define ENOENT 2
+#define EBADF  9
+#define ENOMEM 12
+#endif
+
+#endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
 PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);

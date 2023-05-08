@@ -54,7 +54,7 @@
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
-#define MAX_ARGV_ENTRIES 32 
+#define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
@@ -80,6 +80,9 @@ inline uint32_t PlatformGetCurrentThreadId() {
 #elif defined(__NetBSD__)
 #include <lwp.h>
 #define PlatformGetCurrentThreadId() (uint32_t)_lwp_self()
+#elif defined(__HAIKU__)
+#include <OS.h>
+#define PlatformGetCurrentThreadId() (uint32_t)find_thread(NULL)
 #else
 #define PlatformGetCurrentThreadId() (uint32_t)pthread_self()
 #endif

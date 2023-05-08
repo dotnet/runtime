@@ -9,12 +9,24 @@
 #include <inttypes.h>
 #include "elfreader.h"
 
+#ifndef Elf_Ehdr
 #define Elf_Ehdr   ElfW(Ehdr)
+#endif
+#ifndef Elf_Phdr
 #define Elf_Phdr   ElfW(Phdr)
+#endif
+#ifndef Elf_Shdr
 #define Elf_Shdr   ElfW(Shdr)
+#endif
+#ifndef Elf_Nhdr
 #define Elf_Nhdr   ElfW(Nhdr)
+#endif
+#ifndef Elf_Dyn
 #define Elf_Dyn    ElfW(Dyn)
+#endif
+#ifndef Elf_Sym
 #define Elf_Sym    ElfW(Sym)
+#endif
 
 #if TARGET_64BIT
 #define PRIx PRIx64
@@ -32,6 +44,10 @@
 
 #ifndef HOST_WINDOWS
 static const char ElfMagic[] = { 0x7f, 'E', 'L', 'F', '\0' };
+#endif
+
+#ifdef TARGET_HAIKU
+#define DT_GNU_HASH DT_HASH
 #endif
 
 class ElfReaderExport : public ElfReader
@@ -314,7 +330,7 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
     return true;
 }
 
-#ifdef HOST_UNIX
+#if defined(HOST_UNIX) && !defined(TARGET_HAIKU)
 
 //
 // Enumerate all the ELF info starting from the root program header. This
@@ -414,7 +430,7 @@ ElfReader::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
     return true;
 }
 
-#endif // HOST_UNIX
+#endif // defined(HOST_UNIX) && !defined(TARGET_HAIKU)
 
 bool
 ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)

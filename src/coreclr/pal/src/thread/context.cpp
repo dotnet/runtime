@@ -59,13 +59,22 @@ typedef int __ptrace_request;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 #ifdef HOST_AMD64
+#ifdef __HAIKU__
 #define ASSIGN_CONTROL_REGS \
-    ASSIGN_REG(Rbp)     \
-    ASSIGN_REG(Rip)     \
-    ASSIGN_REG(SegCs)   \
-    ASSIGN_REG(EFlags)  \
-    ASSIGN_REG(Rsp)     \
+        ASSIGN_REG(Rbp)     \
+        ASSIGN_REG(Rip)     \
+        ASSIGN_REG(EFlags)  \
+        ASSIGN_REG(Rsp)     \
 
+#else // __HAIKU__
+#define ASSIGN_CONTROL_REGS \
+        ASSIGN_REG(Rbp)     \
+        ASSIGN_REG(Rip)     \
+        ASSIGN_REG(SegCs)   \
+        ASSIGN_REG(EFlags)  \
+        ASSIGN_REG(Rsp)     \
+
+#endif // __HAIKU__
 #define ASSIGN_INTEGER_REGS \
     ASSIGN_REG(Rdi)     \
     ASSIGN_REG(Rsi)     \

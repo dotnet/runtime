@@ -162,6 +162,8 @@ fix_libc_name (const char *name)
 		return "/usr/lib/libc.dylib";
 #elif defined (__FreeBSD__)
 		return "libc.so.7";
+#elif defined (HOST_HAIKU)
+		return "libroot.so";
 #elif defined (LIBC_SO)
 		return LIBC_SO;
 #else
