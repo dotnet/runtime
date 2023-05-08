@@ -106,6 +106,7 @@ typedef struct {
 	ThreadContext *context;
 	gpointer orig_domain;
 	gpointer attach_cookie;
+	int params_count;
 } JiterpEntryDataHeader;
 
 // we optimize delegate calls by attempting to cache the delegate invoke
@@ -136,7 +137,7 @@ void
 mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+mono_jiterp_interp_entry (JiterpEntryData *_data, void *res);
 
 gpointer
 mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
