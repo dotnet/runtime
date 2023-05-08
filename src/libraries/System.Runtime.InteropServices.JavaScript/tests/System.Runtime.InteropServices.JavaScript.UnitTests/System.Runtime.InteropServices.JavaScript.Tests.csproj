@@ -4,8 +4,10 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'">$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
+    <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>

@@ -7,32 +7,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoCompareTests
+    public class CompareInfoCompareTests : CompareInfoTestsBase
     {
-        private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
-        private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
-        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
-        private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        private static CompareInfo s_japaneseCompare = new CultureInfo("ja-JP").CompareInfo;
-        private static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalizationOnBrowser ?
-            CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreNonSpace;
-
-        private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalizationOnBrowser ?
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
-
-        // On Windows, hiragana characters sort after katakana.
-        // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
-
-        // On Windows, all halfwidth characters sort before fullwidth characters.
-        // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
-        // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
-
         private const string SoftHyphen = "\u00AD";
 
         public static IEnumerable<object[]> Compare_Kana_TestData()
@@ -328,11 +304,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
             yield return new object[] { s_invariantCompare, "\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 0};
         }
-
-        // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
-        public static bool IsNotWindowsKanaRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
-                                                              PlatformDetection.IsIcuGlobalization ||
-                                                              s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
         public void CompareWithUnassignedChars()

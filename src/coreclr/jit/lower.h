@@ -192,7 +192,7 @@ private:
 
     GenTree* Ind(GenTree* tree, var_types type = TYP_I_IMPL)
     {
-        return comp->gtNewOperNode(GT_IND, type, tree);
+        return comp->gtNewIndir(type, tree);
     }
 
     GenTree* PhysReg(regNumber reg, var_types type = TYP_I_IMPL)
@@ -312,7 +312,7 @@ private:
     bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
-    GenTree* LowerConstIntDivOrMod(GenTree* node);
+    bool TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
@@ -353,6 +353,7 @@ private:
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
+    GenTree* LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
@@ -474,7 +475,7 @@ public:
     }
 
 #ifdef TARGET_ARM64
-    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+    bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
 #if defined(FEATURE_HW_INTRINSICS)

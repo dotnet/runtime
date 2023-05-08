@@ -1728,8 +1728,7 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
     // FieldDesc::GetExactDeclaringType to get at the correct field. This requires the exact
     // TypeHandle. </TODO>
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
     unsigned int index = 0;
@@ -3873,8 +3872,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
 PTR_FieldDesc  DacDbiInterfaceImpl::FindField(TypeHandle thApprox, mdFieldDef fldToken)
 {
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
 
@@ -5199,7 +5197,7 @@ void DacDbiInterfaceImpl::Hijack(
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
         CONTEXT_FULL,
-        sizeof(ctx),
+        sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
 
@@ -5346,7 +5344,7 @@ void DacDbiInterfaceImpl::Hijack(
     //
     // Commit the context.
     //
-    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(ctx), reinterpret_cast<BYTE*> (&ctx));
+    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&ctx));
     IfFailThrow(hr);
 }
 
@@ -5717,7 +5715,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
         pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
-                                                sizeof(*pContextBuffer),
+                                                sizeof(DT_CONTEXT),
                                                 reinterpret_cast<BYTE *>(pContextBuffer));
         if (hr == E_NOTIMPL)
         {

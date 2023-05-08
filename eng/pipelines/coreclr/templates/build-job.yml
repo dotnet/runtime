@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossBuild: false
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   disableClrTest: false
   isOfficialBuild: false
   osGroup: ''
@@ -36,6 +37,7 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
     disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}
 

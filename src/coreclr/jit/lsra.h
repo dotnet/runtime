@@ -733,6 +733,7 @@ public:
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
+    bool         needNonIntegerRegisters;
 
 #ifdef DEBUG
 private:
@@ -1784,6 +1785,12 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
+                                             regMaskTP    regsBusy,
+                                             regMaskTP*   regsToFree,
+                                             regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                                 DEBUG_ARG(regNumber assignedReg));
+
     regMaskTP m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
@@ -1833,6 +1840,9 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
+#ifdef TARGET_ARM64
+    regMaskTP consecutiveRegsInUseThisLocation;
+#endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
         regMaskTP regMask = getRegMask(reg, regType);
@@ -2032,13 +2042,14 @@ private:
     }
 #endif // TARGET_AMD64
 
+#endif // TARGET_XARCH
+
     unsigned availableRegCount;
 
     unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
-#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
@@ -2652,6 +2663,10 @@ public:
         }
         return false;
     }
+
+#ifdef DEBUG
+    bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation);
+#endif
 #endif // TARGET_ARM64
 
 #ifdef DEBUG

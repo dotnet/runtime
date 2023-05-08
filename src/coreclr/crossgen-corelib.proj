@@ -16,6 +16,8 @@
       <CrossDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossDir>
 
       <BuildDll>true</BuildDll>
+      <BuildDll Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris'">false</BuildDll>
+      <BuildDll Condition="'$(TargetArchitecture)' == 'riscv64'">false</BuildDll>
 
       <BuildPdb>false</BuildPdb>
       <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>

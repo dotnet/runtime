@@ -44,6 +44,11 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       0
 
+#elif defined(HOST_RISCV64)
+
+#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
+#define OFFSETOF_PRECODE_TYPE       0
+
 #endif // HOST_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -62,6 +67,8 @@ struct InvalidPrecode
 #elif defined(HOST_ARM64) || defined(HOST_ARM)
     static const int Type = 0;
 #elif defined(HOST_LOONGARCH64)
+    static const int Type = 0xff;
+#elif defined(HOST_RISCV64)
     static const int Type = 0xff;
 #endif
 };
@@ -97,6 +104,9 @@ struct StubPrecode
     static const SIZE_T CodeSize = 12;
 #elif defined(HOST_LOONGARCH64)
     static const int Type = 0x4;
+    static const SIZE_T CodeSize = 24;
+#elif defined(HOST_RISCV64)
+    static const int Type = 0x17;
     static const SIZE_T CodeSize = 24;
 #endif // HOST_AMD64
 
@@ -234,6 +244,10 @@ struct FixupPrecode
     static const int Type = 0x3;
     static const SIZE_T CodeSize = 32;
     static const int FixupCodeOffset = 12;
+#elif defined(HOST_RISCV64)
+    static const int Type = 0x97;
+    static const SIZE_T CodeSize = 32;
+    static const int FixupCodeOffset = 10;
 #endif // HOST_AMD64
 
     BYTE m_code[CodeSize];
@@ -422,10 +436,13 @@ public:
 
 #ifdef OFFSETOF_PRECODE_TYPE
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         short type = *((short*)m_data);
         type >>= 5;
+#elif defined(TARGET_RISCV64)
+        assert(0 == OFFSETOF_PRECODE_TYPE);
+        BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
 #else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif

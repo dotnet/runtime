@@ -8,6 +8,7 @@ project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
@@ -40,9 +41,11 @@ set(CMAKE_MODULE_PATH
   )
 set(CMAKE_INSTALL_MESSAGE LAZY)
 
-find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+if(USE_CCACHE)
+  find_program(CCACHE_PROGRAM ccache)
+  if(CCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+  endif()
 endif()
 
 function(append value)
@@ -267,6 +270,7 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   add_compile_options(-Wno-strict-prototypes)
   add_compile_options(-Wno-unused-but-set-variable)
   add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
+  add_compile_options(-msimd128)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)

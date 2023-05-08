@@ -572,7 +572,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">The reference being processed</param>
         /// <param name="data">Stream containing the output of the reference</param>
         /// <returns>Stream containing the output of the reference</returns>
-        [return: NotNullIfNotNull("data")]
+        [return: NotNullIfNotNull(nameof(data))]
         internal static Stream? LogReferenceData(Reference reference, Stream? data)
         {
             if (VerboseLoggingEnabled)

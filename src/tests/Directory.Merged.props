@@ -28,6 +28,6 @@
       Directory.Build.targets is typically too late as SDK .targets files will have already
       been processed and may have used the value.
     -->
-    <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_d', '').Replace('_il_r', ''))</AssemblyName>
+    <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_do', '').Replace('_il_d', '').Replace('_il_ro', '').Replace('_il_r', ''))</AssemblyName>
   </PropertyGroup>
 </Project>

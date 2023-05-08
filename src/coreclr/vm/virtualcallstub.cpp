@@ -863,6 +863,7 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
         NOTHROW;
         GC_NOTRIGGER;
         FORBID_FAULT;
+        SUPPORTS_DAC;
     } CONTRACTL_END
 
     StubCodeBlockKind unusedStubKind;
@@ -1998,7 +1999,7 @@ VirtualCallStubManager::Resolver(
         GCStress<cfg_any>::MaybeTrigger();
 
         // In case of ICastable, instead of trying to find method implementation in the real object type
-        // we call pObj.GetValueInternal() and call Resolver() again with whatever type it returns.
+        // we call Resolver() again with whatever type it returns.
         // It allows objects that implement ICastable to mimic behavior of other types.
         MethodTable * pTokenMT = GetTypeFromToken(token);
 
@@ -3696,56 +3697,7 @@ VirtualCallStubManager *VirtualCallStubManagerManager::FindVirtualCallStubManage
 
     SUPPORTS_DAC;
 
-#ifndef DACCESS_COMPILE
-    // Check the cached element
-    {
-        VirtualCallStubManager *pMgr = m_pCacheElem;
-        if (pMgr != NULL && pMgr->CheckIsStub_Internal(stubAddress))
-        {
-            return pMgr;
-        }
-    }
-
-    // Check the current and shared domains.
-    {
-        Thread *pThread = GetThreadNULLOk();
-        if (pThread != NULL)
-        {
-            // Check the current domain
-            {
-                BaseDomain *pDom = pThread->GetDomain();
-                VirtualCallStubManager *pMgr = pDom->GetLoaderAllocator()->GetVirtualCallStubManager();
-                if (pMgr->CheckIsStub_Internal(stubAddress))
-                {
-                    m_pCacheElem = pMgr;
-                    return pMgr;
-                }
-            }
-        }
-    }
-#endif
-
-    // If both previous attempts fail, run through the list. This is likely
-    // because the thread is a debugger thread running outside of the domain
-    // that owns the target stub.
-    {
-        VirtualCallStubManagerIterator it =
-            VirtualCallStubManagerManager::GlobalManager()->IterateVirtualCallStubManagers();
-
-        while (it.Next())
-        {
-            if (it.Current()->CheckIsStub_Internal(stubAddress))
-            {
-#ifndef DACCESS_COMPILE
-                m_pCacheElem = it.Current();
-#endif
-                return it.Current();
-            }
-        }
-    }
-
-    // No VirtualCallStubManager owns this address.
-    return NULL;
+    return VirtualCallStubManager::FindStubManager(stubAddress);
 }
 
 static VirtualCallStubManager * const IT_START = (VirtualCallStubManager *)(-1);
@@ -3818,8 +3770,8 @@ BOOL VirtualCallStubManagerManager::CheckIsStub_Internal(
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    VirtualCallStubManager *pMgr = FindVirtualCallStubManager(stubStartAddress);
-    return (pMgr != NULL);
+    // Forwarded to from RangeSectionStubManager
+    return FALSE;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

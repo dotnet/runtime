@@ -358,7 +358,7 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
 COOP_PINVOKE_HELPER(void, RhpEtwExceptionThrown, (LPCWSTR exceptionTypeName, LPCWSTR exceptionMessage, void* faultingIP, HRESULT hresult))
 {
-    FireEtwExceptionThrown_V1(exceptionTypeName,
+    FireEtXplatExceptionThrown_V1(exceptionTypeName,
         exceptionMessage,
         faultingIP,
         hresult,

@@ -961,7 +961,7 @@ void CodeGen::psiBegProlog()
                 else
                 {
                     regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
-#ifdef TARGET_LOONGARCH
+#ifdef TARGET_LOONGARCH64
                     if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
                     {
                         // For LoongArch64's ABI, the float args may be passed by integer register.

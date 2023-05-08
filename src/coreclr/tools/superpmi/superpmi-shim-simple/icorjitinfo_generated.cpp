@@ -570,13 +570,6 @@ bool interceptor_ICJI::canCast(
     return original_ICorJitInfo->canCast(child, parent);
 }
 
-bool interceptor_ICJI::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    return original_ICorJitInfo->areTypesEquivalent(cls1, cls2);
-}
-
 TypeCompareState interceptor_ICJI::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -1092,14 +1085,23 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(
+bool interceptor_ICJI::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    return original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool interceptor_ICJI::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

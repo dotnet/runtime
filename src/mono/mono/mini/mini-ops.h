@@ -855,6 +855,10 @@ MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", XREG, XREG, XREG, XREG)
 MINI_OP(OP_WASM_SIMD_SUM, "wasm_sum", XREG, XREG, NONE)
 MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", XREG, XREG, XREG)
 MINI_OP(OP_WASM_EXTRACT_NARROW, "wasm_extract_narrow", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER, "wasm_extmul_lower", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER, "wasm_extmul_upper", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_LOWER_U, "wasm_extmul_lower_u", XREG, XREG, XREG)
+MINI_OP(OP_WASM_EXTMUL_UPPER_U, "wasm_extmul_upper_u", XREG, XREG, XREG)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1461,6 +1465,7 @@ MINI_OP(OP_ARM64_CBZX, "arm64_cbzx", NONE, IREG, NONE)
 /* Branch if sreg1 != 0 */
 MINI_OP(OP_ARM64_CBNZW, "arm64_cbnzw", NONE, IREG, NONE)
 MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
+MINI_OP(OP_ARM64_HINT, "arm64_hint", NONE, NONE, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */
@@ -1498,6 +1503,7 @@ MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
+MINI_OP(OP_XUNOP, "xunop", XREG, XREG, NONE)
 MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
@@ -1759,6 +1765,7 @@ MINI_OP(OP_ARM64_ABSCOMPARE, "arm64_abscompare", XREG, XREG, XREG)
 MINI_OP(OP_ARM64_XNARROW_SCALAR, "arm64_xnarrow_scalar", XREG, XREG, NONE)
 
 MINI_OP3(OP_ARM64_EXT, "arm64_ext", XREG, XREG, XREG, IREG)
+MINI_OP(OP_ARM64_EXT_IMM, "arm64_ext_imm", XREG, XREG, XREG)
 
 MINI_OP3(OP_ARM64_SQRDMLAH, "arm64_sqrdmlah", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLAH_BYSCALAR, "arm64_sqrdmlah_byscalar", XREG, XREG, XREG, XREG)
@@ -1774,6 +1781,8 @@ MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XR
  */
 MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
 MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
+MINI_OP(OP_ARM64_USHL, "arm64_ushl", XREG, XREG, XREG)
 
 #endif // TARGET_ARM64
 
@@ -1794,8 +1803,6 @@ MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
-MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
 
 MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
@@ -1810,6 +1817,8 @@ MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #endif // TARGET_ARM64 || TARGET_AMD64
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
+MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
 

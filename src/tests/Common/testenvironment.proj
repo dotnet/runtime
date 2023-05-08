@@ -308,6 +308,8 @@
       <!-- Mono interpreter -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
+      <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
+
       <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
       <!-- FIXME: temporarily disable LLVM JIT and use mini JIT until LLVM JIT support is brought back -->
       <_TestEnvFileLine Condition="'false' == 'true' and '$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />

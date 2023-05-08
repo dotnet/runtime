@@ -242,6 +242,10 @@ namespace Internal.TypeSystem
 
         public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
         {
+            // The type system only distinguishes between unmanaged and managed signatures.
+            // The caller should have normalized the signature by modifying flags and stripping modopts.
+            Debug.Assert((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) is 0 or MethodSignatureFlags.UnmanagedCallingConvention);
+            Debug.Assert(!signature.HasEmbeddedSignatureData);
             return _functionPointerTypes.GetOrCreateValue(signature);
         }
 

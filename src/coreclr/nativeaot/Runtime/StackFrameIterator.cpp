@@ -774,7 +774,8 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 #if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
 #else // defined(USE_PORTABLE_HELPERS)
-    ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk);
+    ASSERT((CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk) || 
+           (CategorizeUnadjustedReturnAddress(m_ControlPC) == InFilterFuncletInvokeThunk));
 
     PTR_UIntNative SP;
 
@@ -1512,6 +1513,12 @@ UnwindOutOfCurrentManagedFrame:
                     exCollide = true;
                 }
             }
+            else if (category == InFilterFuncletInvokeThunk)
+            {
+                // Unwind through the funclet invoke assembly thunk to reach the topmost managed frame in
+                // the exception dispatch code.
+                UnwindFuncletInvokeThunk();
+            }
             else if (category == InManagedCode)
             {
                 // Non-exceptionally invoked funclet case.  The caller is processed as a normal managed
@@ -1932,19 +1939,33 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
         return InThrowSiteThunk;
     }
 
-    if (
 #ifdef TARGET_X86
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2)
-#else
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2) ||
-        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2)
-#endif
-        )
+    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2))
+    {
+        // See if it is a filter funclet based on the caller of RhpCallFunclet
+        PTR_UIntNative SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
+        PTR_UIntNative ControlPC = *SP++;
+        if (EQUALS_RETURN_ADDRESS(ControlPC, RhpCallFilterFunclet2))
+        {
+            return InFilterFuncletInvokeThunk;
+        }
+        else
+        {
+            return InFuncletInvokeThunk;
+        }
+    }
+#else // TARGET_X86
+    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||
+        EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFinallyFunclet2))
     {
         return InFuncletInvokeThunk;
     }
 
+    if (EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFilterFunclet2))
+    {
+        return InFilterFuncletInvokeThunk;
+    }
+#endif // TARGET_X86
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)
 }

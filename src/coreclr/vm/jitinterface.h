@@ -401,7 +401,7 @@ extern "C"
     void STDCALL JIT_MemCpy(void *dest, const void *src, SIZE_T count);
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !(TARGET_RISCV64)
     void STDCALL JIT_StackProbe();
 #endif // TARGET_ARM64
 };
@@ -422,6 +422,7 @@ class CEEInfo : public ICorJitInfo
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
+    bool isObjectImmutableInteral(OBJECTREF obj);
 
     static unsigned getClassAlignmentRequirementStatic(TypeHandle clsHnd);
 

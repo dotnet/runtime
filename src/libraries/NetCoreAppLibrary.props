@@ -183,6 +183,7 @@
     </NetCoreAppLibraryNoReference>
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
+      ComInterfaceGenerator;
       LibraryImportGenerator;
       JSImportGenerator;
       Microsoft.Interop.SourceGeneration;

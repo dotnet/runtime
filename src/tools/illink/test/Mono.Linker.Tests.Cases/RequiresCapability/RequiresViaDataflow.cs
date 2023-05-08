@@ -17,9 +17,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	{
 		// Base/Derived and Implementation/Interface differs between ILLink and analyzer https://github.com/dotnet/linker/issues/2533
 		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
-		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.Analyzer)]
 		[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
 		[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]

@@ -490,7 +490,7 @@ namespace System.Threading
         {
         }
 
-        private static uint GetMilliseconds(TimeSpan time, [CallerArgumentExpression("time")] string? parameter = null)
+        private static uint GetMilliseconds(TimeSpan time, [CallerArgumentExpression(nameof(time))] string? parameter = null)
         {
             long tm = (long)time.TotalMilliseconds;
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, parameter);
@@ -508,7 +508,7 @@ namespace System.Threading
             {
                 _executionContext = ExecutionContext.Capture();
             }
-            _associatedTimerQueue = TimerQueue.Instances[Thread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
+            _associatedTimerQueue = TimerQueue.Instances[(uint)Thread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
 
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
             // the lock is permitted beyond this point!

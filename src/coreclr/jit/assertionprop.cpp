@@ -196,7 +196,7 @@ bool IntegralRange::Contains(int64_t value) const
                          ForNode(node->AsQmark()->ElseNode(), compiler));
 
         case GT_CAST:
-            return ForCastOutput(node->AsCast());
+            return ForCastOutput(node->AsCast(), compiler);
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
@@ -226,15 +226,6 @@ bool IntegralRange::Contains(int64_t value) const
             }
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
-
-        case GT_FIELD:
-        {
-            if (node->AsField()->IsSpanLength())
-            {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-            break;
-        }
 
         default:
             break;
@@ -369,12 +360,13 @@ bool IntegralRange::Contains(int64_t value) const
 // Unlike ForCastInput, this method supports casts from floating point types.
 //
 // Arguments:
-//   cast - the cast node for which the range will be computed
+//   cast     - the cast node for which the range will be computed
+//   compiler - Compiler object
 //
 // Return Value:
 //   The range this cast produces - see description.
 //
-/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast)
+/* static */ IntegralRange IntegralRange::ForCastOutput(GenTreeCast* cast, Compiler* compiler)
 {
     var_types fromType     = genActualType(cast->CastOp());
     var_types toType       = cast->CastToType();
@@ -405,6 +397,13 @@ bool IntegralRange::Contains(int64_t value) const
     if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
     {
         return ForCastInput(cast);
+    }
+
+    // if we're upcasting and the cast op is a known non-negative - consider
+    // this cast unsigned
+    if (!fromUnsigned && (genTypeSize(toType) >= genTypeSize(fromType)))
+    {
+        fromUnsigned = cast->CastOp()->IsNeverNegative(compiler);
     }
 
     // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
@@ -2213,7 +2212,7 @@ AssertionIndex Compiler::optAssertionGenPhiDefn(GenTree* tree)
 
     // Try to find if all phi arguments are known to be non-null.
     bool isNonNull = true;
-    for (GenTreePhi::Use& use : tree->AsOp()->gtGetOp2()->AsPhi()->Uses())
+    for (GenTreePhi::Use& use : tree->AsLclVar()->Data()->AsPhi()->Uses())
     {
         if (!vnStore->IsKnownNonNull(use.GetNode()->gtVNPair.GetConservative()))
         {
@@ -2270,14 +2269,16 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 assertionInfo = optCreateAssertion(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2, OAK_EQUAL);
             }
-            else
-            {
-                assertionInfo = optAssertionGenPhiDefn(tree);
-            }
+            break;
+
+        case GT_STORE_LCL_VAR:
+            assertionInfo = optAssertionGenPhiDefn(tree);
             break;
 
         case GT_BLK:
         case GT_IND:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
             // R-value indirections create non-null assertions, but not all indirections are R-values.
             // Those under ADDR nodes or on the LHS of ASGs are "locations", and will not end up
             // dereferencing their operands. We cannot reliably detect them here, however, and so
@@ -3794,8 +3795,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    // Bail out if tree is not side effect free.
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+    // Bail out if op1 is not side effect free. Note we'll be bashing it below, unlike op2.
+    if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return nullptr;
     }
@@ -4740,6 +4741,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_BLK:
         case GT_IND:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
         case GT_NULLCHECK:
         case GT_STORE_DYN_BLK:
             return optAssertionProp_Ind(assertions, tree, stmt);
@@ -5721,7 +5724,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_IND:
         {
             const ValueNum vn = tree->GetVN(VNK_Conservative);
-            if ((tree->gtFlags & GTF_IND_ASG_LHS) || (vnStore->VNNormalValue(vn) != vn))
+            if (vnStore->VNNormalValue(vn) != vn)
             {
                 return WALK_CONTINUE;
             }
@@ -5741,11 +5744,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-            // Make sure the local variable is an R-value.
-            if ((tree->gtFlags & (GTF_VAR_USEASG | GTF_VAR_DEF | GTF_DONT_CSE)) != GTF_EMPTY)
-            {
-                return WALK_CONTINUE;
-            }
             // Let's not conflict with CSE (to save the movw/movt).
             if (lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
             {

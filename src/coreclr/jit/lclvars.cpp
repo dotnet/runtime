@@ -2241,7 +2241,7 @@ Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORIN
         // We will only promote fields of SIMD types that fit into a SIMD register.
         if (simdBaseJitType != CORINFO_TYPE_UNDEF)
         {
-            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
+            if (compiler->structSizeMightRepresentSIMDType(simdSize))
             {
                 fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
                 fieldInfo.fldSize = simdSize;
@@ -3332,59 +3332,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
     return lvaGetDesc(varNum)->lvExactSize();
 }
 
-// getCalledCount -- get the value used to normalized weights for this method
-//  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
-//  otherwise it returns the number of times that profile data says the method was called.
-//
-// static
-weight_t BasicBlock::getCalledCount(Compiler* comp)
-{
-    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
-    weight_t calledCount = comp->fgCalledCount;
-
-    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
-    // so return a reasonable value to use until we set it.
-    //
-    if (calledCount == 0)
-    {
-        if (comp->fgIsUsingProfileWeights())
-        {
-            // When we use profile data block counts we have exact counts,
-            // not multiples of BB_UNITY_WEIGHT (100)
-            calledCount = 1;
-        }
-        else
-        {
-            calledCount = comp->fgFirstBB->bbWeight;
-
-            if (calledCount == 0)
-            {
-                calledCount = BB_UNITY_WEIGHT;
-            }
-        }
-    }
-    return calledCount;
-}
-
-// getBBWeight -- get the normalized weight of this block
-weight_t BasicBlock::getBBWeight(Compiler* comp)
-{
-    if (this->bbWeight == BB_ZERO_WEIGHT)
-    {
-        return BB_ZERO_WEIGHT;
-    }
-    else
-    {
-        weight_t calledCount = getCalledCount(comp);
-
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
-        //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
-
-        return fullResult;
-    }
-}
-
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
 class LclVarDsc_SmallCode_Less
 {
@@ -4138,73 +4085,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    if (!isRecompute)
-    {
-        /* Is this an assignment? */
-
-        if (tree->OperIs(GT_ASG))
-        {
-            GenTree* op1 = tree->AsOp()->gtOp1;
-            GenTree* op2 = tree->AsOp()->gtOp2;
-
-            /* Is this an assignment to a local variable? */
-
-            if (op1->gtOper == GT_LCL_VAR)
-            {
-                LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon());
-
-                if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc)
-                {
-                    if (!op2->IsNotGcDef())
-                    {
-                        varDsc->lvAllDefsAreNoGc = false;
-                    }
-                }
-
-                if (op2->gtType != TYP_BOOL)
-                {
-                    /* Only simple assignments allowed for booleans */
-
-                    if (tree->gtOper != GT_ASG)
-                    {
-                        goto NOT_BOOL;
-                    }
-
-                    /* Is the RHS clearly a boolean value? */
-
-                    switch (op2->gtOper)
-                    {
-                        case GT_CNS_INT:
-
-                            if (op2->AsIntCon()->gtIconVal == 0)
-                            {
-                                break;
-                            }
-                            if (op2->AsIntCon()->gtIconVal == 1)
-                            {
-                                break;
-                            }
-
-                            // Not 0 or 1, fall through ....
-                            FALLTHROUGH;
-
-                        default:
-
-                            if (op2->OperIsCompare())
-                            {
-                                break;
-                            }
-
-                        NOT_BOOL:
-
-                            varDsc->lvIsBoolean = false;
-                            break;
-                    }
-                }
-            }
-        }
-    }
-
     if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
@@ -4213,7 +4093,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         return;
     }
 
-    if ((tree->gtOper != GT_LCL_VAR) && (tree->gtOper != GT_LCL_FLD))
+    if (!tree->OperIsLocal())
     {
         return;
     }
@@ -4231,9 +4111,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
-    unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
-
+    unsigned   lclNum = tree->AsLclVarCommon()->GetLclNum();
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     /* Increment the reference counts */
@@ -4252,13 +4130,13 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
     if (!isRecompute)
     {
-        if (lvaVarAddrExposed(lclNum))
+        if (varDsc->IsAddressExposed())
         {
             varDsc->lvIsBoolean      = false;
             varDsc->lvAllDefsAreNoGc = false;
         }
 
-        if (tree->gtOper == GT_LCL_FLD)
+        if (!tree->OperIsScalarLocal())
         {
             return;
         }
@@ -4268,16 +4146,49 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             SetVolatileHint(varDsc);
         }
 
-        /* Record if the variable has a single def or not */
-
-        if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
+        if (tree->OperIs(GT_STORE_LCL_VAR))
         {
-            if (tree->gtFlags & GTF_VAR_DEF) // Is this is a def of our variable
+            GenTree* value = tree->AsLclVar()->Data();
+
+            if (varDsc->lvPinned && varDsc->lvAllDefsAreNoGc && !value->IsNotGcDef())
+            {
+                varDsc->lvAllDefsAreNoGc = false;
+            }
+
+            if (value->gtType != TYP_BOOL)
+            {
+                // Is the value clearly a boolean one?
+                switch (value->gtOper)
+                {
+                    case GT_CNS_INT:
+                        if (value->AsIntCon()->gtIconVal == 0)
+                        {
+                            break;
+                        }
+                        if (value->AsIntCon()->gtIconVal == 1)
+                        {
+                            break;
+                        }
+
+                        // Not 0 or 1, fall through ....
+                        FALLTHROUGH;
+                    default:
+                        if (value->OperIsCompare())
+                        {
+                            break;
+                        }
+
+                        varDsc->lvIsBoolean = false;
+                        break;
+                }
+            }
+
+            if (!varDsc->lvDisqualifySingleDefRegCandidate) // If this var is already disqualified, we can skip this
             {
                 bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                 bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
                 // TODO: Zero-inits in LSRA are created with below condition. But if filter out based on that condition
-                // we filter lot of interesting variables that would benefit otherwise with EH var enregistration.
+                // we filter a lot of interesting variables that would benefit otherwise with EH var enregistration.
                 // bool needsExplicitZeroInit = !varDsc->lvIsParam && (info.compInitMem ||
                 // varTypeIsGC(varDsc->TypeGet()));
                 bool needsExplicitZeroInit = fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn);

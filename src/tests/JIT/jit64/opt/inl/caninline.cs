@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 
 internal class baseclass
@@ -36,12 +37,13 @@ internal class Test : baseclass
 
 
 
-internal class Program
+public class Program
 {
     private volatile static int s_a = 5;
     private volatile static int s_b = 0;
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -97,53 +97,9 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse(&index, mask);
-    return 1L << index;
-}
-
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse64(&index, mask);
-    return 1LL << index;
-}
-
 /*****************************************************************************
 *
-*  Return true if the given 64-bit value has exactly zero or one bits set.
+*  Return true if the given value has exactly zero or one bits set.
 */
 
 template <typename T>
@@ -154,31 +110,11 @@ inline bool genMaxOneBit(T value)
 
 /*****************************************************************************
 *
-*  Return true if the given 32-bit value has exactly zero or one bits set.
-*/
-
-inline bool genMaxOneBit(unsigned value)
-{
-    return (value & (value - 1)) == 0;
-}
-
-/*****************************************************************************
-*
-*  Return true if the given 64-bit value has exactly one bit set.
+*  Return true if the given value has exactly one bit set.
 */
 
 template <typename T>
 inline bool genExactlyOneBit(T value)
-{
-    return ((value != 0) && genMaxOneBit(value));
-}
-
-/*****************************************************************************
-*
-*  Return true if the given 32-bit value has exactly zero or one bits set.
-*/
-
-inline bool genExactlyOneBit(unsigned value)
 {
     return ((value != 0) && genMaxOneBit(value));
 }
@@ -190,8 +126,22 @@ inline bool genExactlyOneBit(unsigned value)
  */
 inline unsigned genLog2(unsigned value)
 {
-    return BitPosition(value);
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
 }
+
+inline unsigned genLog2(unsigned __int64 value)
+{
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
+}
+
+#ifdef __APPLE__
+inline unsigned genLog2(size_t value)
+{
+    return genLog2((unsigned __int64)value);
+}
+#endif // __APPLE__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -205,49 +155,6 @@ inline unsigned ulo32(unsigned __int64 value)
 inline unsigned uhi32(unsigned __int64 value)
 {
     return static_cast<unsigned>(value >> 32);
-}
-
-/*****************************************************************************
- *
- *  Given a value that has exactly one bit set, return the position of that
- *  bit, in other words return the logarithm in base 2 of the given value.
- */
-
-inline unsigned genLog2(unsigned __int64 value)
-{
-#ifdef HOST_64BIT
-    return BitPosition(value);
-#else // HOST_32BIT
-    unsigned     lo32 = ulo32(value);
-    unsigned     hi32 = uhi32(value);
-
-    if (lo32 != 0)
-    {
-        assert(hi32 == 0);
-        return genLog2(lo32);
-    }
-    else
-    {
-        return genLog2(hi32) + 32;
-    }
-#endif
-}
-
-#ifdef __APPLE__
-inline unsigned genLog2(size_t value)
-{
-    return genLog2((unsigned __int64)value);
-}
-#endif // __APPLE__
-
-/*****************************************************************************
- *
- *  Return the lowest bit that is set in the given register mask.
- */
-
-inline regMaskTP genFindLowestReg(regMaskTP value)
-{
-    return (regMaskTP)genFindLowestBit(value);
 }
 
 /*****************************************************************************
@@ -1074,7 +981,7 @@ inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arra
 inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 {
     GenTreeIndir* index;
-    if (varTypeIsStruct(indexAddr->gtElemType))
+    if (indexAddr->gtElemType == TYP_STRUCT)
     {
         index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
@@ -1175,60 +1082,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     }
     assert((optMethodFlags & OMF_HAS_MDARRAYREF) != 0); // Should have been set in the importer.
     return arrOp;
-}
-
-//------------------------------------------------------------------------
-// gtNewBlkIndir: Create a struct indirection node.
-//
-// Arguments:
-//    layout     - The struct layout
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_BLK node.
-//
-inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    blkNode->gtFlags |= indirFlags;
-    blkNode->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        blkNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------------
-// gtNewIndir : Create an indirection node.
-//
-// Arguments:
-//    typ        - Type of the node
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_IND node.
-//
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    return indir->AsIndir();
 }
 
 //------------------------------------------------------------------------------
@@ -1377,6 +1230,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             break;
 #endif
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetLayout(nullptr);
             break;
@@ -1388,7 +1242,12 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
@@ -1432,8 +1291,8 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
 
 inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
 {
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object);
-    result->gtFlags |= GTF_IND_INVARIANT;
+    assert(object->TypeIs(TYP_REF));
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
 
@@ -3336,28 +3195,15 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
 
-    // iterTree should be "lcl ASG lcl <op> const"
+    // iterTree should be "lcl = lcl <op> const"
 
-    assert(lpIterTree->OperIs(GT_ASG));
+    assert(lpIterTree->OperIs(GT_STORE_LCL_VAR));
 
-    const GenTree* lhs = lpIterTree->AsOp()->gtOp1;
-    const GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    assert(lhs->OperGet() == GT_LCL_VAR);
-
-    switch (rhs->gtOper)
-    {
-        case GT_ADD:
-        case GT_SUB:
-        case GT_MUL:
-        case GT_RSH:
-        case GT_LSH:
-            break;
-        default:
-            assert(!"Unknown operator for loop increment");
-    }
-    assert(rhs->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
-    assert(rhs->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
-    assert(rhs->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
+    const GenTree* value = lpIterTree->AsLclVar()->Data();
+    assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
+    assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
+    assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
+    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
 #endif
 }
 
@@ -3366,7 +3212,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 inline unsigned Compiler::LoopDsc::lpIterVar() const
 {
     VERIFY_lpIterTree();
-    return lpIterTree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+    return lpIterTree->AsLclVar()->GetLclNum();
 }
 
 //-----------------------------------------------------------------------------
@@ -3374,8 +3220,8 @@ inline unsigned Compiler::LoopDsc::lpIterVar() const
 inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return (int)rhs->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    GenTree* value = lpIterTree->AsLclVar()->Data();
+    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
 }
 
 //-----------------------------------------------------------------------------
@@ -3383,8 +3229,7 @@ inline int Compiler::LoopDsc::lpIterConst() const
 inline genTreeOps Compiler::LoopDsc::lpIterOper() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return rhs->OperGet();
+    return lpIterTree->AsLclVar()->Data()->OperGet();
 }
 
 inline var_types Compiler::LoopDsc::lpIterOperType() const
@@ -3393,11 +3238,6 @@ inline var_types Compiler::LoopDsc::lpIterOperType() const
 
     var_types type = lpIterTree->TypeGet();
     assert(genActualType(type) == TYP_INT);
-
-    if ((lpIterTree->gtFlags & GTF_UNSIGNED) && type == TYP_INT)
-    {
-        type = TYP_UINT;
-    }
 
     return type;
 }
@@ -4132,7 +3972,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
-        case GT_FIELD:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4508,10 +4347,9 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 // Notes:
 //    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
-
+//
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
 {
-
 #if defined(DEBUG)
     assert(state != RCS_INVALID);
     Compiler* compiler = JitTls::GetCompiler();
@@ -4521,6 +4359,25 @@ inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
     unsigned short oldRefCnt = m_lvRefCnt;
     m_lvRefCnt += delta;
     assert(m_lvRefCnt >= oldRefCnt);
+}
+
+//------------------------------------------------------------------------------
+// incLvRefCntSaturating: increment reference count for this local var (with saturating semantics)
+//
+// Arguments:
+//    delta: the amount of the increment
+//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
+//
+inline void LclVarDsc::incLvRefCntSaturating(unsigned short delta, RefCountState state)
+{
+#if defined(DEBUG)
+    assert(state != RCS_INVALID);
+    Compiler* compiler = JitTls::GetCompiler();
+    assert(compiler->lvaRefCountState == state);
+#endif
+
+    int newRefCnt = m_lvRefCnt + delta;
+    m_lvRefCnt    = static_cast<unsigned short>(min(USHRT_MAX, newRefCnt));
 }
 
 //------------------------------------------------------------------------------
