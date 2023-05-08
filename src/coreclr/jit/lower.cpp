@@ -6251,9 +6251,11 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
         // the original object from a byref constant for optimizations.
         if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
-            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp) &&
-            node->TypeIs(TYP_I_IMPL, TYP_BYREF))
+            (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
+            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
         {
+            assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
             // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
             // will be lowered as the original handle with offset in a reloc.
             BlockRange().Remove(op1);
