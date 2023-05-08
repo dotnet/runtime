@@ -24296,7 +24296,8 @@ GenTree* Compiler::gtNewSimdUnOpNode(
                 op2 = gtNewZeroConNode(type);
                 op3 = gtNewZeroConNode(type);
 
-                return gtNewSimdTernaryLogicNode(type, op3, op2, op1, gtNewIconNode(~0xAA), simdBaseJitType, simdSize);
+                GenTree* cns = gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+                return gtNewSimdTernaryLogicNode(type, op3, op2, op1, cns, simdBaseJitType, simdSize);
             }
             else
             {
