@@ -260,7 +260,7 @@ jobs:
     - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT') }}: 
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nativeaot
           cleanUnpackFolder: false
           artifactFileName: 'iOSSampleApp.zip'
           artifactName: 'iOSSampleApp'
@@ -271,7 +271,7 @@ jobs:
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nativeaot'
           artifactName: 'iOSSampleApp'
           checkDownloadedFiles: true
 

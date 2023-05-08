@@ -422,8 +422,8 @@ if [[ "$iosmono" == "true" ]]; then
 fi
 
 if [[ "$iosnativeaot" == "true" ]]; then
-    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld $payload_directory/iosHelloWorld
-    mkdir -p $payload_directory/iosHelloWorldZip && cp -rv $source_directory/iosHelloWorldZip $payload_directory/iosHelloWorldZip
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nativeaot $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip/nativeaotzip && cp -rv $source_directory/iosHelloWorldZip/nativeaotzip $payload_directory/iosHelloWorldZip
 fi
 
 ci=true
