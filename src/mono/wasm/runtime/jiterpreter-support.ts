@@ -1666,6 +1666,7 @@ export const enum JiterpMember {
     BackwardBranchOffsets = 10,
     BackwardBranchOffsetsCount = 11,
     ClauseDataOffsets = 12,
+    ParamsCount = 13,
 }
 
 const memberOffsets: { [index: number]: number } = {};
