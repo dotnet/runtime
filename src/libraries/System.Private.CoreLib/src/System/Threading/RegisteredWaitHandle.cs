@@ -19,6 +19,7 @@ namespace System.Threading
         private SafeWaitHandle? _waitHandle;
         private readonly _ThreadPoolWaitOrTimerCallback? _callbackHelper;
         private readonly uint _millisecondsTimeout;
+        private int _timeoutDurationMs;
         private bool _repeating;
         private bool _unregistering;
 
@@ -35,7 +36,6 @@ namespace System.Threading
 
             _lock = new object();
 
-            // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
             waitHandle.DangerousAddRef();
             _waitHandle = waitHandle;
 
@@ -62,10 +62,10 @@ namespace System.Threading
             GC.SuppressFinalize(this);
 
             Thread.ThrowIfNoThreadStart();
-            Handle = waitHandle.SafeWaitHandle;
-            Callback = callbackHelper;
-            TimeoutDurationMs = millisecondsTimeout;
-            Repeating = repeating;
+            _waitHandle = waitHandle.SafeWaitHandle;
+            _callbackHelper = callbackHelper;
+            _timeoutDurationMs = millisecondsTimeout;
+            _repeating = repeating;
             if (!IsInfiniteTimeout)
             {
                 RestartTimeout();
@@ -79,26 +79,38 @@ namespace System.Threading
         /// <summary>
         /// The callback to execute when the wait on <see cref="Handle"/> either times out or completes.
         /// </summary>
-        internal _ThreadPoolWaitOrTimerCallback? Callback { get; } // PR-Comment: must be nullable as it has one constructor which exits without initializing
+        internal _ThreadPoolWaitOrTimerCallback? Callback
+        {
+            get => _callbackHelper;
+        }
 
         /// <summary>
         /// The <see cref="SafeWaitHandle"/> that was registered.
         /// </summary>
-        internal SafeWaitHandle? Handle { get; } // PR-Comment: must be nullable as it has one constructor which exits without initializing
+        internal SafeWaitHandle? Handle
+        {
+            get => _waitHandle;
+        }
 
         /// <summary>
         /// The time this handle times out at in ms.
         /// </summary>
         internal int TimeoutTimeMs { get; private set; }
 
-        internal int TimeoutDurationMs { get; }
+        internal int TimeoutDurationMs
+        {
+            get => _timeoutDurationMs;
+        }
 
         internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
 
         /// <summary>
         /// Whether or not the wait is a repeating wait.
         /// </summary>
-        internal bool Repeating { get; }
+        internal bool Repeating
+        {
+            get => _repeating;
+        }
 
         /// <summary>
         /// The <see cref="WaitHandle"/> the user passed in via <see cref="Unregister(WaitHandle)"/>.
