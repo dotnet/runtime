@@ -2858,7 +2858,10 @@ uint32_t BitOperations::PopCount(uint64_t value)
     int64_t result = __popcnt64(value);
     return static_cast<uint32_t>(result);
 #else
-    return __popcnt(value >> 32);
+    uint32_t upper = static_cast<uint32_t>(value >> 32);
+    uint32_t lower = static_cast<uint32_t>(value);
+    return __popcnt(upper) + __popcnt(lower);
+
 #endif
 #else
     int32_t result = __builtin_popcountll(value);
