@@ -19877,9 +19877,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
             // We expect op1 to have already been spilled
 
-            assert((op1->gtFlags & GTF_SIDE_EFFECT) == 0);
             std::swap(op1, op2);
-
             break;
         }
 
