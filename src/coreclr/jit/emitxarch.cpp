@@ -510,6 +510,8 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for zero
 //
 // Return Value:
 //    true if previous instruction zeroed reg's upper bits.
@@ -591,6 +593,8 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for sign-extended
 //
 // Return Value:
 //    true if previous instruction upper bits are sign-extended.
