@@ -127,6 +127,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
     [true, "mono_jiterp_get_simd_intrinsic", "number", ["number", "number"]],
     [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -250,6 +251,7 @@ export interface t_Cwraps {
     mono_jiterp_get_opcode_value_table_entry(opcode: number): number;
     mono_jiterp_get_simd_intrinsic(arity: number, index: number): VoidPtr;
     mono_jiterp_get_simd_opcode(arity: number, index: number): number;
+    mono_jiterp_get_arg_offset (imethod: number, sig: number, index: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

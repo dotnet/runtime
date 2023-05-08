@@ -224,9 +224,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
-                if ((!typeHandle.IsNull()) && ReflectionCoreExecution.ExecutionEnvironment.IsReflectionBlocked(typeHandle))
-                    return null;
                 return GenericTypeDefinitionTypeInfo.InternalDeclaringType;
             }
         }
