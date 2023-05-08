@@ -800,11 +800,31 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
 
             switch (intrinsicId)
             {
+                case NI_AVX_BroadcastScalarToVector128:
+                case NI_AVX_BroadcastScalarToVector256:
+                {
+                    //we have the assumption that AVX_BroadcastScalarToVector*
+                    //only take the memory address as the operand.
+                    assert(hwintrinsic->isContained());
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+                    GenTree* BroadcastScalar = hwintrinsic->Op(1);
+                    if(BroadcastScalar->OperIs(GT_LCL_ADDR))
+                    {
+                        addr = hwintrinsic->Op(1);
+                        break;
+                    }
+                    else
+                    {
+                        assert(BroadcastScalar->OperIs(GT_LCL_VAR));
+                        return OperandDesc(simdBaseType, BroadcastScalar);
+                    }
+                }
+
                 case NI_SSE3_MoveAndDuplicate:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
                 case NI_AVX512F_BroadcastScalarToVector512:
-                // NI_AVX_BroadcastScalarToVector* will use the defult path and emit LCL_ADDR directly.
                 {
                     assert(op->isContained());
                     if (intrinsicId == NI_SSE3_MoveAndDuplicate)
@@ -1329,7 +1349,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
-            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir);
+            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir, instOptions);
         }
         break;
 
