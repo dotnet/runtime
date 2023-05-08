@@ -728,7 +728,7 @@ namespace System.Text
         /// <param name="value">The string to append.</param>
         public StringBuilder Append(string? value)
         {
-            if (value != null)
+            if (value is not null)
             {
                 Append(ref value.GetRawStringData(), value.Length);
             }
