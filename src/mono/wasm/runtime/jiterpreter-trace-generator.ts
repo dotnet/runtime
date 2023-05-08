@@ -277,7 +277,11 @@ export function generateWasmBody (
 
         isFirstInstruction = false;
 
-        if (disabledOpcodes.indexOf(opcode) >= 0) {
+        if (opcode === MintOpcode.MINT_SWITCH) {
+            // HACK: This opcode breaks all our table-based parsing and will cause the trace compiler to hang
+            //  if it encounters a switch inside of a pruning region, so we need to let the normal code path
+            //  run even if pruning is on
+        } else if (disabledOpcodes.indexOf(opcode) >= 0) {
             append_bailout(builder, ip, BailoutReason.Debugging);
             opcode = MintOpcode.MINT_NOP;
             // Intentionally leave the correct info in place so we skip the right number of bytes
@@ -292,7 +296,8 @@ export function generateWasmBody (
                     // We emit an unreachable opcode so that if execution somehow reaches a pruned opcode, we will abort
                     // This should be impossible anyway but it's also useful to have pruning visible in the wasm
                     // FIXME: Ideally we would stop generating opcodes after the first unreachable, but that causes v8 to hang
-                    builder.appendU8(hasEmittedUnreachable ? WasmOpcode.nop : WasmOpcode.unreachable);
+                    if (!hasEmittedUnreachable)
+                        builder.appendU8(WasmOpcode.unreachable);
                     // Each unreachable opcode could generate a bunch of native code in a bad wasm jit so generate nops after it
                     hasEmittedUnreachable = true;
                 }
