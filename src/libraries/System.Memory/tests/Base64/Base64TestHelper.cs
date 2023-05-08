@@ -44,19 +44,7 @@ namespace System.Buffers.Text.Tests
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
         };
 
-        public static bool IsByteToBeIgnored(byte charByte)
-        {
-            switch (charByte)
-            {
-                case 9: // Line feed
-                case 10: // Horizontal tab
-                case 13: // Carriage return
-                case 32: // Space
-                    return true;
-                default:
-                    return false;
-            }
-        }
+        public static bool IsByteToBeIgnored(byte charByte) => charByte is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n';
 
         public const byte EncodingPad = (byte)'=';      // '=', for padding
         public const sbyte InvalidByte = -1;            // Designating -1 for invalid bytes in the decoding map

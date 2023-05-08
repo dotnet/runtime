@@ -55,7 +55,7 @@ namespace System.Buffers.Text
                 utf8 = utf8.Slice(localConsumed);
                 bytes = bytes.Slice(localWritten);
 
-                if (!TrySkipWhitespace(utf8, out localConsumed))
+                if (!TrySkipWhiteSpace(utf8, out localConsumed))
                 {
                     if (localConsumed > 0)
                     {
@@ -71,7 +71,7 @@ namespace System.Buffers.Text
                 {
                     // First char isn't whitespace, but we didn't consume anything,
                     // thus the input may have whitespace anywhere in between. So fall back to block-wise decoding.
-                    return DecodeWithWhitespaceBlockwise(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
+                    return DecodeWithWhiteSpaceBlockwise(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
                 }
 
                 bytesConsumed += localConsumed;
@@ -82,7 +82,7 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Untouched original DecodeFromUtf8 method
+        /// Core logic for decoding UTF-8 encoded text in base 64 into binary data.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe OperationStatus DecodeFromUtf8Core(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
@@ -115,7 +115,9 @@ namespace System.Buffers.Text
                         Avx2Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
+                        {
                             goto DoneExit;
+                        }
                     }
 
                     end = srcMax - 24;
@@ -124,7 +126,9 @@ namespace System.Buffers.Text
                         Vector128Decode(ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
                         if (src == srcEnd)
+                        {
                             goto DoneExit;
+                        }
                     }
                 }
 
@@ -152,7 +156,9 @@ namespace System.Buffers.Text
                     int result = Decode(src, ref decodingMap);
 
                     if (result < 0)
+                    {
                         goto InvalidDataExit;
+                    }
 
                     WriteThreeLowOrderBytes(dest, result);
                     src += 4;
@@ -160,17 +166,23 @@ namespace System.Buffers.Text
                 }
 
                 if (maxSrcLength != srcLength - skipLastChunk)
+                {
                     goto DestinationTooSmallExit;
+                }
 
                 // If input is less than 4 bytes, srcLength == sourceIndex == 0
                 // If input is not a multiple of 4, sourceIndex == srcLength != 0
                 if (src == srcEnd)
                 {
                     if (isFinalBlock)
+                    {
                         goto InvalidDataExit;
+                    }
 
                     if (src == srcBytes + utf8.Length)
+                    {
                         goto DoneExit;
+                    }
 
                     goto NeedMoreDataExit;
                 }
@@ -204,9 +216,13 @@ namespace System.Buffers.Text
                     i0 |= i2;
 
                     if (i0 < 0)
+                    {
                         goto InvalidDataExit;
+                    }
                     if (dest + 3 > destMax)
+                    {
                         goto DestinationTooSmallExit;
+                    }
 
                     WriteThreeLowOrderBytes(dest, i0);
                     dest += 3;
@@ -220,9 +236,13 @@ namespace System.Buffers.Text
                     i0 |= i2;
 
                     if (i0 < 0)
+                    {
                         goto InvalidDataExit;
+                    }
                     if (dest + 2 > destMax)
+                    {
                         goto DestinationTooSmallExit;
+                    }
 
                     dest[0] = (byte)(i0 >> 16);
                     dest[1] = (byte)(i0 >> 8);
@@ -231,9 +251,13 @@ namespace System.Buffers.Text
                 else
                 {
                     if (i0 < 0)
+                    {
                         goto InvalidDataExit;
+                    }
                     if (dest + 1 > destMax)
+                    {
                         goto DestinationTooSmallExit;
+                    }
 
                     dest[0] = (byte)(i0 >> 16);
                     dest += 1;
@@ -242,7 +266,9 @@ namespace System.Buffers.Text
                 src += 4;
 
                 if (srcLength != utf8.Length)
+                {
                     goto InvalidDataExit;
+                }
 
             DoneExit:
                 bytesConsumed = (int)(src - srcBytes);
@@ -251,7 +277,9 @@ namespace System.Buffers.Text
 
             DestinationTooSmallExit:
                 if (srcLength != utf8.Length && isFinalBlock)
+                {
                     goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
+                }
 
                 bytesConsumed = (int)(src - srcBytes);
                 bytesWritten = (int)(dest - destBytes);
@@ -279,7 +307,9 @@ namespace System.Buffers.Text
         public static int GetMaxDecodedFromUtf8Length(int length)
         {
             if (length < 0)
+            {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            }
 
             return (length >> 2) * 3;
         }
@@ -302,17 +332,18 @@ namespace System.Buffers.Text
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
         {
             OperationStatus status = DecodeFromUtf8InPlaceCore(buffer, out bytesWritten, out uint sourceIndex);
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData, "These are the only statuses the method is coded to return.");
 
-            if (status is OperationStatus.InvalidData or OperationStatus.DestinationTooSmall)
+            if (status != OperationStatus.Done)
             {
                 // The input may have whitespace, attempt to decode while ignoring whitespace.
-                status = DecodeWithWhitespaceFromUtf8InPlace(buffer, ref bytesWritten, (int)sourceIndex);
+                status = DecodeWithWhiteSpaceFromUtf8InPlace(buffer, ref bytesWritten, (int)sourceIndex);
             }
 
             return status;
         }
 
-        private static OperationStatus DecodeWithWhitespaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
             Unsafe.SkipInit(out bytesConsumed);
             Unsafe.SkipInit(out bytesWritten);
@@ -329,7 +360,7 @@ namespace System.Buffers.Text
 
                 for (; encodedIdx < utf8.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
                 {
-                    if (IsWhitespace(utf8[encodedIdx]))
+                    if (IsWhiteSpace(utf8[encodedIdx]))
                     {
                         skipped++;
                     }
@@ -381,7 +412,7 @@ namespace System.Buffers.Text
                 {
                     for (int i = 0; i < utf8.Length; ++i)
                     {
-                        if (!IsWhitespace(utf8[i]))
+                        if (!IsWhiteSpace(utf8[i]))
                         {
                             // Revert previous dest increment, since an invalid state followed.
                             bytesConsumed -= localConsumed;
@@ -414,9 +445,8 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Untouched original DecodeFromUtf8InPlace method
+        /// Core logic for decoding UTF-8 encoded text in base 64 into binary data in place.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe OperationStatus DecodeFromUtf8InPlaceCore(Span<byte> buffer, out int bytesWritten, out uint sourceIndex)
         {
             fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
@@ -427,9 +457,13 @@ namespace System.Buffers.Text
 
                 // only decode input if it is a multiple of 4
                 if (bufferLength != ((bufferLength >> 2) * 4))
+                {
                     goto InvalidExit;
+                }
                 if (bufferLength == 0)
+                {
                     goto DoneExit;
+                }
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
 
@@ -437,7 +471,10 @@ namespace System.Buffers.Text
                 {
                     int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
                     if (result < 0)
+                    {
                         goto InvalidExit;
+                    }
+
                     WriteThreeLowOrderBytes(bufferBytes + destIndex, result);
                     destIndex += 3;
                     sourceIndex += 4;
@@ -467,7 +504,9 @@ namespace System.Buffers.Text
                     i0 |= i2;
 
                     if (i0 < 0)
+                    {
                         goto InvalidExit;
+                    }
 
                     WriteThreeLowOrderBytes(bufferBytes + destIndex, i0);
                     destIndex += 3;
@@ -481,7 +520,9 @@ namespace System.Buffers.Text
                     i0 |= i2;
 
                     if (i0 < 0)
+                    {
                         goto InvalidExit;
+                    }
 
                     bufferBytes[destIndex] = (byte)(i0 >> 16);
                     bufferBytes[destIndex + 1] = (byte)(i0 >> 8);
@@ -490,7 +531,9 @@ namespace System.Buffers.Text
                 else
                 {
                     if (i0 < 0)
+                    {
                         goto InvalidExit;
+                    }
 
                     bufferBytes[destIndex] = (byte)(i0 >> 16);
                     destIndex += 1;
@@ -506,10 +549,9 @@ namespace System.Buffers.Text
             }
         }
 
-        private static OperationStatus DecodeWithWhitespaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, int sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, int sourceIndex)
         {
             const int BlockSize = 4;
-            int length = utf8.Length;
             Span<byte> buffer = stackalloc byte[BlockSize];
 
             OperationStatus status = OperationStatus.Done;
@@ -517,14 +559,18 @@ namespace System.Buffers.Text
             bool hasPaddingBeenProcessed = false;
             int localBytesWritten = 0;
 
-            while (sourceIndex < length)
+            while ((uint)sourceIndex < (uint)utf8.Length)
             {
                 int bufferIdx = 0;
 
-                while ((uint)sourceIndex < (uint)length
-                       && bufferIdx < BlockSize)
+                while (bufferIdx < BlockSize)
                 {
-                    if (!IsWhitespace(utf8[sourceIndex]))
+                    if ((uint)sourceIndex >= (uint)utf8.Length) // TODO https://github.com/dotnet/runtime/issues/83349: move into the while condition once fixed
+                    {
+                        break;
+                    }
+
+                    if (!IsWhiteSpace(utf8[sourceIndex]))
                     {
                         buffer[bufferIdx] = utf8[sourceIndex];
                         bufferIdx++;
@@ -559,7 +605,7 @@ namespace System.Buffers.Text
 
                 if (status != OperationStatus.Done)
                 {
-                    return status;
+                    break;
                 }
 
                 // Write result to source span in place.
@@ -655,7 +701,9 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lo = Avx2.Shuffle(lutLo, loNibbles);
 
                 if (!Avx.TestZ(lo, hi))
+                {
                     break;
+                }
 
                 Vector256<sbyte> eq2F = Avx2.CompareEqual(str, mask2F);
                 Vector256<sbyte> shift = Avx2.Shuffle(lutShift, Avx2.Add(eq2F, hiNibbles));
@@ -823,7 +871,9 @@ namespace System.Buffers.Text
                 // Check for invalid input: if any "and" values from lo and hi are not zero,
                 // fall back on bytewise code to do error checking and reporting:
                 if ((lo & hi) != Vector128<byte>.Zero)
+                {
                     break;
+                }
 
                 Vector128<byte> eq2F = Vector128.Equals(str, mask2F);
                 Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), (eq2F + hiNibbles), mask8F);
@@ -921,13 +971,13 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TrySkipWhitespace(ReadOnlySpan<byte> encoded, out int consumed)
+        private static bool TrySkipWhiteSpace(ReadOnlySpan<byte> encoded, out int consumed)
         {
             int i = 0;
 
             for (; i < encoded.Length; ++i)
             {
-                if (!IsWhitespace(encoded[i]))
+                if (!IsWhiteSpace(encoded[i]))
                 {
                     consumed = i;
                     return true;
@@ -939,7 +989,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsWhitespace(int value)
+        internal static bool IsWhiteSpace(int value)
         {
             if (Environment.Is64BitProcess)
             {
@@ -962,12 +1012,13 @@ namespace System.Buffers.Text
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[] {
+        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[]
+        {
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
             52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,         //52-61 are placed at index 48-57 (for 0-9), 64 at index 61 (for =)
-            -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+            -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
             15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,         //0-25 are placed at index 65-90 (for A-Z)
             -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
             41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,         //26-51 are placed at index 97-122 (for a-z)

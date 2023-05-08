@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Buffers.Text
 {
     public static partial class Base64
@@ -41,95 +39,88 @@ namespace System.Buffers.Text
         public static bool IsValid(ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) =>
             IsValid<byte, Base64ByteValidatable>(base64TextUtf8, out decodedLength);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsValid<T, TBase64Validatable>(ReadOnlySpan<T> base64Text, out int decodedLength)
             where TBase64Validatable : IBase64Validatable<T>
         {
-            if (base64Text.IsEmpty)
-            {
-                decodedLength = 0;
-                return true;
-            }
+            int length = 0, paddingCount = 0;
 
-            int length = 0;
-            bool isPaddingFound = false;
-
-            while (true)
+            if (!base64Text.IsEmpty)
             {
-                int index = TBase64Validatable.IndexOfAnyExcept(base64Text);
-                if ((uint)index >= (uint)base64Text.Length)
+                while (true)
                 {
-                    length += base64Text.Length;
+                    int index = TBase64Validatable.IndexOfAnyExcept(base64Text);
+                    if ((uint)index >= (uint)base64Text.Length)
+                    {
+                        length += base64Text.Length;
+                        break;
+                    }
+
+                    length += index;
+
+                    T charToValidate = base64Text[index];
+                    base64Text = base64Text.Slice(index + 1);
+
+                    if (TBase64Validatable.IsWhiteSpace(charToValidate))
+                    {
+                        // It's common if there's whitespace for there to be multiple whitespace characters in a row,
+                        // e.g. \r\n.  Optimize for that case by looping here.
+                        while (!base64Text.IsEmpty && TBase64Validatable.IsWhiteSpace(base64Text[0]))
+                        {
+                            base64Text = base64Text.Slice(1);
+                        }
+                        continue;
+                    }
+
+                    if (!TBase64Validatable.IsEncodingPad(charToValidate))
+                    {
+                        // Invalid char was found.
+                        goto Fail;
+                    }
+
+                    // Encoding pad found. Determine if padding is valid, then stop processing.
+                    paddingCount = 1;
+                    foreach (T charToValidateInPadding in base64Text)
+                    {
+                        if (TBase64Validatable.IsEncodingPad(charToValidateInPadding))
+                        {
+                            // There can be at most 2 padding chars.
+                            if (paddingCount >= 2)
+                            {
+                                goto Fail;
+                            }
+
+                            paddingCount++;
+                        }
+                        else if (!TBase64Validatable.IsWhiteSpace(charToValidateInPadding))
+                        {
+                            // Invalid char was found.
+                            goto Fail;
+                        }
+                    }
+
+                    length += paddingCount;
                     break;
                 }
 
-                length += index;
-
-                T charToValidate = base64Text[index];
-                base64Text = base64Text.Slice(index + 1);
-
-                if (TBase64Validatable.IsWhitespace(charToValidate))
+                if (length % 4 != 0)
                 {
-                    continue;
+                    goto Fail;
                 }
-
-                if (!TBase64Validatable.IsEncodingPad(charToValidate))
-                {
-                    // Invalid char was found.
-                    decodedLength = 0;
-                    return false;
-                }
-
-                // Encoding pad found, determine if padding is valid below.
-                isPaddingFound = true;
-                break;
-            }
-
-            int paddingCount = 0;
-
-            if (isPaddingFound)
-            {
-                paddingCount = 1;
-
-                foreach (T charToValidateInPadding in base64Text)
-                {
-                    if (TBase64Validatable.IsEncodingPad(charToValidateInPadding))
-                    {
-                        // There can be at most 2 padding chars.
-                        if (paddingCount >= 2)
-                        {
-                            decodedLength = 0;
-                            return false;
-                        }
-
-                        paddingCount++;
-                    }
-                    else if (!TBase64Validatable.IsWhitespace(charToValidateInPadding))
-                    {
-                        // Invalid char was found.
-                        decodedLength = 0;
-                        return false;
-                    }
-                }
-
-                length += paddingCount;
-            }
-
-            if (length % 4 != 0)
-            {
-                decodedLength = 0;
-                return false;
             }
 
             // Remove padding to get exact length.
             decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
             return true;
+
+            Fail:
+            decodedLength = 0;
+            return false;
         }
 
         internal interface IBase64Validatable<T>
         {
             static abstract int IndexOfAnyExcept(ReadOnlySpan<T> span);
-            static abstract bool IsWhitespace(T value);
+            static abstract bool IsWhiteSpace(T value);
             static abstract bool IsEncodingPad(T value);
         }
 
@@ -138,17 +129,17 @@ namespace System.Buffers.Text
             private static readonly SearchValues<char> s_validBase64Chars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
             public static int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
-            public static bool IsWhitespace(char value) => Base64.IsWhitespace(value);
-            public static bool IsEncodingPad(char value) => value == Base64.EncodingPad;
+            public static bool IsWhiteSpace(char value) => Base64.IsWhiteSpace(value);
+            public static bool IsEncodingPad(char value) => value == EncodingPad;
         }
 
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
-            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(Base64.EncodingMap);
+            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(EncodingMap);
 
             public static int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
-            public static bool IsWhitespace(byte value) => Base64.IsWhitespace(value);
-            public static bool IsEncodingPad(byte value) => value == Base64.EncodingPad;
+            public static bool IsWhiteSpace(byte value) => Base64.IsWhiteSpace(value);
+            public static bool IsEncodingPad(byte value) => value == EncodingPad;
         }
     }
 }

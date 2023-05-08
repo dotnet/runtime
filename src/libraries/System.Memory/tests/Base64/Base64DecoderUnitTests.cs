@@ -375,9 +375,11 @@ namespace System.Buffers.Text.Tests
                 {
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodingInvalidBytesPadding
                     // Don't test chars to be ignored (spaces: 9, 10, 13, 32 i.e. '\n', '\t', '\r', ' ')
-                    if (invalidBytes[i] == Base64TestHelper.EncodingPad
-                        || Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
+                    if (invalidBytes[i] == Base64TestHelper.EncodingPad ||
+                        Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
+                    {
                         continue;
+                    }
 
                     // replace one byte with an invalid input
                     source[j] = invalidBytes[i];
@@ -572,9 +574,11 @@ namespace System.Buffers.Text.Tests
 
                     // Don't test padding (byte 61 i.e. '='), which is tested in DecodeInPlaceInvalidBytesPadding
                     // Don't test chars to be ignored (spaces: 9, 10, 13, 32 i.e. '\n', '\t', '\r', ' ')
-                    if (invalidBytes[i] == Base64TestHelper.EncodingPad
-                        || Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
+                    if (invalidBytes[i] == Base64TestHelper.EncodingPad ||
+                        Base64TestHelper.IsByteToBeIgnored(invalidBytes[i]))
+                    {
                         continue;
+                    }
 
                     // replace one byte with an invalid input
                     buffer[j] = invalidBytes[i];
