@@ -6424,34 +6424,6 @@ DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE
     return value;
 }
 
-void MethodContext::recgetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-{
-    if (GetXarchCpuInfo == nullptr)
-        GetXarchCpuInfo = new LightWeightMap<DWORD, DWORD>();
-
-    DWORD key   = 0;
-    DWORD value = static_cast<DWORD>(xarchCpuInfoPtr->Value);
-
-    GetXarchCpuInfo->Add(key, value);
-    DEBUG_REC(dmpGetXarchCpuInfo(key, value));
-}
-void MethodContext::dmpGetXarchCpuInfo(DWORD key, DWORD value)
-{
-    printf("getXarchCpuInfo key %u, value %u", key, value);
-}
-void MethodContext::repGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-{
-    DWORD key;
-    DWORD value;
-
-    key   = 0;
-    value = LookupByKeyOrMissNoMessage(GetXarchCpuInfo, key);
-
-    DEBUG_REP(dmpGetXarchCpuInfo(key, value));
-
-    xarchCpuInfoPtr->Value = static_cast<uint32_t>(value);
-}
-
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)
 {
     if (GetRelocTypeHint == nullptr)

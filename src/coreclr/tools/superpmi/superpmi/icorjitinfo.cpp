@@ -1299,12 +1299,6 @@ uint32_t MyICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE struct
     return jitInstance->mc->repGetRISCV64PassStructInRegisterFlags(structHnd);
 }
 
-void MyICJI::getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-{
-    jitInstance->mc->cr->AddCall("getXarchCpuInfo");
-    return jitInstance->mc->repGetXarchCpuInfo(xarchCpuInfoPtr);
-}
-
 // Stuff on ICorDynamicInfo
 uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {

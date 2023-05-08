@@ -317,24 +317,6 @@ private:
     }
 };
 
-// Represents information about an XARCH CPU
-union CORINFO_XARCH_CPU
-{
-    struct {
-        uint32_t SteppingId       : 4;
-        uint32_t Model            : 4;
-        uint32_t FamilyId         : 4;
-        uint32_t ProcessorType    : 2;
-        uint32_t IsAuthenticAmd   : 1; // Unused bits in the CPUID result
-        uint32_t IsGenuineIntel   : 1; // Unused bits in the CPUID result
-        uint32_t ExtendedModelId  : 4;
-        uint32_t ExtendedFamilyId : 8;
-        uint32_t Reserved         : 4; // Unused bits in the CPUID result
-    };
-
-    uint32_t Value;
-};
-
 // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
 // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
 //
@@ -3045,8 +3027,6 @@ public:
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
     virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
-
-    virtual void getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfo) = 0;
 };
 
 /*****************************************************************************

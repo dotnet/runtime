@@ -1999,10 +1999,6 @@ public:
 private:
     CORJIT_FLAGS m_CPUCompileFlags;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    CORINFO_XARCH_CPU m_xarchCpuInfo;
-#endif // TARGET_X86 || TARGET_AMD64
-
 #if !defined DACCESS_COMPILE
     void SetCpuInfo();
 #endif
@@ -2013,14 +2009,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CPUCompileFlags;
     }
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    inline void getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfo)
-    {
-        LIMITED_METHOD_CONTRACT;
-        *xarchCpuInfo = m_xarchCpuInfo;
-    }
-#endif // TARGET_X86 || TARGET_AMD64
 
 private:
     bool m_storeRichDebugInfo;
@@ -2673,5 +2661,23 @@ private:
 #include "codeman.inl"
 
 void ThrowOutOfMemoryWithinRange();
+
+// Represents information about an XARCH CPU
+union XarchCpuInfo
+{
+    struct {
+        uint32_t SteppingId       : 4;
+        uint32_t Model            : 4;
+        uint32_t FamilyId         : 4;
+        uint32_t ProcessorType    : 2;
+        uint32_t IsAuthenticAmd   : 1; // Unused bits in the CPUID result
+        uint32_t IsGenuineIntel   : 1; // Unused bits in the CPUID result
+        uint32_t ExtendedModelId  : 4;
+        uint32_t ExtendedFamilyId : 8;
+        uint32_t Reserved         : 4; // Unused bits in the CPUID result
+    };
+
+    uint32_t Value;
+};
 
 #endif // !__CODEMAN_HPP__

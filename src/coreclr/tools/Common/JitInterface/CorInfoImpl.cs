@@ -3263,14 +3263,6 @@ namespace Internal.JitInterface
             return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void getXarchCpuInfo(ref CORINFO_XARCH_CPU xarchCpuInfoPtr)
-        {
-            // We can't assume a CPU for AOT compilation so return the default
-            xarchCpuInfoPtr = default;
-        }
-#pragma warning restore CA1822 // Mark members as static
-
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)

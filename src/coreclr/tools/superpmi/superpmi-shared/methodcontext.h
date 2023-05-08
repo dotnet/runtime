@@ -807,10 +807,6 @@ public:
     void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
     DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
 
-    void recgetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr);
-    void dmpGetXarchCpuInfo(DWORD key, DWORD value);
-    void repGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr);
-
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -1192,7 +1188,6 @@ enum mcPackets
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
-    Packet_GetXarchCpuInfo = 211,
 };
 
 void SetDebugDumpVariables();

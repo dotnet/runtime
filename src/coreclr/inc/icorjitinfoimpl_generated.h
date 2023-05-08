@@ -542,9 +542,6 @@ uint32_t getRISCV64PassStructInRegisterFlags(
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
 
-void getXarchCpuInfo(
-          CORINFO_XARCH_CPU* xarchCpuInfoPtr) override;
-
 const void* getInlinedCallFrameVptr(
           void** ppIndirection) override;
 

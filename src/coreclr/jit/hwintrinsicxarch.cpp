@@ -907,8 +907,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     else
                     {
                         assert(intrinsic == NI_Vector256_AsVector256);
-                        return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
-                                                   16);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType,
+                                                   retType, 16);
                     }
                 }
             }
@@ -954,14 +954,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (intrinsic == NI_Vector512_AsVector)
                     {
-                        return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType, retType,
-                                                   simdSize);
+                        return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType,
+                                                   retType, simdSize);
                     }
                     else
                     {
                         assert(intrinsic == NI_Vector512_AsVector512);
-                        return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
-                                                   16);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType,
+                                                   retType, 16);
                     }
                 }
             }

@@ -8110,10 +8110,6 @@ public:
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
 
-#if defined(TARGET_XARCH)
-    void eeGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfo);
-#endif // TARGET_XARCH
-
     // Utility functions
 
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
@@ -8681,9 +8677,9 @@ private:
     // Note - cannot be used for System.Runtime.Intrinsic
     unsigned getVectorTByteLength()
     {
-        // We need to report the ISA dependency to the VM so that scenarios
-        // such as R2R work correctly for larger vector sizes, so we always
-        // do `compExactlyDependsOn` for such cases.
+// We need to report the ISA dependency to the VM so that scenarios
+// such as R2R work correctly for larger vector sizes, so we always
+// do `compExactlyDependsOn` for such cases.
 
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_VectorT256))

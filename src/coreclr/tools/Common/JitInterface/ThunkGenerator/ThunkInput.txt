@@ -73,7 +73,6 @@ const wchar_t*,String
 uint32_t**,ref uint*
 unsigned*,ref uint
 CORJIT_FLAGS*,ref CORJIT_FLAGS
-CORINFO_XARCH_CPU*,ref CORINFO_XARCH_CPU
 CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP
 CORINFO_LOOKUP*,ref CORINFO_LOOKUP
 CORINFO_LOOKUP_KIND*,ref CORINFO_LOOKUP_KIND
@@ -292,7 +291,6 @@ FUNCTIONS
     uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
-    void getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void* getHelperFtn (CorInfoHelpFunc         ftnNum, void                  **ppIndirection);

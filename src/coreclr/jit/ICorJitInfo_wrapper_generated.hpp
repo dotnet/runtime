@@ -1297,14 +1297,6 @@ uint32_t WrapICorJitInfo::getThreadTLSIndex(
     return temp;
 }
 
-void WrapICorJitInfo::getXarchCpuInfo(
-          CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-{
-    API_ENTER(getXarchCpuInfo);
-    wrapHnd->getXarchCpuInfo(xarchCpuInfoPtr);
-    API_LEAVE(getXarchCpuInfo);
-}
-
 const void* WrapICorJitInfo::getInlinedCallFrameVptr(
           void** ppIndirection)
 {

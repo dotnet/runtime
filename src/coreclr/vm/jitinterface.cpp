@@ -2516,35 +2516,6 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 }
 
 /*********************************************************************/
-void CEEInfo::getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    *xarchCpuInfoPtr = m_xarchCpuInfo;
-#else
-    *xarchCpuInfoPtr = {};
-#endif
-
-    EE_TO_JIT_TRANSITION_LEAF();
-}
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-void CEEInfo::setXarchCpuInfo(const CORINFO_XARCH_CPU& xarchCpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_xarchCpuInfo = xarchCpuInfo;
-}
-#endif // TARGET_X86 || TARGET_AMD64
-
-/*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {
@@ -12595,12 +12566,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     static ConfigDWORD s_stackSamplingEnabled;
     bool samplingEnabled = (s_stackSamplingEnabled.val(CLRConfig::UNSUPPORTED_StackSamplingEnabled) != 0);
 #endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    CORINFO_XARCH_CPU xarchCpuInfo;
-    ExecutionManager::GetEEJitManager()->getXarchCpuInfo(&xarchCpuInfo);
-    comp->setXarchCpuInfo(xarchCpuInfo);
-#endif // TARGET_X86 || TARGET_AMD64
 
 #if defined(ALLOW_SXS_JIT)
     if (FAILED(ret) && jitMgr->m_alternateJit

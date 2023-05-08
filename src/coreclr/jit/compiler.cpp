@@ -2328,43 +2328,15 @@ void Compiler::compSetProcessor()
 
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
 
-        if (preferredVectorByteLength == 0)
+        if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
         {
-            CORINFO_XARCH_CPU xarchCpuInfo;
-            eeGetXarchCpuInfo(&xarchCpuInfo);
+            // Some architectures can experience frequency throttling when executing
+            // executing 512-bit width instructions. To account for this we set the
+            // default preferred vector width to 256-bits in some scenarios. Power
+            // users can override this with `DOTNET_PreferredVectorBitWith=512` to
+            // allow using such instructions where hardware support is available.
 
-            if (xarchCpuInfo.IsGenuineIntel)
-            {
-                // Some architectures can experience frequency throttling when executing
-                // executing 512-bit width instructions. To account for this we set the
-                // default preferred vector width to 256-bits in some scenarios. Power
-                // users can override this with `DOTNET_PreferredVectorBitWith=512` to
-                // allow using such instructions where hardware support is available.
-
-                if (xarchCpuInfo.FamilyId == 0x06)
-                {
-                    if (xarchCpuInfo.ExtendedModelId == 0x05)
-                    {
-                        if (xarchCpuInfo.Model == 0x05)
-                        {
-                            // * Skylake (Server)
-                            // * Cascade Lake
-                            // * Cooper Lake
-
-                            preferredVectorByteLength = 32;
-                        }
-                    }
-                    else if (xarchCpuInfo.ExtendedModelId == 0x06)
-                    {
-                        if (xarchCpuInfo.Model == 0x06)
-                        {
-                            // * Cannon Lake
-
-                            preferredVectorByteLength = 32;
-                        }
-                    }
-                }
-            }
+            preferredVectorByteLength = 256;
         }
     }
 

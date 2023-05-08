@@ -86,9 +86,9 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
             return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
         }
 
-        var_types   retType           = JITtype2varType(sig->retType);
-        CorInfoType simdBaseJitType   = CORINFO_TYPE_UNDEF;
-        CORINFO_CLASS_HANDLE argClass = NO_CLASS_HANDLE;
+        var_types            retType         = JITtype2varType(sig->retType);
+        CorInfoType          simdBaseJitType = CORINFO_TYPE_UNDEF;
+        CORINFO_CLASS_HANDLE argClass        = NO_CLASS_HANDLE;
 
         if (retType == TYP_STRUCT)
         {

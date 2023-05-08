@@ -533,10 +533,6 @@ public:
 
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    void setXarchCpuInfo(const CORINFO_XARCH_CPU& xarchCpuInfo);
-#endif // TARGET_X86 || TARGET_AMD64
-
 private:
     // Shrinking these buffers drastically reduces the amount of stack space
     // required for each instance of the interpreter, and thereby reduces SOs.
@@ -594,10 +590,6 @@ protected:
     MethodDesc*           m_pMethodBeingCompiled;             // Top-level method being compiled
     Thread *              m_pThread;                          // Cached current thread for faster JIT-EE transitions
     CORJIT_FLAGS          m_jitFlags;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    CORINFO_XARCH_CPU m_xarchCpuInfo;
-#endif // TARGET_X86 || TARGET_AMD64
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()
     {

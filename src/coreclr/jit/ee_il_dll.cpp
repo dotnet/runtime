@@ -1395,17 +1395,3 @@ unsigned Compiler::eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 #endif // !DEBUG
-
-#if defined(TARGET_XARCH)
-    //------------------------------------------------------------------------
-    // eeGetXarchCpuInfo: Gets the XARCH CPU information for the JIT
-    //
-    // Arguments:
-    //    xarchCpuInfoPtr -- pointer to the struct that recieves the cpu info
-    //
-    void Compiler::eeGetXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
-    {
-        info.compCompHnd->getXarchCpuInfo(xarchCpuInfoPtr);
-    }
-#endif // TARGET_XARCH
-
