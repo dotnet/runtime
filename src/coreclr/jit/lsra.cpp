@@ -686,7 +686,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
-    counter = 0;
 #if defined(TARGET_XARCH)
     availableRegCount = ACTUAL_REG_COUNT;
 

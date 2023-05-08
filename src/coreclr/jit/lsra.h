@@ -1553,7 +1553,6 @@ public:
 
 private:
     Compiler* compiler;
-    int counter;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
