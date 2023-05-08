@@ -686,6 +686,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+    counter = 0;
 #if defined(TARGET_XARCH)
     availableRegCount = ACTUAL_REG_COUNT;
 
@@ -5986,6 +5987,35 @@ void LinearScan::allocateRegisters()
 //
 void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
 {
+    printf("%d. UpdateAssignedInterval: %s = ", counter++, getRegName(reg->regNum));
+    if (reg->regNum == 0x20 && (interval != nullptr) && (interval->varNum == 23))
+    {
+        printf("");
+    }
+    if (interval != nullptr)
+    {
+        if (interval->isLocalVar)
+        {
+            printf("V%02d", interval->varNum);
+        }
+        else if (interval->IsUpperVector())
+        {
+            printf("U%02d", interval->relatedInterval->varNum);
+        }
+        else if (interval->isConstant)
+        {
+            printf("C%02d", interval->intervalIndex);
+        }
+        else
+        {
+            printf("I%02d", interval->intervalIndex);
+        }
+    }
+    else
+    {
+        printf("nullptr");
+    }
+    printf("\n");
 #ifdef TARGET_ARM
     // Update overlapping floating point register for TYP_DOUBLE.
     Interval* oldAssignedInterval = reg->assignedInterval;
@@ -5995,12 +6025,38 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
         RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
         doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
         anotherHalfReg->assignedInterval = interval;
+        printf("%d. UpdateAssignedInterval: %s = ", counter++, getRegName(anotherHalfReg->regNum));
+        if (interval != nullptr)
+        {
+            if (interval->isLocalVar)
+            {
+                printf("V%02d", interval->varNum);
+            }
+            else if (interval->IsUpperVector())
+            {
+                printf("U%02d", interval->relatedInterval->varNum);
+            }
+            else if (interval->isConstant)
+            {
+                printf("C%02d", interval->intervalIndex);
+            }
+            else
+            {
+                printf("I%02d", interval->intervalIndex);
+            }
+        }
+        else
+        {
+            printf("nullptr");
+        }
+        printf("\n");
     }
     else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
     {
         RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
         doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
         anotherHalfReg->assignedInterval = nullptr;
+        printf("%d. UpdateAssignedInterval: %s = nullptr\n", counter, getRegName(anotherHalfReg->regNum));
     }
     if (doubleReg != REG_NA)
     {
@@ -6009,6 +6065,10 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
         clearConstantReg(doubleReg, TYP_DOUBLE);
     }
 #endif
+    //if ((reg->regNum == 0x20) && (interval == nullptr))
+    //{
+    //    printf("clearning assigned interval\n");
+    //}
     reg->assignedInterval = interval;
     if (interval != nullptr)
     {
