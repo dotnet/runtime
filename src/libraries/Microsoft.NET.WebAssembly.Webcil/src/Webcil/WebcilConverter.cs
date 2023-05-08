@@ -73,10 +73,10 @@ public class WebcilConverter
             // if wrapping in WASM, write the webcil payload to memory because we need to discover the length
 
             // webcil is about the same size as the PE file
-            using var memoryStream = new MemoryStream (checked((int)inputStream.Length));
+            using var memoryStream = new MemoryStream(checked((int)inputStream.Length));
             WriteConversionTo(memoryStream, inputStream, peInfo, wcInfo);
-            var wrapper = new WebcilWasmWrapper (memoryStream);
-            memoryStream.Seek (0, SeekOrigin.Begin);
+            var wrapper = new WebcilWasmWrapper(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
             wrapper.WriteWasmWrappedWebcil(outputStream);
         }
     }

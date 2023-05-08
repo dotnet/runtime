@@ -39,7 +39,7 @@ public class WebcilWasmWrapper
     private readonly Stream _webcilPayloadStream;
     private readonly uint _webcilPayloadSize;
 
-    public WebcilWasmWrapper (Stream webcilPayloadStream)
+    public WebcilWasmWrapper(Stream webcilPayloadStream)
     {
         _webcilPayloadStream = webcilPayloadStream;
         long len = webcilPayloadStream.Length;
@@ -53,7 +53,7 @@ public class WebcilWasmWrapper
         WriteWasmHeader(outputStream);
         using (var writer = new BinaryWriter(outputStream, System.Text.Encoding.UTF8, leaveOpen: true))
         {
-            WriteDataSection (writer);
+            WriteDataSection(writer);
         }
         WriteWasmSuffix(outputStream);
     }
