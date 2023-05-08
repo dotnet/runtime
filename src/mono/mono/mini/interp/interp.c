@@ -8896,14 +8896,13 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 #endif
 }
 
-typedef struct {
-	const char *name;
-	int length_u16, num_dregs, num_sregs, opargtype;
-} JiterpOpcodeInfo;
-
 EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_get_opcode_info (int opcode, JiterpOpcodeInfo *result)
+mono_jiterp_get_opcode_info (int opcode, void *_result)
 {
+	struct {
+		const char *name;
+		int length_u16, num_dregs, num_sregs, opargtype;
+	} *result = _result;
 	g_assert (result);
 	g_assert (opcode >= 0);
 	g_assert (opcode <= MINT_LASTOP);
