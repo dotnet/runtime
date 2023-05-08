@@ -3112,14 +3112,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Type_get_TypeHandle:
             {
-                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-
                 // We can only expand this on NativeAOT where RuntimeTypeHandle looks like this:
                 //
                 //   struct RuntimeTypeHandle { IntPtr _value; }
                 //
                 GenTree* op1 = impStackTop(0).val;
-                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) && callvirt)
+                if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && op1->IsHelperCall() &&
+                    gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) && callvirt)
                 {
                     assert(info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass) == 1);
 
