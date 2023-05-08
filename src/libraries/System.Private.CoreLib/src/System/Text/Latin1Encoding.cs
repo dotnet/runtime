@@ -583,7 +583,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            string result = string.FastAllocateString(bytes.Length);
+            string result = string.FastAllocateString(count);
             fixed (byte* pBytes = bytes)
             fixed (char* pChars = result)
             {
