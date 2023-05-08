@@ -147,6 +147,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
+        public static string GetLastIndexMarshalledIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "lastIndexMarshalled");
+        }
+
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
