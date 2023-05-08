@@ -587,7 +587,7 @@ namespace System.Text
             fixed (byte* pBytes = bytes)
             fixed (char* pChars = result)
             {
-                GetCharsCommon(pBytes + index, bytes.Length - index, pChars, result.Length);
+                GetCharsCommon(pBytes + index, count, pChars, count);
             }
             return result;
         }
