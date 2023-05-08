@@ -54,7 +54,6 @@ class Promotion
     void InsertInitStatement(Statement** prevStmt, GenTree* tree);
     static GenTree* CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
     static GenTree* CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement);
-    static void IncrementRefCount(Compiler* compiler, unsigned lclNum);
 
     //------------------------------------------------------------------------
     // BinarySearch:
