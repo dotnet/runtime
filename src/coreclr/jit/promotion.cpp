@@ -126,6 +126,57 @@ inline AccessKindFlags& operator&=(AccessKindFlags& a, AccessKindFlags b)
     return a = (AccessKindFlags)((uint32_t)a & (uint32_t)b);
 }
 
+bool AggregateInfo::OverlappingReplacements(unsigned offset, unsigned size, Replacement** firstReplacement, Replacement** endReplacement)
+{
+    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(Replacements, offset);
+    if ((ssize_t)firstIndex < 0)
+    {
+        firstIndex = ~firstIndex;
+        if (firstIndex > 0)
+        {
+            Replacement& lastRepBefore = Replacements[firstIndex - 1];
+            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offset)
+            {
+                // Overlap with last entry starting before offs.
+                firstIndex--;
+            }
+            else if (firstIndex >= Replacements.size())
+            {
+                // Starts after last replacement ends.
+                return false;
+            }
+        }
+
+        const Replacement& first = Replacements[firstIndex];
+        if (first.Offset >= (offset + size))
+        {
+            // First candidate starts after this ends.
+            return false;
+        }
+    }
+
+    assert((firstIndex < Replacements.size()) && Replacements[firstIndex].Overlaps(offset, size));
+    *firstReplacement = &Replacements[firstIndex];
+
+    if (endReplacement != nullptr)
+    {
+        size_t lastIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(Replacements, offset + size);
+        if ((ssize_t)lastIndex < 0)
+        {
+            lastIndex = ~lastIndex;
+        }
+
+        // Since we verified above that there is an overlapping replacement
+        // we know that lastIndex exists and is the next one that does not
+        // overlap.
+        assert(lastIndex > 0);
+        *endReplacement = Replacements.data() + lastIndex;
+    }
+
+    return true;
+}
+
+
 // Tracks all the accesses into one particular struct local.
 class LocalUses
 {
@@ -223,9 +274,9 @@ public:
     // Parameters:
     //   comp   - Compiler instance
     //   lclNum - Local num for this struct local
-    //   replacements - [out] Pointer to vector to create and insert replacements into
+    //   aggregateInfo - [out] Pointer to aggregate info to create and insert replacements into.
     //
-    void PickPromotions(Compiler* comp, unsigned lclNum, jitstd::vector<Replacement>** replacements)
+    void PickPromotions(Compiler* comp, unsigned lclNum, AggregateInfo** aggregateInfo)
     {
         if (m_accesses.size() <= 0)
         {
@@ -261,13 +312,13 @@ public:
             LclVarDsc* dsc    = comp->lvaGetDesc(newLcl);
             dsc->lvType       = access.AccessType;
 
-            if (*replacements == nullptr)
+            if (*aggregateInfo == nullptr)
             {
-                *replacements =
-                    new (comp, CMK_Promotion) jitstd::vector<Replacement>(comp->getAllocator(CMK_Promotion));
+                *aggregateInfo =
+                    new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion));
             }
 
-            (*replacements)->push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
+            (*aggregateInfo)->Replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
         }
 
         JITDUMP("\n");
@@ -618,6 +669,283 @@ bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
     return true;
 }
 
+bool StructSegments::Segment::IntersectsInclusive(const Segment& other) const
+{
+    if (End < other.Start)
+    {
+        return false;
+    }
+
+    if (other.End < Start)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool StructSegments::Segment::Contains(const Segment& other) const
+{
+    return (other.Start >= Start) && (other.End <= End);
+}
+
+void StructSegments::Segment::Merge(const Segment& other)
+{
+    Start = min(Start, other.Start);
+    End   = max(End, other.End);
+}
+
+//------------------------------------------------------------------------
+// Add:
+//   Add a segment to the data structure.
+//
+// Parameters:
+//   segment - The segment to add.
+//
+void StructSegments::Add(const Segment& segment)
+{
+    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+    }
+
+    m_segments.insert(m_segments.begin() + index, segment);
+    size_t endIndex;
+    for (endIndex = index + 1; endIndex < m_segments.size(); endIndex++)
+    {
+        if (!m_segments[index].IntersectsInclusive(m_segments[endIndex]))
+        {
+            break;
+        }
+
+        m_segments[index].Merge(m_segments[endIndex]);
+    }
+
+    m_segments.erase(m_segments.begin() + index + 1, m_segments.begin() + endIndex);
+}
+
+//------------------------------------------------------------------------
+// Subtract:
+//   Subtract a segment from the data structure.
+//
+// Parameters:
+//   segment - The segment to subtract.
+//
+void StructSegments::Subtract(const Segment& segment)
+{
+    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+    }
+    else
+    {
+        // Start == segment[index].End, which makes it non-interesting.
+        index++;
+    }
+
+    if (index >= m_segments.size())
+    {
+        return;
+    }
+
+    // Here we know Start < segment[index].End. Do they not intersect at all?
+    if (m_segments[index].Start >= segment.End)
+    {
+        // Does not intersect any segment.
+        return;
+    }
+
+    assert(m_segments[index].IntersectsInclusive(segment));
+
+    if (m_segments[index].Contains(segment))
+    {
+        if (segment.Start > m_segments[index].Start)
+        {
+            // New segment (existing.Start, segment.Start)
+            if (segment.End < m_segments[index].End)
+            {
+                m_segments.insert(m_segments.begin() + index, Segment(m_segments[index].Start, segment.Start));
+
+                // And new segment (segment.End, existing.End)
+                m_segments[index + 1].Start = segment.End;
+                return;
+            }
+
+            m_segments[index].End = segment.Start;
+            return;
+        }
+        if (segment.End < m_segments[index].End)
+        {
+            // New segment (segment.End, existing.End)
+            m_segments[index].Start = segment.End;
+            return;
+        }
+
+        // Full segment is being removed
+        m_segments.erase(m_segments.begin() + index);
+        return;
+    }
+
+    if (segment.Start > m_segments[index].Start)
+    {
+        m_segments[index].End = segment.Start;
+        index++;
+    }
+
+    size_t endIndex = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.End);
+    if ((ssize_t)endIndex >= 0)
+    {
+        m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex + 1);
+        return;
+    }
+
+    endIndex = ~endIndex;
+    if (endIndex == m_segments.size())
+    {
+        m_segments.erase(m_segments.begin() + index, m_segments.end());
+        return;
+    }
+
+    if (segment.End > m_segments[endIndex].Start)
+    {
+        m_segments[endIndex].Start = segment.End;
+    }
+
+    m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex);
+}
+
+//------------------------------------------------------------------------
+// IsEmpty:
+//   Check if the segment tree is empty.
+//
+// Returns:
+//   True if so.
+//
+bool StructSegments::IsEmpty()
+{
+    return m_segments.size() == 0;
+}
+
+//------------------------------------------------------------------------
+// IsSingleSegment:
+//   Check if the segment tree contains only a single segment, and return
+//   it if so.
+//
+// Parameters:
+//   result - [out] The single segment. Only valid if the method returns true.
+//
+// Returns:
+//   True if so.
+//
+bool StructSegments::IsSingleSegment(Segment* result)
+{
+    if (m_segments.size() == 1)
+    {
+        *result = m_segments[0];
+        return true;
+    }
+
+    return false;
+}
+
+bool StructSegments::CoveringSegment(Segment* result)
+{
+    if (m_segments.size() == 0)
+    {
+        return false;
+    }
+
+    result->Start = m_segments[0].Start;
+    result->End = m_segments[m_segments.size() - 1].End;
+    return true;
+}
+
+StructSegments Promotion::SignificantSegments(Compiler* compiler, ClassLayout* layout)
+{
+    COMP_HANDLE compHnd = compiler->info.compCompHnd;
+
+    bool significantPadding;
+    if (layout->IsBlockLayout())
+    {
+        significantPadding = true;
+        JITDUMP("  Block op has significant padding due to block layout\n");
+    }
+    else
+    {
+        uint32_t attribs = compHnd->getClassAttribs(layout->GetClassHandle());
+        if ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0)
+        {
+            significantPadding = true;
+            JITDUMP("  Block op has significant padding due to indexable fields\n");
+        }
+        else if ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0)
+        {
+            significantPadding = true;
+            JITDUMP("  Block op has significant padding due to CORINFO_FLG_DONT_DIG_FIELDS\n");
+        }
+        else if (((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0) && ((attribs & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
+        {
+            significantPadding = true;
+            JITDUMP("  Block op has significant padding due to CUSTOMLAYOUT without GC pointers\n");
+        }
+        else
+        {
+            significantPadding = false;
+        }
+    }
+
+    StructSegments segments(compiler->getAllocator(CMK_Promotion));
+
+    // Validate with "obviously correct" but less scalable fixed bit vector implementation.
+    INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(layout->GetSize(), compiler));
+
+    if (significantPadding)
+    {
+        segments.Add(StructSegments::Segment(0, layout->GetSize()));
+
+#ifdef DEBUG
+        for (unsigned i = 0; i < layout->GetSize(); i++)
+            segmentBitVect->bitVectSet(i);
+#endif
+    }
+    else
+    {
+        unsigned numFields = compHnd->getClassNumInstanceFields(layout->GetClassHandle());
+        for (unsigned i = 0; i < numFields; i++)
+        {
+            CORINFO_FIELD_HANDLE fieldHnd  = compHnd->getFieldInClass(layout->GetClassHandle(), (int)i);
+            unsigned             fldOffset = compHnd->getFieldOffset(fieldHnd);
+            CORINFO_CLASS_HANDLE fieldClassHandle;
+            CorInfoType          corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
+            var_types            varType = JITtype2varType(corType);
+            unsigned             size    = genTypeSize(varType);
+            if (size == 0)
+            {
+                // TODO-CQ: Recursively handle padding in sub structures
+                // here. Might be better to introduce a single JIT-EE call
+                // to query the significant segments -- that would also be
+                // usable by R2R even outside the version bubble in many
+                // cases.
+                size = compHnd->getClassSize(fieldClassHandle);
+                assert(size != 0);
+            }
+
+            segments.Add(StructSegments::Segment(fldOffset, fldOffset + size));
+#ifdef DEBUG
+            for (unsigned i = 0; i < size; i++)
+                segmentBitVect->bitVectSet(fldOffset + i);
+#endif
+        }
+    }
+
+    // TODO-TP: Cache this per class layout, we call this for every struct
+    // operation on a promoted local.
+    return segments;
+}
+
 //------------------------------------------------------------------------
 // CreateWriteBack:
 //   Create IR that writes a replacement local's value back to its struct local:
@@ -780,12 +1108,12 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 {
     GenTreeLclVarCommon* lcl    = (*use)->AsLclVarCommon();
     unsigned             lclNum = lcl->GetLclNum();
-    if (m_replacements[lclNum] == nullptr)
+    if (m_aggregates[lclNum] == nullptr)
     {
         return;
     }
 
-    jitstd::vector<Replacement>& replacements = *m_replacements[lclNum];
+    jitstd::vector<Replacement>& replacements = m_aggregates[lclNum]->Replacements;
 
     unsigned  offs       = lcl->GetLclOffs();
     var_types accessType = lcl->TypeGet();
@@ -903,12 +1231,12 @@ void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
 //
 void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
 {
-    if (m_replacements[lcl] == nullptr)
+    if (m_aggregates[lcl] == nullptr)
     {
         return;
     }
 
-    jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
+    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
     size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
     if ((ssize_t)index < 0)
@@ -951,12 +1279,12 @@ void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs,
 //
 void ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
 {
-    if (m_replacements[lcl] == nullptr)
+    if (m_aggregates[lcl] == nullptr)
     {
         return;
     }
 
-    jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
+    jitstd::vector<Replacement>& replacements = m_aggregates[lcl]->Replacements;
     size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
     if ((ssize_t)index < 0)
@@ -1025,8 +1353,7 @@ PhaseStatus Promotion::Run()
 
     // Pick promotions based on the use information we just collected.
     bool                          anyReplacements = false;
-    jitstd::vector<Replacement>** replacements =
-        new (m_compiler, CMK_Promotion) jitstd::vector<Replacement>*[m_compiler->lvaCount]{};
+    AggregateInfo** aggregates = new (m_compiler, CMK_Promotion) AggregateInfo*[m_compiler->lvaCount]{};
     for (unsigned i = 0; i < numLocals; i++)
     {
         LocalUses* uses = localsUse.GetUsesByLocal(i);
@@ -1035,21 +1362,43 @@ PhaseStatus Promotion::Run()
             continue;
         }
 
-        uses->PickPromotions(m_compiler, i, &replacements[i]);
+        uses->PickPromotions(m_compiler, i, &aggregates[i]);
 
-        if (replacements[i] != nullptr)
+        if (aggregates[i] == nullptr)
         {
-            assert(replacements[i]->size() > 0);
-            anyReplacements = true;
-#ifdef DEBUG
-            JITDUMP("V%02u promoted with %d replacements\n", i, (int)replacements[i]->size());
-            for (const Replacement& rep : *replacements[i])
-            {
-                JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                        varTypeName(rep.AccessType), rep.LclNum);
-            }
-#endif
+            continue;
         }
+
+        jitstd::vector<Replacement>& reps = aggregates[i]->Replacements;
+
+        StructSegments unpromotedParts = SignificantSegments(m_compiler, m_compiler->lvaGetDesc(i)->GetLayout());
+        for (size_t i = 0; i < reps.size(); i++)
+        {
+            unpromotedParts.Subtract(StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
+        }
+
+        StructSegments::Segment unpromotedSegment;
+        if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+        {
+            aggregates[i]->UnpromotedMin = unpromotedSegment.Start;
+            aggregates[i]->UnpromotedMax = unpromotedSegment.End;
+            assert(unpromotedSegment.Start < unpromotedSegment.End);
+        }
+        else
+        {
+            // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
+        }
+
+        assert(reps.size() > 0);
+        anyReplacements = true;
+#ifdef DEBUG
+        JITDUMP("V%02u promoted with %d replacements\n", i, (int)reps.size());
+        for (const Replacement& rep : reps)
+        {
+            JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
+                    varTypeName(rep.AccessType), rep.LclNum);
+        }
+#endif
     }
 
     if (!anyReplacements)
@@ -1057,14 +1406,19 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // Do a liveness pass to refine liveness for the promotions we picked.
+    PromotionLiveness liveness(m_compiler, aggregates);
+    liveness.Run();
+
     // Make all replacements we decided on.
-    ReplaceVisitor replacer(this, replacements);
+    ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
+        replacer.StartBlock(bb);
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.Reset();
+            replacer.StartStatement(stmt);
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
@@ -1078,12 +1432,12 @@ PhaseStatus Promotion::Run()
 
         for (unsigned i = 0; i < numLocals; i++)
         {
-            if (replacements[i] == nullptr)
+            if (aggregates[i] == nullptr)
             {
                 continue;
             }
 
-            for (Replacement& rep : *replacements[i])
+            for (Replacement& rep : aggregates[i]->Replacements)
             {
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
@@ -1108,7 +1462,7 @@ PhaseStatus Promotion::Run()
     Statement* prevStmt = nullptr;
     for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
     {
-        if (replacements[lclNum] == nullptr)
+        if (aggregates[lclNum] == nullptr)
         {
             continue;
         }
@@ -1116,7 +1470,7 @@ PhaseStatus Promotion::Run()
         LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
         if (dsc->lvIsParam || dsc->lvIsOSRLocal)
         {
-            InsertInitialReadBack(lclNum, *replacements[lclNum], &prevStmt);
+            InsertInitialReadBack(lclNum, aggregates[lclNum]->Replacements, &prevStmt);
         }
         else if (dsc->lvSuppressedZeroInit)
         {
@@ -1125,7 +1479,7 @@ PhaseStatus Promotion::Run()
             // Now that we are promoting some fields that assumption may be
             // invalidated for those fields, and we may need to insert explicit
             // zero inits again.
-            ExplicitlyZeroInitReplacementLocals(lclNum, *replacements[lclNum], &prevStmt);
+            ExplicitlyZeroInitReplacementLocals(lclNum, aggregates[lclNum]->Replacements, &prevStmt);
         }
     }
 
