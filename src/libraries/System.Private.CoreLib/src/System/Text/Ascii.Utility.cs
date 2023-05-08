@@ -1481,12 +1481,20 @@ namespace System.Text
         private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
             where T : unmanaged
         {
-            Debug.Assert(Avx.IsSupported);
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
 
-            return typeof(T) == typeof(byte)
-                ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80))
-                : Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80));
+            if (typeof(T) == typeof(byte))
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
+            }
+            else
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
+                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
