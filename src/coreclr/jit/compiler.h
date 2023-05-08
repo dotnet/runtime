@@ -3948,6 +3948,7 @@ protected:
                           int                     memberRef,
                           bool                    readonlyCall,
                           bool                    tailCall,
+                          bool                    callvirt,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
                           CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                           NamedIntrinsic*         pIntrinsicName,

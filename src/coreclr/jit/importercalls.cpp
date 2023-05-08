@@ -233,9 +233,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call =
-                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
+                                isTailCall, opcode == CEE_CALLVIRT, pConstrainedResolvedToken, callInfo->thisTransform,
+                                &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -2304,6 +2304,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 int                     memberRef,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
+                                bool                    callvirt,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                                 NamedIntrinsic*         pIntrinsicName,
@@ -2589,7 +2590,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
             // We need these to be able to fold "typeof(...) == typeof(...)"
-            case NI_System_RuntimeTypeHandle_ToIntPtr:
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
@@ -2615,6 +2615,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_BitConverter_SingleToInt32Bits:
             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
             case NI_System_Type_GetEnumUnderlyingType:
+            case NI_System_Type_get_TypeHandle:
+            case NI_System_RuntimeTypeHandle_ToIntPtr:
 
             // Most atomics are compiled to single instructions
             case NI_System_Threading_Interlocked_And:
@@ -3105,6 +3107,31 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* typeFrom = impStackTop(1).val;
 
                 retNode = impTypeIsAssignable(typeTo, typeFrom);
+                break;
+            }
+
+            case NI_System_Type_get_TypeHandle:
+            {
+                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+                // We can only expand this on NativeAOT where RuntimeTypeHandle looks like this:
+                //
+                //   struct RuntimeTypeHandle { IntPtr _value; }
+                //
+                GenTree* op1 = impStackTop(0).val;
+                if (op1->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()) && callvirt)
+                {
+                    assert(info.compCompHnd->getClassNumInstanceFields(sig->retTypeClass) == 1);
+
+                    unsigned structLcl = lvaGrabTemp(true DEBUGARG("RuntimeTypeHandle"));
+                    lvaSetStruct(structLcl, sig->retTypeClass, false);
+                    GenTree*       realHandle   = op1->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTreeLclFld* handleFld    = gtNewLclFldNode(structLcl, realHandle->TypeGet(), 0);
+                    GenTree*       asgHandleFld = gtNewAssignNode(handleFld, realHandle);
+                    impAppendTree(asgHandleFld, CHECK_SPILL_NONE, impCurStmtDI);
+                    retNode = impCreateLocalNode(structLcl DEBUGARG(0));
+                    impPopStack();
+                }
                 break;
             }
 
@@ -8228,6 +8255,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "op_Inequality") == 0)
                         {
                             result = NI_System_Type_op_Inequality;
+                        }
+                        else if (strcmp(methodName, "get_TypeHandle") == 0)
+                        {
+                            result = NI_System_Type_get_TypeHandle;
                         }
                     }
                     break;
