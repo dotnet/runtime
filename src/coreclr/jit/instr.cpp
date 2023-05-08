@@ -803,13 +803,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
-                    //we have the assumption that AVX_BroadcastScalarToVector*
-                    //only take the memory address as the operand.
+                    // we have the assumption that AVX_BroadcastScalarToVector*
+                    // only take the memory address as the operand.
                     assert(hwintrinsic->isContained());
                     assert(hwintrinsic->OperIsMemoryLoad());
                     assert(hwintrinsic->GetOperandCount() == 1);
                     GenTree* BroadcastScalar = hwintrinsic->Op(1);
-                    if(BroadcastScalar->OperIs(GT_LCL_ADDR))
+                    if (BroadcastScalar->OperIs(GT_LCL_ADDR))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -1240,17 +1240,17 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
         case GT_CNS_VEC:
         {
-            var_types simdType = op->TypeGet();
-            bool IsIdentical = true;
-            switch(inputSize)
+            var_types simdType    = op->TypeGet();
+            bool      IsIdentical = true;
+            switch (inputSize)
             {
                 case Input_32Bit:
                 {
                     uint32_t FirstElement = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[0]);
-                    for(unsigned i = 1; i < genTypeSize(simdType) / 4; i++)
+                    for (unsigned i = 1; i < genTypeSize(simdType) / 4; i++)
                     {
                         uint32_t ElementToCheck = static_cast<uint32_t>(op->AsVecCon()->gtSimdVal.u32[i]);
-                        if(FirstElement != ElementToCheck)
+                        if (FirstElement != ElementToCheck)
                         {
                             IsIdentical = false;
                             break;
@@ -1261,10 +1261,10 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
                 case Input_64Bit:
                 {
                     uint64_t FirstElement = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[0]);
-                    for(unsigned i = 1; i < genTypeSize(simdType) / 8; i++)
+                    for (unsigned i = 1; i < genTypeSize(simdType) / 8; i++)
                     {
                         uint64_t ElementToCheck = static_cast<uint64_t>(op->AsVecCon()->gtSimdVal.u64[i]);
-                        if(FirstElement != ElementToCheck)
+                        if (FirstElement != ElementToCheck)
                         {
                             IsIdentical = false;
                             break;
@@ -1276,7 +1276,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
                     unreached();
             }
 
-            if(IsIdentical)
+            if (IsIdentical)
             {
                 IsEmbBroadcastEnabled = true;
             }

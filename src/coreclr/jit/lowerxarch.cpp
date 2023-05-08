@@ -1638,12 +1638,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // 1. pass the address as LCL_ADDR to AVX.BroadcastScalarToVector256() API
             // 2. pass the address as LCL_VAR  to AVX.BroadcastScalarToVector256() API
             LIR::Use use;
-            bool foundUse = BlockRange().TryGetUse(node, &use);
-            if(foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
+            bool     foundUse = BlockRange().TryGetUse(node, &use);
+            if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
+                use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
             {
                 GenTree* op = node->Op(1);
                 assert(op->OperIs(GT_LCL_ADDR) || op->OperIs(GT_LCL_VAR));
-                if(node == use.User()->AsHWIntrinsic()->Op(1))
+                if (node == use.User()->AsHWIntrinsic()->Op(1))
                 {
                     std::swap(use.User()->AsHWIntrinsic()->Op(1), use.User()->AsHWIntrinsic()->Op(2));
                 }
@@ -7709,7 +7710,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         {
             GenTree* childNodeOp = hwintrinsic->Op(1);
             assert(childNodeOp->OperIs(GT_LCL_ADDR, GT_LCL_VAR));
-            if(parentNode->OperIsEmbBroadcastCompatible())
+            if (parentNode->OperIsEmbBroadcastCompatible())
             {
                 return true;
             }
@@ -7717,7 +7718,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 return false;
             }
-        }        
+        }
 
         default:
         {

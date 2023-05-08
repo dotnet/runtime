@@ -6677,7 +6677,8 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insOpts instOptions)
+void emitter::emitIns_R_R_A(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
