@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef WASM_MODULE_SECTION
-#error "define WASM_MODULE_SECTION(ident,str) before including this heaer"
+#error "define WASM_MODULE_SECTION(ident,str) before including this header"
 #endif
 
 // order matters and must match the section codes from the WebAssembly spec
