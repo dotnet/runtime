@@ -162,7 +162,8 @@ export function generateWasmBody (
 ) : number {
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, isConditionallyExecuted = false,
-        firstOpcodeInBlock = true, containsSimd = false;
+        firstOpcodeInBlock = true, containsSimd = false,
+        pruneOpcodes = false, hasEmittedUnreachable = false;
     let result = 0,
         prologueOpcodeCounter = 0,
         conditionalOpcodeCounter = 0;
@@ -248,6 +249,10 @@ export function generateWasmBody (
         }
 
         if (startBranchBlock) {
+            // We've reached a branch target so we need to stop pruning opcodes, since
+            //  we are no longer in a dead zone that execution can't reach
+            pruneOpcodes = false;
+            hasEmittedUnreachable = false;
             // If execution runs past the end of the current branch block, ensure
             //  that the instruction pointer is updated appropriately. This will
             //  also guarantee that the branch target block's comparison will
@@ -276,9 +281,23 @@ export function generateWasmBody (
             append_bailout(builder, ip, BailoutReason.Debugging);
             opcode = MintOpcode.MINT_NOP;
             // Intentionally leave the correct info in place so we skip the right number of bytes
+        } else if (pruneOpcodes) {
+            opcode = MintOpcode.MINT_NOP;
         }
 
         switch (opcode) {
+            case MintOpcode.MINT_NOP: {
+                // This typically means the current opcode was disabled or pruned
+                if (pruneOpcodes) {
+                    // We emit an unreachable opcode so that if execution somehow reaches a pruned opcode, we will abort
+                    // This should be impossible anyway but it's also useful to have pruning visible in the wasm
+                    // FIXME: Ideally we would stop generating opcodes after the first unreachable, but that causes v8 to hang
+                    builder.appendU8(hasEmittedUnreachable ? WasmOpcode.nop : WasmOpcode.unreachable);
+                    // Each unreachable opcode could generate a bunch of native code in a bad wasm jit so generate nops after it
+                    hasEmittedUnreachable = true;
+                }
+                break;
+            }
             case MintOpcode.MINT_INITLOCAL:
             case MintOpcode.MINT_INITLOCALS: {
                 // FIXME: We should move the first entry point after initlocals if it exists
@@ -904,6 +923,7 @@ export function generateWasmBody (
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
                     append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
+                    pruneOpcodes = true;
                     opcodeValue = 0;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -928,6 +948,7 @@ export function generateWasmBody (
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
+                    pruneOpcodes = true;
                 } else {
                     ip = abort;
                 }
@@ -943,6 +964,7 @@ export function generateWasmBody (
                 // See comments for MINT_CALL
                 if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
+                    pruneOpcodes = true;
                 } else {
                     ip = abort;
                 }
@@ -955,6 +977,7 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
+                pruneOpcodes = true;
                 break;
 
             // These are generated in place of regular LEAVEs inside of the body of a catch clause.
@@ -962,6 +985,7 @@ export function generateWasmBody (
             case MintOpcode.MINT_LEAVE_CHECK:
             case MintOpcode.MINT_LEAVE_S_CHECK:
                 append_bailout(builder, ip, BailoutReason.LeaveCheck);
+                pruneOpcodes = true;
                 break;
 
             case MintOpcode.MINT_ENDFINALLY: {
@@ -994,6 +1018,7 @@ export function generateWasmBody (
                     // This shouldn't happen during non-exception-handling execution unless the trace doesn't
                     //  contain the CALL_HANDLER that led here
                     append_bailout(builder, ip, BailoutReason.UnexpectedRetIp);
+                    // FIXME: prune opcodes?
                 } else {
                     ip = abort;
                 }
@@ -1230,6 +1255,7 @@ export function generateWasmBody (
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
+                        pruneOpcodes = true;
                     } else
                         ip = abort;
                 } else if (
@@ -1306,6 +1332,7 @@ export function generateWasmBody (
                     if (builder.branchTargets.size > 0) {
                         // FIXME: Try to reduce the number of these
                         append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
+                        pruneOpcodes = true;
                     } else
                         ip = abort;
                 } else if (
