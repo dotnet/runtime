@@ -50,8 +50,3 @@ DLL_EXPORT void JitProcessShutdownWork(ICorJitCompiler * pJit)
 {
     return pJit->ProcessShutdownWork(nullptr);
 }
-
-DLL_EXPORT unsigned GetMaxVectorTBitWidth(ICorJitCompiler * pJit, CORJIT_FLAGS * flags)
-{
-    return pJit->getMaxVectorTBitWidth(*flags);
-}

@@ -314,43 +314,6 @@ void CILJit::setTargetOS(CORINFO_OS os)
 #endif
 }
 
-/*****************************************************************************
- * Get the maximum width, in bytes, that Vector<T> is allowed to be.
- */
-unsigned CILJit::getMaxVectorTBitWidth(CORJIT_FLAGS cpuCompileFlags)
-{
-    JitFlags jitFlags;
-    jitFlags.SetFromFlags(cpuCompileFlags);
-
-#if defined(FEATURE_SIMD)
-    CORINFO_InstructionSetFlags instructionSetFlags = cpuCompileFlags.GetInstructionSetFlags();
-
-#if defined(TARGET_XARCH)
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
-    {
-        if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
-        {
-            JITDUMP("getMaxVectorTBitWidth: returning 256\n");
-        }
-        return 256;
-    }
-#endif // defined(TARGET_XARCH)
-    assert(instructionSetFlags.HasInstructionSet(InstructionSet_VectorT128));
-
-    if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
-    {
-        JITDUMP("getMaxVectorTBitWidth: returning 128\n");
-    }
-    return 128;
-#else  // !FEATURE_SIMD
-    if ((GetJitTls() != nullptr) && (JitTls::GetCompiler() != nullptr))
-    {
-        JITDUMP("getMaxVectorTBitWidth: returning 0\n");
-    }
-    return 0;
-#endif // !FEATURE_SIMD
-}
-
 //------------------------------------------------------------------------
 // eeGetArgSize: Returns the number of bytes required for the given type argument
 //   including padding after the actual value.

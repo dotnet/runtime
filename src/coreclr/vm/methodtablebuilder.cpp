@@ -1146,22 +1146,24 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 
     if (jitMgr->LoadJIT())
     {
-        CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
+        CORJIT_FLAGS CPUCompileFlags       = jitMgr->GetCPUCompileFlags();
+        uint32_t     numInstanceFieldBytes = 16;
 
-        uint32_t maxVectorTBitWidth    = jitMgr->m_jit->getMaxVectorTBitWidth(cpuCompileFlags);
-        uint32_t numInstanceFieldBytes = maxVectorTBitWidth / 8;
-
-        if (numInstanceFieldBytes != 0)
+        if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
         {
-            _ASSERTE((numInstanceFieldBytes * 8) == maxVectorTBitWidth);
-            _ASSERTE((numInstanceFieldBytes >= 16) && ((numInstanceFieldBytes % 16) == 0));
+            // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
+            numInstanceFieldBytes = 32;
+        }
+        else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+        {
+            numInstanceFieldBytes = 32;
+        }
 
-            bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
+        bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
 
-            if (HasLayout())
-            {
-                GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
-            }
+        if (HasLayout())
+        {
+            GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
         }
         return true;
     }
