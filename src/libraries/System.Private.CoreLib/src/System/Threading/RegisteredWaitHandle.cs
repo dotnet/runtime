@@ -19,7 +19,7 @@ namespace System.Threading
         private SafeWaitHandle? _waitHandle;
         private readonly _ThreadPoolWaitOrTimerCallback? _callbackHelper;
         private readonly uint _millisecondsTimeout;
-        private int _timeoutDurationMs;
+        private readonly int _signedMillisecondsTimeout;
         private bool _repeating;
         private bool _unregistering;
 
@@ -64,7 +64,7 @@ namespace System.Threading
             Thread.ThrowIfNoThreadStart();
             _waitHandle = waitHandle.SafeWaitHandle;
             _callbackHelper = callbackHelper;
-            _timeoutDurationMs = millisecondsTimeout;
+            _signedMillisecondsTimeout = millisecondsTimeout;
             _repeating = repeating;
             if (!IsInfiniteTimeout)
             {
@@ -99,7 +99,7 @@ namespace System.Threading
 
         internal int TimeoutDurationMs
         {
-            get => _timeoutDurationMs;
+            get => _signedMillisecondsTimeout;
         }
 
         internal bool IsInfiniteTimeout => TimeoutDurationMs == -1;
