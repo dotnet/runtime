@@ -2540,7 +2540,7 @@ private:
 
     PER_HEAP_METHOD void thread_rw_region_front (int gen_idx, heap_segment* region);
 
-    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
+    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes (int condemned_gen_number);
 
 #ifdef MULTIPLE_HEAPS
     // check that the fields of a decommissioned heap have their expected values,
