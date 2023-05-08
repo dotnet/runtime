@@ -35,11 +35,7 @@ public:
 class TargetArchitecture
 {
 public:
-#ifdef TARGET_64BIT
-    static const bool Is64Bit = true;
-#else
-    static const bool Is64Bit = false;
-#endif
+    static const bool Is64Bit = TARGET_POINTER_SIZE == 8;
 #ifdef TARGET_ARM
     static const bool IsX86 = false;
     static const bool IsX64 = false;
