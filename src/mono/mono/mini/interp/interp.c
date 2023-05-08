@@ -8904,8 +8904,7 @@ mono_jiterp_get_opcode_info (int opcode, void *_result)
 		int length_u16, num_dregs, num_sregs, opargtype;
 	} *result = _result;
 	g_assert (result);
-	g_assert (opcode >= 0);
-	g_assert (opcode <= MINT_LASTOP);
+	g_assert ((opcode >= 0) && (opcode <= MINT_LASTOP));
 	result->name = mono_interp_opname (opcode);
 	result->length_u16 = mono_interp_oplen [opcode];
 	result->num_sregs = mono_interp_op_sregs [opcode];

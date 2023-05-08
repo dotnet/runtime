@@ -1356,7 +1356,7 @@ export function generateWasmBody (
                 // print dregs
                 if (info.dregs > 0)
                     stmtText += " -> ";
-                for (let r = 0; r < info.sregs; r++) {
+                for (let r = 0; r < info.dregs; r++) {
                     if (r !== 0)
                         stmtText += ", ";
                     stmtText += getU16(firstDreg + (r * 2));
