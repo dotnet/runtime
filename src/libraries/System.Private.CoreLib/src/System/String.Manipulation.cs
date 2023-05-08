@@ -94,7 +94,7 @@ namespace System
 
                 if (totalLength < 0) // Check for a positive overflow
                 {
-                    throw new OutOfMemoryException();
+                    ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                 }
             }
 
@@ -116,12 +116,6 @@ namespace System
 
                 CopyStringContent(result, position, s);
                 position += s.Length;
-
-                // Check for overflow
-                if (position < 0)
-                {
-                    ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
-                }
             }
 
             return result;
@@ -292,7 +286,7 @@ namespace System
             }
 
             // It can overflow to a positive number so we accumulate the total length as a long.
-            long totalLength64 = str0.Length + str1.Length + str2.Length;
+            long totalLength64 = (long)str0.Length + (long)str1.Length + (long)str2.Length;
 
             int totalLength32 = (int)totalLength64;
             if (totalLength64 != totalLength32)
@@ -331,7 +325,7 @@ namespace System
             }
 
             // It can overflow to a positive number so we accumulate the total length as a long.
-            long totalLength64 = str0.Length + str1.Length + str2.Length + str3.Length;
+            long totalLength64 = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
             
             int totalLength32 = (int)totalLength64;
             if (totalLength64 != totalLength32)
