@@ -2126,8 +2126,7 @@ namespace System.Text
                     }
                     else
                     {
-                        // Use intrinsic so the JIT can unroll for constant length
-                        Buffer.Memmove(ref Unsafe.As<char, byte>(ref destination), ref Unsafe.As<char, byte>(ref value), (nuint)valueCount * 2);
+                        Buffer.Memmove(ref destination, ref value, (nuint)valueCount);
                     }
 
                     m_ChunkLength = chunkLength + valueCount;
