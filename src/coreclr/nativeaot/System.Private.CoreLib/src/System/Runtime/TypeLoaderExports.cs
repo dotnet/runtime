@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    [ReflectionBlocked]
     public static class TypeLoaderExports
     {
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
@@ -318,7 +317,6 @@ namespace System.Runtime
         }
     }
 
-    [ReflectionBlocked]
     public delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
 
     internal static unsafe class RawCalliHelper
