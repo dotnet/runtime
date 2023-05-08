@@ -7399,7 +7399,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTreeCol
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
 {
     assert(genActualType(type) == type);
-    return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+    return new (this, GT_CNS_INT) GenTreeIntCon(type, value, nullptr);
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
@@ -7632,7 +7632,7 @@ GenTreeIntCon* Compiler::gtNewStringLiteralLength(GenTreeStrCon* node)
 
 GenTree* Compiler::gtNewLconNode(int64_t value)
 {
-    GenTree* node = new (this, GT_CNS_NATIVELONG) GenTreeIntCon(value);
+    GenTree* node = new (this, GT_CNS_NATIVELONG) GenTreeIntCon(TYP_LONG, value, nullptr);
 
     return node;
 }

@@ -7471,7 +7471,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
 //
 GenTreeIntCon CodeGen::intForm(var_types type, ssize_t value)
 {
-    GenTreeIntCon i(type, value);
+    GenTreeIntCon i(type, value, nullptr);
     i.SetRegNum(REG_NA);
     return i;
 }

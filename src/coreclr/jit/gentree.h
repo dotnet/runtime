@@ -3072,16 +3072,8 @@ public:
     size_t gtTargetHandle = 0;
 #endif
 
-    GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fieldSeq = nullptr DEBUGARG(bool largeNode = false))
-        : GenTree(GT_CNS_INT, type DEBUGARG(largeNode))
-        , m_value(value)
-        , gtFieldSeq(fieldSeq)
-    {
-    }
-
-    GenTreeIntCon(int64_t value)
-        : GenTree(GT_CNS_NATIVELONG, TYP_LONG DEBUGARG(/* largeNode */ false))
-        , m_value(value)
+    GenTreeIntCon(var_types type, int64_t value, FieldSeq* fieldSeq DEBUGARG(bool largeNode = false))
+        : GenTree(GT_CNS_INT, type DEBUGARG(largeNode)), m_value(value), gtFieldSeq(fieldSeq)
     {
     }
 

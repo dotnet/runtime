@@ -366,10 +366,10 @@ private:
             assert(checkIdx == 0);
 
             checkBlock                 = CreateAndInsertBasicBlock(BBJ_NONE, currBlock);
-            GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
+            GenTree*   fatPointerMask  = compiler->gtNewIconNode(FAT_POINTER_MASK, TYP_I_IMPL);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
-            GenTree*   zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
+            GenTree*   zero            = compiler->gtNewIconNode(0, TYP_I_IMPL);
             GenTree*   fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
             GenTree*   jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
             Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
@@ -411,7 +411,7 @@ private:
         GenTree* GetFixedFptrAddress()
         {
             GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
+            GenTree* fatPointerMask  = compiler->gtNewIconNode(FAT_POINTER_MASK, TYP_I_IMPL);
             return compiler->gtNewOperNode(GT_SUB, pointerType, fptrAddressCopy, fatPointerMask);
         }
 
@@ -426,7 +426,7 @@ private:
         GenTree* GetHiddenArgument(GenTree* fixedFptrAddress)
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
-            GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
+            GenTree* wordSize             = compiler->gtNewIconNode(genTypeSize(TYP_I_IMPL), TYP_I_IMPL);
             GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
             return compiler->gtNewIndir(fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
