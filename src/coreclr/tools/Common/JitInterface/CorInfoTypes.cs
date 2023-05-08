@@ -1208,22 +1208,6 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    public struct CORINFO_XARCH_CPU
-    {
-        public uint Value;
-
-        // The native version is a union with the following fields:
-        //     uint32_t SteppingId       : 4;
-        //     uint32_t Model            : 4;
-        //     uint32_t FamilyId         : 4;
-        //     uint32_t ProcessorType    : 2;
-        //     uint32_t IsAuthenticAmd   : 1; // Unused bits in the CPUID result
-        //     uint32_t IsGenuineIntel   : 1; // Unused bits in the CPUID result
-        //     uint32_t ExtendedModelId  : 4;
-        //     uint32_t ExtendedFamilyId : 8;
-        //     uint32_t Reserved         : 4; // Unused bits in the CPUID result
-    };
-
     // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
     // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
     //
