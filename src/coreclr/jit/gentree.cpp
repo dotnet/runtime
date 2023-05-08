@@ -8198,8 +8198,7 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
 //
 GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
 {
-    assert((indirFlags & GTF_IND_INVARIANT) == 0);
-    assert((type != TYP_STRUCT) && (genActualType(type) == genActualType(data)));
+    assert(((indirFlags & GTF_IND_INVARIANT) == 0) && (type != TYP_STRUCT));
 
     GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
     store->gtFlags |= GTF_ASG;
