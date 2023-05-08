@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
@@ -11,7 +10,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// </summary>
     public class EventLogSettings
     {
-        private Internal.IEventLog? _eventLog;
+        private IEventLog? _eventLog;
 
         /// <summary>
         /// Name of the event log. If <c>null</c> or not specified, "Application" is the default.
@@ -33,8 +32,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// </summary>
         public Func<string, LogLevel, bool>? Filter { get; set; }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public Internal.IEventLog EventLog
+        internal IEventLog EventLog
         {
             get => _eventLog ??= CreateDefaultEventLog();
 

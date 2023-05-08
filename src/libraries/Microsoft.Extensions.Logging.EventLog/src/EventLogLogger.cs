@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -12,8 +11,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// <summary>
     /// A logger that writes messages to Windows Event Log.
     /// </summary>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public  sealed class EventLogLogger : ILogger
+    internal sealed class EventLogLogger : ILogger
     {
         private readonly string _name;
         private readonly EventLogSettings _settings;
@@ -53,7 +51,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <summary>
         /// The event log.
         /// </summary>
-        public Internal.IEventLog EventLog { get; }
+        public IEventLog EventLog { get; }
 
         /// <inheritdoc />
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull

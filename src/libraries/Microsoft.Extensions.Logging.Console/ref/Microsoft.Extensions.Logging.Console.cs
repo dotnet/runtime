@@ -72,15 +72,6 @@ namespace Microsoft.Extensions.Logging.Console
         public string? TimestampFormat { get { throw null; } set { } }
         public bool UseUtcTimestamp { get { throw null; } set { } }
     }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-    public sealed partial class ConsoleLogger : Microsoft.Extensions.Logging.ILogger
-    {
-        internal ConsoleLogger() { }
-        public System.IDisposable BeginScope<TState>(TState state) where TState : notnull { throw null; }
-        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
-        public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
-    }
     [System.ObsoleteAttribute("ConsoleLoggerFormat has been deprecated.")]
     public enum ConsoleLoggerFormat
     {
@@ -138,15 +129,6 @@ namespace Microsoft.Extensions.Logging.Console
         public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
     }
     [System.ObsoleteAttribute("TODO")]
-    public partial class ConsoleLogScope
-    {
-        internal ConsoleLogScope() { }
-        public static Microsoft.Extensions.Logging.Console.ConsoleLogScope Current { get { throw null; } set { } }
-        public Microsoft.Extensions.Logging.Console.ConsoleLogScope Parent { get { throw null; } }
-        public static System.IDisposable Push(string name, object state) { throw null; }
-        public override string ToString() { throw null; }
-    }
-    [System.ObsoleteAttribute("TODO")]
     public partial interface IConsoleLoggerSettings
     {
         Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get; }
@@ -170,55 +152,5 @@ namespace Microsoft.Extensions.Logging.Console
         public SimpleConsoleFormatterOptions() { }
         public Microsoft.Extensions.Logging.Console.LoggerColorBehavior ColorBehavior { get { throw null; } set { } }
         public bool SingleLine { get { throw null; } set { } }
-    }
-}
-namespace Microsoft.Extensions.Logging.Console.Internal
-{
-    [System.ObsoleteAttribute("TODO")]
-    public partial class AnsiLogConsole : Microsoft.Extensions.Logging.Console.Internal.IConsole
-    {
-        public AnsiLogConsole(Microsoft.Extensions.Logging.Console.Internal.IAnsiSystemConsole systemConsole) { }
-        public void Flush() { }
-        public void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
-        public void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
-    }
-    [System.ObsoleteAttribute("TODO")]
-    public partial class ConsoleLoggerProcessor
-    {
-        public Microsoft.Extensions.Logging.Console.Internal.IConsole Console;
-        public ConsoleLoggerProcessor() { }
-        public void Dispose() { }
-        public virtual void EnqueueMessage(Microsoft.Extensions.Logging.Console.Internal.LogMessageEntry message) { }
-    }
-    [System.ObsoleteAttribute("TODO")]
-    public partial interface IAnsiSystemConsole
-    {
-        void Write(string message);
-        void WriteLine(string message);
-    }
-    [System.ObsoleteAttribute("TODO")]
-    public partial interface IConsole
-    {
-        void Flush();
-        void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground);
-        void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground);
-    }
-    [System.ObsoleteAttribute("TODO")]
-    public sealed partial class LogMessageEntry
-    {
-        internal LogMessageEntry() { }
-        public System.ConsoleColor? LevelBackground;
-        public System.ConsoleColor? LevelForeground;
-        public string LevelString;
-        public string Message;
-        public System.ConsoleColor? MessageColor;
-    }
-    [System.ObsoleteAttribute("TODO")]
-    public partial class WindowsLogConsole : Microsoft.Extensions.Logging.Console.Internal.IConsole
-    {
-        public WindowsLogConsole() { }
-        public void Flush() { }
-        public void Write(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
-        public void WriteLine(string message, System.ConsoleColor? background, System.ConsoleColor? foreground) { }
     }
 }

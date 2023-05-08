@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:Microsoft.Extensions.Hosting.IHostBuilder.UseServiceProviderFactory``1(System.Func{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0}})</Target>
+    <Left>lib/netstandard2.0/Microsoft.Extensions.Hosting.Abstractions.dll</Left>
+    <Right>lib/netstandard2.0/Microsoft.Extensions.Hosting.Abstractions.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+</Suppressions>

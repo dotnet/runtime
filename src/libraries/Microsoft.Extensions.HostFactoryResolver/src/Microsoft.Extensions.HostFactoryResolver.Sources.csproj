@@ -3,6 +3,7 @@
        package infra globs for .cs files. -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <DisableCheckExtensionsBackwardCompatibility>true</DisableCheckExtensionsBackwardCompatibility>
     <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
