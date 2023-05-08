@@ -10,12 +10,14 @@ using System.Runtime.InteropServices;
 namespace Microsoft.NET.WebAssembly.Webcil;
 
 //
-// This is a pretty dumb wrapper.  It assumes that the entire wasm module is going to be unchanging,
-// except for the data section which has 2 passive segments.  segment 0 is 4 bytes and contains the
-// length of the webcil payload.  segment 1 is of a variable size and contains the webcil payload.
+// Emits a simple WebAssembly wrapper module around a given webcil payload.
 //
-// the unchanging parts are stored as a "prefix" and "suffix" which contain the bytes for the following
-// WAT program, split into the parts that come before the data section, and the bytes that come after:
+// The entire wasm module is going to be unchanging, except for the data section which has 2 passive
+// segments.  segment 0 is 4 bytes and contains the length of the webcil payload.  segment 1 is of a
+// variable size and contains the webcil payload.
+//
+// The unchanging parts are stored as a "prefix" and "suffix" which contain the bytes for the following
+// WAT module, split into the parts that come before the data section, and the bytes that come after:
 //
 // (module
 //  (data "\0f\00\00\00") ;; data segment 0: payload size as a 4 byte LE uint32
