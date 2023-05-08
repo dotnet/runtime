@@ -38,7 +38,6 @@ namespace System
         internal const int StackallocIntBufferSizeLimit = 128;
         internal const int StackallocCharBufferSizeLimit = 256;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void CopyStringContent(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
