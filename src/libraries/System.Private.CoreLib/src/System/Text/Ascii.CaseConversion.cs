@@ -548,12 +548,9 @@ namespace System.Text
             }
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
-                // narrowing operation required
-                // since we know data is all-ASCII, special-case SSE2 to avoid unneeded PAND in Narrow call
-                Vector128<byte> narrow = (Sse2.IsSupported)
-                    ? Sse2.PackUnsignedSaturate(vector.AsInt16(), vector.AsInt16())
-                    : Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16());
-                narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
+                // narrowing operation required, we know data is all-ASCII so use extract helper
+                Vector128<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
             {
