@@ -142,8 +142,8 @@ inline void FATAL_GC_ERROR()
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
-#define SPINLOCK_HISTORY
-#define RECORD_LOH_STATE
+//#define SPINLOCK_HISTORY
+//#define RECORD_LOH_STATE
 
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
@@ -356,8 +356,7 @@ const int policy_expand  = 2;
 #ifdef SIMPLE_DPRINTF
 
 void GCLog (const char *fmt, ... );
-//#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
-#define dprintf(l,x) {if ((l == 1) || (l == 5555)) {GCLog x;}}
+#define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
@@ -581,8 +580,6 @@ enum allocation_state
     a_state_trigger_ephemeral_gc,
     a_state_trigger_2nd_ephemeral_gc,
     a_state_check_retry_seg,
-    // a temp state I added to distinguish 
-    a_state_wait_in_tams,
     a_state_max
 };
 
@@ -2544,7 +2541,7 @@ private:
 
     PER_HEAP_METHOD void thread_rw_region_front (int gen_idx, heap_segment* region);
 
-    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
+    PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes (int condemned_gen_number);
 
 #ifdef MULTIPLE_HEAPS
     // check that the fields of a decommissioned heap have their expected values,
@@ -4022,11 +4019,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int* g_mark_stack_busy;
 #endif //MH_SC_MARK
 
-#ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t total_num_fl_items_stage1;
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t total_num_fl_items_moved_stage1;
-#endif //USE_REGIONS
-
 #if !defined(USE_REGIONS) || defined(_DEBUG)
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t* g_promoted;
 #endif //!USE_REGIONS || _DEBUG
@@ -4486,9 +4478,9 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY BOOL heap_analyze_enabled;
 #endif //HEAP_ANALYZE
 
-#ifdef MULTIPLE_HEAPS
+#if defined(MULTIPLE_HEAPS) && defined(STRESS_DYNAMIC_HEAP_COUNT)
     PER_HEAP_FIELD bool uoh_msl_before_gc_p;
-#endif //MULTIPLE_HEAPS
+#endif //MULTIPLE_HEAPS && STRESS_DYNAMIC_HEAP_COUNT
 
     /***************************************************/
     // Fields that don't fit into the above categories //

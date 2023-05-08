@@ -154,7 +154,7 @@ class GCConfig
   public: static int64_t Get##name();                            \
   public: static int64_t Get##name(int64_t defaultValue);        \
   public: static void Set##name(int64_t value);                  \
-  public: static int64_t s_##name;                               \
+  private: static int64_t s_##name;                              \
   private: static bool s_##name##Provided;                       \
   private: static int64_t s_Updated##name;                       \
 
