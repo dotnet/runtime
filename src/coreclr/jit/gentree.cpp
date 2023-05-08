@@ -2671,6 +2671,20 @@ AGAIN:
 
     if (kind & GTK_UNOP)
     {
+        if (oper == GT_IND)
+        {
+            if (op1->TypeIs(TYP_STRUCT))
+            {
+                // Rare case -- need contextual information to check equality in some cases.
+                return false;
+            }
+
+            if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
+            {
+                return false;
+            }
+        }
+
         if (IsExOp(kind))
         {
             // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
@@ -2723,20 +2737,6 @@ AGAIN:
                         return false;
                     }
 
-                    break;
-
-                case GT_IND:
-                case GT_NULLCHECK:
-                    if (op1->TypeIs(TYP_STRUCT))
-                    {
-                        // Rare case -- need contextual information to check equality in some cases.
-                        return false;
-                    }
-
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
                     break;
 
                 case GT_FIELD_ADDR:
