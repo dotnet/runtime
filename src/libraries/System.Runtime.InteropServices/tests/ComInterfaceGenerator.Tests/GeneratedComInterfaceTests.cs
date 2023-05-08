@@ -70,8 +70,8 @@ public partial class GeneratedComInterfaceTests
         //iface.SetData(5);
         //Assert.Equal(5, iface.GetData());
 
-        Assert.Equal("myName", iface.GetName());
         // https://github.com/dotnet/runtime/issues/85795
+        //Assert.Equal("myName", iface.GetName());
         //iface.SetName("updated");
         //Assert.Equal("updated", iface.GetName());
 

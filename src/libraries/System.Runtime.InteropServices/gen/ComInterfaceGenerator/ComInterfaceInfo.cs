@@ -13,7 +13,7 @@ namespace Microsoft.Interop
     public sealed partial class ComInterfaceGenerator
     {
         /// <summary>
-        /// Information about a Com interface, but not it's methods
+        /// Information about a Com interface, but not it's methods.
         /// </summary>
         private sealed record ComInterfaceInfo(
             ManagedTypeInfo Type,

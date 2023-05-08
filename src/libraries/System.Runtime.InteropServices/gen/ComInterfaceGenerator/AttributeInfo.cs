@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Provides the info necessary for copying an attribute from user code to generated code.
+    /// </summary>
     internal sealed record AttributeInfo(ManagedTypeInfo Type, SequenceEqualImmutableArray<string> Arguments)
     {
         internal static AttributeInfo From(AttributeData attribute)

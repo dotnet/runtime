@@ -32,31 +32,6 @@ namespace Microsoft.Interop
                 });
         }
 
-        public static IncrementalValuesProvider<(TGrouper, SequenceEqualImmutableArray<TGroupee>)> GroupTuples<TGrouper, TGroupee>(this IncrementalValuesProvider<(TGrouper Key, TGroupee Value)> values)
-        {
-            return values.Collect().SelectMany(static (values, ct) =>
-            {
-                var valueMap = new Dictionary<TGrouper, List<TGroupee>>();
-                foreach (var value in values)
-                {
-                    if (!valueMap.TryGetValue(value.Key, out var list))
-                    {
-                        list = new();
-                    }
-                    list.Add(value.Value);
-                    valueMap[value.Key] = list;
-                }
-
-                var builder = ImmutableArray.CreateBuilder<(TGrouper, SequenceEqualImmutableArray<TGroupee>)>(valueMap.Count);
-                foreach (var kvp in valueMap)
-                {
-                    builder.Add((kvp.Key, kvp.Value.ToSequenceEqualImmutableArray()));
-                }
-
-                return builder.MoveToImmutable();
-            });
-        }
-
         /// <summary>
         /// Format the syntax nodes in the given provider such that we will not re-normalize if the input nodes have not changed.
         /// </summary>

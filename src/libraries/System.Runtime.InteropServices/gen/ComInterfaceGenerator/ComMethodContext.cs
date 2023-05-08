@@ -13,6 +13,7 @@ namespace Microsoft.Interop
     {
         /// <summary>
         /// Represents a method, its declaring interface, and its index in the interface's vtable.
+        /// This type contains all information necessary to generate the corresponding methods in the ComInterfaceGenerator
         /// </summary>
         private sealed record ComMethodContext(ComInterfaceContext DeclaringInterface, ComMethodInfo MethodInfo, int Index, IncrementalMethodStubGenerationContext GenerationContext)
         {
