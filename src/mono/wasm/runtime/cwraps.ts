@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import { disableLegacyJsInterop, Module } from "./imports";
+import { disableLegacyJsInterop, Module } from "./globals";
 
 type SigLine = [lazy: boolean, name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
@@ -125,6 +125,9 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_boost_back_branch_target", "void", ["number"]],
     [true, "mono_jiterp_is_imethod_var_address_taken", "number", ["number", "number"]],
     [true, "mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
+    [true, "mono_jiterp_get_simd_intrinsic", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -246,6 +249,9 @@ export interface t_Cwraps {
     mono_jiterp_boost_back_branch_target(destination: number): void;
     mono_jiterp_is_imethod_var_address_taken(imethod: VoidPtr, offsetBytes: number): number;
     mono_jiterp_get_opcode_value_table_entry(opcode: number): number;
+    mono_jiterp_get_simd_intrinsic(arity: number, index: number): VoidPtr;
+    mono_jiterp_get_simd_opcode(arity: number, index: number): number;
+    mono_jiterp_get_arg_offset (imethod: number, sig: number, index: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

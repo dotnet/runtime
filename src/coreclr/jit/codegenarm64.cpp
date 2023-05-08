@@ -4569,29 +4569,33 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
                     ins  = INS_cmn;
                     oper = op2->gtGetOp1()->OperGet();
-                    switch (oper)
+                    if (op2->gtGetOp1()->isContained())
                     {
-                        case GT_LSH:
-                        case GT_RSH:
-                        case GT_RSZ:
+                        switch (oper)
                         {
-                            GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
-                            GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
+                            case GT_LSH:
+                            case GT_RSH:
+                            case GT_RSZ:
+                            {
+                                GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
+                                GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
 
-                            assert(op2->gtGetOp1()->isContained());
-                            assert(shiftOp2->IsCnsIntOrI());
-                            assert(shiftOp2->isContained());
+                                assert(shiftOp2->IsCnsIntOrI());
+                                assert(shiftOp2->isContained());
 
-                            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
-                                                shiftOp2->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
-                        }
-                        break;
-
-                        default:
-                            assert(!op2->gtGetOp1()->isContained());
-
-                            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
+                                emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
+                                                    shiftOp2->AsIntConCommon()->IntegralValue(),
+                                                    ShiftOpToInsOpts(oper));
+                            }
                             break;
+
+                            default:
+                                unreached();
+                        }
+                    }
+                    else
+                    {
+                        emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
                     }
                     break;
 
@@ -4804,9 +4808,9 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
 }
 
 //------------------------------------------------------------------------
-// genCodeForJumpCompare: Generates code for jmpCompare statement.
+// genCodeForJumpCompare: Generates code for a GT_JCMP or GT_JTEST statement.
 //
-// A GT_JCMP node is created when a comparison and conditional branch
+// A GT_JCMP/GT_JTEST node is created when a comparison and conditional branch
 // can be executed in a single instruction.
 //
 // Arm64 has a few instructions with this behavior.
@@ -4827,42 +4831,43 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
 // This node is responsible for consuming the register, and emitting the
 // appropriate fused compare/test and branch instruction
 //
-// Two flags guide code generation
-//    GTF_JCMP_TST -- Set if this is a tbz/tbnz rather than cbz/cbnz
-//    GTF_JCMP_EQ  -- Set if this is cbz/tbz rather than cbnz/tbnz
-//
 // Arguments:
-//    tree - The GT_JCMP tree node.
+//    tree - The GT_JCMP/GT_JTEST tree node.
 //
 // Return Value:
 //    None
 //
-void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
+void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
 
-    assert(tree->OperIs(GT_JCMP));
+    assert(tree->OperIs(GT_JCMP, GT_JTEST));
     assert(!varTypeIsFloating(tree));
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
     assert(op2->IsCnsIntOrI());
     assert(op2->isContained());
 
+    GenCondition cc = tree->gtCondition;
+
+    // For ARM64 we only expect equality comparisons.
+    assert((cc.GetCode() == GenCondition::EQ) || (cc.GetCode() == GenCondition::NE));
+
     genConsumeOperands(tree);
 
     regNumber reg  = op1->GetRegNum();
     emitAttr  attr = emitActualTypeSize(op1->TypeGet());
 
-    if (tree->gtFlags & GTF_JCMP_TST)
+    if (tree->OperIs(GT_JTEST))
     {
         ssize_t compareImm = op2->AsIntCon()->IconValue();
 
         assert(isPow2(((size_t)compareImm)));
 
-        instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
+        instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->bbJumpDest, reg, imm);
@@ -4871,7 +4876,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         assert(op2->IsIntegralConst(0));
 
-        instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_cbz : INS_cbnz;
+        instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
 
         GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->bbJumpDest, reg);
     }

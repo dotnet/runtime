@@ -3,7 +3,7 @@
 
 import { dotnet } from './dotnet.js'
 
-dotnet
+await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArguments(...arguments)
     .run()

@@ -1919,6 +1919,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
+    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -1927,8 +1928,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
-    compGeneratingProlog = false;
-    compGeneratingEpilog = false;
+    compGeneratingProlog       = false;
+    compGeneratingEpilog       = false;
+    compGeneratingUnwindProlog = false;
+    compGeneratingUnwindEpilog = false;
 
     compPostImportationCleanupDone = false;
     compLSRADone                   = false;
@@ -4493,6 +4496,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
+    // If we're going to instrument code, we may need to prepare before
+    // we import. Also do this before we read in any profile data.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
+
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
@@ -4501,14 +4512,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
     activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-    // If we're going to instrument code, we may need to prepare before
-    // we import.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
-    }
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4793,6 +4796,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
     DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
+
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // GS security checks for unsafe buffers
     //
@@ -9713,17 +9718,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_NO_OP:
                 break;
 
-            case GT_FIELD:
-                if (tree->gtFlags & GTF_FLD_VOLATILE)
-                {
-                    chars += printf("[FLD_VOLATILE]");
-                }
-                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
-                {
-                    chars += printf("[FLD_TGT_HEAP]");
-                }
-                break;
-
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -9750,10 +9744,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
-                if (tree->gtFlags & GTF_IND_ASG_LHS)
-                {
-                    chars += printf("[IND_ASG_LHS]");
-                }
                 if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
                     chars += printf("[IND_UNALIGNED]");
@@ -9765,6 +9755,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_NONNULL)
                 {
                     chars += printf("[IND_NONNULL]");
+                }
+                if (tree->gtFlags & GTF_IND_INITCLASS)
+                {
+                    chars += printf("[IND_INITCLASS]");
                 }
                 break;
 
@@ -10323,7 +10317,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
+    assert(tree->OperIs(GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);

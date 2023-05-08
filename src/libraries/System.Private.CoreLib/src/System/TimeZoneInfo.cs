@@ -127,6 +127,7 @@ namespace System
 
             public Dictionary<string, TimeZoneInfo>? _systemTimeZones;
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
+            public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
         }
 
@@ -1898,6 +1899,9 @@ namespace System
                             }
                         }
 
+                        cachedData._timeZonesUsingAlternativeIds ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase);
+                        cachedData._timeZonesUsingAlternativeIds[id] = zone;
+
                         Debug.Assert(zone != null);
                         value = zone;
                     }
@@ -1917,17 +1921,26 @@ namespace System
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
-                if (cachedData._systemTimeZones.TryGetValue(id, out TimeZoneInfo? match))
+                if (cachedData._systemTimeZones.TryGetValue(id, out value))
                 {
-                    if (dstDisabled && match._supportsDaylightSavingTime)
+                    if (dstDisabled && value._supportsDaylightSavingTime)
                     {
                         // we found a cache hit but we want a time zone without DST and this one has DST data
-                        value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
+                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                     }
-                    else
+
+                    return result;
+                }
+            }
+
+            if (cachedData._timeZonesUsingAlternativeIds != null)
+            {
+                if (cachedData._timeZonesUsingAlternativeIds.TryGetValue(id, out value))
+                {
+                    if (dstDisabled && value._supportsDaylightSavingTime)
                     {
-                        value = new TimeZoneInfo(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
-                                              match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false, match.HasIanaId);
+                        // we found a cache hit but we want a time zone without DST and this one has DST data
+                        value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                     }
 
                     return result;
@@ -1958,7 +1971,7 @@ namespace System
         {
             TimeZoneInfoResult result;
 
-            result = TryGetTimeZoneFromLocalMachine(id, out TimeZoneInfo? match, out e);
+            result = TryGetTimeZoneFromLocalMachine(id, out value, out e);
 
             if (result == TimeZoneInfoResult.Success)
             {
@@ -1971,23 +1984,14 @@ namespace System
                 // uses reference equality with the Utc object.
                 if (!id.Equals(UtcId, StringComparison.OrdinalIgnoreCase))
                 {
-                    cachedData._systemTimeZones.Add(id, match!);
+                    cachedData._systemTimeZones.Add(id, value!);
                 }
 
-                if (dstDisabled && match!._supportsDaylightSavingTime)
+                if (dstDisabled && value!._supportsDaylightSavingTime)
                 {
                     // we found a cache hit but we want a time zone without DST and this one has DST data
-                    value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
+                    value = CreateCustomTimeZone(value._id, value._baseUtcOffset, value._displayName, value._standardDisplayName);
                 }
-                else
-                {
-                    value = new TimeZoneInfo(match!._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
-                                          match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false, match.HasIanaId);
-                }
-            }
-            else
-            {
-                value = null;
             }
 
             return result;

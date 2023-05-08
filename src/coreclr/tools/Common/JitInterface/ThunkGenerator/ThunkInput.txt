@@ -239,7 +239,6 @@ FUNCTIONS
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
-    bool areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
@@ -314,7 +313,8 @@ FUNCTIONS
     bool canAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE    cls, void                  **ppIndirection);
-    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t *buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t *buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t *buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, void                  **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO       *pSig);

@@ -85,30 +85,12 @@ namespace System.Text
             return new CompositeFormat(format, segments.ToArray());
         }
 
-        /// <summary>Try to parse the composite format string <paramref name="format"/>.</summary>
-        /// <param name="format">The string to parse.</param>
-        /// <param name="compositeFormat">The parsed <see cref="CompositeFormat"/> if parsing was successful; otherwise, null.</param>
-        /// <returns><see langword="true"/> the <paramref name="format"/> can be parsed successfully; otherwise, <see langword="false"/>.</returns>
-        public static bool TryParse([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, [NotNullWhen(true)] out CompositeFormat? compositeFormat)
-        {
-            if (format is not null)
-            {
-                var segments = new List<(string? Literal, int ArgIndex, int Alignment, string? Format)>();
-                int failureOffset = default;
-                ExceptionResource failureReason = default;
-                if (TryParseLiterals(format, segments, ref failureOffset, ref failureReason))
-                {
-                    compositeFormat = new CompositeFormat(format, segments.ToArray());
-                    return true;
-                }
-            }
-
-            compositeFormat = null;
-            return false;
-        }
-
         /// <summary>Gets the original composite format string used to create this <see cref="CompositeFormat"/> instance.</summary>
         public string Format { get; }
+
+        /// <summary>Gets the minimum number of arguments that must be passed to a formatting operation using this <see cref="CompositeFormat"/>.</summary>
+        /// <remarks>It's permissible to supply more arguments than this value, but it's an error to pass fewer.</remarks>
+        public int MinimumArgumentCount => _argsRequired;
 
         /// <summary>Throws an exception if the specified number of arguments is fewer than the number required.</summary>
         /// <param name="numArgs">The number of arguments provided by the caller.</param>

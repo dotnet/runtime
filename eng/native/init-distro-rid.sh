@@ -25,7 +25,7 @@ getNonPortableDistroRid()
                 VERSION_ID="${VERSION_ID%.*}"
             fi
 
-            if [[ "${VERSION_ID}" =~ ^([[:digit:]]|\.)+$ ]]; then
+            if [[ "${VERSION_ID:-}" =~ ^([[:digit:]]|\.)+$ ]]; then
                 nonPortableRid="${ID}.${VERSION_ID}-${targetArch}"
             else
                 # Rolling release distros either do not set VERSION_ID, set it as blank or
