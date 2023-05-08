@@ -3802,6 +3802,10 @@ main_loop:
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_NIY)
+			g_printf ("MONO interpreter: NIY encountered in method %s\n", frame->imethod->method->name);
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			SAVE_INTERP_STATE (frame);

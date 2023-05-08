@@ -67,10 +67,6 @@ static guint16 sri_vector128_methods [] = {
 };
 
 static guint16 sri_vector128_t_methods [] = {
-	SN_get_AllBitsSet,
-	SN_get_Count,
-	SN_get_One,
-	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
@@ -84,12 +80,29 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_RightShift,
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
-	SN_op_UnsignedRightShift
+	SN_op_UnsignedRightShift,
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_One,
+	SN_get_Zero,
 };
 
 static guint16 sri_packedsimd_methods [] = {
+	SN_Add,
+	SN_And,
+	SN_Bitmask,
+	SN_CompareEqual,
+	SN_CompareNotEqual,
 	SN_ConvertNarrowingSignedSaturate,
 	SN_ConvertNarrowingUnsignedSaturate,
+	SN_Dot,
+	SN_Multiply,
+	SN_Negate,
+	SN_ShiftLeft,
+	SN_ShiftRightArithmetic,
+	SN_ShiftRightLogical,
+	SN_Splat,
+	SN_Subtract,
 	SN_Swizzle,
 	SN_get_IsHardwareAccelerated,
 	SN_get_IsSupported,
@@ -534,12 +547,12 @@ static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod);
-	if (id == -1)
-		return FALSE;
+	// We don't early-out for an unrecognized method, we will generate an NIY later
 
 	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	int vector_size = -1;
 
+	// NOTE: Linker substitutions (used in AOT) will prevent this from running.
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 #if HOST_BROWSER
 		interp_add_ins (td, MINT_LDC_I4_1);
@@ -550,6 +563,23 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	}
 
 #if HOST_BROWSER
+	if (id < 0) {
+		g_print ("MONO interpreter: Unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+
+		// If we're missing a packedsimd method but the packedsimd method was AOT'd, we can
+		//  just let the interpreter generate a native call to the AOT method instead of
+		//  generating an NIY that will halt execution
+		ERROR_DECL (error);
+		gpointer addr = mono_aot_get_method (cmethod, error);
+		if (addr)
+			return FALSE;
+
+		// The packedsimd method implementations recurse infinitely and cause a stack overflow,
+		//  so replace them with a NIY opcode instead that will assert
+		interp_add_ins (td, MINT_NIY);
+		goto opcode_added;
+	}
+
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 	if (!m_class_is_simd_type (vector_klass))
@@ -705,21 +735,14 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	class_ns = m_class_get_name_space (cmethod->klass);
 	class_name = m_class_get_name (cmethod->klass);
 
-	if (mono_opt_interp_simd_v128 && !strcmp (class_ns, "System.Runtime.Intrinsics")) {
+	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
 		if (!strcmp (class_name, "Vector128"))
 			return emit_sri_vector128 (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
-	} else if (mono_opt_interp_simd_packedsimd && !strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
-		if (!strcmp (class_name, "PackedSimd")) {
-			gboolean res = emit_sri_packedsimd (td, cmethod, csignature);
-#if HOST_BROWSER
-			if (!res)
-				g_print ("MONO interpreter: Unsupported method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
-			g_assert (res);
-#endif
-			return res;
-		}
+	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+		if (!strcmp (class_name, "PackedSimd"))
+			return emit_sri_packedsimd (td, cmethod, csignature);
 	}
 	return FALSE;
 }
