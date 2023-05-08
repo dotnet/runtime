@@ -149,7 +149,7 @@ CrashInfo::LogMessage(
 // Gather all the necessary crash dump info.
 //
 bool
-CrashInfo::GatherCrashInfo(DumpType* dumpType)
+CrashInfo::GatherCrashInfo(DumpType dumpType)
 {
     // Get the info about the threads (registers, etc.)
     for (ThreadInfo* thread : m_threads)
@@ -182,7 +182,7 @@ CrashInfo::GatherCrashInfo(DumpType* dumpType)
     }
 #endif
     // Load and initialize DAC interfaces
-    if (!InitializeDAC())
+    if (!InitializeDAC(dumpType))
     {
         return false;
     }
@@ -208,13 +208,8 @@ CrashInfo::GatherCrashInfo(DumpType* dumpType)
             region.Trace();
         }
     }
-    // If the DAC module present side-by-side (the default for single-file and native AOT apps), fallback to full dump.
-    if (m_pClrDataProcess == nullptr)
-    {
-        *dumpType = DumpType::Full;
-    }
     // If full memory dump, include everything regardless of permissions
-    if (*dumpType == DumpType::Full)
+    if (dumpType == DumpType::Full)
     {
         for (const MemoryRegion& region : m_moduleMappings)
         {
@@ -233,7 +228,7 @@ CrashInfo::GatherCrashInfo(DumpType* dumpType)
     {
         // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
         // the heap regions are marked RWX instead of just RW.
-        if (*dumpType == DumpType::Heap)
+        if (dumpType == DumpType::Heap)
         {
             for (const MemoryRegion& region : m_otherMappings)
             {
@@ -283,9 +278,9 @@ GetHResultString(HRESULT hr)
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::InitializeDAC()
+CrashInfo::InitializeDAC(DumpType dumpType)
 {
-    // Don't attempt to load the DAC if createdump is statically linked into the runtime
+    // Don't attempt to load the DAC if native AOT app (there is no DAC)
     if (m_appModel == AppModelType::NativeAOT)
     {
         return true;
@@ -312,15 +307,7 @@ CrashInfo::InitializeDAC()
     m_dacModule = dlopen(dacPath.c_str(), RTLD_LAZY);
     if (m_dacModule == nullptr)
     {
-        // Don't fail for single-file apps when the DAC can't be found. Will fall back to full dump.
-        if (m_appModel == AppModelType::SingleFile)
-        {
-            result = true;
-        }
-        else
-        {
-            printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
-        }
+        printf_error("InitializeDAC: dlopen(%s) FAILED %s\n", dacPath.c_str(), dlerror());
         goto exit;
     }
     pfnDllMain = (PFN_DLLMAIN)dlsym(m_dacModule, "DllMain");

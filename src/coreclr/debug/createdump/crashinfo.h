@@ -93,7 +93,7 @@ public:
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(DumpType* dumpType);
+    bool GatherCrashInfo(DumpType dumpType);
     void CombineMemoryRegions();
     bool EnumerateMemoryRegionsWithDAC(DumpType dumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
@@ -154,7 +154,7 @@ private:
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateMemoryRegions();
 #endif
-    bool InitializeDAC();
+    bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
     void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);

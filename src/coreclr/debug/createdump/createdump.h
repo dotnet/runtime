@@ -90,7 +90,7 @@ typedef int T_CONTEXT;
 #include <array>
 #include <string>
 
-enum DumpType
+enum class DumpType
 {
     Mini,
     Heap,
@@ -98,7 +98,7 @@ enum DumpType
     Full
 };
 
-enum AppModelType
+enum class AppModelType
 {
     Normal,
     SingleFile,
