@@ -359,6 +359,8 @@ public:
 #endif // FEATURE_SIMD
 
 private:
+    static constexpr unsigned ComputeValueNumFuncDef(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.

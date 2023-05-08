@@ -8835,6 +8835,28 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
 UINT8* ValueNumStore::s_vnfOpAttribs = nullptr;
 
+constexpr unsigned ValueNumStore::ComputeValueNumFuncDef(int arity, bool commute, bool knownNonNull, bool sharedStatic)
+{
+    unsigned value = 0;
+    if (commute)
+    {
+        value |= VNFOA_Commutative;
+    }
+    if (knownNonNull)
+    {
+        value |= VNFOA_KnownNonNull;
+    }
+    if (sharedStatic)
+    {
+        value |= VNFOA_SharedStatic;
+    }
+    if (arity > 0)
+    {
+        value |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
+    }
+    return value;
+}
+
 void ValueNumStore::InitValueNumStoreStatics()
 {
     // Make sure we have the constants right...
@@ -8872,14 +8894,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
 #define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
-    if (commute)                                                                                                       \
-        vnfOpAttribs[vnfNum] |= VNFOA_Commutative;                                                                     \
-    if (knownNonNull)                                                                                                  \
-        vnfOpAttribs[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
-    if (sharedStatic)                                                                                                  \
-        vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                                                    \
-    if (arity > 0)                                                                                                     \
-        vnfOpAttribs[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                       \
+    vnfOpAttribs[vnfNum] |= ComputeValueNumFuncDef(arity, commute, knownNonNull, sharedStatic);                        \
     vnfNum++;
 
 #include "valuenumfuncs.h"
