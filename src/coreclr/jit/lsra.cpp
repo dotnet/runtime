@@ -5989,12 +5989,12 @@ void LinearScan::allocateRegisters()
 void LinearScan::clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType))
 {
 #ifdef TARGET_ARM
-    regNumber doubleReg           = REG_NA; 
+    regNumber doubleReg           = REG_NA;
     Interval* oldAssignedInterval = reg->assignedInterval;
     if (regType == TYP_DOUBLE)
     {
-        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
-        doubleReg                 = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
+        RegRecord* anotherHalfReg        = findAnotherHalfRegRec(reg);
+        doubleReg                        = genIsValidDoubleReg(reg->regNum) ? reg->regNum : anotherHalfReg->regNum;
         anotherHalfReg->assignedInterval = nullptr;
     }
     else if ((oldAssignedInterval != nullptr) && (oldAssignedInterval->registerType == TYP_DOUBLE))
