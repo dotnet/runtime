@@ -4348,14 +4348,14 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
     // Example2: GT_EQ(int, op1 of type ubyte, op2 is GT_CNS_INT) - in this case codegen uses
     // ubyte as the result of the comparison and if the result needs to be materialized into a reg
     // simply zero extend it to TYP_INT size.
-    else if (varTypeIsByte(op1) && op2->IsCnsIntOrI())
+    else if (varTypeIsByte(op1) && op2->IsIntegralConst())
     {
         needByteRegs = true;
     }
     // Example3: GT_EQ(int, op1 is GT_CNS_INT, op2 of type ubyte) - in this case codegen uses
     // ubyte as the result of the comparison and if the result needs to be materialized into a reg
     // simply zero extend it to TYP_INT size.
-    else if (op1->IsCnsIntOrI() && varTypeIsByte(op2))
+    else if (op1->IsIntegralConst() && varTypeIsByte(op2))
     {
         needByteRegs = true;
     }

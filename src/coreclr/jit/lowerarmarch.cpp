@@ -65,7 +65,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 #endif
 
         // Make sure we have an actual immediate
-        if (!childNode->IsCnsIntOrI())
+        if (!childNode->IsIntegralConst())
             return false;
         if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
             return false;
@@ -250,7 +250,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
         GenTree* shiftAmountNode = childNode->gtGetOp2();
 
-        if (!shiftAmountNode->IsCnsIntOrI())
+        if (!shiftAmountNode->IsIntegralConst())
         {
             // Cannot contain if the childs op2 is not a constant
             return false;
@@ -397,7 +397,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
     // as most small locals have 4-byte-wide stack homes, the common exception being (dependent) struct fields.
     //
-    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsCnsIntOrI())
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsIntegralConst())
     {
         LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
         if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
@@ -571,7 +571,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
 
         if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
-            src->IsCnsIntOrI())
+            src->IsIntegralConst())
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -688,7 +688,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !addr->AsOp()->gtGetOp2()->IsCnsIntOrI())
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !addr->AsOp()->gtGetOp2()->IsIntegralConst())
     {
         return;
     }
@@ -811,7 +811,7 @@ void Lowering::LowerRotate(GenTree* tree)
         unsigned rotatedValueBitSize = genTypeSize(rotatedValue->gtType) * 8;
         GenTree* rotateLeftIndexNode = tree->AsOp()->gtOp2;
 
-        if (rotateLeftIndexNode->IsCnsIntOrI())
+        if (rotateLeftIndexNode->IsIntegralConst())
         {
             ssize_t rotateLeftIndex  = rotateLeftIndexNode->AsIntCon()->IconValue();
             ssize_t rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
@@ -1223,7 +1223,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         op1    = castOp;
     }
 
-    if (op1->IsCnsIntOrI())
+    if (op1->IsIntegralConst())
     {
         const ssize_t dataValue = op1->AsIntCon()->IconValue();
 
@@ -2149,7 +2149,7 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     }
 #endif // TARGET_ARM
 
-    if (shiftBy->IsCnsIntOrI())
+    if (shiftBy->IsIntegralConst())
     {
         MakeSrcContained(node, shiftBy);
     }

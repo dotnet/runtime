@@ -11130,7 +11130,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
         // Keep the offset nodes with annotations for value numbering purposes.
-        if (!op2->IsCnsIntOrI() || (op2->AsIntCon()->gtFieldSeq == nullptr))
+        if (op2->AsIntCon()->gtFieldSeq == nullptr)
         {
             DEBUG_DESTROY_NODE(op2);
             DEBUG_DESTROY_NODE(add);
@@ -11146,7 +11146,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     {
         // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
         //
-        if (op1->OperIs(GT_LCL_ADDR) && op2->IsCnsIntOrI())
+        if (op1->OperIs(GT_LCL_ADDR) && op2->IsIntegralConst())
         {
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();

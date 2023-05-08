@@ -14429,12 +14429,12 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
     GenTree*       op;
     GenTree*       cons;
 
-    if (op1->IsCnsIntOrI())
+    if (op1->IsIntegralConst())
     {
         op   = op2;
         cons = op1;
     }
-    else if (op2->IsCnsIntOrI())
+    else if (op2->IsIntegralConst())
     {
         op   = op1;
         cons = op2;
@@ -14444,9 +14444,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         return tree;
     }
 
-    ssize_t const val = cons->AsIntCon()->IconValue();
-
-    if (val != 0)
+    if (cons->AsIntCon()->IntegralValue() != 0)
     {
         return tree;
     }

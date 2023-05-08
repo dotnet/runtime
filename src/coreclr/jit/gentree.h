@@ -1197,7 +1197,7 @@ public:
 
     bool IsConstInitVal() const
     {
-        return IsCnsIntOrI() || (OperIsInitVal() && gtGetOp1()->IsCnsIntOrI());
+        return IsIntegralConst() || (OperIsInitVal() && gtGetOp1()->IsIntegralConst());
     }
 
     bool OperIsBlkOp();
@@ -2208,7 +2208,9 @@ public:
 
     bool IsIconHandle() const
     {
-        return (IsCnsIntOrI()) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
+        bool isIconHandle = IsIntegralConst() && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
+        assert(!isIconHandle || varTypeIsI(this));
+        return isIconHandle;
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
@@ -2216,7 +2218,7 @@ public:
         // check that handleType is one of the valid GTF_ICON_* values
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return IsCnsIntOrI() && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+        return IsIntegralConst() && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
     template <typename... T>
@@ -2229,7 +2231,7 @@ public:
     // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        return (IsCnsIntOrI()) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
+        return IsIntegralConst() ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
