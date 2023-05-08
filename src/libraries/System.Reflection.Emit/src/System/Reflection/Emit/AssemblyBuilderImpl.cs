@@ -17,6 +17,8 @@ namespace System.Reflection.Emit
         private ModuleBuilderImpl? _module;
         private bool _previouslySaved;
 
+        internal List<CustomAttributeWrapper>? _customAttributes;
+
         internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
@@ -77,7 +79,7 @@ namespace System.Reflection.Emit
             }
 
             // Add assembly metadata
-            _metadataBuilder.AddAssembly(
+            AssemblyDefinitionHandle assemblyHandle = _metadataBuilder.AddAssembly(
                _metadataBuilder.GetOrAddString(value: _assemblyName.Name!),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : _metadataBuilder.GetOrAddString(value: _assemblyName.CultureName),
@@ -88,6 +90,7 @@ namespace System.Reflection.Emit
 #pragma warning restore SYSLIB0037
                );
 
+            _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
             // Add module's metadata
             _module.AppendMetadata();
 
@@ -128,8 +131,10 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
     }
 }

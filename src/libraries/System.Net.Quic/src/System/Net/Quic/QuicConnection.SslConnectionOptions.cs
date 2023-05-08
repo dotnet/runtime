@@ -28,7 +28,7 @@ public partial class QuicConnection
         /// <summary>
         /// Host name send in SNI, set only for outbound/client connections. Configured via <see cref="SslClientAuthenticationOptions.TargetHost"/>.
         /// </summary>
-        private readonly string? _targetHost;
+        private readonly string _targetHost;
         /// <summary>
         /// Always <c>true</c> for outbound/client connections. Configured for inbound/server ones via <see cref="SslServerAuthenticationOptions.ClientCertificateRequired"/>.
         /// </summary>
@@ -47,8 +47,10 @@ public partial class QuicConnection
         /// </summary>
         private readonly X509ChainPolicy? _certificateChainPolicy;
 
+        internal string TargetHost => _targetHost;
+
         public SslConnectionOptions(QuicConnection connection, bool isClient,
-            string? targetHost, bool certificateRequired, X509RevocationMode
+            string targetHost, bool certificateRequired, X509RevocationMode
             revocationMode, RemoteCertificateValidationCallback? validationCallback,
             X509ChainPolicy? certificateChainPolicy)
         {
@@ -118,7 +120,7 @@ public partial class QuicConnection
                 if (result is not null)
                 {
                     bool checkCertName = !chain!.ChainPolicy!.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName);
-                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName, !_isClient, _targetHost, certificateBuffer, certificateLength);
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName, !_isClient, TargetHostNameHelper.NormalizeHostName(_targetHost), certificateBuffer, certificateLength);
                 }
                 else if (_certificateRequired)
                 {

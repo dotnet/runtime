@@ -11,14 +11,14 @@ namespace System.Net.Http
     {
         // token = 1*<any CHAR except CTLs or separators>
         // CTL = <any US-ASCII control character (octets 0 - 31) and DEL (127)>
-        private static readonly IndexOfAnyValues<char> s_tokenChars =
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly SearchValues<char> s_tokenChars =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
-        private static readonly IndexOfAnyValues<byte> s_tokenBytes =
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
+        private static readonly SearchValues<byte> s_tokenBytes =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
 
-        private static readonly IndexOfAnyValues<char> s_hostDelimiterChars =
-            IndexOfAnyValues.Create("/ \t\r,");
+        private static readonly SearchValues<char> s_hostDelimiterChars =
+            SearchValues.Create("/ \t\r,");
 
         private const int MaxNestedCount = 5;
 

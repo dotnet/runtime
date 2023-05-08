@@ -40,7 +40,7 @@ public:
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
         JIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
-        JIT_FLAG_UNUSED8                 = 15,
+        JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 15, // JIT is allowed to use *_MAYBEFROZEN allocators
         JIT_FLAG_UNUSED9                 = 16,
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -187,6 +187,7 @@ public:
 #endif
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);

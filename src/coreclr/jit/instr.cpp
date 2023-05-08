@@ -1164,6 +1164,76 @@ void CodeGen::inst_RV_RV_TT(
             unreached();
     }
 }
+
+//------------------------------------------------------------------------
+// inst_RV_RV_TT_IV: Generates an instruction that takes 3 operands:
+//                   a register operand, an operand that may be in memory or register,
+//                   and an immediate value. The result is returned in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    targetReg -- The target register
+//    op1Reg    -- The first operand register
+//    op2       -- The second operand, which may be a memory node or a node producing a register
+//    ival      -- The immediate operand
+//    isRMW     -- true if the instruction is RMW; otherwise, false
+//
+void CodeGen::inst_RV_RV_TT_IV(
+    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW)
+{
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+    OperandDesc op2Desc = genOperandDesc(op2);
+    switch (op2Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival);
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
+            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival);
+        }
+        break;
+
+        case OperandKind::Reg:
+        {
+            regNumber op2Reg = op2Desc.GetReg();
+
+            if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+            {
+                // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+                //
+                // For non-commutative intrinsics, we should have ensured that op2 was marked
+                // delay free in order to prevent it from getting assigned the same register
+                // as target. However, for commutative intrinsics, we can just swap the operands
+                // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+                op2Reg = op1Reg;
+                op1Reg = targetReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival);
+        }
+        break;
+
+        default:
+            unreached();
+    }
+}
 #endif // TARGET_XARCH
 
 /*****************************************************************************
@@ -1778,7 +1848,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
 #elif defined(TARGET_RISCV64)
         assert(!varTypeIsSIMD(dstType));
-        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fcvt_w_d : INS_fcvt_l_d;
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
 #else
         NYI("ins_Copy");
 #endif
@@ -1834,15 +1904,16 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #elif defined(TARGET_RISCV64)
     assert(!varTypeIsSIMD(dstType));
+    assert(!genIsValidFloatReg(srcReg));
 
     if (dstType == TYP_DOUBLE)
     {
-        return INS_fcvt_d_l;
+        return INS_fmv_d_x;
     }
     else
     {
         assert(dstType == TYP_FLOAT);
-        return INS_fcvt_s_l;
+        return INS_fmv_w_x;
     }
 #else
     NYI("ins_Copy");

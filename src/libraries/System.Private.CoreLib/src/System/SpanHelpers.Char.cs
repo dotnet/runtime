@@ -355,7 +355,6 @@ namespace System
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int SequenceCompareTo(ref char first, int firstLength, ref char second, int secondLength)
         {
             Debug.Assert(firstLength >= 0);
@@ -422,7 +421,6 @@ namespace System
 
         // IndexOfNullCharacter processes memory in aligned chunks, and thus it won't crash even if it accesses memory beyond the null terminator.
         // This behavior is an implementation detail of the runtime and callers outside System.Private.CoreLib must not depend on it.
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe int IndexOfNullCharacter(char* searchSpace)
         {
             const char value = '\0';
