@@ -2915,7 +2915,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
-    arg1->AsIntCon()->gtIconVal = tailCallHelperFlags;
+    arg1->AsIntCon()->SetIconValue(tailCallHelperFlags);
 
     // arg 2 == numberOfNewStackArgsWords
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
@@ -2923,7 +2923,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->IsCnsIntOrI());
 
-    arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
+    arg2->AsIntCon()->SetIconValue(nNewStkArgsWords);
 
 #ifdef DEBUG
     // arg 3 == numberOfOldStackArgsWords
@@ -8295,7 +8295,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_IN_BYTE)));
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
-        ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
+        ind->Data()->AsIntCon()->SetIconValue(val);
         if (genTypeSize(oldType) == 1)
         {
             // A mark for future foldings that this IND doesn't need to be atomic.

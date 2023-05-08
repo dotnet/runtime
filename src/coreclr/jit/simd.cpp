@@ -614,7 +614,7 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
     GenTree* op1IndexNode = op1IndexAddr->Index();
     GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->IsCnsIntOrI() && op2IndexNode->IsCnsIntOrI()) &&
-        (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
+        (op1IndexNode->AsIntCon()->IconValue() + 1 == op2IndexNode->AsIntCon()->IconValue()))
     {
         if (op1ArrayRef->OperIs(GT_IND) && op2ArrayRef->OperIs(GT_IND))
         {
@@ -718,7 +718,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     GenTree* index    = addr->AsIndexAddr()->Index();
     assert(index->IsCnsIntOrI());
 
-    unsigned indexVal = (unsigned)index->AsIntCon()->gtIconVal;
+    unsigned indexVal = (unsigned)index->AsIntCon()->IconValue();
     unsigned offset   = indexVal * genTypeSize(tree->TypeGet());
 
     // Generate the boundary check exception.

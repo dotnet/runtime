@@ -70,8 +70,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
             return false;
 
-        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::IconValue() had target_ssize_t type.
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
@@ -813,9 +813,9 @@ void Lowering::LowerRotate(GenTree* tree)
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+            ssize_t rotateLeftIndex  = rotateLeftIndexNode->AsIntCon()->IconValue();
+            ssize_t rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->AsIntCon()->SetIconValue(rotateRightIndex);
         }
         else
         {
@@ -1225,7 +1225,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 
     if (op1->IsCnsIntOrI())
     {
-        const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
+        const ssize_t dataValue = op1->AsIntCon()->IconValue();
 
         if (comp->GetEmitter()->emitIns_valid_imm_for_movi(dataValue, emitActualTypeSize(node->GetSimdBaseType())))
         {
@@ -2479,7 +2479,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
     {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->IconValue();
 
         if (emitter::emitIns_valid_imm_for_ccmp(immVal))
         {
@@ -3051,7 +3051,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     MakeSrcContained(node, intrin.op2);
 
-                    if ((intrin.op2->AsIntCon()->gtIconVal == 0) && intrin.op3->IsCnsFltOrDbl())
+                    if ((intrin.op2->AsIntCon()->IconValue() == 0) && intrin.op3->IsCnsFltOrDbl())
                     {
                         assert(varTypeIsFloating(intrin.baseType));
 

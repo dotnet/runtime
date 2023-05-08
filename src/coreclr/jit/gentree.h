@@ -3054,11 +3054,10 @@ struct GenTreeVal : public GenTree
 //
 struct GenTreeIntCon : public GenTree
 {
-    union {
-        ssize_t gtIconVal;
-        int64_t gtLconVal;
-    };
+private:
+    int64_t m_value;
 
+public:
     // In case the Jit is prejitting, handles representing various entities at compile time will
     // not be the same as those representing the same entities at runtime. Since the compiler is
     // often interested in the compile-time handle, we store it in this field.
@@ -3075,14 +3074,14 @@ struct GenTreeIntCon : public GenTree
 
     GenTreeIntCon(var_types type, ssize_t value, FieldSeq* fieldSeq = nullptr DEBUGARG(bool largeNode = false))
         : GenTree(GT_CNS_INT, type DEBUGARG(largeNode))
-        , gtLconVal(value)
+        , m_value(value)
         , gtFieldSeq(fieldSeq)
     {
     }
 
     GenTreeIntCon(int64_t value)
         : GenTree(GT_CNS_NATIVELONG, TYP_LONG DEBUGARG(/* largeNode */ false))
-        , gtLconVal(value)
+        , m_value(value)
     {
     }
 
@@ -3095,36 +3094,36 @@ struct GenTreeIntCon : public GenTree
     int64_t LngValue() const
     {
         assert(TypeIs(TYP_LONG));
-        return gtLconVal;
+        return m_value;
     }
 
     void SetLngValue(INT64 value)
     {
         assert(TypeIs(TYP_LONG));
-        gtLconVal = value;
+        m_value = value;
     }
 
     ssize_t IconValue() const
     {
         assert(IsCnsIntOrI()); // We should never see a GT_CNS_LNG for a 64-bit target!
-        return gtIconVal;
+        return static_cast<ssize_t>(m_value);
     }
 
     void SetIconValue(ssize_t val)
     {
         assert(IsCnsIntOrI()); //  We should never see a GT_CNS_LNG for a 64-bit target!
-        gtIconVal = val;
+        m_value = val;
     }
 
     int64_t IntegralValue() const
     {
-        return gtLconVal;
+        return m_value;
     }
 
     void SetIntegralValue(int64_t value)
     {
         assert(FitsIn(TypeGet(), value));
-        gtLconVal = value;
+        m_value = value;
     }
 
     //------------------------------------------------------------------------
@@ -3168,13 +3167,13 @@ struct GenTreeIntCon : public GenTree
     int LoVal() const
     {
         assert(TypeIs(TYP_LONG));
-        return (int)(gtLconVal & 0xffffffff);
+        return (int)(m_value & 0xffffffff);
     }
 
     int HiVal() const
     {
         assert(TypeIs(TYP_LONG));
-        return (int)(gtLconVal >> 32);
+        return (int)(m_value >> 32);
     }
 
     void FixupInitBlkValue(var_types asgType);
@@ -6433,7 +6432,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i8[argIdx] = static_cast<int8_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6449,7 +6448,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i16[argIdx] = static_cast<int16_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6465,7 +6464,7 @@ struct GenTreeVecCon : public GenTree
             {
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i32[argIdx] = static_cast<int32_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
                 else
@@ -6482,7 +6481,7 @@ struct GenTreeVecCon : public GenTree
 #if defined(TARGET_64BIT)
                 if (arg->IsCnsIntOrI())
                 {
-                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->gtIconVal);
+                    simdVal.i64[argIdx] = static_cast<int64_t>(arg->AsIntCon()->IconValue());
                     return true;
                 }
 #else
@@ -6491,9 +6490,9 @@ struct GenTreeVecCon : public GenTree
                     // 32-bit targets will decompose GT_CNS_LNG into two GT_CNS_INT
                     // We need to reconstruct the 64-bit value in order to handle this
 
-                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+                    INT64 gtLconVal = arg->AsOp()->gtOp2->AsIntCon()->IconValue();
                     gtLconVal <<= 32;
-                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+                    gtLconVal |= arg->AsOp()->gtOp1->AsIntCon()->IconValue();
 
                     simdVal.i64[argIdx] = gtLconVal;
                     return true;
@@ -8775,7 +8774,7 @@ inline bool GenTree::OperIsCopyBlkOp()
 //    the given value.
 //
 // Notes:
-//    Like gtIconVal, the argument is of ssize_t, so cannot check for
+//    Like IconValue(), the argument is of ssize_t, so cannot check for
 //    long constants in a target-independent way.
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const

@@ -760,7 +760,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
     }
 
     optLoopTable[loopInd].lpFlags |= LPFLG_CONST_INIT;
-    optLoopTable[loopInd].lpConstInit = (int)initValue->AsIntCon()->gtIconVal;
+    optLoopTable[loopInd].lpConstInit = (int)initValue->AsIntCon()->IconValue();
     optLoopTable[loopInd].lpInitBlock = initBlock;
 
     return true;
@@ -4261,13 +4261,13 @@ PhaseStatus Compiler::optUnrollLoops()
         if (!init->OperIs(GT_STORE_LCL_VAR) ||
             (init->AsLclVar()->GetLclNum() != lvar) ||
             !init->AsLclVar()->Data()->IsCnsIntOrI() ||
-            (init->AsLclVar()->Data()->AsIntCon()->gtIconVal != lbeg) ||
+            (init->AsLclVar()->Data()->AsIntCon()->IconValue() != lbeg) ||
 
             !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) ||
             (incr->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
             (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
             !incr->AsOp()->gtOp2->IsCnsIntOrI() ||
-            (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+            (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
 
             (testStmt->GetRootNode()->gtOper != GT_JTRUE))
         {
@@ -5786,7 +5786,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             case GT_CNS_INT:
 
                 ssize_t ival;
-                ival = tree->AsIntCon()->gtIconVal;
+                ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
                 imask = 0;
 
@@ -5824,12 +5824,9 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)ival;
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+                    tree->gtType = TYP_INT;
+                    tree->AsIntCon()->SetIconValue((int)ival);
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 #endif // TARGET_64BIT
 

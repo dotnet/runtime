@@ -845,8 +845,8 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     GenTree* const divisor = node->gtOp2;
     assert(divisor->gtSkipReloadOrCopy()->IsCnsIntOrI());
     assert(divisor->gtSkipReloadOrCopy()->isUsedFromReg());
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal >= 2);
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal <= 0x3fffffff);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() >= 2);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() <= 0x3fffffff);
 
     // dividendLo must be in RAX; dividendHi must be in RDX
     genCopyRegIfNeeded(dividendLo, REG_EAX);
@@ -2788,7 +2788,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     size_t amount = 0;
     if (size->IsCnsIntOrI() && size->isContained())
     {
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         assert((amount > 0) && (amount <= UINT_MAX));
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
@@ -5308,10 +5308,10 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
 #if TARGET_64BIT
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #endif
     }
     else
@@ -5542,7 +5542,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ssize_t        ival = op2->IconValue();
 
                             assert((ival >= 0) && (ival <= 255));
-                            op2->gtIconVal = static_cast<int8_t>(ival);
+                            op2->SetIconValue(static_cast<int8_t>(ival));
                             break;
                         }
 

@@ -1712,7 +1712,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in targetReg
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
@@ -2100,7 +2100,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             assert(typeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
                    typeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
 
-            // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
+            // ssize_t intConstValue = divisorOp->AsIntCon()->IconValue();
             regNumber   reg1       = src1->GetRegNum();
             regNumber   divisorReg = divisorOp->GetRegNum();
             instruction ins;
@@ -2108,7 +2108,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             // Check divisorOp first as we can always allow it to be a contained immediate
             if (divisorOp->isContainedIntOrIImmed())
             {
-                ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+                ssize_t intConst = (int)(divisorOp->AsIntCon()->IconValue());
                 divisorReg       = rsGetRsvdReg();
                 emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
             }
@@ -2122,7 +2122,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 if (src1->isContainedIntOrIImmed())
                 {
                     assert(!divisorOp->isContainedIntOrIImmed());
-                    ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
+                    ssize_t intConst = (int)(src1->AsIntCon()->IconValue());
                     reg1             = rsGetRsvdReg();
                     emit->emitLoadImmediate(EA_PTRSIZE, reg1, intConst);
                 }
@@ -2147,7 +2147,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //
                 if (divisorOp->IsCnsIntOrI())
                 {
-                    ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
+                    ssize_t intConstValue = divisorOp->AsIntCon()->IconValue();
                     // assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
                     if (intConstValue != -1)
                     {
@@ -3579,7 +3579,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
         if (op2->isContainedIntOrIImmed())
         {
-            ssize_t imm = op2->AsIntCon()->gtIconVal;
+            ssize_t imm = op2->AsIntCon()->IconValue();
 
             switch (cmpSize)
             {
@@ -3815,7 +3815,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     if (op2->isContainedIntOrIImmed())
     {
-        ssize_t imm = op2->AsIntCon()->gtIconVal;
+        ssize_t imm = op2->AsIntCon()->IconValue();
         if (imm)
         {
             assert(regOp1 != REG_R0);
@@ -5561,7 +5561,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
-            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
             if (shiftByImm >= 32 && shiftByImm < 64)
             {
                 immWidth = 64;
@@ -5591,7 +5591,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         else
         {
             instruction ins        = genGetInsForOper(tree);
-            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
+            unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue();
 
             // should check shiftByImm for riscv64-ins.
             unsigned immWidth = emitter::getBitWidth(size); // For RISCV64, immWidth will be set to 32 or 64

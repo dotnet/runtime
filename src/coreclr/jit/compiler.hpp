@@ -1797,15 +1797,6 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_LARGE);
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
-#if defined(HOST_64BIT) && !defined(TARGET_64BIT)
-    if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
-    {
-        // When casting from LONG to INT, we need to force cast of the value,
-        // if the host architecture represents INT and LONG with the same data size.
-        AsIntCon()->gtLconVal = (INT64)(INT32)AsIntCon()->gtLconVal;
-    }
-#endif // defined(HOST_64BIT) && !defined(TARGET_64BIT)
-
     SetOperRaw(oper);
 
 #ifdef DEBUG
@@ -3729,7 +3720,7 @@ inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
     GenTree* value = lpIterTree->AsLclVar()->Data();
-    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    return (int)value->AsOp()->gtOp2->AsIntCon()->IconValue();
 }
 
 //-----------------------------------------------------------------------------
@@ -3860,7 +3851,7 @@ inline int Compiler::LoopDsc::lpConstLimit() const
 
     GenTree* limit = lpLimit();
     assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
+    return (int)limit->AsIntCon()->IconValue();
 }
 
 //-----------------------------------------------------------------------------

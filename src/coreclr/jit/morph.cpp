@@ -8395,8 +8395,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->IsCnsIntOrI()) &&
-                             (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
+                noway_assert(effOp1->IsCnsIntOrI() && (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
 
@@ -11272,8 +11271,8 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         // MUL(NEG(a), C) => MUL(a, NEG(C))
         if (opts.OptimizationEnabled() && op1->OperIs(GT_NEG) && !op2->IsIconHandle())
         {
-            mul->gtOp1                 = op1->AsUnOp()->gtGetOp1();
-            op2->AsIntCon()->gtIconVal = -op2->AsIntCon()->gtIconVal;
+            mul->gtOp1 = op1->AsUnOp()->gtGetOp1();
+            op2->AsIntCon()->SetIconValue(-op2->AsIntCon()->IconValue());
             fgUpdateConstTreeValueNumber(op2);
             DEBUG_DESTROY_NODE(op1);
 
@@ -11883,8 +11882,8 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                         break;
                     }
 
-                    ssize_t imul = op2->AsIntCon()->gtIconVal;
-                    ssize_t iadd = add->AsIntCon()->gtIconVal;
+                    ssize_t imul = op2->AsIntCon()->IconValue();
+                    ssize_t iadd = add->AsIntCon()->IconValue();
 
                     /* Change '(val + iadd) * imul' -> '(val * imul) + (iadd * imul)' */
 
@@ -12443,7 +12442,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
-                leftShiftMask  = leftShiftIndex->gtGetOp2()->AsIntCon()->gtIconVal;
+                leftShiftMask  = leftShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
                 leftShiftIndex = leftShiftIndex->gtGetOp1();
             }
             else
@@ -12456,7 +12455,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
-                rightShiftMask  = rightShiftIndex->gtGetOp2()->AsIntCon()->gtIconVal;
+                rightShiftMask  = rightShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
                 rightShiftIndex = rightShiftIndex->gtGetOp1();
             }
             else
@@ -12496,7 +12495,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
             {
-                if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->gtIconVal == rotatedValueBitSize)
+                if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->IconValue() == rotatedValueBitSize)
                 {
                     if (shiftIndexWithAdd->gtGetOp1()->OperGet() == GT_NEG)
                     {
@@ -12529,7 +12528,8 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         }
         else if ((leftShiftIndex->IsCnsIntOrI() && rightShiftIndex->IsCnsIntOrI()))
         {
-            if (leftShiftIndex->AsIntCon()->gtIconVal + rightShiftIndex->AsIntCon()->gtIconVal == rotatedValueBitSize)
+            if (leftShiftIndex->AsIntCon()->IconValue() + rightShiftIndex->AsIntCon()->IconValue() ==
+                rotatedValueBitSize)
             {
                 // We found this pattern:
                 // (x << c1) | (x >>> c2)
@@ -13154,7 +13154,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             BasicBlock* bTaken;
             BasicBlock* bNotTaken;
 
-            if (cond->AsIntCon()->gtIconVal != 0)
+            if (cond->AsIntCon()->IconValue() != 0)
             {
                 /* JTRUE 1 - transform the basic block into a BBJ_ALWAYS */
                 block->SetJumpKind(BBJ_ALWAYS);
@@ -13383,7 +13383,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t       switchVal = (size_t)cond->AsIntCon()->gtIconVal;
+            size_t       switchVal = (size_t)cond->AsIntCon()->IconValue();
             unsigned     jumpCnt   = block->GetJumpSwt()->bbsCount;
             BasicBlock** jumpTab   = block->GetJumpSwt()->bbsDstTab;
             bool         foundVal  = false;

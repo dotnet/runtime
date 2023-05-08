@@ -638,7 +638,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op3->isContainedFltOrDblImmed())
                 {
                     assert(intrin.op2->isContainedIntOrIImmed());
-                    assert(intrin.op2->AsIntCon()->gtIconVal == 0);
+                    assert(intrin.op2->AsIntCon()->IconValue() == 0);
 
                     const double dataValue = intrin.op3->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
@@ -701,8 +701,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
                 }
 
-                const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
-                const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
+                const int resultIndex = (int)intrin.op2->AsIntCon()->IconValue();
+                const int valueIndex  = (int)intrin.op4->AsIntCon()->IconValue();
                 GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
             }
             break;
@@ -859,7 +859,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if (intrin.op1->isContainedIntOrIImmed())
                     {
                         // movi/movni reg, #imm8
-                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                         GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                     }
                     else
@@ -924,7 +924,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (intrin.op1->isContainedIntOrIImmed())
                 {
-                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                     GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                 }
                 else if (GetEmitter()->IsMovInstruction(ins))

@@ -386,7 +386,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsIntOrI())
     {
-        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+        fprintf(fgxFile, "%d", tree->AsIntCon()->IconValue());
     }
     else if (tree->IsCnsFltOrDbl())
     {

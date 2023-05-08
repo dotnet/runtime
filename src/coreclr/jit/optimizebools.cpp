@@ -1126,9 +1126,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     if (optReturnBlock)
     {
         // Update tree when m_b1 is BBJ_COND and m_b2 and m_b3 are GT_RETURN (BBJ_RETURN)
-        t1Comp->AsOp()->gtOp2->AsIntCon()->gtIconVal = 0;
-        m_testInfo1.testTree->gtOper                 = GT_RETURN;
-        m_testInfo1.testTree->gtType                 = m_testInfo2.testTree->gtType;
+        t1Comp->AsOp()->gtOp2->AsIntCon()->SetIconValue(0);
+        m_testInfo1.testTree->gtOper = GT_RETURN;
+        m_testInfo1.testTree->gtType = m_testInfo2.testTree->gtType;
 
         // Update the return count of flow graph
         assert(m_comp->fgReturnCount >= 2);
@@ -1336,9 +1336,9 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     genTreeOps foldOp;
     genTreeOps cmpOp;
 
-    ssize_t it1val = m_testInfo1.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it2val = m_testInfo2.compTree->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-    ssize_t it3val = m_t3->AsOp()->gtOp1->AsIntCon()->gtIconVal;
+    ssize_t it1val = m_testInfo1.compTree->AsOp()->gtOp2->AsIntCon()->IconValue();
+    ssize_t it2val = m_testInfo2.compTree->AsOp()->gtOp2->AsIntCon()->IconValue();
+    ssize_t it3val = m_t3->AsOp()->gtOp1->AsIntCon()->IconValue();
 
     if (m_c1->gtOper == GT_LCL_VAR && m_c2->gtOper == GT_LCL_VAR &&
         m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
@@ -1607,7 +1607,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
+    ssize_t ival2 = opr2->AsIntCon()->IconValue();
 
     // Is the value a boolean?
     // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
@@ -1629,7 +1629,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         if (pOptTest->isBool)
         {
             m_comp->gtReverseCond(cond);
-            opr2->AsIntCon()->gtIconVal = 0;
+            opr2->AsIntCon()->SetIconValue(0);
         }
         else
         {

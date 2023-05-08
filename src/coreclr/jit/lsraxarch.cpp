@@ -1811,7 +1811,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI() && size->isContained())
     {
         srcCount       = 0;
-        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
+        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->IconValue(), STACK_ALIGN);
 
         // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
         if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))

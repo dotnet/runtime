@@ -59,8 +59,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
             return false;
 
-        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::IconValue() had target_ssize_t type.
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
 
         switch (parentNode->OperGet())
         {

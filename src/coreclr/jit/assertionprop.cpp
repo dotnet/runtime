@@ -990,12 +990,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp2()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp2()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp1()->gtEffectiveVal(/* commaOnly */ true);
             }
             else if (op1->gtGetOp1()->IsCnsIntOrI())
             {
-                offset += op1->gtGetOp1()->AsIntCon()->gtIconVal;
+                offset += op1->gtGetOp1()->AsIntCon()->IconValue();
                 op1 = op1->gtGetOp2()->gtEffectiveVal(/* commaOnly */ true);
             }
             else
@@ -1129,7 +1129,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.lcl.lclNum = lclNum;
             assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-            assertion.op2.u1.iconVal = op2->AsIntCon()->gtIconVal;
+            assertion.op2.u1.iconVal = op2->AsIntCon()->IconValue();
             assertion.op2.vn         = optConservativeNormalVN(op2);
             assertion.op2.SetIconFlag(op2->GetIconHandleFlag());
 
@@ -1202,7 +1202,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->IsCnsIntOrI())
                     {
-                        ssize_t iconVal = op2->AsIntCon()->gtIconVal;
+                        ssize_t iconVal = op2->AsIntCon()->IconValue();
 
                         if (varTypeIsSmall(lclVar))
                         {
@@ -1211,7 +1211,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
 #ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
-                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
+                        // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::IconValue() had
                         // target_ssize_t type.
                         if (!codeGen->validImmForMov((target_ssize_t)iconVal))
                         {
@@ -1224,7 +1224,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
-                        assertion.op2.lconVal = op2->AsIntCon()->gtLconVal;
+                        assertion.op2.lconVal = op2->AsIntCon()->IntegralValue();
                     }
                     else
                     {
@@ -1468,16 +1468,6 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
-#ifdef TARGET_64BIT
-        // Just to be clear, get it from gtLconVal rather than
-        // overlapping gtIconVal.
-        else if (tree->OperGet() == GT_CNS_LNG)
-        {
-            *pConstant = tree->AsIntCon()->gtLconVal;
-            *pFlags    = tree->GetIconHandleFlag();
-            return true;
-        }
-#endif
         return false;
     }
 
@@ -2186,7 +2176,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
     // Validate op1 and op2
     if ((op1->gtOper != GT_CALL) || (op1->AsCall()->gtCallType != CT_HELPER) || (op1->TypeGet() != TYP_REF) || // op1
-        !op2->IsCnsIntOrI() || (op2->AsIntCon()->gtIconVal != 0))                                              // op2
+        !op2->IsCnsIntOrI() || (op2->AsIntCon()->IconValue() != 0))                                            // op2
     {
         return NO_ASSERTION_INDEX;
     }
@@ -4047,7 +4037,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     optOp1Kind op1Kind = O1K_LCLVAR;
     optOp2Kind op2Kind = O2K_CONST_INT;
-    ssize_t    cnsVal  = op2->AsIntCon()->gtIconVal;
+    ssize_t    cnsVal  = op2->AsIntCon()->IconValue();
     var_types  cmpType = op1->TypeGet();
 
     // Don't try to fold/optimize Floating Compares; there are multiple zero values.
@@ -4105,8 +4095,8 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
         foldResult = !foldResult;
     }
 
-    op2->AsIntCon()->gtIconVal = foldResult;
-    op2->gtType                = TYP_INT;
+    op2->gtType = TYP_INT;
+    op2->AsIntCon()->SetIconValue(foldResult);
 
     return optAssertionProp_Update(op2, tree, stmt);
 }

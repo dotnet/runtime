@@ -1059,7 +1059,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
     {
         // Reduce count modulo 64 to match behavior found in the shift helpers,
         // Compiler::gtFoldExpr and ValueNumStore::EvalOpIntegral.
-        unsigned int count = shiftByOp->AsIntCon()->gtIconVal & 0x3F;
+        unsigned int count = shiftByOp->AsIntCon()->IconValue() & 0x3F;
         Range().Remove(shiftByOp);
 
         if (count == 0)
@@ -1416,7 +1416,7 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         oper = GT_RSH_LO;
     }
 
-    unsigned count = (unsigned)rotateByOp->AsIntCon()->gtIconVal;
+    unsigned count = (unsigned)rotateByOp->AsIntCon()->IconValue();
     Range().Remove(rotateByOp);
 
     // Make sure the rotate amount is between 0 and 63.
@@ -1659,8 +1659,8 @@ GenTree* DecomposeLongs::DecomposeUMod(LIR::Use& use)
 
     assert(loOp2->IsCnsIntOrI());
     assert(hiOp2->IsCnsIntOrI());
-    assert((loOp2->AsIntCon()->gtIconVal >= 2) && (loOp2->AsIntCon()->gtIconVal <= 0x3fffffff));
-    assert(hiOp2->AsIntCon()->gtIconVal == 0);
+    assert((loOp2->AsIntCon()->IconValue() >= 2) && (loOp2->AsIntCon()->IconValue() <= 0x3fffffff));
+    assert(hiOp2->AsIntCon()->IconValue() == 0);
 
     // Get rid of op2's hi part. We don't need it.
     Range().Remove(hiOp2);

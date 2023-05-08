@@ -7382,7 +7382,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                        unreachable under compDbgCode */
                     assert(!opts.compDbgCode);
 
-                    BBjumpKinds foldedJumpKind = (BBjumpKinds)(op1->AsIntCon()->gtIconVal ? BBJ_ALWAYS : BBJ_NONE);
+                    BBjumpKinds foldedJumpKind = (BBjumpKinds)(op1->AsIntCon()->IconValue() ? BBJ_ALWAYS : BBJ_NONE);
                     // BBJ_COND: normal case
                     // foldedJumpKind: this can happen if we are reimporting the block for the second time
                     assertImp(block->KindIs(BBJ_COND, foldedJumpKind)); // normal case
@@ -7641,7 +7641,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && op1->IsCnsIntOrI())
                 {
                     // Find the jump target
-                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    size_t       switchVal = (size_t)op1->AsIntCon()->IconValue();
                     unsigned     jumpCnt   = block->GetJumpSwt()->bbsCount;
                     BasicBlock** jumpTab   = block->GetJumpSwt()->bbsDstTab;
                     bool         foundVal  = false;
@@ -7882,7 +7882,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op2->IsCnsIntOrI())
                     {
-                        ssize_t ival = op2->AsIntCon()->gtIconVal;
+                        ssize_t ival = op2->AsIntCon()->IconValue();
                         ssize_t mask, umask;
 
                         switch (lclTyp)
@@ -12737,7 +12737,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         inlCurArgInfo->argIsInvariant = true;
-        if (inlCurArgInfo->argIsThis && curArgVal->IsCnsIntOrI() && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (inlCurArgInfo->argIsThis && curArgVal->IsCnsIntOrI() && (curArgVal->AsIntCon()->IconValue() == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);
@@ -13646,7 +13646,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
     if (value->IsCnsIntOrI())
     {
         assert(value->gtType == TYP_REF);
-        if (value->AsIntCon()->gtIconVal == 0)
+        if (value->AsIntCon()->IconValue() == 0)
         {
             JITDUMP("\nstelem of null: skipping covariant store check\n");
             return true;
