@@ -23,10 +23,6 @@ namespace Microsoft.Extensions.Hosting.Internal
         private CancellationTokenRegistration _applicationStartedRegistration;
         private CancellationTokenRegistration _applicationStoppingRegistration;
 
-        [Obsolete("IHostingEnvironment and IApplicationLifetime have been deprecated. Use Microsoft.Extensions.Hosting.IHostEnvironment and IHostApplicationLifetime instead.")]
-        public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostingEnvironment environment, IApplicationLifetime applicationLifetime)
-            : this (options, environment, applicationLifetime, new OptionsWrapper<HostOptions>(new HostOptions())) { }
-
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions)
             : this(options, environment, applicationLifetime, hostOptions, NullLoggerFactory.Instance) { }
 
