@@ -2,19 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Xunit;
 
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.CodeAnalysis.Testing.EmptySourceGeneratorProvider>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    public class CallingConventionForwarding
+    public class TargetSignatureTests
     {
         [Fact]
         public async Task NoSpecifiedCallConvForwardsDefault()
@@ -32,7 +34,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (compilation, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (compilation, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
                 Assert.Empty(signature.UnmanagedCallingConventionTypes);
@@ -56,7 +58,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
                 Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
@@ -80,7 +82,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
             """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
                 Assert.Empty(signature.UnmanagedCallingConventionTypes);
@@ -105,7 +107,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.CDecl, signature.CallingConvention);
                 Assert.Empty(signature.UnmanagedCallingConventionTypes);
@@ -130,7 +132,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
                 Assert.Equal(new[]
@@ -162,7 +164,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
                 """;
 
-            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
+            await VerifyVirtualMethodIndexGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
             {
                 Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
                 Assert.Equal(new[]
@@ -176,9 +178,90 @@ namespace ComInterfaceGenerator.Unit.Tests
             });
         }
 
-        private static async Task VerifySourceGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+        [Fact]
+        public async Task ComInterfaceMethodFunctionPointerReturnsInt()
         {
-            CallingConventionForwardingTest test = new(interfaceName, methodName, signatureValidator)
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
+
+            await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SpecialType.System_Int32, signature.ReturnType.SpecialType);
+            });
+        }
+
+        [Fact]
+        public async Task ComInterfaceMethodFunctionPointerReturnTypeChangedToOutParameter()
+        {
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    long Method();
+                }
+                """;
+
+            await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SpecialType.System_Int32, signature.ReturnType.SpecialType);
+                Assert.Equal(2, signature.Parameters.Length);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Void)), signature.Parameters[0].Type, SymbolEqualityComparer.Default);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Int64)), signature.Parameters[^1].Type, SymbolEqualityComparer.Default);
+            });
+        }
+
+        [Fact]
+        public async Task ComInterfaceMethodPreserveSigFunctionPointerReturnTypePreserved()
+        {
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    [PreserveSig]
+                    long Method();
+                }
+                """;
+
+            await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SpecialType.System_Int64, signature.ReturnType.SpecialType);
+                Assert.Equal(newComp.CreatePointerTypeSymbol(newComp.GetSpecialType(SpecialType.System_Void)), Assert.Single(signature.Parameters).Type, SymbolEqualityComparer.Default);
+            });
+        }
+
+        private static async Task VerifyVirtualMethodIndexGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+        {
+            VirtualMethodIndexTargetSignatureTest test = new(interfaceName, methodName, signatureValidator)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
+        }
+        private static async Task VerifyComInterfaceGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+        {
+            ComInterfaceTargetSignatureTest test = new(interfaceName, methodName, signatureValidator)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -187,13 +270,13 @@ namespace ComInterfaceGenerator.Unit.Tests
             await test.RunAsync();
         }
 
-        class CallingConventionForwardingTest : VerifyCS.Test
+        private abstract class TargetSignatureTestBase : VerifyCS.Test
         {
             private readonly Action<Compilation, IMethodSymbol> _signatureValidator;
             private readonly string _interfaceName;
             private readonly string _methodName;
 
-            public CallingConventionForwardingTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+            protected TargetSignatureTestBase(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
                 : base(referenceAncillaryInterop: true)
             {
                 _signatureValidator = signatureValidator;
@@ -205,12 +288,14 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 _signatureValidator(compilation, FindFunctionPointerInvocationSignature(compilation));
             }
+
+            protected abstract INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface);
             private IMethodSymbol FindFunctionPointerInvocationSignature(Compilation compilation)
             {
                 INamedTypeSymbol? userDefinedInterface = compilation.Assembly.GetTypeByMetadataName(_interfaceName);
                 Assert.NotNull(userDefinedInterface);
 
-                INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
+                INamedTypeSymbol generatedInterfaceImplementation = FindImplementationInterface(compilation, userDefinedInterface);
 
                 IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{_interfaceName}.{_methodName}").OfType<IMethodSymbol>());
 
@@ -221,6 +306,39 @@ namespace ComInterfaceGenerator.Unit.Tests
                 IOperation body = model.GetOperation(emittedImplementationSyntax)!;
 
                 return Assert.Single(body.Descendants().OfType<IFunctionPointerInvocationOperation>()).GetFunctionPointerSignature();
+            }
+        }
+
+        private sealed class VirtualMethodIndexTargetSignatureTest : TargetSignatureTestBase
+        {
+            public VirtualMethodIndexTargetSignatureTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+                : base(interfaceName, methodName, signatureValidator)
+            {
+            }
+
+            protected override IEnumerable<Type> GetSourceGenerators() => new[] { typeof(VtableIndexStubGenerator) };
+
+            protected override INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface) => Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
+        }
+
+        private sealed class ComInterfaceTargetSignatureTest : TargetSignatureTestBase
+        {
+            public ComInterfaceTargetSignatureTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator) : base(interfaceName, methodName, signatureValidator)
+            {
+            }
+            protected override IEnumerable<Type> GetSourceGenerators() => new[] { typeof(Microsoft.Interop.ComInterfaceGenerator) };
+
+            protected override INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface)
+            {
+                INamedTypeSymbol? iUnknownDerivedAttributeType = compilation.GetTypeByMetadataName("System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute`2");
+
+                Assert.NotNull(iUnknownDerivedAttributeType);
+
+                AttributeData iUnknownDerivedAttribute = Assert.Single(
+                    userDefinedInterface.GetAttributes(),
+                    attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, iUnknownDerivedAttributeType));
+
+                return (INamedTypeSymbol)iUnknownDerivedAttribute.AttributeClass!.TypeArguments[1];
             }
         }
     }
