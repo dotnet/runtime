@@ -1142,32 +1142,31 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
+    CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+    uint32_t     numInstanceFieldBytes = 16;
 
-    if (jitMgr->LoadJIT())
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        CORJIT_FLAGS CPUCompileFlags       = jitMgr->GetCPUCompileFlags();
-        uint32_t     numInstanceFieldBytes = 16;
+        // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
+        numInstanceFieldBytes = 32;
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        numInstanceFieldBytes = 32;
+    }
 
-        if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
-        {
-            // TODO-XARCH: The JIT needs to be updated to support 64-byte Vector<T>
-            numInstanceFieldBytes = 32;
-        }
-        else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
-        {
-            numInstanceFieldBytes = 32;
-        }
-
+    if (numInstanceFieldBytes != 16)
+    {
         bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
 
         if (HasLayout())
         {
             GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
         }
+
         return true;
     }
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // TARGET_X86 || TARGET_AMD64
 
     return false;
 }

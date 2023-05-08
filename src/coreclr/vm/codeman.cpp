@@ -1256,6 +1256,8 @@ EEJitManager::EEJitManager()
 
     m_storeRichDebugInfo = false;
     m_cleanupList = NULL;
+
+    SetCpuInfo();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -2232,8 +2234,6 @@ BOOL EEJitManager::LoadJIT()
     // Did someone load the JIT before we got the lock?
     if (IsJitLoaded())
         return TRUE;
-
-    SetCpuInfo();
 
     m_storeRichDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RichDebugInfo) != 0;
 
