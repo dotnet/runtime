@@ -1126,9 +1126,11 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags*
             break;
 
         case GT_LCL_VAR:
+            val->gtFlags |= GTF_VAR_MOREUSES;
             return gtNewLclVarAddrNode(val->AsLclVar()->GetLclNum(), TYP_BYREF);
 
         case GT_LCL_FLD:
+            val->gtFlags |= GTF_VAR_MOREUSES;
             return gtNewLclAddrNode(val->AsLclFld()->GetLclNum(), val->AsLclFld()->GetLclOffs(), TYP_BYREF);
 
         case GT_COMMA:
