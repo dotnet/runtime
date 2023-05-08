@@ -24733,14 +24733,15 @@ void gc_heap::recommission_heap()
 
 bool gc_heap::change_heap_count (int new_n_heaps)
 {
-    dprintf (5555, ("changing heap count %d -> %d", n_heaps, new_n_heaps));
+    dprintf (5555, ("trying to change heap count %d -> %d", n_heaps, new_n_heaps));
 
     // use this variable for clarity - n_heaps will change during the transition
     int old_n_heaps = n_heaps;
 
     // first do some steps that may fail and cause us to give up
 
-    // move finalizer list items
+    // move finalizer list items from heaps going out of service to remaining heaps
+    // if this step fails, we have to give up
     if (new_n_heaps < old_n_heaps)
     {
         int to_heap_number = 0;
@@ -24770,22 +24771,6 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     }
     if (old_n_heaps < new_n_heaps)
     {
-        int from_heap_number = 0;
-        for (int i = old_n_heaps; i < new_n_heaps; i++)
-        {
-            gc_heap* to_hp = g_heaps[i];
-            gc_heap* from_hp = g_heaps[from_heap_number];
-
-            if (!from_hp->finalize_queue->SplitFinalizationData (to_hp->finalize_queue))
-            {
-                // we can live with this failure - it just means finalization data
-                // are still on the old heap, which is correct, but suboptimal
-                dprintf (3, ("failed to split finalization data between heaps %d and %d", from_heap_number, i));
-            }
-
-            from_heap_number = (from_heap_number + 1) % old_n_heaps;
-        }
-
         // count the number of regions in each generation
         for (int i = 0; i < old_n_heaps; i++)
         {
@@ -24855,6 +24840,24 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
     // after having checked for sufficient resources, we are now committed to actually change the heap count
     dprintf (3, ("switching heap count from %d to %d heaps", old_n_heaps, new_n_heaps));
+
+    // spread finalization data out to heaps coming into service
+    // if this step fails, we can still continue
+    int from_heap_number = 0;
+    for (int i = old_n_heaps; i < new_n_heaps; i++)
+    {
+        gc_heap* to_hp = g_heaps[i];
+        gc_heap* from_hp = g_heaps[from_heap_number];
+
+        if (!from_hp->finalize_queue->SplitFinalizationData (to_hp->finalize_queue))
+        {
+            // we can live with this failure - it just means finalization data
+            // are still on the old heap, which is correct, but suboptimal
+            dprintf (3, ("failed to split finalization data between heaps %d and %d", from_heap_number, i));
+        }
+
+        from_heap_number = (from_heap_number + 1) % old_n_heaps;
+    }
 
     // prepare for the switch by fixing the allocation contexts on the old heaps,
     // and setting the survived size for the existing regions to their allocated size
