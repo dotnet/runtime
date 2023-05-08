@@ -925,7 +925,7 @@ private:
             }
         }
 
-        auto grabAddr = [&numAddrUses, addr, addrBaseOffs, addrBaseOffsFldSeq, this](unsigned offs) {
+        auto grabAddr = [=, &numAddrUses](unsigned offs) {
             assert(numAddrUses > 0);
             numAddrUses--;
 
