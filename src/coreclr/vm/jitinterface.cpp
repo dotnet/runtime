@@ -2535,12 +2535,14 @@ void CEEInfo::getXarchCpuInfo(CORINFO_XARCH_CPU* xarchCpuInfoPtr)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 void CEEInfo::setXarchCpuInfo(const CORINFO_XARCH_CPU& xarchCpuInfo)
 {
     LIMITED_METHOD_CONTRACT;
 
     m_xarchCpuInfo = xarchCpuInfo;
 }
+#endif // TARGET_X86 || TARGET_AMD64
 
 /*********************************************************************/
 unsigned CEEInfo::getClassNumInstanceFields (CORINFO_CLASS_HANDLE clsHnd)
