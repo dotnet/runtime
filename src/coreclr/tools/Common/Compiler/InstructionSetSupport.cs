@@ -317,25 +317,19 @@ namespace ILCompiler
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
                     Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
 
-                    // Unlike for the JIT, we cannot default to enabling Vector<T> to the below sizes
-                    // as it may fail to launch in the case where `--verify-type-and-field-layout`
-                    // was specified. So instead, only enable Vector<T> when we have an explicit width.
-
-                    if (maxVectorTBitWidth >= 128)
-                    {
-                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
-                    }
+                    Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
+                    supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
                     if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2))
                     {
-                        if (maxVectorTBitWidth >= 256)
+                        if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
                         {
                             supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
                         }
 
                         if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F))
                         {
-                            if (maxVectorTBitWidth >= 512)
+                            if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 512))
                             {
                                 supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
                             }
@@ -347,6 +341,7 @@ namespace ILCompiler
                 case TargetArchitecture.ARM64:
                 {
                     Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.ARM64_AdvSimd));
+                    Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.ARM64_VectorT128);
                     break;
                 }

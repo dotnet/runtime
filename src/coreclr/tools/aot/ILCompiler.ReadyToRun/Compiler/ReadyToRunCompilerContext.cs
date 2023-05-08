@@ -217,6 +217,7 @@ namespace ILCompiler
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
                     LayoutAbiStable = false,
+                    IsVectorTOrHasVectorTFields = true,
                 };
                 return instanceLayout;
             }
@@ -235,6 +236,7 @@ namespace ILCompiler
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = _vectorAbiIsStable,
+                    IsVectorTOrHasVectorTFields = true,
                 };
 #else
                 return new ComputedInstanceFieldLayout
@@ -245,6 +247,7 @@ namespace ILCompiler
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
                     LayoutAbiStable = _vectorAbiIsStable,
+                    IsVectorTOrHasVectorTFields = true,
                 };
 #endif
             }

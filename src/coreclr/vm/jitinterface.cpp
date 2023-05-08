@@ -13392,7 +13392,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 // - Alignment
 // - Position of GC references
 //
-BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
+BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff, BOOL* isOrContainsVectorT)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13401,6 +13401,10 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
     uint32_t dwFlags;
     IfFailThrow(p.GetData(&dwFlags));
+
+    // We need to track Vector<T> because its size is expected to vary
+    // and we'll need to fail the load without failing the verification
+    *isOrContainsVectorT = (dwFlags & READYTORUN_LAYOUT_IsOrContainsVectorT) != 0;
 
     BOOL result = TRUE;
 
@@ -13415,9 +13419,12 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
         {
             result = FALSE;
 
-            DefineFullyQualifiedNameForClass();
-            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
-                GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
+            if ((dwFlags & READYTORUN_LAYOUT_IsOrContainsVectorT) == 0)
+            {
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+                       GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
+            }
         }
         else
         {
@@ -13964,10 +13971,17 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
-            if (!TypeLayoutCheck(pMT, pBlob, /* printDiff */ kind == ENCODE_VERIFY_TYPE_LAYOUT))
+            BOOL isOrContainsVectorT = FALSE;
+
+            if (!TypeLayoutCheck(pMT, pBlob, /* printDiff */ kind == ENCODE_VERIFY_TYPE_LAYOUT, &isOrContainsVectorT))
             {
                 if (kind == ENCODE_CHECK_TYPE_LAYOUT)
                 {
+                    return FALSE;
+                }
+                else if (isOrContainsVectorT)
+                {
+                    // We expect Vector<T> to vary in size, don't fail
                     return FALSE;
                 }
                 else
@@ -13982,7 +13996,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     {
                         _ASSERTE_MSG(false, fatalErrorString.GetUTF8());
                         // Run through the type layout logic again, after the assert, makes debugging easy
-                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
+                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE, &isOrContainsVectorT);
                     }
 #endif
 

@@ -76,6 +76,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA;
             }
 
+            if (defType.IsVectorTOrHasVectorTFields)
+            {
+                flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_IsOrContainsVectorT;
+            }
+
             dataBuilder.EmitUInt((uint)flags);
             dataBuilder.EmitUInt((uint)size);
 
@@ -92,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 };
                 dataBuilder.EmitUInt((uint)hfaElementType);
             }
-            
+
             if (alignment != pointerSize)
             {
                 dataBuilder.EmitUInt((uint)alignment);

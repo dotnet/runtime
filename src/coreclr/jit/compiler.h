@@ -8677,16 +8677,17 @@ private:
     // Note - cannot be used for System.Runtime.Intrinsic
     unsigned getVectorTByteLength()
     {
-// We need to report the ISA dependency to the VM so that scenarios
-// such as R2R work correctly for larger vector sizes, so we always
-// do `compExactlyDependsOn` for such cases.
+        // We need to report the ISA dependency to the VM so that scenarios
+        // such as R2R work correctly for larger vector sizes, so we always
+        // do `compExactlyDependsOn` for such cases.
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_XARCH)
         if (compExactlyDependsOn(InstructionSet_VectorT256))
         {
             return YMM_REGSIZE_BYTES;
         }
-        else if (compOpportunisticallyDependsOn(InstructionSet_VectorT128))
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return XMM_REGSIZE_BYTES;
         }
@@ -8695,7 +8696,7 @@ private:
             return 0;
         }
 #elif defined(TARGET_ARM64)
-        if (compOpportunisticallyDependsOn(InstructionSet_VectorT128))
+        if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return FP_REGSIZE_BYTES;
         }
