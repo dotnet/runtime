@@ -11646,11 +11646,15 @@ emit_class_name_table (MonoAotCompile *acfg)
 	name_p = name_buf = (guint8 *)g_malloc0 (name_buf_size);
 #endif
 
+	guint table_len = table->len;
+	if (table_size > 65000 || table->len > 65000) {
+		table_size = 0;
+		table_len = 0;
+	}
+
 	/* FIXME: Optimize memory usage */
-	g_assert (table_size < 65000);
 	encode_int16 (GINT_TO_UINT16 (table_size), p, &p);
-	g_assert (table->len < 65000);
-	for (guint i = 0; i < table->len; ++i) {
+	for (guint i = 0; i < table_len; ++i) {
 		entry = (ClassNameTableEntry *)g_ptr_array_index (table, i);
 		if (entry == NULL) {
 			encode_int16 (0, p, &p);
