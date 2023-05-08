@@ -8554,7 +8554,7 @@ interp_invalidate_transformed (void)
 			mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
 			jit_mm_unlock (jit_mm);
 		}
-		
+
 		g_ptr_array_free (alcs, TRUE);
 	}
 
@@ -8606,7 +8606,7 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 				g_free (copy_jit_info_data.jit_info_array);
 			}
 		}
-		
+
 		g_ptr_array_free (alcs, TRUE);
 	}
 }
@@ -8894,6 +8894,24 @@ mono_jiterp_get_simd_opcode (int arity, int index)
 #else
 	g_assert_not_reached();
 #endif
+}
+
+typedef struct {
+	const char *name;
+	int length_u16, num_dregs, num_sregs, opargtype;
+} JiterpOpcodeInfo;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_get_opcode_info (int opcode, JiterpOpcodeInfo *result)
+{
+	g_assert (result);
+	g_assert (opcode >= 0);
+	g_assert (opcode <= MINT_LASTOP);
+	result->name = mono_interp_opname (opcode);
+	result->length_u16 = mono_interp_oplen [opcode];
+	result->num_sregs = mono_interp_op_sregs [opcode];
+	result->num_dregs = mono_interp_op_dregs [opcode];
+	result->opargtype = mono_interp_opargtype [opcode];
 }
 
 #endif

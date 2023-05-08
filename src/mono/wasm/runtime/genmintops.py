@@ -32,9 +32,6 @@ opdef_regex = r'\s(IR)?OPDEF\((\w+),\s*(.+?),\s*(MintOp\w+)\)'
 enum_values = re.sub(
     opdef_regex, lambda m : f"{m.group(2)},", header
 )
-metadata_table = re.sub(
-    opdef_regex, lambda m : f"[MintOpcode.{m.group(2)}]: [{m.group(3)}, MintOpArgType.{m.group(4)}],", header
-)
 
 simd_values_1 = []
 simd_values_2 = []
@@ -72,10 +69,6 @@ export const enum MintOpcode {{
 
     MINT_LASTOP
 }}
-
-export const OpcodeInfo : OpcodeInfoTable = {{
-{metadata_table}
-}};
 
 export const enum SimdIntrinsic2 {{
     {splitter.join(simd_values_1)}
