@@ -1352,19 +1352,6 @@ uint32_t interceptor_ICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_
     return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
 }
 
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-int interceptor_ICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mc->cr->AddCall("FilterException");
-    int temp = original_ICorJitInfo->FilterException(pExceptionPointers);
-    mc->recFilterException(pExceptionPointers, temp);
-    return temp;
-}
-
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in

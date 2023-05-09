@@ -1494,7 +1494,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     key.flags        = (DWORD)flags;
 
     Agnostic_CORINFO_CALL_INFO value;
-    ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO));.
+    ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO));
 
     if (exceptionCode == 0)
     {
@@ -5127,36 +5127,6 @@ void* MethodContext::repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, D
     DEBUG_REP(dmpGetArrayInitializationData(key, value));
     void* result = (void*)value;
     return result;
-}
-
-void MethodContext::recFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers, int result)
-{
-    if (FilterException == nullptr)
-        FilterException = new LightWeightMap<DWORD, DWORD>();
-
-    DWORD key = (DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode;
-    DWORD value = (DWORD)result;
-    FilterException->Add(key, value);
-    DEBUG_REC(dmpFilterException(key, value));
-}
-void MethodContext::dmpFilterException(DWORD key, DWORD value)
-{
-    printf("FilterException key %u, value %u", key, value);
-}
-int MethodContext::repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    if (FilterException == nullptr)
-        return EXCEPTION_CONTINUE_SEARCH;
-    if (FilterException->GetIndex((DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode) < 0)
-        return EXCEPTION_CONTINUE_SEARCH;
-    else
-    {
-        DWORD key = (DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode;
-        DWORD value = FilterException->Get(key);
-        DEBUG_REP(dmpFilterException(key, value));
-        int result = (int)value;
-        return result;
-    }
 }
 
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)

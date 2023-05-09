@@ -483,9 +483,6 @@ uint32_t GetErrorMessage(
           char16_t* buffer,
           uint32_t bufferLength) override;
 
-int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
 bool runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter) override;

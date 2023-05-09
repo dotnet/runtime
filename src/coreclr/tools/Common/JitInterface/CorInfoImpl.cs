@@ -3049,16 +3049,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("GetErrorMessage"); }
 
 #pragma warning disable CA1822 // Mark members as static
-        private int FilterException(_EXCEPTION_POINTERS* pExceptionPointers)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // This method is completely handled by the C++ wrapper to the JIT-EE interface,
-            // and should never reach the managed implementation.
-            Debug.Fail("CorInfoImpl.FilterException should not be called");
-            throw new NotSupportedException("FilterException");
-        }
-
-#pragma warning disable CA1822 // Mark members as static
         private bool runWithErrorTrap(void* function, void* parameter)
 #pragma warning restore CA1822 // Mark members as static
         {

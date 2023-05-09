@@ -1145,15 +1145,6 @@ uint32_t WrapICorJitInfo::GetErrorMessage(
     return temp;
 }
 
-int WrapICorJitInfo::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(FilterException);
-    int temp = wrapHnd->FilterException(pExceptionPointers);
-    API_LEAVE(FilterException);
-    return temp;
-}
-
 bool WrapICorJitInfo::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

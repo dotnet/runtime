@@ -822,12 +822,6 @@ uint32_t interceptor_ICJI::GetErrorMessage(
     return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
 }
 
-int interceptor_ICJI::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    return original_ICorJitInfo->FilterException(pExceptionPointers);
-}
-
 bool interceptor_ICJI::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

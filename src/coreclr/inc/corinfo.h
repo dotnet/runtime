@@ -2909,16 +2909,6 @@ public:
             uint32_t bufferLength
             ) = 0;
 
-    // returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-    //                        exception, abort some work (like the inlining) and continue compilation
-    // returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-    //                    things like ThreadStoppedException ...
-    // returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-    // Only used as a contract between the Zapper and the VM.
-    virtual int FilterException(
-            struct _EXCEPTION_POINTERS *pExceptionPointers
-            ) = 0;
-
     // Runs the given function under an error trap. This allows the JIT to make calls
     // to interface functions that may throw exceptions without needing to be aware of
     // the EH ABI, exception types, etc. Returns true if the given function completed
