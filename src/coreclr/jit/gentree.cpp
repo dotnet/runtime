@@ -16201,7 +16201,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                // TODO: verify if flags matter here
+                // TODO-Bug?: verify if flags matter here
                 GenTreeFlags indirFlags = GTF_EMPTY;
                 assg                    = impGetNodeAddr(assg, CHECK_SPILL_ALL, &indirFlags);
             }
