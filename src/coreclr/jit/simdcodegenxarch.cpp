@@ -272,6 +272,8 @@ void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 //    lclNum - Stack local's number
 //    offset - Offset to store at
 //
+// Note: The callers should make sure to call consumeReg() to do liveness update.
+//
 void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset)
 {
     assert(store->OperIsLocalStore() || store->OperIs(GT_STOREIND));
