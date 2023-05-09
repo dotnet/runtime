@@ -294,7 +294,7 @@ private:
     };
 
     // An array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
-    static UINT8* s_vnfOpAttribs;
+    //static const UINT8* s_vnfOpAttribs;
 
     // Returns "true" iff gtOper is a legal value number function.
     // (Requires InitValueNumStoreStatics to have been run.)
@@ -359,7 +359,21 @@ public:
 #endif // FEATURE_SIMD
 
 private:
-    static constexpr unsigned ComputeValueNumFuncDef(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    // This struct mainly exists to give a place to put the constexpr code for creating
+    // the OpAttribs table. It also gives a scope for the helpers functions used during
+    // initialization.
+    struct VnfOpAttribsType
+    {
+    public:
+        constexpr VnfOpAttribsType();
+        const UINT8& operator[](std::size_t idx) const { return m_arr[idx]; }
+    private:
+        static constexpr unsigned GetArity(unsigned oper);
+        static constexpr unsigned GetCommutative(unsigned oper);
+        static constexpr unsigned GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+
+        UINT8 m_arr[VNF_COUNT];
+    } static const s_vnfOpAttribs;
 
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
@@ -389,9 +403,6 @@ private:
     GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
-    // Initializes any static variables of ValueNumStore.
-    static void InitValueNumStoreStatics();
-
     // Initialize an empty ValueNumStore.
     ValueNumStore(Compiler* comp, CompAllocator allocator);
 
