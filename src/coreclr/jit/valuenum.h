@@ -366,7 +366,7 @@ private:
     {
     public:
         constexpr VnfOpAttribsType();
-        const UINT8& operator[](std::size_t idx) const { return m_arr[idx]; }
+        const UINT8& operator[](size_t idx) const { return m_arr[idx]; }
     private:
         static constexpr unsigned GetArity(unsigned oper);
         static constexpr unsigned GetCommutative(unsigned oper);
