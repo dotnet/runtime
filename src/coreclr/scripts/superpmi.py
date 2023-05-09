@@ -1347,7 +1347,7 @@ class SuperPMIReplay:
 
             common_flags = [
                 "-v", "ewi",  # display errors, warnings, missing, jit info
-                #"-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
+                "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
             ]
 
             if self.coreclr_args.altjit:
