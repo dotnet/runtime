@@ -626,21 +626,8 @@ public:
 
 #ifdef FEATURE_SIMD
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
+#endif                                       // FEATURE_SIMD
 
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)lvSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        assert(simdBaseJitType < (1 << 5));
-        lvSimdBaseJitType = (unsigned char)simdBaseJitType;
-    }
-
-    var_types GetSimdBaseType() const;
-#endif                             // FEATURE_SIMD
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
     unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
@@ -953,11 +940,6 @@ public:
         return lvUsedInSIMDIntrinsic;
     }
 #else
-    // If feature_simd not enabled, return false
-    bool lvIsSIMDType() const
-    {
-        return false;
-    }
     bool lvIsUsedInSIMDIntrinsic() const
     {
         return false;
@@ -1111,7 +1093,6 @@ public:
     bool lvNormalizeOnLoad() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -1119,7 +1100,6 @@ public:
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -2523,8 +2503,6 @@ public:
     GenTreeLclVar* gtNewStoreLclVarNode(unsigned lclNum, GenTree* data);
 
     GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data);
-
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
@@ -3945,7 +3923,7 @@ protected:
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
                           unsigned                methodFlags,
-                          int                     memberRef,
+                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
@@ -3967,7 +3945,8 @@ protected:
     GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig);
+                                    CORINFO_SIG_INFO*     sig,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
@@ -4050,7 +4029,7 @@ public:
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
     void impAssignTempGen(unsigned         lclNum,
                           GenTree*         val,
-                          unsigned         curLevel   = CHECK_SPILL_NONE,
+                          unsigned         curLevel,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -5568,7 +5547,6 @@ public:
     inline void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
-    GenTree* fgDoNormalizeOnStore(GenTree* tree);
 
     // The following check for loops that don't execute calls
     bool fgLoopCallMarked;
@@ -5913,12 +5891,12 @@ private:
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
     void fgMarkGlobalUses(Statement* stmt);
 
-    GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
+    GenTree* fgMorphLeafLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree);
+    GenTree* fgMorphExpandLocal(GenTreeLclVarCommon* lclNode);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -5985,7 +5963,7 @@ public:
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
-    GenTree* fgOptimizeIndir(GenTreeIndir* indir);
+    GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
@@ -7642,19 +7620,20 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
-    GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
+    GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
+    GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
+    bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
@@ -9407,9 +9386,11 @@ public:
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
-        bool IsInstrumentedOrOptimized() const
+        bool CanBeInstrumentedOrIsOptimized() const
         {
-            return IsInstrumented() || jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
+                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating

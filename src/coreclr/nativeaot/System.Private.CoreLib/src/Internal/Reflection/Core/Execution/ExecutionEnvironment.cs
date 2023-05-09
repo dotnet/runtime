@@ -21,7 +21,6 @@ namespace Internal.Reflection.Core.Execution
     // This class abstracts the underlying Redhawk (or whatever execution engine) runtime and exposes the services
     // that I.R.Core.Execution needs.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class ExecutionEnvironment
     {
@@ -47,17 +46,13 @@ namespace Internal.Reflection.Core.Execution
         public abstract IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle);
         public abstract void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle);
         public abstract void GetInterfaceMap(Type instanceType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
-        public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
         public abstract string GetLastResortString(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
         // Reflection Mapping Tables
         //==============================================================================================
-        public abstract bool TryGetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle, out QTypeDefinition qTypeDefinition);
+        public abstract QTypeDefinition GetMetadataForNamedType(RuntimeTypeHandle runtimeTypeHandle);
         public abstract bool TryGetNamedTypeForMetadata(QTypeDefinition qTypeDefinition, out RuntimeTypeHandle runtimeTypeHandle);
-
-        public abstract bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle);
-        public abstract bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle);
         public abstract bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle);

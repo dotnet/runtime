@@ -126,7 +126,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
-                {{methodModifiers}} {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
+                {{methodModifiers}} {{typeName}} {|#0:Method|}({{typeName}} {|#1:value|}, in {{typeName}} {|#2:inValue|}, ref {{typeName}} {|#3:refValue|}, out {{typeName}} {|#4:outValue|});
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
@@ -277,7 +277,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 void MethodA();
             }
             {{GeneratedComInterface}}
-            partial interface IComInterface2 : IComInterface, IOtherComInterface
+            partial interface {|#0:IComInterface2|} : IComInterface, IOtherComInterface
             {
                 void Method2();
             }

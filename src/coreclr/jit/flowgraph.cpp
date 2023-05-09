@@ -1227,47 +1227,6 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     return true;
 }
 
-// If assigning to a local var, add a cast if the target is
-// marked as NormalizedOnStore. Returns true if any change was made
-GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
-{
-    //
-    // Only normalize the stores in the global morph phase
-    //
-    if (fgGlobalMorph)
-    {
-        noway_assert(tree->OperGet() == GT_ASG);
-
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->AsOp()->gtOp2;
-
-        if (op1->gtOper == GT_LCL_VAR && genActualType(op1->TypeGet()) == TYP_INT)
-        {
-            // Small-typed arguments and aliased locals are normalized on load.
-            // Other small-typed locals are normalized on store.
-            // If it is an assignment to one of the latter, insert the cast on RHS
-            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
-
-            if (varDsc->lvNormalizeOnStore())
-            {
-                noway_assert(op1->gtType <= TYP_INT);
-                op1->gtType = TYP_INT;
-
-                if (fgCastNeeded(op2, varDsc->TypeGet()))
-                {
-                    op2                 = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
-                    tree->AsOp()->gtOp2 = op2;
-
-                    // Propagate GTF_COLON_COND
-                    op2->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-                }
-            }
-        }
-    }
-
-    return tree;
-}
-
 /*****************************************************************************
  *
  *  Mark whether the edge "srcBB -> dstBB" forms a loop that will always
@@ -1814,8 +1773,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 
     if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
-        GenTree* retNode = block->lastStmt()->GetRootNode();
-        GenTree* retExpr = retNode->AsOp()->gtOp1;
+        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+        GenTree*     retExpr = retNode->gtOp1;
 
         if (retExpr != nullptr)
         {
@@ -1823,16 +1782,16 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // ret(...) ->
             // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
-            GenTree* temp   = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1);
-            GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
+            TempInfo tempInfo = fgMakeTemp(retExpr);
+            GenTree* lclVar   = tempInfo.load;
 
-            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
-            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
-            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
-            // 0",
-            // which downstream phases can't handle.
+            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-            retNode->AsOp()->gtOp1->AsOp()->gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.asg, retExpr);
+            retNode->gtOp1 = retExpr;
+            retNode->AddAllEffectsFlags(retExpr);
         }
         else
         {
@@ -2902,14 +2861,11 @@ PhaseStatus Compiler::fgRationalizeAssignments()
     compAssignmentRationalized = true;
 
 #ifdef DEBUG
-    if (JitConfig.JitStressMorphStores())
+    for (BasicBlock* block : Blocks())
     {
-        for (BasicBlock* block : Blocks())
+        for (Statement* stmt : block->Statements())
         {
-            for (Statement* stmt : block->Statements())
-            {
-                fgMorphBlockStmt(block, stmt DEBUGARG("fgRationalizeAssignments"));
-            }
+            assert(!gtTreeContainsOper(stmt->GetRootNode(), GT_ASG));
         }
     }
 #endif // DEBUG

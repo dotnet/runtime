@@ -645,12 +645,12 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impAssignTempGen(varStrTmp, varStr);
+        impAssignTempGen(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled);
+            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -799,13 +799,13 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         // We succeeded, fill the placeholders:
         // TODO-Bug?: verify if flags matter here
         GenTreeFlags indirFlags = GTF_EMPTY;
-        impAssignTempGen(spanObjRef, impGetNodeAddr(spanObj, CHECK_SPILL_NONE, &indirFlags));
-        impAssignTempGen(spanDataTmp, spanData);
+        impAssignTempGen(spanObjRef, impGetNodeAddr(spanObj, CHECK_SPILL_NONE, &indirFlags), CHECK_SPILL_NONE);
+        impAssignTempGen(spanDataTmp, spanData, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled);
+            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
