@@ -814,7 +814,6 @@ private:
             for (int i = 0; i < m_entries.Height(); i++)
             {
                 const Entry& entry = m_entries.BottomRef(i);
-                // TODO: Double check that TYP_BYREF do not incur any write barriers.
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
@@ -901,16 +900,14 @@ private:
 
         if ((addr != nullptr) && (numAddrUses > 1))
         {
-            if (addr->OperIsLocal() && (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                        (addr->AsLclVarCommon()->GetLclNum() != m_dst->AsLclVarCommon()->GetLclNum())))
+            if (CanReuseAddressForDecomposedStore(addr))
             {
-                // We will introduce more uses of the address local, so it is
-                // no longer dying here.
-                addr->gtFlags &= ~GTF_VAR_DEATH;
-            }
-            else if (addr->IsInvariant())
-            {
-                // Fall through
+                if (addr->OperIsLocalRead())
+                {
+                    // We will introduce more uses of the address local, so it is
+                    // no longer dying here.
+                    addr->gtFlags &= ~GTF_VAR_DEATH;
+                }
             }
             else
             {
@@ -1102,6 +1099,58 @@ private:
     {
         return (remainderStrategy.Type == RemainderStrategy::FullBlock) && (entry.FromReplacement != nullptr) &&
                !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+    }
+
+    //------------------------------------------------------------------------
+    // CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+    // specified address node for each decomposed store of a block copy.
+    //
+    // Arguments:
+    //   addrNode - The address node
+    //
+    // Return Value:
+    //   True if the caller can reuse the address by cloning.
+    //
+    bool CanReuseAddressForDecomposedStore(GenTree* addrNode)
+    {
+        if (addrNode->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+            unsigned             lclNum = lcl->GetLclNum();
+            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            {
+                // Address could be pointing to itself
+                return false;
+            }
+
+            // If we aren't writing a local here then since the address is not
+            // exposed it cannot change.
+            if (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                return true;
+            }
+
+            // Otherwise it could still be possible that the address is part of
+            // the struct we're writing.
+            unsigned dstLclNum = m_dst->AsLclVarCommon()->GetLclNum();
+            if (lclNum == dstLclNum)
+            {
+                return false;
+            }
+
+            // It could also be one of the replacement locals we're going to write.
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return addrNode->IsInvariant();
     }
 
     //------------------------------------------------------------------------

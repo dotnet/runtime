@@ -662,6 +662,9 @@ protected:
 
     bool m_dstDoFldAsg = false;
     bool m_srcDoFldAsg = false;
+
+private:
+    bool CanReuseAddressForDecomposedStore(GenTree* addr);
 };
 
 //------------------------------------------------------------------------
@@ -1170,7 +1173,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // and spill, unless we only end up using the address once.
             if (fieldCnt - dyingFieldCnt > 1)
             {
-                if (m_comp->gtClone(srcAddr))
+                if (CanReuseAddressForDecomposedStore(srcAddr))
                 {
                     // "srcAddr" is simple expression. No need to spill.
                     noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
@@ -1202,7 +1205,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // and spill, unless we only end up using the address once.
             if (m_srcVarDsc->lvFieldCnt > 1)
             {
-                if (m_comp->gtClone(dstAddr))
+                if (CanReuseAddressForDecomposedStore(dstAddr))
                 {
                     // "dstAddr" is simple expression. No need to spill
                     noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
@@ -1510,6 +1513,63 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+// specified address node for each decomposed store of a block copy.
+//
+// Arguments:
+//   addrNode - The address node
+//
+// Return Value:
+//   True if the caller can reuse the address by cloning.
+//
+bool MorphCopyBlockHelper::CanReuseAddressForDecomposedStore(GenTree* addrNode)
+{
+    if (addrNode->OperIsLocalRead())
+    {
+        GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+        unsigned             lclNum = lcl->GetLclNum();
+        LclVarDsc*           lclDsc = m_comp->lvaGetDesc(lclNum);
+        if (lclDsc->IsAddressExposed())
+        {
+            // Address could be pointing to itself
+            return false;
+        }
+
+        // The store can also directly write to the address. For example:
+        //
+        //  ▌  STORE_LCL_VAR struct<Program+ListElement, 16>(P) V00 loc0
+        //  ▌    long   V00.Program+ListElement:Next (offs=0x00) -> V03 tmp1
+        //  ▌    int    V00.Program+ListElement:Value (offs=0x08) -> V04 tmp2
+        //  └──▌  BLK       struct<Program+ListElement, 16>
+        //     └──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //
+        // If we reused the address we would produce
+        //
+        //  ▌  COMMA     void
+        //  ├──▌  STORE_LCL_VAR long   V03 tmp1
+        //  │  └──▌  IND       long
+        //  │     └──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //  └──▌  STORE_LCL_VAR int    V04 tmp2
+        //     └──▌  IND       int
+        //        └──▌  ADD       byref
+        //           ├──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //           └──▌  CNS_INT   long   8
+        //
+        // which is also obviously incorrect.
+        //
+
+        if (m_dstLclNum == BAD_VAR_NUM)
+        {
+            return true;
+        }
+
+        return (lclNum != m_dstLclNum) && (!lclDsc->lvIsStructField || (lclDsc->lvParentLcl != m_dstLclNum));
+    }
+
+    return addrNode->IsInvariant();
 }
 
 //------------------------------------------------------------------------
