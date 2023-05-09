@@ -958,8 +958,9 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 	int32_t ret = try_load_pe_cli_header (raw_data, raw_data_len, &cli_header);
 
 #ifdef ENABLE_WEBCIL
+	int32_t webcil_section_adjustment = 0;
 	if (ret == -1) {
-		ret = mono_webcil_load_cli_header (raw_data, raw_data_len, 0, &cli_header);
+		ret = mono_webcil_load_cli_header (raw_data, raw_data_len, 0, &cli_header, &webcil_section_adjustment);
 		is_pe = FALSE;
 	}
 #endif
@@ -992,7 +993,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 				}
 #ifdef ENABLE_WEBCIL
 				else {
-					ret = mono_webcil_load_section_table (raw_data, raw_data_len, ret, &t);
+					ret = mono_webcil_load_section_table (raw_data, raw_data_len, ret, webcil_section_adjustment, &t);
 					if (ret == -1)
 						return FALSE;
 				}

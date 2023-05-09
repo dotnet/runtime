@@ -61,17 +61,21 @@ webcil_image_match (MonoImage *image)
  * most of MonoDotNetHeader is unused and left uninitialized (assumed zero);
  */
 static int32_t
-do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header, int32_t *raw_data_rva_map_wasm_bump)
 {
 	MonoWebCilHeader wcheader;
 	const uint8_t *raw_data_bound = (const uint8_t*)raw_data + raw_data_len;
+	*raw_data_rva_map_wasm_bump = 0;
 	if (mono_wasm_module_is_wasm ((const uint8_t*)raw_data, raw_data_bound)) {
 		/* assume it's webcil wrapped in wasm */
 		const uint8_t *webcil_segment_start = NULL;
 		if (!find_webcil_in_wasm ((const uint8_t*)raw_data, raw_data_bound, &webcil_segment_start))
 			return -1;
+		// HACK: adjust all the rva physical offsets by this amount
+		int32_t offset_adjustment = (int32_t)(webcil_segment_start - (const uint8_t*)raw_data);
+		*raw_data_rva_map_wasm_bump = offset_adjustment;
 		// skip to the beginning of the webcil payload
-		offset += (int32_t)(webcil_segment_start - (const uint8_t*)raw_data);
+		offset += offset_adjustment;
 	}
 
 	if (offset + sizeof (MonoWebCilHeader) > raw_data_len)
@@ -94,7 +98,7 @@ do_load_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, Mon
 }
 
 int32_t
-mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoSectionTable *t)
+mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int32_t offset, int32_t webcil_section_adjustment, MonoSectionTable *t)
 {
 	/* WebCIL section table entries are a subset of a PE section
 	 * header. Initialize just the parts we have.
@@ -109,7 +113,7 @@ mono_webcil_load_section_table (const char *raw_data, uint32_t raw_data_len, int
 	t->st_virtual_size = GUINT32_FROM_LE (st [0]);
 	t->st_virtual_address = GUINT32_FROM_LE (st [1]);
 	t->st_raw_data_size = GUINT32_FROM_LE (st [2]);
-	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]);
+	t->st_raw_data_ptr = GUINT32_FROM_LE (st [3]) + (uint32_t)webcil_section_adjustment;
 	offset += sizeof(st);
 	return offset;
 }
@@ -121,12 +125,13 @@ webcil_image_load_pe_data (MonoImage *image)
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 	int32_t offset = 0;
+	int32_t webcil_section_adjustment = 0;
 	int top;
 
 	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
-	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header);
+	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header, &webcil_section_adjustment);
 	if (offset == -1)
 		goto invalid_image;
 
@@ -138,7 +143,7 @@ webcil_image_load_pe_data (MonoImage *image)
 
 	for (int i = 0; i < top; i++) {
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
-		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, t);
+		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, webcil_section_adjustment, t);
 		if (offset == -1)
 			goto invalid_image;
 	}
@@ -186,9 +191,9 @@ mono_webcil_loader_install (void)
 }
 
 int32_t
-mono_webcil_load_cli_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header)
+mono_webcil_load_cli_header (const char *raw_data, uint32_t raw_data_len, int32_t offset, MonoDotNetHeader *header, int32_t *webcil_section_adjustment)
 {
-	return do_load_header (raw_data, raw_data_len, offset, header);
+	return do_load_header (raw_data, raw_data_len, offset, header, webcil_section_adjustment);
 }
 
 struct webcil_in_wasm_ud
