@@ -863,6 +863,65 @@ bool StructSegments::CoveringSegment(Segment* result)
     return true;
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// Check:
+//   Validate that the data structure is normalized and that it equals a
+//   specific fixed bit vector.
+//
+// Parameters:
+//   vect - The bit vector
+//
+// Remarks:
+//   This validates that the internal representation is normalized (i.e.
+//   all adjacent intervals are merged) and that it contains an index iff
+//   the specified vector contains that index.
+//
+void StructSegments::Check(FixedBitVect* vect)
+{
+    bool     first = true;
+    unsigned last  = 0;
+    for (const Segment& segment : m_segments)
+    {
+        assert(first || (last < segment.Start));
+        assert(segment.End <= vect->bitVectGetSize());
+
+        for (unsigned i = last; i < segment.Start; i++)
+            assert(!vect->bitVectTest(i));
+
+        for (unsigned i = segment.Start; i < segment.End; i++)
+            assert(vect->bitVectTest(i));
+
+        first = false;
+        last  = segment.End;
+    }
+
+    for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
+        assert(!vect->bitVectTest(i));
+}
+
+//------------------------------------------------------------------------
+// Dump:
+//   Dump a string representation of the segment tree to stdout.
+//
+void StructSegments::Dump()
+{
+    if (m_segments.size() == 0)
+    {
+        printf("<empty>");
+    }
+    else
+    {
+        const char* sep = "";
+        for (const Segment& segment : m_segments)
+        {
+            printf("%s[%03u..%03u)", sep, segment.Start, segment.End);
+            sep = " ";
+        }
+    }
+}
+#endif
+
 StructSegments Promotion::SignificantSegments(Compiler* compiler, ClassLayout* layout)
 {
     COMP_HANDLE compHnd = compiler->info.compCompHnd;

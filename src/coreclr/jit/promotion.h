@@ -76,6 +76,11 @@ public:
     bool IsEmpty();
     bool IsSingleSegment(Segment* result);
     bool CoveringSegment(Segment* result);
+
+#ifdef DEBUG
+    void Check(FixedBitVect* vect);
+    void Dump();
+#endif
 };
 
 // Represents information about an aggregate that now has replacements in it.
@@ -100,7 +105,7 @@ class Promotion
 
     friend class LocalUses;
     friend class LocalsUseVisitor;
-    friend class AggregateInfo;
+    friend struct AggregateInfo;
     friend class PromotionLiveness;
     friend class ReplaceVisitor;
     friend class DecompositionPlan;
@@ -229,12 +234,7 @@ public:
         return m_madeChanges;
     }
 
-    void StartBlock(BasicBlock* block)
-    {
-        m_liveness->StartBlock(block);
-    }
-
-    void StartStatement(Statement* stmt)
+    void Reset()
     {
         m_madeChanges = false;
     }
