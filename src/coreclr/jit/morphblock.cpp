@@ -1172,11 +1172,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
             m_comp->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
 
-            // "srcAddr" might be a complex expression that we need to clone
+            // "addr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
             if (fieldCnt - dyingFieldCnt > 1)
             {
-                if (CanReuseAddressForDecomposedStore(srcAddr))
+                if (CanReuseAddressForDecomposedStore(addr))
                 {
                     // "srcAddr" is simple expression. No need to spill.
                     noway_assert((addr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
@@ -1206,11 +1206,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
             m_comp->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
 
-            // "dstAddr" might be a complex expression that we need to clone
+            // "addr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
             if (m_srcVarDsc->lvFieldCnt > 1)
             {
-                if (CanReuseAddressForDecomposedStore(dstAddr))
+                if (CanReuseAddressForDecomposedStore(addr))
                 {
                     // "dstAddr" is simple expression. No need to spill
                     noway_assert((addr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
