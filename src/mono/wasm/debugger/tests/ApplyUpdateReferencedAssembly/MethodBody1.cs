@@ -57,4 +57,41 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine("original");
         }
     }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // public class MethodBody9 {
+    //     public static int M1(int a, int b) {
+    //         return a + b;
+    //     }
+        
+    //     public static int test() {
+    //         return M1(1, 2);
+    //     }
+    // }
 }
