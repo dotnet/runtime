@@ -4055,7 +4055,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((fromTypeHnd == toTypeHnd) || ClassLayout::AreCompatible(fromLayout, toLayout) ||
                 (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType) &&
-                 ((genTypeSize(valType) == fromSize) || (varTypeIsSigned(valType) == varTypeIsSigned(toType)))))
+                 (!varTypeIsSmall(valType) || (varTypeIsSigned(valType) == varTypeIsSigned(toType)))))
             {
                 // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
                 return op1;
