@@ -5,6 +5,7 @@ namespace UnityEmbedHost.Tests;
 
 class Mammal : Animal, IMammal
 {
+    public int EyeCount = 2;
     public void BreathAir()
     {
     }
@@ -12,6 +13,10 @@ class Mammal : Animal, IMammal
 
 class Cat : Mammal, ICat
 {
+    public int EarCount = 0;
+
+    public static int StaticField = 0;
+
     public void Meow()
     {
     }
