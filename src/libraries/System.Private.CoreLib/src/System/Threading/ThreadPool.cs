@@ -10,9 +10,10 @@ namespace System.Threading
 {
     public static partial class ThreadPool
     {
-        internal static readonly bool UseWindowsThreadPool =
-            Environment.GetEnvironmentVariable("DOTNET_ThreadPool_UseWindowsThreadPool") == "1" ||
-            AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", false);
+        internal static bool UseWindowsThreadPool
+        {
+            get => AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.UseWindowsThreadPool", "DOTNET_ThreadPool_UseWindowsThreadPool");
+        }
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
