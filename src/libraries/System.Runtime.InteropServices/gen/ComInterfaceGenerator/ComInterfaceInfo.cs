@@ -82,7 +82,7 @@ namespace Microsoft.Interop
                             if (baseComIface is not null)
                             {
                                 diagnostic = Diagnostic.Create(
-                                    GeneratorDiagnostics.MultipleComInterfaceBaseTypesAttribute,
+                                    GeneratorDiagnostics.MultipleComInterfaceBaseTypes,
                                     syntax.Identifier.GetLocation(),
                                     comIface.ToDisplayString());
                                 return false;
