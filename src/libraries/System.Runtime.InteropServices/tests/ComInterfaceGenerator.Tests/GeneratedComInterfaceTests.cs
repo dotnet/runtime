@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.Remoting;
 using Xunit;
-using Xunit.Sdk;
 
 namespace ComInterfaceGenerator.Tests;
 
