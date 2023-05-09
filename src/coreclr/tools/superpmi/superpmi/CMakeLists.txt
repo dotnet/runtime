@@ -14,7 +14,11 @@ endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     # Make sure a public symbol is created for Instrumentor_GetInsCount
-    add_linker_flag(-Wl,--export-dynamic)
+    if(CLR_CMAKE_HOST_APPLE)
+        add_linker_flag(-Wl,-export_dynamic)
+    else()
+        add_linker_flag(-Wl,--export-dynamic)
+    endif(CLR_CMAKE_HOST_APPLE)
 endif(CLR_CMAKE_HOST_UNIX)
 
 include_directories(.)
