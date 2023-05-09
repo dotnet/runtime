@@ -2230,9 +2230,7 @@ PROCCreateCrashDump(
             SEHCleanupSignals();
 
             // Call the statically linked createdump code
-            fprintf(stderr, "[createdump] entering callback %d\n", gPID);
             g_createdumpCallback(argv.size(), argv.data());
-            fprintf(stderr, "[createdump] returned from callback\n");
         }
         else
         {

@@ -280,8 +280,10 @@ GetHResultString(HRESULT hr)
 bool
 CrashInfo::InitializeDAC(DumpType dumpType)
 {
-    // Don't attempt to load the DAC if native AOT app (there is no DAC)
-    if (m_appModel == AppModelType::NativeAOT)
+    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is a
+    // full dump, but if the dump type requested is a mini, triage or heap and the DAC is side-by-side to the single-file
+    // application the core dump will be generated.
+    if (dumpType == DumpType::Full && (m_appModel == AppModelType::SingleFile || m_appModel == AppModelType::NativeAOT))
     {
         return true;
     }

@@ -24,6 +24,12 @@ CreateDump(const CreateDumpOptions& options)
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
 
+    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel != AppModelType::NativeAOT))
+    {
+        printf_error("The app model does not support crash report generation\n");
+        goto exit;
+    }
+
     // Initialize the crash info 
     if (!crashInfo->Initialize())
     {
@@ -51,8 +57,8 @@ CreateDump(const CreateDumpOptions& options)
     {
         goto exit;
     }
-    // Write the crash report json file if enabled and createdump isn't statically linked into the runtime
-    if (options.CrashReport && options.AppModel != AppModelType::SingleFile && options.AppModel != AppModelType::NativeAOT)
+    // Write the crash report json file if enabled
+    if (options.CrashReport)
     {
         CrashReportWriter crashReportWriter(*crashInfo);
         crashReportWriter.WriteCrashReport(dumpPath);
