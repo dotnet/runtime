@@ -116,7 +116,7 @@ inline bool genMaxOneBit(T value)
 template <typename T>
 inline bool genExactlyOneBit(T value)
 {
-    return BitOperations::PopCount(value) == 1;
+    return ((value != 0) && genMaxOneBit(value));
 }
 
 /*****************************************************************************
