@@ -4046,10 +4046,18 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* op1 = impPopStack().val;
 
-            if ((fromTypeHnd == toTypeHnd) || (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType)) ||
-                ClassLayout::AreCompatible(fromLayout, toLayout))
+            var_types valType = op1->gtType;
+            GenTree* effectiveVal = op1->gtEffectiveVal();
+            if (effectiveVal->OperIs(GT_LCL_VAR))
             {
-                // Handle matching handles, integrals or compatible struct layouts where we can simply return op1
+                valType = lvaGetDesc(effectiveVal->AsLclVar()->GetLclNum())->TypeGet();
+            }
+
+            if ((fromTypeHnd == toTypeHnd) || ClassLayout::AreCompatible(fromLayout, toLayout) ||
+                (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType) &&
+                ((genTypeSize(valType) == fromSize) || (varTypeIsSigned(valType) == varTypeIsSigned(toType)))))
+            {
+                // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
                 return op1;
             }
 
@@ -4104,16 +4112,23 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree*     addr;
             GenTreeFlags indirFlags = GTF_EMPTY;
-            if (op1->OperIsIndir() && (fromSize != op1->AsIndir()->Size()))
+            if (varTypeIsIntegral(valType) && (genTypeSize(valType) < fromSize))
             {
                 unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
                 impAssignTempGen(lclNum, op1, CHECK_SPILL_ALL);
-                addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+                addr = gtNewLclVarAddrNode(lclNum, TYP_I_IMPL);
             }
             else
             {
                 addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
             }
+
+            if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
+                info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
+            {
+                indirFlags |= GTF_IND_UNALIGNED;
+            }
+
             return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
         }
 

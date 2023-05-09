@@ -881,7 +881,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            // TODO: verify if flags matter here
+            // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
@@ -985,7 +985,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            // TODO: verify if flags matter here
+            // TODO-Bug?: verify if flags matter here
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(dest, CHECK_SPILL_ALL, &indirFlags);
             call->gtArgs.InsertAfterThisOrFirst(this,
@@ -1105,7 +1105,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree* destAddr, GenTree* src, unsigned 
 //    val         - The value in question
 //    curLevel    - Stack level for spilling
 //    pDerefFlags - Flags to be used on dereference, nullptr when
-//                 the address won't be dereferenced
+//                 the address won't be dereferenced. Returned flags
+//                 are included in the GTF_IND_COPYABLE_FLAGS mask.
 //
 // Return Value:
 //    In case "val" can represent locations (is an indirection/local),
@@ -1114,13 +1115,17 @@ GenTree* Compiler::impAssignStructPtr(GenTree* destAddr, GenTree* src, unsigned 
 //
 GenTree* Compiler::impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags)
 {
+    if (pDerefFlags != nullptr)
+    {
+        *pDerefFlags = GTF_EMPTY;
+    }
     switch (val->OperGet())
     {
         case GT_BLK:
         case GT_IND:
             if (pDerefFlags != nullptr)
             {
-                *pDerefFlags |= (val->gtFlags & GTF_IND_FLAGS);
+                *pDerefFlags = val->gtFlags & GTF_IND_COPYABLE_FLAGS;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -3172,7 +3177,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
-                                        // TODO: verify if flags matter here
+                                        // TODO-Bug?: verify if flags matter here
                                         GenTreeFlags indirFlags = GTF_EMPTY;
                                         objToBox = impGetNodeAddr(objToBox, CHECK_SPILL_ALL, &indirFlags);
 
@@ -3527,7 +3532,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        // TODO: verify if flags matter here
+        // TODO-Bug?: verify if flags matter here
         GenTreeFlags indirFlags = GTF_EMPTY;
         op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, CHECK_SPILL_ALL, &indirFlags));
     }
@@ -9160,7 +9165,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 BADCODE("top of stack must be a value type");
                             }
 
-                            // TODO: verify if flags matter here
+                            // TODO-Bug?: verify if flags matter here
                             GenTreeFlags indirFlags = GTF_EMPTY;
                             obj                     = impGetNodeAddr(obj, CHECK_SPILL_ALL, &indirFlags);
                         }
