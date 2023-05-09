@@ -261,7 +261,9 @@ namespace System.Text
                     secondVector = Sse2.LoadAlignedVector128((ushort*)pBuffer + SizeOfVector128InChars);
                     Vector128<ushort> combinedVector = Sse2.Or(firstVector, secondVector);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                     if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                     {
                         // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                         // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -304,7 +306,9 @@ namespace System.Text
 
             firstVector = Sse2.LoadAlignedVector128((ushort*)pBuffer);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                 // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -337,7 +341,9 @@ namespace System.Text
                 pBuffer = (char*)((byte*)pBuffer + (bufferLength & (SizeOfVector128InBytes - 1)) - SizeOfVector128InBytes);
                 firstVector = Sse2.LoadVector128((ushort*)pBuffer); // unaligned load
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     // If a non-Latin-1 bit is set in any WORD of the combined vector, we have seen non-Latin-1 data.
                     // Jump to the non-Latin-1 handler to figure out which particular vector contained non-Latin-1 data.
@@ -371,7 +377,9 @@ namespace System.Text
             // we'll make sure the first vector local is the one that contains the non-Latin-1 data.
 
             // See comment earlier in the method for an explanation of how the below logic works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(firstVector, latin1MaskForTestZ))
                 {
@@ -446,7 +454,9 @@ namespace System.Text
 
             if ((bufferLength & 4) != 0)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Bmi1.X64 is considered supported or unsupported
                 if (Bmi1.X64.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     // If we can use 64-bit tzcnt to count the number of leading Latin-1 chars, prefer it.
 
@@ -781,7 +791,9 @@ namespace System.Text
             // If there's non-Latin-1 data in the first 8 elements of the vector, there's nothing we can do.
             // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {
@@ -821,7 +833,9 @@ namespace System.Text
                 utf16VectorFirst = Sse2.LoadVector128((short*)pUtf16Buffer + currentOffsetInElements); // unaligned load
 
                 // See comments earlier in this method for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                     {
@@ -860,7 +874,9 @@ namespace System.Text
                 Vector128<short> combinedVector = Sse2.Or(utf16VectorFirst, utf16VectorSecond);
 
                 // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
                 if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     if (!Sse41.TestZ(combinedVector, latin1MaskForTestZ))
                     {
@@ -894,7 +910,9 @@ namespace System.Text
 
             // Can we at least narrow the high vector?
             // See comments in GetIndexOfFirstNonLatin1Char_Sse2 for information about how this works.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Sse41 is considered supported or unsupported
             if (Sse41.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 if (!Sse41.TestZ(utf16VectorFirst, latin1MaskForTestZ))
                 {

@@ -356,6 +356,8 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse41))]
         private static int IndexOfAnyVectorized(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
             Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
@@ -367,7 +369,9 @@ namespace System.Buffers
             Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap));
             Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap), (nuint)Vector128<byte>.Count);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Avx2 is considered supported or unsupported
             if (Avx2.IsSupported && searchSpaceLength >= 32)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
                 Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);

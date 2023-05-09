@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Text.Unicode;
 using System.Numerics;
 
@@ -181,7 +182,7 @@ namespace System.Text
                     }
                 }
             }
-            else if (Vector256.IsHardwareAccelerated && right.Length >= Vector256<T>.Count)
+            else if (Avx.IsSupported && right.Length >= Vector256<T>.Count)
             {
                 ref T currentLeftSearchSpace = ref MemoryMarshal.GetReference(left);
                 ref T oneVectorAwayFromLeftEnd = ref Unsafe.Add(ref currentLeftSearchSpace, left.Length - Vector256<T>.Count);

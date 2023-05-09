@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -28,17 +29,25 @@ namespace IntrinsicsInSystemPrivateCoreLib
         // You can change these strings in the Resources.resx file. If you do not want your analyzer to be localize-able, you can use regular strings for Title and MessageFormat.
         // See https://github.com/dotnet/roslyn/blob/main/docs/analyzers/Localizing%20Analyzers.md for more on localization
         private const string Title = "System.Private.CoreLib ReadyToRun Intrinsics";
-        private const string MessageFormat = "Intrinsics from class '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag";
+        private const string MessageFormat = "Intrinsics from class '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or BypassReadyToRunForIntrinsicsHelperUse";
         private const string Description = "ReadyToRun Intrinsic Safety For System.Private.CoreLib.";
         private const string Category = "IntrinsicsCorrectness";
 
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
+        public const string DiagnosticIdHelper = "IntrinsicsInSystemPrivateCoreLibHelper";
+        private const string MessageHelperFormat = "Helper '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or BypassReadyToRunForIntrinsicsHelperUse";
+        private static readonly DiagnosticDescriptor RuleHelper = new DiagnosticDescriptor(DiagnosticIdHelper, Title, MessageHelperFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
+
         public const string DiagnosticIdConditionParsing = "IntrinsicsInSystemPrivateCoreLibConditionParsing";
         private const string MessageNonParseableConditionFormat = "Unable to parse condition to determine if intrinsics are correctly used";
         private static readonly DiagnosticDescriptor RuleCantParse = new DiagnosticDescriptor(DiagnosticIdConditionParsing, Title, MessageNonParseableConditionFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, RuleCantParse); } }
+        public const string DiagnosticIdAttributeNotSpecificEnough = "IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough";
+        private const string MessageAttributeNotSpecificEnoughFormat = "BypassReadyToRunForIntrinsicsHelperUse({0}) attribute found which relates to this IsSupported check, but is not specific enough. Suppress this error if this function has an appropriate if condition so that if the meaning of the function is invariant regardless of the result of the call to IsSupported.";
+        private static readonly DiagnosticDescriptor RuleAttributeNotSpecificEnough = new DiagnosticDescriptor(DiagnosticIdAttributeNotSpecificEnough, Title, MessageAttributeNotSpecificEnoughFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, RuleHelper, RuleCantParse, RuleAttributeNotSpecificEnough); } }
 
         private static INamespaceSymbol GetNamespace(IAssemblySymbol assembly, params string[] namespaceNames)
         {
@@ -110,7 +119,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
 
         private sealed class IntrinsicsAnalyzerOnLoadData
         {
-            public IntrinsicsAnalyzerOnLoadData(List<INamedTypeSymbol> namedTypesToBeProtected,
+            public IntrinsicsAnalyzerOnLoadData(HashSet<INamedTypeSymbol> namedTypesToBeProtected,
                                                 INamedTypeSymbol? bypassReadyToRunAttribute,
                                                 INamedTypeSymbol? bypassReadyToRunForIntrinsicsHelperUse)
             {
@@ -118,7 +127,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 BypassReadyToRunAttribute = bypassReadyToRunAttribute;
                 BypassReadyToRunForIntrinsicsHelperUse = bypassReadyToRunForIntrinsicsHelperUse;
             }
-            public readonly List<INamedTypeSymbol> NamedTypesToBeProtected;
+            public readonly HashSet<INamedTypeSymbol> NamedTypesToBeProtected;
             public readonly INamedTypeSymbol? BypassReadyToRunAttribute;
             public readonly INamedTypeSymbol? BypassReadyToRunForIntrinsicsHelperUse;
         }
@@ -129,7 +138,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
             context.EnableConcurrentExecution();
             context.RegisterCompilationStartAction(context =>
             {
-                List<INamedTypeSymbol> namedTypesToBeProtected = new List<INamedTypeSymbol>();
+                HashSet<INamedTypeSymbol> namedTypesToBeProtected = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
                 INamespaceSymbol systemRuntimeIntrinsicsNamespace = GetNamespace(context.Compilation.Assembly, "System", "Runtime", "Intrinsics");
                 INamedTypeSymbol? bypassReadyToRunAttribute = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunAttribute");
                 INamedTypeSymbol? bypassReadyToRunForIntrinsicsHelperUse = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunForIntrinsicsHelperUseAttribute");
@@ -175,7 +184,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                     {
                         AnalyzeOperation(context.Operation, methodSymbol, context, onLoadData);
                     },
-                    OperationKind.Invocation);
+                    OperationKind.Invocation, OperationKind.PropertyReference);
                 }, SymbolKind.Method);
             });
         }
@@ -201,6 +210,16 @@ namespace IntrinsicsInSystemPrivateCoreLib
             }
         }
 
+        private static INamedTypeSymbol? GetIsSupportedTypeSymbol(SemanticModel model, IdentifierNameSyntax identifierName)
+        {
+            var symbolInfo = model.GetSymbolInfo(identifierName);
+
+            if (identifierName.Identifier.Text == "IsSupported")
+                return symbolInfo.Symbol.ContainingSymbol as INamedTypeSymbol;
+            else
+                return null;
+        }
+
         private static INamedTypeSymbol[] GatherAndConditions(SemanticModel model, ExpressionSyntax expressionToDecompose)
         {
             if (expressionToDecompose is ParenthesizedExpressionSyntax parenthesizedExpression)
@@ -211,6 +230,16 @@ namespace IntrinsicsInSystemPrivateCoreLib
             if (expressionToDecompose is MemberAccessExpressionSyntax memberAccessExpression)
             {
                 var isSupportedType = GetIsSupportedTypeSymbol(model, memberAccessExpression);
+                if (isSupportedType == null)
+                {
+                    return Array.Empty<INamedTypeSymbol>();
+                }
+                else
+                    return new INamedTypeSymbol[] { isSupportedType };
+            }
+            else if (expressionToDecompose is IdentifierNameSyntax identifier)
+            {
+                var isSupportedType = GetIsSupportedTypeSymbol(model, identifier);
                 if (isSupportedType == null)
                 {
                     return Array.Empty<INamedTypeSymbol>();
@@ -243,36 +272,72 @@ namespace IntrinsicsInSystemPrivateCoreLib
             return Array.Empty<INamedTypeSymbol>();
         }
 
-        private static INamedTypeSymbol[][] DecomposeConditionForIsSupportedGroups(SemanticModel model, ExpressionSyntax expressionToDecompose)
+        private static INamedTypeSymbol[][] DecomposePropertySymbolForIsSupportedGroups_Property(OperationAnalysisContext context, SemanticModel model, ExpressionSyntax expressionToDecompose)
+        {
+            var symbolInfo = model.GetSymbolInfo(expressionToDecompose);
+            if (symbolInfo.Symbol.Kind != SymbolKind.Property)
+            {
+                return Array.Empty<INamedTypeSymbol[]>();
+            }
+
+            if (symbolInfo.Symbol.Name == "IsSupported")
+            {
+                var typeSymbol = symbolInfo.Symbol.ContainingSymbol as INamedTypeSymbol;
+                if (typeSymbol != null)
+                {
+                    return new INamedTypeSymbol[][] { new INamedTypeSymbol[] { typeSymbol } };
+                }
+            }
+
+            var propertyDefiningSyntax = symbolInfo.Symbol.DeclaringSyntaxReferences[0].GetSyntax();
+            if (propertyDefiningSyntax != null)
+            {
+                if (propertyDefiningSyntax is PropertyDeclarationSyntax propertyDeclaration
+                    && propertyDeclaration.ExpressionBody is ArrowExpressionClauseSyntax arrowExpression)
+                {
+                    return DecomposeConditionForIsSupportedGroups(context, model, arrowExpression.Expression);
+                }
+            }
+
+            return Array.Empty<INamedTypeSymbol[]>();
+        }
+
+        private static INamedTypeSymbol[][] DecomposeConditionForIsSupportedGroups(OperationAnalysisContext context, SemanticModel model, ExpressionSyntax expressionToDecompose)
         {
             if (expressionToDecompose is ParenthesizedExpressionSyntax parenthesizedExpression)
             {
-                return DecomposeConditionForIsSupportedGroups(model, parenthesizedExpression.Expression);
+                return DecomposeConditionForIsSupportedGroups(context, model, parenthesizedExpression.Expression);
             }
-            if (expressionToDecompose is MemberAccessExpressionSyntax memberAccessExpression)
+            if (expressionToDecompose is MemberAccessExpressionSyntax || expressionToDecompose is IdentifierNameSyntax)
             {
-                var isSupportedType = GetIsSupportedTypeSymbol(model, memberAccessExpression);
-                if (isSupportedType == null)
-                {
-                    return Array.Empty<INamedTypeSymbol[]>();
-                }
-                else
-                {
-                    return new INamedTypeSymbol[][] { new INamedTypeSymbol[] { isSupportedType } };
-                }
+                return DecomposePropertySymbolForIsSupportedGroups_Property(context, model, expressionToDecompose);
             }
             else if (expressionToDecompose is BinaryExpressionSyntax binaryExpression)
             {
-                var decomposedLeft = DecomposeConditionForIsSupportedGroups(model, binaryExpression.Left);
-                var decomposedRight = DecomposeConditionForIsSupportedGroups(model, binaryExpression.Right);
+                var decomposedLeft = DecomposeConditionForIsSupportedGroups(context, model, binaryExpression.Left);
+                var decomposedRight = DecomposeConditionForIsSupportedGroups(context, model, binaryExpression.Right);
                 if (binaryExpression.OperatorToken is SyntaxToken operatorToken && operatorToken.ValueText == "&&")
                 {
+                    if (decomposedLeft.Length == 0)
+                        return decomposedRight;
+                    else if (decomposedRight.Length == 0)
+                        return decomposedLeft;
+
+                    if ((decomposedLeft.Length > 1) || (decomposedRight.Length > 1))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
+                    }
+
                     return new INamedTypeSymbol[][] { GatherAndConditions(model, binaryExpression) };
                 }
                 else if (binaryExpression.OperatorToken is SyntaxToken operatorToken2 && operatorToken2.ValueText == "||")
                 {
                     if (decomposedLeft.Length == 0 || decomposedRight.Length == 0)
                     {
+                        if (decomposedLeft.Length != 0 || decomposedRight.Length != 0)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
+                        }
                         return Array.Empty<INamedTypeSymbol[]>();
                     }
                     var retVal = new INamedTypeSymbol[decomposedLeft.Length + decomposedRight.Length][];
@@ -280,11 +345,52 @@ namespace IntrinsicsInSystemPrivateCoreLib
                     Array.Copy(decomposedRight, 0, retVal, decomposedLeft.Length, decomposedRight.Length);
                     return retVal;
                 }
+                else
+                {
+                    if (decomposedLeft.Length != 0 || decomposedRight.Length != 0)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
+                    }
+                }
+            }
+            else if (expressionToDecompose is PrefixUnaryExpressionSyntax prefixUnaryExpression)
+            {
+                var decomposedOperand = DecomposeConditionForIsSupportedGroups(context, model, prefixUnaryExpression.Operand);
+
+                if (decomposedOperand.Length != 0)
+                    context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
+            }
+            else if (expressionToDecompose is ConditionalExpressionSyntax conditionalExpressionSyntax)
+            {
+                var decomposedTrue = DecomposeConditionForIsSupportedGroups(context, model, conditionalExpressionSyntax.WhenTrue);
+                var decomposedFalse = DecomposeConditionForIsSupportedGroups(context, model, conditionalExpressionSyntax.WhenFalse);
+                if (decomposedTrue.Length != 0 || decomposedFalse.Length != 0)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, expressionToDecompose.GetLocation()));
+                }
             }
             return Array.Empty<INamedTypeSymbol[]>();
         }
 
-        private static bool ConditionAllowsSymbol(ISymbol symbolOfInvokeTarget, INamedTypeSymbol namedTypeThatIsSafeToUse)
+        private static IEnumerable<INamedTypeSymbol> GetBypassForIntrinsicHelperUseList(ISymbol symbol, IntrinsicsAnalyzerOnLoadData onLoadData)
+        {
+            var bypassReadyToRunForIntrinsicsHelperUse = onLoadData.BypassReadyToRunForIntrinsicsHelperUse;
+            if (bypassReadyToRunForIntrinsicsHelperUse != null)
+            {
+                foreach (var attributeData in symbol.GetAttributes())
+                {
+                    if (attributeData.AttributeClass.Equals(bypassReadyToRunForIntrinsicsHelperUse, SymbolEqualityComparer.Default))
+                    {
+                        if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
+                        {
+                            yield return attributeTypeSymbol;
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool ConditionAllowsSymbol(ISymbol symbolOfInvokeTarget, INamedTypeSymbol namedTypeThatIsSafeToUse, IntrinsicsAnalyzerOnLoadData onLoadData)
         {
             HashSet<INamedTypeSymbol> examinedSymbols = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
             Stack<INamedTypeSymbol> symbolsToExamine = new Stack<INamedTypeSymbol>();
@@ -295,6 +401,12 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 INamedTypeSymbol symbol = symbolsToExamine.Pop();
                 if (symbolOfInvokeTarget.ContainingSymbol.Equals(symbol, SymbolEqualityComparer.Default))
                     return true;
+
+                foreach (var helperForType in GetBypassForIntrinsicHelperUseList(symbolOfInvokeTarget, onLoadData))
+                {
+                    if (helperForType.Equals(symbol, SymbolEqualityComparer.Default))
+                        return true;
+                }
 
                 examinedSymbols.Add(symbol);
                 if (symbol.ContainingType != null && !examinedSymbols.Contains(symbol.ContainingType))
@@ -328,6 +440,18 @@ namespace IntrinsicsInSystemPrivateCoreLib
             return false;
         }
 
+        private static INamespaceSymbol? SymbolToNamespaceSymbol(ISymbol symbol)
+        {
+            if (symbol.ContainingType != null)
+                return SymbolToNamespaceSymbol(symbol.ContainingType);
+
+            if (symbol.ContainingNamespace != null)
+            {
+                return symbol.ContainingNamespace;
+            }
+
+            return null;
+        }
         private static void AnalyzeOperation(IOperation operation, IMethodSymbol methodSymbol, OperationAnalysisContext context, IntrinsicsAnalyzerOnLoadData onLoadData)
         {
             var symbol = GetOperationSymbol(operation);
@@ -337,30 +461,31 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 return;
             }
 
-            if (methodSymbol.ContainingType.Equals(symbol.ContainingSymbol, SymbolEqualityComparer.Default))
+            bool methodNeedsProtectionWithIsSupported = false;
+#pragma warning disable RS1024
+            if (onLoadData.NamedTypesToBeProtected.Contains(symbol.ContainingSymbol))
+            {
+                methodNeedsProtectionWithIsSupported = true;
+            }
+#pragma warning restore RS1024
+
+            if (methodNeedsProtectionWithIsSupported && methodSymbol.ContainingType.Equals(symbol.ContainingSymbol, SymbolEqualityComparer.Default))
             {
                 return; // Intrinsic functions on their containing type can call themselves
             }
 
-            bool methodNeedsProtectionWithIsSupported = false;
-            foreach (var search in onLoadData.NamedTypesToBeProtected)
+            if (!methodNeedsProtectionWithIsSupported)
             {
-                if (search.Equals(symbol.ContainingSymbol, SymbolEqualityComparer.Default))
-                {
+                if (GetBypassForIntrinsicHelperUseList(symbol, onLoadData).Any())
                     methodNeedsProtectionWithIsSupported = true;
-                }
             }
 
             if (!methodNeedsProtectionWithIsSupported)
-                return;
-
-            if (symbol is IPropertySymbol propertySymbol)
             {
-                if (propertySymbol.Name == "IsSupported")
-                {
-                    return;
-                }
+                return;
             }
+
+            var bypassReadyToRunForIntrinsicsHelperUse = onLoadData.BypassReadyToRunForIntrinsicsHelperUse;
 
             ISymbol? symbolThatMightHaveIntrinsicsHelperAttribute = methodSymbol;
             IOperation operationSearch = operation;
@@ -382,19 +507,51 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 operationSearch = operationSearch.Parent;
             }
 
-            var bypassReadyToRunForIntrinsicsHelperUse = onLoadData.BypassReadyToRunForIntrinsicsHelperUse;
-            if ((bypassReadyToRunForIntrinsicsHelperUse != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
+            if (symbol is IPropertySymbol propertySymbol)
             {
-                foreach (var attributeData in symbolThatMightHaveIntrinsicsHelperAttribute.GetAttributes())
+                if (propertySymbol.Name == "IsSupported")
                 {
-                    if (attributeData.AttributeClass.Equals(bypassReadyToRunForIntrinsicsHelperUse, SymbolEqualityComparer.Default))
+                    ISymbol? attributeExplicitlyAllowsRelatedSymbol = null;
+                    if ((bypassReadyToRunForIntrinsicsHelperUse != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
                     {
-                        if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol && ConditionAllowsSymbol(symbol, attributeTypeSymbol))
+                        foreach (var attributeData in symbolThatMightHaveIntrinsicsHelperAttribute.GetAttributes())
                         {
-                            // This attribute indicates that this method will only be compiled into a ReadyToRun image if the behavior
-                            // of the associated IsSupported method is defined to a constant value during ReadyToRun compilation that cannot change at runtime
-                            return;
+                            if (attributeData.AttributeClass.Equals(bypassReadyToRunForIntrinsicsHelperUse, SymbolEqualityComparer.Default))
+                            {
+                                if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
+                                {
+                                    var namespaceAttributeTypeSymbol = SymbolToNamespaceSymbol(attributeTypeSymbol);
+                                    var namespaceSymbol = SymbolToNamespaceSymbol(symbol);
+                                    if ((namespaceAttributeTypeSymbol != null) && (namespaceSymbol != null))
+                                    {
+                                        if (!ConditionAllowsSymbol(symbol, attributeTypeSymbol, onLoadData) && namespaceAttributeTypeSymbol.Equals(namespaceSymbol, SymbolEqualityComparer.Default))
+                                        {
+                                            attributeExplicitlyAllowsRelatedSymbol = attributeTypeSymbol;
+                                        }
+                                    }
+                                }
+                            }
                         }
+                    }
+
+                    if (attributeExplicitlyAllowsRelatedSymbol != null)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleAttributeNotSpecificEnough, operation.Syntax.GetLocation(), attributeExplicitlyAllowsRelatedSymbol.ToDisplayString()));
+                    }
+
+                    return;
+                }
+            }
+
+            if (symbolThatMightHaveIntrinsicsHelperAttribute != null)
+            {
+                foreach (var attributeTypeSymbol in GetBypassForIntrinsicHelperUseList(symbolThatMightHaveIntrinsicsHelperAttribute, onLoadData))
+                {
+                    if (ConditionAllowsSymbol(symbol, attributeTypeSymbol, onLoadData))
+                    {
+                        // This attribute indicates that this method will only be compiled into a ReadyToRun image if the behavior
+                        // of the associated IsSupported method is defined to a constant value during ReadyToRun compilation that cannot change at runtime
+                        return;
                     }
                 }
             }
@@ -433,85 +590,76 @@ namespace IntrinsicsInSystemPrivateCoreLib
                     {
                         if (previousNode == syntaxOnPositiveCondition)
                         {
-                            var decomposedCondition = DecomposeConditionForIsSupportedGroups(operation.SemanticModel, condition);
-                            if (decomposedCondition.Length == 1)
+                            var decomposedCondition = DecomposeConditionForIsSupportedGroups(context, operation.SemanticModel, condition);
+
+                            if (decomposedCondition.Length == 0)
+                                return false;
+
+                            // Ensure every symbol found in the condition is only in 1 OR clause
+                            HashSet<ISymbol> foundSymbols = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+                            foreach (var andClause in decomposedCondition)
                             {
-                                foreach (var symbolFromCondition in decomposedCondition[0])
+                                foreach (var symbolInOrClause in andClause)
                                 {
-                                    if (ConditionAllowsSymbol(symbol, symbolFromCondition))
+                                    if (!foundSymbols.Add(symbolInOrClause))
                                     {
-                                        // There is a good IsSupported check with a positive check for the IsSupported call involved. Do not report.
+                                        context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, operation.Syntax.GetLocation()));
                                         return true;
                                     }
                                 }
                             }
-                            else if (decomposedCondition.Length > 1)
+
+                            // Determine which sets of conditions have been excluded
+                            List<int> includedClauses = new List<int>();
+                            for (int andClauseIndex = 0; andClauseIndex < decomposedCondition.Length; andClauseIndex++)
                             {
-                                // Ensure every symbol found in the condition is only in 1 OR clause
-                                HashSet<ISymbol> foundSymbols = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
-                                foreach (var andClause in decomposedCondition)
+                                bool foundMatchInAndClause = false;
+                                foreach (var symbolInAndClause in decomposedCondition[andClauseIndex])
                                 {
-                                    foreach (var symbolInOrClause in andClause)
+                                    foreach (var notType in notTypes)
                                     {
-                                        if (!foundSymbols.Add(symbolInOrClause))
+                                        if (TypeSymbolAllowsTypeSymbol(notType, symbolInAndClause))
                                         {
-                                            context.ReportDiagnostic(Diagnostic.Create(RuleCantParse, operation.Syntax.GetLocation()));
-                                            return true;
-                                        }
-                                    }
-                                }
-
-                                // Check to see if all of the OR conditions other than 1 have been eliminated via if statements excluding those symbols
-                                int indexNotExcluded = -1;
-                                for (int andClauseIndex = 0; andClauseIndex < decomposedCondition.Length; andClauseIndex++)
-                                {
-                                    bool foundMatchInAndClause = false;
-                                    foreach (var symbolInAndClause in decomposedCondition[andClauseIndex])
-                                    {
-                                        foreach (var notType in notTypes)
-                                        {
-                                            if (TypeSymbolAllowsTypeSymbol(notType, symbolInAndClause))
-                                            {
-                                                foundMatchInAndClause = true;
-                                                break;
-                                            }
-                                        }
-                                        if (foundMatchInAndClause)
-                                            break;
-                                    }
-
-                                    if (!foundMatchInAndClause)
-                                    {
-                                        if (indexNotExcluded == -1)
-                                        {
-                                            indexNotExcluded = andClauseIndex;
-                                        }
-                                        else
-                                        {
-                                            // Multiple And clause groups not excluded. We didn't find a unique one.
-                                            indexNotExcluded = -1;
+                                            foundMatchInAndClause = true;
                                             break;
                                         }
                                     }
+                                    if (foundMatchInAndClause)
+                                        break;
                                 }
 
-                                if (indexNotExcluded != -1)
+                                if (!foundMatchInAndClause)
                                 {
-                                    var andClause = decomposedCondition[indexNotExcluded];
-                                    foreach (var symbolFromCondition in andClause)
-                                    {
-                                        if (ConditionAllowsSymbol(symbol, symbolFromCondition))
-                                        {
-                                            // There is a good IsSupported check with a positive check for the IsSupported call involved. Do not report.
-                                            return true;
-                                        }
-                                    }
+                                    includedClauses.Add(andClauseIndex);
                                 }
                             }
+
+                            // Each one of these clauses must be supported by the function being called
+                            // or there is a lack of safety
+
+                            foreach (var clauseIndex in includedClauses)
+                            {
+                                bool clauseAllowsSymbol = false;
+
+                                var andClause = decomposedCondition[clauseIndex];
+                                foreach (var symbolFromCondition in andClause)
+                                {
+                                    if (ConditionAllowsSymbol(symbol, symbolFromCondition, onLoadData))
+                                    {
+                                        // There is a good IsSupported check with a positive check for the IsSupported call involved. Do not report.
+                                        clauseAllowsSymbol = true;
+                                    }
+                                }
+
+                                if (!clauseAllowsSymbol)
+                                    return false;
+                            }
+
+                            return true;
                         }
                         else if (previousNode == syntaxOnNegativeCondition)
                         {
-                            var decomposedCondition = DecomposeConditionForIsSupportedGroups(operation.SemanticModel, condition);
+                            var decomposedCondition = DecomposeConditionForIsSupportedGroups(context, operation.SemanticModel, condition);
                             if (decomposedCondition.Length == 1)
                             {
                                 foreach (var symbolFromCondition in decomposedCondition[0])
@@ -527,7 +675,10 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 previousNode = ancestorNode;
             }
 
-            context.ReportDiagnostic(Diagnostic.Create(Rule, operation.Syntax.GetLocation(), symbol.ContainingSymbol.ToDisplayString()));
+            if (onLoadData.NamedTypesToBeProtected.Contains(symbol.ContainingType))
+                context.ReportDiagnostic(Diagnostic.Create(Rule, operation.Syntax.GetLocation(), symbol.ContainingSymbol.ToDisplayString()));
+            else
+                context.ReportDiagnostic(Diagnostic.Create(RuleHelper, operation.Syntax.GetLocation(), symbol.ToDisplayString()));
         }
     }
 }
