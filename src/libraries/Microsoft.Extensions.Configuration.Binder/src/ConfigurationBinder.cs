@@ -50,15 +50,14 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
-            throw new InvalidOperationException();
-            //ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
 
-            //object? result = configuration.Get(typeof(T), configureOptions);
-            //if (result == null)
-            //{
-            //    return default(T);
-            //}
-            //return (T)result;
+            object? result = configuration.Get(typeof(T), configureOptions);
+            if (result == null)
+            {
+                return default(T);
+            }
+            return (T)result;
         }
 
         /// <summary>
@@ -91,14 +90,13 @@ namespace Microsoft.Extensions.Configuration
             Type type,
             Action<BinderOptions>? configureOptions)
         {
-            //ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
 
-            //var options = new BinderOptions();
-            //configureOptions?.Invoke(options);
-            //var bindingPoint = new BindingPoint();
-            //BindInstance(type, bindingPoint, config: configuration, options: options);
-            //return bindingPoint.Value;
-            throw new InvalidOperationException();
+            var options = new BinderOptions();
+            configureOptions?.Invoke(options);
+            var bindingPoint = new BindingPoint();
+            BindInstance(type, bindingPoint, config: configuration, options: options);
+            return bindingPoint.Value;
         }
 
         /// <summary>
@@ -110,10 +108,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, string key, object? instance)
-        {
-            throw new InvalidOperationException();
-        }
-        //=> configuration.GetSection(key).Bind(instance);
+            => configuration.GetSection(key).Bind(instance);
 
         /// <summary>
         /// Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.
@@ -135,16 +130,15 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
-            //ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(configuration);
 
-            //if (instance != null)
-            //{
-            //    var options = new BinderOptions();
-            //    configureOptions?.Invoke(options);
-            //    var bindingPoint = new BindingPoint(instance, isReadOnly: true);
-            //    BindInstance(instance.GetType(), bindingPoint, configuration, options);
-            //}
-            throw new InvalidOperationException();
+            if (instance != null)
+            {
+                var options = new BinderOptions();
+                configureOptions?.Invoke(options);
+                var bindingPoint = new BindingPoint(instance, isReadOnly: true);
+                BindInstance(instance.GetType(), bindingPoint, configuration, options);
+            }
         }
 
         /// <summary>
@@ -206,14 +200,13 @@ namespace Microsoft.Extensions.Configuration
             Type type, string key,
             object? defaultValue)
         {
-            throw new InvalidOperationException();
-            //IConfigurationSection section = configuration.GetSection(key);
-            //string? value = section.Value;
-            //if (value != null)
-            //{
-            //    return ConvertValue(type, value, section.Path);
-            //}
-            //return defaultValue;
+            IConfigurationSection section = configuration.GetSection(key);
+            string? value = section.Value;
+            if (value != null)
+            {
+                return ConvertValue(type, value, section.Path);
+            }
+            return defaultValue;
         }
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
@@ -378,7 +371,7 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
 
                     if (interfaceGenericType is not null &&
                         (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
@@ -660,7 +653,7 @@ namespace Microsoft.Extensions.Configuration
                         indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -698,7 +691,7 @@ namespace Microsoft.Extensions.Configuration
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -774,7 +767,7 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            bool elementTypeIsEnum  = elementType.IsEnum;
+            bool elementTypeIsEnum = elementType.IsEnum;
 
             if (elementType != typeof(string) && !elementTypeIsEnum)
             {
