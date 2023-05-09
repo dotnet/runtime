@@ -194,10 +194,6 @@ namespace
 #elif defined(TARGET_OSX)
         RID_CURRENT_ARCH_LIST("osx")
         RID_CURRENT_ARCH_LIST("unix")
-#elif defined(TARGET_LINUX_MUSL)
-        RID_CURRENT_ARCH_LIST("linux-musl")
-        RID_CURRENT_ARCH_LIST("linux")
-        RID_CURRENT_ARCH_LIST("unix")
 #elif defined(TARGET_ANDROID)
         RID_CURRENT_ARCH_LIST("linux-bionic")
         RID_CURRENT_ARCH_LIST("linux")
@@ -205,7 +201,10 @@ namespace
 #else
         // Covers non-portable RIDs
         RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS)
-#ifndef FALLBACK_OS_IS_SAME_AS_TARGET_OS
+#if defined(TARGET_LINUX_MUSL)
+        RID_CURRENT_ARCH_LIST("linux-musl")
+        RID_CURRENT_ARCH_LIST("linux")
+#elif !defined(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
         // Covers "linux" and non-linux like "freebsd", "illumos"
         RID_CURRENT_ARCH_LIST(CURRENT_OS_NAME)
 #endif
@@ -236,14 +235,14 @@ namespace
         return currentRid;
     }
 
-    void print_host_rid_list(const pal::string_t& host_rid, const pal::string_t& host_rid_no_arch)
+    void print_host_rid_list()
     {
         if (trace::is_enabled())
         {
             trace::verbose(_X("Host RID list = ["));
-            trace::verbose(_X("  %s,"), host_rid.c_str());
-            if (!host_rid_no_arch.empty())
-                trace::verbose(_X("  %s,"), host_rid_no_arch.c_str());
+            pal::string_t env_rid;
+            if (try_get_runtime_id_from_env(env_rid))
+                trace::verbose(_X("  %s,"), env_rid.c_str());
 
             for (const pal::char_t* rid : s_host_rids)
             {
@@ -253,20 +252,17 @@ namespace
         }
     }
 
-    bool try_get_matching_rid(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, const pal::string_t& host_rid, const pal::string_t& host_rid_no_arch, pal::string_t& out_rid)
+    bool try_get_matching_rid(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, pal::string_t& out_rid)
     {
-        // Check for exact match with the host RID
-        if (rid_assets.count(host_rid) != 0)
+        // Check for match with environment variable RID value
+        pal::string_t env_rid;
+        if (try_get_runtime_id_from_env(env_rid))
         {
-            out_rid = host_rid;
-            return true;
-        }
-
-        // Host RID without architecture
-        if (!host_rid_no_arch.empty() && rid_assets.count(host_rid_no_arch) != 0)
-        {
-            out_rid = host_rid_no_arch;
-            return true;
+            if (rid_assets.count(env_rid) != 0)
+            {
+                out_rid = env_rid;
+                return true;
+            }
         }
 
         // Use our list of known portable RIDs
@@ -322,15 +318,15 @@ namespace
 void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
 {
     assert(!m_rid_resolution_options.use_fallback_graph || m_rid_resolution_options.rid_fallback_graph != nullptr);
-    const pal::string_t host_rid = get_current_rid(m_rid_resolution_options.rid_fallback_graph);
 
-    pal::string_t host_rid_no_arch;
-    if (!m_rid_resolution_options.use_fallback_graph)
+    pal::string_t host_rid;
+    if (m_rid_resolution_options.use_fallback_graph)
     {
-        if (ends_with(host_rid, CURRENT_ARCH_SUFFIX, true))
-            host_rid_no_arch = host_rid.substr(0, host_rid.size() - STRING_LENGTH(CURRENT_ARCH_SUFFIX));
-
-        print_host_rid_list(host_rid, host_rid_no_arch);
+        host_rid = get_current_rid(m_rid_resolution_options.rid_fallback_graph);
+    }
+    else
+    {
+        print_host_rid_list();
     }
 
     for (auto& package : portable_assets->libs)
@@ -345,7 +341,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
             pal::string_t matched_rid;
             bool found_match = m_rid_resolution_options.use_fallback_graph
                 ? try_get_matching_rid_with_fallback_graph(rid_assets, host_rid, *m_rid_resolution_options.rid_fallback_graph, matched_rid)
-                : try_get_matching_rid(rid_assets, host_rid, host_rid_no_arch, matched_rid);
+                : try_get_matching_rid(rid_assets, matched_rid);
             if (!found_match)
             {
                 trace::verbose(_X("  No matching %s assets for package %s"), deps_entry_t::s_known_asset_types[asset_type_index], package.first.c_str());

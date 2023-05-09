@@ -252,7 +252,7 @@ const pal::char_t* get_current_arch_name()
 pal::string_t get_current_runtime_id(bool use_fallback)
 {
     pal::string_t rid;
-    if (pal::getenv(_X("DOTNET_RUNTIME_ID"), &rid))
+    if (try_get_runtime_id_from_env(rid))
         return rid;
 
     rid = pal::get_current_os_rid_platform();
@@ -266,6 +266,11 @@ pal::string_t get_current_runtime_id(bool use_fallback)
     }
 
     return rid;
+}
+
+bool try_get_runtime_id_from_env(pal::string_t& out_rid)
+{
+    return pal::getenv(_X("DOTNET_RUNTIME_ID"), &out_rid);
 }
 
 /**

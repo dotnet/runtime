@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x64", WindowsAssembly, $"{LinuxAssembly};{MacOSAssembly}")]
         [InlineData("linux-x64", LinuxAssembly, $"{MacOSAssembly};{WindowsAssembly}")]
         [InlineData("osx-x64", MacOSAssembly, $"{LinuxAssembly};{WindowsAssembly}")]
-        public void RidSpecificAssembly(string rid, string includedPath, string excludedPath)
+        public void RidSpecificAssembly_RidGraph(string rid, string includedPath, string excludedPath)
         {
             RidSpecificAssemblyImpl(
                 new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
@@ -190,7 +190,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x64", "win", "linux;osx")]
         [InlineData("linux-x64", "linux", "osx;win")]
         [InlineData("osx-x64", "osx", "linux;win")]
-        public void RidSpecificNativeLibrary(string rid, string includedPath, string excludedPath)
+        public void RidSpecificNativeLibrary_RidGraph(string rid, string includedPath, string excludedPath)
         {
             RidSpecificNativeLibraryImpl(
                 new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
@@ -265,7 +265,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x64", "win-x64/ManagedWin64.dll")]
         [InlineData("win10-x86", "win/ManagedWin.dll")]
         [InlineData("linux-x64", "any/ManagedAny.dll")]
-        public void MostSpecificRidAssemblySelected(string rid, string expectedPath)
+        public void MostSpecificRidAssemblySelected_RidGraph(string rid, string expectedPath)
         {
             RunTest(
                 p => p
@@ -276,6 +276,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new ResolvedPaths() { IncludedAssemblyPaths = expectedPath });
         }
 
+        // The build RID from the test context should match the build RID of the host under test
         private static string CurrentRid = RepoDirectoriesProvider.Default.BuildRID;
         private static string CurrentRidAsset = $"{CurrentRid}/{CurrentRid}Asset.dll";
 
@@ -300,7 +301,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(false, false, true)]
         [InlineData(false, false, false)]
         [InlineData(false, false, null)]
-        public void MostSpecificRidAssemblySelected_ComputedRid(bool includeCurrentArch, bool hasRuntimeFallbacks, bool? readRidGraph)
+        public void MostSpecificRidAssemblySelected(bool includeCurrentArch, bool hasRuntimeFallbacks, bool? readRidGraph)
         {
             // When not using the RID graph, the host uses the target OS for which it was built to determine applicable
             // RIDs that apply, so it can find both the arch-specific and the OS-only assets.
@@ -339,7 +340,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x64", "win-x64")]
         [InlineData("win10-x86", "win")]
         [InlineData("linux-x64", "any")]
-        public void MostSpecificRidNativeLibrarySelected(string rid, string expectedPath)
+        public void MostSpecificRidNativeLibrarySelected_RidGraph(string rid, string expectedPath)
         {
             RunTest(
                 p => p
@@ -363,7 +364,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(false, false, true)]
         [InlineData(false, false, false)]
         [InlineData(false, false, null)]
-        public void MostSpecificRidNativeLibrarySelected_ComputedRid(bool includeCurrentArch, bool hasRuntimeFallbacks, bool? readRidGraph)
+        public void MostSpecificRidNativeLibrarySelected(bool includeCurrentArch, bool hasRuntimeFallbacks, bool? readRidGraph)
         {
             // When not using the RID graph, the host uses the target OS for which it was built to determine applicable
             // RIDs that apply, so it can find both the arch-specific and the OS-only assets.
@@ -402,7 +403,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x64", "win/ManagedWin.dll", "native/win-x64")]
         [InlineData("win10-x86", "win/ManagedWin.dll", "native/win-x86")]
         [InlineData("linux-x64", "any/ManagedAny.dll", "native/linux")]
-        public void MostSpecificRidAssemblySelectedPerType(string rid, string expectedAssemblyPath, string expectedNativePath)
+        public void MostSpecificRidAssemblySelectedPerType_RidGraph(string rid, string expectedAssemblyPath, string expectedNativePath)
         {
             RunTest(
                 p => p
@@ -422,7 +423,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(false, null)]
-        public void MostSpecificRidAssemblySelectedPerType_ComputedRid(bool hasRuntimeFallbacks, bool? readRidGraph)
+        public void MostSpecificRidAssemblySelectedPerType(bool hasRuntimeFallbacks, bool? readRidGraph)
         {
             // When not using the RID graph, the host uses the target OS for which it was built to determine applicable
             // RIDs that apply, so it can find both the arch-specific and the OS-only assets.
@@ -462,7 +463,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         // For "linux" on the other hand the DependencyLib will be resolved because there are
         // no RID-specific assembly assets available.
         [InlineData("linux-x64", "DependencyLib.dll", "native/linux")]
-        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets(string rid, string expectedAssemblyPath, string expectedNativePath)
+        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets_RidGraph(string rid, string expectedAssemblyPath, string expectedNativePath)
         {
             RunTest(
                 assetsCustomizer: null,
@@ -496,7 +497,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(false, null)]
-        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets_ComputedRid(bool hasRuntimeFallbacks, bool? readRidGraph)
+        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets(bool hasRuntimeFallbacks, bool? readRidGraph)
         {
             // When not using the RID graph, the host uses the target OS for which it was built to determine applicable
             // RIDs that apply, so it can find both the arch-specific and the OS-only assets.
