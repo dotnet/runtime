@@ -3229,17 +3229,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (unusedVal1)
                     {
-                        impAppendTree(gtUnusedValNode(*val1), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val1), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
                     if (unusedVal2)
                     {
-                        impAppendTree(gtUnusedValNode(*val2), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val2), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
                     if (unusedVal3)
                     {
-                        impAppendTree(gtUnusedValNode(*val3), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val3), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
                     switch (info.oper1)
