@@ -239,6 +239,9 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84006</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
