@@ -3005,7 +3005,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         if (arg->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(arg->AsCall()))
                         {
                             impPopStack();
-                            // Bash the RET_EXPR to no-op since it's unused now
+                            // Bash the RET_EXPR's call to no-op since it's unused now
                             op1->AsRetExpr()->gtInlineCandidate->gtBashToNOP();
                             // Skip roundtrip and return the type handle directly
                             retNode = arg->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
