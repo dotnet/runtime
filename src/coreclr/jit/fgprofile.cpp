@@ -436,7 +436,7 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1220,6 +1220,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
         }
     }
+
+    // Notify visitor of remaining blocks
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        {
+            visitor->VisitBlock(block);
+        }
+    }
 }
 
 // Map a block into its schema key we will use for storing basic blocks.
@@ -1606,7 +1616,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -2125,7 +2135,7 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewAssignNode(tmpNode3, objUse->GetNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
@@ -2455,6 +2465,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
+    // Even though we haven't yet instrumented, we may have made changes in anticipation...
+    //
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const PhaseStatus earlyExitPhaseStatus =
+        madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
@@ -2478,13 +2494,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        return earlyExitPhaseStatus;
     }
 
     if (schema.size() == 0)
     {
         JITDUMP("Not instrumenting method: no schemas were created\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
@@ -2515,13 +2532,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
-            return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        // We may have modified control flow preparing for instrumentation.
-        //
-        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
-        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
@@ -2704,29 +2717,19 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     if (fgPgoHaveWeights)
     {
-        // We expect not to have both block and edge counts. We may have other
-        // forms of profile data even if we do not have any counts.
+        // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        // As of 4/6/2023 the following invariant check turns out to no longer hold.
-        // Tracking issue: https://github.com/dotnet/runtime/issues/84446
-        //
-        // assert(!haveBlockCounts || !haveEdgeCounts);
-
         bool dataIsGood = false;
 
-        if (haveBlockCounts)
-        {
-            dataIsGood = fgIncorporateBlockCounts();
-        }
-        else if (haveEdgeCounts)
+        if (haveEdgeCounts)
         {
             dataIsGood = fgIncorporateEdgeCounts();
         }
+        else if (haveBlockCounts)
+        {
+            dataIsGood = fgIncorporateBlockCounts();
+        }
 
-        // Profile incorporation may have tossed out all PGO data if it
-        // encountered major issues. This is perhaps too drastic. Consider
-        // at least keeping the class profile data, or perhaps enable full synthesis.
-        //
         // If profile incorporation hit fixable problems, run synthesis in blend mode.
         //
         if (fgPgoHaveWeights && !dataIsGood)
@@ -3294,6 +3297,15 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
+    // If we have dynamic PGO data, we don't expect to see any mismatches,
+    // since the schema we got from the runtime should have come from the
+    // exact same JIT and IL, created in an earlier tier.
+    //
+    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+    {
+        assert(!m_mismatch);
+    }
+
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
@@ -3551,10 +3563,9 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        // Make sure nothing else in the jit looks at the profile data.
+        // Make sure nothing else in the jit looks at the count profile data.
         //
         m_comp->fgPgoHaveWeights = false;
-        m_comp->fgPgoSchema      = nullptr;
 
         if (m_badcode)
         {
@@ -3573,7 +3584,7 @@ void EfficientEdgeCountReconstructor::Propagate()
             m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
         }
 
-        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
+        JITDUMP("... discarding profile count data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 

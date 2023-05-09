@@ -737,7 +737,6 @@
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.so</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$([MSBuild]::NormalizePath('$(MonoLLVMDir)', '$(BuildArchitecture)', 'bin', 'libclang.dll'))</MonoLibClang>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
       <_ForceRelease Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(Configuration)' == 'Debug'">true</_ForceRelease>
     </PropertyGroup>
 

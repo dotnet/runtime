@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 var index = i;
                 var service = new DelegateHostedService(() => { events[index, 0] = true; }, () => { events[index, 1] = true; } , () => { });
-
+                service.Identifier = index;
                 hostedServices[index] = service;
             }
 
@@ -92,8 +92,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.False(events[i, 1]);
             }
 
-            // Ensures that IHostedService instances are started in FIFO order
-            AssertExtensions.CollectionEqual(hostedServices, hostedServices.OrderBy(h => h.StartDate), EqualityComparer<DelegateHostedService>.Default);
+            // Ensures that IHostedService instances are started in FIFO order when services are started non concurrently
+            if (hostedServiceCount > 0 && !startConcurrently)
+            {
+                AssertExtensions.Equal(hostedServices, hostedServices.OrderBy(h => h.StartDate).ToArray());
+            }
 
             await host.StopAsync(CancellationToken.None);
 
@@ -103,8 +106,11 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.True(events[i, 1]);
             }
 
-            // Ensures that IHostedService instances are stopped in LIFO order
-            AssertExtensions.CollectionEqual(hostedServices.Reverse(), hostedServices.OrderBy(h => h.StopDate), EqualityComparer<DelegateHostedService>.Default);
+            // Ensures that IHostedService instances are stopped in LIFO order  when services are stopped non concurrently
+            if (hostedServiceCount > 0 && !stopConcurrently)
+            {
+                AssertExtensions.Equal(hostedServices, hostedServices.OrderByDescending(h => h.StopDate).ToArray());
+            }
         }
 
         [Fact]

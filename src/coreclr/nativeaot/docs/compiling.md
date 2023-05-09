@@ -127,3 +127,6 @@ Alpine
 ```sh
 apk add cmake openssl-dev openssl-libs-static
 ```
+
+## NixOS
+NativeAOT uses native executable `ilc` pulled from nuget, which has special requirements. Docs can be found at https://nixos.wiki/wiki/DotNET#NativeAOT

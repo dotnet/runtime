@@ -192,11 +192,8 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        // Do not copy propagate if the old and new lclVar have different 'doNotEnregister' settings.
-        // This is primarily to avoid copy propagating to IND(ADDR(LCL_VAR)) where the replacement lclVar
-        // is not marked 'lvDoNotEnregister'.
-        // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
-        // existing use of an enregisterable lclVar.
+        // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
+        // enregisterable lclVar.
         LclVarDsc* const newLclVarDsc = lvaGetDesc(newLclNum);
         if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
@@ -285,8 +282,8 @@ bool Compiler::optCopyProp(
 // optCopyPropPushDef: Push the new live SSA def on the stack for "lclNode".
 //
 // Arguments:
-//    defNode    - The definition node for this def (GT_ASG/GT_CALL) (will be "nullptr" for "use" defs)
-//    lclNode    - The local tree representing "the def" (that can actually be a use)
+//    defNode    - The definition node for this def (store/GT_CALL) (will be "nullptr" for "use" defs)
+//    lclNode    - The local tree representing "the def"
 //    curSsaName - The map of local numbers to stacks of their defs
 //
 void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName)
@@ -392,8 +389,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             {
                 optCopyPropPushDef(tree, lclDefNode, curSsaName);
             }
-            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((tree->gtFlags & GTF_VAR_DEF) == 0) &&
-                     tree->AsLclVarCommon()->HasSsaName())
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {
                 unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 

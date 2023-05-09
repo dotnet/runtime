@@ -43,7 +43,6 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebCil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" />
 
   <PropertyGroup>
-    <SelfContained>true</SelfContained>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 
     <!-- Runtime feature defaults to trim unnecessary code -->

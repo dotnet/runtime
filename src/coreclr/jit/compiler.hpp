@@ -1230,6 +1230,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             break;
 #endif
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetLayout(nullptr);
             break;
@@ -1241,7 +1242,12 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
@@ -3189,28 +3195,15 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
 
-    // iterTree should be "lcl ASG lcl <op> const"
+    // iterTree should be "lcl = lcl <op> const"
 
-    assert(lpIterTree->OperIs(GT_ASG));
+    assert(lpIterTree->OperIs(GT_STORE_LCL_VAR));
 
-    const GenTree* lhs = lpIterTree->AsOp()->gtOp1;
-    const GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    assert(lhs->OperGet() == GT_LCL_VAR);
-
-    switch (rhs->gtOper)
-    {
-        case GT_ADD:
-        case GT_SUB:
-        case GT_MUL:
-        case GT_RSH:
-        case GT_LSH:
-            break;
-        default:
-            assert(!"Unknown operator for loop increment");
-    }
-    assert(rhs->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
-    assert(rhs->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
-    assert(rhs->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
+    const GenTree* value = lpIterTree->AsLclVar()->Data();
+    assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
+    assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
+    assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
+    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
 #endif
 }
 
@@ -3219,7 +3212,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 inline unsigned Compiler::LoopDsc::lpIterVar() const
 {
     VERIFY_lpIterTree();
-    return lpIterTree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+    return lpIterTree->AsLclVar()->GetLclNum();
 }
 
 //-----------------------------------------------------------------------------
@@ -3227,8 +3220,8 @@ inline unsigned Compiler::LoopDsc::lpIterVar() const
 inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return (int)rhs->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    GenTree* value = lpIterTree->AsLclVar()->Data();
+    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
 }
 
 //-----------------------------------------------------------------------------
@@ -3236,8 +3229,7 @@ inline int Compiler::LoopDsc::lpIterConst() const
 inline genTreeOps Compiler::LoopDsc::lpIterOper() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return rhs->OperGet();
+    return lpIterTree->AsLclVar()->Data()->OperGet();
 }
 
 inline var_types Compiler::LoopDsc::lpIterOperType() const
@@ -3246,11 +3238,6 @@ inline var_types Compiler::LoopDsc::lpIterOperType() const
 
     var_types type = lpIterTree->TypeGet();
     assert(genActualType(type) == TYP_INT);
-
-    if ((lpIterTree->gtFlags & GTF_UNSIGNED) && type == TYP_INT)
-    {
-        type = TYP_UINT;
-    }
 
     return type;
 }
@@ -3985,7 +3972,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
-        case GT_FIELD:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:

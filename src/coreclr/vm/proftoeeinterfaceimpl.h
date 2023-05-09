@@ -727,6 +727,10 @@ public:
     COM_METHOD EnumerateNonGCObjects(
         ICorProfilerObjectEnum** ppEnum);
 
+    COM_METHOD GetNonGCHeapBounds(ULONG cObjectRanges,
+                                  ULONG * pcObjectRanges,
+                                  COR_PRF_NONGC_HEAP_RANGE ranges[]);
+
     // end ICorProfilerInfo14
 
 protected:
