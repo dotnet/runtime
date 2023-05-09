@@ -19,6 +19,7 @@ import sys
 import tempfile
 import logging
 import time
+import tarfile
 import urllib
 import urllib.request
 import zipfile
@@ -687,7 +688,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
             is_item_url = is_url(item_path)
             item_name = item_path.split("/")[-1] if is_item_url else os.path.basename(item_path)
 
-            if item_path.lower().endswith(".zip"):
+            if item_path.lower().endswith(".zip") or item_path.lower().endswith(".tar.gz"):
                 # Delete everything in the temp_location (from previous iterations of this loop, so previous URL downloads).
                 temp_location_items = [os.path.join(temp_location, item) for item in os.listdir(temp_location)]
                 for item in temp_location_items:
@@ -709,16 +710,22 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, is_a
 
                 if verbose:
                     logging.info("Uncompress %s", download_path)
-                with zipfile.ZipFile(download_path, "r") as file_handle:
-                    file_handle.extractall(temp_location)
+
+                if item_path.lower().endswith(".zip"):
+                    with zipfile.ZipFile(download_path, "r") as file_handle:
+                        file_handle.extractall(temp_location)
+                else:
+                    with tarfile.open(download_path, "r") as file_handle:
+                        file_handle.extractall(temp_location)
 
                 # Copy everything that was extracted to the target directory.
-                copy_directory(temp_location, target_dir, verbose_copy=verbose, match_func=lambda path: not path.endswith(".zip"))
+                copy_directory(temp_location, target_dir, verbose_copy=verbose,
+                               match_func=lambda path: not path.endswith(".zip") and not path.endswith(".tar.gz"))
 
                 # The caller wants to know where all the files ended up, so compute that.
                 for dirpath, _, files in os.walk(temp_location, topdown=True):
                     for file_name in files:
-                        if not file_name.endswith(".zip"):
+                        if not file_name.endswith(".zip") and not file_name.endswith(".tar.gz"):
                             full_file_path = os.path.join(dirpath, file_name)
                             target_path = full_file_path.replace(temp_location, target_dir)
                             local_paths.append(target_path)
