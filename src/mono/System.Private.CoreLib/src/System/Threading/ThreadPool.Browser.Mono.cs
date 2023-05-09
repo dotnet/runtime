@@ -16,7 +16,7 @@ namespace System.Threading
 #if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif
-    public sealed class RegisteredWaitHandle : MarshalByRefObject
+    public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle()
         {
