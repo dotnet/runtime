@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AbstractOrInterfaceNotSupported">
         <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="new">Abstract or interface types are not supported: '{0}'.</target>
+        <target state="translated">추상 또는 인터페이스 유형은 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
-        <target state="new">The collection type is not supported: '{0}'.</target>
+        <target state="translated">컬렉션 유형이 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
-        <target state="new">The dictionary key type is not supported: '{0}'.</target>
+        <target state="translated">사전 키 유형이 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypeNotSupported">
         <source>The collection element type is not supported: '{0}'.</source>
-        <target state="new">The collection element type is not supported: '{0}'.</target>
+        <target state="translated">컬렉션 요소 유형이 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
@@ -34,17 +34,17 @@
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
-        <target state="new">Multidimensional arrays are not supported: '{0}'.</target>
+        <target state="translated">다차원 배열은 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NeedPublicParameterlessConstructor">
         <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="new">Only objects with public parameterless constructors are supported: '{0}'.</target>
+        <target state="translated">공용 매개 변수 없는 생성자가 있는 개체만 지원됩니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
         <source>Nullable underlying type is not supported: '{0}'.</source>
-        <target state="new">Nullable underlying type is not supported: '{0}'.</target>
+        <target state="translated">Null 허용 기본 유형이 지원되지 않습니다: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
-        <target state="new">The type is not supported: '{0}'.</target>
+        <target state="translated">지원되지 않는 유형: '{0}'.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">

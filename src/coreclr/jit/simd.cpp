@@ -453,7 +453,7 @@ GenTree* Compiler::impSIMDPopStack()
     // Handle calls that may return the struct via a return buffer.
     if (tree->OperIs(GT_CALL, GT_RET_EXPR))
     {
-        tree = impNormStructVal(tree, se.seTypeInfo.GetClassHandle(), CHECK_SPILL_ALL);
+        tree = impNormStructVal(tree, CHECK_SPILL_ALL);
     }
 
     return tree;
@@ -689,69 +689,43 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize)
 {
     assert(tree->OperIs(GT_IND));
-    GenTree*  addr      = tree->AsIndir()->Addr();
-    GenTree*  byrefNode = nullptr;
-    unsigned  offset    = 0;
-    var_types baseType  = tree->gtType;
+    GenTree* addr = tree->AsIndir()->Addr();
 
     if (addr->OperIs(GT_FIELD_ADDR))
     {
         assert(addr->AsFieldAddr()->IsInstance());
 
+        // If the field is directly from a struct, then in this case, we should set this
+        // struct's lvUsedInSIMDIntrinsic as true, so that this sturct won't be promoted.
         GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
-        if (objRef->IsLclVarAddr())
+        if (objRef->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
         {
-            // If the field is directly from a struct, then in this case,
-            // we should set this struct's lvUsedInSIMDIntrinsic as true,
-            // so that this sturct won't be promoted.
-            // e.g. s.x x is a field, and s is a struct, then we should set the s's lvUsedInSIMDIntrinsic as true.
-            // so that s won't be promoted.
-            // Notice that if we have a case like s1.s2.x. s1 s2 are struct, and x is a field, then it is possible that
-            // s1 can be promoted, so that s2 can be promoted. The reason for that is if we don't allow s1 to be
-            // promoted, then this will affect the other optimizations which are depend on s1's struct promotion.
-            // TODO-CQ:
-            //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
-            //  address is used for initializing the vector, then s1 can be promoted but s2 can't.
-            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
-            {
-                setLclRelatedToSIMDIntrinsic(objRef);
-            }
+            setLclRelatedToSIMDIntrinsic(objRef);
         }
 
-        // TODO-FIELD: this seems unnecessary. Simply "return addr;"?
-        byrefNode = gtCloneExpr(objRef);
-        assert(byrefNode != nullptr);
-        offset = addr->AsFieldAddr()->gtFldOffset;
-    }
-    else
-    {
-        GenTree* arrayRef = addr->AsIndexAddr()->Arr();
-        GenTree* index    = addr->AsIndexAddr()->Index();
-        assert(index->IsCnsIntOrI());
-
-        GenTree* checkIndexExpr = nullptr;
-        unsigned indexVal       = (unsigned)index->AsIntCon()->gtIconVal;
-        offset                  = indexVal * genTypeSize(tree->TypeGet());
-
-        // Generate the boundary check exception.
-        // The length for boundary check should be the maximum index number which should be
-        // (first argument's index number) + (how many array arguments we have) - 1
-        // = indexVal + arrayElementsCount - 1
-        unsigned arrayElementsCount = simdSize / genTypeSize(simdBaseType);
-        checkIndexExpr              = gtNewIconNode(indexVal + arrayElementsCount - 1);
-        GenTreeArrLen*    arrLen    = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
-        GenTreeBoundsChk* arrBndsChk =
-            new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
-
-        offset += OFFSETOF__CORINFO_Array__data;
-        byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
+        return addr;
     }
 
-    GenTree* address = byrefNode;
-    if (offset != 0)
-    {
-        address = gtNewOperNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(offset, TYP_I_IMPL));
-    }
+    GenTree* arrayRef = addr->AsIndexAddr()->Arr();
+    GenTree* index    = addr->AsIndexAddr()->Index();
+    assert(index->IsCnsIntOrI());
+
+    unsigned indexVal = (unsigned)index->AsIntCon()->gtIconVal;
+    unsigned offset   = indexVal * genTypeSize(tree->TypeGet());
+
+    // Generate the boundary check exception.
+    // The length for boundary check should be the maximum index number which should be
+    // (first argument's index number) + (how many array arguments we have) - 1 = indexVal + arrayElementsCount - 1
+    //
+    unsigned          arrayElementsCount = simdSize / genTypeSize(simdBaseType);
+    GenTree*          checkIndexExpr     = gtNewIconNode(indexVal + arrayElementsCount - 1);
+    GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
+    GenTreeBoundsChk* arrBndsChk =
+        new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
+
+    offset += OFFSETOF__CORINFO_Array__data;
+    GenTree* address = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
+    address          = gtNewOperNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(offset, TYP_I_IMPL));
 
     return address;
 }
@@ -773,14 +747,14 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
     GenTree* expr = stmt->GetRootNode();
     if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
     {
-        GenTree*    curDst          = expr->AsOp()->gtOp1;
-        GenTree*    curSrc          = expr->AsOp()->gtOp2;
-        unsigned    index           = 0;
-        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize        = 0;
-        GenTree*    srcSimdLclAddr  = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
+        GenTree*  curDst         = expr->AsOp()->gtOp1;
+        GenTree*  curSrc         = expr->AsOp()->gtOp2;
+        unsigned  index          = 0;
+        var_types simdBaseType   = curSrc->TypeGet();
+        unsigned  simdSize       = 0;
+        GenTree*  srcSimdLclAddr = getSIMDStructFromField(curSrc, &index, &simdSize, true);
 
-        if (srcSimdLclAddr == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
+        if (srcSimdLclAddr == nullptr || simdBaseType != TYP_FLOAT)
         {
             fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
         }
@@ -791,10 +765,9 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
         else if (fgPreviousCandidateSIMDFieldAsgStmt != nullptr)
         {
             assert(index > 0);
-            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-            GenTree*  prevAsgExpr  = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
-            GenTree*  prevDst      = prevAsgExpr->AsOp()->gtOp1;
-            GenTree*  prevSrc      = prevAsgExpr->AsOp()->gtOp2;
+            GenTree* prevAsgExpr = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
+            GenTree* prevDst     = prevAsgExpr->AsOp()->gtOp1;
+            GenTree* prevSrc     = prevAsgExpr->AsOp()->gtOp2;
             if (!areArgumentsContiguous(prevDst, curDst) || !areArgumentsContiguous(prevSrc, curSrc))
             {
                 fgPreviousCandidateSIMDFieldAsgStmt = nullptr;

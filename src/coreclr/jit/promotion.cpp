@@ -627,7 +627,7 @@ bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
 //       LCL_VAR int V01
 //
 // Parameters:
-//   compiler     - Compiler instance
+//   compiler - Compiler instance
 //   structLclNum - Struct local
 //   replacement  - Information about the replacement
 //
@@ -651,7 +651,7 @@ GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, c
 //       LCL_FLD int V00 [+4]
 //
 // Parameters:
-//   compiler     - Compiler instance
+//   compiler - Compiler instance
 //   structLclNum - Struct local
 //   replacement  - Information about the replacement
 //
