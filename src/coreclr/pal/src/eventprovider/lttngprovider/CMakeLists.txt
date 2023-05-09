@@ -62,7 +62,7 @@ add_dependencies(coreclrtraceptprovider generated_eventing_headers)
 
 find_library(LTTNG NAMES lttng-ust)
 
-# --noinhibit-exec works around error in lld from LLVM 16
+# --noinhibit-exec works around error produced by lld from LLVM 16
 # that is caused by invalid symbols in the lttng we are linking against:
 # ld.lld: error: liblttng-ust.so: invalid local symbol '__stop___tracepoints_ptrs' in global part of symbol table
 # see https://github.com/llvm/llvm-project/commit/3ac94280245415be66cb1b603367c5f4f6d498e7
