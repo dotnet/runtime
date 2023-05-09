@@ -37,11 +37,12 @@ namespace System.Reflection
 
         // Performance metric to count the number of assemblies
         // Caching since in NativeAOT, the number will be the same
-        private static uint? s_assemblyCount;
+        private static uint s_assemblyCount;
         internal static uint GetAssemblyCount()
         {
-            s_assemblyCount ??= (uint)AppDomain.CurrentDomain.GetAssemblies().Length;
-            return (uint)s_assemblyCount;
+            if (s_assemblyCount == 0)
+                s_assemblyCount = (uint)AppDomain.CurrentDomain.GetAssemblies().Length;
+            return s_assemblyCount;
         }
 
         [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]
