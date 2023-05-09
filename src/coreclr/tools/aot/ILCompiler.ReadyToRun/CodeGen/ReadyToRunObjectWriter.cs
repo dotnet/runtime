@@ -295,11 +295,12 @@ namespace ILCompiler.DependencyAnalysis
 
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.GetSection(_nodeFactory));
                     lastWrittenObjectNode = node;
-
-                    if (_outputInfoBuilder != null && node is MethodWithGCInfo methodNode)
-                    {
+                }
+                
+                if (_outputInfoBuilder != null)
+                {
+                    foreach (MethodWithGCInfo methodNode in _nodeFactory.EnumerateCompiledMethods())
                         _outputInfoBuilder.AddMethod(methodNode, nodeContents.DefinedSymbols[0]);
-                    }
                 }
 
                 // Emit cold method nodes to end of execution section.
