@@ -1104,6 +1104,14 @@ uint32_t interceptor_ICJI::getNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE fie
     return result;
 }
 
+uint32_t interceptor_ICJI::getGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    mc->cr->AddCall("getGCThreadLocalFieldInfo");
+    uint32_t result = original_ICorJitInfo->getGCThreadLocalFieldInfo(field);
+    mc->recGetGCThreadLocalFieldInfo(field, result);
+    return result;
+}
+
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");

@@ -3655,6 +3655,33 @@ uint32_t MethodContext::repGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE fie
     return value;
 }
 
+void MethodContext::recGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+{
+    if (GetGCThreadLocalFieldInfo == nullptr)
+        GetGCThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = 0;
+
+    key = CastHandle(field);
+    GetGCThreadLocalFieldInfo->Add(key, result);
+    DEBUG_REC(dmpGetGCThreadLocalFieldInfo(key, result));
+}
+
+void MethodContext::dmpGetGCThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+{
+    printf("GetGCThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+}
+
+uint32_t MethodContext::repGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    DWORDLONG key   = CastHandle(field);
+    DWORD     value = LookupByKeyOrMiss(GetGCThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+
+    DEBUG_REP(dmpGetNonGCThreadLocalFieldInfo(key, value));
+
+    return value;
+}
+
 void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     if (GetThreadLocalStaticBlocksInfo == nullptr)

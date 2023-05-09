@@ -39,6 +39,7 @@ LWM(EmbedGenericHandle, Agnostic_EmbedGenericHandle, Agnostic_CORINFO_GENERICHAN
 LWM(EmbedMethodHandle, DWORDLONG, DLDL)
 LWM(EmbedModuleHandle, DWORDLONG, DLDL)
 LWM(GetNonGCThreadLocalFieldInfo, DWORDLONG, DWORD)
+LWM(GetGCThreadLocalFieldInfo, DWORDLONG, DWORD)
 LWM(GetThreadLocalStaticBlocksInfo, DWORD, Agnostic_GetThreadLocalStaticBlocksInfo)
 DENSELWM(EmptyStringLiteral, DLD)
 DENSELWM(ErrorList, DWORD)

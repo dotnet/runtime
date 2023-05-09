@@ -1811,6 +1811,30 @@ uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 }
 
 /*********************************************************************/
+uint32_t CEEInfo::getGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    UINT32 typeIndex = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* fieldDesc = (FieldDesc*)field;
+    _ASSERTE(fieldDesc->IsThreadStatic());
+
+    typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+
+    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+    
+    EE_TO_JIT_TRANSITION();
+    return typeIndex;
+}
+
+/*********************************************************************/
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
@@ -1834,6 +1858,17 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 }
 #else
 uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    return 0;
+}
+
+uint32_t CEEInfo::getGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
         NOTHROW;

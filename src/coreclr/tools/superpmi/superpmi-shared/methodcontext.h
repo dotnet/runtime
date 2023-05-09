@@ -489,6 +489,10 @@ public:
     void     dmpGetNonGCThreadLocalFieldInfo(DWORDLONG key, DWORD value);
     uint32_t repGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
+    void     recGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
+    void     dmpGetGCThreadLocalFieldInfo(DWORDLONG key, DWORD value);
+    uint32_t repGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+
     void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
     void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
@@ -1185,9 +1189,10 @@ enum mcPackets
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
     Packet_GetNonGCThreadLocalFieldInfo = 207,
-    Packet_GetThreadLocalStaticBlocksInfo = 208,
-    Packet_GetRISCV64PassStructInRegisterFlags = 209,
-    Packet_GetObjectContent = 210,
+    Packet_GetGCThreadLocalFieldInfo = 208,
+    Packet_GetThreadLocalStaticBlocksInfo = 209,
+    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    Packet_GetObjectContent = 211,
 };
 
 void SetDebugDumpVariables();

@@ -980,6 +980,15 @@ uint32_t WrapICorJitInfo::getNonGCThreadLocalFieldInfo(
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getGCThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    API_ENTER(getGCThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getGCThreadLocalFieldInfo(field);
+    API_LEAVE(getGCThreadLocalFieldInfo);
+    return temp;
+}
+
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
