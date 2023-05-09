@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AbstractOrInterfaceNotSupported">
         <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="new">Abstract or interface types are not supported: '{0}'.</target>
+        <target state="translated">Les types abstract ou interface ne sont pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
-        <target state="new">The collection type is not supported: '{0}'.</target>
+        <target state="translated">Le type de collection n‘est pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
         <source>The dictionary key type is not supported: '{0}'.</source>
-        <target state="new">The dictionary key type is not supported: '{0}'.</target>
+        <target state="translated">Le type de clé du dictionnaire n’est pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="ElementTypeNotSupported">
         <source>The collection element type is not supported: '{0}'.</source>
-        <target state="new">The collection element type is not supported: '{0}'.</target>
+        <target state="translated">Le type d‘élément collection n‘est pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
@@ -34,17 +34,17 @@
       </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
-        <target state="new">Multidimensional arrays are not supported: '{0}'.</target>
+        <target state="translated">Les tableaux multidimensionnels ne sont pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="NeedPublicParameterlessConstructor">
         <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="new">Only objects with public parameterless constructors are supported: '{0}'.</target>
+        <target state="translated">Seuls les objets avec des constructeurs sans paramètre publics sont pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
         <source>Nullable underlying type is not supported: '{0}'.</source>
-        <target state="new">Nullable underlying type is not supported: '{0}'.</target>
+        <target state="translated">Le type sous-jacent pouvant accepter la valeur Null n’est pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -59,7 +59,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
-        <target state="new">The type is not supported: '{0}'.</target>
+        <target state="translated">Le type n‘est pas pris en charge : ‘{0}‘.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">

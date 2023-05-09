@@ -9,9 +9,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Interop.Analyzers;
 using Xunit;
-using static Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
     Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer,
     Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer>;
 
@@ -488,6 +487,222 @@ namespace LibraryImportGenerator.UnitTests
                 }
                 """;
             await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
+        }
+
+        [InlineData(CharSet.Ansi, 'A')]
+        [InlineData(CharSet.Unicode, 'W')]
+        [Theory]
+        public async Task SuffixPresent_ExactSpelling_False_NoAutoCharSet_Provides_No_Suffix_And_Suffix_Fix(CharSet charSet, char suffix)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", EntryPoint = "Entry{{suffix}}", ExactSpelling = false, CharSet = CharSet.{{charSet}})]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceNoSuffix = $$"""
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "Entry{{suffix}}")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task SuffixWPresent_ExactSpelling_False_AutoCharSet_Provides_No_Suffix_And_Both_Suffix_Fixes()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", EntryPoint = "EntryW", ExactSpelling = false, CharSet = CharSet.Auto)]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceNoSuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "EntryW")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "EntryWA")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A,");
+        }
+
+        [Fact]
+        public async Task SuffixAPresent_ExactSpelling_False_AutoCharSet_Provides_No_Suffix_And_Both_Suffix_Fixes()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", EntryPoint = "EntryA", ExactSpelling = false, CharSet = CharSet.Auto)]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceNoSuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "EntryA")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceNoSuffix, ConvertToLibraryImportKey);
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "EntryAW")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}W,");
+        }
+
+        [Fact]
+        public async Task SuffixPresent_ExactSpelling_False_ImplicitAnsiCharSet_Provides_No_Suffix_And_Suffix_Fix()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", EntryPoint = "EntryA", ExactSpelling = false)]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceWithNoAdditionalSuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist", EntryPoint = "EntryA")]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithNoAdditionalSuffix, $"{ConvertToLibraryImportKey}A,");
+        }
+
+        [Fact]
+        public async Task SuffixPresent_ExactSpelling_False_ConstantNonLiteralEntryPoint()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    private const string EntryPoint = "EntryA";
+                    [DllImport("DoesNotExist", EntryPoint = EntryPoint, CharSet = CharSet.Ansi, ExactSpelling = false)]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    private const string EntryPoint = "EntryA";
+                    [LibraryImport("DoesNotExist", EntryPoint = EntryPoint)]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task SuffixPresent_Implicit_ExactSpelling_False_Offers_Suffix_Fix()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", CharSet = CharSet.Ansi)]
+                    public static extern void [|MethodA|]();
+                }
+                """;
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void {|CS8795:MethodA|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task SuffixPresent_ExactSpelling_False_NameOfEntryPoint()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    private const string FooA = "BarA";
+                    [DllImport("DoesNotExist", EntryPoint = nameof(FooA), CharSet = CharSet.Ansi, ExactSpelling = false)]
+                    public static extern void [|Method|]();
+                }
+                """;
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    private const string FooA = "BarA";
+                    [LibraryImport("DoesNotExist", EntryPoint = nameof(FooA))]
+                    public static partial void {|CS8795:Method|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, ConvertToLibraryImportKey);
+        }
+
+        [Fact]
+        public async Task SuffixPresent_ExactSpelling_False_ImplicitEntryPointName()
+        {
+            string source = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist", CharSet = CharSet.Ansi, ExactSpelling = false)]
+                    public static extern void [|MethodA|]();
+                }
+                """;
+            string fixedSourceWithASuffix = """
+
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [LibraryImport("DoesNotExist")]
+                    public static partial void {|CS8795:MethodA|}();
+                }
+                """;
+            await VerifyCodeFixAsync(source, fixedSourceWithASuffix, ConvertToLibraryImportKey);
         }
 
         [Fact]

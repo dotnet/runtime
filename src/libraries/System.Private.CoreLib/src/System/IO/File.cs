@@ -88,7 +88,7 @@ namespace System.IO
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
         // false.  Note that if path describes a directory,
-        // Exists will return true.
+        // Exists will return false.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
             try

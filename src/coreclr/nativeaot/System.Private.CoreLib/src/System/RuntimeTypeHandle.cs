@@ -154,14 +154,6 @@ namespace System
             }
         }
 
-        internal IntPtr RawValue
-        {
-            get
-            {
-                return _value;
-            }
-        }
-
         private IntPtr _value;
     }
 }

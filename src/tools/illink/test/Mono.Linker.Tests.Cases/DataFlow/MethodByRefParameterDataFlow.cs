@@ -11,7 +11,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class MethodByRefParameterDataFlow
@@ -202,11 +201,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
 			static ref Type GetTypeRefWithMethodsAndFields () { throw null; }
 
-			[ExpectedWarning ("IL2067", "t", "InnerMethodWithDam")]
-			[ExpectedWarning ("IL2067", "tWithMethodsAndFields", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2067", "'t'", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2067", "'tWithMethodsAndFields'", "InnerMethodWithDam")]
 			[ExpectedWarning ("IL2072", nameof (GetTypeRefWithoutAnnotations), "InnerMethodWithDam")]
 			[ExpectedWarning ("IL2068", nameof (GetTypeRefWithMethodsAndFields), "InnerMethodWithDam")]
-			static void MethodWithLocaMethodWithDam (Type t, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tWithMethods, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type tWithMethodsAndFields)
+			static void MethodWithLocalMethodWithDam (Type t, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tWithMethods, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type tWithMethodsAndFields)
 			{
 				// 2067
 				InnerMethodWithDam (ref t);
@@ -233,7 +232,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				MethodWithLocaMethodWithDam (null, null, null);
+				MethodWithLocalMethodWithDam (null, null, null);
 			}
 		}
 
