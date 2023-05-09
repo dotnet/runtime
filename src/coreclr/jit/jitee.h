@@ -21,21 +21,15 @@ public:
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
-
         JIT_FLAG_PINVOKE_RESTORE_ESP     = 8, // Restore ESP after returning from inlined PInvoke
-        JIT_FLAG_TARGET_P4               = 9,
-        JIT_FLAG_USE_FCOMI               = 10, // Generated code may use fcomi(p) instruction
-        JIT_FLAG_USE_CMOV                = 11, // Generated code may use cmov instruction
-
     #else // !defined(TARGET_X86)
-
         JIT_FLAG_UNUSED2                 = 8,
+    #endif // !defined(TARGET_X86)
+
         JIT_FLAG_UNUSED3                 = 9,
         JIT_FLAG_UNUSED4                 = 10,
         JIT_FLAG_UNUSED5                 = 11,
         JIT_FLAG_UNUSED6                 = 12,
-
-    #endif // !defined(TARGET_X86)
 
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 

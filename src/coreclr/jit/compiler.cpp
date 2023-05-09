@@ -2251,38 +2251,10 @@ void Compiler::compSetProcessor()
 
     const JitFlags& jitFlags = *opts.jitFlags;
 
-#if defined(TARGET_ARM)
-    info.genCPU = CPU_ARM;
-#elif defined(TARGET_ARM64)
-    info.genCPU      = CPU_ARM64;
-#elif defined(TARGET_AMD64)
-    info.genCPU = CPU_X64;
-#elif defined(TARGET_X86)
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
-        info.genCPU = CPU_X86_PENTIUM_4;
-    else
-        info.genCPU = CPU_X86;
-#elif defined(TARGET_LOONGARCH64)
-    info.genCPU                   = CPU_LOONGARCH64;
-#elif defined(TARGET_RISCV64)
-    info.genCPU = CPU_RISCV64;
-#endif
-
     //
     // Processor specific optimizations
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_AMD64
-    opts.compUseCMOV = true;
-#elif defined(TARGET_X86)
-    opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
-#ifdef DEBUG
-    if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
-#endif // DEBUG
-
-#endif // TARGET_X86
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
