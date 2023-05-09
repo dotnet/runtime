@@ -233,9 +233,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call =
-                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
+                                pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -2301,7 +2300,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
                                 unsigned                methodFlags,
-                                int                     memberRef,
+                                CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -2312,6 +2311,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     bool       mustExpand  = false;
     bool       isSpecial   = false;
     const bool isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) != 0;
+    int        memberRef   = pResolvedToken->token;
 
     NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
@@ -2455,7 +2455,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             assert(ni > NI_SRCS_UNSAFE_START);
             assert(!mustExpand);
-            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig, pResolvedToken);
         }
         else
         {
@@ -3909,10 +3909,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     return retNode;
 }
 
-GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
-                                          CORINFO_CLASS_HANDLE  clsHnd,
-                                          CORINFO_METHOD_HANDLE method,
-                                          CORINFO_SIG_INFO*     sig)
+GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
+                                          CORINFO_CLASS_HANDLE    clsHnd,
+                                          CORINFO_METHOD_HANDLE   method,
+                                          CORINFO_SIG_INFO*       sig,
+                                          CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
     if (info.compHasNextCallRetAddr)
@@ -3990,6 +3991,37 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SRCS_UNSAFE_As:
         {
             assert((sig->sigInst.methInstCount == 1) || (sig->sigInst.methInstCount == 2));
+
+            if (sig->sigInst.methInstCount == 1)
+            {
+                CORINFO_SIG_INFO exactSig;
+                info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
+                const CORINFO_CLASS_HANDLE inst = exactSig.sigInst.methInst[0];
+                assert(inst != nullptr);
+
+                GenTree* op = impPopStack().val;
+                assert(op->TypeIs(TYP_REF));
+
+                JITDUMP("Expanding Unsafe.As<%s>(...)\n", eeGetClassName(inst));
+
+                bool                 isExact, isNonNull;
+                CORINFO_CLASS_HANDLE oldClass = gtGetClassHandle(op, &isExact, &isNonNull);
+                if ((oldClass != NO_CLASS_HANDLE) &&
+                    ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
+                {
+                    JITDUMP("Unsafe.As: Keep using old '%s' type\n", eeGetClassName(oldClass));
+                    return op;
+                }
+
+                // In order to change the class handle of the object we need to spill it to a temp
+                // and update class info for that temp.
+                unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
+                impAssignTempGen(localNum, op, CHECK_SPILL_ALL);
+
+                // NOTE: we still can't say for sure that it is the exact type of the argument
+                lvaSetClass(localNum, inst, /*isExact*/ false);
+                return gtNewLclvNode(localNum, TYP_REF);
+            }
 
             // ldarg.0
             // ret

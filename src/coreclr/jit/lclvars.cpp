@@ -8061,12 +8061,7 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* const       tree = *pTree;
-    GenTreeLclVarCommon* lcl  = nullptr;
-
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
-    {
-        lcl = tree->AsLclVarCommon();
-    }
+    GenTreeLclVarCommon* lcl  = tree->OperIsAnyLocal() ? tree->AsLclVarCommon() : nullptr;
 
     if (lcl == nullptr)
     {
@@ -8083,23 +8078,24 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     if (varDsc->lvNoLclFldStress)
     {
         // Already determined we can't do anything for this var
-        return WALK_SKIP_SUBTREES;
+        return WALK_CONTINUE;
     }
 
     if (bFirstPass)
     {
         // Ignore locals that already have field appearances
-        if (lcl->OperIs(GT_LCL_FLD) || (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
+        if (lcl->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
+            (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Ignore arguments and temps
         if (varDsc->lvIsParam || lclNum >= pComp->info.compLocalsCount)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Ignore OSR locals; if in memory, they will live on the
@@ -8108,7 +8104,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->lvaIsOSRLocal(lclNum))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Likewise for Tier0 methods with patchpoints --
@@ -8117,7 +8113,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Converting tail calls to loops may require insertion of explicit
@@ -8128,21 +8124,21 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->compMayConvertTailCallToLoop)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Fix for lcl_fld stress mode
         if (varDsc->lvKeepType)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Can't have GC ptrs in block layouts.
         if (!varTypeIsArithmetic(lclType))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // The noway_assert in the second pass below, requires that these types match
@@ -8150,7 +8146,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (varType != lclType)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
@@ -8160,7 +8156,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (genTypeSize(varType) != genTypeSize(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Offset some of the local variable by a "random" non-zero amount
@@ -8169,7 +8165,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (padding == 0)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
     }
     else
@@ -8204,13 +8200,22 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Update the trees
         if (tree->OperIs(GT_LCL_VAR))
         {
-            tree->ChangeOper(GT_LCL_FLD);
+            tree->SetOper(GT_LCL_FLD);
+        }
+        else if (tree->OperIs(GT_STORE_LCL_VAR))
+        {
+            tree->SetOper(GT_STORE_LCL_FLD);
         }
 
         tree->AsLclFld()->SetLclOffs(padding);
+
+        if (tree->OperIs(GT_STORE_LCL_FLD) && tree->IsPartialLclFld(pComp))
+        {
+            tree->gtFlags |= GTF_VAR_USEASG;
+        }
     }
 
-    return WALK_SKIP_SUBTREES;
+    return WALK_CONTINUE;
 }
 
 /*****************************************************************************/

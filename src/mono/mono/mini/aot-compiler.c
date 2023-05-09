@@ -9659,6 +9659,13 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			add_gsharedvt_wrappers (acfg, mono_method_signature_internal (cfg->method), FALSE, TRUE, TRUE);
 	}
 
+	for (GSList *l = cfg->pinvoke_calli_signatures; l; l = l->next) {
+		MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
+
+		MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (cfg->method->klass, sig, TRUE);
+		add_extra_method (acfg, wrapper);
+	}
+
 	if (cfg->llvm_only)
 		acfg->stats.llvm_count ++;
 
