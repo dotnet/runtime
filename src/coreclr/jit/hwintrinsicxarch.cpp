@@ -3055,9 +3055,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     bool spillOp1 = false;
                     bool spillOp2 = false;
 
-                    GenTree*& val1 = op1;
-                    GenTree*& val2 = op2;
-                    GenTree*& val3 = op3;
+                    GenTree** val1 = &op1;
+                    GenTree** val2 = &op2;
+                    GenTree** val3 = &op3;
 
                     bool unusedVal1 = false;
                     bool unusedVal2 = false;
@@ -3219,17 +3219,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (unusedVal1)
                     {
-                        impAppendTree(gtUnusedValNode(val1), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val1), CHECK_SPILL_NONE, impCurStmtDI);
                     }
 
                     if (unusedVal2)
                     {
-                        impAppendTree(gtUnusedValNode(val2), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val2), CHECK_SPILL_NONE, impCurStmtDI);
                     }
 
                     if (unusedVal3)
                     {
-                        impAppendTree(gtUnusedValNode(val3), CHECK_SPILL_NONE, impCurStmtDI);
+                        impAppendTree(gtUnusedValNode(*val3), CHECK_SPILL_NONE, impCurStmtDI);
                     }
 
                     switch (info.oper1)
@@ -3249,7 +3249,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(unusedVal2);
                             assert(!unusedVal3);
 
-                            return val3;
+                            return *val3;
                         }
 
                         case TernaryLogicOperKind::True:
@@ -3300,14 +3300,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 assert(unusedVal2);
                                 assert(!unusedVal3);
 
-                                if (!val1->IsVectorZero())
+                                if (!(*val1)->IsVectorZero())
                                 {
-                                    val1 = gtNewZeroConNode(retType);
+                                    *val1 = gtNewZeroConNode(retType);
                                 }
 
-                                if (!val2->IsVectorZero())
+                                if (!(*val2)->IsVectorZero())
                                 {
-                                    val2 = gtNewZeroConNode(retType);
+                                    *val2 = gtNewZeroConNode(retType);
                                 }
 
                                 op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xAA);
@@ -3332,7 +3332,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 // GT_AND_NOT takes them as `op1 & ~op2` and x86 reorders them back to `~op1 & op2`
                                 // since the underlying andnps/andnpd/pandn instructions take them as such
 
-                                return gtNewSimdBinOpNode(GT_AND_NOT, retType, val3, val2, simdBaseJitType, simdSize);
+                                return gtNewSimdBinOpNode(GT_AND_NOT, retType, *val3, *val2, simdBaseJitType, simdSize);
                             }
                             else
                             {
@@ -3349,9 +3349,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 assert(!unusedVal2);
                                 assert(!unusedVal3);
 
-                                if (!val1->IsVectorZero())
+                                if (!(*val1)->IsVectorZero())
                                 {
-                                    val1 = gtNewZeroConNode(retType);
+                                    *val1 = gtNewZeroConNode(retType);
                                 }
                             }
                             break;
@@ -3372,7 +3372,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            return gtNewSimdBinOpNode(GT_AND, retType, val2, val3, simdBaseJitType, simdSize);
+                            return gtNewSimdBinOpNode(GT_AND, retType, *val2, *val3, simdBaseJitType, simdSize);
                         }
 
                         case TernaryLogicOperKind::Nand:
@@ -3390,9 +3390,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            if (!val1->IsVectorZero())
+                            if (!(*val1)->IsVectorZero())
                             {
-                                val1 = gtNewZeroConNode(retType);
+                                *val1 = gtNewZeroConNode(retType);
                             }
 
                             op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC & 0xAA));
@@ -3414,7 +3414,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            return gtNewSimdBinOpNode(GT_OR, retType, val2, val3, simdBaseJitType, simdSize);
+                            return gtNewSimdBinOpNode(GT_OR, retType, *val2, *val3, simdBaseJitType, simdSize);
                         }
 
                         case TernaryLogicOperKind::Nor:
@@ -3432,9 +3432,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            if (!val1->IsVectorZero())
+                            if (!(*val1)->IsVectorZero())
                             {
-                                val1 = gtNewZeroConNode(retType);
+                                *val1 = gtNewZeroConNode(retType);
                             }
 
                             op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC | 0xAA));
@@ -3456,7 +3456,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            return gtNewSimdBinOpNode(GT_XOR, retType, val2, val3, simdBaseJitType, simdSize);
+                            return gtNewSimdBinOpNode(GT_XOR, retType, *val2, *val3, simdBaseJitType, simdSize);
                         }
 
                         case TernaryLogicOperKind::Xnor:
@@ -3474,9 +3474,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             assert(!unusedVal2);
                             assert(!unusedVal3);
 
-                            if (!val1->IsVectorZero())
+                            if (!(*val1)->IsVectorZero())
                             {
-                                val1 = gtNewZeroConNode(retType);
+                                *val1 = gtNewZeroConNode(retType);
                             }
 
                             op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC ^ 0xAA));
@@ -3498,7 +3498,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
-                    retNode = gtNewSimdTernaryLogicNode(retType, val1, val2, val3, op4, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdTernaryLogicNode(retType, *val1, *val2, *val3, op4, simdBaseJitType, simdSize);
                     break;
                 }
             }

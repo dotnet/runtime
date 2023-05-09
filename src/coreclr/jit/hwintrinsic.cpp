@@ -43,6 +43,34 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 #if defined(TARGET_XARCH)
 const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
 {
+    // This table is 768 bytes and is about as small as we can make it.
+    //
+    // The way the constants work is we have three keys:
+    // * A: 0xF0
+    // * B: 0xCC
+    // * C: 0xAA
+    //
+    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
+    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
+    //
+    // This table allows us to compute the inverse information, that is given a control, what are the operations it performs.
+    // This allows us to determine things like what operands are actually used (so we can correctly compute isRMW) and
+    // what operations are performed and in what order (such that we can do constant folding in the future).
+    //
+    // The total set of operations supported are:
+    // * true:   AllBitsSet
+    // * false:  Zero
+    // * not:    ~value
+    // * and:    left & right
+    // * nand:   ~(left & right)
+    // * or:     left | right
+    // * nor:    ~(left | right)
+    // * xor:    left ^ right
+    // * xnor:   ~(left ^ right)
+    // * cndsel: a ? b : c; aka (B & A) | (C & ~A)
+    // * major:  0 if two+ input bits are 0
+    // * minor:  1 if two+ input bits are 0
+
     // clang-format off
     static const TernaryLogicInfo ternaryLogicFlags[256] = {
         /* FALSE */           { TernaryLogicOperKind::False,  TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
