@@ -22,7 +22,7 @@ class RhConfig
 
 #define CONFIG_INI_NOT_AVAIL (void*)0x1  //signal for ini file failed to load
 #define CONFIG_KEY_MAXLEN 50             //arbitrary max length of config keys increase if needed
-#define CONFIG_VAL_MAXLEN 16              //32 bit uint in hex
+#define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
 
 private:
     struct ConfigPair

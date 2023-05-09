@@ -26,7 +26,7 @@
 
 bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bool decimal)
 {
-    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
+    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
     const uint32_t cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
 
     uint32_t cchResult = 0;
