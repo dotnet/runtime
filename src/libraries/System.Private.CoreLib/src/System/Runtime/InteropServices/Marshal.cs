@@ -738,8 +738,6 @@ namespace System.Runtime.InteropServices
                     return new System.NotSupportedException();
                 case HResults.E_POINTER:
                     return new System.NullReferenceException();
-                case HResults.COR_E_OBJECTDISPOSED:
-                    return new System.ObjectDisposedException("");
                 case HResults.COR_E_OPERATIONCANCELED:
                     return new System.OperationCanceledException();
                 case HResults.COR_E_OUTOFMEMORY:
@@ -783,7 +781,7 @@ namespace System.Runtime.InteropServices
                 case HResults.COR_E_TYPEACCESS:
                     return new System.TypeAccessException();
                 case HResults.COR_E_TYPEINITIALIZATION:
-                    return new System.TypeInitializationException("");
+                    return new System.TypeInitializationException(null);
                 case HResults.COR_E_TYPELOAD:
                     return new System.TypeLoadException();
                 case HResults.COR_E_TYPEUNLOADED:
@@ -798,33 +796,8 @@ namespace System.Runtime.InteropServices
                     return new System.NotImplementedException();
                 //case HResults.E_POINTER:
                 case HResults.RO_E_CLOSED:
-                    return new System.ObjectDisposedException("");
-                case HResults.COR_E_ABANDONEDMUTEX:
-                case HResults.COR_E_AMBIGUOUSIMPLEMENTATION:
-                case HResults.COR_E_CANNOTUNLOADAPPDOMAIN:
-                case HResults.COR_E_CONTEXTMARSHAL:
-                //case HResults.COR_E_HOSTPROTECTION:
-                case HResults.COR_E_INSUFFICIENTMEMORY:
-                case HResults.COR_E_INVALIDCOMOBJECT:
-                case HResults.COR_E_KEYNOTFOUND:
-                case HResults.COR_E_MISSINGSATELLITEASSEMBLY:
-                case HResults.COR_E_SAFEARRAYRANKMISMATCH:
-                case HResults.COR_E_SAFEARRAYTYPEMISMATCH:
-                //case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
-                //case HResults.COR_E_SEMAPHOREFULL:
-                //case HResults.COR_E_THREADSTOP:
-                case HResults.COR_E_TIMEOUT:
-                case HResults.COR_E_WAITHANDLECANNOTBEOPENED:
-                case HResults.DISP_E_OVERFLOW:
-                case HResults.E_BOUNDS:
-                case HResults.E_CHANGED_STATE:
-                case HResults.E_FAIL:
-                case HResults.E_HANDLE:
-                case HResults.ERROR_MRM_MAP_NOT_FOUND:
-                case HResults.TYPE_E_TYPEMISMATCH:
-                case HResults.CO_E_NOTINITIALIZED:
-                case HResults.RPC_E_CHANGED_MODE:
-                    return new COMException("", errorCode);
+                case HResults.COR_E_OBJECTDISPOSED:
+                    return new System.ObjectDisposedException(null);
 
                 case HResults.STG_E_PATHNOTFOUND:
                 case HResults.CTL_E_PATHNOTFOUND:
@@ -861,7 +834,7 @@ namespace System.Runtime.InteropServices
                         };
                     }
                 default:
-                    return new COMException("", errorCode);
+                    return new COMException(null, errorCode);
             }
         }
 #pragma warning restore IDE0060

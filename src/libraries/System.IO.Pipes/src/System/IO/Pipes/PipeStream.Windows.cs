@@ -109,7 +109,7 @@ namespace System.IO.Pipes
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
-                return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+                return TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
             else
                 return base.BeginRead(buffer, offset, count, callback, state);
         }
@@ -117,7 +117,7 @@ namespace System.IO.Pipes
         public override int EndRead(IAsyncResult asyncResult)
         {
             if (_isAsync)
-                return TaskToApm.End<int>(asyncResult);
+                return TaskToAsyncResult.End<int>(asyncResult);
             else
                 return base.EndRead(asyncResult);
         }
@@ -205,7 +205,7 @@ namespace System.IO.Pipes
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
-                return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+                return TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
             else
                 return base.BeginWrite(buffer, offset, count, callback, state);
         }
@@ -213,7 +213,7 @@ namespace System.IO.Pipes
         public override void EndWrite(IAsyncResult asyncResult)
         {
             if (_isAsync)
-                TaskToApm.End(asyncResult);
+                TaskToAsyncResult.End(asyncResult);
             else
                 base.EndWrite(asyncResult);
         }
@@ -586,7 +586,7 @@ namespace System.IO.Pipes
                 pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);
                 fixed (byte* pSecurityDescriptor = securityDescriptor)
                 {
-                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
                 }
             }
 

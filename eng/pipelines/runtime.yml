@@ -10,7 +10,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -37,7 +36,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -76,6 +74,7 @@ extends:
           - linux_x64
           - linux_arm
           - linux_arm64
+          - linux_riscv64
           - linux_musl_arm
           - linux_musl_arm64
           - linux_musl_x64
@@ -102,11 +101,9 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64
+          - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -206,7 +203,6 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
@@ -214,7 +210,12 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -238,15 +239,19 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -266,6 +271,9 @@ extends:
           - linux_x64
           - windows_x64
           - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
@@ -280,7 +288,12 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -303,7 +316,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
@@ -383,6 +396,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - linux_musl_x64
+          - linux_riscv64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -466,14 +480,17 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      # Build and Smoke Tests only - Wasm Threading Legs
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _Threading
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
+          nameSuffix: _Threading_Smoke
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - WasmTestOnBrowser
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
@@ -497,6 +514,13 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
+
+      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -544,43 +568,46 @@ extends:
       # MacCatalyst interp - requires AOT Compilation and Interp flags
       # Build the whole product using Mono and run libraries tests
       #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - maccatalyst_x64
-          - ${{ if eq(variables['isRollingBuild'], true) }}:
-            - maccatalyst_arm64
-          variables:
-            # map dependencies variables to local variables
-            - name: librariesContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-            - name: monoContainsChange
-              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
-            timeoutInMinutes: 180
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-            # extra steps, run tests
-            extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-            extraStepsParameters:
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-              condition: >-
-                or(
-                  eq(variables['librariesContainsChange'], true),
-                  eq(variables['monoContainsChange'], true),
-                  eq(variables['isRollingBuild'], true))
+      #
+      # Disabled pending queue backup investigation 
+      #
+      #- template: /eng/pipelines/common/platform-matrix.yml
+      #  parameters:
+      #    jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+      #    buildConfig: Release
+      #    runtimeFlavor: mono
+      #    platforms:
+      #    - maccatalyst_x64
+      #    - ${{ if eq(variables['isRollingBuild'], true) }}:
+      #      - maccatalyst_arm64
+      #    variables:
+      #      # map dependencies variables to local variables
+      #      - name: librariesContainsChange
+      #        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      #      - name: monoContainsChange
+      #        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+      #    jobParameters:
+      #      testGroup: innerloop
+      #      nameSuffix: AllSubsets_Mono
+      #      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      #      timeoutInMinutes: 180
+      #      condition: >-
+      #        or(
+      #          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+      #          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+      #          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+      #          eq(variables['isRollingBuild'], true))
+      #      # extra steps, run tests
+      #      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      #      extraStepsParameters:
+      #        creator: dotnet-bot
+      #        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #        condition: >-
+      #          or(
+      #            eq(variables['librariesContainsChange'], true),
+      #            eq(variables['monoContainsChange'], true),
+      #            eq(variables['isRollingBuild'], true))
 
       #
       # Build Mono and Installer on LLVMJIT mode
@@ -748,7 +775,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-                
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -943,6 +970,7 @@ extends:
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -1117,6 +1145,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - osx_x64
+            - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1138,6 +1167,8 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1171,6 +1202,8 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
       # Only when Mono is changed
@@ -1194,7 +1227,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
             timeoutInMinutes: 180
 
             condition: >-
@@ -1205,7 +1238,10 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
+              llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
       # Libraries Release Test Execution against a release mono runtime.

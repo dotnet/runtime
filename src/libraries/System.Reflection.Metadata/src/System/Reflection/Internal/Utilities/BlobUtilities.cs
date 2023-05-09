@@ -20,12 +20,20 @@ namespace System.Reflection
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
+#if NETCOREAPP
+            WriteUInt64(buffer, start, BitConverter.DoubleToUInt64Bits(value));
+#else
             WriteUInt64(buffer, start, *(ulong*)&value);
+#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
+#if NETCOREAPP
+            WriteUInt32(buffer, start, BitConverter.SingleToUInt32Bits(value));
+#else
             WriteUInt32(buffer, start, *(uint*)&value);
+#endif
         }
 
         public static void WriteByte(this byte[] buffer, int start, byte value)

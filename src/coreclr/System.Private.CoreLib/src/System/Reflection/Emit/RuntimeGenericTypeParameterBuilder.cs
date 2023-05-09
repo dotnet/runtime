@@ -215,14 +215,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Protected Members Overrides
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_type.SetGenParamCustomAttribute(customBuilder);
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)

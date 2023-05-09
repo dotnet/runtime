@@ -22,7 +22,8 @@ namespace System.Reflection.TypeLoading
 
     /// <summary>
     /// Another layer of base types. For NetCore, these base types are all but empty. For NetStandard, these base types add the NetCore apis to NetStandard
-    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area.
+    /// so code interacting with "RoTypes" and friends can happily code to the full NetCore surface area. For pre-8.0 NetCore
+    /// these add new members that were introduced in 8.0.
     ///
     /// On NetStandard (and pre-2.2 NetCore), the TypeInfo constructor is not exposed so we cannot derive directly from TypeInfo.
     /// But we *can* derive from TypeDelegator which derives from TypeInfo. Since we're overriding (almost) every method,
@@ -53,6 +54,14 @@ namespace System.Reflection.TypeLoading
         public virtual bool IsSignatureType => false;
         protected abstract MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers);
         public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
+
+        public abstract bool IsFunctionPointer { get; }
+        public abstract bool IsUnmanagedFunctionPointer { get; }
+        public abstract Type[] GetFunctionPointerCallingConventions();
+        public abstract Type[] GetFunctionPointerParameterTypes();
+        public abstract Type GetFunctionPointerReturnType();
+        public abstract Type[] GetOptionalCustomModifiers();
+        public abstract Type[] GetRequiredCustomModifiers();
     }
 
     internal abstract class LeveledAssembly : Assembly
@@ -79,11 +88,18 @@ namespace System.Reflection.TypeLoading
 
     internal abstract class LeveledFieldInfo : FieldInfo
     {
+        public abstract Type GetModifiedFieldType();
         public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
+    }
+
+    internal abstract class LeveledParameterInfo : ParameterInfo
+    {
+        public abstract Type GetModifiedParameterType();
     }
 
     internal abstract class LeveledPropertyInfo : PropertyInfo
     {
+        public abstract Type GetModifiedPropertyType();
         public abstract bool HasSameMetadataDefinitionAs(MemberInfo other);
     }
 

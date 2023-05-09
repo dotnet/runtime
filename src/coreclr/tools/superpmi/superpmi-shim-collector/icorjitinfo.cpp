@@ -590,6 +590,26 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return temp;
 }
 
+bool interceptor_ICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
+                                                   CORINFO_CONST_LOOKUP* addr,
+                                                   int*                  offset)
+{
+    mc->cr->AddCall("getIsClassInitedFlagAddress");
+    bool temp = original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
+    mc->recGetIsClassInitedFlagAddress(cls, addr, offset, temp);
+    return temp;
+}
+
+bool interceptor_ICJI::getStaticBaseAddress(CORINFO_CLASS_HANDLE  cls,
+                                            bool                  isGc,
+                                            CORINFO_CONST_LOOKUP* addr)
+{
+    mc->cr->AddCall("getStaticBaseAddress");
+    bool temp = original_ICorJitInfo->getStaticBaseAddress(cls, isGc, addr);
+    mc->recGetStaticBaseAddress(cls, isGc, addr, temp);
+    return temp;
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned interceptor_ICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {
@@ -878,15 +898,6 @@ bool interceptor_ICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends p
     return temp;
 }
 
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool interceptor_ICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    mc->cr->AddCall("areTypesEquivalent");
-    bool temp = original_ICorJitInfo->areTypesEquivalent(cls1, cls2);
-    mc->recAreTypesEquivalent(cls1, cls2, temp);
-    return temp;
-}
-
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState interceptor_ICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
@@ -1083,6 +1094,21 @@ void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     mc->cr->AddCall("getFieldInfo");
     original_ICorJitInfo->getFieldInfo(pResolvedToken, callerHandle, flags, pResult);
     mc->recGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
+}
+
+uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    mc->cr->AddCall("getThreadLocalFieldInfo");
+    uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field);
+    mc->recGetThreadLocalFieldInfo(field, result);
+    return result;
+}
+
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1454,6 +1480,14 @@ uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS
     return temp;
 }
 
+uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
+    uint32_t temp = original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+    mc->recGetRISCV64PassStructInRegisterFlags(structHnd, temp);
+    return temp;
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t interceptor_ICJI::getThreadTLSIndex(void** ppIndirection)
 {
@@ -1700,11 +1734,19 @@ unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppI
     return temp;
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    mc->cr->AddCall("getReadonlyStaticFieldValue");
-    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    mc->cr->AddCall("getStaticFieldContent");
+    bool result = original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mc->recGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    return result;
+}
+
+bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    mc->cr->AddCall("getObjectContent");
+    bool result = original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    mc->recGetObjectContent(obj, buffer, bufferSize, valueOffset, result);
     return result;
 }
 
@@ -1713,7 +1755,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_
 {
     mc->cr->AddCall("getStaticFieldCurrentClass");
     CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, pIsSpeculative);
-    mc->recGetStaticFieldCurrentClass(field, (pIsSpeculative == nullptr) ? false : *pIsSpeculative, result);
+    mc->recGetStaticFieldCurrentClass(field, pIsSpeculative, result);
     return result;
 }
 

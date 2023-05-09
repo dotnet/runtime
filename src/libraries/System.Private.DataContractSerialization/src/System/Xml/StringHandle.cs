@@ -100,7 +100,7 @@ namespace System.Xml
 
         public void ToPrefixHandle(PrefixHandle prefix)
         {
-            DiagnosticUtility.DebugAssert(_type == StringHandleType.UTF8, "");
+            Debug.Assert(_type == StringHandleType.UTF8);
             prefix.SetValue(_offset, _length);
         }
 
@@ -114,7 +114,7 @@ namespace System.Xml
             if (type == StringHandleType.ConstString)
                 return nameTable.Add(s_constStrings[_key]);
             // If none of the above, must be StringHandleType.EscapedUTF8
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8, "Should be EscapedUTF8");
+            Debug.Assert(type == StringHandleType.EscapedUTF8, "Should be EscapedUTF8");
             return _bufferReader.GetEscapedString(_offset, _length, nameTable);
         }
 
@@ -128,7 +128,7 @@ namespace System.Xml
             if (type == StringHandleType.ConstString)
                 return s_constStrings[_key];
             // If none of the above, must be StringHandleType.EscapedUTF8
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8, "Should be EscapedUTF8");
+            Debug.Assert(type == StringHandleType.EscapedUTF8, "Should be EscapedUTF8");
             return _bufferReader.GetEscapedString(_offset, _length);
         }
 
@@ -157,7 +157,7 @@ namespace System.Xml
             }
             else
             {
-                DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8, "");
+                Debug.Assert(type == StringHandleType.EscapedUTF8);
                 byte[] buffer = XmlConverter.ToBytes(_bufferReader.GetEscapedString(_offset, _length));
                 offset = 0;
                 length = buffer.Length;
@@ -194,7 +194,7 @@ namespace System.Xml
                 return _bufferReader.Equals2(_key, key2, bufferReader2);
             if (type == StringHandleType.UTF8)
                 return _bufferReader.Equals2(_offset, _length, bufferReader2.GetDictionaryString(key2).Value);
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
+            Debug.Assert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString);
             return GetString() == _bufferReader.GetDictionaryString(key2).Value;
         }
 
@@ -205,7 +205,7 @@ namespace System.Xml
                 return _bufferReader.Equals2(_key, xmlString2);
             if (type == StringHandleType.UTF8)
                 return _bufferReader.Equals2(_offset, _length, xmlString2.ToUTF8());
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
+            Debug.Assert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString);
             return GetString() == xmlString2.Value;
         }
 
@@ -216,7 +216,7 @@ namespace System.Xml
                 return _bufferReader.GetDictionaryString(_key).Value == s2;
             if (type == StringHandleType.UTF8)
                 return _bufferReader.Equals2(_offset, _length, s2);
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
+            Debug.Assert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString);
             return GetString() == s2;
         }
 
@@ -227,7 +227,7 @@ namespace System.Xml
                 return bufferReader2.Equals2(offset2, length2, _bufferReader.GetDictionaryString(_key).Value);
             if (type == StringHandleType.UTF8)
                 return _bufferReader.Equals2(_offset, _length, bufferReader2, offset2, length2);
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
+            Debug.Assert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString);
             return GetString() == _bufferReader.GetString(offset2, length2);
         }
 
@@ -240,7 +240,7 @@ namespace System.Xml
                 return Equals2(other._key, other._bufferReader);
             if (type == StringHandleType.UTF8)
                 return Equals2(other._offset, other._length, other._bufferReader);
-            DiagnosticUtility.DebugAssert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString, "");
+            Debug.Assert(type == StringHandleType.EscapedUTF8 || type == StringHandleType.ConstString);
             return Equals2(other.GetString());
         }
 

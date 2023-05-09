@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         private int _inBufferSize;
         private int _outBufferSize;
         private HandleInheritability _inheritability;
-        private CancellationTokenSource _internalTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _internalTokenSource = new CancellationTokenSource();
 
         private void Create(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,

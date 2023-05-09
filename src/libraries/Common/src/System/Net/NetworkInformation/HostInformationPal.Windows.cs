@@ -21,7 +21,7 @@ namespace System.Net.NetworkInformation
         private static bool s_enableDns;
 
         private static volatile bool s_initialized;
-        private static object s_syncObject = new object();
+        private static readonly object s_syncObject = new object();
 
         public static string GetHostName()
         {

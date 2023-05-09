@@ -89,7 +89,7 @@ namespace ILCompiler
             {
                 XPathNavigator nav = _document.CreateNavigator();
 
-                // Initial structure check - ignore XML document which don't look like linker XML format
+                // Initial structure check - ignore XML document which don't look like ILLink XML format
                 if (!nav.MoveToChild(LinkerElementName, XmlNamespace))
                     return;
 
@@ -212,11 +212,7 @@ namespace ILCompiler
 
                 // TODO: Process exported types
 
-                // TODO: Semantics differ and xml format is cecil specific, therefore they are discrepancies on things like nested types
-                // for now just hack replacing / for + to support basic resolving of nested types
-                // https://github.com/dotnet/runtime/issues/73083
-                fullname = fullname.Replace("/", "+");
-                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
+                TypeDesc? type = CecilCompatibleTypeParser.GetType(assembly, fullname);
 
                 if (type == null)
                 {
@@ -751,6 +747,58 @@ namespace ILCompiler
                 return false;
             }
 #endif
+        }
+    }
+
+    public class CecilCompatibleTypeParser
+    {
+        public static TypeDesc? GetType(ModuleDesc assembly, string fullName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(fullName));
+            var position = fullName.IndexOf('/');
+            if (position > 0)
+                return GetNestedType(assembly, fullName);
+            string @namespace, name;
+            SplitFullName(fullName, out @namespace, out name);
+
+            return assembly.GetType(@namespace, name, throwIfNotFound: false);
+        }
+
+        private static MetadataType? GetNestedType(ModuleDesc assembly, string fullName)
+        {
+            var names = fullName.Split('/');
+            var type = GetType(assembly, names[0]);
+
+            if (type == null)
+                return null;
+
+            MetadataType typeReference = (MetadataType)type;
+            for (int i = 1; i < names.Length; i++)
+            {
+                var nested_type = typeReference.GetNestedType(names[i]);
+                if (nested_type == null)
+                    return null;
+
+                typeReference = nested_type;
+            }
+
+            return typeReference;
+        }
+
+        public static void SplitFullName(string fullName, out string @namespace, out string name)
+        {
+            var last_dot = fullName.LastIndexOf('.');
+
+            if (last_dot == -1)
+            {
+                @namespace = string.Empty;
+                name = fullName;
+            }
+            else
+            {
+                @namespace = fullName.Substring(0, last_dot);
+                name = fullName.Substring(last_dot + 1);
+            }
         }
     }
 }

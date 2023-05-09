@@ -206,12 +206,6 @@ mono_gc_base_init (void)
 }
 
 void
-mono_gc_base_cleanup (void)
-{
-	GC_set_finalizer_notifier (NULL);
-}
-
-void
 mono_gc_init_icalls (void)
 {
 }
@@ -311,13 +305,19 @@ mono_restart_world (MonoThreadInfoFlags flags)
  * are indirectly referenced by managed objects (for example unmanaged
  * memory holding image or other binary data).
  * This is a hint only to the garbage collector algorithm.
- * Note that negative amounts of p value will decrease the memory
- * pressure.
+ * `value` must be greater than or equal to 0. 
+ * To remove pressure, use `mono_gc_remove_memory_pressure`.
  */
 void
-mono_gc_add_memory_pressure (gint64 value)
+mono_gc_add_memory_pressure (guint64 value)
 {
 }
+
+void
+mono_gc_remove_memory_pressure (guint64 value)
+{
+}
+
 
 /**
  * mono_gc_get_used_size:
@@ -885,16 +885,6 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 	/* do not copy the sync state */
 	mono_gc_memmove_aligned (mono_object_get_data (obj), (char*)src + MONO_ABI_SIZEOF (MonoObject),
 				m_class_get_instance_size (mono_object_class (obj)) - MONO_ABI_SIZEOF (MonoObject));
-}
-
-void
-mono_gc_clear_domain (MonoDomain *domain)
-{
-}
-
-void
-mono_gc_suspend_finalizers (void)
-{
 }
 
 int

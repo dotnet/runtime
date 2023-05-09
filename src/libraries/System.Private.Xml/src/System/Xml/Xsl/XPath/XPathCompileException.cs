@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -25,6 +26,7 @@ namespace System.Xml.Xsl.XPath
             : base(resId, args)
         { } // queryString will be set later
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         internal XPathCompileException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -33,6 +35,8 @@ namespace System.Xml.Xsl.XPath
             endChar = (int)info.GetValue("EndChar", typeof(int))!;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

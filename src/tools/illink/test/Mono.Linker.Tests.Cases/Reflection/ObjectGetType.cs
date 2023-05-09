@@ -1032,7 +1032,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void Test ()
 			{
-				var i = typeof (ICommon); // Explicitely keep the interface (otherwise linker would remove it as it's not used)
+				var i = typeof (ICommon); // Explicitely keep the interface (otherwise trimming tools would remove it as it's not used)
 				GetInstance ().GetType ().GetMethod ("InterfaceMethod");
 			}
 		}
@@ -1455,11 +1455,11 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void Test ()
 			{
 				// Call GetType, but don't use it for any data flow related stuff (no reflection or annotations)
-				// Linker has an optimization which avoids marking the type for type hierarchy annotations in this case
+				// trimming tools have an optimization which avoids marking the type for type hierarchy annotations in this case
 				var name = GetInstance ().GetType ().Name;
 
 				// Using GetType and isinst should not mark the type or apply the annotation either
-				// This is a specific test for a pattern we want the linker to trim correctly
+				// This is a specific test for a pattern we want the trimming tools to trim correctly
 				// that is the type which is only referenced in the isinst in a condition like this should not be kept
 				if (GetBaseInstance ().GetType () is DerivedFromAnnotatedBase) {
 					Console.WriteLine ("Never get here");
@@ -1585,7 +1585,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2819
-			[ExpectedWarning ("IL2072", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2072", ProducedBy = Tool.Trimmer)]
 			static void TestIsInstOf (object o)
 			{
 				if (o is Target t) {

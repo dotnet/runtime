@@ -438,10 +438,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client, otherwise throw WinSock
@@ -510,10 +507,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(multicastAddr);
-            if (ifindex < 0)
-            {
-                throw new ArgumentException(SR.net_value_cannot_be_negative, nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
             if (_family != AddressFamily.InterNetworkV6)
             {
                 // Ensure that this is an IPv6 client.

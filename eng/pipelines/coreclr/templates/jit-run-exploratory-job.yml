@@ -41,13 +41,8 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
+      - ${{insert}}: ${{ variable }}
 
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
@@ -101,7 +96,7 @@ jobs:
         value: 'fuzzlyn_summarize.py'
       - name: FuzzerLogsLocation
         value: '$(FuzzlynLogsLocation)'
-        
+
     workspace:
       clean: all
     pool:
@@ -109,7 +104,7 @@ jobs:
     container: ${{ parameters.container }}
     steps:
     - ${{ parameters.steps }}
-  
+
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/fuzzer_setup.py -tool_name $(toolName) -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -platform $(osGroup)
       displayName: ${{ format('{0} setup ({1}-{2})', parameters.toolName, parameters.osGroup, parameters.archType) }}
 

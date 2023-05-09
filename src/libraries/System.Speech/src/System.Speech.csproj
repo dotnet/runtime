@@ -223,6 +223,8 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
             Link="Common\Interop\Windows\WinMm\Interop.waveOutRestart.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
             Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+            Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">

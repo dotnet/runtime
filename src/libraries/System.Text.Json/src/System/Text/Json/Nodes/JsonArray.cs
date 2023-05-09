@@ -229,7 +229,7 @@ namespace System.Text.Json.Nodes
         private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private JsonArray _node;
+            private readonly JsonArray _node;
 
             public DebugView(JsonArray node)
             {

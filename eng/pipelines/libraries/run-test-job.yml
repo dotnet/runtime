@@ -88,6 +88,10 @@ jobs:
             artifactFileName: $(librariesTestsArtifactName)$(archiveExtension)
             unpackFolder: $(Build.SourcesDirectory)/artifacts
 
+        - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
+          - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+            displayName: Install Build Dependencies
+
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - script: $(_buildScript)
                     -subset host.native+libs.pretest
@@ -157,6 +161,7 @@ jobs:
               - jitstressregs0x10
               - jitstressregs0x80
               - jitstressregs0x1000
+              - jitstressregs0x2000
             ${{ if in(parameters.coreclrTestGroup, 'jitstress2-jitstressregs') }}:
               scenarios:
               - jitstress2_jitstressregs1
@@ -167,6 +172,7 @@ jobs:
               - jitstress2_jitstressregs0x10
               - jitstress2_jitstressregs0x80
               - jitstress2_jitstressregs0x1000
+              - jitstress2_jitstressregs0x2000
             ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
               scenarios:
               # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
@@ -196,3 +202,6 @@ jobs:
                 - fullpgo_random_gdv_edge
                 - jitosr_stress
                 - jitosr_stress_random
+                - syntheticpgo
+                - syntheticpgo_blend
+

@@ -44,6 +44,12 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, accessFlags, pResult);
 }
 
+FORCEINLINE
+uint32_t Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    return info.compCompHnd->getThreadLocalFieldInfo(field);
+}
+
 /*****************************************************************************
  *
  *          VOS info, method sigs, etc
@@ -289,6 +295,32 @@ inline var_types JitType2PreciseVarType(CorInfoType type)
 
     return ((var_types)preciseVarTypeMap[type]);
 };
+
+inline var_types Compiler::TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout)
+{
+    CorInfoType jitType = info.compCompHnd->asCorInfoType(handle);
+    var_types   type    = TypeHandleToVarType(jitType, handle, pLayout);
+
+    return type;
+}
+
+inline var_types Compiler::TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout)
+{
+    ClassLayout* layout = nullptr;
+    var_types    type   = JITtype2varType(jitType);
+    if (type == TYP_STRUCT)
+    {
+        layout = typGetObjLayout(handle);
+        type   = layout->GetType();
+    }
+
+    if (pLayout != nullptr)
+    {
+        *pLayout = layout;
+    }
+
+    return type;
+}
 
 inline CORINFO_CALLINFO_FLAGS combine(CORINFO_CALLINFO_FLAGS flag1, CORINFO_CALLINFO_FLAGS flag2)
 {

@@ -32,8 +32,23 @@ public class NativeLibraryToLoad
 
     public static string GetFullPath()
     {
-        Assembly assembly = Assembly.GetExecutingAssembly();
-        string directory = Path.GetDirectoryName(assembly.Location);
-        return Path.Combine(directory, GetFileName());
+        return Path.Combine(GetDirectory(), GetFileName());
+    }
+
+    public static string GetDirectory()
+    {
+        string directory;
+        if (TestLibrary.Utilities.IsNativeAot)
+        {
+            // NativeAOT test is put in a native/ subdirectory, so we want the parent
+            // directory that contains the native library to load
+            directory = new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName;
+        }
+        else
+        {
+            directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        }
+
+        return directory;
     }
 }

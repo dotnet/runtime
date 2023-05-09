@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class SurrogateSelector : ISurrogateSelector
     {
         internal readonly SurrogateHashtable _surrogates = new SurrogateHashtable(32);

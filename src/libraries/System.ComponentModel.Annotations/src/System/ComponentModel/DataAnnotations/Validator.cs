@@ -94,7 +94,7 @@ namespace System.ComponentModel.DataAnnotations
         [RequiresUnreferencedCode(ValidationContext.InstanceTypeNotStaticallyDiscovered)]
         public static bool TryValidateObject(
             object instance, ValidationContext validationContext, ICollection<ValidationResult>? validationResults) =>
-            TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
+            TryValidateObject(instance, validationContext, validationResults, validateAllProperties: false);
 
         /// <summary>
         ///     Tests whether the given object instance is valid.
@@ -522,6 +522,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 var context = CreateValidationContext(instance, validationContext);
                 context.MemberName = property.Name;
+                context.MemberType = property.PropertyType;
 
                 if (_store.GetPropertyValidationAttributes(context).Any())
                 {

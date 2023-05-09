@@ -6,6 +6,7 @@ inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransiti
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 

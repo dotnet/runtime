@@ -247,7 +247,7 @@ namespace Mono.Linker.Steps
 			//
 			// Builds CustomAttributeArgument in the same way as it would be
 			// represented in the metadata if encoded there. This simplifies
-			// any custom attributes handling in linker by using same attributes
+			// any custom attributes handling in ILLink by using same attributes
 			// value extraction or mathing logic.
 			//
 			switch (typeref.MetadataType) {

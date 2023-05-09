@@ -10,6 +10,7 @@
 //Test returns 100 on success and 1 on failure.
 
 using System;
+using Xunit;
 
 public abstract class Base<U>
 {
@@ -26,7 +27,8 @@ public class Derived : Base<string>
         return n;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret = 100;
         string s = "abc";

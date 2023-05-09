@@ -77,12 +77,13 @@ FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 // fgAddRefPred: Increment block->bbRefs by one and add "blockPred" to the predecessor list of "block".
 //
 // Arguments:
+//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
+//                         happening.
+//
 //    block     -- A block to operate on.
 //    blockPred -- The predecessor block to add to the predecessor list.
 //    oldEdge   -- Optional (default: nullptr). If non-nullptr, and a new edge is created (and the dup count
 //                 of an existing edge is not just incremented), the edge weights are copied from this edge.
-//    initializingPreds -- Optional (default: false). Only set to "true" when the initial preds computation is
-//                         happening.
 //
 // Return Value:
 //    The flow edge representing the predecessor.
@@ -94,10 +95,8 @@ FlowEdge* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred, 
 //    -- fgModified is set if a new flow edge is created (but not if an existing flow edge dup count is incremented),
 //       indicating that the flow graph shape has changed.
 //
-FlowEdge* Compiler::fgAddRefPred(BasicBlock* block,
-                                 BasicBlock* blockPred,
-                                 FlowEdge*   oldEdge /* = nullptr */,
-                                 bool        initializingPreds /* = false */)
+template <bool initializingPreds>
+FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowEdge* oldEdge /* = nullptr */)
 {
     assert(block != nullptr);
     assert(blockPred != nullptr);
@@ -227,6 +226,14 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block,
     return flow;
 }
 
+// Add explicit instantiations.
+template FlowEdge* Compiler::fgAddRefPred<false>(BasicBlock* block,
+                                                 BasicBlock* blockPred,
+                                                 FlowEdge*   oldEdge /* = nullptr */);
+template FlowEdge* Compiler::fgAddRefPred<true>(BasicBlock* block,
+                                                BasicBlock* blockPred,
+                                                FlowEdge*   oldEdge /* = nullptr */);
+
 //------------------------------------------------------------------------
 // fgRemoveRefPred: Decrements the reference count of a predecessor edge from "blockPred" to "block",
 // removing the edge if it is no longer necessary.
@@ -354,27 +361,20 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                     fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
                 }
             }
+            fgRemoveRefPred(block->bbJumpDest, block);
+            break;
 
-            FALLTHROUGH;
-
-        case BBJ_COND:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-
-            /* Update the predecessor list for 'block->bbJumpDest' and 'block->bbNext' */
             fgRemoveRefPred(block->bbJumpDest, block);
-
-            if (block->bbJumpKind != BBJ_COND)
-            {
-                break;
-            }
-
-            /* If BBJ_COND fall through */
-            FALLTHROUGH;
+            break;
 
         case BBJ_NONE:
+            fgRemoveRefPred(block->bbNext, block);
+            break;
 
-            /* Update the predecessor list for 'block->bbNext' */
+        case BBJ_COND:
+            fgRemoveRefPred(block->bbJumpDest, block);
             fgRemoveRefPred(block->bbNext, block);
             break;
 
@@ -416,6 +416,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
         }
         break;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
             break;
@@ -451,46 +452,41 @@ BasicBlock* Compiler::fgSuccOfFinallyRet(BasicBlock* block, unsigned i)
 
 void Compiler::fgSuccOfFinallyRetWork(BasicBlock* block, unsigned i, BasicBlock** bres, unsigned* nres)
 {
-    assert(block->hasHndIndex()); // Otherwise, endfinally outside a finally/fault block?
+    assert(block->hasHndIndex()); // Otherwise, endfinally outside a finally block?
 
     unsigned  hndIndex = block->getHndIndex();
     EHblkDsc* ehDsc    = ehGetDsc(hndIndex);
 
-    assert(ehDsc->HasFinallyOrFaultHandler()); // Otherwise, endfinally outside a finally/fault block.
+    assert(ehDsc->HasFinallyHandler()); // Otherwise, endfinally outside a finally block.
 
     *bres            = nullptr;
     unsigned succNum = 0;
 
-    if (ehDsc->HasFinallyHandler())
+    BasicBlock* begBlk;
+    BasicBlock* endBlk;
+    ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
+
+    BasicBlock* finBeg = ehDsc->ebdHndBeg;
+
+    for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
     {
-        BasicBlock* begBlk;
-        BasicBlock* endBlk;
-        ehGetCallFinallyBlockRange(hndIndex, &begBlk, &endBlk);
-
-        BasicBlock* finBeg = ehDsc->ebdHndBeg;
-
-        for (BasicBlock* bcall = begBlk; bcall != endBlk; bcall = bcall->bbNext)
+        if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
         {
-            if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
-            {
-                continue;
-            }
-
-            assert(bcall->isBBCallAlwaysPair());
-
-            if (succNum == i)
-            {
-                *bres = bcall->bbNext;
-                return;
-            }
-            succNum++;
+            continue;
         }
+
+        assert(bcall->isBBCallAlwaysPair());
+
+        if (succNum == i)
+        {
+            *bres = bcall->bbNext;
+            return;
+        }
+        succNum++;
     }
-    assert(i == ~0u || ehDsc->HasFaultHandler()); // Should reach here only for fault blocks.
-    if (i == ~0u)
-    {
-        *nres = succNum;
-    }
+
+    assert(i == ~0u);
+    *nres = succNum;
 }
 
 Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switchBlk)
@@ -512,8 +508,7 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // can create a new epoch, thus invalidating all existing BlockSet objects, such as
         // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
 
-        unsigned     bbNumMax = impInlineRoot()->fgBBNumMax;
-        BitVecTraits blockVecTraits(bbNumMax + 1, this);
+        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {

@@ -103,6 +103,8 @@ extends:
             jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
             buildConfig: release
             platforms:
+            - linux_x64
+            - windows_x64
             - linux_arm64
             - windows_arm64
             jobParameters:
@@ -217,7 +219,25 @@ extends:
               projectFile: microbenchmarks.proj
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-              logicalmachine: 'perfampere' 
+              logicalmachine: 'perfampere'
+        
+        # run coreclr cloudvm microbenchmarks perf job
+        # this run is added temporarily for measuring AVX-512 performance
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_x64
+            - windows_x64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'cloudvm'
 
       # Uncomment once we fix https://github.com/dotnet/performance/issues/1950
       # # run coreclr linux crossgen perf job

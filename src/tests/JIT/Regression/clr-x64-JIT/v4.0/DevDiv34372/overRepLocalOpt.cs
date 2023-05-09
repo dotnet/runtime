@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class DeadEH
 {
@@ -57,7 +58,8 @@ public static class DeadEH
     }
 
     // Get everything jitted before we call
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Foo("prep");
         Bar(0);

@@ -13,15 +13,11 @@
 
     <PropertyGroup>
       <CrossDir></CrossDir>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(BuildArchitecture)' != '$(TargetArchitecture)'">
-      <CrossDir Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">x64</CrossDir>
-      <CrossDir Condition="'$(TargetArchitecture)' == 'x86'">$(BuildArchitecture)</CrossDir>
-    </PropertyGroup>
+      <CrossDir Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)'">$(BuildArchitecture)</CrossDir>
 
-    <PropertyGroup>
       <BuildDll>true</BuildDll>
-      <BuildDll Condition="'$(CrossBuild)' == 'true' and '$(CrossDir)' == ''">false</BuildDll>
+      <BuildDll Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris'">false</BuildDll>
+      <BuildDll Condition="'$(TargetArchitecture)' == 'riscv64'">false</BuildDll>
 
       <BuildPdb>false</BuildPdb>
       <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>

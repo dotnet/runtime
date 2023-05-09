@@ -7,6 +7,7 @@
 // Reduced from 235.4 KiB to 1.4 KiB in 00:22:05
 // Crashes the runtime
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class C0
 {
@@ -38,7 +39,8 @@ public class Runtime_57061_3
     static long s_2;
     static S0[][][] s_3;
     static S0 s_4;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         C1 vr3 = default(C1);
         for (int vr4 = 0; vr4 < Bound(); vr4++)

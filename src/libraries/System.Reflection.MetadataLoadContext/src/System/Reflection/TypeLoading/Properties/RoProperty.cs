@@ -51,9 +51,45 @@ namespace System.Reflection.TypeLoading
         private const PropertyAttributes PropertyAttributesSentinel = (PropertyAttributes)(-1);
         private volatile PropertyAttributes _lazyPropertyAttributes = PropertyAttributesSentinel;
 
-        public sealed override Type PropertyType => _lazyPropertyType ??= ComputePropertyType();
+        public sealed override Type PropertyType
+        {
+            get
+            {
+                InitializeFieldType();
+                return _lazyPropertyType!;
+            }
+        }
+
+        protected RoModifiedType ModifiedType
+        {
+            get
+            {
+                InitializeFieldType();
+                _modifiedType ??= RoModifiedType.Create((RoType)PropertyType);
+                return _modifiedType;
+            }
+        }
+
+        private void InitializeFieldType()
+        {
+            if (_lazyPropertyType is null)
+            {
+                Type type = ComputePropertyType();
+                if (type is RoModifiedType modifiedType)
+                {
+                    _modifiedType = modifiedType;
+                    _lazyPropertyType = modifiedType.UnderlyingSystemType;
+                }
+                else
+                {
+                    _lazyPropertyType = type;
+                }
+            }
+        }
+
         protected abstract Type ComputePropertyType();
         private volatile Type? _lazyPropertyType;
+        protected volatile RoModifiedType? _modifiedType;
 
         public sealed override MethodInfo? GetGetMethod(bool nonPublic) => GetRoGetMethod()?.FilterAccessor(nonPublic);
         public sealed override MethodInfo? GetSetMethod(bool nonPublic) => GetRoSetMethod()?.FilterAccessor(nonPublic);

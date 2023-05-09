@@ -350,8 +350,7 @@ namespace System.Xml
             get { return _indentation; }
             set
             {
-                if (value < 0)
-                    throw new ArgumentException(SR.Xml_InvalidIndentation);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _indentation = value;
             }
         }

@@ -23,8 +23,8 @@ namespace System.Net.Http
         private const int ColonSpaceLength = 2;
         private const int CommaSpaceLength = 2;
 
-        private static readonly IndexOfAnyValues<char> s_allowedBoundaryChars =
-            IndexOfAnyValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+        private static readonly SearchValues<char> s_allowedBoundaryChars =
+            SearchValues.Create(" '()+,-./0123456789:=?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private readonly List<HttpContent> _nestedContent;
         private readonly string _boundary;
@@ -533,10 +533,10 @@ namespace System.Net.Http
                 ReadAsyncPrivate(buffer, cancellationToken);
 
             public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-                TaskToApm.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(ReadAsync(array, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
             public override int EndRead(IAsyncResult asyncResult) =>
-                TaskToApm.End<int>(asyncResult);
+                TaskToAsyncResult.End<int>(asyncResult);
 
             public async ValueTask<int> ReadAsyncPrivate(Memory<byte> buffer, CancellationToken cancellationToken)
             {

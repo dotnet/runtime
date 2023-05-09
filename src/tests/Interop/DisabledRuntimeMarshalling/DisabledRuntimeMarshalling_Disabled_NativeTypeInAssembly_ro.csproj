@@ -4,6 +4,9 @@
     <!-- Run the same test suite with optimizations on to validate that inlined IL stubs with the disabled marshalling behavior work correctly. -->
     <DebugType>None</DebugType>
     <Optimize>true</Optimize>
+
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/84402 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />

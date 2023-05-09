@@ -190,7 +190,9 @@ namespace System
         public void GetItems<T>(ReadOnlySpan<T> choices, Span<T> destination)
         {
             if (choices.IsEmpty)
+            {
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+            }
 
             for (int i = 0; i < destination.Length; i++)
             {
@@ -237,11 +239,10 @@ namespace System
         /// </remarks>
         public T[] GetItems<T>(ReadOnlySpan<T> choices, int length)
         {
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             T[] items = new T[length];
-            GetItems<T>(choices, items.AsSpan());
+            GetItems(choices, items.AsSpan());
             return items;
         }
 
@@ -258,7 +259,7 @@ namespace System
         public void Shuffle<T>(T[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
-            Shuffle<T>(values.AsSpan());
+            Shuffle(values.AsSpan());
         }
 
         /// <summary>

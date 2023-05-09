@@ -14,8 +14,8 @@ namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
     {
-        private PEReader _peReader;
-        protected MetadataReader _metadataReader;
+        private readonly PEReader _peReader;
+        protected readonly MetadataReader _metadataReader;
 
         internal interface IEntityHandleObject
         {
@@ -27,8 +27,8 @@ namespace Internal.TypeSystem.Ecma
 
         private sealed class EcmaObjectLookupWrapper : IEntityHandleObject
         {
-            private EntityHandle _handle;
-            private object _obj;
+            private readonly EntityHandle _handle;
+            private readonly object _obj;
 
             public EcmaObjectLookupWrapper(EntityHandle handle, object obj)
             {
@@ -55,7 +55,7 @@ namespace Internal.TypeSystem.Ecma
 
         internal sealed class EcmaObjectLookupHashtable : LockFreeReaderHashtable<EntityHandle, IEntityHandleObject>
         {
-            private EcmaModule _module;
+            private readonly EcmaModule _module;
 
             public EcmaObjectLookupHashtable(EcmaModule module)
             {
@@ -178,8 +178,8 @@ namespace Internal.TypeSystem.Ecma
             return _moduleResolver.ResolveModule(this.Assembly, fileName);
         }
 
-        private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
-        private IModuleResolver _moduleResolver;
+        private readonly LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
+        private readonly IModuleResolver _moduleResolver;
 
         internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver)
             : base(context, containingAssembly)
@@ -282,60 +282,80 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        private Dictionary<(string Name, string Namespace), EntityHandle> _nameLookupCache;
+
+        private Dictionary<(string Name, string Namespace), EntityHandle> CreateNameLookupCache()
+        {
+            // TODO: it's not particularly efficient to materialize strings just to hash them and hold
+            // onto them forever. We could instead hash the UTF-8 bytes and hold the TypeDefinitionHandle
+            // so we can obtain the bytes again when needed.
+            // E.g. see the scheme explored in the first commit of https://github.com/dotnet/runtime/pull/84285.
+
+            var result = new Dictionary<(string Name, string Namespace), EntityHandle>();
+
+            MetadataReader metadataReader = _metadataReader;
+            foreach (TypeDefinitionHandle typeDefHandle in metadataReader.TypeDefinitions)
+            {
+                TypeDefinition typeDefinition = metadataReader.GetTypeDefinition(typeDefHandle);
+                if (typeDefinition.Attributes.IsNested())
+                    continue;
+
+                result.Add((metadataReader.GetString(typeDefinition.Name), metadataReader.GetString(typeDefinition.Namespace)), typeDefHandle);
+            }
+
+            foreach (ExportedTypeHandle exportedTypeHandle in metadataReader.ExportedTypes)
+            {
+                ExportedType exportedType = metadataReader.GetExportedType(exportedTypeHandle);
+                if (exportedType.Implementation.Kind == HandleKind.ExportedType)
+                    continue;
+
+                result.Add((metadataReader.GetString(exportedType.Name), metadataReader.GetString(exportedType.Namespace)), exportedTypeHandle);
+            }
+
+            return _nameLookupCache = result;
+        }
+
         public sealed override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                var metadataReader = currentModule._metadataReader;
-                var stringComparer = metadataReader.StringComparer;
-                // TODO: More efficient implementation?
-                foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+                if ((currentModule._nameLookupCache ?? currentModule.CreateNameLookupCache()).TryGetValue((name, nameSpace), out EntityHandle foundHandle))
                 {
-                    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-                    if (typeDefinition.Attributes.IsNested())
-                        continue;
+                    if (foundHandle.Kind == HandleKind.TypeDefinition)
+                        return currentModule.GetType((TypeDefinitionHandle)foundHandle);
 
-                    if (stringComparer.Equals(typeDefinition.Name, name) &&
-                        stringComparer.Equals(typeDefinition.Namespace, nameSpace))
+                    ExportedType exportedType = currentModule._metadataReader.GetExportedType((ExportedTypeHandle)foundHandle);
+                    if (exportedType.IsForwarder)
                     {
-                        return currentModule.GetType(typeDefinitionHandle);
-                    }
-                }
+                        object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
 
-                foreach (var exportedTypeHandle in metadataReader.ExportedTypes)
-                {
-                    var exportedType = metadataReader.GetExportedType(exportedTypeHandle);
-                    if (stringComparer.Equals(exportedType.Name, name) &&
-                        stringComparer.Equals(exportedType.Namespace, nameSpace))
-                    {
-                        if (exportedType.IsForwarder)
+                        if (implementation == null)
                         {
-                            object implementation = currentModule.GetObject(exportedType.Implementation, notFoundBehavior);
-
-                            if (implementation == null)
-                            {
-                                return null;
-                            }
-                            if (implementation is EcmaModule ecmaModule)
-                            {
-                                currentModule = ecmaModule;
-                                break;
-                            }
-                            if (implementation is ModuleDesc moduleDesc)
-                            {
-                                return moduleDesc.GetType(nameSpace, name, notFoundBehavior);
-                            }
-                            if (implementation is ResolutionFailure failure)
-                            {
-                                // No need to check notFoundBehavior - the callee already handled ReturnNull and Throw
-                                return implementation;
-                            }
+                            return null;
+                        }
+                        else if (implementation is EcmaModule ecmaModule)
+                        {
+                            currentModule = ecmaModule;
+                        }
+                        else if (implementation is ModuleDesc moduleDesc)
+                        {
+                            return moduleDesc.GetType(nameSpace, name, notFoundBehavior);
+                        }
+                        else if (implementation is ResolutionFailure)
+                        {
+                            // No need to check notFoundBehavior - the callee already handled ReturnNull and Throw
+                            return implementation;
+                        }
+                        else
+                        {
                             // TODO
                             throw new NotImplementedException();
                         }
-
+                    }
+                    else
+                    {
                         // TODO:
                         throw new NotImplementedException();
                     }

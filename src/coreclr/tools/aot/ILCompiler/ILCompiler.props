@@ -14,6 +14,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <TieredCompilation>false</TieredCompilation>
+    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 
   <PropertyGroup>

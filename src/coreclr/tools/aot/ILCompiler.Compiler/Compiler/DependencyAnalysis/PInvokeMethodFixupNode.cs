@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
 using Internal.IL.Stubs;
@@ -118,8 +119,16 @@ namespace ILCompiler.DependencyAnalysis
             PInvokeMetadata metadata = pInvokeLazyFixupField.PInvokeMetadata;
             ModuleDesc declaringModule = ((MetadataType)pInvokeLazyFixupField.TargetMethod.OwningType).Module;
 
-            DllImportSearchPath? dllImportSearchPath = default;
-            if (declaringModule.Assembly is EcmaAssembly asm)
+            CustomAttributeValue<TypeDesc>? decodedAttr = null;
+
+            // Look for DefaultDllImportSearchPath on the method
+            if (pInvokeLazyFixupField.TargetMethod is EcmaMethod method)
+            {
+                decodedAttr = method.GetDecodedCustomAttribute("System.Runtime.InteropServices", "DefaultDllImportSearchPathsAttribute");
+            }
+
+            // If the attribute it wasn't found on the method, look for it on the assembly
+            if (!decodedAttr.HasValue && declaringModule.Assembly is EcmaAssembly asm)
             {
                 // We look for [assembly:DefaultDllImportSearchPaths(...)]
                 var attrHandle = asm.MetadataReader.GetCustomAttributeHandle(asm.AssemblyDefinition.GetCustomAttributes(),
@@ -127,14 +136,18 @@ namespace ILCompiler.DependencyAnalysis
                 if (!attrHandle.IsNil)
                 {
                     var attr = asm.MetadataReader.GetCustomAttribute(attrHandle);
-                    var decoded = attr.DecodeValue(new CustomAttributeTypeProvider(asm));
-                    if (decoded.FixedArguments.Length == 1 &&
-                        decoded.FixedArguments[0].Value is int searchPath)
-                    {
-                        dllImportSearchPath = (DllImportSearchPath)searchPath;
-                    }
+                    decodedAttr = attr.DecodeValue(new CustomAttributeTypeProvider(asm));
                 }
             }
+
+            DllImportSearchPath? dllImportSearchPath = default;
+            if (decodedAttr.HasValue
+                && decodedAttr.Value.FixedArguments.Length == 1
+                && decodedAttr.Value.FixedArguments[0].Value is int searchPath)
+            {
+                dllImportSearchPath = (DllImportSearchPath)searchPath;
+            }
+
             ModuleData = new PInvokeModuleData(metadata.Module, dllImportSearchPath, declaringModule);
 
             EntryPointName = metadata.Name;

@@ -374,9 +374,9 @@ namespace System.Threading.Tasks.Dataflow
             private readonly TOutput _messageValue;
 
             /// <summary>CancellationToken used to cancel the send.</summary>
-            private CancellationToken _cancellationToken;
+            private readonly CancellationToken _cancellationToken;
             /// <summary>Registration with the cancellation token.</summary>
-            private CancellationTokenRegistration _cancellationRegistration;
+            private readonly CancellationTokenRegistration _cancellationRegistration;
             /// <summary>The cancellation/completion state of the source.</summary>
             private int _cancellationState; // one of the CANCELLATION_STATE_* constant values, defaulting to NONE
 

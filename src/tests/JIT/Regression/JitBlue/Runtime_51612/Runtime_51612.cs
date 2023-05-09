@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_51612
 {
@@ -64,7 +65,8 @@ namespace Runtime_51612
             x.HasEspBasedFrame();
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

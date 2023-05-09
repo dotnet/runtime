@@ -61,6 +61,11 @@ public:
         return m_deps_file;
     }
 
+public: // static
+    // Get the RID fallback graph for a deps file.
+    // Parse failures or non-existent files will return an empty fallback graph
+    static rid_fallback_graph_t get_rid_fallback_graph(const pal::string_t& deps_path);
+
 private:
     void load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
     void load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);

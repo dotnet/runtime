@@ -43,9 +43,8 @@ namespace System.Collections.ObjectModel
         }
 
         public IEnumerator<T> GetEnumerator() =>
-            list.Count == 0 ?
-                SZGenericArrayEnumerator<T>.Empty :
-                list.GetEnumerator();
+            list.Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            list.GetEnumerator();
 
         public int IndexOf(T value)
         {

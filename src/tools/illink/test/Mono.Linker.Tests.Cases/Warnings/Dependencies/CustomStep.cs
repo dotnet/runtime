@@ -26,8 +26,8 @@ namespace CustomStep
 	{
 		public void Process (LinkContext context)
 		{
-			// All codes in the range [1000-6000] are reserved for the linker
-			// and should not be used by external parties.
+			// All codes in the range [1000-6000] are reserved for trimming, single-file and nativeAOT
+			// errors and warnings and should not be used by external parties.
 			var invalidWarningMessage = MessageContainer.CreateCustomWarningMessage (
 				context: context,
 				text: "Warning",

@@ -30,7 +30,7 @@ Please note that choosing the same image as the host OS you are running on will 
 Once you have chosen an image, the build is one command run from the root of the runtime repository:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
+docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
 ```
 
 Dissecting the command:

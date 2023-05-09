@@ -18,6 +18,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public Array(params object[] _params)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Array), _params))
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
@@ -91,7 +94,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (exception != 0)
                     throw new JSException((string)indexValue);
-                JSHostImplementation.ReleaseInFlight(indexValue);
+                LegacyHostImplementation.ReleaseInFlight(indexValue);
                 return indexValue;
             }
             set

@@ -102,6 +102,58 @@ build_native()
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
+    elif [[ "$__TargetOS" == iossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == ios ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvos ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS architecture $__TargetArch."
+            exit 1
+        fi
     fi
 
     if [[ "$__UseNinja" == 1 ]]; then
@@ -232,7 +284,6 @@ source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 __TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
-__BuildOS=$os
 __OutputRid=''
 
 # Get the number of processors available to the scheduler
@@ -421,6 +472,7 @@ while :; do
         hostarch|-hostarch)
             if [[ -n "$2" ]]; then
                 __HostArch="$2"
+                __ExplicitHostArch=1
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"
@@ -484,9 +536,17 @@ if [[ "$__CrossBuild" == 1 ]]; then
     fi
 fi
 
-# init the target distro name
+# init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
-
 if [ -z "$__OutputRid" ]; then
-    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+    if [[ "$__PortableBuild" == 0 ]]; then
+        __OutputRid="$__DistroRid"
+    else
+        __OutputRid="$__PortableTargetOS-$__TargetArch"
+    fi
 fi
+export __OutputRid
+echo "__OutputRid: ${__OutputRid}"
+
+# When the host runs on an unknown rid, it falls back to the output rid
+__HostFallbackOS="${__OutputRid%-*}" # Strip architecture

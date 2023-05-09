@@ -17,7 +17,7 @@
 //
 
 // Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
-// positions as the mainline runtime but we can change this below when it becomes apparent how Redhawk will
+// positions as the mainline runtime but we can change this below when it becomes apparent how NativeAOT will
 // handle sync blocks).
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000

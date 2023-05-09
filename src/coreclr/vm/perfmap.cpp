@@ -12,6 +12,7 @@
 #include "perfinfo.h"
 #include "pal.h"
 
+
 // The code addresses are actually native image offsets during crossgen. Print
 // them as 32-bit numbers for consistent output when cross-targeting and to
 // make the output more compact.
@@ -21,6 +22,15 @@
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
+unsigned PerfMap::s_StubsMapped = 0;
+
+enum 
+{
+    DISABLED,
+    ALL,
+    JITDUMP,
+    PERFMAP
+};
 
 // Initialize the map for the process - called from EEStartupHelper.
 void PerfMap::Initialize()
@@ -28,7 +38,7 @@ void PerfMap::Initialize()
     LIMITED_METHOD_CONTRACT;
 
     // Only enable the map if requested.
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled))
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == PERFMAP)
     {
         // Get the current process id.
         int currentPid = GetCurrentProcessId();
@@ -49,7 +59,10 @@ void PerfMap::Initialize()
         }
 
         s_enabled = true;
+    }
 
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == ALL || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapEnabled) == JITDUMP)
+    {   
         const char* jitdumpPath;
         char jitdumpPathBuffer[4096];
 
@@ -65,6 +78,13 @@ void PerfMap::Initialize()
         }
 
         PAL_PerfJitDump_Start(jitdumpPath);
+
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
+        {
+            s_ShowOptimizationTiers = true;
+        }
+        
+        s_enabled = true;
     }
 }
 
@@ -88,8 +108,6 @@ PerfMap::PerfMap(int pid)
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
-
-    m_StubsMapped = 0;
 
     // Build the path to the map file on disk.
     WCHAR tempPath[MAX_LONGPATH+1];
@@ -119,7 +137,7 @@ PerfMap::PerfMap()
     // Initialize with no failures.
     m_ErrorEncountered = false;
 
-    m_StubsMapped = 0;
+    s_StubsMapped = 0;
 }
 
 // Clean-up resources.
@@ -157,6 +175,11 @@ void PerfMap::WriteLine(SString& line)
 {
     STANDARD_VM_CONTRACT;
 
+    if (m_FileStream == nullptr || m_ErrorEncountered)
+    {
+        return;
+    }
+
     EX_TRY
     {
         // Write the line.
@@ -177,50 +200,9 @@ void PerfMap::WriteLine(SString& line)
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-// Log a method to the map.
-void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier)
-{
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pMethod != nullptr);
-        PRECONDITION(pCode != nullptr);
-        PRECONDITION(codeSize > 0);
-    } CONTRACTL_END;
-
-    if (m_FileStream == nullptr || m_ErrorEncountered)
-    {
-        // A failure occurred, do not log.
-        return;
-    }
-
-    // Logging failures should not cause any exceptions to flow upstream.
-    EX_TRY
-    {
-        // Get the full method signature.
-        SString name;
-        pMethod->GetFullMethodInfo(name);
-
-        // Build the map file line.
-        if (optimizationTier != nullptr && s_ShowOptimizationTiers)
-        {
-            name.AppendPrintf("[%s]", optimizationTier);
-        }
-        SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
-
-        // Write the line.
-        WriteLine(line);
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
-    }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-}
-
-
 void PerfMap::LogImageLoad(PEAssembly * pPEAssembly)
 {
-    if (s_enabled)
+    if (s_enabled && s_Current != nullptr)
     {
         s_Current->LogImage(pPEAssembly);
     }
@@ -259,6 +241,15 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
 {
     LIMITED_METHOD_CONTRACT;
 
+    CONTRACTL{
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+        PRECONDITION(pMethod != nullptr);
+        PRECONDITION(pCode != nullptr);
+        PRECONDITION(codeSize > 0);
+    } CONTRACTL_END;
+
     if (!s_enabled)
     {
         return;
@@ -270,7 +261,30 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
         optimizationTier = PrepareCodeConfig::GetJitOptimizationTierStr(pConfig, pMethod);
     }
 
-    s_Current->LogMethod(pMethod, pCode, codeSize, optimizationTier);
+    // Logging failures should not cause any exceptions to flow upstream.
+    EX_TRY
+    {
+        // Get the full method signature.
+        SString name;
+        pMethod->GetFullMethodInfo(name);
+
+        // Build the map file line.
+        if (optimizationTier != nullptr && s_ShowOptimizationTiers)
+        {
+            name.AppendPrintf("[%s]", optimizationTier);
+        }
+        SString line;
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+
+        // Write the line.
+        if(s_Current != nullptr)
+        {
+            s_Current->WriteLine(line);
+        }
+        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
+    }
+    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+
 }
 
 // Log a pre-compiled method to the perfmap.
@@ -327,7 +341,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (!s_enabled || s_Current->m_FileStream == nullptr)
+    if (!s_enabled)
     {
         return;
     }
@@ -346,12 +360,15 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 
         SString name;
         // Build the map file line.
-        name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
+        name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
         SString line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
 
         // Write the line.
-        s_Current->WriteLine(line);
+        if(s_Current != nullptr)
+        {
+            s_Current->WriteLine(line);
+        }
         PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);

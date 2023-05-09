@@ -54,6 +54,11 @@
 #include <time.h>
 #endif
 
+#ifdef TARGET_APPLE
+#include <minipal/getexepath.h>
+#include <mach-o/getsect.h>
+#endif
+
 using std::nullptr_t;
 
 #define PalRaiseFailFastException RaiseFailFastException
@@ -297,10 +302,9 @@ public:
     {
         pthread_mutex_lock(&m_mutex);
         m_state = true;
-        pthread_mutex_unlock(&m_mutex);
-
         // Unblock all threads waiting for the condition variable
         pthread_cond_broadcast(&m_condition);
+        pthread_mutex_unlock(&m_mutex);
     }
 
     void Reset()
@@ -339,8 +343,6 @@ void ConfigureSignals()
     // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
     signal(SIGPIPE, SIG_IGN);
 }
-
-extern bool GetCpuLimit(uint32_t* val);
 
 void InitializeCurrentProcessCpuCount()
 {
@@ -488,14 +490,63 @@ extern "C" bool PalDetachThread(void* thread)
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+
+#ifdef TARGET_APPLE
+static const struct section_64 *thunks_section;
+static const struct section_64 *thunks_data_section;
+#endif
+
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
+#ifdef TARGET_APPLE
+    int f;
+    Dl_info info;
+
+    int st = dladdr((const void*)hTemplateModule, &info);
+    if (st == 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    f = open(info.dli_fname, O_RDONLY);
+    if (f < 0)
+    {
+        return UInt32_FALSE;
+    }
+
+    // NOTE: We ignore templateRva since we would need to convert it to file offset
+    // and templateSize is useless too. Instead we read the sections from the
+    // executable and determine the size from them.
+    if (thunks_section == NULL)
+    {
+        const struct mach_header_64 *hdr = (const struct mach_header_64 *)hTemplateModule;
+        thunks_section = getsectbynamefromheader_64(hdr, "__THUNKS", "__thunks");
+        thunks_data_section = getsectbynamefromheader_64(hdr, "__THUNKS_DATA", "__thunks");
+    }
+
+    *newThunksOut = mmap(
+        NULL,
+        thunks_section->size + thunks_data_section->size,
+        PROT_READ | PROT_EXEC,
+        MAP_PRIVATE,
+        f,
+        thunks_section->offset);
+    close(f);
+
+    return *newThunksOut == NULL ? UInt32_FALSE : UInt32_TRUE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
 {
+#ifdef TARGET_APPLE
+    int ret = munmap(pBaseAddress, thunks_section->size + thunks_data_section->size);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
+#else
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+#endif
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
@@ -506,7 +557,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping)
 {
-    return UInt32_TRUE;
+    int ret = mprotect(
+        (void*)((uintptr_t)virtualAddress + (thunkBlocksPerMapping * OS_PAGE_SIZE)),
+        thunkBlocksPerMapping * OS_PAGE_SIZE,
+        PROT_READ | PROT_WRITE);
+    return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
@@ -678,7 +733,9 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
-    write(STDERR_FILENO, message, strlen(message));
+    // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
+    // so we use additional NOT(!) operator to force unused-result suppression.
+    (void)!write(STDERR_FILENO, message, strlen(message));
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -733,7 +790,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
         int flags = MAP_ANON | MAP_PRIVATE;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
         if (unixProtect & PROT_EXEC)
         {
             flags |= MAP_JIT;
@@ -795,6 +852,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
     return mprotect(pPageStart, memSize, unixProtect) == 0;
 }
 
+#if (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+extern "C" void sys_icache_invalidate(const void* start, size_t len);
+#endif
+
 REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 {
 #if defined(__linux__) && defined(HOST_ARM)
@@ -817,6 +878,8 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
+#elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
+    sys_icache_invalidate (pAddress, size);
 #else
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
@@ -961,14 +1024,14 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
     // Only accept activations from the current process
     if (g_pHijackCallback != NULL && (siginfo->si_pid == getpid()
-#ifdef HOST_OSX
-        // On OSX si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+#ifdef HOST_APPLE
+        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
         // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
         || siginfo->si_pid == 0
 #endif
         ))
     {
-        // Make sure that errno is not modified 
+        // Make sure that errno is not modified
         int savedErrNo = errno;
         g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
         errno = savedErrNo;
@@ -1212,12 +1275,16 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 }
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+//
+// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
 
 #if !__has_builtin(__cpuid)
 REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1230,7 +1297,7 @@ REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1251,8 +1318,26 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
+#ifndef XSTATE_MASK_AVX512
+#define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
+#endif // XSTATE_MASK_AVX512
+
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
 {
+#if defined(TARGET_APPLE)
+    // MacOS has specialized behavior where it reports AVX512 support but doesnt
+    // actually enable AVX512 until the first instruction is executed and does so
+    // on a per thread basis. It does this by catching the faulting instruction and
+    // checking for the EVEX encoding. The kmov instructions, despite being part
+    // of the AVX512 instruction set are VEX encoded and dont trigger the enablement
+    //
+    // See https://github.com/apple/darwin-xnu/blob/main/osfmk/i386/fpu.c#L174
+
+    // TODO-AVX512: Enabling this for OSX requires ensuring threads explicitly trigger
+    // the AVX-512 enablement so that arbitrary usage doesn't cause downstream problems
+
+    return false;
+#else
     DWORD eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
@@ -1261,6 +1346,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
       );
     // check OS has enabled XMM, YMM and ZMM state support
     return ((eax & 0xE6) == 0x0E6) ? 1 : 0;
+#endif
 }
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)

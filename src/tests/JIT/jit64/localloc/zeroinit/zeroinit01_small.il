@@ -10,9 +10,9 @@
 
 // Test zero initialization of localloc
 .assembly extern mscorlib{}
-.assembly 'zeroinit01_small'{}
+.assembly 'zeroInit01_small_'{}
 
-.class private auto ansi beforefieldinit T
+.class public auto ansi beforefieldinit T
        extends [mscorlib]System.Object
 {
   .field public static int32 size_to_test

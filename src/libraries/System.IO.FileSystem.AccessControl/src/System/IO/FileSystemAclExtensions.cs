@@ -247,10 +247,7 @@ namespace System.IO
                 access |= FileAccess.Write;
             }
 
-            if (access == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(rights));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero((int)access, nameof(rights));
 
             return access;
         }
@@ -282,7 +279,7 @@ namespace System.IO
             {
                 fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
                 {
-                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
                     handle = CreateFileHandleInternal(fullPath, mode, rights, share, flagsAndAttributes, &secAttrs);
                 }
             }

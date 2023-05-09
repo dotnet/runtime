@@ -12,7 +12,7 @@
 .assembly callconv3 {}
 .namespace PrimitiveVT
 {
-  .class private auto ansi beforefieldinit CallConv3
+  .class public auto ansi beforefieldinit CallConv3
          extends [mscorlib]System.Object
   {
     .field private static class [mscorlib]System.Random rand
@@ -263,8 +263,7 @@
       IL_002d:  ret
     } 
 
-    .method private hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

@@ -3,15 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using FluentAssertions;
 using ILCompiler;
-using ILCompiler.DependencyAnalysis;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
@@ -25,42 +21,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
-		internal readonly struct AssemblyQualifiedToken : IEquatable<AssemblyQualifiedToken>
-		{
-			public string? AssemblyName { get; }
-			public int Token { get; }
-
-			public AssemblyQualifiedToken (string? assemblyName, int token) => (AssemblyName, Token) = (assemblyName, token);
-
-			public AssemblyQualifiedToken (TypeSystemEntity entity) =>
-				(AssemblyName, Token) = entity switch {
-					EcmaType type => (type.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (type.Handle)),
-					EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
-					PropertyPseudoDesc property => (((EcmaType) property.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (property.Handle)),
-					EventPseudoDesc @event => (((EcmaType) @event.OwningType).Module.Assembly.GetName ().Name, MetadataTokens.GetToken (@event.Handle)),
-					ILStubMethod => (null, 0), // Ignore compiler generated methods
-					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
-				};
-
-			public AssemblyQualifiedToken (IMemberDefinition member) =>
-				(AssemblyName, Token) = member switch {
-					TypeDefinition type => (type.Module.Assembly.Name.Name, type.MetadataToken.ToInt32 ()),
-					MethodDefinition method => (method.Module.Assembly.Name.Name, method.MetadataToken.ToInt32 ()),
-					PropertyDefinition property => (property.Module.Assembly.Name.Name, property.MetadataToken.ToInt32 ()),
-					EventDefinition @event => (@event.Module.Assembly.Name.Name, @event.MetadataToken.ToInt32 ()),
-					FieldDefinition field => (field.Module.Assembly.Name.Name, field.MetadataToken.ToInt32 ()),
-					_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {member} yet.")
-				};
-
-			public override int GetHashCode () => AssemblyName == null ? 0 : AssemblyName.GetHashCode () ^ Token.GetHashCode ();
-			public override string ToString () => $"{AssemblyName}: {Token}";
-			public bool Equals (AssemblyQualifiedToken other) =>
-				string.CompareOrdinal (AssemblyName, other.AssemblyName) == 0 && Token == other.Token;
-			public override bool Equals ([NotNullWhen (true)] object? obj) => ((AssemblyQualifiedToken?) obj)?.Equals (this) == true;
-
-			public bool IsNil => AssemblyName == null;
-		}
-
 		private readonly BaseAssemblyResolver originalsResolver;
 		private readonly ReaderParameters originalReaderParameters;
 		private readonly AssemblyDefinition originalAssembly;
@@ -80,7 +40,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Ignore NativeAOT injected members
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
-				"<Module>.MainMethodWrapper()"
+				"<Module>.MainMethodWrapper()",
+
+				// Ignore compiler generated code which can't be reasonably matched to the source method
+				"<PrivateImplementationDetails>",
 			};
 
 		public AssemblyChecker (
@@ -168,6 +131,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddMethod (method);
 			}
 
+			foreach (MethodDesc method in testResult.TrimmingResults.ReflectedMethods) {
+				AddMethod (method);
+			}
+
 			void AddMethod (MethodDesc method)
 			{
 				MethodDesc methodDef = method.GetTypicalMethodDefinition ();
@@ -213,8 +180,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (typeDef.IsDelegate) {
 					// AOT's handling of delegates is very different from the IL/metadata picture
 					// So to simplify this, we're going to automatically "mark" all of the delegate's methods
-					foreach (MethodDesc m in typeDef.GetMethods()) {
-						if (ShouldIncludeEntityByDisplayName(m)) {
+					foreach (MethodDesc m in typeDef.GetMethods ()) {
+						if (ShouldIncludeEntityByDisplayName (m)) {
 							AddMember (m);
 						}
 					}
@@ -1233,7 +1200,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 
@@ -1250,7 +1217,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object? keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.NativeAot);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.NativeAot);
 			});
 		}
 

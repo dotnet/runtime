@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 internal class Foo : IDisposable
 {
@@ -41,7 +42,8 @@ public class GitHub_18332
         return "wobble";
     }
     
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string expected = "wobble";
         string actual = Aargh();

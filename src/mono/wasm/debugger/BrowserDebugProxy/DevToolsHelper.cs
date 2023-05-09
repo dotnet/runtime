@@ -63,7 +63,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class DotnetObjectId
     {
-        private int? _intValue;
+        private readonly int? _intValue;
 
         public string Scheme { get; }
         public int Value

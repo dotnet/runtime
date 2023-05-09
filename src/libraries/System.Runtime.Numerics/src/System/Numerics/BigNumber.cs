@@ -518,7 +518,7 @@ namespace System.Numerics
         // algorithm with a running time of O(N^2). And if it is greater than the threshold, use
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
-        private static int s_naiveThreshold = 20000;
+        private static int s_naiveThreshold = 20000; // non-readonly for testing
         private static ParsingStatus NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;

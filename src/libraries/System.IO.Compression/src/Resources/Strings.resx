@@ -146,9 +146,6 @@
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
   </data>
-  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed stream.</value>
-  </data>
   <data name="UnknownBlockType" xml:space="preserve">
     <value>Unknown block type. Stream might be corrupted.</value>
   </data>

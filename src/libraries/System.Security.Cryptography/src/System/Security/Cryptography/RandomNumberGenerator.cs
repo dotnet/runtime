@@ -203,8 +203,7 @@ namespace System.Security.Cryptography
             if (choices.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             T[] result = new T[length];
             GetItemsCore<T>(choices, result);
@@ -231,8 +230,7 @@ namespace System.Security.Cryptography
             if (choices.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
 
-            if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
 #pragma warning disable 8500
             return string.Create(length,

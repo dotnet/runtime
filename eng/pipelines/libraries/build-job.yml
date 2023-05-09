@@ -24,6 +24,7 @@ parameters:
   container: ''
   condition: true
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   shouldContinueOnError: false
   variables: {}
   pool: ''
@@ -52,6 +53,7 @@ jobs:
       container: ${{ parameters.container }}
       condition: ${{ parameters.condition }}
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
       pool: ${{ parameters.pool }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
       testScope: ${{ parameters.testScope }}
@@ -85,7 +87,7 @@ jobs:
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
-        - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
+        - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
           - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
             displayName: Install Build Dependencies
 

@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests
 				.GetCustomAttributes<AssemblyMetadataAttribute> ()
 				.Where (ca => ca.Key == "CecilPackageVersion")
 				.Single ().Value;
-			// Assume that the test assembly builds against the same cecil as the linker.
+			// Assume that the test assembly builds against the same cecil as ILLink.
 			var cecilAssemblyVersion = thisAssembly
 				.GetReferencedAssemblies ()
 				.Where (an => an.Name == "Mono.Cecil")

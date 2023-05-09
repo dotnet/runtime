@@ -1001,7 +1001,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     // On Debug builds, we'll ASSERT by default whenever the target appears to be corrupt or
     // otherwise inconsistent (both in DAC and DBI).  But we also need the ability to
     // explicitly test corrupt targets.
-    // Tests should set COMPlus_DbgIgnoreInconsistentTarget=1 to suppress these asserts
+    // Tests should set DOTNET_DbgIgnoreInconsistentTarget=1 to suppress these asserts
     // Note that this controls two things:
     //     1) DAC behavior - see code:IDacDbiInterface::DacSetTargetConsistencyChecks
     //     2) RS-only consistency asserts - see code:CordbProcess::TargetConsistencyCheck
@@ -6438,7 +6438,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     DT_CONTEXT * pContext;
 
-    if (contextSize != sizeof(DT_CONTEXT))
+    if (contextSize < sizeof(DT_CONTEXT))
     {
         LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
         return E_INVALIDARG;
@@ -11179,10 +11179,10 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
-    CONTEXT context = { 0 };
+    DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(CONTEXT), reinterpret_cast<BYTE*> (&context));
+    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&context));
     IfFailThrow(hr);
 
     TADDR lsContextAddr = (TADDR)context.Rcx;

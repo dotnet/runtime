@@ -20,6 +20,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -75,7 +77,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
     NI_System_Object_GetType,
-    NI_System_RuntimeTypeHandle_GetValueInternal,
+    NI_System_RuntimeTypeHandle_ToIntPtr,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
@@ -102,6 +104,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
+    NI_System_SpanHelpers_SequenceEqual,
     NI_System_ReadOnlySpan_get_Item,
     NI_System_ReadOnlySpan_get_Length,
 
@@ -179,6 +182,7 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_As,
     NI_SRCS_UNSAFE_AsPointer,
     NI_SRCS_UNSAFE_AsRef,
+    NI_SRCS_UNSAFE_BitCast,
     NI_SRCS_UNSAFE_ByteOffset,
     NI_SRCS_UNSAFE_Copy,
     NI_SRCS_UNSAFE_CopyBlock,

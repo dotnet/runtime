@@ -1,4 +1,4 @@
-<!-- This is file is to tell the linker not to remove these assemblies/types/namespace 
+<!-- This is file is to tell the trimming tools not to remove these assemblies/types/namespace 
      when aggressive trimming is enabled. -->
 <linker>
   <assembly fullname="TestUtilities">

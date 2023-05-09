@@ -664,7 +664,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 keepChecking = true;
                 break;
 
-            case GT_FIELD:
             case GT_IND:
                 // Address of the field/ind is not taken so the local doesn't escape.
                 canLclVarEscapeViaParentStack = false;
@@ -760,7 +759,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 keepChecking = true;
                 break;
 
-            case GT_FIELD:
             case GT_IND:
             {
                 // The new target could be *not* on the heap.
@@ -839,7 +837,7 @@ void ObjectAllocator::RewriteUses()
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
-            assert(tree->IsLocal() || tree->OperIsLocalAddr());
+            assert(tree->IsLocal() || tree->OperIs(GT_LCL_ADDR));
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;

@@ -49,12 +49,12 @@ Follow these steps to prepare your machine to collect a performance trace.
 2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
 
     > ```bash
-	> export COMPlus_PerfMapEnabled=1
-	> export COMPlus_EnableEventLog=1
+	> export DOTNET_PerfMapEnabled=1
+	> export DOTNET_EnableEventLog=1
 	> ```
 
    Note:
-   COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
+   DOTNET_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
 
 3. **[Trace]** Start collection.
 
@@ -152,7 +152,7 @@ is not needed.   This works, but will increase startup time for your code by som
 can tolerate that (you probably can), then this is an alternative.   You were already setting environment variables
 in order to get symbols, you simply need to add one more.
 	> ```bash
-	> export COMPlus_ZapDisable=1
+	> export DOTNET_ZapDisable=1
 	> ```
 With this change you should get the symbols for all .NET code.
 
@@ -199,8 +199,8 @@ Filtering is implemented on Windows through the latest mechanisms provided with 
 
 On Linux those mechanisms are not available yet. Instead, there are two environment variables that exist just on linux to do some basic filtering.
 
-* COMPlus_EventSourceFilter – filter event sources by name
-* COMPlus_EventNameFilter – filter events by name
+* DOTNET_EventSourceFilter – filter event sources by name
+* DOTNET_EventNameFilter – filter events by name
 
 Setting one or both of these variables will only enable collecting events that contain the name you specify as a substring. Strings are treated as case insensitive.
 

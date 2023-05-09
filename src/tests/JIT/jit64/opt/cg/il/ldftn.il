@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly Test{}
+.assembly 'ldftn'{}
 
 .method public static int32 Foo()
 {
@@ -15,10 +16,13 @@
 	ret
 }
 
-.class Test
+.class public Test
 {
 .method public static int32 main()
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.locals init (int32 V_0)
 	ldc.i4 101

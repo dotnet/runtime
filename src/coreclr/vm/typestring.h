@@ -33,16 +33,13 @@ class TypeNameBuilder
 {
 private:
     friend class TypeString;
-    friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
-    friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*,
-        AssemblyBinder * pBinder,
-        OBJECTREF *);
     HRESULT OpenGenericArguments();
     HRESULT CloseGenericArguments();
     HRESULT OpenGenericArgument();
     HRESULT CloseGenericArgument();
     HRESULT AddName(LPCWSTR szName);
     HRESULT AddName(LPCWSTR szName, LPCWSTR szNamespace);
+    HRESULT AddNameNoEscaping(LPCWSTR szName);
     HRESULT AddPointer();
     HRESULT AddByRef();
     HRESULT AddSzArray();

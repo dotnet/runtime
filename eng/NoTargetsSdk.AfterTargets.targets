@@ -1,7 +1,0 @@
-<Project>
-
-  <!-- Reset the following target to avoid copying references to an output directory.
-       TODO: Remove when https://github.com/microsoft/MSBuildSdks/pull/395 is merged. -->
-  <Target Name="CopyFilesToOutputDirectory" />
-
-</Project>

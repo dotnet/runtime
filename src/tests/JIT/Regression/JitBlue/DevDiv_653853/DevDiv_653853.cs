@@ -4,10 +4,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class Test_DevDiv_653853
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {        
         if (RunTest(0) == 5)
         {

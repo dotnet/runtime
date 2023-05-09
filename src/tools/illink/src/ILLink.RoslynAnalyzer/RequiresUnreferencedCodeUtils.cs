@@ -14,14 +14,14 @@ namespace ILLink.RoslynAnalyzer
 		public static bool TryGetRequiresUnreferencedCodeAttribute (this ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData) =>
 			member.DoesMemberRequireUnreferencedCodeAttribute (out requiresAttributeData) && VerifyRequiresUnreferencedCodeAttributeArguments (requiresAttributeData);
 
-		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
+		// TODO: Consider sharing with ILLink DoesMethodRequireUnreferencedCode method
 		/// <summary>
 		/// True if the target of a call is considered to be annotated with the RequiresUnreferencedCode attribute
 		/// </summary>
 		public static bool DoesMemberRequireUnreferencedCodeAttribute (this ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttributeData)
 			=> member.DoesMemberRequire (RequiresUnreferencedCodeAttribute, out requiresAttributeData);
 
-		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
+		// TODO: Consider sharing with ILLink IsMethodInRequiresUnreferencedCodeScope method
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the RequiresUnreferencedCode attribute
 		/// </summary>

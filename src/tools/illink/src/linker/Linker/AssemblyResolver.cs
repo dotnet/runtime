@@ -65,7 +65,7 @@ namespace Mono.Linker
 			if (_assemblyToPath.TryGetValue (assembly, out string? path))
 				return path;
 
-			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using linker resolver");
+			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using ILLink resolver");
 		}
 
 		AssemblyDefinition? ResolveFromReferences (AssemblyNameReference name)
@@ -166,7 +166,7 @@ namespace Mono.Linker
 
 		AssemblyDefinition IAssemblyResolver.Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
-			// This is never used by cecil in linker context
+			// This is never used by cecil in ILLink context
 			throw new NotSupportedException ();
 		}
 
