@@ -5280,32 +5280,29 @@ void CEEInfo::getCallInfo(
         {
             BYTE * indcell = NULL;
 
-            if (!(flags & CORINFO_CALLINFO_KINDONLY))
+            // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
+            // VirtualCallStubManager from where the stub will be used.
+            // For normal methods there is no difference.
+            LoaderAllocator *pLoaderAllocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+            VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+
+            PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
+
+            // Now we want to indirect through a cell so that updates can take place atomically.
+            if (m_pMethodBeingCompiled->IsLCGMethod())
             {
-                // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
-                // VirtualCallStubManager from where the stub will be used.
-                // For normal methods there is no difference.
-                LoaderAllocator *pLoaderAllocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-                VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+                // LCG methods should use recycled indcells to prevent leaks.
+                indcell = pMgr->GenerateStubIndirection(addr, TRUE);
 
-                PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
-
-                // Now we want to indirect through a cell so that updates can take place atomically.
-                if (m_pMethodBeingCompiled->IsLCGMethod())
-                {
-                    // LCG methods should use recycled indcells to prevent leaks.
-                    indcell = pMgr->GenerateStubIndirection(addr, TRUE);
-
-                    // Add it to the per DM list so that we can recycle them when the resolver is finalized
-                    LCGMethodResolver *pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
-                    pResolver->AddToUsedIndCellList(indcell);
-                }
-                else
-                {
-                    // Normal methods should avoid recycled cells to preserve the locality of all indcells
-                    // used by one method.
-                    indcell = pMgr->GenerateStubIndirection(addr, FALSE);
-                }
+                // Add it to the per DM list so that we can recycle them when the resolver is finalized
+                LCGMethodResolver *pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
+                pResolver->AddToUsedIndCellList(indcell);
+            }
+            else
+            {
+                // Normal methods should avoid recycled cells to preserve the locality of all indcells
+                // used by one method.
+                indcell = pMgr->GenerateStubIndirection(addr, FALSE);
             }
 
             // We use an indirect call
