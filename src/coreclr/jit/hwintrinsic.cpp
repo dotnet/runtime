@@ -53,9 +53,9 @@ const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
     // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
     // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
     //
-    // This table allows us to compute the inverse information, that is given a control, what are the operations it performs.
-    // This allows us to determine things like what operands are actually used (so we can correctly compute isRMW) and
-    // what operations are performed and in what order (such that we can do constant folding in the future).
+    // This table allows us to compute the inverse information, that is given a control, what are the operations it
+    // performs. This allows us to determine things like what operands are actually used (so we can correctly compute
+    // isRMW) and what operations are performed and in what order (such that we can do constant folding in the future).
     //
     // The total set of operations supported are:
     // * true:   AllBitsSet
