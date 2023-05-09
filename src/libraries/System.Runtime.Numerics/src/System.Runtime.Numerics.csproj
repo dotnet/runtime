@@ -32,6 +32,8 @@
              Link="CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs"
+             Link="Common\System\Number.Formatting.Common.cs" />
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs"
              Link="Common\System\Number.NumberBuffer.cs" />
     <Compile Include="$(CommonPath)System\Number.Parsing.Common.cs"

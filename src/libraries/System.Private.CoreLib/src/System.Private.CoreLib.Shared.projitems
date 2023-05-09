@@ -1421,6 +1421,9 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Number.Formatting.Common.cs">
+      <Link>System\Number.Formatting.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs">
       <Link>System\Number.NumberBuffer.cs</Link>
     </Compile>
