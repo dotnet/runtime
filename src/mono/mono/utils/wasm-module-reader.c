@@ -135,6 +135,6 @@ mono_wasm_module_decode_passive_data_segment (const uint8_t *ptr, const uint8_t 
 		return FALSE;
 	*data_start = ptr;
 	*data_len = len;
-	*endp = ptr;
+	*endp = ptr + len;
 	return TRUE;
 }
