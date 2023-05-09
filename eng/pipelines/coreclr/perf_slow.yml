@@ -205,7 +205,7 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               timeoutInMinutes: 500 
-              pgoRunType: -DynamicPgo
+              pgoRunType: --dynamicpgo
 
       # # run coreclr Windows arm64 microbenchmarks perf job
       #   - template: /eng/pipelines/common/platform-matrix.yml
