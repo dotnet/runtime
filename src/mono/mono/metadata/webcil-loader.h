@@ -5,6 +5,8 @@
 #ifndef _MONO_METADATA_WEBCIL_LOADER_H
 #define _MONO_METADATA_WEBCIL_LOADER_H
 
+#define MONO_WEBCIL_IN_WASM_EXTENSION ".wasm"
+
 void
 mono_webcil_loader_install (void);
 
