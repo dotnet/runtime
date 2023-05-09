@@ -12,9 +12,8 @@
 //
 // This phase tries to reconnect trees that were split early on by
 // phases like the importer and inlining. We run it before morph
-// to provide more context for morph's tree based optimizations, and
-// we run it after the local address visitor because that phase sets
-// address exposure for locals and computes (early) ref counts.
+// to provide more context for morph's tree based optimizations and
+// it makes use of early liveness to know which uses are last uses.
 //
 // The general pattern we look for is
 //
@@ -23,8 +22,7 @@
 //  Statement(n+1):
 //    ... use of lcl ...
 //
-// where those are the only appearances of lcl and lcl is not address
-// exposed.
+// where the use of lcl is a last use.
 //
 // The "optimization" here transforms this to
 //
@@ -38,6 +36,8 @@
 // For throughput, we try and early out on illegal or unprofitable cases
 // before doing the more costly bits of analysis. We only scan a limited
 // amount of IR and just give up if we can't find what we are looking for.
+// We use the linked lists of locals to quickly find out if there is a
+// candidate last use in the next statement.
 //
 // If we're successful we will backtrack a bit, to try and catch cases like
 //
@@ -62,15 +62,12 @@
 // that upstream phases didn't leave the wrong flags.
 //
 // For profitability we first try and avoid code growth. We do this
-// by only substituting in cases where lcl has exactly one def and one use.
-// This info is computed for us but the RCS_Early ref counting done during
-// the immediately preceding fgMarkAddressExposedLocals phase.
+// by only substituting in cases where we can see a def followed by
+// a single (last) use, i.e. we do not allow substituting multiple
+// uses.
 //
-// Because of this, once we've substituted "tree" we know that lcl is dead
-// and we can remove the assignment statement.
-//
-// Even with ref count screening, we don't know for sure where the
-// single use of local might be, so we have to seach for it.
+// Once we've substituted "tree" we know that lcl is dead (since the use was a
+// last use) and we can remove the assignment statement.
 //
 // We also take pains not to create overly large trees as the recursion
 // done by morph incorporates a lot of state; deep trees may lead to
@@ -113,6 +110,12 @@ PhaseStatus Compiler::fgForwardSub()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
+
+    if (!fgDidEarlyLiveness)
+    {
+        JITDUMP("Liveness information not available, skipping forward sub\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
     bool changed = false;
 
@@ -189,8 +192,7 @@ public:
         UseExecutionOrder = true
     };
 
-    ForwardSubVisitor(Compiler* compiler, unsigned lclNum, bool livenessBased)
-        : GenTreeVisitor(compiler), m_lclNum(lclNum), m_livenessBased(livenessBased)
+    ForwardSubVisitor(Compiler* compiler, unsigned lclNum) : GenTreeVisitor(compiler), m_lclNum(lclNum)
     {
         LclVarDsc* dsc = compiler->lvaGetDesc(m_lclNum);
         if (dsc->lvIsStructField)
@@ -374,15 +376,6 @@ public:
     {
         assert(lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == m_lclNum));
 
-        if (!m_livenessBased)
-        {
-            // When not liveness based we can only get here when we have
-            // exactly 2 global references, and we should have already seen the
-            // def.
-            assert(m_compiler->lvaGetDesc(lcl)->lvRefCnt(RCS_EARLY) == 2);
-            return true;
-        }
-
         LclVarDsc*   dsc        = m_compiler->lvaGetDesc(lcl);
         GenTreeFlags deathFlags = dsc->FullDeathFlags();
         return (lcl->gtFlags & deathFlags) == deathFlags;
@@ -405,7 +398,6 @@ private:
     ExceptionSetFlags m_accumulatedExceptions = ExceptionSetFlags::None;
     ExceptionSetFlags m_useExceptions         = ExceptionSetFlags::None;
     unsigned          m_treeSize              = 0;
-    bool              m_livenessBased;
 };
 
 //------------------------------------------------------------------------
@@ -495,25 +487,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // Only fwd sub if we expect no code duplication
+    // Cannot forward sub without liveness information.
     //
-    bool livenessBased = false;
-    if (varDsc->lvRefCnt(RCS_EARLY) != 2)
-    {
-        if (!fgDidEarlyLiveness)
-        {
-            JITDUMP(" not asg (single-use lcl)\n");
-            return false;
-        }
-
-        if (varDsc->lvRefCnt(RCS_EARLY) < 2)
-        {
-            JITDUMP(" not asg (no use)\n");
-            return false;
-        }
-
-        livenessBased = true;
-    }
+    assert(fgDidEarlyLiveness);
 
     // And local is unalised
     //
@@ -577,8 +553,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
-    ForwardSubVisitor fsv(this, lclNum, livenessBased);
-    assert(fgNodeThreading == NodeThreading::AllLocals);
+    ForwardSubVisitor fsv(this, lclNum);
     // Do a quick scan through the linked locals list to see if there is a last
     // use.
     bool found = false;
@@ -628,14 +603,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Scan for the (last) use.
     //
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
-
-    if (!livenessBased)
-    {
-        // LclMorph (via RCS_Early) said there was just one use.
-        // It had better have gotten this right.
-        //
-        assert(fsv.GetUseCount() == 1);
-    }
 
     // The visitor has more contextual information and may not actually deem
     // the use we found above as a valid forward sub destination so we must

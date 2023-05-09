@@ -2430,7 +2430,7 @@ inline ssize_t emitter::emitGetInsCIdisp(instrDesc* id)
  */
 
 // clang-format off
-const insFlags      CodeGenInterface::instInfo[] =
+const insFlags CodeGenInterface::instInfo[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
     #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insFlags>(flags),
@@ -2454,7 +2454,7 @@ const insFlags      CodeGenInterface::instInfo[] =
  */
 
 // clang-format off
-const BYTE          emitter::emitInsModeFmtTab[] =
+const uint8_t emitter::emitInsModeFmtTab[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags) um,
     #define INST1(id, nm, um, mr,                 tt, flags) um,
@@ -2557,8 +2557,7 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
 inline size_t insCode(instruction ins)
 {
     // clang-format off
-    const static
-    size_t          insCodes[] =
+    const static uint32_t insCodes[] =
     {
         #define INST0(id, nm, um, mr,                 tt, flags) mr,
         #define INST1(id, nm, um, mr,                 tt, flags) mr,
@@ -2590,8 +2589,7 @@ inline size_t insCode(instruction ins)
 inline size_t insCodeACC(instruction ins)
 {
     // clang-format off
-    const static
-    size_t          insCodesACC[] =
+    const static uint32_t insCodesACC[] =
     {
         #define INST0(id, nm, um, mr,                 tt, flags)
         #define INST1(id, nm, um, mr,                 tt, flags)
@@ -2623,8 +2621,7 @@ inline size_t insCodeACC(instruction ins)
 inline size_t insCodeRR(instruction ins)
 {
     // clang-format off
-    const static
-    size_t          insCodesRR[] =
+    const static uint32_t insCodesRR[] =
     {
         #define INST0(id, nm, um, mr,                 tt, flags)
         #define INST1(id, nm, um, mr,                 tt, flags)
@@ -2649,8 +2646,7 @@ inline size_t insCodeRR(instruction ins)
 }
 
 // clang-format off
-const static
-size_t          insCodesRM[] =
+const static size_t insCodesRM[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags)
     #define INST1(id, nm, um, mr,                 tt, flags)
@@ -2689,8 +2685,7 @@ inline size_t insCodeRM(instruction ins)
 }
 
 // clang-format off
-const static
-size_t          insCodesMI[] =
+const static size_t insCodesMI[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags)
     #define INST1(id, nm, um, mr,                 tt, flags)
@@ -2729,8 +2724,7 @@ inline size_t insCodeMI(instruction ins)
 }
 
 // clang-format off
-const static
-size_t          insCodesMR[] =
+const static uint32_t insCodesMR[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags)
     #define INST1(id, nm, um, mr,                 tt, flags) mr,
@@ -2881,8 +2875,7 @@ inline size_t insCodeMR(instruction ins)
 }
 
 // clang-format off
-const static
-insTupleType insTupleTypeInfos[] =
+const static insTupleType insTupleTypeInfos[] =
 {
     #define INST0(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
     #define INST1(id, nm, um, mr,                 tt, flags) static_cast<insTupleType>(tt),
