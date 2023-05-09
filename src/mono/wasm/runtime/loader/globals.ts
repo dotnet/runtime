@@ -30,6 +30,9 @@ export function setLoaderGlobals(
     loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
+    Object.assign(exportedRuntimeAPI, {
+        INTERNAL
+    });
 
     Object.assign(globalObjects.module, {
         disableDotnet6Compatibility: true,

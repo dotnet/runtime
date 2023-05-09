@@ -65,11 +65,13 @@ function get_response_headers(res: ResponseExtension): void {
     if (!res.__headerNames) {
         res.__headerNames = [];
         res.__headerValues = [];
-        const entries: Iterable<string[]> = (<any>res.headers).entries();
+        if (res.headers && (<any>res.headers).entries) {
+            const entries: Iterable<string[]> = (<any>res.headers).entries();
 
-        for (const pair of entries) {
-            res.__headerNames.push(pair[0]);
-            res.__headerValues.push(pair[1]);
+            for (const pair of entries) {
+                res.__headerNames.push(pair[0]);
+                res.__headerValues.push(pair[1]);
+            }
         }
     }
 }
