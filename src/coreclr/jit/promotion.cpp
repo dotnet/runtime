@@ -830,6 +830,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
     if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
     {
+        (*use)->gtFlags |= GTF_VAR_DEF; // TODO-ASG: delete.
         rep.NeedsWriteBack = true;
         rep.NeedsReadBack  = false;
     }
