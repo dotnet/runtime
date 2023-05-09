@@ -171,6 +171,7 @@ namespace FPBehaviorApp
             if (t == FPtoIntegerConversionType.CONVERT_NATIVECOMPILERBEHAVIOR)
                 return (ulong)x;
 
+            double input_val = x;
             x = Truncate(x); // truncate (round toward zero)
 
             // (double)ULLONG_MAX cannot be represented exactly as double
@@ -199,21 +200,8 @@ namespace FPBehaviorApp
                             return (ulong)ConvertDoubleToInt64(x - two63, FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_ARM32) + (0x8000000000000000);
                         }
                     }
-
                 case FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
-
-                    if (x < two63)
-                    {
-                        return (x < long.MinValue) ? unchecked((ulong)long.MinValue) : (ulong)(long)x;
-                    }
-                    else
-                    {
-                        // (double)LLONG_MAX cannot be represented exactly as double
-                        const double llong_max_plus_1 = (double)((ulong)long.MaxValue + 1);
-                        x -= two63;
-                        x = Math.Truncate(x);
-                        return (ulong)((Double.IsNaN(x) || (x >= llong_max_plus_1)) ? long.MinValue : (long)x) + (0x8000000000000000);
-                    }
+                    return (Double.IsNaN(input_val) || (input_val < 0) || (input_val >= ullong_max_plus_1)) ? ulong.MaxValue : (ulong)input_val;
             }
 
             return 0;
