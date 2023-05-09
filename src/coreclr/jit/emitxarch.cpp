@@ -16467,18 +16467,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                // In case of AVX instructions that take 3 operands, encode reg1 as first source.
-                // Note that reg1 is both a source and a destination.
-                //
-                // TODO-XArch-CQ: Eventually we need to support 3 operand instruction formats. For
-                // now we use the single source as source1 and source2.
-                // For this format, moves do not support a third operand, so we only need to handle the binary ops.
-                if (IsDstDstSrcAVXInstruction(ins))
-                {
-                    // encode source operand reg in 'vvvv' bits in 1's complement form
-                    code = insEncodeReg3456(id, id->idReg1(), size, code);
-                }
-
                 dst = emitOutputAM(dst, id, code | (regcode << 8), &cnsVal);
             }
 
