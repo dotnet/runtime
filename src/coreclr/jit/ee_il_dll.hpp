@@ -50,6 +50,12 @@ uint32_t Compiler::eeGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
     return info.compCompHnd->getNonGCThreadLocalFieldInfo(field);
 }
 
+FORCEINLINE
+uint32_t Compiler::eeGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    return info.compCompHnd->getGCThreadLocalFieldInfo(field);
+}
+
 /*****************************************************************************
  *
  *          VOS info, method sigs, etc

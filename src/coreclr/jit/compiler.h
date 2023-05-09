@@ -7828,6 +7828,7 @@ public:
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
     uint32_t eeGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    uint32_t eeGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 

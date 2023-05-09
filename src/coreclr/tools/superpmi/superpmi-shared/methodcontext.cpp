@@ -3677,7 +3677,7 @@ uint32_t MethodContext::repGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
     DWORDLONG key   = CastHandle(field);
     DWORD     value = LookupByKeyOrMiss(GetGCThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetNonGCThreadLocalFieldInfo(key, value));
+    DEBUG_REP(dmpGetGCThreadLocalFieldInfo(key, value));
 
     return value;
 }

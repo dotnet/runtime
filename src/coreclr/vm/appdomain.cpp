@@ -671,6 +671,7 @@ void BaseDomain::InitNonGCThreadStaticBlockTypeMap()
     STANDARD_VM_CONTRACT;
 
     m_NonGCThreadStaticBlockTypeIDMap.Init();
+    m_GCThreadStaticBlockTypeIDMap.Init();
 }
 #endif // HOST_WINDOWS
 
