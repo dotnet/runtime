@@ -53,11 +53,11 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
-      <NativeLibrary Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" Include="$(IlcSdkPath)libbootstrapper.a" />
-      <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcSdkPath)libbootstrapperdll.a" />
-      <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
-      <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
-      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" Include="$(IlcFrameworkSdkPath)libbootstrapper.a" />
+      <NativeLibrary Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" Include="$(IlcFrameworkSdkPath)libbootstrapperdll.a" />
+      <NativeLibrary Include="$(IlcFrameworkSdkPath)$(FullRuntimeName).a" />
+      <NativeLibrary Include="$(IlcFrameworkSdkPath)$(EventPipeName)$(LibFileExt)" />
+      <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcFrameworkSdkPath)libstdc++compat.a" />
     </ItemGroup>
 
     <ItemGroup>
