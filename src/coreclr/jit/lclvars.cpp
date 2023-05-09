@@ -914,7 +914,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // On LoongArch64 and TARGET_RISCV64 , if there aren't any remaining floating-point registers to pass the
+            // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
             // argument,
             // integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
@@ -960,6 +960,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            unsigned secondAllocatedRegArgNum = 0;
             if (argRegTypeInStruct1 != TYP_UNKNOWN)
             {
                 firstAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct1, 1);
@@ -1022,7 +1023,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
-                        unsigned secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
+                        secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2));
                         varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
@@ -1114,7 +1115,30 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     }
                 }
                 else
-#endif // defined(UNIX_AMD64_ABI)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                if (varTypeIsStruct(argType))
+                {
+                    if (argRegTypeInStruct1 == TYP_UNKNOWN)
+                    {
+                        printf("first: <not used>");
+                    }
+                    else
+                    {
+                        printf("first: %s",
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1)));
+                    }
+                    if (argRegTypeInStruct2 == TYP_UNKNOWN)
+                    {
+                        printf(", second: <not used>");
+                    }
+                    else
+                    {
+                        printf(", second: %s",
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2)));
+                    }
+                }
+                else
+#endif // UNIX_AMD64_ABI, TARGET_LOONGARCH64, TARGET_RISCV64
                 {
                     assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
 
