@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
@@ -208,7 +207,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_TypeOf_BinderOptions))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) =>" +
+                    _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
                         $"{expressionForGetCore}({Identifier.configuration}, type, {Identifier.configureActions});");
                 }
             }
@@ -290,7 +289,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 _useFullyQualifiedNames = false;
 
-                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.BindCore | MethodSpecifier.HasValueOrChildren | MethodSpecifier.HasChildren))
+                if (_generationSpec.ShouldEmitMethods(Helpers.GetMethods | Helpers.BindMethods | MethodSpecifier.Configure))
                 {
                     // Helper class in source-generation namespace.
                     _writer.WriteBlockStart($"namespace {GeneratorProjectName}");
@@ -332,13 +331,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck();
 
-                foreach (TypeSpec type in _generationSpec.GetTypesForRootMethodGen(Helpers.GetMethods))
+                if (_generationSpec.RootConfigTypes.TryGetValue(Helpers.GetMethods, out HashSet<TypeSpec>? types))
                 {
-                    _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
-                    EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
-                    _writer.WriteLine($"return {Identifier.obj};");
-                    _writer.WriteBlockEnd();
-                    _writer.WriteBlankLine();
+                    foreach (TypeSpec type in types)
+                    {
+                        _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
+                        EmitBindLogicFromRootMethod(type, Identifier.obj, InitializationKind.Declaration);
+                        _writer.WriteLine($"return {Identifier.obj};");
+                        _writer.WriteBlockEnd();
+                        _writer.WriteBlankLine();
+                    }
                 }
 
                 Emit_NotSupportedException_TypeNotDetectedAsInput();
@@ -350,6 +352,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.BindCore])
                 {
+                    if (type.SpecKind is TypeSpecKind.ParsableFromString)
+                    {
+                        continue;
+                    }
+
                     EmitBlankLineIfRequired();
                     EmitBindCoreMethod(type);
                 }
@@ -846,14 +853,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitHelperMethods()
             {
-                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.HasValueOrChildren))
+                if (_generationSpec.ShouldEmitMethods(Helpers.BindMethods))
                 {
+                    _writer.WriteBlankLine();
                     EmitHasValueOrChildrenMethod();
                     _writer.WriteBlankLine();
                     EmitHasChildrenMethod();
                 }
-                else if (_generationSpec.ShouldEmitMethods(MethodSpecifier.HasChildren))
+                else if (_generationSpec.ShouldEmitMethods(Helpers.GetMethods))
                 {
+                    _writer.WriteBlankLine();
                     EmitHasChildrenMethod();
                 }
 

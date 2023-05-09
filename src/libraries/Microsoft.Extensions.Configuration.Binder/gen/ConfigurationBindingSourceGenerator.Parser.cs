@@ -100,30 +100,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ImmutableArray<IParameterSymbol> @params = operation.TargetMethod.Parameters;
                 int paramLength = @params.Length;
 
-                MethodSpecifier bindMethod = MethodSpecifier.None;
+                MethodSpecifier binderMethod = MethodSpecifier.None;
 
                 if (paramLength is 2)
                 {
-                    bindMethod = MethodSpecifier.Bind_instance;
+                    binderMethod = MethodSpecifier.Bind_instance;
                 }
                 else if (paramLength is 3)
                 {
                     if (@params[1].Type.SpecialType is SpecialType.System_String)
                     {
-                        bindMethod = MethodSpecifier.Bind_key_instance;
+                        binderMethod = MethodSpecifier.Bind_key_instance;
                     }
                     else if (Helpers.TypesAreEqual(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        bindMethod = MethodSpecifier.Bind_instance_BinderOptions;
+                        binderMethod = MethodSpecifier.Bind_instance_BinderOptions;
                     }
                 }
 
-                if (bindMethod is MethodSpecifier.None)
+                if (binderMethod is MethodSpecifier.None)
                 {
                     return;
                 }
 
-                int objectIndex = bindMethod switch
+                int objectIndex = binderMethod switch
                 {
                     MethodSpecifier.Bind_instance => 1,
                     MethodSpecifier.Bind_instance_BinderOptions => 1,
@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(bindMethod, namedType, binderOperation.Location);
+                AddRootConfigType(Helpers.BindMethods, binderMethod, namedType, binderOperation.Location);
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
                     conversionOperation switch
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(Helpers.GetMethods, binderMethod, namedType, binderOperation.Location);
             }
 
             private void ProcessGetValueCall(BinderInvocationOperation binderOperation)
@@ -281,7 +281,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(Helpers.GetValueMethods, binderMethod, namedType, binderOperation.Location);
             }
 
             private void ProcessConfigureCall(BinderInvocationOperation binderOperation)
@@ -302,11 +302,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    AddRootConfigType(MethodSpecifier.Configure, namedType, binderOperation.Location);
+                    AddRootConfigType(MethodSpecifier.Configure, MethodSpecifier.Configure, namedType, binderOperation.Location);
                 }
             }
 
-            private TypeSpec? AddRootConfigType(MethodSpecifier method, ITypeSymbol type, Location? location)
+            private TypeSpec? AddRootConfigType(MethodSpecifier methodGroup, MethodSpecifier method, ITypeSymbol type, Location? location)
             {
                 if (type is not INamedTypeSymbol namedType || ContainsGenericParameters(namedType))
                 {
@@ -317,13 +317,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (spec != null)
                 {
                     GetRootConfigTypeCache(method).Add(spec);
+                    GetRootConfigTypeCache(methodGroup).Add(spec);
                     _methodsToGen |= method;
-
-                    bool isBindMethod = method is MethodSpecifier.Bind_instance or MethodSpecifier.Bind_key_instance or MethodSpecifier.Bind_instance_BinderOptions;
-                    if (!isBindMethod)
-                    {
-                        _methodsToGen |= MethodSpecifier.HasValueOrChildren;
-                    }
                 }
 
                 return spec;
@@ -357,7 +352,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return null;
                     }
 
-                    RegisterTypeForBindCoreMethodGen(MethodSpecifier.BindCore, spec);
                     return CacheSpec(spec);
                 }
                 else if (IsParsableFromString(type, out StringParsableTypeKind specialTypeKind))
@@ -377,7 +371,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return null;
                     }
 
-                    RegisterTypeForBindCoreMethodGen(MethodSpecifier.BindCore, spec);
                     return CacheSpec(spec);
                 }
                 else if (Helpers.TypesAreEqual(type, _typeSymbols.IConfigurationSection))
@@ -392,42 +385,53 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return null;
                     }
 
-                    RegisterTypeForBindCoreMethodGen(MethodSpecifier.BindCore, spec);
                     return CacheSpec(spec);
                 }
 
                 ReportUnsupportedType(type, Helpers.TypeNotSupported, location);
                 return null;
 
-                T CacheSpec<T>(T? s) where T : TypeSpec
+                T CacheSpec<T>(T? spec) where T : TypeSpec
                 {
-                    TypeSpecKind typeKind = s.SpecKind;
+                    TypeSpecKind typeKind = spec.SpecKind;
                     Debug.Assert(typeKind is not TypeSpecKind.Unknown);
 
-                    string @namespace = s.Namespace;
+                    string @namespace = spec.Namespace;
                     if (@namespace != null && @namespace != "<global namespace>")
                     {
                         _namespaces.Add(@namespace);
                     }
 
-                    if (typeKind is TypeSpecKind.ParsableFromString)
+                    HashSet<TypeSpec> bindCoreTypeCache = GetRootConfigTypeCache(MethodSpecifier.BindCore);
+                    switch (spec)
                     {
-                        ParsableFromStringTypeSpec type = ((ParsableFromStringTypeSpec)(object)s);
-                        if (type.StringParsableTypeKind is not StringParsableTypeKind.ConfigValue)
-                        {
-                            _primitivesForHelperGen.Add(type);
-                        }
+                        case ParsableFromStringTypeSpec stringParsableSpec:
+                            {
+                                if (stringParsableSpec.StringParsableTypeKind is not StringParsableTypeKind.ConfigValue)
+                                {
+                                    _primitivesForHelperGen.Add(stringParsableSpec);
+                                }
+                            }
+                            break;
+                        case ObjectSpec:
+                        case DictionarySpec:
+                        case CollectionSpec:
+                            {
+                                bindCoreTypeCache.Add(spec);
+                            }
+                            break;
+                        case NullableSpec nullableSpec:
+                            {
+                                bindCoreTypeCache.Add(nullableSpec.UnderlyingType);
+                            }
+                            break;
+                        default:
+                            break;
                     }
 
-                    _createdSpecs[type] = s;
-                    return s;
+                    _createdSpecs[type] = spec;
+                    return spec;
                 }
-            }
-
-            private void RegisterTypeForBindCoreMethodGen(MethodSpecifier method, TypeSpec spec)
-            {
-                GetRootConfigTypeCache(MethodSpecifier.BindCore).Add(spec);
-                _methodsToGen |= method;
             }
 
             private HashSet<TypeSpec> GetRootConfigTypeCache(MethodSpecifier method)
@@ -644,7 +648,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private TypeSpec? ConstructAndCacheGenericTypeForBind(INamedTypeSymbol type, params ITypeSymbol[] parameters)
             {
                 Debug.Assert(type.IsGenericType);
-                return AddRootConfigType(MethodSpecifier.Bind_instance, type.Construct(parameters), location: null);
+                return AddRootConfigType(Helpers.BindMethods, MethodSpecifier.Bind_instance, type.Construct(parameters), location: null);
             }
 
             private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location, ITypeSymbol elementType)
@@ -718,14 +722,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     if (spec.CanGet || spec.CanSet)
                                     {
                                         objectSpec.Properties[configKeyName] = (spec);
-                                    }
-
-                                    if (propertyTypeSpec.SpecKind is TypeSpecKind.Object or
-                                        TypeSpecKind.Array or
-                                        TypeSpecKind.Enumerable or
-                                        TypeSpecKind.Dictionary)
-                                    {
-                                        _methodsToGen |= MethodSpecifier.HasChildren;
                                     }
                                 }
                             }

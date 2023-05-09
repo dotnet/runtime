@@ -71,9 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         Configure = 0x800,
 
-        // Helper methods
+        // Binding helper
         BindCore = 0x1000,
-        HasValueOrChildren = 0x2000,
-        HasChildren = 0x4000,
     }
 }
