@@ -61,3 +61,12 @@ PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  uint8_t* sortKey,
                                                  int32_t cbSortKeyLength,
                                                  int32_t options);
+
+#ifdef __APPLE__
+PALEXPORT int32_t GlobalizationNative_CompareStringNative(const char* localeName,
+                                                          const char* lpStr1,
+                                                          int32_t cwStr1Length,
+                                                          const char* lpStr2,
+                                                          int32_t cwStr2Length,
+                                                          int32_t options);
+#endif
