@@ -223,6 +223,9 @@ namespace System.Buffers
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
 
+            if (count == 0)
+                return;
+
             Consumed -= count;
 
             if (CurrentSpanIndex >= count)
