@@ -44,25 +44,25 @@ import {
 
 /*
 struct MonoVTable {
-	MonoClass  *klass; // 0
-	MonoGCDescriptor gc_descr; // 4
-	MonoDomain *domain; // 8
-	gpointer    type; // 12
-	guint8     *interface_bitmap; // 16
-	guint32     max_interface_id; // 20
-	guint8      rank; // 21
-	guint8      initialized; // 22
-	guint8      flags;
+    MonoClass  *klass; // 0
+    MonoGCDescriptor gc_descr; // 4
+    MonoDomain *domain; // 8
+    gpointer    type; // 12
+    guint8     *interface_bitmap; // 16
+    guint32     max_interface_id; // 20
+    guint8      rank; // 21
+    guint8      initialized; // 22
+    guint8      flags;
 */
 
 /*
 struct InterpFrame {
-	InterpFrame    *parent; // 0
-	InterpMethod   *imethod; // 4
-	stackval       *retval; // 8
-	stackval       *stack; // 12
-	InterpFrame    *next_free; // 16
-	InterpState state; // 20
+    InterpFrame    *parent; // 0
+    InterpMethod   *imethod; // 4
+    stackval       *retval; // 8
+    stackval       *stack; // 12
+    InterpFrame    *next_free; // 16
+    InterpState state; // 20
 };
 
 struct InterpMethod {
@@ -388,10 +388,10 @@ export function generateWasmBody(
                 const sizeOffset = getArgU16(ip, 3),
                     valueOffset = getArgU16(ip, 2),
                     destOffset = getArgU16(ip, 1);
-                    /*
-                    constantSize = get_known_constant_value(sizeOffset),
-                    constantValue = get_known_constant_value(valueOffset);
-                    */
+                /*
+                constantSize = get_known_constant_value(sizeOffset),
+                constantValue = get_known_constant_value(valueOffset);
+                */
 
                 // TODO: Handle constant size initblks. Not sure if they matter though
                 // FIXME: This will cause an erroneous bailout if dest and size are both 0
@@ -1108,7 +1108,7 @@ export function generateWasmBody(
             case MintOpcode.MINT_CONV_I8_R4:
             case MintOpcode.MINT_CONV_I8_R8: {
                 const isF32 = (opcode === MintOpcode.MINT_CONV_I4_R4) ||
-                        (opcode === MintOpcode.MINT_CONV_I8_R4),
+                    (opcode === MintOpcode.MINT_CONV_I8_R4),
                     isI64 = (opcode === MintOpcode.MINT_CONV_I8_R4) ||
                         (opcode === MintOpcode.MINT_CONV_I8_R8),
                     limit = isI64
@@ -1471,7 +1471,7 @@ function append_branch_target_block(builder: WasmBuilder, ip: MintOpcodePtr, isB
     builder.cfg.startBranchBlock(ip, isBackBranchTarget);
 }
 
-function append_ldloc (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     builder.local("pLocals");
     builder.appendU8(opcodeOrPrefix);
     if (simdOpcode !== undefined) {
@@ -1489,7 +1489,7 @@ function append_ldloc (builder: WasmBuilder, offset: number, opcodeOrPrefix: Was
 //  where the offset+alignment pair is referred to as a 'memarg' by the spec.
 // The actual store operation is equivalent to `pBase[offset] = value` (alignment has no
 //  observable impact on behavior, other than causing compilation failures if out of range)
-function append_stloc_tail (builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
+function append_stloc_tail(builder: WasmBuilder, offset: number, opcodeOrPrefix: WasmOpcode, simdOpcode?: WasmSimdOpcode) {
     builder.appendU8(opcodeOrPrefix);
     if (simdOpcode !== undefined) {
         // This looks wrong but I assure you it's correct.
@@ -1769,9 +1769,9 @@ function emit_fieldop(
         (opcode <= MintOpcode.MINT_LDFLDA_UNSAFE)
     ) ||
         (
-        (opcode >= MintOpcode.MINT_LDSFLD_I1) &&
-        (opcode <= MintOpcode.MINT_LDSFLD_W)
-    );
+            (opcode >= MintOpcode.MINT_LDSFLD_I1) &&
+            (opcode <= MintOpcode.MINT_LDSFLD_W)
+        );
 
     const objectOffset = getArgU16(ip, isLoad ? 2 : 1),
         fieldOffset = getArgU16(ip, 3),
@@ -1955,9 +1955,9 @@ function emit_sfieldop(
         (opcode <= MintOpcode.MINT_LDFLDA_UNSAFE)
     ) ||
         (
-        (opcode >= MintOpcode.MINT_LDSFLD_I1) &&
-        (opcode <= MintOpcode.MINT_LDSFLD_W)
-    );
+            (opcode >= MintOpcode.MINT_LDSFLD_I1) &&
+            (opcode <= MintOpcode.MINT_LDSFLD_W)
+        );
 
     const localOffset = getArgU16(ip, 1),
         pVtable = get_imethod_data(frame, getArgU16(ip, 2)),
@@ -2067,24 +2067,24 @@ const floatToIntTable: { [opcode: number]: WasmOpcode } = {
 
 // thanks for making this as complex as possible, typescript
 const unopTable: { [opcode: number]: OpRec3 | undefined } = {
-    [MintOpcode.MINT_CEQ0_I4]:    [WasmOpcode.i32_eqz,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_ADD1_I4]:    [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SUB1_I4]:    [WasmOpcode.i32_sub,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_NEG_I4]:     [WasmOpcode.i32_sub,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_NOT_I4]:     [WasmOpcode.i32_xor,   WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CEQ0_I4]: [WasmOpcode.i32_eqz, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD1_I4]: [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SUB1_I4]: [WasmOpcode.i32_sub, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_NEG_I4]: [WasmOpcode.i32_sub, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_NOT_I4]: [WasmOpcode.i32_xor, WasmOpcode.i32_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_ADD1_I8]:    [WasmOpcode.i64_add,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SUB1_I8]:    [WasmOpcode.i64_sub,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_NEG_I8]:     [WasmOpcode.i64_sub,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_NOT_I8]:     [WasmOpcode.i64_xor,   WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ADD1_I8]: [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SUB1_I8]: [WasmOpcode.i64_sub, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_NEG_I8]: [WasmOpcode.i64_sub, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_NOT_I8]: [WasmOpcode.i64_xor, WasmOpcode.i64_load, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_ADD_I4_IMM]: [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_MUL_I4_IMM]: [WasmOpcode.i32_mul,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_ADD_I8_IMM]: [WasmOpcode.i64_add,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_MUL_I8_IMM]: [WasmOpcode.i64_mul,   WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ADD_I4_IMM]: [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_MUL_I4_IMM]: [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD_I8_IMM]: [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_MUL_I8_IMM]: [WasmOpcode.i64_mul, WasmOpcode.i64_load, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_NEG_R4]:     [WasmOpcode.f32_neg,   WasmOpcode.f32_load, WasmOpcode.f32_store],
-    [MintOpcode.MINT_NEG_R8]:     [WasmOpcode.f64_neg,   WasmOpcode.f64_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_NEG_R4]: [WasmOpcode.f32_neg, WasmOpcode.f32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_NEG_R8]: [WasmOpcode.f64_neg, WasmOpcode.f64_load, WasmOpcode.f64_store],
 
     [MintOpcode.MINT_CONV_R4_I4]: [WasmOpcode.f32_convert_s_i32, WasmOpcode.i32_load, WasmOpcode.f32_store],
     [MintOpcode.MINT_CONV_R8_I4]: [WasmOpcode.f64_convert_s_i32, WasmOpcode.i32_load, WasmOpcode.f64_store],
@@ -2092,40 +2092,40 @@ const unopTable: { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_CONV_R4_I8]: [WasmOpcode.f32_convert_s_i64, WasmOpcode.i64_load, WasmOpcode.f32_store],
     [MintOpcode.MINT_CONV_R8_I8]: [WasmOpcode.f64_convert_s_i64, WasmOpcode.i64_load, WasmOpcode.f64_store],
     [MintOpcode.MINT_CONV_R_UN_I8]: [WasmOpcode.f64_convert_u_i64, WasmOpcode.i64_load, WasmOpcode.f64_store],
-    [MintOpcode.MINT_CONV_R8_R4]: [WasmOpcode.f64_promote_f32,   WasmOpcode.f32_load, WasmOpcode.f64_store],
-    [MintOpcode.MINT_CONV_R4_R8]: [WasmOpcode.f32_demote_f64,    WasmOpcode.f64_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_CONV_R8_R4]: [WasmOpcode.f64_promote_f32, WasmOpcode.f32_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_CONV_R4_R8]: [WasmOpcode.f32_demote_f64, WasmOpcode.f64_load, WasmOpcode.f32_store],
 
-    [MintOpcode.MINT_CONV_I8_I4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_s, WasmOpcode.i64_store],
-    [MintOpcode.MINT_CONV_I8_U4]: [WasmOpcode.nop,               WasmOpcode.i64_load32_u, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CONV_I8_I4]: [WasmOpcode.nop, WasmOpcode.i64_load32_s, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CONV_I8_U4]: [WasmOpcode.nop, WasmOpcode.i64_load32_u, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_CONV_U1_I4]: [WasmOpcode.i32_and,           WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_U2_I4]: [WasmOpcode.i32_and,           WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I1_I4]: [WasmOpcode.i32_shr_s,         WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I2_I4]: [WasmOpcode.i32_shr_s,         WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_U1_I4]: [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_U2_I4]: [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_I1_I4]: [WasmOpcode.i32_shr_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_I2_I4]: [WasmOpcode.i32_shr_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CONV_U1_I8]: [WasmOpcode.i32_and,           WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_U2_I8]: [WasmOpcode.i32_and,           WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I1_I8]: [WasmOpcode.i32_shr_s,           WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CONV_I2_I8]: [WasmOpcode.i32_shr_s,           WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_U1_I8]: [WasmOpcode.i32_and, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_U2_I8]: [WasmOpcode.i32_and, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_I1_I8]: [WasmOpcode.i32_shr_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CONV_I2_I8]: [WasmOpcode.i32_shr_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_SHL_I4_IMM]:     [WasmOpcode.i32_shl,       WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SHL_I8_IMM]:     [WasmOpcode.i64_shl,       WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SHR_I4_IMM]:     [WasmOpcode.i32_shr_s,     WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SHR_I8_IMM]:     [WasmOpcode.i64_shr_s,     WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SHR_UN_I4_IMM]:  [WasmOpcode.i32_shr_u,     WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SHL_I4_IMM]: [WasmOpcode.i32_shl, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SHL_I8_IMM]: [WasmOpcode.i64_shl, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SHR_I4_IMM]: [WasmOpcode.i32_shr_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SHR_I8_IMM]: [WasmOpcode.i64_shr_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SHR_UN_I4_IMM]: [WasmOpcode.i32_shr_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SHR_UN_I8_IMM]: [WasmOpcode.i64_shr_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_ROL_I4_IMM]:     [WasmOpcode.i32_rotl,      WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_ROL_I8_IMM]:     [WasmOpcode.i64_rotl,      WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_ROR_I4_IMM]:     [WasmOpcode.i32_rotr,      WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_ROR_I8_IMM]:     [WasmOpcode.i64_rotr,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ROL_I4_IMM]: [WasmOpcode.i32_rotl, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROL_I8_IMM]: [WasmOpcode.i64_rotl, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ROR_I4_IMM]: [WasmOpcode.i32_rotr, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROR_I8_IMM]: [WasmOpcode.i64_rotr, WasmOpcode.i64_load, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_CLZ_I4]:         [WasmOpcode.i32_clz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CTZ_I4]:         [WasmOpcode.i32_ctz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_POPCNT_I4]:      [WasmOpcode.i32_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLZ_I8]:         [WasmOpcode.i64_clz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_CTZ_I8]:         [WasmOpcode.i64_ctz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_POPCNT_I8]:      [WasmOpcode.i64_popcnt,    WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CLZ_I4]: [WasmOpcode.i32_clz, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CTZ_I4]: [WasmOpcode.i32_ctz, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_POPCNT_I4]: [WasmOpcode.i32_popcnt, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLZ_I8]: [WasmOpcode.i64_clz, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CTZ_I8]: [WasmOpcode.i64_ctz, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_POPCNT_I8]: [WasmOpcode.i64_popcnt, WasmOpcode.i64_load, WasmOpcode.i64_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
@@ -2156,152 +2156,152 @@ const intrinsicFpBinops: { [opcode: number]: WasmOpcode } = {
 };
 
 const binopTable: { [opcode: number]: OpRec3 | OpRec4 | undefined } = {
-    [MintOpcode.MINT_ADD_I4]:    [WasmOpcode.i32_add,   WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ADD_I4]: [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ADD_OVF_I4]: [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_ADD_OVF_UN_I4]: [WasmOpcode.i32_add, WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SUB_I4]:    [WasmOpcode.i32_sub,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_MUL_I4]:    [WasmOpcode.i32_mul,   WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SUB_I4]: [WasmOpcode.i32_sub, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_MUL_I4]: [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_MUL_OVF_I4]: [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_MUL_OVF_UN_I4]: [WasmOpcode.i32_mul, WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_DIV_I4]:    [WasmOpcode.i32_div_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_DIV_I4]: [WasmOpcode.i32_div_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_DIV_UN_I4]: [WasmOpcode.i32_div_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_REM_I4]:    [WasmOpcode.i32_rem_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_REM_I4]: [WasmOpcode.i32_rem_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_REM_UN_I4]: [WasmOpcode.i32_rem_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_AND_I4]:    [WasmOpcode.i32_and,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_OR_I4]:     [WasmOpcode.i32_or,    WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_XOR_I4]:    [WasmOpcode.i32_xor,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SHL_I4]:    [WasmOpcode.i32_shl,   WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_SHR_I4]:    [WasmOpcode.i32_shr_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_AND_I4]: [WasmOpcode.i32_and, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_OR_I4]: [WasmOpcode.i32_or, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_XOR_I4]: [WasmOpcode.i32_xor, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SHL_I4]: [WasmOpcode.i32_shl, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_SHR_I4]: [WasmOpcode.i32_shr_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_SHR_UN_I4]: [WasmOpcode.i32_shr_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_ADD_I8]:    [WasmOpcode.i64_add,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SUB_I8]:    [WasmOpcode.i64_sub,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_MUL_I8]:    [WasmOpcode.i64_mul,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_DIV_I8]:    [WasmOpcode.i64_div_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_REM_I8]:    [WasmOpcode.i64_rem_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ADD_I8]: [WasmOpcode.i64_add, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SUB_I8]: [WasmOpcode.i64_sub, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_MUL_I8]: [WasmOpcode.i64_mul, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_DIV_I8]: [WasmOpcode.i64_div_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_REM_I8]: [WasmOpcode.i64_rem_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_DIV_UN_I8]: [WasmOpcode.i64_div_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_REM_UN_I8]: [WasmOpcode.i64_rem_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_AND_I8]:    [WasmOpcode.i64_and,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_OR_I8]:     [WasmOpcode.i64_or,    WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_XOR_I8]:    [WasmOpcode.i64_xor,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SHL_I8]:    [WasmOpcode.i64_shl,   WasmOpcode.i64_load, WasmOpcode.i64_store],
-    [MintOpcode.MINT_SHR_I8]:    [WasmOpcode.i64_shr_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_AND_I8]: [WasmOpcode.i64_and, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_OR_I8]: [WasmOpcode.i64_or, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_XOR_I8]: [WasmOpcode.i64_xor, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SHL_I8]: [WasmOpcode.i64_shl, WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_SHR_I8]: [WasmOpcode.i64_shr_s, WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_SHR_UN_I8]: [WasmOpcode.i64_shr_u, WasmOpcode.i64_load, WasmOpcode.i64_store],
 
-    [MintOpcode.MINT_ADD_R4]:    [WasmOpcode.f32_add,   WasmOpcode.f32_load, WasmOpcode.f32_store],
-    [MintOpcode.MINT_SUB_R4]:    [WasmOpcode.f32_sub,   WasmOpcode.f32_load, WasmOpcode.f32_store],
-    [MintOpcode.MINT_MUL_R4]:    [WasmOpcode.f32_mul,   WasmOpcode.f32_load, WasmOpcode.f32_store],
-    [MintOpcode.MINT_DIV_R4]:    [WasmOpcode.f32_div,   WasmOpcode.f32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_ADD_R4]: [WasmOpcode.f32_add, WasmOpcode.f32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_SUB_R4]: [WasmOpcode.f32_sub, WasmOpcode.f32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_MUL_R4]: [WasmOpcode.f32_mul, WasmOpcode.f32_load, WasmOpcode.f32_store],
+    [MintOpcode.MINT_DIV_R4]: [WasmOpcode.f32_div, WasmOpcode.f32_load, WasmOpcode.f32_store],
 
-    [MintOpcode.MINT_ADD_R8]:    [WasmOpcode.f64_add,   WasmOpcode.f64_load, WasmOpcode.f64_store],
-    [MintOpcode.MINT_SUB_R8]:    [WasmOpcode.f64_sub,   WasmOpcode.f64_load, WasmOpcode.f64_store],
-    [MintOpcode.MINT_MUL_R8]:    [WasmOpcode.f64_mul,   WasmOpcode.f64_load, WasmOpcode.f64_store],
-    [MintOpcode.MINT_DIV_R8]:    [WasmOpcode.f64_div,   WasmOpcode.f64_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_ADD_R8]: [WasmOpcode.f64_add, WasmOpcode.f64_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_SUB_R8]: [WasmOpcode.f64_sub, WasmOpcode.f64_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_MUL_R8]: [WasmOpcode.f64_mul, WasmOpcode.f64_load, WasmOpcode.f64_store],
+    [MintOpcode.MINT_DIV_R8]: [WasmOpcode.f64_div, WasmOpcode.f64_load, WasmOpcode.f64_store],
 
-    [MintOpcode.MINT_CEQ_I4]:    [WasmOpcode.i32_eq,    WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_I4]:    [WasmOpcode.i32_ne,    WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_I4]:    [WasmOpcode.i32_lt_s,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_I4]:    [WasmOpcode.i32_gt_s,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_I4]:    [WasmOpcode.i32_le_s,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_I4]:    [WasmOpcode.i32_ge_s,  WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CEQ_I4]: [WasmOpcode.i32_eq, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CNE_I4]: [WasmOpcode.i32_ne, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLT_I4]: [WasmOpcode.i32_lt_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGT_I4]: [WasmOpcode.i32_gt_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLE_I4]: [WasmOpcode.i32_le_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGE_I4]: [WasmOpcode.i32_ge_s, WasmOpcode.i32_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CLT_UN_I4]: [WasmOpcode.i32_lt_u,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_UN_I4]: [WasmOpcode.i32_gt_u,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_UN_I4]: [WasmOpcode.i32_le_u,  WasmOpcode.i32_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_UN_I4]: [WasmOpcode.i32_ge_u,  WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLT_UN_I4]: [WasmOpcode.i32_lt_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGT_UN_I4]: [WasmOpcode.i32_gt_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLE_UN_I4]: [WasmOpcode.i32_le_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGE_UN_I4]: [WasmOpcode.i32_ge_u, WasmOpcode.i32_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CEQ_I8]:    [WasmOpcode.i64_eq,    WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CNE_I8]:    [WasmOpcode.i64_ne,    WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLT_I8]:    [WasmOpcode.i64_lt_s,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_I8]:    [WasmOpcode.i64_gt_s,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_I8]:    [WasmOpcode.i64_le_s,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_I8]:    [WasmOpcode.i64_ge_s,  WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CEQ_I8]: [WasmOpcode.i64_eq, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CNE_I8]: [WasmOpcode.i64_ne, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLT_I8]: [WasmOpcode.i64_lt_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGT_I8]: [WasmOpcode.i64_gt_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLE_I8]: [WasmOpcode.i64_le_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGE_I8]: [WasmOpcode.i64_ge_s, WasmOpcode.i64_load, WasmOpcode.i32_store],
 
-    [MintOpcode.MINT_CLT_UN_I8]: [WasmOpcode.i64_lt_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGT_UN_I8]: [WasmOpcode.i64_gt_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
-    [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u,  WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLT_UN_I8]: [WasmOpcode.i64_lt_u, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGT_UN_I8]: [WasmOpcode.i64_gt_u, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLE_UN_I8]: [WasmOpcode.i64_le_u, WasmOpcode.i64_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CGE_UN_I8]: [WasmOpcode.i64_ge_u, WasmOpcode.i64_load, WasmOpcode.i32_store],
 
 };
 
 const relopbranchTable: { [opcode: number]: [comparisonOpcode: MintOpcode, immediateOpcode: WasmOpcode | false, isSafepoint: boolean] | MintOpcode | undefined } = {
-    [MintOpcode.MINT_BEQ_I4_S]:         MintOpcode.MINT_CEQ_I4,
-    [MintOpcode.MINT_BNE_UN_I4_S]:      MintOpcode.MINT_CNE_I4,
-    [MintOpcode.MINT_BGT_I4_S]:         MintOpcode.MINT_CGT_I4,
-    [MintOpcode.MINT_BGT_UN_I4_S]:      MintOpcode.MINT_CGT_UN_I4,
-    [MintOpcode.MINT_BLT_I4_S]:         MintOpcode.MINT_CLT_I4,
-    [MintOpcode.MINT_BLT_UN_I4_S]:      MintOpcode.MINT_CLT_UN_I4,
-    [MintOpcode.MINT_BGE_I4_S]:         MintOpcode.MINT_CGE_I4,
-    [MintOpcode.MINT_BGE_UN_I4_S]:      MintOpcode.MINT_CGE_UN_I4,
-    [MintOpcode.MINT_BLE_I4_S]:         MintOpcode.MINT_CLE_I4,
-    [MintOpcode.MINT_BLE_UN_I4_S]:      MintOpcode.MINT_CLE_UN_I4,
+    [MintOpcode.MINT_BEQ_I4_S]: MintOpcode.MINT_CEQ_I4,
+    [MintOpcode.MINT_BNE_UN_I4_S]: MintOpcode.MINT_CNE_I4,
+    [MintOpcode.MINT_BGT_I4_S]: MintOpcode.MINT_CGT_I4,
+    [MintOpcode.MINT_BGT_UN_I4_S]: MintOpcode.MINT_CGT_UN_I4,
+    [MintOpcode.MINT_BLT_I4_S]: MintOpcode.MINT_CLT_I4,
+    [MintOpcode.MINT_BLT_UN_I4_S]: MintOpcode.MINT_CLT_UN_I4,
+    [MintOpcode.MINT_BGE_I4_S]: MintOpcode.MINT_CGE_I4,
+    [MintOpcode.MINT_BGE_UN_I4_S]: MintOpcode.MINT_CGE_UN_I4,
+    [MintOpcode.MINT_BLE_I4_S]: MintOpcode.MINT_CLE_I4,
+    [MintOpcode.MINT_BLE_UN_I4_S]: MintOpcode.MINT_CLE_UN_I4,
 
-    [MintOpcode.MINT_BEQ_I4_SP]:        [MintOpcode.MINT_CEQ_I4, false, true],
-    [MintOpcode.MINT_BNE_UN_I4_SP]:     [MintOpcode.MINT_CNE_I4, false, true],
-    [MintOpcode.MINT_BGT_I4_SP]:        [MintOpcode.MINT_CGT_I4, false, true],
-    [MintOpcode.MINT_BGT_UN_I4_SP]:     [MintOpcode.MINT_CGT_UN_I4, false, true],
-    [MintOpcode.MINT_BLT_I4_SP]:        [MintOpcode.MINT_CLT_I4, false, true],
-    [MintOpcode.MINT_BLT_UN_I4_SP]:     [MintOpcode.MINT_CLT_UN_I4, false, true],
-    [MintOpcode.MINT_BGE_I4_SP]:        [MintOpcode.MINT_CGE_I4, false, true],
-    [MintOpcode.MINT_BGE_UN_I4_SP]:     [MintOpcode.MINT_CGE_UN_I4, false, true],
-    [MintOpcode.MINT_BLE_I4_SP]:        [MintOpcode.MINT_CLE_I4, false, true],
-    [MintOpcode.MINT_BLE_UN_I4_SP]:     [MintOpcode.MINT_CLE_UN_I4, false, true],
+    [MintOpcode.MINT_BEQ_I4_SP]: [MintOpcode.MINT_CEQ_I4, false, true],
+    [MintOpcode.MINT_BNE_UN_I4_SP]: [MintOpcode.MINT_CNE_I4, false, true],
+    [MintOpcode.MINT_BGT_I4_SP]: [MintOpcode.MINT_CGT_I4, false, true],
+    [MintOpcode.MINT_BGT_UN_I4_SP]: [MintOpcode.MINT_CGT_UN_I4, false, true],
+    [MintOpcode.MINT_BLT_I4_SP]: [MintOpcode.MINT_CLT_I4, false, true],
+    [MintOpcode.MINT_BLT_UN_I4_SP]: [MintOpcode.MINT_CLT_UN_I4, false, true],
+    [MintOpcode.MINT_BGE_I4_SP]: [MintOpcode.MINT_CGE_I4, false, true],
+    [MintOpcode.MINT_BGE_UN_I4_SP]: [MintOpcode.MINT_CGE_UN_I4, false, true],
+    [MintOpcode.MINT_BLE_I4_SP]: [MintOpcode.MINT_CLE_I4, false, true],
+    [MintOpcode.MINT_BLE_UN_I4_SP]: [MintOpcode.MINT_CLE_UN_I4, false, true],
 
-    [MintOpcode.MINT_BEQ_I4_IMM_SP]:    [MintOpcode.MINT_CEQ_I4,    WasmOpcode.i32_const, true],
-    [MintOpcode.MINT_BNE_UN_I4_IMM_SP]: [MintOpcode.MINT_CNE_I4,    WasmOpcode.i32_const, true],
-    [MintOpcode.MINT_BGT_I4_IMM_SP]:    [MintOpcode.MINT_CGT_I4,    WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BEQ_I4_IMM_SP]: [MintOpcode.MINT_CEQ_I4, WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BNE_UN_I4_IMM_SP]: [MintOpcode.MINT_CNE_I4, WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BGT_I4_IMM_SP]: [MintOpcode.MINT_CGT_I4, WasmOpcode.i32_const, true],
     [MintOpcode.MINT_BGT_UN_I4_IMM_SP]: [MintOpcode.MINT_CGT_UN_I4, WasmOpcode.i32_const, true],
-    [MintOpcode.MINT_BLT_I4_IMM_SP]:    [MintOpcode.MINT_CLT_I4,    WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BLT_I4_IMM_SP]: [MintOpcode.MINT_CLT_I4, WasmOpcode.i32_const, true],
     [MintOpcode.MINT_BLT_UN_I4_IMM_SP]: [MintOpcode.MINT_CLT_UN_I4, WasmOpcode.i32_const, true],
-    [MintOpcode.MINT_BGE_I4_IMM_SP]:    [MintOpcode.MINT_CGE_I4,    WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BGE_I4_IMM_SP]: [MintOpcode.MINT_CGE_I4, WasmOpcode.i32_const, true],
     [MintOpcode.MINT_BGE_UN_I4_IMM_SP]: [MintOpcode.MINT_CGE_UN_I4, WasmOpcode.i32_const, true],
-    [MintOpcode.MINT_BLE_I4_IMM_SP]:    [MintOpcode.MINT_CLE_I4,    WasmOpcode.i32_const, true],
+    [MintOpcode.MINT_BLE_I4_IMM_SP]: [MintOpcode.MINT_CLE_I4, WasmOpcode.i32_const, true],
     [MintOpcode.MINT_BLE_UN_I4_IMM_SP]: [MintOpcode.MINT_CLE_UN_I4, WasmOpcode.i32_const, true],
 
-    [MintOpcode.MINT_BEQ_I8_S]:         MintOpcode.MINT_CEQ_I8,
-    [MintOpcode.MINT_BNE_UN_I8_S]:      MintOpcode.MINT_CNE_I8,
-    [MintOpcode.MINT_BGT_I8_S]:         MintOpcode.MINT_CGT_I8,
-    [MintOpcode.MINT_BGT_UN_I8_S]:      MintOpcode.MINT_CGT_UN_I8,
-    [MintOpcode.MINT_BLT_I8_S]:         MintOpcode.MINT_CLT_I8,
-    [MintOpcode.MINT_BLT_UN_I8_S]:      MintOpcode.MINT_CLT_UN_I8,
-    [MintOpcode.MINT_BGE_I8_S]:         MintOpcode.MINT_CGE_I8,
-    [MintOpcode.MINT_BGE_UN_I8_S]:      MintOpcode.MINT_CGE_UN_I8,
-    [MintOpcode.MINT_BLE_I8_S]:         MintOpcode.MINT_CLE_I8,
-    [MintOpcode.MINT_BLE_UN_I8_S]:      MintOpcode.MINT_CLE_UN_I8,
+    [MintOpcode.MINT_BEQ_I8_S]: MintOpcode.MINT_CEQ_I8,
+    [MintOpcode.MINT_BNE_UN_I8_S]: MintOpcode.MINT_CNE_I8,
+    [MintOpcode.MINT_BGT_I8_S]: MintOpcode.MINT_CGT_I8,
+    [MintOpcode.MINT_BGT_UN_I8_S]: MintOpcode.MINT_CGT_UN_I8,
+    [MintOpcode.MINT_BLT_I8_S]: MintOpcode.MINT_CLT_I8,
+    [MintOpcode.MINT_BLT_UN_I8_S]: MintOpcode.MINT_CLT_UN_I8,
+    [MintOpcode.MINT_BGE_I8_S]: MintOpcode.MINT_CGE_I8,
+    [MintOpcode.MINT_BGE_UN_I8_S]: MintOpcode.MINT_CGE_UN_I8,
+    [MintOpcode.MINT_BLE_I8_S]: MintOpcode.MINT_CLE_I8,
+    [MintOpcode.MINT_BLE_UN_I8_S]: MintOpcode.MINT_CLE_UN_I8,
 
-    [MintOpcode.MINT_BEQ_I8_IMM_SP]:    [MintOpcode.MINT_CEQ_I8,    WasmOpcode.i64_const, true],
+    [MintOpcode.MINT_BEQ_I8_IMM_SP]: [MintOpcode.MINT_CEQ_I8, WasmOpcode.i64_const, true],
     // FIXME: Missing compare opcode
     // [MintOpcode.MINT_BNE_UN_I8_IMM_SP]: [MintOpcode.MINT_CNE_UN_I8, WasmOpcode.i64_const, true],
-    [MintOpcode.MINT_BGT_I8_IMM_SP]:    [MintOpcode.MINT_CGT_I8,    WasmOpcode.i64_const, true],
+    [MintOpcode.MINT_BGT_I8_IMM_SP]: [MintOpcode.MINT_CGT_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BGT_UN_I8_IMM_SP]: [MintOpcode.MINT_CGT_UN_I8, WasmOpcode.i64_const, true],
-    [MintOpcode.MINT_BLT_I8_IMM_SP]:    [MintOpcode.MINT_CLT_I8,    WasmOpcode.i64_const, true],
+    [MintOpcode.MINT_BLT_I8_IMM_SP]: [MintOpcode.MINT_CLT_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BLT_UN_I8_IMM_SP]: [MintOpcode.MINT_CLT_UN_I8, WasmOpcode.i64_const, true],
-    [MintOpcode.MINT_BGE_I8_IMM_SP]:    [MintOpcode.MINT_CGE_I8,    WasmOpcode.i64_const, true],
+    [MintOpcode.MINT_BGE_I8_IMM_SP]: [MintOpcode.MINT_CGE_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BGE_UN_I8_IMM_SP]: [MintOpcode.MINT_CGE_UN_I8, WasmOpcode.i64_const, true],
-    [MintOpcode.MINT_BLE_I8_IMM_SP]:    [MintOpcode.MINT_CLE_I8,    WasmOpcode.i64_const, true],
+    [MintOpcode.MINT_BLE_I8_IMM_SP]: [MintOpcode.MINT_CLE_I8, WasmOpcode.i64_const, true],
     [MintOpcode.MINT_BLE_UN_I8_IMM_SP]: [MintOpcode.MINT_CLE_UN_I8, WasmOpcode.i64_const, true],
 
-    [MintOpcode.MINT_BEQ_R4_S]:         MintOpcode.MINT_CEQ_R4,
-    [MintOpcode.MINT_BNE_UN_R4_S]:      <any>JiterpSpecialOpcode.CNE_UN_R4,
-    [MintOpcode.MINT_BGT_R4_S]:         MintOpcode.MINT_CGT_R4,
-    [MintOpcode.MINT_BGT_UN_R4_S]:      MintOpcode.MINT_CGT_UN_R4,
-    [MintOpcode.MINT_BLT_R4_S]:         MintOpcode.MINT_CLT_R4,
-    [MintOpcode.MINT_BLT_UN_R4_S]:      MintOpcode.MINT_CLT_UN_R4,
-    [MintOpcode.MINT_BGE_R4_S]:         MintOpcode.MINT_CGE_R4,
-    [MintOpcode.MINT_BGE_UN_R4_S]:      <any>JiterpSpecialOpcode.CGE_UN_R4,
-    [MintOpcode.MINT_BLE_R4_S]:         MintOpcode.MINT_CLE_R4,
-    [MintOpcode.MINT_BLE_UN_R4_S]:      <any>JiterpSpecialOpcode.CLE_UN_R4,
+    [MintOpcode.MINT_BEQ_R4_S]: MintOpcode.MINT_CEQ_R4,
+    [MintOpcode.MINT_BNE_UN_R4_S]: <any>JiterpSpecialOpcode.CNE_UN_R4,
+    [MintOpcode.MINT_BGT_R4_S]: MintOpcode.MINT_CGT_R4,
+    [MintOpcode.MINT_BGT_UN_R4_S]: MintOpcode.MINT_CGT_UN_R4,
+    [MintOpcode.MINT_BLT_R4_S]: MintOpcode.MINT_CLT_R4,
+    [MintOpcode.MINT_BLT_UN_R4_S]: MintOpcode.MINT_CLT_UN_R4,
+    [MintOpcode.MINT_BGE_R4_S]: MintOpcode.MINT_CGE_R4,
+    [MintOpcode.MINT_BGE_UN_R4_S]: <any>JiterpSpecialOpcode.CGE_UN_R4,
+    [MintOpcode.MINT_BLE_R4_S]: MintOpcode.MINT_CLE_R4,
+    [MintOpcode.MINT_BLE_UN_R4_S]: <any>JiterpSpecialOpcode.CLE_UN_R4,
 
-    [MintOpcode.MINT_BEQ_R8_S]:         MintOpcode.MINT_CEQ_R8,
-    [MintOpcode.MINT_BNE_UN_R8_S]:      <any>JiterpSpecialOpcode.CNE_UN_R8,
-    [MintOpcode.MINT_BGT_R8_S]:         MintOpcode.MINT_CGT_R8,
-    [MintOpcode.MINT_BGT_UN_R8_S]:      MintOpcode.MINT_CGT_UN_R8,
-    [MintOpcode.MINT_BLT_R8_S]:         MintOpcode.MINT_CLT_R8,
-    [MintOpcode.MINT_BLT_UN_R8_S]:      MintOpcode.MINT_CLT_UN_R8,
-    [MintOpcode.MINT_BGE_R8_S]:         MintOpcode.MINT_CGE_R8,
-    [MintOpcode.MINT_BGE_UN_R8_S]:      <any>JiterpSpecialOpcode.CGE_UN_R8,
-    [MintOpcode.MINT_BLE_R8_S]:         MintOpcode.MINT_CLE_R8,
-    [MintOpcode.MINT_BLE_UN_R8_S]:      <any>JiterpSpecialOpcode.CLE_UN_R8,
+    [MintOpcode.MINT_BEQ_R8_S]: MintOpcode.MINT_CEQ_R8,
+    [MintOpcode.MINT_BNE_UN_R8_S]: <any>JiterpSpecialOpcode.CNE_UN_R8,
+    [MintOpcode.MINT_BGT_R8_S]: MintOpcode.MINT_CGT_R8,
+    [MintOpcode.MINT_BGT_UN_R8_S]: MintOpcode.MINT_CGT_UN_R8,
+    [MintOpcode.MINT_BLT_R8_S]: MintOpcode.MINT_CLT_R8,
+    [MintOpcode.MINT_BLT_UN_R8_S]: MintOpcode.MINT_CLT_UN_R8,
+    [MintOpcode.MINT_BGE_R8_S]: MintOpcode.MINT_CGE_R8,
+    [MintOpcode.MINT_BGE_UN_R8_S]: <any>JiterpSpecialOpcode.CGE_UN_R8,
+    [MintOpcode.MINT_BLE_R8_S]: MintOpcode.MINT_CLE_R8,
+    [MintOpcode.MINT_BLE_UN_R8_S]: <any>JiterpSpecialOpcode.CLE_UN_R8,
 };
 
 function emit_binop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
@@ -2603,7 +2603,6 @@ function emit_branch(
     builder: WasmBuilder, ip: MintOpcodePtr,
     frame: NativePointer, opcode: MintOpcode, displacement?: number
 ): boolean {
-    const info = OpcodeInfo[opcode];
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
     eraseInferredState();
@@ -2828,55 +2827,55 @@ function emit_relop_branch(
 }
 
 const mathIntrinsicTable: { [opcode: number]: [isUnary: boolean, isF32: boolean, opcodeOrFuncName: WasmOpcode | string] } = {
-    [MintOpcode.MINT_SQRT]:     [true, false,  WasmOpcode.f64_sqrt],
-    [MintOpcode.MINT_SQRTF]:    [true, true,   WasmOpcode.f32_sqrt],
-    [MintOpcode.MINT_CEILING]:  [true, false,  WasmOpcode.f64_ceil],
-    [MintOpcode.MINT_CEILINGF]: [true, true,   WasmOpcode.f32_ceil],
-    [MintOpcode.MINT_FLOOR]:    [true, false,  WasmOpcode.f64_floor],
-    [MintOpcode.MINT_FLOORF]:   [true, true,   WasmOpcode.f32_floor],
-    [MintOpcode.MINT_ABS]:      [true, false,  WasmOpcode.f64_abs],
-    [MintOpcode.MINT_ABSF]:     [true, true,   WasmOpcode.f32_abs],
+    [MintOpcode.MINT_SQRT]: [true, false, WasmOpcode.f64_sqrt],
+    [MintOpcode.MINT_SQRTF]: [true, true, WasmOpcode.f32_sqrt],
+    [MintOpcode.MINT_CEILING]: [true, false, WasmOpcode.f64_ceil],
+    [MintOpcode.MINT_CEILINGF]: [true, true, WasmOpcode.f32_ceil],
+    [MintOpcode.MINT_FLOOR]: [true, false, WasmOpcode.f64_floor],
+    [MintOpcode.MINT_FLOORF]: [true, true, WasmOpcode.f32_floor],
+    [MintOpcode.MINT_ABS]: [true, false, WasmOpcode.f64_abs],
+    [MintOpcode.MINT_ABSF]: [true, true, WasmOpcode.f32_abs],
 
-    [MintOpcode.MINT_ACOS]:     [true, false,  "acos"],
-    [MintOpcode.MINT_ACOSF]:    [true, true,   "acosf"],
-    [MintOpcode.MINT_ACOSH]:    [true, false,  "acosh"],
-    [MintOpcode.MINT_ACOSHF]:   [true, true,   "acoshf"],
-    [MintOpcode.MINT_COS]:      [true, false,  "cos"],
-    [MintOpcode.MINT_COSF]:     [true, true,   "cosf"],
-    [MintOpcode.MINT_ASIN]:     [true, false,  "asin"],
-    [MintOpcode.MINT_ASINF]:    [true, true,   "asinf"],
-    [MintOpcode.MINT_ASINH]:    [true, false,  "asinh"],
-    [MintOpcode.MINT_ASINHF]:   [true, true,   "asinhf"],
-    [MintOpcode.MINT_SIN]:      [true, false,  "sin"],
-    [MintOpcode.MINT_SINF]:     [true, true,   "sinf"],
-    [MintOpcode.MINT_ATAN]:     [true, false,  "atan"],
-    [MintOpcode.MINT_ATANF]:    [true, true,   "atanf"],
-    [MintOpcode.MINT_ATANH]:    [true, false,  "atanh"],
-    [MintOpcode.MINT_ATANHF]:   [true, true,   "atanhf"],
-    [MintOpcode.MINT_TAN]:      [true, false,  "tan"],
-    [MintOpcode.MINT_TANF]:     [true, true,   "tanf"],
-    [MintOpcode.MINT_CBRT]:     [true, false,  "cbrt"],
-    [MintOpcode.MINT_CBRTF]:    [true, true,   "cbrtf"],
-    [MintOpcode.MINT_EXP]:      [true, false,  "exp"],
-    [MintOpcode.MINT_EXPF]:     [true, true,   "expf"],
-    [MintOpcode.MINT_LOG]:      [true, false,  "log"],
-    [MintOpcode.MINT_LOGF]:     [true, true,   "logf"],
-    [MintOpcode.MINT_LOG2]:     [true, false,  "log2"],
-    [MintOpcode.MINT_LOG2F]:    [true, true,   "log2f"],
-    [MintOpcode.MINT_LOG10]:    [true, false,  "log10"],
-    [MintOpcode.MINT_LOG10F]:   [true, true,   "log10f"],
+    [MintOpcode.MINT_ACOS]: [true, false, "acos"],
+    [MintOpcode.MINT_ACOSF]: [true, true, "acosf"],
+    [MintOpcode.MINT_ACOSH]: [true, false, "acosh"],
+    [MintOpcode.MINT_ACOSHF]: [true, true, "acoshf"],
+    [MintOpcode.MINT_COS]: [true, false, "cos"],
+    [MintOpcode.MINT_COSF]: [true, true, "cosf"],
+    [MintOpcode.MINT_ASIN]: [true, false, "asin"],
+    [MintOpcode.MINT_ASINF]: [true, true, "asinf"],
+    [MintOpcode.MINT_ASINH]: [true, false, "asinh"],
+    [MintOpcode.MINT_ASINHF]: [true, true, "asinhf"],
+    [MintOpcode.MINT_SIN]: [true, false, "sin"],
+    [MintOpcode.MINT_SINF]: [true, true, "sinf"],
+    [MintOpcode.MINT_ATAN]: [true, false, "atan"],
+    [MintOpcode.MINT_ATANF]: [true, true, "atanf"],
+    [MintOpcode.MINT_ATANH]: [true, false, "atanh"],
+    [MintOpcode.MINT_ATANHF]: [true, true, "atanhf"],
+    [MintOpcode.MINT_TAN]: [true, false, "tan"],
+    [MintOpcode.MINT_TANF]: [true, true, "tanf"],
+    [MintOpcode.MINT_CBRT]: [true, false, "cbrt"],
+    [MintOpcode.MINT_CBRTF]: [true, true, "cbrtf"],
+    [MintOpcode.MINT_EXP]: [true, false, "exp"],
+    [MintOpcode.MINT_EXPF]: [true, true, "expf"],
+    [MintOpcode.MINT_LOG]: [true, false, "log"],
+    [MintOpcode.MINT_LOGF]: [true, true, "logf"],
+    [MintOpcode.MINT_LOG2]: [true, false, "log2"],
+    [MintOpcode.MINT_LOG2F]: [true, true, "log2f"],
+    [MintOpcode.MINT_LOG10]: [true, false, "log10"],
+    [MintOpcode.MINT_LOG10F]: [true, true, "log10f"],
 
-    [MintOpcode.MINT_MIN]:      [false, false,  WasmOpcode.f64_min],
-    [MintOpcode.MINT_MINF]:     [false, true,   WasmOpcode.f32_min],
-    [MintOpcode.MINT_MAX]:      [false, false,  WasmOpcode.f64_max],
-    [MintOpcode.MINT_MAXF]:     [false, true,   WasmOpcode.f32_max],
+    [MintOpcode.MINT_MIN]: [false, false, WasmOpcode.f64_min],
+    [MintOpcode.MINT_MINF]: [false, true, WasmOpcode.f32_min],
+    [MintOpcode.MINT_MAX]: [false, false, WasmOpcode.f64_max],
+    [MintOpcode.MINT_MAXF]: [false, true, WasmOpcode.f32_max],
 
-    [MintOpcode.MINT_ATAN2]:    [false, false, "atan2"],
-    [MintOpcode.MINT_ATAN2F]:   [false, true,  "atan2f"],
-    [MintOpcode.MINT_POW]:      [false, false, "pow"],
-    [MintOpcode.MINT_POWF]:     [false, true,  "powf"],
-    [MintOpcode.MINT_REM_R8]:   [false, false, "fmod"],
-    [MintOpcode.MINT_REM_R4]:   [false, true,  "fmodf"],
+    [MintOpcode.MINT_ATAN2]: [false, false, "atan2"],
+    [MintOpcode.MINT_ATAN2F]: [false, true, "atan2f"],
+    [MintOpcode.MINT_POW]: [false, false, "pow"],
+    [MintOpcode.MINT_POWF]: [false, true, "powf"],
+    [MintOpcode.MINT_REM_R8]: [false, false, "fmod"],
+    [MintOpcode.MINT_REM_R4]: [false, true, "fmodf"],
 };
 
 function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
@@ -2939,17 +2938,17 @@ function emit_indirectop(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOp
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_IMM_I8)
     ) ||
         (
-        (opcode >= MintOpcode.MINT_STIND_OFFSET_I1) &&
-        (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
-    ) || isAddMul;
+            (opcode >= MintOpcode.MINT_STIND_OFFSET_I1) &&
+            (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
+        ) || isAddMul;
     const isImm = (
         (opcode >= MintOpcode.MINT_LDIND_OFFSET_IMM_I1) &&
         (opcode <= MintOpcode.MINT_LDIND_OFFSET_IMM_I8)
     ) ||
         (
-        (opcode >= MintOpcode.MINT_STIND_OFFSET_IMM_I1) &&
-        (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
-    ) || isAddMul;
+            (opcode >= MintOpcode.MINT_STIND_OFFSET_IMM_I1) &&
+            (opcode <= MintOpcode.MINT_STIND_OFFSET_IMM_I8)
+        ) || isAddMul;
 
     let valueVarIndex, addressVarIndex, offsetVarIndex = -1, constantOffset = 0,
         constantMultiplier = 1;
@@ -3316,9 +3315,9 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
 
 const vec128Test =
     "0061736d0100000001040160000003020100070801047465737400000a090107004100fd111a0b";
-let wasmSimdSupported : boolean | undefined;
+let wasmSimdSupported: boolean | undefined;
 
-function getIsWasmSimdSupported () : boolean {
+function getIsWasmSimdSupported(): boolean {
     if (wasmSimdSupported !== undefined)
         return wasmSimdSupported;
 
@@ -3337,10 +3336,10 @@ function getIsWasmSimdSupported () : boolean {
     return wasmSimdSupported;
 }
 
-function get_import_name (
+function get_import_name(
     builder: WasmBuilder, typeName: string,
     functionPtr: number
-) : string {
+): string {
     const name = `${typeName}_${functionPtr.toString(16)}`;
     if (typeof (builder.importedFunctions[name]) !== "object")
         builder.defineImportedFunction("s", name, typeName, false, functionPtr);
@@ -3369,11 +3368,11 @@ const simdCreateStoreOps = {
     [MintOpcode.MINT_SIMD_V128_I8_CREATE]: WasmOpcode.i64_store,
 };
 
-function emit_simd (
+function emit_simd(
     builder: WasmBuilder, ip: MintOpcodePtr,
     opcode: MintOpcode, opname: string,
     argCount: number, index: number
-) : boolean {
+): boolean {
     // First, if compiling an intrinsic attempt to emit the special vectorized implementation
     // We only do this if SIMD is enabled since we'll be using the v128 opcodes.
     if (builder.options.enableSimd && getIsWasmSimdSupported()) {
@@ -3470,24 +3469,24 @@ function emit_simd (
     }
 }
 
-function append_simd_store (builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_store(builder: WasmBuilder, ip: MintOpcodePtr) {
     append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
 
-function append_simd_2_load (builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
+function append_simd_2_load(builder: WasmBuilder, ip: MintOpcodePtr, loadOp?: WasmSimdOpcode) {
     builder.local("pLocals");
     // This || is harmless since v128_load is 0
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, loadOp || WasmSimdOpcode.v128_load);
 }
 
-function append_simd_3_load (builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_3_load(builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     // FIXME: Can rhs be a scalar? We handle shifts separately already
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
 }
 
-function append_simd_4_load (builder: WasmBuilder, ip: MintOpcodePtr) {
+function append_simd_4_load(builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.local("pLocals");
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
@@ -3510,14 +3509,14 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
-function append_stloc_simd_zero (builder: WasmBuilder, offset: number) {
+function append_stloc_simd_zero(builder: WasmBuilder, offset: number) {
     builder.local("pLocals");
     builder.appendSimd(WasmSimdOpcode.v128_const);
     builder.appendBytes(new Uint8Array(sizeOfV128));
     append_stloc_tail(builder, offset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
 
-function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2) : boolean {
+function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
     if (simple) {
         append_simd_2_load(builder, ip);
@@ -3578,7 +3577,7 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     }
 }
 
-function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3) : boolean {
+function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic3): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(2, index);
     if (simple) {
         const isShift = simdShiftTable.has(index);
@@ -3614,7 +3613,7 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     return false;
 }
 
-function emit_simd_4 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4) : boolean {
+function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic4): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(3, index);
     if (simple) {
         append_simd_4_load(builder, ip);
