@@ -1743,7 +1743,7 @@ void CodeGen::genGenerateMachineCode()
         }
         else
         {
-            printf("X86 with SSE2");
+            printf("generic X86");
         }
 #elif defined(TARGET_AMD64)
         if (compiler->canUseEvexEncoding())
@@ -1756,7 +1756,7 @@ void CodeGen::genGenerateMachineCode()
         }
         else
         {
-            printf("X64 with SSE2");
+            printf("generic X64");
         }
 #elif defined(TARGET_ARM)
         printf("generic ARM");
