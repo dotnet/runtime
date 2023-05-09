@@ -40,7 +40,7 @@ Webcil consists of a standard [binary WebAssembly version 0 module](https://weba
 ```
 
 That is, the module imports linear memory 0 and exports:
-* a global `i32` `webcilVersion` encoding the version of the WebAssembly wrapper (currently 0), 
+* a global `i32` `webcilVersion` encoding the version of the WebAssembly wrapper (currently 0),
 * a function `getWebcilSize : i32 -> ()` that writes the size of the Webcil payload to the specified
   address in linear memory as a `u32` (that is: 4 LE bytes).
 * a function `getWebcilPayload : i32 i32 -> ()` that writes `$n` bytes of the content of the Webcil
@@ -58,7 +58,7 @@ Webcil payload and a tool that generates Webcil files could simply emit the pref
 constant data.  The data section is the only variable content between different Webcil-encoded .NET
 assemblies)
 
-(**Rational**: Encoding the payload in the data section in passive data segments with known indices
+(**Rationale**: Encoding the payload in the data section in passive data segments with known indices
 allows a runtime that does not include a WebAssembly host or a runtime that does not wish to
 instantiate the WebAssembly module to extract the payload by traversing the WebAssembly module and
 locating the Webcil payload in the data section at segment 1.)
