@@ -163,7 +163,7 @@ namespace System.Text
             goto Finish;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe nuint GetIndexOfFirstNonLatin1Char_Sse2(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -761,7 +761,7 @@ namespace System.Text
             goto Finish;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe nuint NarrowUtf16ToLatin1_Sse2(char* pUtf16Buffer, byte* pLatin1Buffer, nuint elementCount)
         {
             // This method contains logic optimized for both SSE2 and SSE41. Much of the logic in this method
@@ -960,7 +960,7 @@ namespace System.Text
             }
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static unsafe void WidenLatin1ToUtf16_Sse2(byte* pLatin1Buffer, char* pUtf16Buffer, nuint elementCount)
         {
             // JIT turns the below into constants

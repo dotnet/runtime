@@ -26,17 +26,15 @@ namespace IntrinsicsInSystemPrivateCoreLib
     {
         public const string DiagnosticId = "IntrinsicsInSystemPrivateCoreLib";
 
-        // You can change these strings in the Resources.resx file. If you do not want your analyzer to be localize-able, you can use regular strings for Title and MessageFormat.
-        // See https://github.com/dotnet/roslyn/blob/main/docs/analyzers/Localizing%20Analyzers.md for more on localization
         private const string Title = "System.Private.CoreLib ReadyToRun Intrinsics";
-        private const string MessageFormat = "Intrinsics from class '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or BypassReadyToRunForIntrinsicsHelperUse";
+        private const string MessageFormat = "Intrinsics from class '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or CompExactlyDependsOn";
         private const string Description = "ReadyToRun Intrinsic Safety For System.Private.CoreLib.";
         private const string Category = "IntrinsicsCorrectness";
 
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
         public const string DiagnosticIdHelper = "IntrinsicsInSystemPrivateCoreLibHelper";
-        private const string MessageHelperFormat = "Helper '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or BypassReadyToRunForIntrinsicsHelperUse";
+        private const string MessageHelperFormat = "Helper '{0}' used without the protection of an explicit if statement checking the correct IsSupported flag or CompExactlyDependsOn";
         private static readonly DiagnosticDescriptor RuleHelper = new DiagnosticDescriptor(DiagnosticIdHelper, Title, MessageHelperFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
         public const string DiagnosticIdConditionParsing = "IntrinsicsInSystemPrivateCoreLibConditionParsing";
@@ -44,7 +42,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
         private static readonly DiagnosticDescriptor RuleCantParse = new DiagnosticDescriptor(DiagnosticIdConditionParsing, Title, MessageNonParseableConditionFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
         public const string DiagnosticIdAttributeNotSpecificEnough = "IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough";
-        private const string MessageAttributeNotSpecificEnoughFormat = "BypassReadyToRunForIntrinsicsHelperUse({0}) attribute found which relates to this IsSupported check, but is not specific enough. Suppress this error if this function has an appropriate if condition so that if the meaning of the function is invariant regardless of the result of the call to IsSupported.";
+        private const string MessageAttributeNotSpecificEnoughFormat = "CompExactlyDependsOn({0}) attribute found which relates to this IsSupported check, but is not specific enough. Suppress this error if this function has an appropriate if condition so that if the meaning of the function is invariant regardless of the result of the call to IsSupported.";
         private static readonly DiagnosticDescriptor RuleAttributeNotSpecificEnough = new DiagnosticDescriptor(DiagnosticIdAttributeNotSpecificEnough, Title, MessageAttributeNotSpecificEnoughFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(Rule, RuleHelper, RuleCantParse, RuleAttributeNotSpecificEnough); } }
@@ -121,15 +119,15 @@ namespace IntrinsicsInSystemPrivateCoreLib
         {
             public IntrinsicsAnalyzerOnLoadData(HashSet<INamedTypeSymbol> namedTypesToBeProtected,
                                                 INamedTypeSymbol? bypassReadyToRunAttribute,
-                                                INamedTypeSymbol? bypassReadyToRunForIntrinsicsHelperUse)
+                                                INamedTypeSymbol? compExaclyDependsOn)
             {
                 NamedTypesToBeProtected = namedTypesToBeProtected;
                 BypassReadyToRunAttribute = bypassReadyToRunAttribute;
-                BypassReadyToRunForIntrinsicsHelperUse = bypassReadyToRunForIntrinsicsHelperUse;
+                CompExactlyDependsOn = compExaclyDependsOn;
             }
             public readonly HashSet<INamedTypeSymbol> NamedTypesToBeProtected;
             public readonly INamedTypeSymbol? BypassReadyToRunAttribute;
-            public readonly INamedTypeSymbol? BypassReadyToRunForIntrinsicsHelperUse;
+            public readonly INamedTypeSymbol? CompExactlyDependsOn;
         }
 
         public override void Initialize(AnalysisContext context)
@@ -141,9 +139,9 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 HashSet<INamedTypeSymbol> namedTypesToBeProtected = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
                 INamespaceSymbol systemRuntimeIntrinsicsNamespace = GetNamespace(context.Compilation.Assembly, "System", "Runtime", "Intrinsics");
                 INamedTypeSymbol? bypassReadyToRunAttribute = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunAttribute");
-                INamedTypeSymbol? bypassReadyToRunForIntrinsicsHelperUse = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunForIntrinsicsHelperUseAttribute");
+                INamedTypeSymbol? compExaclyDependsOn = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.CompilerServices.CompExactlyDependsOnAttribute");
 
-                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, bypassReadyToRunForIntrinsicsHelperUse);
+                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, compExaclyDependsOn);
 
                 // Find all types in the System.Runtime.Intrinsics namespace that have an IsSupported property that are NOT
                 // directly in the System.Runtime.Intrinsics namespace
@@ -374,12 +372,12 @@ namespace IntrinsicsInSystemPrivateCoreLib
 
         private static IEnumerable<INamedTypeSymbol> GetBypassForIntrinsicHelperUseList(ISymbol symbol, IntrinsicsAnalyzerOnLoadData onLoadData)
         {
-            var bypassReadyToRunForIntrinsicsHelperUse = onLoadData.BypassReadyToRunForIntrinsicsHelperUse;
-            if (bypassReadyToRunForIntrinsicsHelperUse != null)
+            var compExaclyDependsOn = onLoadData.CompExactlyDependsOn;
+            if (compExaclyDependsOn != null)
             {
                 foreach (var attributeData in symbol.GetAttributes())
                 {
-                    if (attributeData.AttributeClass.Equals(bypassReadyToRunForIntrinsicsHelperUse, SymbolEqualityComparer.Default))
+                    if (attributeData.AttributeClass.Equals(compExaclyDependsOn, SymbolEqualityComparer.Default))
                     {
                         if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
                         {
@@ -488,7 +486,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 return;
             }
 
-            var bypassReadyToRunForIntrinsicsHelperUse = onLoadData.BypassReadyToRunForIntrinsicsHelperUse;
+            var compExaclyDependsOn = onLoadData.CompExactlyDependsOn;
 
             ISymbol? symbolThatMightHaveIntrinsicsHelperAttribute = methodSymbol;
             IOperation operationSearch = operation;
@@ -516,11 +514,11 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 {
                     ISymbol? attributeExplicitlyAllowsRelatedSymbol = null;
                     ISymbol? attributeExplicitlyAllowsExactSymbol = null;
-                    if ((bypassReadyToRunForIntrinsicsHelperUse != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
+                    if ((compExaclyDependsOn != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
                     {
                         foreach (var attributeData in symbolThatMightHaveIntrinsicsHelperAttribute.GetAttributes())
                         {
-                            if (attributeData.AttributeClass.Equals(bypassReadyToRunForIntrinsicsHelperUse, SymbolEqualityComparer.Default))
+                            if (attributeData.AttributeClass.Equals(compExaclyDependsOn, SymbolEqualityComparer.Default))
                             {
                                 if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
                                 {

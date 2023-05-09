@@ -53,7 +53,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
@@ -1479,7 +1479,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx))]
+        [CompExactlyDependsOn(typeof(Avx))]
         private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
             where T : unmanaged
         {

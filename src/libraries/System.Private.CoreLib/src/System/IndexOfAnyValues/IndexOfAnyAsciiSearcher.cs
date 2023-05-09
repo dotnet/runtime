@@ -166,9 +166,9 @@ namespace System.Buffers
             return false;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -281,9 +281,9 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -396,9 +396,9 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
         {
@@ -506,9 +506,9 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
         {
@@ -616,9 +616,9 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap0, Vector128<byte> bitmap1)
             where TNegator : struct, INegator
         {
@@ -727,9 +727,9 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap0, Vector128<byte> bitmap1)
             where TNegator : struct, INegator
         {
@@ -839,9 +839,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector128<short> source0, Vector128<short> source1, Vector128<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -877,9 +877,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
@@ -907,7 +907,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<short> source0, Vector256<short> source1, Vector256<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -928,7 +928,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
             // See comments in IndexOfAnyLookupCore(Vector128<byte>) above for more details.
@@ -940,9 +940,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator>(Vector128<byte> source, Vector128<byte> bitmapLookup0, Vector128<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
@@ -965,7 +965,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator>(Vector256<byte> source, Vector256<byte> bitmapLookup0, Vector256<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
@@ -1036,7 +1036,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1052,7 +1052,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1074,7 +1074,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1090,7 +1090,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector256<byte> result)
             where TNegator : struct, INegator
         {
@@ -1112,7 +1112,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);

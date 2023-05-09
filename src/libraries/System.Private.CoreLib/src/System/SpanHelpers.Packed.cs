@@ -35,46 +35,46 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOf(ref char searchSpace, char value, int length) =>
             IndexOf<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value, int length) =>
             IndexOf<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAny(ref char searchSpace, char value0, char value1, int length) =>
             IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length) =>
             IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length) =>
             IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length) =>
             IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
             IndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
             IndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static bool Contains(ref short searchSpace, short value, int length)
         {
             Debug.Assert(CanUsePackedIndexOf(value));
@@ -228,7 +228,7 @@ namespace System
             return false;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOf<TNegator>(ref short searchSpace, short value, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -381,7 +381,7 @@ namespace System
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -543,7 +543,7 @@ namespace System
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, short value2, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -708,7 +708,7 @@ namespace System
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAnyInRange<TNegator>(ref short searchSpace, short lowInclusive, short rangeInclusive, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -854,7 +854,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
             Debug.Assert(Avx2.IsSupported);
@@ -866,7 +866,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
             Debug.Assert(Sse2.IsSupported);
@@ -896,7 +896,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
@@ -919,7 +919,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
@@ -934,7 +934,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);

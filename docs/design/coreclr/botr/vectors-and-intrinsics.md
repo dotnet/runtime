@@ -61,14 +61,14 @@ Code will be compiled using the optimistic instruction set to drive compilation,
 -  If an application developer is highly concerned about startup performance, developers should avoid use intrinsics beyond Sse42, or should use Crossgen with an updated baseline instruction set support.
 
 ### Crossgen2 adjustment to rules for System.Private.CoreLib.dll
-Since System.Private.CoreLib.dll is known to be code reviewed with the code review rules as written above for crossgen1 with System.Private.CoreLib.dll, it is possible to relax rule "Code which attempts to use instruction sets outside of the optimistic set will generate code that will not be used on machines with support for the instruction set." What this will do is allow the generation of non-optimal code for these situations, but through the magic of code review and analyzers, the generated logic will still work correctly.
+Since System.Private.CoreLib.dll is known to be code reviewed with the code review rules as written below with System.Private.CoreLib.dll, it is possible to relax rule "Code which attempts to use instruction sets outside of the optimistic set will generate code that will not be used on machines with support for the instruction set." What this will do is allow the generation of non-optimal code for these situations, but through the magic of code review and analyzers, the generated logic will still work correctly.
 
-#### Code review rules for code written in System.Private.CoreLib.dll
-- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to an associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, OR the function which uses the platform intrinsic must have the `BypassReadyToRunForIntrinsicsHelperUse` attribute used to indicate that this function will unconditionally call platform intrinsics of from some type.
-- Within a single function that uses platform intrinsics, unless marked with the `BypassReadyToRunForIntrinsicsHelperUse` attribute it must behave identically regardless of whether IsSupported returns true or not. This allows the R2R compiler to compile with a lower set of intrinsics support, and yet expect that the behavior of the function will remain unchanged in the presence of tiered compilation.
-- Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen. To fix this, we may, in the future, change the compilation rules to compile the methods marked with`BypassReadyToRunForIntrinsicsHelperUse` with the appropriate platform intrinsics enabled.
+#### Code review and analyzer rules for code written in System.Private.CoreLib.dll
+- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to an associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, OR the function which uses the platform intrinsic must have the `CompExactlyDependsOn` attribute used to indicate that this function will unconditionally call platform intrinsics of from some type.
+- Within a single function that uses platform intrinsics, unless marked with the `CompExactlyDependsOn` attribute it must behave identically regardless of whether IsSupported returns true or not. This allows the R2R compiler to compile with a lower set of intrinsics support, and yet expect that the behavior of the function will remain unchanged in the presence of tiered compilation.
+- Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen. To fix this, we may, in the future, change the compilation rules to compile the methods marked with`CompExactlyDependsOn` with the appropriate platform intrinsics enabled.
 
-Correct use of the `IsSupported` properties and `BypassReadyToRunForIntrinsicsHelperUse` attribute is checked by an analyzer during build of `System.Private.CoreLib`. This analyzer requires that all usage of `IsSupported` properties conform to a few specific patterns. These patterns are supported via either if statements or the ternary operator.
+Correct use of the `IsSupported` properties and `CompExactlyDependsOn` attribute is checked by an analyzer during build of `System.Private.CoreLib`. This analyzer requires that all usage of `IsSupported` properties conform to a few specific patterns. These patterns are supported via either if statements or the ternary operator.
 
 The supported conditional checks are
 
@@ -109,7 +109,53 @@ if (Avx2.IsSupported || ArmBase.IsSupported)
 }
 ```
 
-The behavior of the `BypassReadyToRunForIntrinsicsHelperUse` is that 1 or more attributes may be applied to a given method. If any of the types specified via the attribute will not have an invariant result for its associated `IsSupported` property at runtime, then the method will not be compiled or inlined into another function during R2R compilation. If no type so described will have a true result for the `IsSupported` method, then the method will not be compiled or inlined into another function during R2R compilation.
+4. Within a method marked with `CompExactlyDependsOn` for a less advanced attribute, there may be a use of an explicit IsSupported check for a more advanced cpu feature. If so, the behavior of the overall function must remain the same regardless of whether or not the CPU feature is enabled. The analyzer will detect this usage as a warning, so that any use of IsSupported in a helper method is examined to verify that that use follows the rule of preserving exactly equivalent behavior.
+
+```
+[CompExactlyDependsOn(typeof(Sse41))]
+int DoSomethingHelper()
+{
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+    if (Avx2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+    {
+        Avx2.IntrinsicThatDoesTheSameThingAsSse41IntrinsicAndSse41.Intrinsic2();
+    }
+    else
+    {
+        Sse41.Intrinsic();
+        Sse41.Intrinsic2();
+    }
+}
+```
+
+- NOTE: If the helper needs to be used AND behave differently with different instruction sets enabled, correct logic requires spreading the `CompExactlyDependsOn` attribute to all callers such that no caller could be compiled expecting the wrong behavior. See the `Vector128.ShuffleUnsafe` method, and various uses.
+
+
+The behavior of the `CompExactlyDependsOn` is that 1 or more attributes may be applied to a given method. If any of the types specified via the attribute will not have an invariant result for its associated `IsSupported` property at runtime, then the method will not be compiled or inlined into another function during R2R compilation. If no type so described will have a true result for the `IsSupported` method, then the method will not be compiled or inlined into another function during R2R compilation.
+
+5. In addition to directly using the IsSupported properties to enable/disable support for intrinsics, simple static properties written in the following style may be used to reduce code duplication.
+
+```
+static bool IsVectorizationSupported => Avx2.IsSupported || PackedSimd.IsSupported
+
+public void SomePublicApi()
+{
+    if (IsVectorizationSupported)
+        SomeVectorizationHelper();
+    else
+    {
+        // Non-Vectorized implementation
+    }
+}
+
+[CompExactlyDependsOn(typeof(Avx2))]
+[CompExactlyDependsOn(typeof(PackedSimd))]
+private void SomeVectorizationHelper()
+{
+}
+```
+
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
 The JIT receives flags which instruct it on what instruction sets are valid to use, and has access to a new jit interface api `notifyInstructionSetUsage(isa, bool supportBehaviorRequired)`.

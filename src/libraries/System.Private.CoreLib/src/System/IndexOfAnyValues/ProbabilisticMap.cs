@@ -107,7 +107,7 @@ namespace System.Buffers
                 values.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
             Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace);
@@ -128,7 +128,7 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
@@ -146,8 +146,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
@@ -168,11 +168,11 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
@@ -362,8 +362,8 @@ namespace System.Buffers
             return -1;
         }
 
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
-        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse41))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse41))]
         private static int IndexOfAnyVectorized(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
             Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);

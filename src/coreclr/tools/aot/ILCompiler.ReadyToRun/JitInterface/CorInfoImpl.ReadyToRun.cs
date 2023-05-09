@@ -551,7 +551,7 @@ namespace Internal.JitInterface
                     {
                         return true;
                     }
-                    if (metadataReader.StringComparer.Equals(nameHandle, "BypassReadyToRunForIntrinsicsHelperUseAttribute"))
+                    if (metadataReader.StringComparer.Equals(nameHandle, "CompExactlyDependsOnAttribute"))
                     {
                         var customAttribute = metadataReader.GetCustomAttribute(attributeHandle);
                         var typeProvider = new CustomAttributeTypeProvider(ecmaMethod.Module);
