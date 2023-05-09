@@ -627,7 +627,7 @@ namespace System.Data.ProviderBase
             WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }
 
-        internal unsafe void ZeroMemory()
+        internal void ZeroMemory()
         {
             bool mustRelease = false;
 
@@ -636,7 +636,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = DangerousGetHandle();
-                NativeMemory.Clear((void*)ptr, (uint)Length);
+                SafeNativeMethods.ZeroMemory(ptr, Length);
             }
             finally
             {
