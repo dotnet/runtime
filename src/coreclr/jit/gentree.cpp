@@ -2671,6 +2671,20 @@ AGAIN:
 
     if (kind & GTK_UNOP)
     {
+        if (oper == GT_IND)
+        {
+            if (op1->TypeIs(TYP_STRUCT))
+            {
+                // Rare case -- need contextual information to check equality in some cases.
+                return false;
+            }
+
+            if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
+            {
+                return false;
+            }
+        }
+
         if (IsExOp(kind))
         {
             // ExOp operators extend unary operator with extra, non-GenTree* members.  In many cases,
@@ -2723,20 +2737,6 @@ AGAIN:
                         return false;
                     }
 
-                    break;
-
-                case GT_IND:
-                case GT_NULLCHECK:
-                    if (op1->TypeIs(TYP_STRUCT))
-                    {
-                        // Rare case -- need contextual information to check equality in some cases.
-                        return false;
-                    }
-
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
                     break;
 
                 case GT_FIELD_ADDR:
@@ -8271,17 +8271,23 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     }
     dst->gtFlags |= GTF_DONT_CSE;
 
-#if defined(FEATURE_SIMD) && !defined(TARGET_X86)
-    // TODO-Cleanup: enable on Windows x86.
+#if defined(FEATURE_SIMD)
+#if !defined(TARGET_X86)
     if (varTypeIsSIMD(dst))
     {
         // We want to track SIMD assignments as being intrinsics since they
         // are functionally SIMD `mov` instructions and are more efficient
         // when we don't promote, particularly when it occurs due to inlining
-
         SetOpLclRelatedToSIMDIntrinsic(dst);
         SetOpLclRelatedToSIMDIntrinsic(src);
     }
+#else  // TARGET_X86
+    // TODO-Cleanup: merge with the all-arch logic.
+    if (varTypeIsSIMD(src) && src->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
+    {
+        SetOpLclRelatedToSIMDIntrinsic(dst);
+    }
+#endif // TARGET_X86
 #endif // FEATURE_SIMD
 
     /* Create the assignment node */
@@ -8506,86 +8512,6 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
             divisor->gtFlags |= GTF_DONT_CSE;
         }
     }
-}
-
-//------------------------------------------------------------------------
-// gtNewBlkOpNode: Creates a GenTree for a block (struct) assignment.
-//
-// Arguments:
-//    dst           - The destination node: local var / block node.
-//    srcOrFillVall - The value to assign for CopyBlk, the integer "fill" for InitBlk
-//    isVolatile    - Whether this is a volatile memory operation or not.
-//
-// Return Value:
-//    Returns the newly constructed and initialized block operation.
-//
-GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
-{
-    assert(varTypeIsStruct(dst) && (dst->OperIsIndir() || dst->OperIsLocal()));
-
-    bool isCopyBlock = srcOrFillVal->TypeGet() == dst->TypeGet();
-    if (!isCopyBlock) // InitBlk
-    {
-        assert(genActualTypeIsInt(srcOrFillVal) && dst->TypeIs(TYP_STRUCT));
-        if (!srcOrFillVal->IsIntegralConst(0))
-        {
-            srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);
-        }
-    }
-
-    GenTree* result = gtNewAssignNode(dst, srcOrFillVal);
-
-    /* In the case of CpBlk, we want to avoid generating
-    * nodes where the source and destination are the same
-    * because of two reasons, first, is useless, second
-    * it introduces issues in liveness and also copying
-    * memory from an overlapping memory location is
-    * undefined both as per the ECMA standard and also
-    * the memcpy semantics specify that.
-    *
-    * NOTE: In this case we'll only detect the case for addr of a local
-    * and a local itself, any other complex expressions won't be
-    * caught.
-    *
-    * TODO-Cleanup: though having this logic is goodness (i.e. avoids self-assignment
-    * of struct vars very early), it was added because fgInterBlockLocalVarLiveness()
-    * isn't handling self-assignment of struct variables correctly.  This issue may not
-    * surface if struct promotion is ON (which is the case on x86/arm).  But still the
-    * fundamental issue exists that needs to be addressed.
-    */
-    if (isCopyBlock)
-    {
-        GenTree* currSrc = srcOrFillVal;
-        GenTree* currDst = dst;
-
-        if (currSrc->OperIs(GT_LCL_VAR) && currDst->OperIs(GT_LCL_VAR) &&
-            currSrc->AsLclVarCommon()->GetLclNum() == currDst->AsLclVarCommon()->GetLclNum())
-        {
-            result->gtBashToNOP(); // Make this a NOP.
-            return result;
-        }
-    }
-
-    if (isVolatile)
-    {
-        assert(dst->OperIsIndir());
-        dst->gtFlags |= GTF_IND_VOLATILE;
-    }
-
-#ifdef FEATURE_SIMD
-    // If the source is a SIMD/HWI node of SIMD type, then the dst lclvar struct
-    // should be labeled as simd intrinsic related struct. This is done so that
-    // we do not promote the local, thus avoiding conflicting access methods
-    // (fields vs. whole-register).
-    if (varTypeIsSIMD(srcOrFillVal) && srcOrFillVal->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
-    {
-        // TODO-Cleanup: similar logic already exists in "gtNewAssignNode",
-        // however, it is not enabled for x86. Fix that and delete this code.
-        SetOpLclRelatedToSIMDIntrinsic(dst);
-    }
-#endif // FEATURE_SIMD
-
-    return result;
 }
 
 //------------------------------------------------------------------------

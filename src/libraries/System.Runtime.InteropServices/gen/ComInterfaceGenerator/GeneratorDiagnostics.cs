@@ -187,7 +187,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
-        public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypesAttribute =
+        public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypes =
             new DiagnosticDescriptor(
                 Ids.MultipleComInterfaceBaseTypes,
                 GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesTitle)),

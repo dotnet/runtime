@@ -31,9 +31,6 @@ namespace ILCompiler.DependencyAnalysis
             // relocs to nodes we emit.
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
 
-            if(_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
-
             DefType closestDefType = _type.GetClosestDefType();
 
             if (_type.IsArray)
@@ -69,21 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
-
-            // Keep track of the default constructor map dependency for this type if it has a default constructor
-            // We only do this for reflection blocked types because dataflow analysis is responsible for
-            // generating default constructors for Activator.CreateInstance in other cases.
-            MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null && factory.MetadataManager.IsReflectionBlocked(defaultCtor))
-            {
-                dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor),
-                    "DefaultConstructorNode"));
-            }
 
             return dependencyList;
         }

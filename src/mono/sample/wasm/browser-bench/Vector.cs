@@ -15,6 +15,8 @@ namespace Sample
         {
             measurements = new Measurement[] {
                 new Create(),
+                new PackConstant(),
+                new Pack(),
                 new Add(),
                 new Multiply(),
                 new DotInt(),
@@ -54,6 +56,25 @@ namespace Sample
             public override string Name => "Create Vector128";
 
             public override void RunStep() => vector = Vector128.Create(0x123456);
+        }
+
+        class PackConstant : VectorMeasurement
+        {
+            Vector128<int> vector;
+
+            public override string Name => "Pack Vector128 (Constant)";
+
+            public override void RunStep() => vector = Vector128.Create(1, 2, 3, 4);
+        }
+
+        class Pack : VectorMeasurement
+        {
+            Vector128<int> vector;
+            int a = 1, b = 2, c = 3, d = 4;
+
+            public override string Name => "Pack Vector128";
+
+            public override void RunStep() => vector = Vector128.Create(a, b, c, d);
         }
 
         class Add : VectorMeasurement
