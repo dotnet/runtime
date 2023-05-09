@@ -344,6 +344,17 @@ namespace System.Numerics
                 throw e; // TryParse still throws ArgumentException on invalid NumberStyles
             }
 
+            if ((style & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                return TryParseBigIntegerHexNumberStyle(value, style, out result);
+            }
+
+            return TryParseBigIntegerNumber(value, style, info, out result);
+        }
+
+        internal static unsafe ParsingStatus TryParseBigIntegerNumber(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
+        {
+
             scoped Span<byte> buffer;
             byte[]? arrayFromPool = null;
 
@@ -362,21 +373,14 @@ namespace System.Numerics
             {
                 Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Integer, buffer);
 
-                if (Number.TryStringToNumber(value, style, ref number, info))
-                {
-                    if ((style & NumberStyles.AllowHexSpecifier) != 0)
-                    {
-                        ret = HexNumberToBigInteger(ref number, out result);
-                    }
-                    else
-                    {
-                        ret = NumberToBigInteger(ref number, out result);
-                    }
-                }
-                else
+                if (!Number.TryStringToNumber(value, style, ref number, info))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
+                }
+                else
+                {
+                    ret = NumberToBigInteger(ref number, out result);
                 }
             }
 
@@ -411,17 +415,42 @@ namespace System.Numerics
             return result;
         }
 
-        private static ParsingStatus HexNumberToBigInteger(ref Number.NumberBuffer number, out BigInteger result)
+        internal static ParsingStatus TryParseBigIntegerHexNumberStyle(ReadOnlySpan<char> value, NumberStyles style, out BigInteger result)
         {
-            if (number.Digits.IsEmpty)
+            int whiteIndex = 0;
+
+            // Skip past any whitespace at the beginning.
+            if ((style & NumberStyles.AllowLeadingWhite) != 0)
             {
-                result = default;
-                return ParsingStatus.Failed;
+                for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
+                {
+                    if (!Number.IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[whiteIndex..];
+            }
+
+            // Skip past any whitespace at the end.
+            if ((style & NumberStyles.AllowTrailingWhite) != 0)
+            {
+                for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
+                {
+                    if (!Number.IsWhite(value[whiteIndex]))
+                        break;
+                }
+
+                value = value[..(whiteIndex + 1)];
+            }
+
+            if (value.IsEmpty)
+            {
+                goto FailExit;
             }
 
             const int DigitsPerBlock = 8;
 
-            int totalDigitCount = number.DigitsCount;
+            int totalDigitCount = value.Length;
             int blockCount, partialDigitCount;
 
             blockCount = Math.DivRem(totalDigitCount, DigitsPerBlock, out int remainder);
@@ -435,7 +464,8 @@ namespace System.Numerics
                 partialDigitCount = DigitsPerBlock - remainder;
             }
 
-            bool isNegative = HexConverter.FromChar(number.Digits[0]) >= 8;
+            if (!HexConverter.IsHexChar(value[0])) goto FailExit;
+            bool isNegative = HexConverter.FromChar(value[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
             uint[]? arrayFromPool = null;
@@ -448,16 +478,12 @@ namespace System.Numerics
 
             try
             {
-                for (int i = 0; i < number.DigitsCount; i++)
+                for (int i = 0; i < value.Length; i++)
                 {
-                    char digitChar = (char)number.Digits[i];
-                    if (digitChar == '\0')
-                    {
-                        break;
-                    }
+                    char digitChar = value[i];
 
+                    if (!HexConverter.IsHexChar(digitChar)) goto FailExit;
                     int hexValue = HexConverter.FromChar(digitChar);
-                    Debug.Assert(hexValue != 0xFF);
 
                     partialValue = (partialValue << 4) | (uint)hexValue;
                     partialDigitCount++;
@@ -516,6 +542,10 @@ namespace System.Numerics
                     ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
+
+        FailExit:
+            result = default;
+            return ParsingStatus.Failed;
         }
 
         //
