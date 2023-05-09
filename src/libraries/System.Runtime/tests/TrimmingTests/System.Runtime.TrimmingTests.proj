@@ -45,6 +45,12 @@
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
       <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
+      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
+      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
