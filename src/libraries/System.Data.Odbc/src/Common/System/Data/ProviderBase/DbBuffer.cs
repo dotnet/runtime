@@ -14,21 +14,12 @@ namespace System.Data.ProviderBase
     {
         private readonly int _bufferLength;
 
-        protected DbBuffer(int initialSize) : base(IntPtr.Zero, true)
+        protected unsafe DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
             if (0 < initialSize)
             {
                 _bufferLength = initialSize;
-
-                try { }
-                finally
-                {
-                    base.handle = SafeNativeMethods.LocalAlloc((IntPtr)initialSize);
-                }
-                if (IntPtr.Zero == base.handle)
-                {
-                    throw new OutOfMemoryException();
-                }
+                base.handle = (IntPtr)NativeMemory.AllocZeroed((uint)initialSize);
             }
         }
 
@@ -368,15 +359,12 @@ namespace System.Data.ProviderBase
             return BitConverter.Int32BitsToSingle(value);
         }
 
-        protected override bool ReleaseHandle()
+        protected override unsafe bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (IntPtr.Zero != ptr)
-            {
-                SafeNativeMethods.LocalFree(ptr);
-            }
+            NativeMemory.Free((void*)ptr);
             return true;
         }
 
@@ -639,7 +627,7 @@ namespace System.Data.ProviderBase
             WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }
 
-        internal void ZeroMemory()
+        internal unsafe void ZeroMemory()
         {
             bool mustRelease = false;
 
@@ -648,7 +636,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = DangerousGetHandle();
-                SafeNativeMethods.ZeroMemory(ptr, Length);
+                NativeMemory.Clear((void*)ptr, (uint)Length);
             }
             finally
             {
