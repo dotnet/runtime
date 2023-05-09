@@ -50,12 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 foreach (BinderInvocationOperation operation in operations)
                 {
                     IInvocationOperation invocationOperation = operation.InvocationOperation!;
-                    ImmutableArray<IArgumentOperation> arguments = invocationOperation.Arguments;
-                    int argLength = arguments.Length;
-
-                    if (!invocationOperation.TargetMethod.IsExtensionMethod ||
-                        argLength < 1 ||
-                        !Helpers.TypesAreEqual(_typeSymbols.IConfiguration, arguments[0].Parameter.Type))
+                    if (!invocationOperation.TargetMethod.IsExtensionMethod)
                     {
                         continue;
                     }
@@ -99,6 +94,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
                 ImmutableArray<IParameterSymbol> @params = operation.TargetMethod.Parameters;
                 int paramLength = @params.Length;
+
+                if (!Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[0].Type))
+                {
+                    return;
+                }
 
                 MethodSpecifier binderMethod = MethodSpecifier.None;
 
@@ -168,44 +168,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void ProcessGetCall(BinderInvocationOperation binderOperation)
             {
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
-                ImmutableArray<IArgumentOperation> arguments = operation.Arguments;
-                int argLength = arguments.Length;
+                IMethodSymbol targetMethod = operation.TargetMethod;
+                ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
+                int paramLength = @params.Length;
+
+                if (!Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[0].Type))
+                {
+                    return;
+                }
 
                 MethodSpecifier binderMethod = MethodSpecifier.None;
                 INamedTypeSymbol? namedType;
 
-                if (operation.TargetMethod.IsGenericMethod)
+                if (targetMethod.IsGenericMethod)
                 {
-                    if (argLength > 2)
+                    if (paramLength > 2)
                     {
                         return;
                     }
 
-                    namedType = operation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
+                    namedType = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
 
-                    if (argLength is 1)
+                    if (paramLength is 1)
                     {
                         binderMethod = MethodSpecifier.Get_T;
                     }
-                    else if (argLength is 2 && Helpers.TypesAreEqual(arguments[1].Parameter.Type, _typeSymbols.ActionOfBinderOptions))
+                    else if (paramLength is 2 && Helpers.TypesAreEqual(@params[1].Type, _typeSymbols.ActionOfBinderOptions))
                     {
                         binderMethod = MethodSpecifier.Get_T_BinderOptions;
                     }
                 }
-                else if (argLength > 3)
+                else if (paramLength > 3)
                 {
                     return;
                 }
                 else
                 {
-                    ITypeOfOperation? typeOfOperation = arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
+                    ITypeOfOperation? typeOfOperation = operation.Arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
                     namedType = typeOfOperation?.TypeOperand as INamedTypeSymbol;
 
-                    if (argLength is 2)
+                    if (paramLength is 2)
                     {
                         binderMethod = MethodSpecifier.Get_TypeOf;
                     }
-                    else if (argLength is 3 && Helpers.TypesAreEqual(arguments[2].Parameter.Type, _typeSymbols.ActionOfBinderOptions))
+                    else if (paramLength is 3 && Helpers.TypesAreEqual(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
                         binderMethod = MethodSpecifier.Get_TypeOf_BinderOptions;
                     }
@@ -225,49 +231,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void ProcessGetValueCall(BinderInvocationOperation binderOperation)
             {
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
-                ImmutableArray<IArgumentOperation> arguments = operation.Arguments;
-                int argLength = arguments.Length;
+                IMethodSymbol targetMethod = operation.TargetMethod;
+                ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
+                int paramLength = @params.Length;
 
                 MethodSpecifier binderMethod = MethodSpecifier.None;
                 INamedTypeSymbol? namedType;
 
-                if (operation.TargetMethod.IsGenericMethod)
+                if (targetMethod.IsGenericMethod)
                 {
-                    if (argLength > 3 || arguments[1].Parameter.Type.SpecialType is not SpecialType.System_String)
+                    if (paramLength > 3 || @params[1].Type.SpecialType is not SpecialType.System_String)
                     {
                         return;
                     }
 
-                    namedType = operation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
+                    namedType = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None) as INamedTypeSymbol;
 
-                    if (argLength is 2)
+                    if (paramLength is 2)
                     {
                         binderMethod = MethodSpecifier.GetValue_T_key;
                     }
-                    else if (argLength is 3 && Helpers.TypesAreEqual(arguments[2].Parameter.Type, namedType))
+                    else if (paramLength is 3 && Helpers.TypesAreEqual(@params[2].Type, namedType))
                     {
                         binderMethod = MethodSpecifier.Get_T_BinderOptions;
                     }
                 }
-                else if (argLength > 4)
+                else if (paramLength > 4)
                 {
                     return;
                 }
                 else
                 {
-                    if (arguments[2].Parameter.Type.SpecialType is not SpecialType.System_String)
+                    if (@params[2].Type.SpecialType is not SpecialType.System_String)
                     {
                         return;
                     }
 
-                    ITypeOfOperation? typeOfOperation = arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
+                    ITypeOfOperation? typeOfOperation = operation.Arguments[1].ChildOperations.FirstOrDefault() as ITypeOfOperation;
                     namedType = typeOfOperation?.TypeOperand as INamedTypeSymbol;
 
-                    if (argLength is 3)
+                    if (paramLength is 3)
                     {
                         binderMethod = MethodSpecifier.Get_TypeOf;
                     }
-                    else if (argLength is 4 && Helpers.TypesAreEqual(arguments[3].Parameter.Type, namedType))
+                    else if (paramLength is 4 && Helpers.TypesAreEqual(@params[3].Type, namedType))
                     {
                         binderMethod = MethodSpecifier.Get_TypeOf_BinderOptions;
                     }
@@ -287,16 +294,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void ProcessConfigureCall(BinderInvocationOperation binderOperation)
             {
                 IInvocationOperation operation = binderOperation.InvocationOperation!;
+                IMethodSymbol targetMethod = operation.TargetMethod;
+                ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
 
                 // We're looking for IServiceCollection.Configure<T>(IConfiguration).
                 if (operation is IInvocationOperation { Arguments.Length: 2 } invocationOperation &&
-                    invocationOperation.TargetMethod.IsExtensionMethod &&
-                    invocationOperation.TargetMethod.IsGenericMethod &&
-                    Helpers.TypesAreEqual(_typeSymbols.IServiceCollection, invocationOperation.TargetMethod.Parameters[0].Type) &&
-                    Helpers.TypesAreEqual(_typeSymbols.IConfiguration, invocationOperation.TargetMethod.Parameters[1].Type))
+                    targetMethod.IsGenericMethod &&
+                    Helpers.TypesAreEqual(_typeSymbols.IServiceCollection, @params[0].Type) &&
+                    Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[1].Type))
                 {
-                    ITypeSymbol? type = invocationOperation.TargetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
-                    if (type is not INamedTypeSymbol { } namedType ||
+                    ITypeSymbol? type = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
+                    if (type is not INamedTypeSymbol namedType ||
                         namedType.SpecialType == SpecialType.System_Object)
                     {
                         return;
@@ -318,6 +326,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     GetRootConfigTypeCache(method).Add(spec);
                     GetRootConfigTypeCache(methodGroup).Add(spec);
+
                     _methodsToGen |= method;
                 }
 
@@ -417,12 +426,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         case DictionarySpec:
                         case CollectionSpec:
                             {
-                                bindCoreTypeCache.Add(spec);
+                                RegisterBindCoreGenType(spec);
                             }
                             break;
                         case NullableSpec nullableSpec:
                             {
-                                bindCoreTypeCache.Add(nullableSpec.UnderlyingType);
+                                RegisterBindCoreGenType(nullableSpec.UnderlyingType);
                             }
                             break;
                         default:
@@ -431,6 +440,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     _createdSpecs[type] = spec;
                     return spec;
+
+                    void RegisterBindCoreGenType(TypeSpec spec)
+                    {
+                        bindCoreTypeCache.Add(spec);
+                        _methodsToGen |= MethodSpecifier.BindCore;
+                    }
                 }
             }
 
@@ -674,6 +689,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return null;
                 }
 
+                RegisterHasChildrenHelperForGenIfRequired(elementSpec);
+
                 return new EnumerableSpec(type)
                 {
                     Location = location,
@@ -723,6 +740,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     {
                                         objectSpec.Properties[configKeyName] = (spec);
                                     }
+
+                                    RegisterHasChildrenHelperForGenIfRequired(propertyTypeSpec);
                                 }
                             }
                         }
@@ -731,6 +750,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return objectSpec;
+            }
+
+            private void RegisterHasChildrenHelperForGenIfRequired(TypeSpec type)
+            {
+                if (type.SpecKind is TypeSpecKind.Object or
+                                        TypeSpecKind.Array or
+                                        TypeSpecKind.Enumerable or
+                                        TypeSpecKind.Dictionary)
+                {
+                    _methodsToGen |= MethodSpecifier.HasChildren;
+                }
             }
 
             private bool IsCandidateEnumerable(INamedTypeSymbol type, out ITypeSymbol? elementType)

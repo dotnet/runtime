@@ -39,7 +39,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? IServiceCollection { get; }
         public INamedTypeSymbol? ISet { get; }
         public INamedTypeSymbol? List { get; }
-        public INamedTypeSymbol? Type { get; }
 
         public KnownTypeSymbols(CSharpCompilation compilation)
         {
@@ -65,7 +64,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             IConfiguration = compilation.GetBestTypeByMetadataName(TypeFullName.IConfiguration);
             IConfigurationSection = compilation.GetBestTypeByMetadataName(TypeFullName.IConfigurationSection);
             IServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.IServiceCollection);
-            IServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.Type);
 
             // Collections.
             IEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);

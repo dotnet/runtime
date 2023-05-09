@@ -818,7 +818,7 @@ namespace Microsoft.Extensions
             var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
 
-            options = config.Get(typeof(ComplexOptions), o => o.BindNonPublicProperties = true);
+            options = (ComplexOptions)config.Get(typeof(ComplexOptions), o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
 #endif
         }
@@ -1551,7 +1551,7 @@ namespace Microsoft.Extensions
             var test = config.Get<ClassOverridingVirtualProperty>(b => b.BindNonPublicProperties = true);
             Assert.Equal("a", test.ExposePrivatePropertyValue());
 
-            test = config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true);
+            test = (ClassOverridingVirtualProperty)config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true);
             Assert.Equal("a", test.ExposePrivatePropertyValue());
 #endif
         }
