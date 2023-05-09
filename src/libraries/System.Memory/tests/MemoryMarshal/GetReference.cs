@@ -104,11 +104,15 @@ namespace System.SpanTests
         [Fact]
         public static void ReadOnlySpanGetReferenceAndReadInteger()
         {
-            Assert.Equal(6619240, 
+            Assert.Equal(BitConverter.IsLittleEndian ?
+                0x65_00_68 :
+                0x68_00_65,
                 Unsafe.As<byte, int>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
-                ref MemoryMarshal.GetReference("hello world 1".AsSpan())), 0)));
+                    ref MemoryMarshal.GetReference("hello world 1".AsSpan())), 0)));
 
-            Assert.Equal(7998511687277765888,
+            Assert.Equal(BitConverter.IsLittleEndian ?
+                0x6F_00_6C_00_6C_00_65_00 :
+                0x00_65_00_6C_00_6C_00_6F,
                 Unsafe.As<byte, long>(ref Unsafe.Add(ref Unsafe.As<char, byte>(
                     ref MemoryMarshal.GetReference("hello world 2".AsSpan())), 1)));
         }
