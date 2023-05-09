@@ -2192,30 +2192,13 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         emitAttr attr = emitActualTypeSize(targetType);
         if (varTypeUsesFloatArgReg(treeNode))
         {
-            if (attr == EA_4BYTE)
-            {
-                GetEmitter()->emitIns_R_R(INS_fmov_s, attr, retReg, op1->GetRegNum());
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R(INS_fmov_d, attr, retReg, op1->GetRegNum());
-            }
+            instruction ins = attr == EA_4BYTE ? INS_fmov_s : INS_fmov_d;
+            GetEmitter()->emitIns_R_R(ins, attr, retReg, op1->GetRegNum());
         }
         else
         {
-            if (attr == EA_4BYTE)
-            {
-                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    GetEmitter()->emitIns_R_R_I_I(INS_bstrpick_d, EA_PTRSIZE, retReg, op1->GetRegNum(), 31, 0);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slli_w, attr, retReg, op1->GetRegNum(), 0);
-                }
-            }
-            else
-                GetEmitter()->emitIns_R_R_I(INS_ori, attr, retReg, op1->GetRegNum(), 0);
+            instruction ins = (attr == EA_4BYTE) ? INS_slli_w : INS_ori;
+            GetEmitter()->emitIns_R_R_I(ins, attr, retReg, op1->GetRegNum(), 0);
         }
     }
 }
@@ -3340,18 +3323,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
             case GT_MUL:
                 if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                 {
-                    op2 = treeNode->gtGetOp2();
-                    if (genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
-                        ins = treeNode->IsUnsigned() ? INS_mulw_d_wu : INS_mulw_d_w;
-                    else
-                        ins = INS_mul_d;
+                    ins = INS_mul_d;
                 }
                 else
                 {
-                    if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                        ins = INS_mulw_d_wu;
-                    else
-                        ins = INS_mul_w;
+                    ins = INS_mul_w;
                 }
                 break;
 
@@ -4368,20 +4344,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
+                {
+                    regNumber tmpRegOp1 = rsGetRsvdReg();
+                    assert(regOp1 != tmpRegOp1);
                     if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint32_t>(imm);
-
-                        regNumber tmpRegOp1 = rsGetRsvdReg();
-                        assert(regOp1 != tmpRegOp1);
                         emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
-                        regOp1 = tmpRegOp1;
                     }
                     else
                     {
                         imm = static_cast<int32_t>(imm);
+                        emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp1, regOp1, 0);
                     }
+                    regOp1 = tmpRegOp1;
                     break;
+                }
                 case EA_8BYTE:
                     break;
                 case EA_1BYTE:

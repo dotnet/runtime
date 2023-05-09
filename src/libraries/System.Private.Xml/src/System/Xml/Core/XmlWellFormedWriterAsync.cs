@@ -61,10 +61,7 @@ namespace System.Xml
         {
             try
             {
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
 
                 XmlConvert.VerifyQName(name, ExceptionType.XmlException);
 
@@ -183,10 +180,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 Task task = AdvanceStateAsync(Token.StartElement);
@@ -448,7 +442,7 @@ namespace System.Xml
             try
             {
                 // check local name
-                if (localName == null || localName.Length == 0)
+                if (string.IsNullOrEmpty(localName))
                 {
                     if (prefix == "xmlns")
                     {
@@ -519,7 +513,7 @@ namespace System.Xml
                     else if (namespaceName.Length > 0)
                     {
                         prefix = LookupPrefix(namespaceName);
-                        if (prefix == null || prefix.Length == 0)
+                        if (string.IsNullOrEmpty(prefix))
                         {
                             prefix = GeneratePrefix();
                         }
@@ -794,10 +788,7 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 // check text
@@ -842,11 +833,7 @@ namespace System.Xml
             try
             {
                 // check name
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
-
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 CheckNCName(name);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
@@ -1144,15 +1131,12 @@ namespace System.Xml
         {
             try
             {
-                if (localName == null || localName.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyLocalName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(localName);
                 CheckNCName(localName);
 
                 await AdvanceStateAsync(Token.Text).ConfigureAwait(false);
                 string? prefix = string.Empty;
-                if (ns != null && ns.Length != 0)
+                if (!string.IsNullOrEmpty(ns))
                 {
                     prefix = LookupPrefix(ns);
                     if (prefix == null)
