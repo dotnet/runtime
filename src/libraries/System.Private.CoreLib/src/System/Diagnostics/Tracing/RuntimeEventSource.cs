@@ -85,23 +85,13 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
-#if NATIVEAOT
-        public
-#else
-        internal
-#endif
-        void LogAppContextSwitch(string switchName, int value)
+        internal void LogAppContextSwitch(string switchName, int value)
         {
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
-#if NATIVEAOT
-        public
-#else
-        internal
-#endif
-        void ProcessorCount(int processorCount)
+        internal void ProcessorCount(int processorCount)
         {
             base.WriteEvent((int)EventId.ProcessorCount, processorCount);
         }

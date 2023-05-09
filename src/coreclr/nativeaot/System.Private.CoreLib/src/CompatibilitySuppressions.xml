@@ -945,38 +945,6 @@
     <Target>T:System.Threading.LockHolder</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.CounterPayload</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.IncrementingCounterPayload</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.IncrementingPollingCounterPayloadType</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.PollingPayloadType</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Tracing.RuntimeEventSource.LogAppContextSwitch(System.String,System.Int32)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Diagnostics.Tracing.RuntimeEventSource.ProcessorCount(System.Int32)</Target>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.ModuleHandle.#ctor(System.Reflection.Module)</Target>
   </Suppression>

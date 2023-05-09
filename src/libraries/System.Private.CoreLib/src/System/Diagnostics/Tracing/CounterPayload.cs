@@ -7,12 +7,7 @@ using System.Collections.Generic;
 namespace System.Diagnostics.Tracing
 {
     [EventData]
-#if NATIVEAOT
-    public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
-#else
-    internal
-#endif
-    sealed class CounterPayload : IEnumerable<KeyValuePair<string, object?>>
+    internal sealed class CounterPayload : IEnumerable<KeyValuePair<string, object?>>
     {
         public string? Name { get; set; }
 
@@ -73,12 +68,7 @@ namespace System.Diagnostics.Tracing
     }
 
     [EventData]
-#if NATIVEAOT
-    public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
-#else
-    internal
-#endif
-    sealed class IncrementingCounterPayload : IEnumerable<KeyValuePair<string, object?>>
+    internal sealed class IncrementingCounterPayload : IEnumerable<KeyValuePair<string, object?>>
     {
         public string? Name { get; set; }
 

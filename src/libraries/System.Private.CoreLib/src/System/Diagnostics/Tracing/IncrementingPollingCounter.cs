@@ -90,12 +90,7 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-#if NATIVEAOT
-    public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
-#else
-    internal
-#endif
-    sealed class IncrementingPollingCounterPayloadType
+    internal sealed class IncrementingPollingCounterPayloadType
     {
         public IncrementingPollingCounterPayloadType(IncrementingCounterPayload payload) { Payload = payload; }
         public IncrementingCounterPayload Payload { get; set; }
