@@ -4,12 +4,13 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
-using SourceGenerators.Tests;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
+
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -46,13 +47,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
         }
 
         [Fact]
@@ -66,13 +61,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
@@ -106,13 +95,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: true, TestTargetFramework.Net);
         }
 
         [Fact]
@@ -126,13 +109,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
@@ -159,20 +136,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial bool Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(targetFramework)), out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            if (expectSkipLocalsInit)
-            {
-                Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
-            }
-            else
-            {
-                Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
-            }
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: expectSkipLocalsInit, targetFramework);
         }
 
         [Fact]
@@ -206,13 +170,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
@@ -246,13 +204,7 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+            await VerifySourceGeneratorAsync(source, "C", "Method", typeof(SkipLocalsInitAttribute).FullName, attributeAdded: false, TestTargetFramework.Net);
         }
 
         [Fact]
@@ -286,13 +238,49 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            // Verify that we get no diagnostics from applying the attribute twice.
+            await VerifyCS.VerifySourceGeneratorAsync(source);
+        }
 
-            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.LibraryImportGenerator());
+        private static Task VerifySourceGeneratorAsync(string source, string typeName, string methodName, string? attributeName, bool attributeAdded, TestTargetFramework targetFramework)
+        {
+            AttributeAddedTest test = new(typeName, methodName, attributeName, attributeAdded, targetFramework)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            return test.RunAsync();
+        }
 
-            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
-            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
-            Assert.DoesNotContain(newComp.GetDiagnostics(), d => d.Id != "CS0579"); // No duplicate attribute error
+        class AttributeAddedTest : VerifyCS.Test
+        {
+            private readonly string _typeName;
+            private readonly string _methodName;
+            private readonly string? _attributeName;
+            private readonly bool _expectSkipLocalsInit;
+
+            public AttributeAddedTest(string typeName, string methodName, string? attributeName, bool expectSkipLocalsInitOnMethod, TestTargetFramework targetFramework)
+                : base(targetFramework)
+            {
+                _typeName = typeName;
+                _methodName = methodName;
+                _attributeName = attributeName;
+                _expectSkipLocalsInit = expectSkipLocalsInitOnMethod;
+            }
+
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                ITypeSymbol c = compilation.GetTypeByMetadataName(_typeName)!;
+                IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == _methodName);
+                if (_expectSkipLocalsInit)
+                {
+                    Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == _attributeName);
+                }
+                else
+                {
+                    Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == _attributeName);
+                }
+            }
         }
     }
 }

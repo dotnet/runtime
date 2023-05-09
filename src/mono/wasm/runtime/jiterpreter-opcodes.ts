@@ -3,6 +3,9 @@
 
 // Keep this file in sync with mintops.def. The order and values need to match exactly.
 
+import { Module } from "./globals";
+import cwraps from "./cwraps";
+
 export const enum MintOpArgType {
 	MintOpNoArgs = 0,
 	MintOpShortInt,
@@ -26,8 +29,27 @@ export const enum MintOpArgType {
 	MintOpPair4
 }
 
-export type OpcodeInfoTable = {
-    [key: number]: [name: string, length_u16: number, dregs: number, sregs: number, optype: MintOpArgType];
+export const enum OpcodeInfoType {
+    Name = 0,
+    Length,
+    Sregs,
+    Dregs,
+    OpArgType
+}
+
+export type OpcodeNameTable = {
+    [key: number]: string;
+}
+
+const opcodeNameCache : OpcodeNameTable = {};
+
+export function getOpcodeName (opcode: number) : string {
+    let result = opcodeNameCache[opcode];
+    if (typeof (result) !== "string") {
+        const pName = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Name);
+        opcodeNameCache[opcode] = result = Module.UTF8ToString(<any>pName);
+    }
+    return result;
 }
 
 export type SimdInfoSubtable = Array<string>

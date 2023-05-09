@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -27,6 +27,8 @@
             Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
             Link="Verifiers\CSharpCodeFixVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpSourceGeneratorVerifier.cs"
+            Link="Verifiers\CSharpSourceGeneratorVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
             Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
@@ -35,6 +37,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
   </ItemGroup>
 
   <ItemGroup>

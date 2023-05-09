@@ -814,7 +814,6 @@ private:
             for (int i = 0; i < m_entries.Height(); i++)
             {
                 const Entry& entry = m_entries.BottomRef(i);
-                // TODO: Double check that TYP_BYREF do not incur any write barriers.
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
@@ -901,23 +900,20 @@ private:
 
         if ((addr != nullptr) && (numAddrUses > 1))
         {
-            if (addr->OperIsLocal() && (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                        (addr->AsLclVarCommon()->GetLclNum() != m_dst->AsLclVarCommon()->GetLclNum())))
+            if (CanReuseAddressForDecomposedStore(addr))
             {
-                // We will introduce more uses of the address local, so it is
-                // no longer dying here.
-                addr->gtFlags &= ~GTF_VAR_DEATH;
-            }
-            else if (addr->IsInvariant())
-            {
-                // Fall through
+                if (addr->OperIsLocalRead())
+                {
+                    // We will introduce more uses of the address local, so it is
+                    // no longer dying here.
+                    addr->gtFlags &= ~GTF_VAR_DEATH;
+                }
             }
             else
             {
                 unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
                 statements->AddStatement(m_compiler->gtNewTempAssign(addrLcl, addr));
                 addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
-                UpdateEarlyRefCount(m_compiler, addr);
             }
         }
 
@@ -934,7 +930,6 @@ private:
             else
             {
                 addrUse = m_compiler->gtCloneExpr(addr);
-                UpdateEarlyRefCount(m_compiler, addrUse);
             }
 
             if (offs != 0)
@@ -1001,9 +996,6 @@ private:
             if (entry.ToLclNum != BAD_VAR_NUM)
             {
                 dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
-
-                if (m_compiler->lvaGetDesc(entry.ToLclNum)->lvIsStructField)
-                    UpdateEarlyRefCount(m_compiler, dst);
             }
             else if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -1013,7 +1005,6 @@ private:
                 dst = m_compiler->gtNewLclFldNode(m_dst->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
                 m_compiler->lvaSetVarDoNotEnregister(m_dst->AsLclVarCommon()->GetLclNum()
                                                          DEBUGARG(DoNotEnregisterReason::LocalField));
-                UpdateEarlyRefCount(m_compiler, dst);
             }
             else
             {
@@ -1026,9 +1017,6 @@ private:
             if (entry.FromLclNum != BAD_VAR_NUM)
             {
                 src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
-
-                if (m_compiler->lvaGetDesc(entry.FromLclNum)->lvIsStructField)
-                    UpdateEarlyRefCount(m_compiler, src);
             }
             else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -1037,7 +1025,6 @@ private:
                 src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
                 m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum()
                                                          DEBUGARG(DoNotEnregisterReason::LocalField));
-                UpdateEarlyRefCount(m_compiler, src);
             }
             else
             {
@@ -1115,6 +1102,58 @@ private:
     }
 
     //------------------------------------------------------------------------
+    // CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+    // specified address node for each decomposed store of a block copy.
+    //
+    // Arguments:
+    //   addrNode - The address node
+    //
+    // Return Value:
+    //   True if the caller can reuse the address by cloning.
+    //
+    bool CanReuseAddressForDecomposedStore(GenTree* addrNode)
+    {
+        if (addrNode->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+            unsigned             lclNum = lcl->GetLclNum();
+            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            {
+                // Address could be pointing to itself
+                return false;
+            }
+
+            // If we aren't writing a local here then since the address is not
+            // exposed it cannot change.
+            if (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                return true;
+            }
+
+            // Otherwise it could still be possible that the address is part of
+            // the struct we're writing.
+            unsigned dstLclNum = m_dst->AsLclVarCommon()->GetLclNum();
+            if (lclNum == dstLclNum)
+            {
+                return false;
+            }
+
+            // It could also be one of the replacement locals we're going to write.
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return addrNode->IsInvariant();
+    }
+
+    //------------------------------------------------------------------------
     // PropagateIndirFlags:
     //   Propagate the specified flags to a GT_IND node.
     //
@@ -1130,54 +1169,6 @@ private:
         }
 
         indir->gtFlags |= flags;
-    }
-
-    //------------------------------------------------------------------------
-    // UpdateEarlyRefCount:
-    //   Update early ref counts if necessary for the specified IR node.
-    //
-    // Parameters:
-    //   comp      - compiler instance
-    //   candidate - the IR node that may be a local that should have its early
-    //               ref counts updated.
-    //
-    static void UpdateEarlyRefCount(Compiler* comp, GenTree* candidate)
-    {
-        if (!candidate->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
-        {
-            return;
-        }
-
-        IncrementRefCount(comp, candidate->AsLclVarCommon()->GetLclNum());
-
-        LclVarDsc* varDsc = comp->lvaGetDesc(candidate->AsLclVarCommon());
-        if (varDsc->lvIsStructField)
-        {
-            IncrementRefCount(comp, varDsc->lvParentLcl);
-        }
-
-        if (varDsc->lvPromoted)
-        {
-            for (unsigned fldLclNum = varDsc->lvFieldLclStart; fldLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt;
-                 fldLclNum++)
-            {
-                IncrementRefCount(comp, fldLclNum);
-            }
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // IncrementRefCount:
-    //   Increment the ref count for the specified local.
-    //
-    // Parameters:
-    //   comp   - compiler instance
-    //   lclNum - the local
-    //
-    static void IncrementRefCount(Compiler* comp, unsigned lclNum)
-    {
-        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
-        varDsc->incLvRefCntSaturating(1, RCS_EARLY);
     }
 };
 
