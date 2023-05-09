@@ -61,7 +61,7 @@ The best way to create a minimal reproduction is gradually removing code and dep
 
 Project maintainers will merge changes that improve the product significantly.
 
-The [Pull Request Guide](docs/workflow/pr-guide.md) and [Copyright](docs/project/copyright.md) docs define additional guidance.
+The [Pull Request Guide](docs/workflow/ci/pr-guide.md) and [Copyright](docs/project/copyright.md) docs define additional guidance.
 
 ### DOs and DON'Ts
 

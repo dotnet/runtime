@@ -444,6 +444,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOutOfMemoryException_StringTooLong()
+        {
+            throw new OutOfMemoryException(SR.OutOfMemory_StringTooLong);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
             throw new ArgumentException(SR.Argument_IncompatibleArrayType);

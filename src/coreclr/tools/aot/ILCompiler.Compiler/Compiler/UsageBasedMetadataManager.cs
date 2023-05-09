@@ -629,19 +629,10 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithConstructedEETypes())
+            foreach (var constructedType in GetTypesWithEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
-            }
-
-            // All necessary types for which this is the highest load level that are not blocked
-            // get runtime mapping.
-            foreach (var necessaryType in GetTypesWithEETypes())
-            {
-                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
-                    !IsReflectionBlocked(necessaryType))
-                    yield return necessaryType;
             }
         }
 
