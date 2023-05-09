@@ -675,7 +675,8 @@ namespace System.Numerics
 
         public static BigInteger Parse(string value, NumberStyles style, IFormatProvider? provider)
         {
-            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            ArgumentNullException.ThrowIfNull(value);
+            return Parse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? value, out BigInteger result)
@@ -685,7 +686,7 @@ namespace System.Numerics
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == BigNumber.ParsingStatus.OK;
+            return TryParse(value.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)

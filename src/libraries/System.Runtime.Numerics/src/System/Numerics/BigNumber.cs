@@ -326,17 +326,6 @@ namespace System.Numerics
             return true;
         }
 
-        internal static ParsingStatus TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
-        {
-            if (value == null)
-            {
-                result = default;
-                return ParsingStatus.Failed;
-            }
-
-            return TryParseBigInteger(value.AsSpan(), style, info, out result);
-        }
-
         internal static unsafe ParsingStatus TryParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
             if (!TryValidateParseStyleInteger(style, out ArgumentException? e))
@@ -390,13 +379,6 @@ namespace System.Numerics
             }
 
             return ret;
-        }
-
-        internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            return ParseBigInteger(value.AsSpan(), style, info);
         }
 
         internal static BigInteger ParseBigInteger(ReadOnlySpan<char> value, NumberStyles style, NumberFormatInfo info)
