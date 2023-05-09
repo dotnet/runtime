@@ -469,7 +469,10 @@ namespace IntrinsicsInSystemPrivateCoreLib
             }
 #pragma warning restore RS1024
 
-            if (methodNeedsProtectionWithIsSupported && methodSymbol.ContainingType.Equals(symbol.ContainingSymbol, SymbolEqualityComparer.Default))
+            // A method on an intrinsic type can call other methods on the intrinsic type safely, as well as methods on the type that contains the method
+            if (methodNeedsProtectionWithIsSupported &&
+                (methodSymbol.ContainingType.Equals(symbol.ContainingSymbol, SymbolEqualityComparer.Default)
+                || (methodSymbol.ContainingType.ContainingType != null && methodSymbol.ContainingType.ContainingType.Equals(symbol.ContainingType, SymbolEqualityComparer.Default))))
             {
                 return; // Intrinsic functions on their containing type can call themselves
             }
@@ -512,6 +515,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 if (propertySymbol.Name == "IsSupported")
                 {
                     ISymbol? attributeExplicitlyAllowsRelatedSymbol = null;
+                    ISymbol? attributeExplicitlyAllowsExactSymbol = null;
                     if ((bypassReadyToRunForIntrinsicsHelperUse != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
                     {
                         foreach (var attributeData in symbolThatMightHaveIntrinsicsHelperAttribute.GetAttributes())
@@ -524,9 +528,16 @@ namespace IntrinsicsInSystemPrivateCoreLib
                                     var namespaceSymbol = SymbolToNamespaceSymbol(symbol);
                                     if ((namespaceAttributeTypeSymbol != null) && (namespaceSymbol != null))
                                     {
-                                        if (!ConditionAllowsSymbol(symbol, attributeTypeSymbol, onLoadData) && namespaceAttributeTypeSymbol.Equals(namespaceSymbol, SymbolEqualityComparer.Default))
+                                        if (namespaceAttributeTypeSymbol.Equals(namespaceSymbol, SymbolEqualityComparer.Default))
                                         {
-                                            attributeExplicitlyAllowsRelatedSymbol = attributeTypeSymbol;
+                                            if (ConditionAllowsSymbol(symbol, attributeTypeSymbol, onLoadData))
+                                            {
+                                                attributeExplicitlyAllowsExactSymbol = attributeTypeSymbol;
+                                            }
+                                            else
+                                            {
+                                                attributeExplicitlyAllowsRelatedSymbol = attributeTypeSymbol;
+                                            }
                                         }
                                     }
                                 }
@@ -534,7 +545,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                         }
                     }
 
-                    if (attributeExplicitlyAllowsRelatedSymbol != null)
+                    if ((attributeExplicitlyAllowsRelatedSymbol != null) && (attributeExplicitlyAllowsExactSymbol == null))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleAttributeNotSpecificEnough, operation.Syntax.GetLocation(), attributeExplicitlyAllowsRelatedSymbol.ToDisplayString()));
                     }

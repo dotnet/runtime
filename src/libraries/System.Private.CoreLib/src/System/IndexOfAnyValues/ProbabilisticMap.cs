@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
@@ -167,6 +168,11 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564

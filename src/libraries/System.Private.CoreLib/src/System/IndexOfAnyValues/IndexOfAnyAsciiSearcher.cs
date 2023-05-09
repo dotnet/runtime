@@ -166,6 +166,9 @@ namespace System.Buffers
             return false;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -174,7 +177,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > 2 * Vector128<short>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
 
@@ -276,6 +281,9 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator, TOptimizations>(ref short searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -284,7 +292,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > 2 * Vector128<short>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
 
@@ -386,6 +396,9 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
         {
@@ -393,7 +406,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > Vector128<byte>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
 
@@ -491,6 +506,9 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap)
             where TNegator : struct, INegator
         {
@@ -498,7 +516,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > Vector128<byte>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256 = Vector256.Create(bitmap, bitmap);
 
@@ -596,6 +616,9 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int IndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap0, Vector128<byte> bitmap1)
             where TNegator : struct, INegator
         {
@@ -603,7 +626,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > Vector128<byte>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256_0 = Vector256.Create(bitmap0, bitmap0);
                     Vector256<byte> bitmap256_1 = Vector256.Create(bitmap1, bitmap1);
@@ -702,6 +727,9 @@ namespace System.Buffers
             return -1;
         }
 
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static int LastIndexOfAnyVectorized<TNegator>(ref byte searchSpace, int searchSpaceLength, Vector128<byte> bitmap0, Vector128<byte> bitmap1)
             where TNegator : struct, INegator
         {
@@ -709,7 +737,9 @@ namespace System.Buffers
 
             if (searchSpaceLength > Vector128<byte>.Count)
             {
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
                 if (Avx2.IsSupported)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> bitmap256_0 = Vector256.Create(bitmap0, bitmap0);
                     Vector256<byte> bitmap256_1 = Vector256.Create(bitmap1, bitmap1);
@@ -847,6 +877,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookupCore(Vector128<byte> source, Vector128<byte> bitmapLookup)
         {
             // On X86, the Ssse3.Shuffle instruction will already perform an implicit 'AND 0xF' on the indices, so we can skip it.
@@ -907,6 +940,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator>(Vector128<byte> source, Vector128<byte> bitmapLookup0, Vector128<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {

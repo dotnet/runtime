@@ -2444,8 +2444,10 @@ namespace System.Runtime.Intrinsics
         /// On hardware with <see cref="Ssse3"/> support, indices are treated as modulo 16, and if the high bit is set, the result will be set to 0 for that element.
         /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))] // Because this method has specific behavior when this is used on a machine with SSSE3, mark with this attribute which will
-                                                                // make the behavior of the function at runtime not be affected by R2R compilation behavior
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         internal static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
