@@ -1054,6 +1054,19 @@ void FixedBitVect::bitVectSet(UINT bitNum)
     bitVect[index] |= bitNumToBit(bitNum);
 }
 
+// bitVectClear() - Clears the given bit
+void FixedBitVect::bitVectClear(UINT bitNum)
+{
+    UINT index;
+
+    assert(bitNum <= bitVectSize);
+
+    index = bitNum / bitChunkSize();
+    bitNum -= index * bitChunkSize();
+
+    bitVect[index] &= ~bitNumToBit(bitNum);
+}
+
 // bitVectTest() - Tests the given bit
 bool FixedBitVect::bitVectTest(UINT bitNum)
 {

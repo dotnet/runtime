@@ -1940,6 +1940,14 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
+
+    // TODO-CQ: We build physRegRecords before building intervals
+    // and refpositions. During building intervals/refposition, we
+    // would know if there are floating points used. If we can know
+    // that information before we build intervals, we can skip
+    // initializing the floating registers.
+    // For that `compFloatingPointUsed` should be set accurately
+    // before invoking allocator.
     for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
     {
         regNumber  reg  = lsraRegOrderFlt[i];
@@ -2725,6 +2733,12 @@ void LinearScan::buildIntervals()
     if (prevBlock->NumSucc(compiler) > 0)
     {
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
+    }
+
+    needNonIntegerRegisters |= compiler->compFloatingPointUsed;
+    if (!needNonIntegerRegisters)
+    {
+        availableRegCount = REG_INT_COUNT;
     }
 
 #ifdef DEBUG

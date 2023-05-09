@@ -38,7 +38,6 @@ namespace Microsoft.Interop
             public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
         }
 
-
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Get all types with the [GeneratedComInterface] attribute.
@@ -382,7 +381,48 @@ namespace Microsoft.Interop
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
+        private static ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>> GroupContextsForInterfaceGeneration(ImmutableArray<GeneratedMethodContextBase> contexts)
+        {
+            // We can end up with an empty set of contexts here as the compiler will call a SelectMany
+            // after a Collect with no input entries
+            if (contexts.IsEmpty)
+            {
+                return ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>>.Empty;
+            }
 
+            ImmutableArray<SequenceEqualImmutableArray<GeneratedMethodContextBase>>.Builder allGroupsBuilder = ImmutableArray.CreateBuilder<SequenceEqualImmutableArray<GeneratedMethodContextBase>>();
+
+            // Due to how the source generator driver processes the input item tables and our limitation that methods on COM interfaces can only be defined in a single partial definition of the type,
+            // we can guarantee that the method contexts are ordered as follows:
+            // - I1.M1
+            // - I1.M2
+            // - I1.M3
+            // - I2.M1
+            // - I2.M2
+            // - I2.M3
+            // - I3.M1
+            // - etc...
+            // This enable us to group our contexts by their containing syntax rather simply.
+            ManagedTypeInfo? lastSeenDefiningType = null;
+            ImmutableArray<GeneratedMethodContextBase>.Builder groupBuilder = ImmutableArray.CreateBuilder<GeneratedMethodContextBase>();
+            foreach (var context in contexts)
+            {
+                if (lastSeenDefiningType is null || lastSeenDefiningType == context.OriginalDefiningType)
+                {
+                    groupBuilder.Add(context);
+                }
+                else
+                {
+                    allGroupsBuilder.Add(new(groupBuilder.ToImmutable()));
+                    groupBuilder.Clear();
+                    groupBuilder.Add(context);
+                }
+                lastSeenDefiningType = context.OriginalDefiningType;
+            }
+
+            allGroupsBuilder.Add(new(groupBuilder.ToImmutable()));
+            return allGroupsBuilder.ToImmutable();
+        }
 
         private static readonly InterfaceDeclarationSyntax ImplementationInterfaceTemplate = InterfaceDeclaration("InterfaceImplementation")
                 .WithModifiers(TokenList(Token(SyntaxKind.FileKeyword), Token(SyntaxKind.UnsafeKeyword), Token(SyntaxKind.PartialKeyword)));
