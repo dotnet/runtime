@@ -4002,16 +4002,17 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 
                 bool                 isExact, isNonNull;
                 CORINFO_CLASS_HANDLE oldClass = gtGetClassHandle(op, &isExact, &isNonNull);
-                if ((oldClass != NO_CLASS_HANDLE) && !info.compCompHnd->isMoreSpecificType(oldClass, inst))
+                if ((oldClass != NO_CLASS_HANDLE) &&
+                    ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
                 {
-                    JITDUMP("Unsafe.As: Keep using old '%s' type as it is more specific\n", eeGetClassName(oldClass));
+                    JITDUMP("Unsafe.As: Keep using old '%s' type\n", eeGetClassName(oldClass));
                     return op;
                 }
 
                 // In order to change the class handle of the object we need to spill it to a temp
                 // and update class info for that temp.
                 unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
-                impAssignTempGen(localNum, op);
+                impAssignTempGen(localNum, op, CHECK_SPILL_ALL);
 
                 // NOTE: we still can't say for sure that it is the exact type of the argument
                 lvaSetClass(localNum, inst, /*isExact*/ false);
