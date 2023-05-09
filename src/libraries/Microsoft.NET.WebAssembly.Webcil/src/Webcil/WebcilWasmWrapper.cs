@@ -113,6 +113,8 @@ public class WebcilWasmWrapper
     private void WriteDataSection(BinaryWriter writer)
     {
         uint dataSectionSize = 0;
+        // uleb128 encoding of number of segments
+        dataSectionSize += 1; // there's always 2 segments which encodes to 1 byte
         // compute the segment 0 size:
         //   segment 0 has 1 byte segment code, 1 byte of size and 4 bytes of payload
         dataSectionSize += SegmentCodeSize + 1 + 4;
@@ -131,6 +133,8 @@ public class WebcilWasmWrapper
 
         writer.Write((byte)11); // section Data
         writer.Write(ulebSectionSize, 0, ulebSectionSize.Length);
+
+        writer.Write((byte)2); // number of segments
 
         // write segment 0
         writer.Write((byte)1); // passive segment
