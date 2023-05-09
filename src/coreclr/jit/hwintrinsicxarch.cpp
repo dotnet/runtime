@@ -3499,6 +3499,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
 
                     retNode = gtNewSimdTernaryLogicNode(retType, val1, val2, val3, op4, simdBaseJitType, simdSize);
+                    break;
                 }
             }
 
