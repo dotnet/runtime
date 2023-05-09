@@ -837,15 +837,13 @@ private:
 
         if (m_dst->OperIs(GT_BLK))
         {
-            addr = m_dst->gtGetOp1();
-            indirFlags =
-                m_dst->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            addr       = m_dst->gtGetOp1();
+            indirFlags = m_dst->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
         else if (m_src->OperIs(GT_BLK))
         {
-            addr = m_src->gtGetOp1();
-            indirFlags =
-                m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            addr       = m_src->gtGetOp1();
+            indirFlags = m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
 
         int numAddrUses = 0;
