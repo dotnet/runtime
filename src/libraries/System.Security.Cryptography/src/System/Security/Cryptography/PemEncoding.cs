@@ -235,11 +235,12 @@ namespace System.Security.Cryptography
             out int base64DecodedSize)
         {
             // Trim starting and ending allowed white space characters
-            int start = 0, end = str.Length - 1;
+            int start = 0;
+            int end = str.Length - 1;
             for (; start < str.Length && IsWhiteSpaceCharacter(str[start]); start++);
             for (; end > start && IsWhiteSpaceCharacter(str[end]); end--);
 
-            // Validate that the remaining characters is valid base-64 encoded data.
+            // Validate that the remaining characters are valid base-64 encoded data.
             if (Base64.IsValid(str.Slice(start, end + 1 - start), out base64DecodedSize))
             {
                 base64Start = start;
@@ -247,7 +248,8 @@ namespace System.Security.Cryptography
                 return true;
             }
 
-            base64Start = base64End = 0;
+            base64Start = 0;
+            base64End = 0;
             return false;
         }
 
