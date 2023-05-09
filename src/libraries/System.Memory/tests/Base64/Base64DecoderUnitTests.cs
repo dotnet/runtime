@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -736,27 +738,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("AQ==", 4, 1)]
-        [InlineData("AQ== ", 5, 1)]
-        [InlineData("AQ==  ", 6, 1)]
-        [InlineData("AQ==   ", 7, 1)]
-        [InlineData("AQ==    ", 8, 1)]
-        [InlineData("AQ==     ", 9, 1)]
-        [InlineData("AQ==\n", 5, 1)]
-        [InlineData("AQ==\n\n", 6, 1)]
-        [InlineData("AQ==\n\n\n", 7, 1)]
-        [InlineData("AQ==\n\n\n\n", 8, 1)]
-        [InlineData("AQ==\n\n\n\n\n", 9, 1)]
-        [InlineData("AQ==\t", 5, 1)]
-        [InlineData("AQ==\t\t", 6, 1)]
-        [InlineData("AQ==\t\t\t", 7, 1)]
-        [InlineData("AQ==\t\t\t\t", 8, 1)]
-        [InlineData("AQ==\t\t\t\t\t", 9, 1)]
-        [InlineData("AQ==\r", 5, 1)]
-        [InlineData("AQ==\r\r", 6, 1)]
-        [InlineData("AQ==\r\r\r", 7, 1)]
-        [InlineData("AQ==\r\r\r\r", 8, 1)]
-        [InlineData("AQ==\r\r\r\r\r", 9, 1)]
+        [MemberData(nameof(BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes_MemberData))]
         public void BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes(string inputString, int expectedConsumed, int expectedWritten)
         {
             Span<byte> source = Encoding.ASCII.GetBytes(inputString);
@@ -766,6 +748,20 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(expectedConsumed, consumed);
             Assert.Equal(expectedWritten, decodedByteCount);
             Assert.True(Base64TestHelper.VerifyDecodingCorrectness(expectedConsumed, expectedWritten, source, decodedBytes));
+        }
+
+        public static IEnumerable<object[]> BasicDecodingWithExtraWhitespaceShouldBeCountedInConsumedBytes_MemberData()
+        {
+            var r = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                yield return new object[] { "AQ==" + new string(r.GetItems<char>(" \n\t\r", i)), 4 + i, 1 };
+            }
+
+            foreach (string s in new[] { "MTIz", "M TIz", "MT Iz", "MTI z", "MTIz ", "M    TI   z", "M T I Z " })
+            {
+                yield return new object[] { s + s + s + s, s.Length * 4, 12 };
+            }
         }
     }
 }

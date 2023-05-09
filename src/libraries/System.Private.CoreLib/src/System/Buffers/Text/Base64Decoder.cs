@@ -47,7 +47,7 @@ namespace System.Buffers.Text
                 bytesConsumed += localConsumed;
                 bytesWritten += localWritten;
 
-                if (status is not OperationStatus.InvalidData or OperationStatus.DestinationTooSmall)
+                if (status is not OperationStatus.InvalidData)
                 {
                     break;
                 }
@@ -55,25 +55,33 @@ namespace System.Buffers.Text
                 utf8 = utf8.Slice(localConsumed);
                 bytes = bytes.Slice(localWritten);
 
-                if (!TrySkipWhiteSpace(utf8, out localConsumed))
+                if (utf8.IsEmpty)
                 {
-                    if (localConsumed > 0)
-                    {
-                        bytesConsumed += localConsumed;
-                        status = OperationStatus.Done;
-                    }
+                    break;
+                }
 
-                    // The end of the input has been reached.
+                localConsumed = IndexOfAnyExceptWhiteSpace(utf8);
+                if (localConsumed < 0)
+                {
+                    // The remainder of the input is all whitespace. Mark it all as having been consumed,
+                    // and mark the operation as being done.
+                    bytesConsumed += utf8.Length;
+                    status = OperationStatus.Done;
                     break;
                 }
 
                 if (localConsumed == 0)
                 {
-                    // First char isn't whitespace, but we didn't consume anything,
-                    // thus the input may have whitespace anywhere in between. So fall back to block-wise decoding.
-                    return DecodeWithWhiteSpaceBlockwise(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock);
+                    // Non-whitespace was found at the beginning of the input. Since it wasn't consumed
+                    // by the previous call to DecodeFromUtf8Core, it must be part of a Base64 sequence
+                    // that was interrupted by whitespace or something else considered invalid.
+                    // Fall back to block-wise decoding. This is very slow, but it's also very non-standard
+                    // formatting of the input; whitespace is typically only found between blocks, such as
+                    // when Convert.ToBase64String inserts a line break every 76 output characters.
+                    return DecodeWithWhiteSpaceBlockwise(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
                 }
 
+                // Skip over the starting whitespace and continue.
                 bytesConsumed += localConsumed;
                 utf8 = utf8.Slice(localConsumed);
             }
@@ -343,11 +351,8 @@ namespace System.Buffers.Text
             return status;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
         {
-            Unsafe.SkipInit(out bytesConsumed);
-            Unsafe.SkipInit(out bytesWritten);
-
             const int BlockSize = 4;
             Span<byte> buffer = stackalloc byte[BlockSize];
             OperationStatus status = OperationStatus.Done;
@@ -749,20 +754,17 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/63331: Replace this once that's available.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
-            if (Ssse3.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                return Ssse3.Shuffle(left, right);
+                right &= mask8F;
             }
-            else
-            {
-                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
-            }
+
+            return Vector128.ShuffleUnsafe(left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -967,25 +969,21 @@ namespace System.Buffers.Text
         {
             destination[0] = (byte)(value >> 16);
             destination[1] = (byte)(value >> 8);
-            destination[2] = (byte)(value);
+            destination[2] = (byte)value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TrySkipWhiteSpace(ReadOnlySpan<byte> encoded, out int consumed)
+        private static int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span)
         {
-            int i = 0;
-
-            for (; i < encoded.Length; ++i)
+            for (int i = 0; i < span.Length; i++)
             {
-                if (!IsWhiteSpace(encoded[i]))
+                if (!IsWhiteSpace(span[i]))
                 {
-                    consumed = i;
-                    return true;
+                    return i;
                 }
             }
 
-            consumed = i;
-            return false;
+            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
