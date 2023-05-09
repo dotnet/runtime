@@ -61,7 +61,7 @@ cache_object (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, M
 		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 		e->item = item;
 		e->refclass = klass;
-		if (G_UNLIKELY(mono_metadata_has_updates())
+		if (G_UNLIKELY(mono_metadata_has_updates()))
 			e->generation = mono_metadata_update_get_thread_generation();
 		else
 			e->generation = 0;
@@ -89,7 +89,7 @@ cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 			e->item = item;
 			e->refclass = klass;
-			if (G_UNLIKELY(mono_metadata_has_updates())
+			if (G_UNLIKELY(mono_metadata_has_updates()))
 				e->generation = mono_metadata_update_get_thread_generation();
 			else
 				e->generation = 0;
@@ -102,7 +102,7 @@ cache_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 			ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 			e->item = item;
 			e->refclass = klass;
-			if (G_UNLIKELY(mono_metadata_has_updates())
+			if (G_UNLIKELY(mono_metadata_has_updates()))
 				e->generation = mono_metadata_update_get_thread_generation();
 			else
 				e->generation = 0;
