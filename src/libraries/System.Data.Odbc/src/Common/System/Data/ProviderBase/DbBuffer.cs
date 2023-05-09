@@ -16,6 +16,8 @@ namespace System.Data.ProviderBase
 
         protected unsafe DbBuffer(int initialSize) : base(IntPtr.Zero, true)
         {
+            Debug.Assert(initialSize % IntPtr.Size == 0, $"Expected aligned {nameof(initialSize)}.");
+
             if (0 < initialSize)
             {
                 _bufferLength = initialSize;
@@ -627,7 +629,7 @@ namespace System.Data.ProviderBase
             WriteInt32(offset, BitConverter.SingleToInt32Bits(value));
         }
 
-        internal void ZeroMemory()
+        internal unsafe void ZeroMemory()
         {
             bool mustRelease = false;
 
@@ -636,7 +638,7 @@ namespace System.Data.ProviderBase
                 DangerousAddRef(ref mustRelease);
 
                 IntPtr ptr = DangerousGetHandle();
-                SafeNativeMethods.ZeroMemory(ptr, Length);
+                Unsafe.InitBlock((void*)ptr, 0, (uint)Length);
             }
             finally
             {
