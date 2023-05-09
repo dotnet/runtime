@@ -253,10 +253,17 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.GetValue<bool>("Boolean"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Integer"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Nested:Integer"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<ComplexOptions>("Object"));
+#else
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
+#endif
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
@@ -363,7 +370,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -384,7 +391,7 @@ namespace Microsoft.Extensions
             Assert.Same(config.GetValue("Object", foo), foo);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue.
         public void GetUri()
         {
             var dic = new Dictionary<string, string>
@@ -831,8 +838,12 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new ComplexOptions();
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Bind(options, o => o.BindNonPublicProperties = true));
+#else
             config.Bind(options, o => o.BindNonPublicProperties = true);
             Assert.Null(options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync

@@ -79,7 +79,7 @@ namespace Microsoft.Extensions
             Assert.True(list[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void GetDictionaryInvalidValues()
         {
             var input = new Dictionary<string, string>

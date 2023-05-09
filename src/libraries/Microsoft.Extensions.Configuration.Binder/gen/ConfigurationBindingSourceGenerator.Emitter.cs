@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
@@ -187,14 +188,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}) => " +
-                        $"(T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}: null);");
+                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}: null) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_T_BinderOptions))
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"(T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions});");
+                        $"(T?)((T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_TypeOf))
