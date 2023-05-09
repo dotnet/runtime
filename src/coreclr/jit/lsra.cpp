@@ -6011,8 +6011,8 @@ void LinearScan::clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regTy
 #endif // TARGET_ARM
 
     reg->assignedInterval = nullptr;
-    clearNextIntervalRef(reg->regNum ARM_ARG(reg->registerType));
-    clearSpillCost(reg->regNum ARM_ARG(reg->registerType));
+    clearNextIntervalRef(reg->regNum, reg->registerType);
+    clearSpillCost(reg->regNum, reg->registerType);
 }
 
 //-----------------------------------------------------------------------------
