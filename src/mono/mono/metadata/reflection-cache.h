@@ -142,7 +142,7 @@ check_object_handle (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer 
 	if (!mem_manager->collectible) {
 		MonoConcGHashTable *hash = mem_manager->refobject_hash;
 		if (mono_conc_g_hash_table_lookup_extended (hash, &e, &orig_e, &orig_value))
-			if (((ReflectedEntry *)orig_e)->generation < mono_metadata_update_get_thread_generation()) {
+			if (mono_metadata_has_updates() && ((ReflectedEntry *)orig_e)->generation < mono_metadata_update_get_thread_generation()) {
 				mono_conc_g_hash_table_remove (hash, &e);
 				free_reflected_entry ((ReflectedEntry *)orig_e);
 				obj_handle = MONO_HANDLE_NEW (MonoObject, NULL);
