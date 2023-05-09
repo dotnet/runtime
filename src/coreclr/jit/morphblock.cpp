@@ -1086,11 +1086,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 {
     GenTree* result = nullptr;
 
-    GenTree*  addr               = nullptr;
-    ssize_t   addrBaseOffs       = 0;
-    FieldSeq* addrBaseOffsFldSeq = nullptr;
-    GenTree*  addrSpill          = nullptr;
-    unsigned  addrSpillTemp      = BAD_VAR_NUM;
+    GenTree*       addr               = nullptr;
+    target_ssize_t addrBaseOffs       = 0;
+    FieldSeq*      addrBaseOffsFldSeq = nullptr;
+    GenTree*       addrSpill          = nullptr;
+    unsigned       addrSpillTemp      = BAD_VAR_NUM;
 
     GenTree* addrSpillStore = nullptr;
 
@@ -1223,7 +1223,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         }
 
         assert(addrClone != nullptr);
-        ssize_t fullOffs = addrBaseOffs + (ssize_t)offs;
+        target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
         if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
         {
             // Avoid using unsigned overload of gtNewIconNode
