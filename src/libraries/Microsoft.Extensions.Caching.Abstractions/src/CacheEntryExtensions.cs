@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Caching.Memory
             return entry.RegisterPostEvictionCallbackNoValidation(callback, state);
         }
 
-        internal static ICacheEntry RegisterPostEvictionCallbackNoValidation(
+        private static ICacheEntry RegisterPostEvictionCallbackNoValidation(
             this ICacheEntry entry,
             PostEvictionDelegate callback,
             object? state)
