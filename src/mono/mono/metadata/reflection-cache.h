@@ -61,7 +61,10 @@ cache_object (MonoMemoryManager *mem_manager, MonoClass *klass, gpointer item, M
 		ReflectedEntry *e = alloc_reflected_entry (mem_manager);
 		e->item = item;
 		e->refclass = klass;
-		e->generation = mono_metadata_update_get_thread_generation();
+		if (G_UNLIKELY(mono_metadata_has_updates())
+			e->generation = mono_metadata_update_get_thread_generation();
+		else
+			e->generation = 0;
 		mono_conc_g_hash_table_insert (mem_manager->refobject_hash, e, o);
 		obj = o;
 	}
