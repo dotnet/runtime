@@ -945,20 +945,6 @@ int interceptor_ICJI::FilterException(
     return original_ICorJitInfo->FilterException(pExceptionPointers);
 }
 
-void interceptor_ICJI::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    mcs->AddCall("ThrowExceptionForJitResult");
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-void interceptor_ICJI::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    mcs->AddCall("ThrowExceptionForHelper");
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
-}
-
 bool interceptor_ICJI::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

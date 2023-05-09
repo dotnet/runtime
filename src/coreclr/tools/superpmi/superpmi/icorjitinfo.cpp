@@ -1180,21 +1180,6 @@ int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
     return result;
 }
 
-void MyICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
-    LogError("Hit unimplemented ThrowExceptionForJitResult");
-    DebugBreakorAV(80);
-}
-
-// Throws an exception defined by the given throw helper.
-void MyICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForHelper");
-    LogError("Hit unimplemented ThrowExceptionForHelper");
-    DebugBreakorAV(81);
-}
-
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in

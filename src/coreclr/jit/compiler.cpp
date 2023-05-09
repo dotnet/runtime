@@ -2690,19 +2690,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     bool altJitConfig = !pfAltJit->isEmpty();
 
-    //  If we have a non-empty AltJit config then we change all of these other
-    //  config values to refer only to the AltJit. Otherwise, a lot of DOTNET_* variables
-    //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the DOTNET_AltJit configuration is set.
-    //
-    if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
-    {
-        if (JitConfig.JitImportBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-        {
-            assert(!"JitImportBreak reached");
-        }
-    }
-
     bool verboseDump = false;
 
     if (!altJitConfig || opts.altJit)
@@ -2759,11 +2746,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     lvaEnregEHVars       = (compEnregLocals() && JitConfig.EnableEHWriteThru());
     lvaEnregMultiRegVars = (compEnregLocals() && JitConfig.EnableMultiRegLocals());
-
-    if (compIsForImportOnly())
-    {
-        return;
-    }
 
 #if FEATURE_TAILCALL_OPT
     // By default opportunistic tail call optimization is enabled.
@@ -4408,7 +4390,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 
         /* { editor brace-matching workaround for following printf */
         printf("} Jitted Method %4d at" FMT_ADDR "method %s size %08x%s%s\n", methodNumber, DBG_ADDR(methodCodePtr),
-               info.compFullName, methodCodeSize, isNYI ? " NYI" : (compIsForImportOnly() ? " import only" : ""),
+               info.compFullName, methodCodeSize, isNYI ? " NYI" : "",
                opts.altJit ? " altjit" : "");
     }
 #endif // DEBUG
@@ -4587,13 +4569,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // been run, and inlinee compiles have exited, so we should only
     // get this far if we are jitting the root method.
     noway_assert(!compIsForInlining());
-
-    // Maybe the caller was not interested in generating code
-    if (compIsForImportOnly())
-    {
-        compFunctionTraceEnd(nullptr, 0, false);
-        return;
-    }
 
     // Prepare for the morph phases
     //
@@ -6204,10 +6179,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
 
 #endif // DEBUG
-
-    // Set this before the first 'BADCODE'
-    // Skip verification where possible
-    assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
 
     /* Setup an error trap */
 

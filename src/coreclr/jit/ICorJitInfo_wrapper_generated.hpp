@@ -1154,22 +1154,6 @@ int WrapICorJitInfo::FilterException(
     return temp;
 }
 
-void WrapICorJitInfo::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    API_ENTER(ThrowExceptionForJitResult);
-    wrapHnd->ThrowExceptionForJitResult(result);
-    API_LEAVE(ThrowExceptionForJitResult);
-}
-
-void WrapICorJitInfo::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    API_ENTER(ThrowExceptionForHelper);
-    wrapHnd->ThrowExceptionForHelper(throwHelper);
-    API_LEAVE(ThrowExceptionForHelper);
-}
-
 bool WrapICorJitInfo::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

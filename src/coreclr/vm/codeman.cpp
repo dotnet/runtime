@@ -1336,27 +1336,6 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
-#if defined(TARGET_X86)
-    CORINFO_CPU cpuInfo;
-    GetSpecificCpuInfo(&cpuInfo);
-
-    switch (CPU_X86_FAMILY(cpuInfo.dwCPUType))
-    {
-        case CPU_X86_PENTIUM_4:
-            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
-            break;
-
-        default:
-            break;
-    }
-
-    if (CPU_X86_USE_CMOV(cpuInfo.dwFeatures))
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
-    }
-#endif // TARGET_X86
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     CPUCompileFlags.Set(InstructionSet_X86Base);
 

@@ -1008,12 +1008,6 @@ namespace Internal.JitInterface
 
         public CORINFO_SIG_INFO sig;
 
-        //Verification information
-        public uint verMethodFlags;     // flags for CORINFO_RESOLVED_TOKEN::hMethod
-        public CORINFO_SIG_INFO verSig;
-        //All of the regular method data is the same... hMethod might not be the same as CORINFO_RESOLVED_TOKEN::hMethod
-
-
         //If set to:
         //  - CORINFO_ACCESS_ALLOWED - The access is allowed.
         //  - CORINFO_ACCESS_ILLEGAL - This access cannot be allowed (i.e. it is public calling private).  The
@@ -1418,7 +1412,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_PROF_ENTERLEAVE = 20, // Instrument prologues/epilogues
         CORJIT_FLAG_UNUSED7 = 21,
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE = 22, // Disables PInvoke inlining
-        CORJIT_FLAG_SKIP_VERIFICATION = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
+        CORJIT_FLAG_UNUSED8 = 23,
         CORJIT_FLAG_PREJIT = 24, // jit or prejit is the execution engine.
         CORJIT_FLAG_RELOC = 25, // Generate relocatable code
         CORJIT_FLAG_IMPORT_ONLY = 26, // Only import the function

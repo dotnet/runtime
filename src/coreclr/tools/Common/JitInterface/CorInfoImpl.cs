@@ -3078,11 +3078,6 @@ namespace Internal.JitInterface
             throw new NotSupportedException("runWithSPMIErrorTrap");
         }
 
-        private void ThrowExceptionForJitResult(HRESULT result)
-        { throw new NotImplementedException("ThrowExceptionForJitResult"); }
-        private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
-        { throw new NotImplementedException("ThrowExceptionForHelper"); }
-
         public static CORINFO_OS TargetToOs(TargetDetails target)
         {
             return target.IsWindows ? CORINFO_OS.CORINFO_WINNT :
@@ -3910,7 +3905,6 @@ namespace Internal.JitInterface
             flags.InstructionSetFlags.Add(_compilation.InstructionSetSupport.OptimisticFlags);
 
             // Set the rest of the flags that don't make sense to expose publicly.
-            flags.Set(CorJitFlag.CORJIT_FLAG_SKIP_VERIFICATION);
             flags.Set(CorJitFlag.CORJIT_FLAG_READYTORUN);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);

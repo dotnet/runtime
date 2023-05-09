@@ -1365,19 +1365,6 @@ int interceptor_ICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPoin
     return temp;
 }
 
-void interceptor_ICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    mc->cr->AddCall("ThrowExceptionForJitResult");
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-// Throws an exception defined by the given throw helper.
-void interceptor_ICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    mc->cr->AddCall("ThrowExceptionForHelper");
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
-}
-
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in

@@ -10301,7 +10301,6 @@ public:
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
-    bool compIsForImportOnly();
     bool compIsForInlining() const;
     bool compDonotInline();
 
@@ -10497,8 +10496,6 @@ public:
 
     void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
                                                        DEBUGARG(unsigned line));
-    void verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                             DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);

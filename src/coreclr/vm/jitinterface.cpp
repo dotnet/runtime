@@ -5521,20 +5521,6 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    if (flags & CORINFO_CALLINFO_VERIFICATION)
-    {
-        if (pResult->hMethod != pResolvedToken->hMethod)
-        {
-            pResult->verMethodFlags = getMethodAttribsInternal(pResolvedToken->hMethod);
-            getMethodSigInternal(pResolvedToken->hMethod, &pResult->verSig, pResolvedToken->hClass);
-        }
-        else
-        {
-            pResult->verMethodFlags = pResult->methodFlags;
-            pResult->verSig = pResult->sig;
-        }
-    }
-
     pResult->wrapperDelegateInvoke = FALSE;
 
     if (m_pMethodBeingCompiled->IsDynamicMethod())
@@ -5595,49 +5581,6 @@ bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
     EE_TO_JIT_TRANSITION();
     return ret;
 }
-void CEEInfo::ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(throwHelper->args[0].argType == CORINFO_HELPER_ARG_TYPE_Method);
-    MethodDesc *pCallerMD = GetMethod(throwHelper->args[0].methodHandle);
-
-    AccessCheckContext accessContext(pCallerMD);
-
-    switch (throwHelper->helperNum)
-    {
-    case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Method);
-            ThrowMethodAccessException(&accessContext, GetMethod(throwHelper->args[1].methodHandle));
-        }
-        break;
-    case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Field);
-            ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(throwHelper->args[1].fieldHandle));
-        }
-        break;
-    case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Class);
-            TypeHandle typeHnd(throwHelper->args[1].classHandle);
-            ThrowTypeAccessException(&accessContext, typeHnd.GetMethodTable());
-        }
-        break;
-
-    default:
-        _ASSERTE(!"Unknown access exception type");
-    }
-    EE_TO_JIT_TRANSITION();
-}
-
 
 bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
 {
@@ -10514,26 +10457,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-void ThrowExceptionForJit(HRESULT res);
-
-void CEEInfo::ThrowExceptionForJitResult(
-        HRESULT result)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (!SUCCEEDED(result))
-        ThrowExceptionForJit(result);
-
-    EE_TO_JIT_TRANSITION();
-}
-
-
 CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
                                                  void **ppIndirection)
 {
@@ -12894,8 +12817,6 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         }
     }
 
-    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
-
     if (ftn->IsILStub() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
     {
         // no debug info available for IL stubs
@@ -13061,17 +12982,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
-
-#ifdef _DEBUG
-    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
-    {
-        SString methodString;
-        if (LoggingOn(LF_VERIFIER, LL_INFO100))
-            TypeString::AppendMethodDebug(methodString, ftn);
-
-        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
-    }
-#endif //_DEBUG
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     BOOL fForceJumpStubOverflow = FALSE;
