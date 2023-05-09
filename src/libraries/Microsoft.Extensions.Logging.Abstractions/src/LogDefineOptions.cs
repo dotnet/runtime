@@ -14,5 +14,7 @@ namespace Microsoft.Extensions.Logging
         /// Gets or sets the flag to skip IsEnabled check for the logging method.
         /// </summary>
         public bool SkipEnabledCheck { get; set; }
+
+        public Attribute[]?[]? ParameterAttributes { get; set; }
     }
 }

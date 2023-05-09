@@ -112,6 +112,7 @@ namespace Microsoft.Extensions.Logging
         private readonly ref TState _state;
         private readonly ref TEnrichmentProperties _enrichmentProperties;
 #else
+        // TODO: Explore making intrinsic. Or convert to regular fields.
         private readonly ByReference<TState> _state;
         private readonly ByReference<TEnrichmentProperties> _enrichmentProperties;
 #endif

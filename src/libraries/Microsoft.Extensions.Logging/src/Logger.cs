@@ -3,150 +3,102 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal sealed class Logger : ILogger
+    internal sealed class Logger : ILogger, ILogEntryPipelineFactory
     {
-        public Logger(LoggerInformation[] loggers) => Loggers = loggers;
+        private readonly LoggerFactory _loggerFactory;
 
-        public LoggerInformation[] Loggers { get; set; }
-        public MessageLogger[]? MessageLoggers { get; set; }
-        public ScopeLogger[]? ScopeLoggers { get; set; }
+        public Logger(LoggerFactory loggerFactory)
+        {
+            _loggerFactory = loggerFactory;
+        }
+
+        public VersionedLoggerState VersionedState { get; set; } = VersionedLoggerState.Default;
+
+        public Action ProcessorInvalidated => () => _loggerFactory.OnProcessorInvalidated(this);
+
+        public LogEntryPipeline<TState>? GetPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
+        {
+            return VersionedState.GetPipeline(metadata, userState);
+        }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            MessageLogger[]? loggers = MessageLoggers;
-            if (loggers == null)
+            ILogMetadata<TState>? metadata = null;
+            if (state is ILoggerStateWithMetadata<TState>)
             {
+                metadata = ((ILoggerStateWithMetadata<TState>)state).Metadata;
+            }
+            LogEntryPipeline<TState> pipeline = GetPipeline<TState>(metadata, this)!;
+            if (!pipeline.IsEnabled || (pipeline.IsDynamicLevelCheckRequired && !pipeline.IsEnabledDynamic(logLevel)))
                 return;
-            }
-
-            List<Exception>? exceptions = null;
-            for (int i = 0; i < loggers.Length; i++)
-            {
-                ref readonly MessageLogger loggerInfo = ref loggers[i];
-                if (!loggerInfo.IsEnabled(logLevel))
-                {
-                    continue;
-                }
-
-                LoggerLog(logLevel, eventId, loggerInfo.Logger, exception, formatter, ref exceptions, state);
-            }
-
-            if (exceptions != null && exceptions.Count > 0)
-            {
-                ThrowLoggingError(exceptions);
-            }
-
-            static void LoggerLog(LogLevel logLevel, EventId eventId, ILogger logger, Exception? exception, Func<TState, Exception?, string> formatter, ref List<Exception>? exceptions, in TState state)
-            {
-                try
-                {
-                    logger.Log(logLevel, eventId, state, exception, formatter);
-                }
-                catch (Exception ex)
-                {
-                    exceptions ??= new List<Exception>();
-                    exceptions.Add(ex);
-                }
-            }
+            EmptyEnrichmentPropertyValues props = default;
+            LogEntry<TState, EmptyEnrichmentPropertyValues> logEntry = new LogEntry<TState, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref props, exception, formatter);
+            pipeline.HandleLogEntry(ref logEntry);
         }
 
-        public bool IsEnabled(LogLevel logLevel)
+        public bool IsEnabled(LogLevel level)
         {
-            MessageLogger[]? loggers = MessageLoggers;
-            if (loggers == null)
+            ILogEntryProcessor processor = VersionedState.Processor;
+            if (processor != null)
             {
-                return false;
+                return processor.IsEnabled(level);
             }
-
-            List<Exception>? exceptions = null;
-            int i = 0;
-            for (; i < loggers.Length; i++)
-            {
-                ref readonly MessageLogger loggerInfo = ref loggers[i];
-                if (!loggerInfo.IsEnabled(logLevel))
-                {
-                    continue;
-                }
-
-                if (LoggerIsEnabled(logLevel, loggerInfo.Logger, ref exceptions))
-                {
-                    break;
-                }
-            }
-
-            if (exceptions != null && exceptions.Count > 0)
-            {
-                ThrowLoggingError(exceptions);
-            }
-
-            return i < loggers.Length ? true : false;
-
-            static bool LoggerIsEnabled(LogLevel logLevel, ILogger logger, ref List<Exception>? exceptions)
-            {
-                try
-                {
-                    if (logger.IsEnabled(logLevel))
-                    {
-                        return true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    exceptions ??= new List<Exception>();
-                    exceptions.Add(ex);
-                }
-
-                return false;
-            }
+            return false;
         }
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull
         {
-            ScopeLogger[]? loggers = ScopeLoggers;
+            throw new NotImplementedException();
+            //Processors should also handle scopes
+            //ScopeLogger[]? loggers = ScopeLoggers;
+            //ScopeLogger[]? loggers = null;
 
-            if (loggers == null)
-            {
-                return NullScope.Instance;
-            }
+            //if (loggers == null)
+            //{
+            //    return NullScope.Instance;
+            //}
 
-            if (loggers.Length == 1)
-            {
-                return loggers[0].CreateScope(state);
-            }
+            //if (loggers.Length == 1)
+            //{
+            //    return loggers[0].CreateScope(state);
+            //}
 
-            var scope = new Scope(loggers.Length);
-            List<Exception>? exceptions = null;
-            for (int i = 0; i < loggers.Length; i++)
-            {
-                ref readonly ScopeLogger scopeLogger = ref loggers[i];
+            //var scope = new Scope(loggers.Length);
+            //List<Exception>? exceptions = null;
+            //for (int i = 0; i < loggers.Length; i++)
+            //{
+            //    ref readonly ScopeLogger scopeLogger = ref loggers[i];
 
-                try
-                {
-                    scope.SetDisposable(i, scopeLogger.CreateScope(state));
-                }
-                catch (Exception ex)
-                {
-                    exceptions ??= new List<Exception>();
-                    exceptions.Add(ex);
-                }
-            }
+            //    try
+            //    {
+            //        scope.SetDisposable(i, scopeLogger.CreateScope(state));
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        exceptions ??= new List<Exception>();
+            //        exceptions.Add(ex);
+            //    }
+            //}
 
-            if (exceptions != null && exceptions.Count > 0)
-            {
-                ThrowLoggingError(exceptions);
-            }
+            //if (exceptions != null && exceptions.Count > 0)
+            //{
+            //    ThrowLoggingError(exceptions);
+            //}
 
-            return scope;
+            //return scope;
         }
 
-        private static void ThrowLoggingError(List<Exception> exceptions)
+        internal static void ThrowLoggingError(List<Exception> exceptions)
         {
             throw new AggregateException(
                 message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
         }
+
+
 
         private sealed class Scope : IDisposable
         {
@@ -198,6 +150,79 @@ namespace Microsoft.Extensions.Logging
 
                     _isDisposed = true;
                 }
+            }
+        }
+    }
+
+    internal sealed class VersionedLoggerState
+    {
+        public static readonly VersionedLoggerState Default = new VersionedLoggerState();
+
+        public VersionedLoggerState()
+        {
+            Loggers = Array.Empty<LoggerInformation>();
+            Processor = NullLogProcessor.Instance;
+        }
+
+        public VersionedLoggerState(LoggerInformation[] loggers, ILogEntryProcessor processor)
+        {
+            Loggers = loggers;
+            Processor = processor;
+            _isUpToDate = true;
+        }
+
+        private bool _isUpToDate;
+        public LoggerInformation[] Loggers { get; }
+        public ILogEntryProcessor Processor { get; }
+        public Dictionary<PipelineKey, LogEntryPipeline> Pipelines { get; } = new Dictionary<PipelineKey, LogEntryPipeline>();
+
+        public LogEntryPipeline<TState>? GetPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
+        {
+            // The default versioned state should never be used to create pipelines, it is a shared singleton
+            // that exists just to satisfy nullability checks
+            Debug.Assert(this != Default);
+
+            LogEntryPipeline? pipeline;
+            PipelineKey key = new PipelineKey((metadata == null) ? typeof(TState) : metadata, terminalProcessor: null, userState: userState);
+            lock (Pipelines)
+            {
+                if (!Pipelines.TryGetValue(key, out pipeline))
+                {
+                    LogEntryHandler<TState, EmptyEnrichmentPropertyValues> handler = Processor.GetLogEntryHandler<TState, EmptyEnrichmentPropertyValues>(metadata, out bool enabled, out bool dynamicCheckRequired);
+                    pipeline = new LogEntryPipeline<TState>(handler, userState, enabled, dynamicCheckRequired);
+                    // in a multi-threaded race it is possible to create new pipelines after the versioned state is already disposed
+                    // if this happens the pipeline is immediately marked as being not up-to-date.
+                    pipeline.IsUpToDate = _isUpToDate;
+                    Pipelines[key] = pipeline;
+                }
+            }
+            return (LogEntryPipeline<TState>?)pipeline;
+        }
+
+        public void MarkNotUpToDate()
+        {
+            lock (Pipelines)
+            {
+                _isUpToDate = false;
+                foreach (LogEntryPipeline pipeline in Pipelines.Values)
+                {
+                    pipeline.IsUpToDate = false;
+                }
+            }
+        }
+
+        private sealed class NullLogProcessor : ILogEntryProcessor
+        {
+            public static readonly NullLogProcessor Instance = new NullLogProcessor();
+
+            public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return false;
             }
         }
     }

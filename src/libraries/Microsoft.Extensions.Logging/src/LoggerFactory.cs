@@ -3,12 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
+
     /// <summary>
     /// Produces instances of <see cref="ILogger"/> classes based on the given providers.
     /// </summary>
@@ -22,6 +26,7 @@ namespace Microsoft.Extensions.Logging
         private LoggerFilterOptions _filterOptions;
         private IExternalScopeProvider? _scopeProvider;
         private readonly LoggerFactoryOptions _factoryOptions;
+        private IProcessorFactory[] _processorFactories;
 
         /// <summary>
         /// Creates a new <see cref="LoggerFactory"/> instance.
@@ -62,7 +67,8 @@ namespace Microsoft.Extensions.Logging
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options) : this(providers, filterOption, options, null)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options) :
+            this(providers, Array.Empty<IProcessorFactory>(), filterOption, options, null)
         {
         }
 
@@ -70,10 +76,15 @@ namespace Microsoft.Extensions.Logging
         /// Creates a new <see cref="LoggerFactory"/> instance.
         /// </summary>
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="processorFactories">The processor factories to use in the logging pipeline.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
         /// <param name="scopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options = null, IExternalScopeProvider? scopeProvider = null)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers,
+                             IEnumerable<IProcessorFactory> processorFactories,
+                             IOptionsMonitor<LoggerFilterOptions> filterOption,
+                             IOptions<LoggerFactoryOptions>? options = null,
+                             IExternalScopeProvider? scopeProvider = null)
         {
             _scopeProvider = scopeProvider;
 
@@ -86,13 +97,15 @@ namespace Microsoft.Extensions.Logging
 
             if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidActivityTrackingOptions, _factoryOptions.ActivityTrackingOptions), nameof(options));
+                throw new ArgumentException("placeholder");
             }
 
             foreach (ILoggerProvider provider in providers)
             {
                 AddProviderRegistration(provider, dispose: false);
             }
+
+            _processorFactories = processorFactories.ToArray();
 
             _changeTokenRegistration = filterOption.OnChange(RefreshFilters);
             RefreshFilters(filterOption.CurrentValue);
@@ -121,9 +134,50 @@ namespace Microsoft.Extensions.Logging
                 foreach (KeyValuePair<string, Logger> registeredLogger in _loggers)
                 {
                     Logger logger = registeredLogger.Value;
-                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
+                    UpdateLogger(logger);
                 }
             }
+        }
+
+        internal void OnProcessorInvalidated(Logger logger)
+        {
+            lock (_sync)
+            {
+                UpdateLogger(logger);
+            }
+        }
+
+        private void UpdateLogger(Logger logger)
+        {
+            Debug.Assert(Monitor.IsEntered(_sync));
+            LoggerInformation[] loggerInfos = logger.VersionedState.Loggers;
+            for (int i = 0; i < loggerInfos.Length; i++)
+            {
+                LoggerInformation previousInfo = loggerInfos[i];
+                loggerInfos[i] = CreateLoggerInformation(logger, previousInfo.Provider, previousInfo.Category, previousInfo.Logger, previousInfo.Processor, previousInfo.ProcessorCancelRegistration);
+            }
+            UpdateLogger(logger, loggerInfos);
+        }
+
+        private void UpdateLogger(Logger logger, LoggerInformation[] loggerInfos)
+        {
+            Debug.Assert(Monitor.IsEntered(_sync));
+            VersionedLoggerState oldState = logger.VersionedState;
+            // Even though we set new versioned state before disposing the old one keep in mind that
+            // it is still possible for a concurrent operation to capture the versioned state before
+            // it was replaced and then use it after it was disposed.
+            logger.VersionedState = new VersionedLoggerState(loggerInfos, GetProcessor(loggerInfos));
+            oldState.MarkNotUpToDate();
+        }
+
+        private ILogEntryProcessor GetProcessor(LoggerInformation[] loggerInfos)
+        {
+            ILogEntryProcessor processor = new DispatchProcessor(loggerInfos);
+            for (int i = _processorFactories.Length - 1; i >= 0; i--)
+            {
+                processor = _processorFactories[i].GetProcessor(processor);
+            }
+            return processor;
         }
 
         /// <summary>
@@ -142,10 +196,9 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!_loggers.TryGetValue(categoryName, out Logger? logger))
                 {
-                    logger = new Logger(CreateLoggers(categoryName));
-
-                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
-
+                    logger = new Logger(this);
+                    LoggerInformation[] loggerInfos = CreateLoggers(logger, categoryName);
+                    UpdateLogger(logger, loggerInfos);
                     _loggers[categoryName] = logger;
                 }
 
@@ -164,7 +217,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            ThrowHelper.ThrowIfNull(provider);
+            if (provider == null) throw new ArgumentNullException(nameof(provider));
 
             lock (_sync)
             {
@@ -173,14 +226,12 @@ namespace Microsoft.Extensions.Logging
                 foreach (KeyValuePair<string, Logger> existingLogger in _loggers)
                 {
                     Logger logger = existingLogger.Value;
-                    LoggerInformation[] loggerInformation = logger.Loggers;
+                    LoggerInformation[] loggerInformation = logger.VersionedState.Loggers;
 
-                    int newLoggerIndex = loggerInformation.Length;
-                    Array.Resize(ref loggerInformation, loggerInformation.Length + 1);
-                    loggerInformation[newLoggerIndex] = new LoggerInformation(provider, existingLogger.Key);
-
-                    logger.Loggers = loggerInformation;
-                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
+                    int newLoggerIndex = loggerInformation == null ? 0 : loggerInformation.Length;
+                    Array.Resize(ref loggerInformation, newLoggerIndex + 1);
+                    loggerInformation[newLoggerIndex] = CreateLoggerInformation(logger, provider, existingLogger.Key);
+                    UpdateLogger(logger, loggerInformation);
                 }
             }
         }
@@ -201,48 +252,55 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private LoggerInformation[] CreateLoggers(string categoryName)
+        private LoggerInformation[] CreateLoggers(Logger logger, string categoryName)
         {
             var loggers = new LoggerInformation[_providerRegistrations.Count];
             for (int i = 0; i < _providerRegistrations.Count; i++)
             {
-                loggers[i] = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
+                loggers[i] = CreateLoggerInformation(logger, _providerRegistrations[i].Provider, categoryName);
             }
             return loggers;
         }
 
-        private (MessageLogger[] MessageLoggers, ScopeLogger[]? ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
+        private LoggerInformation CreateLoggerInformation(
+            Logger logger,
+            ILoggerProvider provider,
+            string category,
+            ILogger? existingLogger = null,
+            ILogEntryProcessor? existingProcessor = null,
+            CancellationTokenRegistration? existingProcCancelRegistration = null)
         {
-            var messageLoggers = new List<MessageLogger>();
-            List<ScopeLogger>? scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
+            LoggerRuleSelector.Select(_filterOptions,
+                provider.GetType(),
+                category,
+                out LogLevel? minLevel,
+                out Func<string?, string?, LogLevel, bool>? filter);
 
-            foreach (LoggerInformation loggerInformation in loggers)
+            ILogger loggerSink = existingLogger ?? provider.CreateLogger(category);
+            minLevel ??= LogLevel.Trace;
+
+            ILogEntryProcessor? processor = existingProcessor;
+            CancellationTokenRegistration? registration = existingProcCancelRegistration;
+            // TODO: CancellationTokenRegistration.Token isn't available in .NET Standard 2.0.
+            //if (registration.HasValue && registration.Value.Token.IsCancellationRequested)
+            //{
+            //    processor = null;
+            //    registration.Value.Dispose();
+            //}
+            if (processor == null && loggerSink is ILogEntryProcessorFactory factory)
             {
-                LoggerRuleSelector.Select(_filterOptions,
-                    loggerInformation.ProviderType,
-                    loggerInformation.Category,
-                    out LogLevel? minLevel,
-                    out Func<string?, string?, LogLevel, bool>? filter);
-
-                if (minLevel is not null and > LogLevel.Critical)
+                var processorContext = factory.GetProcessor();
+                if (processorContext.CancellationToken.IsCancellationRequested)
                 {
-                    continue;
+                    processor = null;
                 }
-
-                messageLoggers.Add(new MessageLogger(loggerInformation.Logger, loggerInformation.Category, loggerInformation.ProviderType.FullName, minLevel, filter));
-
-                if (!loggerInformation.ExternalScope)
+                else
                 {
-                    scopeLoggers?.Add(new ScopeLogger(logger: loggerInformation.Logger, externalScopeProvider: null));
+                    processor = processorContext.Processor;
+                    registration = processorContext.CancellationToken.Register(logger.ProcessorInvalidated);
                 }
             }
-
-            if (_scopeProvider != null)
-            {
-                scopeLoggers?.Add(new ScopeLogger(logger: null, externalScopeProvider: _scopeProvider));
-            }
-
-            return (messageLoggers.ToArray(), scopeLoggers?.ToArray());
+            return new LoggerInformation(provider, category, loggerSink, processor, registration, minLevel.Value, filter);
         }
 
         /// <summary>

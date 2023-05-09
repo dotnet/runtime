@@ -3,12 +3,12 @@
 
 namespace Microsoft.Extensions.Logging
 {
-    internal interface ILogEntryPipelineFactory
+    public interface ILogEntryPipelineFactory
     {
         public LogEntryPipeline<TState>? GetPipeline<TState>(ILogMetadata<TState>? metadata, object? userState);
     }
 
-    internal class LogEntryPipeline
+    public class LogEntryPipeline
     {
         public LogEntryPipeline(object? userState, bool isEnabled, bool isDynamicLevelCheckRequired)
         {
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging
         public bool IsUpToDate { get; set; }
     }
 
-    internal class LogEntryPipeline<TState> : LogEntryPipeline
+    public class LogEntryPipeline<TState> : LogEntryPipeline
     {
         public LogEntryPipeline(LogEntryHandler<TState, EmptyEnrichmentPropertyValues> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) :
             base(userState, isEnabled, isDynamicLevelCheckRequired)
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Logging
         public void HandleLogEntry(ref LogEntry<TState, EmptyEnrichmentPropertyValues> logEntry) => _firstHandler.HandleLogEntry(ref logEntry);
     }
 
-    internal struct EmptyEnrichmentPropertyValues
+    public struct EmptyEnrichmentPropertyValues
     {
     }
 }

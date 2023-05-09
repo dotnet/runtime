@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Logging
                     return 1;
                 }
 
-                return _formatter.ValueNames.Count + 1;
+                return _formatter.PropertyCount + 1;
             }
         }
 
