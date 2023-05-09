@@ -93,8 +93,28 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     return fgExpandHelper<&Compiler::fgExpandRuntimeLookupsForCall>(false);
 }
 
-bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+//------------------------------------------------------------------------------
+// fgExpandRuntimeLookupsForCall : partially expand runtime lookups helper calls
+//    to add a nullcheck [+ size check] and a fast path
+//
+// Arguments:
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+// Returns:
+//    true if a runtime lookup was found and expanded.
+//
+// Notes:
+//    The runtime lookup itself is needed to access a handle in code shared between
+//    generic instantiations. The lookup depends on the typeContext which is only available at
+//    runtime, and not at compile - time. See ASCII block diagrams in comments below for
+//    better understanding how this phase expands runtime lookups.
+//
+bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    BasicBlock* block = *pBlock;
     assert(call->IsHelperCall());
 
     if (!call->IsExpRuntimeLookup())
@@ -150,6 +170,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
     GenTree**   callUse      = nullptr;
     Statement*  newFirstStmt = nullptr;
     block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
     assert(prevBb != nullptr && block != nullptr);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -165,15 +186,10 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
 
     // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
     // we can drop it and use that LCL as the destination
-    if (stmt->GetRootNode()->OperIs(GT_ASG))
+    if (stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) && (stmt->GetRootNode()->AsLclVar()->Data() == *callUse))
     {
-        GenTree* lhs = stmt->GetRootNode()->gtGetOp1();
-        GenTree* rhs = stmt->GetRootNode()->gtGetOp2();
-        if (lhs->OperIs(GT_LCL_VAR) && rhs == *callUse)
-        {
-            rtLookupLcl = gtClone(lhs)->AsLclVar();
-            fgRemoveStmt(block, stmt);
-        }
+        rtLookupLcl = gtNewLclVarNode(stmt->GetRootNode()->AsLclVar()->GetLclNum());
+        fgRemoveStmt(block, stmt);
     }
 
     // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
@@ -264,12 +280,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
         fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
 
     // Fallback basic block
-    GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, asgFallbackValue, debugInfo, true);
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
+    BasicBlock* fallbackBb       = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, fallbackValueDef, debugInfo, true);
 
     // Fast-path basic block
-    GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, asgFastpathValue, debugInfo);
+    GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
+    BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo);
 
     BasicBlock* sizeCheckBb = nullptr;
     if (needsSizeCheck)
@@ -433,9 +449,10 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //                             that access fields marked with [ThreadLocal].
 //
 // Arguments:
-//    block - Block containing the helper call to expand
-//    stmt  - Statement containing the helper call
-//    call  - The helper call
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
 //
 //
 // Returns:
@@ -450,8 +467,9 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //    If the entry is not present, the helper is called, which would make an entry of current static block
 //    in the cache.
 //
-bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    BasicBlock* block = *pBlock;
     assert(call->IsHelperCall());
     if (!call->IsExpTLSFieldAccess())
     {
@@ -489,6 +507,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     Statement*  newFirstStmt = nullptr;
     DebugInfo   debugInfo    = stmt->GetDebugInfo();
     block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
     assert(prevBb != nullptr && block != nullptr);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -541,15 +560,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     // Cache the tls value
     unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
     lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-    GenTree* defTlsLclValue    = gtNewLclvNode(tlsLclNum, TYP_I_IMPL);
-    GenTree* useTlsLclValue    = gtCloneExpr(defTlsLclValue); // Create a use for tlsLclValue
-    GenTree* asgTlsValue       = gtNewAssignNode(defTlsLclValue, tlsValue);
+    GenTree* tlsValueDef       = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    GenTree* tlsLclValueUse    = gtNewLclVarNode(tlsLclNum);
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
     GenTree* offsetOfMaxThreadStaticBlocks =
         gtNewIconNode(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfMaxThreadStaticBlocks);
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
     GenTree* maxThreadStaticBlocksValue =
         gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -561,7 +579,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
     GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(threadStaticBlocksInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
     GenTree* threadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfThreadStaticBlocks);
+        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
     GenTree* threadStaticBlocksValue =
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -575,14 +593,12 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
     lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
-    GenTree* defThreadStaticBlockBaseLclValue    = gtNewLclvNode(threadStaticBlockBaseLclNum, TYP_I_IMPL);
-    GenTree* useThreadStaticBlockBaseLclValue =
-        gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
-    GenTree* asgThreadStaticBlockBase = gtNewAssignNode(defThreadStaticBlockBaseLclValue, typeThreadStaticBlockValue);
+    GenTree* threadStaticBlockBaseDef = gtNewStoreLclVarNode(threadStaticBlockBaseLclNum, typeThreadStaticBlockValue);
+    GenTree* threadStaticBlockBaseLclValueUse = gtNewLclVarNode(threadStaticBlockBaseLclNum);
 
     // Create tree for "if (threadStaticBlockValue != nullptr)"
     GenTree* threadStaticBlockNullCond =
-        gtNewOperNode(GT_NE, TYP_INT, useThreadStaticBlockBaseLclValue, gtNewIconNode(0, TYP_I_IMPL));
+        gtNewOperNode(GT_NE, TYP_INT, threadStaticBlockBaseLclValueUse, gtNewIconNode(0, TYP_I_IMPL));
     threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
 
     // prevBb (BBJ_NONE):                                               [weight: 1.0]
@@ -609,26 +625,26 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     //      use(threadStaticBlockBase);
 
     // maxThreadStaticBlocksCondBB
-    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, asgTlsValue, debugInfo);
+    BasicBlock* maxThreadStaticBlocksCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsValueDef, debugInfo);
 
     fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
                       fgNewStmtFromTree(maxThreadStaticBlocksCond));
 
     // threadStaticBlockNullCondBB
     BasicBlock* threadStaticBlockNullCondBB =
-        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, asgThreadStaticBlockBase, debugInfo);
+        fgNewBBFromTreeAfter(BBJ_COND, maxThreadStaticBlocksCondBB, threadStaticBlockBaseDef, debugInfo);
     fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
                       fgNewStmtFromTree(threadStaticBlockNullCond));
 
     // fallbackBb
-    GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(threadStaticBlockLcl), call);
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(threadStaticBlockLclNum, call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, asgFallbackValue, debugInfo, true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
 
     // fastPathBb
-    GenTree* asgFastPathValue =
-        gtNewAssignNode(gtClone(threadStaticBlockLcl), gtCloneExpr(useThreadStaticBlockBaseLclValue));
-    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, asgFastPathValue, debugInfo, true);
+    GenTree* fastPathValueDef =
+        gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);
 
     //
     // Update preds in all new blocks
@@ -682,7 +698,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
 // Returns:
 //    true if there was any helper that was expanded.
 //
-template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
 PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
@@ -695,9 +711,14 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
         }
 
         // Expand and visit the last block again to find more candidates
-        while (fgExpandHelperForBlock<ExpansionFunction>(block))
+        INDEBUG(BasicBlock* origBlock = block);
+        while (fgExpandHelperForBlock<ExpansionFunction>(&block))
         {
             result = PhaseStatus::MODIFIED_EVERYTHING;
+#ifdef DEBUG
+            assert(origBlock != block);
+            origBlock = block;
+#endif
         }
     }
 
@@ -715,16 +736,17 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 //    invoke `fgExpand` if any of the tree node was a helper call.
 //
 // Arguments:
-//    block    - block to scan for static initializations
+//    pBlock   - Block containing the helper call to expand. If expansion is performed,
+//               this is updated to the new block that was an outcome of block splitting.
 //    fgExpand - function that expands the helper call
 //
 // Returns:
 //    true if a helper was expanded
 //
-template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
-bool Compiler::fgExpandHelperForBlock(BasicBlock* block)
+template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
+bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock)
 {
-    for (Statement* const stmt : block->NonPhiStatements())
+    for (Statement* const stmt : (*pBlock)->NonPhiStatements())
     {
         if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
         {
@@ -739,7 +761,7 @@ bool Compiler::fgExpandHelperForBlock(BasicBlock* block)
                 continue;
             }
 
-            if ((this->*ExpansionFunction)(block, stmt, tree->AsCall()))
+            if ((this->*ExpansionFunction)(pBlock, stmt, tree->AsCall()))
             {
                 return true;
             }
@@ -796,15 +818,17 @@ PhaseStatus Compiler::fgExpandStaticInit()
 //    Also, see fgExpandStaticInit's comments.
 //
 // Arguments:
-//    block  - call's block
-//    stmt   - call's statement
-//    call   - call that represents a static initialization
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
 //
 // Returns:
 //    true if a static initialization was expanded
 //
-bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    BasicBlock* block = *pBlock;
     assert(call->IsHelperCall());
 
     bool                    isGc       = false;
@@ -848,6 +872,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
     GenTree**   callUse      = nullptr;
     Statement*  newFirstStmt = nullptr;
     block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
     assert(prevBb != nullptr && block != nullptr);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.

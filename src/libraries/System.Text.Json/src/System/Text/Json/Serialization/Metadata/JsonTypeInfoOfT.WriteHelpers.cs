@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this, rootValueBoxed);
 
-                bool success = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
+                bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
                 Debug.Assert(success);
                 writer.Flush();
             }
@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                         try
                         {
-                            isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
+                            isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
                             writer.Flush();
 
                             if (state.SuppressFlush)
@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
-                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue!, Options, ref state);
+                    isFinalBlock = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
                     writer.Flush();
 
                     bufferWriter.WriteToStream(utf8Json);

@@ -21,18 +21,18 @@
   "author": "Microsoft",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-typescript": "9.0.2",
+    "@rollup/plugin-typescript": "11.1.0",
     "@rollup/plugin-virtual": "3.0.1",
-    "@rollup/plugin-terser": "0.1.0",
-    "@typescript-eslint/eslint-plugin": "5.44.0",
-    "@typescript-eslint/parser": "5.44.0",
-    "eslint": "8.28.0",
+    "@rollup/plugin-terser": "0.4.1",
+    "@typescript-eslint/eslint-plugin": "5.59.1",
+    "@typescript-eslint/parser": "5.59.1",
+    "eslint": "8.39.0",
     "fast-glob": "3.2.12",
     "git-commit-info": "2.0.1",
-    "rollup": "3.4.0",
-    "rollup-plugin-dts": "5.0.0",
-    "terser": "5.15.1",
-    "tslib": "2.4.1",
-    "typescript": "4.9.3"
+    "rollup": "3.21.1",
+    "rollup-plugin-dts": "5.3.0",
+    "terser": "5.17.1",
+    "tslib": "2.5.0",
+    "typescript": "5.0.4"
   }
 }

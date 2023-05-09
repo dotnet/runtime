@@ -650,7 +650,7 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
     STANDARD_VM_CONTRACT;
 
     LOG((LF_JIT, LL_INFO1000000,
-        "JitCompileCode(" FMT_ADDR ", %s) for %s:%s\n",
+        "JitCompileCode(" FMT_ADDR ", ILStub: %s) for %s::%s\n",
         DBG_ADDR(this),
         IsILStub() ? " TRUE" : "FALSE",
         GetMethodTable()->GetDebugClassName(),

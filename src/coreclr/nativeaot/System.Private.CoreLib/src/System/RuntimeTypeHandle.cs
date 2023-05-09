@@ -51,18 +51,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(RuntimeTypeHandle handle)
         {
-            if (_value == handle._value)
-            {
-                return true;
-            }
-            else if (this.IsNull || handle.IsNull)
-            {
-                return false;
-            }
-            else
-            {
-                return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
-            }
+            return _value == handle._value;
         }
 
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
@@ -162,14 +151,6 @@ namespace System
                         s += "(" + penultimateLastResortString + ")";
                 }
                 return s;
-            }
-        }
-
-        internal IntPtr RawValue
-        {
-            get
-            {
-                return _value;
             }
         }
 

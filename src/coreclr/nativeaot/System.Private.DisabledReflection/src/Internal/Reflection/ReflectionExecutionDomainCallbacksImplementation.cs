@@ -20,12 +20,10 @@ namespace Internal.Reflection
         public override Exception GetExceptionForHR(int hr) => throw new NotImplementedException();
         public override Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress) => null;
-        public override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
+        public override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type) => type.TypeHandle;
-        public override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle) => false;
-        public override bool SupportsReflection(Type type) => false;
         public override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle) => throw new NotSupportedException(SR.Reflection_Disabled);
     }
 }

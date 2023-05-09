@@ -68,7 +68,13 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (
+#if NETFRAMEWORK
+                Environment.OSVersion.Platform != PlatformID.Win32NT
+#else
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+#endif
+                )
             {
                 return true;
             }

@@ -300,7 +300,21 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX2_GatherVector256:
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
+        {
+            assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 8;
+        }
+
+        case NI_AVX512F_GetMantissa:
+        case NI_AVX512F_GetMantissaScalar:
+        case NI_AVX512F_VL_GetMantissa:
+        case NI_AVX512DQ_Range:
+        case NI_AVX512DQ_RangeScalar:
+        case NI_AVX512DQ_VL_Range:
+        {
+            assert(!HWIntrinsicInfo::HasFullRangeImm(id));
+            return 15;
+        }
 
         default:
         {
@@ -2799,7 +2813,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
@@ -2859,7 +2873,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);

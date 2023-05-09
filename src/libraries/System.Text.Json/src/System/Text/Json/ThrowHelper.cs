@@ -88,6 +88,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowPropertyNameTooLargeArgumentException(int length)
+        {
+            throw GetArgumentException(SR.Format(SR.PropertyNameTooLarge, length));
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
         {
             if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)

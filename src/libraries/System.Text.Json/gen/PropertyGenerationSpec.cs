@@ -91,6 +91,11 @@ namespace System.Text.Json.SourceGeneration
         public JsonNumberHandling? NumberHandling { get; init; }
 
         /// <summary>
+        /// The <see cref="JsonObjectCreationHandling"/> for the property.
+        /// </summary>
+        public JsonObjectCreationHandling? ObjectCreationHandling { get; init; }
+
+        /// <summary>
         /// The serialization order of the property.
         /// </summary>
         public int Order { get; init; }

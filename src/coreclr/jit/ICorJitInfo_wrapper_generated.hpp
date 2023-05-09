@@ -793,16 +793,6 @@ bool WrapICorJitInfo::canCast(
     return temp;
 }
 
-bool WrapICorJitInfo::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    API_ENTER(areTypesEquivalent);
-    bool temp = wrapHnd->areTypesEquivalent(cls1, cls2);
-    API_LEAVE(areTypesEquivalent);
-    return temp;
-}
-
 TypeCompareState WrapICorJitInfo::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -1522,16 +1512,28 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+bool WrapICorJitInfo::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    API_LEAVE(getReadonlyStaticFieldValue);
+    API_ENTER(getStaticFieldContent);
+    bool temp = wrapHnd->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    API_LEAVE(getStaticFieldContent);
+    return temp;
+}
+
+bool WrapICorJitInfo::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(getObjectContent);
+    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(getObjectContent);
     return temp;
 }
 

@@ -2284,7 +2284,6 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
 
     /* +0x000 */ DWORD ContextFlags;
-    /* +0x004 */ DWORD Fcsr;
 
     //
     // Integer registers.
@@ -2328,6 +2327,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // TODO-RISCV64: support the SIMD.
     ULONGLONG F[32];
+    DWORD Fcsr;
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //
