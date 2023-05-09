@@ -132,7 +132,7 @@ of the CLI header, as well as the directory entry for the PE debug directory.
 
 Immediately following the Webcil header is a sequence (whose length is given by `coff_sections`
 above) of section headers giving their virtual address and virtual size, as well as the offset in
-the Webcil file and the size in the file.  This is a subset of the PE section header that includes
+the Webcil payload and the size in the file.  This is a subset of the PE section header that includes
 enough information to correctly interpret the RVAs from the webcil header and from the .NET
 metadata. Other information (such as the section names) are not included.
 
@@ -144,6 +144,8 @@ struct SectionHeader {
     uint32_t st_raw_data_ptr;
 };
 ```
+
+(**Note**: the `st_raw_data_ptr` member is an offset from the beginning of the Webcil payload, not from the beginning of the WebAssembly wrapper module.)
 
 #### Sections
 
