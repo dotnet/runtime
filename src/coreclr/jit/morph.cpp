@@ -4050,7 +4050,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
     // Copy the valuetype to the temp
     GenTree* dest    = gtNewLclvNode(tmp, lvaGetDesc(tmp)->TypeGet());
-    GenTree* copyBlk = gtNewBlkOpNode(dest, argx);
+    GenTree* copyBlk = gtNewAssignNode(dest, argx);
     copyBlk          = fgMorphCopyBlock(copyBlk);
 
     call->gtArgs.SetTemp(arg, tmp);
@@ -7505,18 +7505,9 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             bool      hadSuppressedInit  = varDsc->lvSuppressedZeroInit;
             if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
             {
-                GenTree* lcl  = gtNewLclvNode(varNum, lclType);
-                GenTree* init = nullptr;
-                if (lclType == TYP_STRUCT)
-                {
-                    init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
-                    init = fgMorphInitBlock(init);
-                }
-                else
-                {
-                    GenTree* zero = gtNewZeroConNode(lclType);
-                    init          = gtNewAssignNode(lcl, zero);
-                }
+                GenTree*   lcl      = gtNewLclvNode(varNum, lclType);
+                GenTree*   zero     = gtNewZeroConNode((lclType == TYP_STRUCT) ? TYP_INT : lclType);
+                GenTree*   init     = gtNewAssignNode(lcl, zero);
                 Statement* initStmt = gtNewStmt(init, callDI);
                 fgInsertStmtBefore(block, lastStmt, initStmt);
             }

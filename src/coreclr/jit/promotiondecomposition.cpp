@@ -724,8 +724,7 @@ private:
     //
     void FinalizeInit(DecompositionStatementList* statements)
     {
-        GenTree* cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
-        uint8_t  initPattern = GetInitPattern();
+        uint8_t initPattern = GetInitPattern();
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
@@ -742,7 +741,7 @@ private:
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
-            GenTree* asg = m_compiler->gtNewBlkOpNode(m_dst, cns);
+            GenTree* asg = m_compiler->gtNewAssignNode(m_dst, m_src);
             statements->AddStatement(asg);
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
@@ -962,7 +961,7 @@ private:
         // that it's best to do it last.
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
         {
-            statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+            statements->AddStatement(m_compiler->gtNewAssignNode(m_dst, m_src));
 
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -1043,7 +1042,7 @@ private:
 
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
         {
-            statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+            statements->AddStatement(m_compiler->gtNewAssignNode(m_dst, m_src));
         }
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)

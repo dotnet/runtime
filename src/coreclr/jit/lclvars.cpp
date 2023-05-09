@@ -2935,19 +2935,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             }
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if FEATURE_SIMD
-            if (varTypeIsSIMD(layout->GetType()))
-            {
-                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-                impNormStructType(layout->GetClassHandle(), &simdBaseJitType);
-
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-                {
-                    assert(varTypeIsSIMD(varDsc));
-                    varDsc->SetSimdBaseJitType(simdBaseJitType);
-                }
-            }
-#endif // FEATURE_SIMD
             // For structs that are small enough, we check and set HFA element type
             if (GlobalJitOptions::compFeatureHfa && (layout->GetSize() <= MAX_PASS_MULTIREG_BYTES))
             {
@@ -2969,9 +2956,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     }
     else
     {
-#if FEATURE_SIMD
-        assert(!varTypeIsSIMD(varDsc) || (varDsc->GetSimdBaseType() != TYP_UNKNOWN));
-#endif // FEATURE_SIMD
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
@@ -3791,19 +3775,6 @@ void Compiler::lvaSortByRefCount()
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeFull(this));
 #endif
 }
-
-#ifdef FEATURE_SIMD
-var_types LclVarDsc::GetSimdBaseType() const
-{
-    CorInfoType simdBaseJitType = GetSimdBaseJitType();
-
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNKNOWN;
-    }
-    return JitType2PreciseVarType(simdBaseJitType);
-}
-#endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
 // lvExactSize: Get the exact size of the type of this local.

@@ -1064,8 +1064,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     }
 
     // Return a store node, to be appended.
-    GenTree* storeNode = gtNewBlkOpNode(dest, src);
-
+    GenTree* storeNode = gtNewAssignNode(dest, src);
     return storeNode;
 }
 
@@ -3756,7 +3755,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 // realType is either struct or SIMD
                 var_types      realType  = lvaGetRealType(structTempNum);
                 GenTreeLclVar* structLcl = gtNewLclvNode(structTempNum, realType);
-                impAppendTree(gtNewBlkOpNode(structLcl, gtNewIconNode(0)), CHECK_SPILL_NONE, impCurStmtDI);
+                impAppendTree(gtNewAssignNode(structLcl, gtNewIconNode(0)), CHECK_SPILL_NONE, impCurStmtDI);
 
                 return gtNewLclvNode(structTempNum, realType);
             }
@@ -8751,17 +8750,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
-                            GenTree* newObjDst = gtNewLclvNode(lclNum, lclDsc->TypeGet());
-                            GenTree* newObjInit;
-                            if (lclDsc->TypeGet() == TYP_STRUCT)
-                            {
-                                newObjInit = gtNewBlkOpNode(newObjDst, gtNewIconNode(0));
-                            }
-                            else
-                            {
-                                newObjInit = gtNewAssignNode(newObjDst, gtNewZeroConNode(lclDsc->TypeGet()));
-                            }
-                            impAppendTree(newObjInit, CHECK_SPILL_NONE, impCurStmtDI);
+                            GenTree* newObjInit =
+                                gtNewZeroConNode((lclDsc->TypeGet() == TYP_STRUCT) ? TYP_INT : lclDsc->TypeGet());
+
+                            impAssignTempGen(lclNum, newObjInit, CHECK_SPILL_NONE);
                         }
                         else
                         {
@@ -10486,7 +10478,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 op1 = gtNewLoadValueNode(layout, op1);
                 op2 = gtNewIconNode(0);
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
+                op1 = gtNewAssignNode(op1, op2);
                 goto SPILL_APPEND;
             }
 
@@ -10516,9 +10508,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(op3->AsIntConCommon()->IconValue()));
-                    op1                 = gtNewLoadValueNode(layout, op1, indirFlags);
-                    op2                 = opcode == CEE_INITBLK ? op2 : gtNewLoadValueNode(layout, op2, indirFlags);
-                    op1                 = gtNewBlkOpNode(op1, op2, (indirFlags & GTF_IND_VOLATILE) != 0);
+
+                    if (opcode == CEE_INITBLK)
+                    {
+                        if (!op2->IsIntegralConst(0))
+                        {
+                            op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                        }
+                    }
+                    else
+                    {
+                        op2 = gtNewLoadValueNode(layout, op2, indirFlags);
+                    }
+
+                    op1 = gtNewLoadValueNode(layout, op1, indirFlags);
+                    op1 = gtNewAssignNode(op1, op2);
                 }
                 else
                 {
@@ -10568,7 +10572,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = gtNewLoadValueNode(layout, op1);
                 op2 = gtNewLoadValueNode(layout, op2);
-                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0));
+                op1 = gtNewAssignNode(op1, op2);
                 goto SPILL_APPEND;
             }
 
