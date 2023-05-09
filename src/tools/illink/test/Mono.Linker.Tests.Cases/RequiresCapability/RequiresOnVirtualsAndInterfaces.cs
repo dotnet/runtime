@@ -76,6 +76,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				tmp.VirtualMethodRequires ();
 			}
 
+			// https://github.com/dotnet/runtime/issues/86008
+			// This is the "direct reflection" case, which actually behaves differently from indirect (DAM annotation)
+			// in this case even trimmer will warn on both methods.
 			[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
 			[ExpectedWarning ("IL3002", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
@@ -93,6 +96,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof(T).GetMethod("VirtualMethodRequires").Invoke(instance, Array.Empty<object> ());
 			}
 
+			// https://github.com/dotnet/runtime/issues/86008
+			// - It's OK that analyzer doesn't produce anything here - it's a reflection access via DAM which the analyzer doesn't do
+			// For consideration if this should maybe warn on both methods (since it's going to mark both)
 			[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
@@ -205,7 +211,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (T).GetMethod ("MethodWithRequires").Invoke (new ImplementationClass (), Array.Empty<object> ());
 			}
 
-			// BUG
+			// https://github.com/dotnet/runtime/issues/86008
+			// This is a bug in illink, the fact that there's no warning is an analysis hole
 			[ExpectedWarning ("IL2026", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3002", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
