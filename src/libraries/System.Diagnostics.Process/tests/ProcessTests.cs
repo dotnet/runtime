@@ -2049,6 +2049,7 @@ namespace System.Diagnostics.Tests
 #pragma warning disable 0618
                 Assert.Equal(0, _process.PeakWorkingSet);
 #pragma warning restore 0618
+                return;
             }
 
             // On recent Linux kernels (6.2+) working set can be zero just after the process started.
