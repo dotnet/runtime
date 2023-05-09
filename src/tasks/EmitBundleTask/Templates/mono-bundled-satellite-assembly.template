@@ -5,4 +5,4 @@ const MonoBundledSatelliteAssemblyResource %ResourceName% = {
                             .culture = "%Culture%",
                             .data = %ResourceName%_data,
                             .size = %Len% },
-%MonoBundledSymbolData%};
+};

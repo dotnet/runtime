@@ -51,7 +51,6 @@ typedef struct _MonoBundledAssemblyResource {
 typedef struct _MonoBundledSatelliteAssemblyResource {
 	MonoBundledResource resource;
 	MonoBundledSatelliteAssembly satellite_assembly;
-	MonoBundledSymbolData symbol_data;
 } MonoBundledSatelliteAssemblyResource;
 
 void

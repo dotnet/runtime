@@ -239,6 +239,15 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             switch (GetFileType(tuple.registeredFilename)) {
             case "MONO_BUNDLED_ASSEMBLY": {
                 preloadedStruct = assemblyTemplate;
+                // Add associated symfile information to MonoBundledAssemblyResource structs
+                string preloadedSymbolData = "";
+                if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
+                {
+                    preloadedSymbolData = Utils.GetEmbeddedResource("mono-bundled-symbol.template")
+                                                .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
+                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
+                }
+                preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
                 preallocatedAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 assembliesCount += 1;
                 break;
@@ -260,19 +269,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             }
             }
 
-            // Add associated symfile information to MonoBundledAssemblyResource/MonoBundleSatelliteAssemblyResource structs
-            string preloadedSymfile = "";
-            if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
-            {
-                preloadedSymfile = Utils.GetEmbeddedResource("mono-bundled-symbol.template")
-                                            .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
-                                            .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
-            }
             preallocatedSource.AppendLine(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
                                          .Replace("%ResourceID%", resourceId)
                                          .Replace("%RegisteredFilename%", tuple.registeredFilename)
-                                         .Replace("%Len%", symbolDataLen[tuple.resourceName].ToString())
-                                         .Replace("%MonoBundledSymbolData%", preloadedSymfile));
+                                         .Replace("%Len%", symbolDataLen[tuple.resourceName].ToString()));
         }
 
         var addPreallocatedResources = new StringBuilder();
