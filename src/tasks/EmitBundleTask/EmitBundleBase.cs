@@ -236,8 +236,16 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
             // Generate Preloaded MonoBundled*Resource structs
             string preloadedStruct;
-            switch (GetFileType(tuple.registeredFilename)) {
-            case "MONO_BUNDLED_ASSEMBLY": {
+            if (!string.IsNullOrEmpty(tuple.culture))
+            {
+                preloadedStruct = satelliteAssemblyTemplate;
+                preloadedStruct.Replace("%Culture%", tuple.culture);
+                resourceId = $"{tuple.culture}/{tuple.registeredFilename}";
+                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
+                satelliteAssembliesCount += 1;
+            }
+            else if (tuple.registeredFilename.EndsWith(".dll"))
+            {
                 preloadedStruct = assemblyTemplate;
                 // Add associated symfile information to MonoBundledAssemblyResource structs
                 string preloadedSymbolData = "";
@@ -250,23 +258,12 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
                 preallocatedAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 assembliesCount += 1;
-                break;
             }
-            case "MONO_BUNDLED_SATELLITE_ASSEMBLY": {
-                preloadedStruct = satelliteAssemblyTemplate;
-                preloadedStruct.Replace("%Culture%", tuple.culture);
-                resourceId = $"{tuple.culture}/{tuple.registeredFilename}";
-                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
-                satelliteAssembliesCount += 1;
-                break;
-            }
-            case "MONO_BUNDLED_DATA":
-            default: {
+            else
+            {
                 preloadedStruct = symbolDataTemplate;
                 preallocatedData.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
                 dataCount += 1;
-                break;
-            }
             }
 
             preallocatedSource.AppendLine(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
@@ -356,19 +353,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
 
         return sb.ToString();
-    }
-
-    private static string GetFileType(string destinationFileName)
-    {
-        if (destinationFileName.EndsWith(".resources.dll"))
-        {
-            return "MONO_BUNDLED_SATELLITE_ASSEMBLY";
-        }
-        if (destinationFileName.EndsWith(".dll"))
-        {
-            return "MONO_BUNDLED_ASSEMBLY";
-        }
-        return "MONO_BUNDLED_DATA";
     }
 
     // Equivalent to "isalnum"
