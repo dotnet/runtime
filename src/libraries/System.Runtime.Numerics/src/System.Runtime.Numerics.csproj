@@ -18,12 +18,11 @@
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
+    <Compile Include="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
-             Link="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
