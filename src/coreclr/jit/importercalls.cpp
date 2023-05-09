@@ -3999,11 +3999,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
                     JITDUMP("Expanding Unsafe.As<%s>(...)\n", eeGetClassName(inst));
 
-                    // In order to change the class handle of the object we need to spill it to a temp
-                    // and update class info for that temp.
-                    unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
-                    impAssignTempGen(localNum, op);
-
                     bool                 isExact, isNonNull;
                     CORINFO_CLASS_HANDLE oldClass = gtGetClassHandle(op, &isExact, &isNonNull);
                     if ((oldClass != NO_CLASS_HANDLE) && info.compCompHnd->isMoreSpecificType(inst, oldClass))
@@ -4012,6 +4007,11 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                 eeGetClassName(oldClass));
                         return op;
                     }
+
+                    // In order to change the class handle of the object we need to spill it to a temp
+                    // and update class info for that temp.
+                    unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
+                    impAssignTempGen(localNum, op);
 
                     // NOTE: we still can't say for sure that it is the exact type of the argument
                     lvaSetClass(localNum, inst, /*isExact*/ false);
