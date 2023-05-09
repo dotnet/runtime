@@ -2136,7 +2136,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
-    return gtNewBlkOpNode(dst, src);
+    return gtNewAssignNode(dst, src);
 }
 
 GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
@@ -3795,8 +3795,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_SpanHelpers_SequenceEqual:
             case NI_System_Buffer_Memmove:
             {
-                // We'll try to unroll this in lower for constant input.
-                isSpecial = true;
+                if (sig->sigInst.methInstCount == 0)
+                {
+                    // We'll try to unroll this in lower for constant input.
+                    isSpecial = true;
+                }
+                // The generic version is also marked as [Intrinsic] just as a hint for the inliner
                 break;
             }
 
