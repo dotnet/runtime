@@ -72,24 +72,6 @@ void Compiler::impPushNullObjRefOnStack()
     impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TI_NULL));
 }
 
-void DECLSPEC_NORETURN Compiler::verRaiseVerifyException(INDEBUG(const char* msg) DEBUGARG(const char* file)
-                                                             DEBUGARG(unsigned line))
-{
-    JITLOG((LL_ERROR, "Verification failure:  %s:%d : %s, while compiling %s opcode %s, IL offset %x\n", file, line,
-            msg, info.compFullName, impCurOpcName, impCurOpcOffs));
-
-#ifdef DEBUG
-    //    BreakIfDebuggerPresent();
-    if (getBreakOnBadCode())
-    {
-        assert(!"Typechecking error");
-    }
-#endif
-
-    RaiseException(SEH_VERIFICATION_EXCEPTION, EXCEPTION_NONCONTINUABLE, 0, nullptr);
-    UNREACHABLE();
-}
-
 // helper function that will tell us if the IL instruction at the addr passed
 // by param consumes an address at the top of the stack. We use it to save
 // us lvAddrTaken
@@ -11291,16 +11273,6 @@ void Compiler::impReimportMarkSuccessors(BasicBlock* block)
  *  from it).
  */
 
-LONG FilterVerificationExceptions(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    if (pExceptionPointers->ExceptionRecord->ExceptionCode == SEH_VERIFICATION_EXCEPTION)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 {
     assert(block->hasTryIndex());
@@ -11457,17 +11429,6 @@ void Compiler::impImportBlock(BasicBlock* block)
 
     /* Now walk the code and import the IL into GenTrees */
 
-    struct FilterVerificationExceptionsParam
-    {
-        Compiler*   pThis;
-        BasicBlock* block;
-    };
-    FilterVerificationExceptionsParam param;
-
-    param.pThis = this;
-    param.block = block;
-
-    PAL_TRY(FilterVerificationExceptionsParam*, pParam, &param)
     {
         /* @VERIFICATION : For now, the only state propagation from try
            to it's handler is "thisInit" state (stack is empty at start of try).
@@ -11495,26 +11456,21 @@ void Compiler::impImportBlock(BasicBlock* block)
 
         // merge the start state of the try begin
         //
-        if (pParam->block->bbFlags & BBF_TRY_BEG)
+        if (block->bbFlags & BBF_TRY_BEG)
         {
-            pParam->pThis->impVerifyEHBlock(pParam->block, true);
+            impVerifyEHBlock(block, true);
         }
 
-        pParam->pThis->impImportBlockCode(pParam->block);
+        impImportBlockCode(block);
 
         // As discussed above:
         // merge the post-state of each block that is part of this try region
         //
-        if (pParam->block->hasTryIndex())
+        if (block->hasTryIndex())
         {
-            pParam->pThis->impVerifyEHBlock(pParam->block, false);
+            impVerifyEHBlock(block, false);
         }
     }
-    PAL_EXCEPT_FILTER(FilterVerificationExceptions)
-    {
-        verHandleVerificationFailure(block DEBUGARG(false));
-    }
-    PAL_ENDTRY
 
     if (compDonotInline())
     {
