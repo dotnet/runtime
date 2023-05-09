@@ -3043,11 +3043,6 @@ namespace Internal.JitInterface
             };
         }
 
-        private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
-        { throw new NotImplementedException("GetErrorHRESULT"); }
-        private uint GetErrorMessage(char* buffer, uint bufferLength)
-        { throw new NotImplementedException("GetErrorMessage"); }
-
 #pragma warning disable CA1822 // Mark members as static
         private bool runWithErrorTrap(void* function, void* parameter)
 #pragma warning restore CA1822 // Mark members as static

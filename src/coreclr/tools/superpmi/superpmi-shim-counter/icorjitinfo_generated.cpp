@@ -923,21 +923,6 @@ CorInfoHFAElemType interceptor_ICJI::getHFAType(
     return original_ICorJitInfo->getHFAType(hClass);
 }
 
-JITINTERFACE_HRESULT interceptor_ICJI::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mcs->AddCall("GetErrorHRESULT");
-    return original_ICorJitInfo->GetErrorHRESULT(pExceptionPointers);
-}
-
-uint32_t interceptor_ICJI::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    mcs->AddCall("GetErrorMessage");
-    return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
-}
-
 bool interceptor_ICJI::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

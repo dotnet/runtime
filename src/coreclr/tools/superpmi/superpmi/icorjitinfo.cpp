@@ -1142,32 +1142,6 @@ CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 }
 
 /*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-
-// Returns the HRESULT of the current exception
-HRESULT MyICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("GetErrorHRESULT");
-    LogError("Hit unimplemented GetErrorHRESULT");
-    DebugBreakorAV(76);
-    return 0;
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t MyICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
-{
-    jitInstance->mc->cr->AddCall("GetErrorMessage");
-    LogError("Hit unimplemented GetErrorMessage");
-    DebugBreakorAV(77);
-    return 0;
-}
-
-/*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in
  * persisted information like statically generated code. (This is of course

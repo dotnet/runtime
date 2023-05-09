@@ -1126,25 +1126,6 @@ CorInfoHFAElemType WrapICorJitInfo::getHFAType(
     return temp;
 }
 
-JITINTERFACE_HRESULT WrapICorJitInfo::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(GetErrorHRESULT);
-    JITINTERFACE_HRESULT temp = wrapHnd->GetErrorHRESULT(pExceptionPointers);
-    API_LEAVE(GetErrorHRESULT);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    API_ENTER(GetErrorMessage);
-    uint32_t temp = wrapHnd->GetErrorMessage(buffer, bufferLength);
-    API_LEAVE(GetErrorMessage);
-    return temp;
-}
-
 bool WrapICorJitInfo::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

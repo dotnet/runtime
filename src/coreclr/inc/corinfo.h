@@ -1757,13 +1757,6 @@ enum CORINFO_OS
     CORINFO_MACOS,
 };
 
-struct CORINFO_CPU
-{
-    uint32_t           dwCPUType;
-    uint32_t           dwFeatures;
-    uint32_t           dwExtendedFeatures;
-};
-
 enum CORINFO_RUNTIME_ABI
 {
     CORINFO_DESKTOP_ABI = 0x100,
@@ -2888,25 +2881,6 @@ public:
     // Returns type of HFA for valuetype
     virtual CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
-            ) = 0;
-
- /*****************************************************************************
- * ICorErrorInfo contains methods to deal with SEH exceptions being thrown
- * from the corinfo interface.  These methods may be called when an exception
- * with code EXCEPTION_COMPLUS is caught.
- *****************************************************************************/
-
-    // Returns the HRESULT of the current exception
-    virtual JITINTERFACE_HRESULT GetErrorHRESULT(
-            struct _EXCEPTION_POINTERS *pExceptionPointers
-            ) = 0;
-
-    // Fetches the message of the current exception
-    // Returns the size of the message (including terminating null). This can be
-    // greater than bufferLength if the buffer is insufficient.
-    virtual uint32_t GetErrorMessage(
-            _Inout_updates_(bufferLength) char16_t *buffer,
-            uint32_t bufferLength
             ) = 0;
 
     // Runs the given function under an error trap. This allows the JIT to make calls
