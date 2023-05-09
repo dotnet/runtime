@@ -274,12 +274,13 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace System.Numerics
+namespace System
 {
-    internal static class BigNumber
+    internal static partial class Number
     {
         private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
@@ -288,13 +289,6 @@ namespace System.Numerics
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
 
         private static ReadOnlySpan<uint> UInt32PowersOfTen => new uint[] { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
-
-        internal enum ParsingStatus
-        {
-            OK,
-            Failed,
-            Overflow
-        }
 
         [DoesNotReturn]
         internal static void ThrowOverflowOrFormatException(ParsingStatus status) => throw GetException(status);
@@ -360,9 +354,9 @@ namespace System.Numerics
 
             fixed (byte* ptr = buffer) // NumberBuffer expects pinned span
             {
-                Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.Integer, buffer);
+                NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (!Number.TryStringToNumber(value, style, ref number, info))
+                if (!TryStringToNumber(value, style, ref number, info))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
@@ -406,7 +400,7 @@ namespace System.Numerics
             {
                 for (whiteIndex = 0; whiteIndex < value.Length; whiteIndex++)
                 {
-                    if (!Number.IsWhite(value[whiteIndex]))
+                    if (!IsWhite(value[whiteIndex]))
                         break;
                 }
 
@@ -418,7 +412,7 @@ namespace System.Numerics
             {
                 for (whiteIndex = value.Length - 1; whiteIndex >= 0; whiteIndex--)
                 {
-                    if (!Number.IsWhite(value[whiteIndex]))
+                    if (!IsWhite(value[whiteIndex]))
                         break;
                 }
 
@@ -538,7 +532,7 @@ namespace System.Numerics
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
         private static int s_naiveThreshold = 20000; // non-readonly for testing
-        private static ParsingStatus NumberToBigInteger(ref Number.NumberBuffer number, out BigInteger result)
+        private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;
 
@@ -581,7 +575,7 @@ namespace System.Numerics
                 }
             }
 
-            ParsingStatus Naive(ref Number.NumberBuffer number, out BigInteger result)
+            ParsingStatus Naive(ref NumberBuffer number, out BigInteger result)
             {
                 Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
                 Span<uint> currentBuffer = stackBuffer;
@@ -662,7 +656,7 @@ namespace System.Numerics
                 }
             }
 
-            ParsingStatus DivideAndConquer(ref Number.NumberBuffer number, out BigInteger result)
+            ParsingStatus DivideAndConquer(ref NumberBuffer number, out BigInteger result)
             {
                 Span<uint> currentBuffer;
                 int[]? arrayFromPoolForMultiplier = null;

@@ -14,7 +14,7 @@
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
-    <Compile Include="System\Numerics\BigNumber.cs" />
+    <Compile Include="System\Number.BigInteger.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
