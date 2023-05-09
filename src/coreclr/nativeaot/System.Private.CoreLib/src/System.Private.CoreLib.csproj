@@ -192,7 +192,6 @@
     <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
@@ -358,9 +357,6 @@
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
@@ -427,7 +423,6 @@
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
-    <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
@@ -503,7 +498,6 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeDefinitionTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />

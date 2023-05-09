@@ -173,10 +173,6 @@ namespace System.Reflection.Runtime.General
             Justification = "Resolves type references within metadata. We ensure metadata is consistent.")]
         private static RuntimeTypeInfo? TryResolveTypeReference(this TypeReferenceHandle typeReferenceHandle, MetadataReader reader, ref Exception? exception)
         {
-            RuntimeTypeHandle resolvedRuntimeTypeHandle;
-            if (ReflectionCoreExecution.ExecutionEnvironment.TryGetNamedTypeForTypeReference(reader, typeReferenceHandle, out resolvedRuntimeTypeHandle))
-                return resolvedRuntimeTypeHandle.GetTypeForRuntimeTypeHandle();
-
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             string name = typeReference.TypeName.GetString(reader);
             Handle parent = typeReference.ParentNamespaceOrType;

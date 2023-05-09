@@ -7,7 +7,7 @@
 #ifdef FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_XARCH
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Simple SIMD intrinsics
     // - take Vector128/256<T> parameters
@@ -40,10 +40,8 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #elif defined(TARGET_ARM64)
-
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Most of the Arm64 intrinsic fall into SIMD category:
     // - vector or scalar intrinsics that operate on one-or-many SIMD registers
@@ -69,11 +67,9 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #else
 #error Unsupported platform
 #endif
-
 enum HWIntrinsicFlag : unsigned int
 {
     HW_Flag_NoFlag = 0,
@@ -194,7 +190,7 @@ enum HWIntrinsicFlag : unsigned int
 
 #if defined(TARGET_XARCH)
 // This mirrors the System.Runtime.Intrinsics.X86.FloatComparisonMode enumeration
-enum class FloatComparisonMode : unsigned char
+enum class FloatComparisonMode : uint8_t
 {
     // _CMP_EQ_OQ
     OrderedEqualNonSignaling = 0,
@@ -293,7 +289,7 @@ enum class FloatComparisonMode : unsigned char
     UnorderedTrueSignaling = 31,
 };
 
-enum class FloatRoundingMode : unsigned char
+enum class FloatRoundingMode : uint8_t
 {
     // _MM_FROUND_TO_NEAREST_INT
     ToNearestInteger = 0x00,
@@ -320,14 +316,17 @@ enum class FloatRoundingMode : unsigned char
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic         id;
-    const char*            name;
-    CORINFO_InstructionSet isa;
-    int                    simdSize;
-    int                    numArgs;
-    instruction            ins[10];
-    HWIntrinsicCategory    category;
-    HWIntrinsicFlag        flags;
+    // 32-bit: 36-bytes (34+2 trailing padding)
+    // 64-bit: 40-bytes (38+2 trailing padding)
+
+    const char*         name;     // 4 or 8-bytes
+    HWIntrinsicFlag     flags;    // 4-bytes
+    NamedIntrinsic      id;       // 2-bytes
+    uint16_t            ins[10];  // 10 * 2-bytes
+    uint8_t             isa;      // 1-byte
+    int8_t              simdSize; // 1-byte
+    int8_t              numArgs;  // 1-byte
+    HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
@@ -372,7 +371,8 @@ struct HWIntrinsicInfo
 
     static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
     {
-        return lookup(id).isa;
+        uint8_t result = lookup(id).isa;
+        return static_cast<CORINFO_InstructionSet>(result);
     }
 
 #ifdef TARGET_XARCH
@@ -612,7 +612,9 @@ struct HWIntrinsicInfo
             assert(!"Unexpected type");
             return INS_invalid;
         }
-        return lookup(id).ins[type - TYP_BYTE];
+
+        uint16_t result = lookup(id).ins[type - TYP_BYTE];
+        return static_cast<instruction>(result);
     }
 
     static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)

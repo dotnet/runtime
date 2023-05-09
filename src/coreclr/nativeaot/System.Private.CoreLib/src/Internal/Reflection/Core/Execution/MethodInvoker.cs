@@ -16,7 +16,6 @@ namespace Internal.Reflection.Core.Execution
     // This class polymorphically implements the MethodBase.Invoke() api and its close cousins. MethodInvokers are designed to be built once and cached
     // for maximum Invoke() throughput.
     //
-    [ReflectionBlocked]
     public abstract class MethodInvoker
     {
         protected MethodInvoker() { }

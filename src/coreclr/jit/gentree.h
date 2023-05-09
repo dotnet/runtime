@@ -488,8 +488,6 @@ enum GenTreeFlags : unsigned int
     GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
-                                              //           assignment; don't evaluate it independently.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
@@ -1637,7 +1635,7 @@ public:
 
     bool OperIsSsaDef() const
     {
-        return OperIs(GT_ASG, GT_CALL);
+        return OperIs(GT_ASG, GT_CALL) || OperIsLocalStore();
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
@@ -9295,10 +9293,10 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped assignment
+// gtCommaAssignVal - find value being assigned to a comma wrapped store
 //
 // Returns:
-//    tree representing value being assigned if this tree represents a
+//    tree representing value being stored if this tree represents a
 //    comma-wrapped local definition and use.
 //
 //    original tree, if not.
@@ -9312,15 +9310,10 @@ inline GenTree* GenTree::gtCommaAssignVal()
         GenTree* commaOp1 = AsOp()->gtOp1;
         GenTree* commaOp2 = AsOp()->gtOp2;
 
-        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_ASG))
+        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_STORE_LCL_VAR) &&
+            (commaOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
         {
-            GenTree* asgOp1 = commaOp1->AsOp()->gtOp1;
-            GenTree* asgOp2 = commaOp1->AsOp()->gtOp2;
-
-            if (asgOp1->OperIs(GT_LCL_VAR) && (asgOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
-            {
-                result = asgOp2;
-            }
+            result = commaOp1->AsLclVar()->Data();
         }
     }
 

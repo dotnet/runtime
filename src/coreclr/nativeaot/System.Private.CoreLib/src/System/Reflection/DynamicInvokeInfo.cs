@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 namespace System.Reflection
 {
     // caches information required for efficient argument validation and type coercion for reflection Invoke.
-    [ReflectionBlocked]
     public class DynamicInvokeInfo
     {
         // Public state

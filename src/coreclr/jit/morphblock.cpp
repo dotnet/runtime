@@ -410,7 +410,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    const int64_t initPattern = (initVal->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
+    const uint8_t initPattern = (uint8_t)(initVal->AsIntCon()->IconValue() & 0xFF);
 
     if (initPattern != 0)
     {
@@ -418,14 +418,11 @@ void MorphInitBlockHelper::TryInitFieldByField()
         {
             LclVarDsc* fieldDesc = m_comp->lvaGetDesc(destLclVar->lvFieldLclStart + i);
 
-            if (varTypeIsSIMD(fieldDesc) || varTypeIsGC(fieldDesc))
+            if (varTypeIsGC(fieldDesc))
             {
-                // Cannot initialize GC or SIMD types with a non-zero constant.
-                // The former is completely bogus. The later restriction could be
-                // lifted by supporting non-zero SIMD constants or by generating
-                // field initialization code that converts an integer constant to
-                // the appropriate SIMD value. Unlikely to be very useful, though.
-                JITDUMP(" dest contains GC and/or SIMD fields and source constant is not 0.\n");
+                // Cannot initialize GC types with a non-zero constant. The
+                // former is completely bogus.
+                JITDUMP(" dest contains GC fields and source constant is not 0.\n");
                 return;
             }
         }
@@ -448,58 +445,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         LclVarDsc* fieldDesc = m_comp->lvaGetDesc(fieldLclNum);
         var_types  fieldType = fieldDesc->TypeGet();
 
-        GenTree* src;
-        switch (fieldType)
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-            case TYP_SHORT:
-            case TYP_USHORT:
-                // Promoted fields are expected to be "normalize on load". If that changes then
-                // we may need to adjust this code to widen the constant correctly.
-                assert(fieldDesc->lvNormalizeOnLoad());
-                FALLTHROUGH;
-            case TYP_INT:
-            {
-                int64_t mask = (int64_t(1) << (genTypeSize(fieldType) * 8)) - 1;
-                src          = m_comp->gtNewIconNode(static_cast<int32_t>(initPattern & mask));
-                break;
-            }
-            case TYP_LONG:
-                src = m_comp->gtNewLconNode(initPattern);
-                break;
-            case TYP_FLOAT:
-                float floatPattern;
-                memcpy(&floatPattern, &initPattern, sizeof(floatPattern));
-                src = m_comp->gtNewDconNode(floatPattern, TYP_FLOAT);
-                break;
-            case TYP_DOUBLE:
-                double doublePattern;
-                memcpy(&doublePattern, &initPattern, sizeof(doublePattern));
-                src = m_comp->gtNewDconNode(doublePattern);
-                break;
-            case TYP_REF:
-            case TYP_BYREF:
-#ifdef FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif // TARGET_XARCH
-#endif // FEATURE_SIMD
-            {
-                assert(initPattern == 0);
-                src = m_comp->gtNewZeroConNode(fieldType);
-                break;
-            }
-
-            default:
-                unreached();
-        }
-
+        GenTree* src   = m_comp->gtNewConWithPattern(fieldType, initPattern);
         GenTree* store = m_comp->gtNewTempAssign(fieldLclNum, src);
 
         if (m_comp->optLocalAssertionProp)
@@ -716,6 +662,9 @@ protected:
 
     bool m_dstDoFldAsg = false;
     bool m_srcDoFldAsg = false;
+
+private:
+    bool CanReuseAddressForDecomposedStore(GenTree* addr);
 };
 
 //------------------------------------------------------------------------
@@ -1224,7 +1173,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // and spill, unless we only end up using the address once.
             if (fieldCnt - dyingFieldCnt > 1)
             {
-                if (m_comp->gtClone(srcAddr))
+                if (CanReuseAddressForDecomposedStore(srcAddr))
                 {
                     // "srcAddr" is simple expression. No need to spill.
                     noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
@@ -1256,7 +1205,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // and spill, unless we only end up using the address once.
             if (m_srcVarDsc->lvFieldCnt > 1)
             {
-                if (m_comp->gtClone(dstAddr))
+                if (CanReuseAddressForDecomposedStore(dstAddr))
                 {
                     // "dstAddr" is simple expression. No need to spill
                     noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
@@ -1564,6 +1513,63 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+// specified address node for each decomposed store of a block copy.
+//
+// Arguments:
+//   addrNode - The address node
+//
+// Return Value:
+//   True if the caller can reuse the address by cloning.
+//
+bool MorphCopyBlockHelper::CanReuseAddressForDecomposedStore(GenTree* addrNode)
+{
+    if (addrNode->OperIsLocalRead())
+    {
+        GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+        unsigned             lclNum = lcl->GetLclNum();
+        LclVarDsc*           lclDsc = m_comp->lvaGetDesc(lclNum);
+        if (lclDsc->IsAddressExposed())
+        {
+            // Address could be pointing to itself
+            return false;
+        }
+
+        // The store can also directly write to the address. For example:
+        //
+        //  ▌  STORE_LCL_VAR struct<Program+ListElement, 16>(P) V00 loc0
+        //  ▌    long   V00.Program+ListElement:Next (offs=0x00) -> V03 tmp1
+        //  ▌    int    V00.Program+ListElement:Value (offs=0x08) -> V04 tmp2
+        //  └──▌  BLK       struct<Program+ListElement, 16>
+        //     └──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //
+        // If we reused the address we would produce
+        //
+        //  ▌  COMMA     void
+        //  ├──▌  STORE_LCL_VAR long   V03 tmp1
+        //  │  └──▌  IND       long
+        //  │     └──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //  └──▌  STORE_LCL_VAR int    V04 tmp2
+        //     └──▌  IND       int
+        //        └──▌  ADD       byref
+        //           ├──▌  LCL_VAR   long   V03 tmp1          (last use)
+        //           └──▌  CNS_INT   long   8
+        //
+        // which is also obviously incorrect.
+        //
+
+        if (m_dstLclNum == BAD_VAR_NUM)
+        {
+            return true;
+        }
+
+        return (lclNum != m_dstLclNum) && (!lclDsc->lvIsStructField || (lclDsc->lvParentLcl != m_dstLclNum));
+    }
+
+    return addrNode->IsInvariant();
 }
 
 //------------------------------------------------------------------------
