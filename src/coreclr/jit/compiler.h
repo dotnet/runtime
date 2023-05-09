@@ -3923,7 +3923,7 @@ protected:
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
                           unsigned                methodFlags,
-                          int                     memberRef,
+                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
@@ -3945,7 +3945,8 @@ protected:
     GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig);
+                                    CORINFO_SIG_INFO*     sig,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
@@ -4028,7 +4029,7 @@ public:
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
     void impAssignTempGen(unsigned         lclNum,
                           GenTree*         val,
-                          unsigned         curLevel   = CHECK_SPILL_NONE,
+                          unsigned         curLevel,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
