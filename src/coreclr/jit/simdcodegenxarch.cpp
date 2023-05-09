@@ -51,6 +51,7 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     {
         genEmitStoreLclTypeSimd12(treeNode, addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
         genUpdateLife(treeNode);
+        genUpdateLife(treeNode->Data());
         return;
     }
 
