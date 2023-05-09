@@ -121,7 +121,7 @@ namespace Microsoft.Interop
                         {
                             guid = new Guid(guidstr);
                         }
-                        // Diagnostic will be raised if guid is null
+                        // Catch any issues with the Guid string -- Diagnostic will be raised if guid is null
                         catch (FormatException) { }
                         catch (OverflowException) { }
                     }

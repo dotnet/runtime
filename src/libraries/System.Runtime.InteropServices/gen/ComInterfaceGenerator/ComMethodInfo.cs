@@ -14,7 +14,6 @@ namespace Microsoft.Interop
 {
     public sealed partial class ComInterfaceGenerator
     {
-
         /// <summary>
         /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
         /// </summary>
