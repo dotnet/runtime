@@ -1733,28 +1733,39 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        printf("generic X86 CPU");
-#elif defined(TARGET_AMD64)
         if (compiler->canUseEvexEncoding())
         {
-            printf("X64 CPU with AVX512");
+            printf("X86 with AVX512");
         }
         else if (compiler->canUseVexEncoding())
         {
-            printf("X64 CPU with AVX");
+            printf("X86 with AVX");
         }
         else
         {
-            printf("X64 CPU with SSE2");
+            printf("X86 with SSE2");
+        }
+#elif defined(TARGET_AMD64)
+        if (compiler->canUseEvexEncoding())
+        {
+            printf("X64 with AVX512");
+        }
+        else if (compiler->canUseVexEncoding())
+        {
+            printf("X64 with AVX");
+        }
+        else
+        {
+            printf("X64 with SSE2");
         }
 #elif defined(TARGET_ARM)
-        printf("generic ARM CPU");
+        printf("generic ARM");
 #elif defined(TARGET_ARM64)
-        printf("generic ARM64 CPU");
+        printf("generic ARM64");
 #elif defined(TARGET_LOONGARCH64)
-        printf("generic LOONGARCH64 CPU");
+        printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
-        printf("generic RISCV64 CPU");
+        printf("generic RISCV64");
 #else
         printf("unknown architecture");
 #endif
