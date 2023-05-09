@@ -554,6 +554,76 @@ namespace System.Buffers.Text
             }
         }
 
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, int sourceIndex)
+        {
+            const int BlockSize = 4;
+            Span<byte> buffer = stackalloc byte[BlockSize];
+
+            OperationStatus status = OperationStatus.Done;
+            int localDestIndex = destIndex;
+            bool hasPaddingBeenProcessed = false;
+            int localBytesWritten = 0;
+
+            while ((uint)sourceIndex < (uint)utf8.Length)
+            {
+                int bufferIdx = 0;
+
+                while (bufferIdx < BlockSize)
+                {
+                    if ((uint)sourceIndex >= (uint)utf8.Length) // TODO https://github.com/dotnet/runtime/issues/83349: move into the while condition once fixed
+                    {
+                        break;
+                    }
+
+                    if (!IsWhiteSpace(utf8[sourceIndex]))
+                    {
+                        buffer[bufferIdx] = utf8[sourceIndex];
+                        bufferIdx++;
+                    }
+
+                    sourceIndex++;
+                }
+
+                if (bufferIdx == 0)
+                {
+                    continue;
+                }
+
+                if (bufferIdx != 4)
+                {
+                    status = OperationStatus.InvalidData;
+                    break;
+                }
+
+                if (hasPaddingBeenProcessed)
+                {
+                    // Padding has already been processed, a new valid block cannot be processed.
+                    // Revert previous dest increment, since an invalid state followed.
+                    localDestIndex -= localBytesWritten;
+                    status = OperationStatus.InvalidData;
+                    break;
+                }
+
+                status = DecodeFromUtf8InPlaceCore(buffer, out localBytesWritten, out _);
+                localDestIndex += localBytesWritten;
+                hasPaddingBeenProcessed = localBytesWritten < 3;
+
+                if (status != OperationStatus.Done)
+                {
+                    break;
+                }
+
+                // Write result to source span in place.
+                for (int i = 0; i < localBytesWritten; i++)
+                {
+                    utf8[localDestIndex - localBytesWritten + i] = buffer[i];
+                }
+            }
+
+            destIndex = localDestIndex;
+            return status;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)

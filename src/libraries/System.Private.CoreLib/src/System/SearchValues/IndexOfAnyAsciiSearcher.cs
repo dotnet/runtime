@@ -1137,6 +1137,8 @@ namespace System.Buffers
         {
             // Replace with Vector128.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
                 Vector128<short> lowerMin = Vector128.Min(lower, Vector128.Create((ushort)255)).AsInt16();
@@ -1148,7 +1150,7 @@ namespace System.Buffers
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
-            [BypassReadyToRun]
+            [CompExactlyDependsOn(typeof(Avx2))]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
             {
@@ -1161,6 +1163,9 @@ namespace System.Buffers
         internal readonly struct Default : IOptimizations
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
             {
                 return
@@ -1169,7 +1174,7 @@ namespace System.Buffers
                     PackedSimd.ConvertNarrowingUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
             }
 
-            [BypassReadyToRun]
+            [CompExactlyDependsOn(typeof(Avx2))]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
             {
