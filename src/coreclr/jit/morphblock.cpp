@@ -1366,7 +1366,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 if (!m_dstUseLclFld)
                 {
                     GenTree* fldAddr = grabAddr(srcFieldOffset);
-                    dstFldStore = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
+                    dstFldStore      = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
                 }
                 else
                 {
