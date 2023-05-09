@@ -120,6 +120,10 @@ namespace Unity.CoreCLRHelpers;
                 return "object";
             case "MonoArray*":
                 return "Array";
+            case "MonoMethod*":
+                return "RuntimeMethodHandle";
+            case "MonoReflectionMethod*":
+                return "System.Reflection.MethodInfo";
         }
 
         return typeSymbol.ToString();
@@ -147,6 +151,8 @@ namespace Unity.CoreCLRHelpers;
             case "MonoClass*":
             case "MonoType*":
                 return $"{parameterSymbol.Name}.TypeHandleIntPtr()";
+            case "MonoMethod*":
+                return $"{parameterSymbol.Name}.MethodHandleIntPtr()";
         }
 
         return parameterSymbol.Name;
@@ -158,6 +164,7 @@ namespace Unity.CoreCLRHelpers;
         {
             case "MonoObject*":
             case "MonoArray*":
+            case "MonoReflectionMethod*":
                 return ".ToManagedRepresentation()";
             case "MonoClass*":
                 return ".TypeFromHandleIntPtr()";
@@ -172,6 +179,8 @@ namespace Unity.CoreCLRHelpers;
         {
             case "MonoArray*":
                 return "(Array)";
+            case "MonoReflectionMethod*":
+                return "(System.Reflection.MethodInfo)";
         }
 
         return string.Empty;

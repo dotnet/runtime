@@ -161,6 +161,14 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
 
+    [return: NativeCallbackType("MonoReflectionMethod*")]
+    public static IntPtr method_get_object(
+        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        IntPtr domain,
+        [NativeCallbackType("MonoMethod*")] IntPtr method,
+        [NativeCallbackType("MonoClass*")] IntPtr refclass) =>
+        MethodInfo.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr(), RuntimeTypeHandle.FromIntPtr(refclass)).ToNativeRepresentation();
+
     static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.

@@ -5,10 +5,16 @@ namespace UnityEmbedHost.Tests;
 
 class Mammal : Animal, IMammal
 {
+    public void BreathAir()
+    {
+    }
 }
 
 class Cat : Mammal, ICat
 {
+    public void Meow()
+    {
+    }
 }
 
 class CatOnlyInterface : ICat
