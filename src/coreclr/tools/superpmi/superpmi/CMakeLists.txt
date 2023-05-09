@@ -12,6 +12,11 @@ if(CLR_CMAKE_HOST_WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_HOST_UNIX)
+    # Make sure a public symbol is created for Instrumentor_GetInsCount
+    add_linker_flag(-Wl,--export-dynamic)
+endif(CLR_CMAKE_HOST_UNIX)
+
 include_directories(.)
 include_directories(../superpmi-shared)
 
