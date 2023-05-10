@@ -277,15 +277,11 @@ void HWIntrinsicInfo::lookupImmBounds(
 //    intrinsic       -- intrinsic ID
 //    simdType        -- Vector type
 //    simdBaseJitType -- base JIT type of the Vector64/128<T>
-//    mustExpand      -- true if the intrinsict must be expanded; otherwise false
 //
 // Return Value:
 //     return the IR of semantic alternative on non-const imm-arg
 //
-GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic,
-                                       var_types      simdType,
-                                       CorInfoType    simdBaseJitType,
-                                       bool           mustExpand)
+GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
 {
     return nullptr;
 }

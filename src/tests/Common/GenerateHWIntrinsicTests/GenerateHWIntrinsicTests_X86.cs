@@ -2321,7 +2321,8 @@ bool isImmTemplate(string name)
            name == "ExtractScalarTest.template" || name == "InsertVector128Test.template" ||
            name == "ExtractVector128Test.template" || name == "InsertLoadTest.template" ||
            name == "ExtractStoreTest.template" || name == "ImmBinOpTest.template" ||
-           name == "AesImmOpTest.template" || name == "PclmulqdqOpTest.template";
+           name == "AesImmOpTest.template" || name == "PclmulqdqOpTest.template" ||
+           name == "ImmTernOpTest.template";
 }
 
 string projectName = args[0];

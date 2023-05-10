@@ -186,6 +186,10 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SpecialSideEffect_Other = 0x400000,
 
     HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
+
+    // MaybeNoJmpTable IMM
+    // the imm intrinsic may not need jumptable fallback when it gets non-const argument
+    HW_Flag_MaybeNoJmpTableIMM = 0x800000,
 };
 
 #if defined(TARGET_XARCH)
@@ -972,6 +976,12 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
+
+    static bool MaybeNoJmpTableImm(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeNoJmpTableIMM) != 0;
     }
 };
 

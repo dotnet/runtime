@@ -1160,7 +1160,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!immOp2->IsCnsIntOrI())
         {
             assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
-            return impNonConstFallback(intrinsic, retType, simdBaseJitType, mustExpand);
+            return impNonConstFallback(intrinsic, retType, simdBaseJitType);
         }
 
         unsigned int otherSimdSize    = 0;
@@ -1269,8 +1269,28 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
             {
-                return impNonConstFallback(intrinsic, retType, simdBaseJitType, mustExpand);
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
+#if defined(TARGET_XARCH)
+            else if (HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic))
+            {
+#if defined(TARGET_X86)
+                var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
+                if (varTypeIsLong(simdBaseType))
+                {
+                    if (!mustExpand)
+                    {
+                        return nullptr;
+                    }
+                }
+                else
+#endif // TARGET_XARCH
+                {
+                    return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+                }
+            }
+#endif // TARGET_XARCH
             else if (!mustExpand)
             {
                 // When the imm-argument is not a constant and we are not being forced to expand, we need to
