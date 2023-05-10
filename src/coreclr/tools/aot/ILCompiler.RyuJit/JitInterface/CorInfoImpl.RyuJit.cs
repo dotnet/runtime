@@ -1648,20 +1648,6 @@ namespace Internal.JitInterface
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
 
-            if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_VERIFICATION) != 0)
-            {
-                if (pResult->hMethod != pResolvedToken.hMethod)
-                {
-                    pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
-                }
-                else
-                {
-                    pResult->verMethodFlags = pResult->methodFlags;
-                    pResult->verSig = pResult->sig;
-                }
-            }
-
             pResult->_wrapperDelegateInvoke = 0;
         }
 

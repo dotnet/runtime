@@ -26,6 +26,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
   perfForkToUse: {} # url, branch
+  crossBuild: false
 
 ### Perf job
 
@@ -113,6 +114,7 @@ jobs:
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
+    - _crossBuildPropertyArg: ''
 
     - name: _compareArg
       ${{ if eq(parameters.compare, 'true') }}:
@@ -126,6 +128,9 @@ jobs:
 
     - name: extraSetupParametersSuffix
       value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
+
+    - ${{ if eq(parameters.crossBuild, true) }}:
+      - _crossBuildPropertyArg: '-cross'
 
     frameworks:
       - ${{ parameters.framework }}
@@ -276,7 +281,7 @@ jobs:
           checkDownloadedFiles: true
 
     # Create Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg) $(_crossBuildPropertyArg)
       displayName: Create Core_Root
       condition: and(succeeded(), ne(variables.runtimeFlavorName, 'Mono'), ne('${{ parameters.runtimeType }}', 'wasm'))
 

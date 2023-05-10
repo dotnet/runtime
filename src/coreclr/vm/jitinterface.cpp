@@ -5280,32 +5280,29 @@ void CEEInfo::getCallInfo(
         {
             BYTE * indcell = NULL;
 
-            if (!(flags & CORINFO_CALLINFO_KINDONLY))
+            // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
+            // VirtualCallStubManager from where the stub will be used.
+            // For normal methods there is no difference.
+            LoaderAllocator *pLoaderAllocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+            VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+
+            PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
+
+            // Now we want to indirect through a cell so that updates can take place atomically.
+            if (m_pMethodBeingCompiled->IsLCGMethod())
             {
-                // We shouldn't be using GetLoaderAllocator here because for LCG, we need to get the
-                // VirtualCallStubManager from where the stub will be used.
-                // For normal methods there is no difference.
-                LoaderAllocator *pLoaderAllocator = m_pMethodBeingCompiled->GetLoaderAllocator();
-                VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
+                // LCG methods should use recycled indcells to prevent leaks.
+                indcell = pMgr->GenerateStubIndirection(addr, TRUE);
 
-                PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
-
-                // Now we want to indirect through a cell so that updates can take place atomically.
-                if (m_pMethodBeingCompiled->IsLCGMethod())
-                {
-                    // LCG methods should use recycled indcells to prevent leaks.
-                    indcell = pMgr->GenerateStubIndirection(addr, TRUE);
-
-                    // Add it to the per DM list so that we can recycle them when the resolver is finalized
-                    LCGMethodResolver *pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
-                    pResolver->AddToUsedIndCellList(indcell);
-                }
-                else
-                {
-                    // Normal methods should avoid recycled cells to preserve the locality of all indcells
-                    // used by one method.
-                    indcell = pMgr->GenerateStubIndirection(addr, FALSE);
-                }
+                // Add it to the per DM list so that we can recycle them when the resolver is finalized
+                LCGMethodResolver *pResolver = m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetLCGMethodResolver();
+                pResolver->AddToUsedIndCellList(indcell);
+            }
+            else
+            {
+                // Normal methods should avoid recycled cells to preserve the locality of all indcells
+                // used by one method.
+                indcell = pMgr->GenerateStubIndirection(addr, FALSE);
             }
 
             // We use an indirect call
@@ -5521,20 +5518,6 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    if (flags & CORINFO_CALLINFO_VERIFICATION)
-    {
-        if (pResult->hMethod != pResolvedToken->hMethod)
-        {
-            pResult->verMethodFlags = getMethodAttribsInternal(pResolvedToken->hMethod);
-            getMethodSigInternal(pResolvedToken->hMethod, &pResult->verSig, pResolvedToken->hClass);
-        }
-        else
-        {
-            pResult->verMethodFlags = pResult->methodFlags;
-            pResult->verSig = pResult->sig;
-        }
-    }
-
     pResult->wrapperDelegateInvoke = FALSE;
 
     if (m_pMethodBeingCompiled->IsDynamicMethod())
@@ -5595,49 +5578,6 @@ bool CEEInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
     EE_TO_JIT_TRANSITION();
     return ret;
 }
-void CEEInfo::ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    _ASSERTE(throwHelper->args[0].argType == CORINFO_HELPER_ARG_TYPE_Method);
-    MethodDesc *pCallerMD = GetMethod(throwHelper->args[0].methodHandle);
-
-    AccessCheckContext accessContext(pCallerMD);
-
-    switch (throwHelper->helperNum)
-    {
-    case CORINFO_HELP_METHOD_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Method);
-            ThrowMethodAccessException(&accessContext, GetMethod(throwHelper->args[1].methodHandle));
-        }
-        break;
-    case CORINFO_HELP_FIELD_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Field);
-            ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(throwHelper->args[1].fieldHandle));
-        }
-        break;
-    case CORINFO_HELP_CLASS_ACCESS_EXCEPTION:
-        {
-            _ASSERTE(throwHelper->args[1].argType == CORINFO_HELPER_ARG_TYPE_Class);
-            TypeHandle typeHnd(throwHelper->args[1].classHandle);
-            ThrowTypeAccessException(&accessContext, typeHnd.GetMethodTable());
-        }
-        break;
-
-    default:
-        _ASSERTE(!"Unknown access exception type");
-    }
-    EE_TO_JIT_TRANSITION();
-}
-
 
 bool CEEInfo::isRIDClassDomainID(CORINFO_CLASS_HANDLE cls)
 {
@@ -10284,70 +10224,6 @@ int32_t * CEEInfo::getAddrOfCaptureThreadGlobal(void **ppIndirection)
 }
 
 
-
-HRESULT CEEInfo::GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    //This function is called from the JIT64 exception filter during PEVerify.  Because it is a filter, it
-    //can be "called" from a NOTHROW region in the case of StackOverflow.  Security::MapToHR throws
-    //internally, but it catches all exceptions.  Therefore, none of the children can cause an exception to
-    //percolate out of this function (except for Stack Overflow).  Obviously I can't explain most of this to
-    //the Contracts system, and I can't add this CONTRACT_VIOLATION to the filter in Jit64.
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    JIT_TO_EE_TRANSITION();
-
-    GCX_COOP();
-
-    OBJECTREF throwable = GetThread()->LastThrownObject();
-    hr = GetExceptionHResult(throwable);
-
-    EE_TO_JIT_TRANSITION();
-
-    return hr;
-}
-
-
-uint32_t CEEInfo::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    uint32_t result = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    GCX_COOP();
-
-    OBJECTREF throwable = GetThread()->LastThrownObject();
-
-    if (throwable != NULL)
-    {
-        EX_TRY
-        {
-            result = GetExceptionMessage(throwable, (LPWSTR)buffer, bufferLength);
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 // This method is called from CEEInfo::FilterException which
 // is run as part of the SEH filter clause for the JIT.
 // It is fatal to throw an exception while running a SEH filter clause
@@ -10431,12 +10307,6 @@ LONG EEFilterException(struct _EXCEPTION_POINTERS *pExceptionPointers, void *unu
     return result;
 }
 
-int CEEInfo::FilterException(struct _EXCEPTION_POINTERS *pExceptionPointers)
-{
-    WRAPPER_NO_CONTRACT;
-    return EEFilterException(pExceptionPointers, nullptr);
-}
-
 // This code is called if FilterException chose to handle the exception.
 void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 {
@@ -10513,26 +10383,6 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
-
-void ThrowExceptionForJit(HRESULT res);
-
-void CEEInfo::ThrowExceptionForJitResult(
-        HRESULT result)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (!SUCCEEDED(result))
-        ThrowExceptionForJit(result);
-
-    EE_TO_JIT_TRANSITION();
-}
-
 
 CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
                                                  void **ppIndirection)
@@ -10659,7 +10509,7 @@ static LONG RunWithErrorTrapFilter(struct _EXCEPTION_POINTERS* exceptionPointers
 
     auto* param = reinterpret_cast<RunWithErrorTrapFilterParam*>(theParam);
     param->m_exceptionPointers = *exceptionPointers;
-    return param->m_corInfo->FilterException(exceptionPointers);
+    return EEFilterException(exceptionPointers, nullptr);
 }
 
 #endif // !defined(TARGET_UNIX)
@@ -12894,8 +12744,6 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
         }
     }
 
-    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
-
     if (ftn->IsILStub() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
     {
         // no debug info available for IL stubs
@@ -13061,17 +12909,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
 
     flags = GetCompileFlags(ftn, flags, &methodInfo);
-
-#ifdef _DEBUG
-    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
-    {
-        SString methodString;
-        if (LoggingOn(LF_VERIFIER, LL_INFO100))
-            TypeString::AppendMethodDebug(methodString, ftn);
-
-        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
-    }
-#endif //_DEBUG
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     BOOL fForceJumpStubOverflow = FALSE;
