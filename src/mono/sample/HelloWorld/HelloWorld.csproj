@@ -8,7 +8,7 @@
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
   <UsingTask TaskName="MarshalingPInvokeScanner"
-           AssemblyFile="/Users/jandupej/Dev/runtime/artifacts/bin/MarshalingPInvokeScanner/Debug/net8.0/publish/MarshalingPInvokeScanner.dll"  />
+           AssemblyFile="$(MarshalingPInvokeScannerPath)"  />
 
   <Target Name="ScanAssembliesForMarshaling" AfterTargets="CopyFilesToPublishDirectory">
     <ItemGroup>
