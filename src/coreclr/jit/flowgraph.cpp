@@ -3040,8 +3040,8 @@ PhaseStatus Compiler::fgSimpleLowering()
                     }
 
                     // Change to a GT_IND.
-                    tree->ChangeOperUnchecked(GT_IND);
-                    tree->AsOp()->gtOp1 = addr;
+                    tree->ChangeOper(GT_IND);
+                    tree->AsIndir()->Addr() = addr;
 
                     JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
                     DISPRANGE(LIR::ReadOnlyRange(arr, tree));

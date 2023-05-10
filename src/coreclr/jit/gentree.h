@@ -1907,12 +1907,8 @@ public:
         PRESERVE_VN // Preserve value number
     };
 
-    void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN); // set gtOper
-    void SetOperResetFlags(genTreeOps oper);                              // set gtOper and reset flags
-
-    // set gtOper and only keep GTF_COMMON_MASK flags
+    void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
-    void ChangeOperUnchecked(genTreeOps oper);
     void SetOperRaw(genTreeOps oper);
 
     void ChangeType(var_types newType)

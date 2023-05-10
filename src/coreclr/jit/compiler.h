@@ -66,10 +66,6 @@ inline var_types genActualType(T value);
 #include "simd.h"
 #include "simdashwintrinsic.h"
 
-// This is only used locally in the JIT to indicate that
-// a verification block should be inserted
-#define SEH_VERIFICATION_EXCEPTION 0xe0564552 // VER
-
 /*****************************************************************************
  *                  Forward declarations
  */
@@ -3010,6 +3006,8 @@ public:
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
+
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -9254,8 +9252,6 @@ public:
 
         codeOptimize compCodeOpt; // what type of code optimizations
 
-        bool compUseCMOV;
-
 // optimize maximally and/or favor speed over size?
 
 #define DEFAULT_MIN_OPTS_CODE_SIZE 60000
@@ -9680,7 +9676,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
@@ -9736,7 +9731,8 @@ public:
 // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNames[STRESS_COUNT + 1];
+    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
+    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
     BYTE                 compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
@@ -9744,6 +9740,7 @@ public:
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
     bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
+    static unsigned compStressAreaHash(compStressArea area);
 
 #ifdef DEBUG
 
@@ -9901,22 +9898,6 @@ public:
         IL_OFFSET*                   compStmtOffsets; // sorted
         unsigned                     compStmtOffsetsCount;
         ICorDebugInfo::BoundaryTypes compStmtOffsetsImplicit;
-
-#define CPU_X86 0x0100 // The generic X86 CPU
-#define CPU_X86_PENTIUM_4 0x0110
-
-#define CPU_X64 0x0200       // The generic x64 CPU
-#define CPU_AMD_X64 0x0210   // AMD x64 CPU
-#define CPU_INTEL_X64 0x0240 // Intel x64 CPU
-
-#define CPU_ARM 0x0300   // The generic ARM CPU
-#define CPU_ARM64 0x0400 // The generic ARM64 CPU
-
-#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
-
-#define CPU_RISCV64 0x1000 // The generic RISCV64 CPU
-
-        unsigned genCPU; // What CPU are we running on
 
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
@@ -10281,7 +10262,6 @@ public:
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
-    bool compIsForImportOnly();
     bool compIsForInlining() const;
     bool compDonotInline();
 
@@ -10475,10 +10455,6 @@ public:
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     bool verIsByRefLike(const typeInfo& ti);
 
-    void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                                       DEBUGARG(unsigned line));
-    void verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                             DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
