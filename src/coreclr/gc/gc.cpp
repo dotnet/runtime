@@ -24442,6 +24442,8 @@ void gc_heap::check_decommissioned_heap()
 // to detect inadvertent usage
 void gc_heap::decommission_heap()
 {
+    // avoid race condition where a thread decides to wait on the gc done event just as
+    // another thread decides to decommission the heap
     set_gc_done();
 
 //  keep the mark stack for the time being
