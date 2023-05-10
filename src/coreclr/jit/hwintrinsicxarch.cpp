@@ -3108,6 +3108,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                             std::swap(val2, val3); // 1, 3, 2
 
+                            unusedVal1 = true;
                             unusedVal2 = true;
                             break;
                         }
@@ -3320,12 +3321,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                             if (info.oper2 == TernaryLogicOperKind::And)
                             {
-                                assert((control == static_cast<uint8_t>(~0xF0 & 0xCC)) || // ~A & B
-                                       (control == static_cast<uint8_t>(~0xF0 & 0xAA)) || // ~A & C
-                                       (control == static_cast<uint8_t>(~0xCC & 0xF0)) || // ~B & A
-                                       (control == static_cast<uint8_t>(~0xCC & 0xAA)) || // ~B & C
-                                       (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
-                                       (control == static_cast<uint8_t>(~0xAA & 0xCC)));  // ~C & B
+                                if ((control == static_cast<uint8_t>(~0xCC & 0xF0)) || // ~B & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
+                                {
+                                    // We're normalizing to ~B & C, so we need another swap
+                                    std::swap(*val2, *val3);
+                                }
+                                else
+                                {
+                                    assert((control == static_cast<uint8_t>(~0xF0 & 0xCC)) || // ~A & B
+                                           (control == static_cast<uint8_t>(~0xF0 & 0xAA)) || // ~A & C
+                                           (control == static_cast<uint8_t>(~0xCC & 0xAA)));  // ~B & C
+                                }
 
                                 assert(unusedVal1);
                                 assert(!unusedVal2);
@@ -3340,12 +3348,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             {
                                 assert(info.oper2 == TernaryLogicOperKind::Or);
 
-                                assert((control == static_cast<uint8_t>(~0xF0 | 0xCC)) || // ~A | B
-                                       (control == static_cast<uint8_t>(~0xF0 | 0xAA)) || // ~A | C
-                                       (control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
-                                       (control == static_cast<uint8_t>(~0xCC | 0xAA)) || // ~B | C
-                                       (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
-                                       (control == static_cast<uint8_t>(~0xAA | 0xCC)));  // ~C | B
+                                if ((control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
+                                {
+                                    // We're normalizing to ~B & C, so we need another swap
+                                    std::swap(*val2, *val3);
+                                }
+                                else
+                                {
+                                    assert((control == static_cast<uint8_t>(~0xF0 | 0xCC)) || // ~A | B
+                                           (control == static_cast<uint8_t>(~0xF0 | 0xAA)) || // ~A | C
+                                           (control == static_cast<uint8_t>(~0xCC | 0xAA)));  // ~B | C
+                                }
 
                                 assert(unusedVal1);
                                 assert(!unusedVal2);
@@ -3355,6 +3370,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 {
                                     *val1 = gtNewZeroConNode(retType);
                                 }
+
+                                op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xCC | 0xAA);
                             }
                             break;
                         }
