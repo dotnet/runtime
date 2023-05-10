@@ -2978,11 +2978,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1     = op1->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
                     retNode = op1;
                 }
-                else if (op1->OperIs(GT_RET_EXPR))
+                else if (op1->OperIs(GT_CALL, GT_RET_EXPR))
                 {
                     // Skip roundtrip "handle -> RuntimeType -> handle" for
                     // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
-                    GenTreeCall* call = op1->AsRetExpr()->gtInlineCandidate;
+                    GenTreeCall* call = op1->IsCall() ? op1->AsCall() : op1->AsRetExpr()->gtInlineCandidate;
                     if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
                     {
                         // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
@@ -2990,8 +2990,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         if (arg->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(arg->AsCall()))
                         {
                             impPopStack();
-                            // Bash the RET_EXPR's call to no-op since it's unused now
-                            op1->AsRetExpr()->gtInlineCandidate->gtBashToNOP();
+                            if (op1->OperIs(GT_RET_EXPR))
+                            {
+                                // Bash the RET_EXPR's call to no-op since it's unused now
+                                op1->AsRetExpr()->gtInlineCandidate->gtBashToNOP();
+                            }
                             // Skip roundtrip and return the type handle directly
                             retNode = arg->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
                         }
