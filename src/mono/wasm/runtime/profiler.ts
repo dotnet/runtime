@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
 import { AOTProfilerOptions, BrowserProfilerOptions } from "./types";
 import cwraps from "./cwraps";
 import { MonoMethod } from "./types";

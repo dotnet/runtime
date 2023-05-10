@@ -344,12 +344,6 @@ PAL_Initialize(
     char * const argv[]);
 
 PALIMPORT
-void
-PALAPI
-PAL_InitializeWithFlags(
-    DWORD flags);
-
-PALIMPORT
 int
 PALAPI
 PAL_InitializeDLL();
@@ -401,6 +395,17 @@ VOID
 PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
+
+/// <summary>
+/// Used by the single-file and native AOT hosts to connect the linked in version of createdump
+/// </summary>
+typedef int (*PCREATEDUMP_CALLBACK)(const int argc, const char* argv[]);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback); 
 
 // Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
 enum
@@ -1314,6 +1319,10 @@ QueueUserAPC(
          IN PAPCFUNC pfnAPC,
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
+
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
@@ -4226,10 +4235,6 @@ inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
 inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
         {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
-#endif
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
 #endif
 
 #if !__has_builtin(_rotl)

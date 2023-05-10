@@ -868,19 +868,19 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
             ${ARCH_SOURCES_DIR}/singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
-elseif(clr_cmake_target_arch_loongarch64)
-    set(vm_sources_dac_and_wks_arch
-        ${arch_sources_dir}/stubs.cpp
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/stubs.cpp
         exceptionhandling.cpp
     )
 
-    set(vm_headers_dac_and_wks_arch
-        ${arch_sources_dir}/virtualcallstubcpu.hpp
+    set(VM_HEADERS_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/virtualcallstubcpu.hpp
         exceptionhandling.h
     )
 
-    set(vm_sources_wks_arch
-        ${arch_sources_dir}/profiler.cpp
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
     )
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)

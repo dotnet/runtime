@@ -1161,6 +1161,7 @@ Dictionary::PopulateEntry(
                 }
                 IfFailThrow(ptr.SkipExactlyOne());
 
+                // Computed by MethodTable::GetIndexForFieldDesc().
                 uint32_t fieldIndex;
                 IfFailThrow(ptr.GetData(&fieldIndex));
 

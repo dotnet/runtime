@@ -2639,6 +2639,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	table_size = amodule->class_name_table [0];
 	table = amodule->class_name_table + 1;
 
+	if (table_size == 0)
+		return FALSE;
+
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
 	else {
@@ -4547,6 +4550,7 @@ mono_aot_can_dedup (MonoMethod *method)
 #else
 		return FALSE;
 #endif
+		break;
 	case MONO_WRAPPER_OTHER: {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 

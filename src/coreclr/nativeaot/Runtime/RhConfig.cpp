@@ -24,9 +24,9 @@
 
 #include <string.h>
 
-bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint32_t* pValue, bool decimal)
+bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bool decimal)
 {
-    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // 8 hex digits plus a nul terminator.
+    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
     const uint32_t cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
 
     uint32_t cchResult = 0;
@@ -47,7 +47,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint32_t* pValue, bo
     if ((cchResult == 0) || (cchResult >= cchBuffer))
         return false; // not found
 
-    uint32_t uiResult = 0;
+    uint64_t uiResult = 0;
 
     for (uint32_t i = 0; i < cchResult; i++)
     {

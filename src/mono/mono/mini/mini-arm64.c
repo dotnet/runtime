@@ -35,6 +35,8 @@
 #define EXPAND(x) x
 #define PARENTHESIZE(...) (__VA_ARGS__)
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
+#define OPFMT_DS dreg, sreg1
+#define OPFMT_TDS _t, dreg, sreg1
 #define OPFMT_WDSS _w, dreg, sreg1, sreg2
 #define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
@@ -404,6 +406,65 @@ mono_arch_register_lowlevel_calls (void)
 void
 mono_arch_finish_init (void)
 {
+}
+
+static gboolean
+is_type_float_macro (MonoTypeEnum type)
+{
+	return (type == MONO_TYPE_R4 || type == MONO_TYPE_R8); 
+}
+
+static gboolean
+is_type_unsigned_macro (MonoTypeEnum type)
+{
+	return (type == MONO_TYPE_U1 || type == MONO_TYPE_U2 || type == MONO_TYPE_U4 || type == MONO_TYPE_U8);
+}
+
+static int
+get_vector_size_macro (MonoInst *ins)
+{
+	g_assert (ins->klass);
+	int size = mono_class_value_size (ins->klass, NULL);
+	switch (size) {
+	case 16:
+		return VREG_FULL;
+	case 8:
+		return VREG_LOW;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static int
+get_type_size_macro (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return TYPE_I8;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return TYPE_I16;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		return TYPE_I32;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return TYPE_I64;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return TYPE_I64;
+#else
+		return TYPE_I32;
+#endif
+	case MONO_TYPE_R4:
+		return TYPE_F32;
+	case MONO_TYPE_R8:
+		return TYPE_F64;
+	default:
+		g_assert_not_reached ();
+	}
 }
 
 /* The maximum length is 2 instructions */
@@ -925,6 +986,69 @@ mono_arm_emit_ldrx (guint8 *code, int rt, int rn, int imm)
 }
 
 static guint8*
+emit_xextract_i8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	/* code: */
+	arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 0);
+	arm_b (ret, code + 16 /*done*/);
+	/* upper: */
+	arm_neon_umov (ret, TYPE_I64, dreg, sreg1, 1);
+	/* done: */
+	return ret;
+}
+
+static guint8*
+emit_xextract_r8 (guint8* code, int dreg, int sreg1, int sreg2)
+{
+	guint8* ret = code;
+	
+	if (dreg == sreg1) {
+		/* code: */
+		arm_cbzw (ret, sreg2, code + 8 /*done*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	} else {
+		/* code: */
+		arm_cbnzw (ret, sreg2, code + 12 /*upper*/);
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 0);
+		arm_b (ret, code + 16 /*done*/);
+		/* upper: */
+		arm_neon_fdup_e (ret, VREG_FULL, TYPE_F64, dreg, sreg1, 1);
+		/* done: */
+	}
+	return ret;
+}
+
+static guint8*
+emit_xinsert_i8_r8 (guint8* code, MonoTypeEnum type, int dreg, int src_reg, int repl_reg, int index_reg)
+{
+	guint8* ret = code;
+	gboolean is_float = is_type_float_macro (type);
+	int extra_code = 0;
+
+	if (dreg != src_reg) {
+		arm_neon_mov (ret, dreg, src_reg);
+		extra_code = 4;
+	}
+
+	arm_cbnzw (ret, index_reg, code + 12 + extra_code);
+
+	if (is_float) {
+		arm_neon_ins_e (ret, TYPE_I64, dreg, repl_reg, 0, 0);
+		arm_b (ret, code + 16 + extra_code);
+		arm_neon_ins_e (ret, TYPE_I64, dreg, repl_reg, 1, 0);
+	} else {
+		arm_neon_ins_g (ret, TYPE_I64, dreg, repl_reg, 0);
+		arm_b (ret, code + 16 + extra_code);
+		arm_neon_ins_g (ret, TYPE_I64, dreg, repl_reg, 1);
+	}
+
+	return ret; // max. 5 instructions generated = 20 Bytes
+}
+
+static guint8*
 emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	/*
@@ -1064,7 +1188,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static gpointer
-create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
+create_thunk (MonoCompile *cfg, guchar *code, const guchar *target, int relocation)
 {
 	MonoJitInfo *ji;
 	MonoThunkJitInfo *info;
@@ -1136,7 +1260,7 @@ create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 
 		if (!target_thunk) {
 			jit_mm_unlock (jit_mm);
-			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
+			g_print ("thunk failed %p->%p, thunk space=%d method %s, relocation %d", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), relocation);
 			g_assert_not_reached ();
 		}
 
@@ -1159,7 +1283,7 @@ arm_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, code, target);
+			thunk = create_thunk (cfg, code, target, relocation);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_b (code, thunk);
 		}
@@ -1193,7 +1317,7 @@ arm_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, code, target);
+			thunk = create_thunk (cfg, code, target, relocation);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_bl (code, thunk);
 		}
@@ -3458,72 +3582,13 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 	return code;
 }
 
-static gboolean
-is_type_float_macro (MonoTypeEnum type)
-{
-	return (type == MONO_TYPE_R4 || type == MONO_TYPE_R8); 
-}
-
-static gboolean
-is_type_unsigned_macro (MonoTypeEnum type)
-{
-	return (type == MONO_TYPE_U1 || type == MONO_TYPE_U2 || type == MONO_TYPE_U4 || type == MONO_TYPE_U8);
-}
-
-static int
-get_vector_size_macro (MonoInst *ins)
-{
-	g_assert (ins->klass);
-	int size = mono_class_value_size (ins->klass, NULL);
-	switch (size) {
-	case 16:
-		return VREG_FULL;
-	case 8:
-		return VREG_LOW;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
-static int
-get_type_size_macro (MonoTypeEnum type)
-{
-	switch (type) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return TYPE_I8;
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-		return TYPE_I16;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return TYPE_I32;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return TYPE_I64;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#if TARGET_SIZEOF_VOID_P == 8
-		return TYPE_I64;
-#else
-		return TYPE_I32;
-#endif
-	case MONO_TYPE_R4:
-		return TYPE_F32;
-	case MONO_TYPE_R8:
-		return TYPE_F64;
-	default:
-		g_assert_not_reached ();
-	}
-}
-
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins;
 	MonoCallInst *call;
 	guint8 *code = cfg->native_code + cfg->code_len;
-	int start_offset, max_len, dreg, sreg1, sreg2;
+	int start_offset, max_len, dreg, sreg1, sreg2, sreg3;
 	target_mgreg_t imm;
 
 	if (cfg->verbose_level > 2)
@@ -3550,6 +3615,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		dreg = ins->dreg;
 		sreg1 = ins->sreg1;
 		sreg2 = ins->sreg2;
+		sreg3 = ins->sreg3;
 		imm = ins->inst_imm;
 
 		if (opcode_simd_status [ins->opcode - OP_START] == OPCODE_SIMD)
@@ -3757,6 +3823,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		case OP_XOP_OVR_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_TBL1:
+				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
@@ -3774,7 +3852,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
 		case OP_XMOVE:
-			arm_neon_mov (code, dreg, sreg1);
+			if(dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
 			break;
 		case OP_XCONST: {
 			if (cfg->compile_aot && cfg->code_exec_only) {
@@ -3826,12 +3905,43 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_fdup_e (code, VREG_FULL, t, dreg, sreg1, ins->inst_c0);
 			}
 			break;
+		
+		case OP_XEXTRACT_I8:
+			code = emit_xextract_i8 (code, dreg, sreg1, sreg2);
+			break;
+		case OP_XEXTRACT_R8:
+			code = emit_xextract_r8 (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XEXTRACT_I1:
+		case OP_XEXTRACT_I2:
+		case OP_XEXTRACT_I4: 
+		case OP_XEXTRACT_R4: 
+			g_assert_not_reached ();
+			break;
+
+		case OP_XINSERT_I1:
+		case OP_XINSERT_I2:
+		case OP_XINSERT_I4:
+		case OP_XINSERT_R4:
+			g_assert_not_reached();
+			break;
+		case OP_XINSERT_I8:
+			code = emit_xinsert_i8_r8 (code, MONO_TYPE_I8, dreg, sreg1, sreg2, sreg3);
+			break;
+		case OP_XINSERT_R8:
+			code = emit_xinsert_i8_r8 (code, MONO_TYPE_R8, dreg, sreg1, sreg2, sreg3);
+			break;
+
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
 		case OP_INSERT_I4:
 		case OP_INSERT_I8: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_ins_g(code, t, dreg, sreg1, ins->inst_c0);
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			arm_neon_ins_g(code, t, dreg, sreg2, ins->inst_c0);
 			break;
 		}
 		case OP_INSERT_R4:
@@ -3845,9 +3955,45 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				t = SIZE_8;
 				break;
 			}
-			arm_neon_ins_e(code, t, dreg, sreg1, ins->inst_c0, 0);
+
+			if (dreg != sreg1) {
+				if (dreg != sreg2) {
+					arm_neon_mov (code, dreg, sreg1);
+					arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+				} else {
+					arm_neon_mov (code, NEON_TMP_REG, sreg1);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, ins->inst_c0, 0);
+					arm_neon_mov (code, dreg, NEON_TMP_REG);
+				}
+			} else {
+				g_assert (dreg != sreg2);
+				arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			}
 			break;
 		}
+		case OP_ARM64_XTN:
+			// The '-1' here and in XTN2 is to account for the arm_neon_xtn macro defining
+			// its type as the type of the destination. Here inst_c1 is the type of the 
+			// source data. Since XTN(2) steps down the type by one; e.g. I4 to I2, we 
+			// subtract unity.
+			arm_neon_xtn (code, get_type_size_macro (ins->inst_c1) - 1, dreg, sreg1);
+			break;
+
+		case OP_ARM64_XTN2: 
+			g_assert (dreg == sreg1);
+			arm_neon_xtn2 (code, get_type_size_macro (ins->inst_c1) - 1, dreg, sreg2);
+			break;
+
+		case OP_ARM64_FCVTN:
+			// Only double->float is supported here, while arm64 can also do float->half.
+			arm_neon_fcvtn (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_FCVTN2:
+			g_assert (dreg == sreg1);
+			arm_neon_fcvtn2 (code, dreg, sreg2); 
+			break;
+
 		case OP_ARM64_XADDV: {
 			switch (ins->inst_c0) {
 			case INTRINS_AARCH64_ADV_SIMD_FADDV:
@@ -3916,7 +4062,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		// Enable this when adding support for Narrow and enable support for Create at the same time
+		// This requires Vector64 SIMD support
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
@@ -5201,6 +5347,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (int i = 0; i < MONO_MAX_IREGS; i++)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
 					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
+			break;
+
+		/**** Arm.ArmBase ****/
+		case OP_LZCNT32:
+			arm_clzw (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT32:
+			arm_clsw (code, dreg, sreg1);
+			break;
+
+		case OP_LZCNT64:
+			arm_clzx (code, dreg, sreg1);
+			break;
+
+		case OP_LSCNT64:
+			arm_clsx (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_SMULH:
+			arm_smulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_ARM64_UMULH:
+			arm_umulh (code, dreg, sreg1, sreg2);
+			break;
+
+		case OP_XOP_I8_I8:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I64);
+			arm_rbitx (code, dreg, sreg1);
+			break;
+
+		case OP_XOP_I4_I4:
+			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
+			arm_rbitw (code, dreg, sreg1);
+			break;
+
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
 			break;
 
 		default:

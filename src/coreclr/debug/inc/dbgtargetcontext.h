@@ -487,7 +487,7 @@ static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equ
 #define DT_LOONGARCH64_MAX_BREAKPOINTS     8
 #define DT_LOONGARCH64_MAX_WATCHPOINTS     2
 
-typedef DECLSPEC_ALIGN(16) struct {
+typedef struct DECLSPEC_ALIGN(16) {
     //
     // Control flags.
     //
@@ -498,9 +498,9 @@ typedef DECLSPEC_ALIGN(16) struct {
     // Integer registers
     //
     DWORD64 R0;
-    DWORD64 RA;
-    DWORD64 TP;
-    DWORD64 SP;
+    DWORD64 Ra;
+    DWORD64 Tp;
+    DWORD64 Sp;
     DWORD64 A0;
     DWORD64 A1;
     DWORD64 A2;
@@ -519,7 +519,7 @@ typedef DECLSPEC_ALIGN(16) struct {
     DWORD64 T7;
     DWORD64 T8;
     DWORD64 X0;
-    DWORD64 FP;
+    DWORD64 Fp;
     DWORD64 S0;
     DWORD64 S1;
     DWORD64 S2;
@@ -529,12 +529,13 @@ typedef DECLSPEC_ALIGN(16) struct {
     DWORD64 S6;
     DWORD64 S7;
     DWORD64 S8;
-    DWORD64 PC;
+    DWORD64 Pc;
 
     //
     // Floating Point Registers
     //
     ULONGLONG F[32];
+    DWORD Fcsr;
 } DT_CONTEXT;
 
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
@@ -554,7 +555,7 @@ static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equ
 #define DT_RISCV64_MAX_BREAKPOINTS     8
 #define DT_RISCV64_MAX_WATCHPOINTS     2
 
-typedef DECLSPEC_ALIGN(16) struct {
+typedef struct DECLSPEC_ALIGN(16) {
     //
     // Control flags.
     //
@@ -564,15 +565,15 @@ typedef DECLSPEC_ALIGN(16) struct {
     //
     // Integer registers
     //
-    DWORD64 ZR;
-    DWORD64 RA;
-    DWORD64 SP;
-    DWORD64 GP;
-    DWORD64 TP;
+    DWORD64 R0;
+    DWORD64 Ra;
+    DWORD64 Sp;
+    DWORD64 Gp;
+    DWORD64 Tp;
     DWORD64 T0;
     DWORD64 T1;
     DWORD64 T2;
-    DWORD64 FP;
+    DWORD64 Fp;
     DWORD64 S1;
     DWORD64 A0;
     DWORD64 A1;
@@ -596,12 +597,13 @@ typedef DECLSPEC_ALIGN(16) struct {
     DWORD64 T4;
     DWORD64 T5;
     DWORD64 T6;
-    DWORD64 PC;
+    DWORD64 Pc;
 
     //
     // Floating Point Registers
     //
     ULONGLONG F[32];
+    DWORD Fcsr;
 } DT_CONTEXT;
 
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");

@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- 
+    <WasmSingleFileBundle>true</WasmSingleFileBundle>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    -->
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithWasmtime" />

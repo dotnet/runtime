@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CS8500 // takes address of managed type
+
 namespace System.Text.RegularExpressions
 {
     /// <summary>
@@ -126,7 +128,7 @@ namespace System.Text.RegularExpressions
         /// Given a Match, emits into the StringBuilder the evaluated
         /// substitution pattern.
         /// </summary>
-        public void ReplacementImpl(ref SegmentStringBuilder segments, Match match)
+        public void ReplacementImpl(ref StructListBuilder<ReadOnlyMemory<char>> segments, Match match)
         {
             foreach (int rule in _rules)
             {
@@ -157,7 +159,7 @@ namespace System.Text.RegularExpressions
         /// Given a Match, emits into the builder the evaluated
         /// Right-to-Left substitution pattern.
         /// </summary>
-        public void ReplacementImplRTL(ref SegmentStringBuilder segments, Match match)
+        public void ReplacementImplRTL(ref StructListBuilder<ReadOnlyMemory<char>> segments, Match match)
         {
             for (int i = _rules.Length - 1; i >= 0; i--)
             {
@@ -210,11 +212,99 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
-            var state = (replacement: this, segments: SegmentStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
+            // Handle the common case of a left-to-right pattern with no backreferences in the replacement pattern such that the replacement is just a string of text.
+            if (!regex.RightToLeft && !_hasBackreferences)
+            {
+                // With no backreferences, there should either be no rules (in the case of an empty replacement)
+                // or one rule (in the case of a single text string).
+                Debug.Assert(_rules.Length <= 1);
+                Debug.Assert(_rules.Length == 0 || (_rules[0] == 0 && _strings.Length == 1));
+
+                return ReplaceSimpleText(regex, input, _rules.Length != 0 ? _strings[0] : "", count, startat);
+            }
+            else
+            {
+                return ReplaceNonSimpleText(regex, input, count, startat);
+            }
+        }
+
+        private static unsafe string ReplaceSimpleText(Regex regex, string input, string replacement, int count, int startat)
+        {
+            // As the replacement text is the same for every match, for every match we can simply store the offset/count for the match.
+            // As we only split the input when there's a replacement, we know that there's then replacement text to be inserted between
+            // every offset/count pair in the list.
+
+            var state = (input, replacement, offsetAndCounts: new StructListBuilder<int>(), inputMemory: input.AsMemory(), prevat: 0, count);
+            string result = input;
+
+            regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (string input, string replacement, StructListBuilder<int> segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+            {
+                // Store the offset/count pair for the match.
+                state.segments.Add(state.prevat);
+                state.segments.Add(match.Index - state.prevat);
+
+                // Update the previous offset to be the end of the match.
+                state.prevat = match.Index + match.Length;
+
+                // Update the number of matches and return whether to continue.
+                return --state.count != 0;
+            }, RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
+
+            // If the list is empty, there were no matches and we can just return the input string.
+            // If the list isn't empty, we need to compose the result string.
+            if (state.offsetAndCounts.Count != 0)
+            {
+                // Add the final offset/count pair for the text after the last match.
+                state.offsetAndCounts.Add(state.prevat);
+                state.offsetAndCounts.Add(input.Length - state.prevat);
+
+                // There should now be an even number of items in the list, as each offset and count is its
+                // own entry and they're added in pairs.  And there should be at least four entries, one for
+                // the first segment and one for the last.
+                Debug.Assert(state.offsetAndCounts.Count % 2 == 0, $"{state.offsetAndCounts.Count}");
+                Debug.Assert(state.offsetAndCounts.Count >= 4, $"{state.offsetAndCounts.Count}");
+
+                Span<int> span = state.offsetAndCounts.AsSpan();
+
+                // Determine the final string length.
+                int length = ((span.Length / 2) - 1) * replacement.Length;
+                for (int i = 1; i < span.Length; i += 2) // the count of each pair is the second item
+                {
+                    length += span[i];
+                }
+
+                ReadOnlySpan<int> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
+                result = string.Create(length, ((IntPtr)(&tmpSpan), input, replacement), static (dest, state) =>
+                {
+                    Span<int> span = *(Span<int>*)state.Item1;
+                    for (int i = 0; i < span.Length; i += 2)
+                    {
+                        if (i != 0)
+                        {
+                            state.replacement.CopyTo(dest);
+                            dest = dest.Slice(state.replacement.Length);
+                        }
+
+                        (int offset, int count) = (span[i], span[i + 1]);
+                        state.input.AsSpan(offset, count).CopyTo(dest);
+                        dest = dest.Slice(count);
+                    }
+                });
+            }
+
+            state.offsetAndCounts.Dispose();
+
+            return result;
+        }
+
+        /// <summary>Handles cases other than left-to-right with a simple replacement string.</summary>
+        private string ReplaceNonSimpleText(Regex regex, string input, int count, int startat)
+        {
+            var state = (replacement: this, segments: new StructListBuilder<ReadOnlyMemory<char>>(), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
             {
-                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, StructListBuilder<ReadOnlyMemory<char>> segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
                     state.segments.Add(state.inputMemory.Slice(state.prevat, match.Index - state.prevat));
                     state.prevat = match.Index + match.Length;
@@ -227,13 +317,14 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
+                // Final segment of the input string after the last match.
                 state.segments.Add(state.inputMemory.Slice(state.prevat));
             }
             else
             {
                 state.prevat = input.Length;
 
-                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, SegmentStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+                regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (RegexReplacement thisRef, StructListBuilder<ReadOnlyMemory<char>> segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
                 {
                     state.segments.Add(state.inputMemory.Slice(match.Index + match.Length, state.prevat - match.Index - match.Length));
                     state.prevat = match.Index;
@@ -246,11 +337,15 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
+                // Final segment of the input string after the last match.
                 state.segments.Add(state.inputMemory.Slice(0, state.prevat));
+
+                // Reverse the segments as we're dealing with right-to-left handling.
                 state.segments.AsSpan().Reverse();
             }
 
-            return state.segments.ToString();
+            // Compose the final string from the built up segments.
+            return Regex.SegmentsToStringAndDispose(ref state.segments);
         }
     }
 }
