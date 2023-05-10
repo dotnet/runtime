@@ -165,8 +165,6 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
 
                 Path.Combine(paths.BundleDir, "dotnet.native.wasm"),
-                Path.Combine(paths.BundleDir, "dotnet.js"),
-                Path.Combine(paths.BundleDir, "dotnet.runtime.js"),
                 Path.Combine(paths.BundleDir, "dotnet.native.js"),
             };
 
@@ -185,6 +183,10 @@ namespace Wasm.Build.NativeRebuild.Tests
             var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
             foreach (var file in files)
                 dict[Path.GetFileName(file)] = (file, unchanged);
+
+            // those files do not change on re-link
+            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "dotnet.js"), true);
+            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "dotnet.js"), true);
 
             return dict;
         }
