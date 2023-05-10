@@ -210,7 +210,7 @@
 
   <!-- All breaking changes in extensions happened after 2.2 -->
   <PropertyGroup>
-    <RunExtensionsCompat Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) AND '$(DisableCheckExtensionsBackwardCompatibility)' != 'true'">true</RunExtensionsCompat>
+    <RunExtensionsCompat Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.')) AND '$(IsPackable)' == 'true' AND '$(DisableCheckExtensionsBackwardCompatibility)' != 'true'">true</RunExtensionsCompat>
     <ExtensionsCompatVersion Condition="'$(ExtensionsCompatVersion)' == ''">2.2.0</ExtensionsCompatVersion>
     <ExtensionsApiCompatValidatePackageSemaphoreFile>$(IntermediateOutputPath)$(MSBuildThisFileName).semaphore</ExtensionsApiCompatValidatePackageSemaphoreFile>    
 
@@ -219,12 +219,18 @@
     <ExtensionsCompatSuppressionOutputFile Condition="'$(ExtensionsCompatSuppressionOutputFile)' == '' and '$(ExtensionsCompatGenerateSuppressionFile)' == 'true'">$(ExtensionsCompatSuppressionFilePath)</ExtensionsCompatSuppressionOutputFile>
   </PropertyGroup>
   <ItemGroup Condition="'$(RunExtensionsCompat)' == 'true'">
-    <!-- NuGet insists on only a single PackageDownload per ID -->
-    <PackageDownload Update="$(PackageId)" Version="[$(ExtensionsCompatVersion)];[$(PackageValidationBaselineVersion)]" />
-
     <ExtensionsCompatSuppressionFile Include="@(ApiCompatSuppressionFile)" />
     <ExtensionsCompatSuppressionFile Condition="Exists('$(ExtensionsCompatSuppressionFilePath)')" Include="$(ExtensionsCompatSuppressionFilePath)" />
   </ItemGroup>
+
+  <Target Name="AddExtensionsCompatPackageDownload"
+          Condition="'$(RunExtensionsCompat)' == 'true'"
+          BeforeTargets="CollectPackageDownloads">
+    <ItemGroup>
+      <!-- NuGet insists on only a single PackageDownload per ID.  Update the one added by SDK. -->
+      <PackageDownload Condition="'%(Identity)' == '$(PackageId)'" Version="[$(ExtensionsCompatVersion)];[$(PackageValidationBaselineVersion)]" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="CheckExtensionsBackwardCompatibility"
           Condition="'$(RunExtensionsCompat)' == 'true'"
