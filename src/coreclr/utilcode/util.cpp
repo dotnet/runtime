@@ -2765,7 +2765,17 @@ namespace Reg
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
                 _ASSERTE(dn_wcslen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
-                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, (size_t)size));
+
+                // Compute the length of the string taking into account the there
+                // could be a double NULL we are trying to detect.
+                size_t n = 0;
+                while (n < (size_t)size && *wcs)
+                {
+                    n++;
+                    wcs++;
+                }
+
+                ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, n));
             }
             else
             {
