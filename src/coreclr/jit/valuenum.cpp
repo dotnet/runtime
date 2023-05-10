@@ -8832,7 +8832,7 @@ static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do hea
                                                        // These control-flow operations need no values.
                                                        GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
 
-/* static */ const ValueNumStore::VnfOpAttribsType ValueNumStore::s_vnfOpAttribs = ValueNumStore::VnfOpAttribsType();
+/* static */ constexpr ValueNumStore::VnfOpAttribsType ValueNumStore::s_vnfOpAttribs = ValueNumStore::VnfOpAttribsType();
 
 /* static */ constexpr unsigned ValueNumStore::VnfOpAttribsType::GetArity(unsigned oper)
 {
@@ -8863,24 +8863,27 @@ static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do hea
 /* static */ constexpr unsigned ValueNumStore::VnfOpAttribsType::GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
 {
     unsigned value = 0;
-    if (commute)
-    {
-        value |= VNFOA_Commutative;
-    }
-    if (knownNonNull)
-    {
-        value |= VNFOA_KnownNonNull;
-    }
-    if (sharedStatic)
-    {
-        value |= VNFOA_SharedStatic;
-    }
-    if (arity > 0)
-    {
-        value |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
-    }
+    value |= static_cast<unsigned>(commute) << VNFOA_CommutativeShift;
+    value |= static_cast<unsigned>(knownNonNull) << VNFOA_KnownNonNullShift;
+    value |= static_cast<unsigned>(sharedStatic) << VNFOA_SharedStaticShift;
+    value |= (((arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
     return value;
 }
+
+const uint8_t ValueNumStore::s_vnfOpAttribs2[VNF_COUNT] =
+{
+#define GTNODE(en, st, cm, ok) static_cast<uint8_t>(VnfOpAttribsType::GetArity(GT_##en) | VnfOpAttribsType::GetCommutative(GT_##en)),
+#include "gtlist.h"
+
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic) \
+    static_cast<uint8_t>(VnfOpAttribsType::GetFunc(                     \
+        arity/* + (((VNF_##vnf >= VNF_HWI_FIRST) && (VNF_##vnf < (VNF_HWI_FIRST + (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START))) && Compiler::vnEncodesResultTypeForHWIntrinsic(static_cast<NamedIntrinsic>(VNF_##vnf - VNF_HWI_FIRST + NI_HW_INTRINSIC_START + 1))) ? 1 : 0)*/, \
+        commute/* || ((VNF_##vnf >= VNF_HWI_FIRST) && (VNF_##vnf < (VNF_HWI_FIRST + (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START))) && HWIntrinsicInfo::IsCommutative(static_cast<NamedIntrinsic>(VNF_##vnf - VNF_HWI_FIRST + NI_HW_INTRINSIC_START + 1)))*/, \
+        knownNonNull, \
+        sharedStatic)),
+#include "valuenumfuncs.h"
+};
+
 
 constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
 {
@@ -8903,7 +8906,6 @@ constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
     vnfNum++;
 
 #include "valuenumfuncs.h"
-#undef ValueNumFuncDef
 
     assert(vnfNum == VNF_COUNT);
 
@@ -8952,7 +8954,6 @@ constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
 
 const char* ValueNumStore::VNFuncNameArr[] = {
 #include "valuenumfuncs.h"
-#undef ValueNumFuncDef
 };
 
 /* static */ const char* ValueNumStore::VNFuncName(VNFunc vnf)

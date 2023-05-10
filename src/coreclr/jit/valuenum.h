@@ -279,10 +279,14 @@ private:
         VNFOA_SharedStatic     = 0x40, // 1 iff this VNF is represent one of the shared static jit helpers
     };
 
-    static const unsigned VNFOA_ArityShift = 2;
-    static const unsigned VNFOA_ArityBits  = 3;
-    static const unsigned VNFOA_MaxArity   = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
-    static const unsigned VNFOA_ArityMask  = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
+    static const unsigned VNFOA_IllegalGenTreeOpShift = 0;
+    static const unsigned VNFOA_CommutativeShift      = 1;
+    static const unsigned VNFOA_ArityShift            = 2;
+    static const unsigned VNFOA_ArityBits             = 3;
+    static const unsigned VNFOA_MaxArity              = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
+    static const unsigned VNFOA_ArityMask             = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
+    static const unsigned VNFOA_KnownNonNullShift     = 5;
+    static const unsigned VNFOA_SharedStaticShift     = 6;
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
@@ -367,14 +371,14 @@ private:
     public:
         constexpr VnfOpAttribsType();
         const UINT8& operator[](size_t idx) const { return m_arr[idx]; }
-    private:
+
         static constexpr unsigned GetArity(unsigned oper);
         static constexpr unsigned GetCommutative(unsigned oper);
         static constexpr unsigned GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
 
         UINT8 m_arr[VNF_COUNT];
     } static const s_vnfOpAttribs;
-
+    static const uint8_t s_vnfOpAttribs2[];
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
