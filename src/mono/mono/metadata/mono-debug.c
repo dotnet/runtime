@@ -1067,60 +1067,31 @@ mono_is_debugger_attached (void)
 	return is_attached;
 }
 
-/*
- * Bundles
- */
-
-typedef struct _BundledSymfile BundledSymfile;
-
-struct _BundledSymfile {
-	BundledSymfile *next;
-	const char *aname;
-	const mono_byte *raw_contents;
-	int size;
-};
-
-static BundledSymfile *bundled_symfiles = NULL;
-
 /**
  * mono_register_symfile_for_assembly:
  */
 void
 mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *raw_contents, int size)
 {
-	BundledSymfile *bsymfile;
-
-	bsymfile = g_new0 (BundledSymfile, 1);
-	bsymfile->aname = assembly_name;
-	bsymfile->raw_contents = raw_contents;
-	bsymfile->size = size;
-	bsymfile->next = bundled_symfiles;
-	bundled_symfiles = bsymfile;
-}
-
-static gboolean
-bsymfile_match (BundledSymfile *bsymfile, const char *assembly_name)
-{
-	if (!strcmp (bsymfile->aname, assembly_name))
-		return TRUE;
-#ifdef ENABLE_WEBCIL
-	const char *p = strstr (assembly_name, ".webcil");
-	/* if assembly_name ends with .webcil, check if aname matches, with a .dll extension instead */
-	if (p && *(p + strlen(".webcil")) == 0) {
-		size_t n = p - assembly_name;
-		if (!strncmp (bsymfile->aname, assembly_name, n)
-			&& !strcmp (bsymfile->aname + n, ".dll"))
-			return TRUE;
+	MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly_name);
+	if (!assembly_resource) {
+		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
+		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
+		assembly_resource->resource.id = assembly_name;
+	} else {
+		g_assert (assembly_resource->resource.type == MONO_BUNDLED_ASSEMBLY);
+		g_assert (!strcmp(assembly_resource->resource.id, assembly_name));
+		// Ensure the MonoBundledSymbolData has not been initialized
+		g_assert (!assembly_resource->symbol_data.data && assembly_resource->symbol_data.size == 0);
 	}
-#endif
-	return FALSE;
+	assembly_resource->symbol_data.data = (uint8_t *)raw_contents;
+	assembly_resource->symbol_data.size = (uint32_t)size;
+	mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 }
 
 static MonoDebugHandle *
 open_symfile_from_bundle (MonoImage *image)
 {
-	BundledSymfile *bsymfile;
-
 	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (image->module_name);
 	if (assembly && assembly->symbol_data.data)
 		return mono_debug_open_image (image, assembly->symbol_data.data, assembly->symbol_data.size);
@@ -1139,27 +1110,18 @@ open_symfile_from_bundle (MonoImage *image)
 		return mono_debug_open_image (image, assembly->symfile.data, assembly->symfile.size);
 #endif
 
-	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (!bsymfile_match (bsymfile, image->module_name))
-			continue;
-
-		return mono_debug_open_image (image, bsymfile->raw_contents, bsymfile->size);
-	}
-
 	return NULL;
 }
 
 const mono_byte *
 mono_get_symfile_bytes_from_bundle (const char *assembly_name, int *size)
 {
-	BundledSymfile *bsymfile;
-	for (bsymfile = bundled_symfiles; bsymfile; bsymfile = bsymfile->next) {
-		if (!bsymfile_match (bsymfile, assembly_name))
-			continue;
-		*size = bsymfile->size;
-		return bsymfile->raw_contents;
-	}
-	return NULL;
+	MonoBundledAssemblyResource *assembly = mono_bundled_resources_get_assembly_resource (assembly_name);
+	if (!assembly)
+		return NULL;
+
+	*size = assembly->symbol_data.size;
+	return assembly->symbol_data.data;
 }
 
 void
