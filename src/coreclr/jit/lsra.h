@@ -1017,8 +1017,9 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
-    void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType));
+    void updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
+    void updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
@@ -1552,8 +1553,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler* compiler;
-
+    Compiler*     compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);

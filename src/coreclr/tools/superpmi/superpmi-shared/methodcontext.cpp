@@ -1185,16 +1185,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_MCJIT_BACKGROUND";
 
 #if defined(TARGET_X86)
-
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PINVOKE_RESTORE_ESP:
         return "CORJIT_FLAG_PINVOKE_RESTORE_ESP";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TARGET_P4:
-        return "CORJIT_FLAG_TARGET_P4";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_FCOMI:
-        return "CORJIT_FLAG_USE_FCOMI";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_CMOV:
-        return "CORJIT_FLAG_USE_CMOV";
-
 #endif // defined(TARGET_X86)
 
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_OSR:
@@ -1211,14 +1203,10 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_PROF_ENTERLEAVE";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE:
         return "CORJIT_FLAG_PROF_NO_PINVOKE_INLINE";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SKIP_VERIFICATION:
-        return "CORJIT_FLAG_SKIP_VERIFICATION";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PREJIT:
         return "CORJIT_FLAG_PREJIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELOC:
         return "CORJIT_FLAG_RELOC";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IMPORT_ONLY:
-        return "CORJIT_FLAG_IMPORT_ONLY";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IL_STUB:
         return "CORJIT_FLAG_IL_STUB";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROCSPLIT:
@@ -1506,7 +1494,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     key.flags        = (DWORD)flags;
 
     Agnostic_CORINFO_CALL_INFO value;
-    ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO)); // init verSig with 0.
+    ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO));
 
     if (exceptionCode == 0)
     {
@@ -1514,11 +1502,6 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         value.methodFlags = (DWORD)pResult->methodFlags;
         value.classFlags  = (DWORD)pResult->classFlags;
         value.sig         = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(pResult->sig, GetCallInfo, SigInstHandleMap);
-        if (flags & CORINFO_CALLINFO_VERIFICATION)
-        {
-            value.verMethodFlags = (DWORD)pResult->verMethodFlags;
-            value.verSig         = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(pResult->verSig, GetCallInfo, SigInstHandleMap);
-        }
 
         value.accessAllowed                   = (DWORD)pResult->accessAllowed;
         value.callsiteCalloutHelper.helperNum = (DWORD)pResult->callsiteCalloutHelper.helperNum;
@@ -1553,8 +1536,6 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
     printf("GetCallInfo key rt{%s} crt{%s} ch-%016" PRIX64 " flg-%08X"
         ", value mth-%016" PRIX64 ", mf-%08X (%s) cf-%08X (%s)"
         " sig-%s"
-        " vmf-%08X (%s)"
-        " vsig-%s"
         " aa-%u"
         " cch{hn-%u na-%u (TODO: dump callsiteCalloutHelper.args)}"
         " tt-%u"
@@ -1578,9 +1559,6 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         value.classFlags,
         SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value.classFlags).c_str(),
         SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap).c_str(),
-        value.verMethodFlags,
-        SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value.verMethodFlags).c_str(),
-        SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig, GetCallInfo, SigInstHandleMap).c_str(),
         value.accessAllowed,
         value.callsiteCalloutHelper.helperNum,
         value.callsiteCalloutHelper.numArgs,
@@ -1634,11 +1612,6 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->methodFlags = (unsigned)value.methodFlags;
         pResult->classFlags = (unsigned)value.classFlags;
         pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
-        if (flags & CORINFO_CALLINFO_VERIFICATION)
-        {
-            pResult->verMethodFlags = (unsigned)value.verMethodFlags;
-            pResult->verSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.verSig, GetCallInfo, SigInstHandleMap);
-        }
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
         pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
         pResult->callsiteCalloutHelper.numArgs = (unsigned)value.callsiteCalloutHelper.numArgs;
@@ -5154,36 +5127,6 @@ void* MethodContext::repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, D
     DEBUG_REP(dmpGetArrayInitializationData(key, value));
     void* result = (void*)value;
     return result;
-}
-
-void MethodContext::recFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers, int result)
-{
-    if (FilterException == nullptr)
-        FilterException = new LightWeightMap<DWORD, DWORD>();
-
-    DWORD key = (DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode;
-    DWORD value = (DWORD)result;
-    FilterException->Add(key, value);
-    DEBUG_REC(dmpFilterException(key, value));
-}
-void MethodContext::dmpFilterException(DWORD key, DWORD value)
-{
-    printf("FilterException key %u, value %u", key, value);
-}
-int MethodContext::repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    if (FilterException == nullptr)
-        return EXCEPTION_CONTINUE_SEARCH;
-    if (FilterException->GetIndex((DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode) < 0)
-        return EXCEPTION_CONTINUE_SEARCH;
-    else
-    {
-        DWORD key = (DWORD)pExceptionPointers->ExceptionRecord->ExceptionCode;
-        DWORD value = FilterException->Get(key);
-        DEBUG_REP(dmpFilterException(key, value));
-        int result = (int)value;
-        return result;
-    }
 }
 
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)

@@ -411,20 +411,9 @@ void Compiler::gsParamsToShadows()
         LclVarDsc* shadowVarDsc = lvaGetDesc(shadowVarNum);
 
         // Copy some info
-
-        var_types type       = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
-        shadowVarDsc->lvType = type;
-
-#ifdef FEATURE_SIMD
-        shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varTypeIsSIMD(varDsc))
-        {
-            CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
-            shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
-        }
-#endif
+        var_types type            = varTypeIsSmall(varDsc->TypeGet()) ? TYP_INT : varDsc->TypeGet();
+        shadowVarDsc->lvType      = type;
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
-
         shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
@@ -527,7 +516,7 @@ void Compiler::gsParamsToShadows()
         }
 
         GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        src->gtFlags |= GTF_DONT_CSE; // TODO-ASG-Cleanup: delete.
+        src->gtFlags |= GTF_DONT_CSE;
         GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
 
         fgEnsureFirstBBisScratch();
@@ -563,7 +552,7 @@ void Compiler::gsParamsToShadows()
                 }
 
                 GenTree* src = gtNewLclVarNode(shadowVarNum);
-                src->gtFlags |= GTF_DONT_CSE; // TODO-ASG-Cleanup: delete.
+                src->gtFlags |= GTF_DONT_CSE;
                 GenTree* store = gtNewStoreLclVarNode(lclNum, src);
 
                 (void)fgNewStmtNearEnd(block, fgMorphTree(store));

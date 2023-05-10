@@ -324,7 +324,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
                     MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = writableDataPtr;
+                    pEEType->WritableData = (void*)writableDataPtr;
                 }
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
