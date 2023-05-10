@@ -1733,55 +1733,42 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->info.genCPU == CPU_X86)
+        if (compiler->canUseEvexEncoding())
         {
-            printf("generic X86 CPU");
+            printf("X86 with AVX512");
         }
-        else if (compiler->info.genCPU == CPU_X86_PENTIUM_4)
+        else if (compiler->canUseVexEncoding())
         {
-            printf("Pentium 4");
+            printf("X86 with AVX");
         }
-#elif defined(TARGET_AMD64)
-        if (compiler->info.genCPU == CPU_X64)
-        {
-            if (compiler->canUseEvexEncoding())
-            {
-                printf("X64 CPU with AVX512");
-            }
-            else if (compiler->canUseVexEncoding())
-            {
-                printf("X64 CPU with AVX");
-            }
-            else
-            {
-                printf("X64 CPU with SSE2");
-            }
-        }
-#elif defined(TARGET_ARM)
-        if (compiler->info.genCPU == CPU_ARM)
-        {
-            printf("generic ARM CPU");
-        }
-#elif defined(TARGET_ARM64)
-        if (compiler->info.genCPU == CPU_ARM64)
-        {
-            printf("generic ARM64 CPU");
-        }
-#elif defined(TARGET_LOONGARCH64)
-        if (compiler->info.genCPU == CPU_LOONGARCH64)
-        {
-            printf("generic LOONGARCH64 CPU");
-        }
-#elif defined(TARGET_RISCV64)
-        if (compiler->info.genCPU == CPU_RISCV64)
-        {
-            printf("generic RISCV64 CPU");
-        }
-#endif
         else
         {
-            printf("unknown architecture");
+            printf("generic X86");
         }
+#elif defined(TARGET_AMD64)
+        if (compiler->canUseEvexEncoding())
+        {
+            printf("X64 with AVX512");
+        }
+        else if (compiler->canUseVexEncoding())
+        {
+            printf("X64 with AVX");
+        }
+        else
+        {
+            printf("generic X64");
+        }
+#elif defined(TARGET_ARM)
+        printf("generic ARM");
+#elif defined(TARGET_ARM64)
+        printf("generic ARM64");
+#elif defined(TARGET_LOONGARCH64)
+        printf("generic LOONGARCH64");
+#elif defined(TARGET_RISCV64)
+        printf("generic RISCV64");
+#else
+        printf("unknown architecture");
+#endif
 
         if (TargetOS::IsWindows)
         {

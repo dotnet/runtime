@@ -1126,50 +1126,6 @@ CorInfoHFAElemType WrapICorJitInfo::getHFAType(
     return temp;
 }
 
-JITINTERFACE_HRESULT WrapICorJitInfo::GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(GetErrorHRESULT);
-    JITINTERFACE_HRESULT temp = wrapHnd->GetErrorHRESULT(pExceptionPointers);
-    API_LEAVE(GetErrorHRESULT);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    API_ENTER(GetErrorMessage);
-    uint32_t temp = wrapHnd->GetErrorMessage(buffer, bufferLength);
-    API_LEAVE(GetErrorMessage);
-    return temp;
-}
-
-int WrapICorJitInfo::FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    API_ENTER(FilterException);
-    int temp = wrapHnd->FilterException(pExceptionPointers);
-    API_LEAVE(FilterException);
-    return temp;
-}
-
-void WrapICorJitInfo::ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    API_ENTER(ThrowExceptionForJitResult);
-    wrapHnd->ThrowExceptionForJitResult(result);
-    API_LEAVE(ThrowExceptionForJitResult);
-}
-
-void WrapICorJitInfo::ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    API_ENTER(ThrowExceptionForHelper);
-    wrapHnd->ThrowExceptionForHelper(throwHelper);
-    API_LEAVE(ThrowExceptionForHelper);
-}
-
 bool WrapICorJitInfo::runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter)

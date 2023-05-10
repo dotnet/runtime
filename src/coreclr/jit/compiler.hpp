@@ -3622,16 +3622,6 @@ inline bool Compiler::impIsThis(GenTree* obj)
 
 /*****************************************************************************
  *
- * Returns true if the compiler instance is created for import only (verification).
- */
-
-inline bool Compiler::compIsForImportOnly()
-{
-    return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IMPORT_ONLY);
-}
-
-/*****************************************************************************
- *
  *  Returns true if the compiler instance is created for inlining.
  */
 

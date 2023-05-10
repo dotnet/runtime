@@ -18064,14 +18064,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
     *pIsExact                     = false;
     CORINFO_CLASS_HANDLE objClass = nullptr;
 
-    // Bail out if we're just importing and not generating code, since
-    // the jit uses TYP_REF for CORINFO_TYPE_VAR locals and args, but
-    // these may not be ref types.
-    if (compIsForImportOnly())
-    {
-        return objClass;
-    }
-
     // Bail out if the tree is not a ref type.
     var_types treeType = tree->TypeGet();
     if (treeType != TYP_REF)
