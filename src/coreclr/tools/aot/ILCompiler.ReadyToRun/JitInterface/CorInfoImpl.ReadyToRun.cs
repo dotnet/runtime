@@ -537,7 +537,7 @@ namespace Internal.JitInterface
 
             var handle = ecmaMethod.Handle;
 
-            List<TypeDesc> bypassForHelperIntrinsicsList = null;
+            List<TypeDesc> compExactlyDependsOnList = null;
 
             foreach (var attributeHandle in metadataReader.GetMethodDefinition(handle).GetCustomAttributes())
             {
@@ -551,6 +551,9 @@ namespace Internal.JitInterface
                     {
                         return true;
                     }
+                }
+                else if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                {
                     if (metadataReader.StringComparer.Equals(nameHandle, "CompExactlyDependsOnAttribute"))
                     {
                         var customAttribute = metadataReader.GetCustomAttribute(attributeHandle);
@@ -562,22 +565,22 @@ namespace Internal.JitInterface
                         TypeDesc typeForBypass = fixedArguments[0].Value as TypeDesc;
                         if (typeForBypass != null)
                         {
-                            if (bypassForHelperIntrinsicsList == null)
-                                bypassForHelperIntrinsicsList = new List<TypeDesc>();
+                            if (compExactlyDependsOnList == null)
+                                compExactlyDependsOnList = new List<TypeDesc>();
 
-                            bypassForHelperIntrinsicsList.Add(typeForBypass);
+                            compExactlyDependsOnList.Add(typeForBypass);
                         }
                     }
                 }
             }
 
-            if (instructionSetSupport != null && bypassForHelperIntrinsicsList != null && bypassForHelperIntrinsicsList.Count > 0)
+            if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
                 // Default to true, and set to false if at least of the types is actually supported in the current environment, and none of the
                 // intrinisc types are in an opportunistic state.
                 bool doBypass = true;
 
-                foreach (var intrinsicType in bypassForHelperIntrinsicsList)
+                foreach (var intrinsicType in compExactlyDependsOnList)
                 {
                     InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
                     if (instructionSet == InstructionSet.ILLEGAL)

@@ -120,7 +120,7 @@ namespace ILCompiler
             //
             // Initialize type system context
             //
-            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib);
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib, instructionSetSupport);
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -262,7 +262,7 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext.InstructionSetSupport, _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
