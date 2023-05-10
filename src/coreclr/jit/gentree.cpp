@@ -24159,6 +24159,21 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
 }
 
 #if defined(TARGET_XARCH)
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdTernaryLogicNode: Creates a new simd TernaryLogic node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The value of the first operand: 'A'
+//    op2                 - The value of the second operand: 'B'
+//    op3                 - The value of the third operand: 'C'
+//    op4                 - The constant control byte used to determine how 'A', 'B', and 'C' are manipulated
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created TernaryLogic node that performs the specified operation on 'A', 'B', and 'C'.
+//
 GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                                              GenTree*    op1,
                                              GenTree*    op2,

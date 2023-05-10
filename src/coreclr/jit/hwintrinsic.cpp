@@ -1160,7 +1160,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!immOp2->IsCnsIntOrI())
         {
             assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
-            return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            return impNonConstFallback(intrinsic, retType, simdBaseJitType, mustExpand);
         }
 
         unsigned int otherSimdSize    = 0;
@@ -1269,7 +1269,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             if (HWIntrinsicInfo::NoJmpTableImm(intrinsic))
             {
-                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType, mustExpand);
             }
             else if (!mustExpand)
             {

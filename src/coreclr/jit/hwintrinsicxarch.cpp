@@ -561,11 +561,15 @@ bool HWIntrinsicInfo::isScalarIsa(CORINFO_InstructionSet isa)
 //    intrinsic       -- intrinsic ID
 //    simdType        -- Vector type
 //    simdBaseJitType -- SIMD base JIT type of the Vector128/256<T>
+//    mustExpand      -- true if the intrinsict must be expanded; otherwise false
 //
 // Return Value:
 //     return the IR of semantic alternative on non-const imm-arg
 //
-GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType)
+GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic,
+                                       var_types      simdType,
+                                       CorInfoType    simdBaseJitType,
+                                       bool           mustExpand)
 {
     assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic));
     switch (intrinsic)
@@ -601,6 +605,30 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         case NI_AVX512F_VL_RotateLeft:
         case NI_AVX512F_VL_RotateRight:
         {
+            GenTree* op1;
+            GenTree* op2;
+
+            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
+#if defined(TARGET_X86)
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (mustExpand)
+                {
+                    op2 = impPopStack().val;
+                    op1 = impSIMDPopStack();
+
+                    return gtNewSimdHWIntrinsicNode(simdType, op1, op2, intrinsic, simdBaseJitType,
+                                                    genTypeSize(simdType));
+                }
+                else
+                {
+                    // TODO-XARCH-CQ: We need to add TYP_LONG support to gtNewSimdCreateBroadcastNode
+                    return nullptr;
+                }
+            }
+#endif // TARGET_X86
+
             // These intrinsics have variants that take op2 in a simd register and read a unique shift per element
             intrinsic = static_cast<NamedIntrinsic>(intrinsic + 1);
 
@@ -609,21 +637,11 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
 
-            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: We need to add TYP_LONG support to gtNewSimdCreateBroadcastNode
-                return nullptr;
-            }
-#endif // TARGET_X86
-
             impSpillSideEffect(true,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
-            GenTree* op2 = impPopStack().val;
-            GenTree* op1 = impSIMDPopStack();
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack();
 
             if (varTypeIsLong(simdBaseType))
             {
