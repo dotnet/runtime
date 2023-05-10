@@ -130,8 +130,6 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
 
 
 
-
-
 public class MarshalingPInvokeScanner : Task
 {
     [Required]
@@ -169,6 +167,12 @@ public class MarshalingPInvokeScanner : Task
     {
         if (Assemblies is not null)
             IncompatibleAssemblies = ScanAssemblies(Assemblies);
+
+        if(IncompatibleAssemblies is not null && IncompatibleAssemblies.Length != 0)
+        {
+            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                "One or more assemblies is incompatible with the lightweight Mono marshaler. Therefore the full marshaler will be included.");
+        }
     }
 
     private static string[] ScanAssemblies(string[] assemblies)
@@ -218,9 +222,6 @@ public class MarshalingPInvokeScanner : Task
             TypeDefinition typeDef = mdtReader.GetTypeDefinition(typeDefHandle);
             string fullTypeName = string.Join(':', mdtReader.GetString(typeDef.Namespace), mdtReader.GetString(typeDef.Name));
 
-            if (inconclusiveTypes.Contains(fullTypeName))
-                Console.WriteLine("Resolving inconclusive: " + fullTypeName);
-
             // This is not perfect, but should work right for enums defined in other assemblies,
             // which is the only case where we use Compatibility.Inconclusive.
             if (inconclusiveTypes.Contains(fullTypeName) &&
@@ -237,8 +238,6 @@ public class MarshalingPInvokeScanner : Task
         using PEReader peReader = new PEReader(file);
         MetadataReader mdtReader = peReader.GetMetadataReader();
 
-        Console.WriteLine(path);
-
         foreach(CustomAttributeHandle attrHandle in mdtReader.CustomAttributes)
         {
             CustomAttribute attr = mdtReader.GetCustomAttribute(attrHandle);
@@ -251,10 +250,7 @@ public class MarshalingPInvokeScanner : Task
                 TypeDefinition td = mdtReader.GetTypeDefinition(tdh);
 
                 if(mdtReader.GetString(td.Name) == "DisableRuntimeMarshallingAttribute")
-                {
-                    Console.WriteLine(string.Format("Assembly {0} is annotated with DisableRuntimeMarshallingAttribute.", path));
                     return false;
-                }
             }
             catch(InvalidCastException)
             {
@@ -279,62 +275,15 @@ public class MarshalingPInvokeScanner : Task
 
                 MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
                 if(sgn.ReturnType == Compatibility.Incompatible)
-                {
-                    Console.WriteLine("   " + GetMethodName(mdtReader, mthDef) + " - incompatible return type.");
                     return true;
-                }
 
-                if(sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible)) // if not all are true
-                {
-                    Console.WriteLine("   " + GetMethodName(mdtReader, mthDef) + " - incompatible parameter type.");
+                if(sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
                     return true;
-                }
             }
         }
 
         return false;
     }
-
-
-
-    #pragma warning disable IDE0060
-    private bool IsAssemblyIncompatible(Assembly assy, List<PInvoke> pivs, List<string> strs, List<PInvokeCallback> cbks)
-    {
-        // Assembly is incompatible with the lightweight mono marshaler if it does not have the
-        // DisableRuntimeMarshallingAttribute and has P/Invokes with nonblittable types.
-        IList<CustomAttributeData> attrs = assy.GetCustomAttributesData();
-        foreach (CustomAttributeData attr in attrs)
-        {
-            if (attr.AttributeType == typeof(DisableRuntimeMarshallingAttribute))
-                return false;
-        }
-
-        try
-        {
-            foreach (PInvoke piv in pivs)
-            {
-                foreach (ParameterInfo parInfo in piv.Method.GetParameters())
-                {
-                    if (!PInvokeCollector.IsBlittable(parInfo.ParameterType))
-                        return true;
-                }
-
-                if (!PInvokeCollector.IsBlittable(piv.Method.ReturnType) &&
-                    piv.Method.ReturnType.FullName != "System.Void")
-                    return true;
-            }
-        }
-        catch (NotSupportedException ex)
-        {
-            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
-                $"Could not parse method signature because '{ex.Message}'. This will result in the assembly being marked as incompatible with the lightweight Mono marshaler, potentially as a false positive. ");
-            return true;
-        }
-
-        return false;
-    }
-    #pragma warning restore IDE0060
-
 
     public string FixupSymbolName(string name)
     {
