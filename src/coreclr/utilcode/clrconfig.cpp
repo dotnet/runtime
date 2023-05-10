@@ -249,7 +249,7 @@ namespace
         {
             errno = 0;
             LPWSTR endPtr;
-            DWORD configMaybe = wcstoul(val, &endPtr, radix);
+            DWORD configMaybe = dn_wcstoul(val, &endPtr, radix);
             BOOL fSuccess = ((errno != ERANGE) && (endPtr != val));
             if (fSuccess)
             {

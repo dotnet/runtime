@@ -2848,7 +2848,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
             return;
         }
         LPWSTR endPtr;
-        DWORD dwCustomObjectAllocationEventsPerTypePerSec = wcstoul(
+        DWORD dwCustomObjectAllocationEventsPerTypePerSec = dn_wcstoul(
             wszCustomObjectAllocationEventsPerTypePerSec,
             &endPtr,
             10          // Base 10 conversion

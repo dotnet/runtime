@@ -61,7 +61,7 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, const CLRConfig::ConfigDWOR
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return wcstoul(knobValue, nullptr, 0);
+        return dn_wcstoul(knobValue, nullptr, 0);
     }
 
     return legacyValue;
@@ -72,7 +72,7 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue)
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return wcstoul(knobValue, nullptr, 0);
+        return dn_wcstoul(knobValue, nullptr, 0);
     }
 
     return defaultValue;
@@ -83,7 +83,7 @@ ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultVa
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return _wcstoui64(knobValue, nullptr, 0);
+        return dn_wcstoui64(knobValue, nullptr, 0);
     }
 
     return defaultValue;

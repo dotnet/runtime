@@ -629,7 +629,7 @@ HRESULT EEConfig::sync()
         if( str )
         {
             errno = 0;
-            iStartupDelayMS = wcstoul(str, &end, 10);
+            iStartupDelayMS = dn_wcstoul(str, &end, 10);
             if (errno == ERANGE || end == str)
                 iStartupDelayMS = 0;
         }

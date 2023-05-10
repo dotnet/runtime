@@ -370,7 +370,7 @@ private:
         auto enabledKeywordsMask = (uint64_t)(-1);
         if ((component.End - component.Start) != 0)
         {
-            enabledKeywordsMask = _wcstoui64(component.Start, nullptr, 16);
+            enabledKeywordsMask = dn_wcstoui64(component.Start, nullptr, 16);
         }
         return enabledKeywordsMask;
     }

@@ -77,7 +77,7 @@ bool JitHost::convertStringValueToInt(const WCHAR* key, const WCHAR* stringValue
     }
 
     WCHAR*      endPtr;
-    unsigned long longResult = wcstoul(stringValue, &endPtr, 16);
+    unsigned long longResult = dn_wcstoul(stringValue, &endPtr, 16);
     bool          succeeded  = (errno != ERANGE) && (endPtr != stringValue) && (longResult <= INT_MAX);
     if (!succeeded)
     {
