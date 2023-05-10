@@ -9,21 +9,21 @@ namespace Microsoft.Extensions.Logging
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public static partial class ConsoleLoggerExtensions
     {
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, Microsoft.Extensions.Logging.LogLevel minLevel, bool includeScopes) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, bool includeScopes) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter) { throw null; }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).")]
         public static Microsoft.Extensions.Logging.ILoggerFactory AddConsole(this Microsoft.Extensions.Logging.ILoggerFactory factory, System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder) { throw null; }
         public static Microsoft.Extensions.Logging.ILoggingBuilder AddConsole(this Microsoft.Extensions.Logging.ILoggingBuilder builder, System.Action<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> configure) { throw null; }
@@ -43,11 +43,11 @@ namespace Microsoft.Extensions.Logging
 }
 namespace Microsoft.Extensions.Logging.Console
 {
-    [System.ObsoleteAttribute("TODO")]
+    [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.")]
     public partial class ConfigurationConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
     {
         public ConfigurationConsoleLoggerSettings(Microsoft.Extensions.Configuration.IConfiguration configuration) { }
-        public Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get { throw null; } }
+        public Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get { throw null; } }
         public bool IncludeScopes { get { throw null; } }
         public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
         public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
@@ -100,13 +100,13 @@ namespace Microsoft.Extensions.Logging.Console
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class ConsoleLoggerProvider : Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.ISupportExternalScope, System.IDisposable
     {
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
         public ConsoleLoggerProvider(Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings settings) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options) { }
         public ConsoleLoggerProvider(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.Extensions.Logging.Console.ConsoleLoggerOptions> options, System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Console.ConsoleFormatter>? formatters) { }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
         public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes) { }
-        [System.ObsoleteAttribute("TODO")]
+        [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
         public ConsoleLoggerProvider(System.Func<string, Microsoft.Extensions.Logging.LogLevel, bool> filter, bool includeScopes, bool disableColors) { }
         public Microsoft.Extensions.Logging.ILogger CreateLogger(string name) { throw null; }
         public void Dispose() { }
@@ -117,21 +117,21 @@ namespace Microsoft.Extensions.Logging.Console
         Wait = 0,
         DropWrite = 1,
     }
-    [System.ObsoleteAttribute("TODO")]
+    [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.")]
     public partial class ConsoleLoggerSettings : Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings
     {
         public ConsoleLoggerSettings() { }
-        public Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get { throw null; } set { } }
+        public Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get { throw null; } set { } }
         public bool DisableColors { get { throw null; } set { } }
         public bool IncludeScopes { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, Microsoft.Extensions.Logging.LogLevel> Switches { get { throw null; } set { } }
         public Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload() { throw null; }
         public bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level) { throw null; }
     }
-    [System.ObsoleteAttribute("TODO")]
+    [System.ObsoleteAttribute("This method is retained only for compatibility. The recommended alternative is ConsoleLoggerOptions.")]
     public partial interface IConsoleLoggerSettings
     {
-        Microsoft.Extensions.Primitives.IChangeToken ChangeToken { get; }
+        Microsoft.Extensions.Primitives.IChangeToken? ChangeToken { get; }
         bool IncludeScopes { get; }
         Microsoft.Extensions.Logging.Console.IConsoleLoggerSettings Reload();
         bool TryGetSwitch(string name, out Microsoft.Extensions.Logging.LogLevel level);

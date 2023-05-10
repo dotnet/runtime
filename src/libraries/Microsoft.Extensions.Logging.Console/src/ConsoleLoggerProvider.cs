@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// </summary>
     [UnsupportedOSPlatform("browser")]
     [ProviderAlias("Console")]
-    public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
+    public partial class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
         private readonly IOptionsMonitor<ConsoleLoggerOptions> _options;
         private readonly ConcurrentDictionary<string, ConsoleLogger> _loggers;
@@ -25,15 +25,6 @@ namespace Microsoft.Extensions.Logging.Console
 
         private readonly IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
-
-        [System.Obsolete("TODO")]
-        public ConsoleLoggerProvider(IConsoleLoggerSettings settings) { throw new NotImplementedException(); }
-
-        [System.Obsolete("TODO")]
-        public ConsoleLoggerProvider(System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes, bool disableColors) { throw new NotImplementedException(); }
-
-        [System.Obsolete("TODO")]
-        public ConsoleLoggerProvider(System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes) { throw new NotImplementedException(); }
 
         /// <summary>
         /// Creates an instance of <see cref="ConsoleLoggerProvider"/>.
