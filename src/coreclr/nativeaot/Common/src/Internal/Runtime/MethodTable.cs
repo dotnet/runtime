@@ -943,16 +943,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal MethodTable* RawBaseType
-        {
-            get
-            {
-                Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
-                return _relatedType._pBaseType;
-            }
-        }
-
         internal MethodTable* NullableType
         {
             get

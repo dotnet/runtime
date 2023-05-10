@@ -43,12 +43,6 @@ namespace Internal.Reflection.Core.Execution
             if (RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
                 return;
 
-            if (RuntimeAugments.IsInterface(declaringTypeHandle))
-            {
-                if (RuntimeAugments.IsInstanceOfInterface(thisObject, declaringTypeHandle))
-                    return;
-            }
-
             throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
         }
     }

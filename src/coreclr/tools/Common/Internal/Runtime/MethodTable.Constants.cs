@@ -64,11 +64,6 @@ namespace Internal.Runtime
         ElementTypeShift = 26,
 
         /// <summary>
-        /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
-        /// </summary>
-        ComplexCastingMask = EETypeKindMask | GenericVarianceFlag,
-
-        /// <summary>
         /// The _usComponentSize is a number (not holding FlagsEx).
         /// </summary>
         HasComponentSizeFlag = 0x80000000,
