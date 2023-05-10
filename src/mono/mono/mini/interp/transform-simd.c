@@ -154,8 +154,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		goto opcode_added;
 	}
 
-	return FALSE;
-
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 	if (!m_class_is_simd_type (vector_klass))
@@ -179,6 +177,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			scalar_arg = i;
 	}
 
+	/*
 	switch (id) {
 		case SN_AndNot:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -304,6 +303,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		default:
 			return FALSE;
 	}
+	*/
 
 	if (simd_opcode == -1 || simd_intrins == -1) {
 		return FALSE;
