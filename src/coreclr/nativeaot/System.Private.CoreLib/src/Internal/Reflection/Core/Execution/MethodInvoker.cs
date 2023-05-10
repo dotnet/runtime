@@ -40,10 +40,8 @@ namespace Internal.Reflection.Core.Execution
             if (thisObject == null)
                 throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
-            if (RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
-                return;
-
-            throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+            if (!RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
+                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
         }
     }
 }
