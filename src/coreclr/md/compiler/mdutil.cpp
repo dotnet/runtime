@@ -444,7 +444,7 @@ ErrExit:
 //
 // Determine the blob size base of the ELEMENT_TYPE_* associated with the blob.
 // This cannot be a table lookup because ELEMENT_TYPE_STRING is an unicode string.
-// The size of the blob is determined by calling wcsstr of the string + 1.
+// The size of the blob is determined by calling dn_wcsstr of the string + 1.
 //
 //*******************************************************************************
 ULONG _GetSizeOfConstantBlob(

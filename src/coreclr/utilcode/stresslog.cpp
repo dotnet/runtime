@@ -149,7 +149,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
     // replace it by the PID of our process
     // only the first occurrence will be replaced
     const WCHAR* pidLit =  W("{pid}");
-    const WCHAR* pidPtr = wcsstr(original, pidLit);
+    const WCHAR* pidPtr = dn_wcsstr(original, pidLit);
     if (pidPtr != nullptr)
     {
         // copy the file name up to the "{pid}" occurrence

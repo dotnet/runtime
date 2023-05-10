@@ -665,8 +665,8 @@ BOOL Assembler::EmitMethod(Method *pMethod)
 
     if(IsMdPrivateScope(pMethod->m_Attr))
     {
-        WCHAR* p = wcsstr(wzMemberName,W("$PST06"));
-        if(p) *p = 0;
+        WCHAR* p = (WCHAR*)dn_wcsstr(wzMemberName,W("$PST06"));
+        if(p) *p = W('\0');
     }
 
     if (FAILED(m_pEmitter->DefineMethod(ClassToken,       // parent class

@@ -1828,7 +1828,7 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     BOOL isUserDebug = FALSE;
 
     NewArrayHolder<WCHAR> wszModuleName = new WCHAR[g_cBytesNeeded];
-    LPWSTR pComma = wcsstr(g_wszModuleNames, W(","));
+    LPWSTR pComma = dn_wcschr(g_wszModuleNames, W(','));
     LPWSTR tmp = g_wszModuleNames;
 
     while (pComma != NULL)
@@ -1842,7 +1842,7 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
             break;
         }
         tmp = pComma + 1;
-        pComma = wcsstr(tmp, W(","));
+        pComma = dn_wcschr(tmp, W(','));
     }
     if (isUserDebug == FALSE)
     {
@@ -2562,10 +2562,10 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 #endif
 
     // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
-    LPWSTR pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
+    LPWSTR pNIExt = const_cast<LPWSTR>(dn_wcsstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
     if (!pNIExt)
     {
-      pNIExt = const_cast<LPWSTR>(wcsstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
+      pNIExt = const_cast<LPWSTR>(dn_wcsstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
     }
 
     if (pNIExt)

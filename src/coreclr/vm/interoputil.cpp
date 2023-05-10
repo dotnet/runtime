@@ -2753,12 +2753,12 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     CONTRACTL_END;
 
     // Find the first character after the = in the standard DISPID member name.
-    LPWSTR strDispId = wcsstr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W("=")) + 1;
+    LPWSTR strDispId = dn_wcschr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W('=')) + 1;
     if (!strDispId)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
     // Validate that the last character of the standard member name is a ].
-    LPWSTR strClosingBracket = wcsstr(strDispId, W("]"));
+    LPWSTR strClosingBracket = dn_wcschr(strDispId, W(']'));
     if (!strClosingBracket || (strClosingBracket[1] != 0))
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
