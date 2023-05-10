@@ -35,7 +35,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
     if (altJitFlag != nullptr)
     {
-        if (wcscmp(altJitFlag, W("")) == 0)
+        if (dn_wcscmp(altJitFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -47,7 +47,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
     if (altJitNgenFlag != nullptr)
     {
-        if (wcscmp(altJitNgenFlag, W("")) == 0)
+        if (dn_wcscmp(altJitNgenFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }

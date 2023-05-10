@@ -225,7 +225,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         aDispIds[cNames] = DISPID_UNKNOWN;
 
     // Retrieve the appropriate string comparation function.
-    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? wcscmp : SString::_wcsicmp;
+    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? dn_wcscmp : SString::_wcsicmp;
 
     GCPROTECT_BEGIN(ParamArray)
     {

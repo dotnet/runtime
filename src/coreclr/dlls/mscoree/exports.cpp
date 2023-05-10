@@ -173,7 +173,7 @@ static void ConvertConfigPropertiesToUnicode(
         else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_HOSTPOLICY_EMBEDDED) == 0)
         {
             // The HOSTPOLICY_EMBEDDED property indicates if the executable has hostpolicy statically linked in
-            *hostPolicyEmbedded = (wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
+            *hostPolicyEmbedded = (dn_wcscmp(propertyValuesW[propertyIndex], W("true")) == 0);
         }
         else if (strcmp(propertyKeys[propertyIndex], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
         {

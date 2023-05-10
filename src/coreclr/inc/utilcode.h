@@ -627,7 +627,7 @@ public:
         if (id == UICULTUREID_DONTCARE)
             return FALSE;
 
-        return wcscmp(id, m_LangId) == 0;
+        return dn_wcscmp(id, m_LangId) == 0;
     }
 
     HRESOURCEDLL GetLibraryHandle()

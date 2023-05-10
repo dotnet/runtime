@@ -1103,7 +1103,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 {
                     WCHAR wzFileName[2048];
                     SourceLinesHelper(GUICookie, pLCD, wzFileName, 2048);
-                    bIsNewFile = (wcscmp(wzFileName,wzWasFileName)!=0);
+                    bIsNewFile = (dn_wcscmp(wzFileName,wzWasFileName)!=0);
                     if(bIsNewFile||(pLCD->Line < ulWasLine))
                     {
                         wcscpy_s(wzWasFileName,2048,wzFileName);

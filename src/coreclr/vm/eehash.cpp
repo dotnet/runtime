@@ -405,7 +405,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
         return FALSE;
 
     // Finally do a string comparison of the server names.
-    return wcscmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
+    return dn_wcscmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
 }
 
 DWORD EEClassFactoryInfoHashTableHelper::Hash(ClassFactoryInfo *pKey)

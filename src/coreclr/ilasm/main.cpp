@@ -161,7 +161,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #pragma warning(push)
 #pragma warning(disable:26000) // "Suppress prefast warning about index overflow"
 #endif
-    if (! wcscmp(argv[1], W("/?")) || ! wcscmp(argv[1],W("-?")))
+    if (! dn_wcscmp(argv[1], W("/?")) || ! dn_wcscmp(argv[1],W("-?")))
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

@@ -1926,7 +1926,7 @@ bool DoesResourceNameMatch(LPCWSTR nameA, LPCWSTR nameB)
         if (IS_INTRESOURCE(nameB))
             return false;
         else
-            foundEntry = !wcscmp(nameB, nameA);
+            foundEntry = !dn_wcscmp(nameB, nameA);
     }
 
     return foundEntry;

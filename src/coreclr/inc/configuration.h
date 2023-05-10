@@ -51,18 +51,18 @@ public:
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a dn_wcscmp with "true").
     //    - The default set in the ConfigDWORDInfo (0 is false, anything else is true)
     static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo);
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a dn_wcscmp with "true").
     //    - The default value passed in
     static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo, bool defaultValue);
 
     // Returns (in priority order):
-    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a dn_wcscmp with "true").
     //    - The default value passed in
     static bool GetKnobBooleanValue(LPCWSTR name, bool defaultValue);
 };

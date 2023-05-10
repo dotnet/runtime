@@ -905,9 +905,9 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
     if (!*szTempBuf)
         strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    bool result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".ctor")));
+    bool result = (((flags) & mdRTSpecialName) && !dn_wcscmp((memberName), W(".ctor")));
     if (result) strcat_s(szTempBuf, STRING_BUFFER_LEN, "[.ctor] ");
-    result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".cctor")));
+    result = (((flags) & mdRTSpecialName) && !dn_wcscmp((memberName), W(".cctor")));
     if (result) strcat_s(szTempBuf,STRING_BUFFER_LEN, "[.cctor] ");
     // "Reserved" flags
     ISFLAG(Md, HasSecurity);
@@ -1964,7 +1964,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     }
 
     // Keep track of coff overhead.
-    if (!wcscmp(W("__DecoratedName"), rcName))
+    if (!dn_wcscmp(W("__DecoratedName"), rcName))
     {
         bCoffSymbol = true;
         g_cbCoffNames += cbValue + 6;

@@ -360,7 +360,7 @@ void DumpAssemblyRefs(void* GUICookie)
                         // check for name duplication and introduce alias if needed
                         for(ixx = 0; ixx < ix; ixx++)
                         {
-                            if(!wcscmp(rAsmRef[ixx].name,rAsmRef[ix].name)) break;
+                            if(!dn_wcscmp(rAsmRef[ixx].name,rAsmRef[ix].name)) break;
                         }
                         if(ixx < ix)
                         {

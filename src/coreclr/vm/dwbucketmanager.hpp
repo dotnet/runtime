@@ -64,7 +64,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
     DWORD countParams = kInvalidParamsCount;
     for (int index = 0; index < EndOfWerBucketTypes; ++index)
     {
-        if (wcscmp(wzEventName, g_WerEventTraits[index].EventNameW) == 0)
+        if (dn_wcscmp(wzEventName, g_WerEventTraits[index].EventNameW) == 0)
         {
             _ASSERTE(index == g_WerEventTraits[index].BucketType);
             countParams = g_WerEventTraits[index].CountParams;

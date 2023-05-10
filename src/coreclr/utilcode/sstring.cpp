@@ -985,7 +985,7 @@ BOOL SString::Find(CIterator &i, const SString &s) const
             const WCHAR *end = GetUnicode() + GetRawCount() - count;
             while (start <= end)
             {
-                if (wcsncmp(start, source.GetRawUnicode(), count) == 0)
+                if (dn_wcsncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
                     RETURN TRUE;
@@ -1124,7 +1124,7 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
 
             while (start >= end)
             {
-                if (wcsncmp(start, source.GetRawUnicode(), count) == 0)
+                if (dn_wcsncmp(start, source.GetRawUnicode(), count) == 0)
                 {
                     i.Resync(this, (BYTE*) start);
                     RETURN TRUE;
@@ -1334,7 +1334,7 @@ int SString::Compare(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        result = wcsncmp(GetRawUnicode(), source.GetRawUnicode(), smaller);
+        result = dn_wcsncmp(GetRawUnicode(), source.GetRawUnicode(), smaller);
         break;
 
     case REPRESENTATION_ASCII:
@@ -1448,7 +1448,7 @@ BOOL SString::Equals(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        RETURN (wcsncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
+        RETURN (dn_wcsncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
         RETURN (strncmp(GetRawASCII(), source.GetRawASCII(), count) == 0);
@@ -1536,7 +1536,7 @@ BOOL SString::Match(const CIterator &i, const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-        RETURN (wcsncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
+        RETURN (dn_wcsncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
         RETURN (strncmp(i.GetASCII(), source.GetRawASCII(), count) == 0);

@@ -117,7 +117,7 @@ int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
     if (!valueFound)
     {
         // Look for special case keys.
-        if (wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
+        if (dn_wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
         {
             result     = jitInstance.mc->index;
             valueFound = true;

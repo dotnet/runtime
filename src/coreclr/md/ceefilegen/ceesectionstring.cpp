@@ -70,7 +70,7 @@ StringTableEntry *CeeSectionString::findStringInsert(
         cur = cur->m_next;
     }
     while (cur && cur->m_hashId == hashId) {
-        if (wcscmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
+        if (dn_wcscmp(target, (LPWSTR)(computePointer(cur->m_offset))) == 0)
             return cur;
         prev = cur;
         cur = cur->m_next;

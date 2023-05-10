@@ -163,9 +163,9 @@ bool verbMerge::DirectoryFilterDirectories(WIN32_FIND_DATAW* findData)
         if ((findData->dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0)
             return false;
 
-        if (wcscmp(findData->cFileName, W(".")) == 0)
+        if (dn_wcscmp(findData->cFileName, W(".")) == 0)
             return false;
-        if (wcscmp(findData->cFileName, W("..")) == 0)
+        if (dn_wcscmp(findData->cFileName, W("..")) == 0)
             return false;
 
         return true;
@@ -193,7 +193,7 @@ int __cdecl verbMerge::WIN32_FIND_DATAW_qsort_helper(const void* p1, const void*
 {
     const WIN32_FIND_DATAW* file1 = (WIN32_FIND_DATAW*)p1;
     const WIN32_FIND_DATAW* file2 = (WIN32_FIND_DATAW*)p2;
-    return wcscmp(file1->cFileName, file2->cFileName);
+    return dn_wcscmp(file1->cFileName, file2->cFileName);
 }
 
 // Enumerate a directory for the files specified by "searchPattern". For each element in the directory,
@@ -354,7 +354,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
 #ifdef TARGET_WINDOWS
         if (wcslen(fileFullPath) > MAX_PATH) // This path is too long, use \\?\ to access it.
         {
-            if (wcscmp(dir, W(".")) == 0)
+            if (dn_wcscmp(dir, W(".")) == 0)
             {
                 LogError("can't access the relative path with UNC");
                 goto CLEAN_UP;

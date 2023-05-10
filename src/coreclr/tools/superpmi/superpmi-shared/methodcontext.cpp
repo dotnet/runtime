@@ -7555,11 +7555,11 @@ void SetDebugDumpVariables()
         g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
     }
 
-    if (0 == wcscmp(g_debugRecStr, W("1")))
+    if (0 == dn_wcscmp(g_debugRecStr, W("1")))
     {
         g_debugRec = true;
     }
-    if (0 == wcscmp(g_debugRepStr, W("1")))
+    if (0 == dn_wcscmp(g_debugRepStr, W("1")))
     {
         g_debugRep = true;
     }

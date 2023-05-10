@@ -266,7 +266,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (wcscmp(szName, pszName) == 0)
+                if (dn_wcscmp(szName, pszName) == 0)
     #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
     #endif
@@ -300,7 +300,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (wcscmp(szName, pszName) == 0)
+                if (dn_wcscmp(szName, pszName) == 0)
     #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
     #endif

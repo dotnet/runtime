@@ -618,7 +618,7 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szHeap) == 0)
+    if (dn_wcscmp(PDB_STREAM, szHeap) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
@@ -855,7 +855,7 @@ HRESULT CLiteWeightStgdbRW::SavePool(   // Return code.
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     // Treat PDB stream differently since we are not using StgPools
-    if (wcscmp(PDB_STREAM, szName) == 0)
+    if (dn_wcscmp(PDB_STREAM, szName) == 0)
     {
         if (m_pPdbHeap && !m_pPdbHeap->IsEmpty())
         {
