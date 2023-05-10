@@ -30,8 +30,6 @@ namespace Microsoft.Interop
                 }
             }
 
-            public Diagnostic? Diagnostic => MethodInfo.Diagnostic;
-
             public GeneratedMethodContextBase NativeToManagedStub
             {
                 get

@@ -58,7 +58,8 @@ namespace Microsoft.Interop
             context.RegisterDiagnostics(interfaceSymbolAndDiagnostic.Select((data, ct) => data.Diagnostic));
 
             var interfaceSymbolsWithoutDiagnostics = interfaceSymbolAndDiagnostic
-                .Where(data => data.Diagnostic is null);
+                .Where(data => data.Diagnostic is null)
+                .Select((data, ct) => (data.InterfaceInfo, data.Symbol));
 
             var interfacesToGenerate = interfaceSymbolsWithoutDiagnostics
                 .Select((data, ct) => data.InterfaceInfo!);
@@ -66,21 +67,14 @@ namespace Microsoft.Interop
             var interfaceContexts = interfacesToGenerate.Collect().SelectMany(ComInterfaceContext.GetContexts);
 
             // Get the information we need about methods themselves
-            var interfaceMethods = interfaceSymbolsWithoutDiagnostics.Select(static (pair, ct) =>
-            {
-                var symbol = pair.Symbol;
-                var info = pair.InterfaceInfo;
-                List<ComMethodInfo> comMethods = new();
-                foreach (var member in symbol.GetMembers())
-                {
-                    if (ComMethodInfo.IsComMethod(info, member, out ComMethodInfo? methodInfo))
-                    {
-                        comMethods.Add(methodInfo);
-                    }
-                }
-                return comMethods.ToSequenceEqualImmutableArray();
-            });
-            context.RegisterDiagnostics(interfaceMethods.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
+            var interfaceMethodsAndDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
+            context.RegisterDiagnostics(interfaceMethodsAndDiagnostics.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
+            var interfaceMethods = interfaceMethodsAndDiagnostics
+                .Select(static (methods, ct) =>
+                    methods
+                        .Where(pair => pair.Diagnostic is null)
+                        .Select(pair => pair.ComMethod)
+                        .ToSequenceEqualImmutableArray());
 
             // Generate a map from Com interface to the methods it declares
             var interfaceToDeclaredMethodsMap = interfaceContexts
@@ -455,7 +449,7 @@ namespace Microsoft.Interop
                         comInterfaceAndMethods.DeclaredMethods
                             .Select(m => m.NativeToManagedStub)
                             .OfType<GeneratedStubCodeContext>()
-                            .Select(context => context.Stub.Node) ));
+                            .Select(context => context.Stub.Node)));
         }
 
         private static readonly TypeSyntax VoidStarStarSyntax = PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))));
