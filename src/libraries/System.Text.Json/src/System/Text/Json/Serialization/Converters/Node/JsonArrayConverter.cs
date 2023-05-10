@@ -10,7 +10,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override void Write(Utf8JsonWriter writer, JsonArray value, JsonSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             value.WriteTo(writer, options);
         }
 

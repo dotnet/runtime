@@ -30,7 +30,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
-            Debug.Assert(value?.GetType() == typeof(object));
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             writer.WriteStartObject();
             writer.WriteEndObject();
         }
