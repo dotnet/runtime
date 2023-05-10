@@ -239,6 +239,9 @@
 
     <!-- Windows all architecture excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/2164/foreground-shutdown/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84006</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x64 specific excludes -->
@@ -890,12 +893,22 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74555</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85747</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/Runtime_34170/*">
             <Issue>https://github.com/dotnet/runtime/issues/53560</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Crossgen2 arm32/arm64 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
         </ExcludeList>
     </ItemGroup>
 

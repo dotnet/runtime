@@ -177,7 +177,6 @@ namespace Internal.Runtime
 
     internal enum EETypeField
     {
-        ETF_InterfaceMap,
         ETF_TypeManagerIndirection,
         ETF_WritableData,
         ETF_DispatchMap,

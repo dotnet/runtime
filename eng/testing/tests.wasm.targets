@@ -6,6 +6,20 @@
     <ArchiveTests Condition="'$(WasmBuildingForNestedPublish)' == 'true'">false</ArchiveTests>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
+    <!--
+        Some tests depend on debugger attributes, and thus set $(DebuggerSupport)=true to preserve
+        them while linking.
+        But setting WasmDebugLevel<0 disables optimizations in the interpreter. So setting that
+        based on $(DebuggerSupport) has unintended slow down.
+
+        But we do want to set it for Configuration=Debug .
+    -->
+    <WasmDebugLevel Condition="'$(Configuration)' == 'Debug' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
+    <!-- We want to have WasmDebugLevel=0, but if DebuggerSupport=true then WasmApp.targets
+         *will* override it. So, set this to "reset-to-zero" here, and reset the value later
+         in targets. -->
+    <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(WasmDebugLevel)' == ''">reset-to-zero</WasmDebugLevel>
+
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
 
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,

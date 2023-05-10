@@ -10,11 +10,29 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ size, \
+         /* numArgs */ numarg, \
+        /* category */ category \
+    },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ size, \
+         /* numArgs */ numarg, \
+        /* category */ category \
+    },
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -39,6 +57,302 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 
     return hwIntrinsicInfoArray[id - NI_HW_INTRINSIC_START - 1];
 }
+
+#if defined(TARGET_XARCH)
+const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
+{
+    // This table is 768 bytes and is about as small as we can make it.
+    //
+    // The way the constants work is we have three keys:
+    // * A: 0xF0
+    // * B: 0xCC
+    // * C: 0xAA
+    //
+    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
+    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
+    //
+    // This table allows us to compute the inverse information, that is given a control, what are the operations it
+    // performs. This allows us to determine things like what operands are actually used (so we can correctly compute
+    // isRMW) and what operations are performed and in what order (such that we can do constant folding in the future).
+    //
+    // The total set of operations supported are:
+    // * true:   AllBitsSet
+    // * false:  Zero
+    // * not:    ~value
+    // * and:    left & right
+    // * nand:   ~(left & right)
+    // * or:     left | right
+    // * nor:    ~(left | right)
+    // * xor:    left ^ right
+    // * xnor:   ~(left ^ right)
+    // * cndsel: a ? b : c; aka (B & A) | (C & ~A)
+    // * major:  0 if two+ input bits are 0
+    // * minor:  1 if two+ input bits are 0
+
+    // clang-format off
+    static const TernaryLogicInfo ternaryLogicFlags[256] = {
+        /* FALSE */           { TernaryLogicOperKind::False,  TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norABC */          { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andCnorBA */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norBA */           { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andBnorAC */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCA */           { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norAxnorBC */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norAandBC */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norAnandBC */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norAxorBC */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andC!A */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?!A:norBA */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* andB!A */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?!A:norAC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* norAnorBC */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* !A */              { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andAnorBC */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCB */           { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norBxnorAC */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norBandAC */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCxnorBA */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCandBA */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?norBC:xorBC */   { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* minorABC */        { TernaryLogicOperKind::Minor,  TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?norBC:andBC */   { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?norBC:xnorBC */  { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?norBC:C */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?!A:!B */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?norBC:B */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?!A:!C */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* xorAorBC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandAorBC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norBnandAC */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norBxorAC */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andC!B */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?!B:norBA */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?norAC:andAC */   { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?norAC:xnorAC */  { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?norAC:C */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?!B:!A */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* andCxorBA */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?xorBA:norBA */   { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* andCnandBA */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?nandBA:norBA */  { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?!A:andAC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?!A:xnorAC */     { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?!A:C */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?nandBA:!A */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* andA!B */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?!B:norBC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* norBnorAC */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* !B */              { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?norAC:A */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?!B:!C */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xorBorAC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandBorAC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?!B:andBC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?!B:xnorBC */     { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?!B:C */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?nandBA:!B */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* xorBA */           { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?xorBA:nandBA */  { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?!B:orBC */       { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandBA */          { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCnandBA */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* norCxorBA */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?norBA:andBA */   { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?norBA:xnorBA */  { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* andB!C */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?!C:norAC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?norBA:B */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?!C:!A */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* andBxorAC */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?xorAC:norAC */   { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?!A:andBA */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?xorAC:!A */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* andBnandAC */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?nandAC:norAC */  { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?!A:B */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?nandAC:!A */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* andA!C */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?!C:norBC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?norBA:A */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?!C:!B */         { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* norCnorBA */       { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* !C */              { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xorCorBA */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandCorBA */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?!C:andBC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?!C:xnorBC */     { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xorCA */           { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?xorAC:nandAC */  { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?!C:B */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?nandAC:!C */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?!C:orBC */       { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandCA */          { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andAxorBC */       { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?xorBC:norBC */   { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?!B:andBA */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?xorBC:!B */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?!C:andAC */      { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?xorBC:!C */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xorCB */           { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?xorBC:nandBC */  { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?xorBC:andBC */   { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xnorABC */         { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xorCandBA */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?nandBA:xnorBA */ { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* xorBandAC */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?nandAC:xnorAC */ { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?nandAC:C */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* nandAxnorBC */     { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andAnandBC */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?nandBC:norBC */  { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?!B:A */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?nandBC:!B */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?!C:A */          { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?nandBC:!C */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?!C:orAC */       { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* nandCB */          { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xorAandBC */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?nandBC:xnorBC */ { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?nandBC:C */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandBxnorAC */     { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?nandBC:B */      { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandCxnorBA */     { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?nandBC:orBC */   { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandABC */         { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andABC */          { TernaryLogicOperKind::And,    TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?andBC:norBC */   { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* andCxnorBA */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?andBC:!B */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* andBxnorAC */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?andBC:!C */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?andBC:xorBC */   { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xnorAandBC */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andCB */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?C:norAC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?andBC:C */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?C:!A */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?andBC:B */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?B:!A */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?andBC:orBC */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandAnandBC */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andAxnorBC */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?andAC:!C */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?andAC:xorAC */   { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* xnorBandAC */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?andBA:xorBA */   { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* xnorCandBA */      { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xorABC */          { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?xnorBC:nandBC */ { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?xnorBC:andBC */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* xnorCB */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?xnorBC:C */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?C:nandAC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?xnorBC:B */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?B:nandBA */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?xnorBC:orBC */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* nandAxorBC */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andCA */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?C:norBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?andAC:C */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?C:!B */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?xnorAC:andAC */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* xnorCA */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?C:xorBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?C:nandBC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* andCorAB */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xnorCorBA */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orCnorBA */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?C:B */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?orBA:!A */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?C:orBC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* orC!A */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?andAC:A */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?A:!B */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?andAC:orAC */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* nandBnandAC */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?xnorAC:A */      { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?A:nandBA */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?xnorAC:orAC */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* nandBxorAC */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?C:A */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?orBA:!B */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?C:orAC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* orC!B */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?orBA:xorBA */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* C?orBA:nandBA */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* orCxorBA */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orCnandBA */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andBA */           { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?B:norBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?xnorBA:andBA */  { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* xnorBA */          { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?andBA:B */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?B:!C */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:xorBC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?B:nandBC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* andBorAC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xnorBorAC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?B:C */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* B?orAC:!A */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBnorAC */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?B:orBC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* orB!A */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?andBA:A */       { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?A:!C */          { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:xorAC */       { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?A:nandAC */      { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?andBA:orBA */    { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* nandCnandBA */     { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?xnorBA:orBA */   { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* nandCxorBA */      { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?B:A */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* B?orAC:!C */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?orAC:xorAC */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* B?orAC:nandAC */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* C?B:orBA */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* orB!C */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBxorAC */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBnandAC */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* andAorBC */        { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::And,    TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* xnorAorBC */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?A:C */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* A?orBC:!B */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* C?A:B */           { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Select, TernaryLogicUseFlags::B,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* A?orBC:!C */       { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?orBC:xorBC */    { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* A?orBC:nandBC */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* majorABC */        { TernaryLogicOperKind::Major,  TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A?orBC:xnorBC */   { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A    },
+        /* orCandBA */        { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orCxnorBA */       { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBandAC */        { TernaryLogicOperKind::And,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBxnorAC */       { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orCB */            { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::BC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandAnorBC */      { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* A */               { TernaryLogicOperKind::Select, TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orAnorBC */        { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* B?A:orAC */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::B    },
+        /* orA!B */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::B,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* C?A:orBA */        { TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::A,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Cond,   TernaryLogicUseFlags::C    },
+        /* orA!C */           { TernaryLogicOperKind::Not,    TernaryLogicUseFlags::C,    TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orAxorBC */        { TernaryLogicOperKind::Xor,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orAnandBC */       { TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orAandBC */        { TernaryLogicOperKind::And,    TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orAxnorBC */       { TernaryLogicOperKind::Xnor,   TernaryLogicUseFlags::BC,   TernaryLogicOperKind::Or,     TernaryLogicUseFlags::A,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orCA */            { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AC,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandBnorAC */      { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AC,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::B,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orBA */            { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::AB,   TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* nandCnorBA */      { TernaryLogicOperKind::Nor,    TernaryLogicUseFlags::AB,   TernaryLogicOperKind::Nand,   TernaryLogicUseFlags::C,    TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* orABC */           { TernaryLogicOperKind::Or,     TernaryLogicUseFlags::ABC,  TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+        /* TRUE */            { TernaryLogicOperKind::True,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None, TernaryLogicOperKind::None,   TernaryLogicUseFlags::None },
+    };
+    // clang-format on
+
+    return ternaryLogicFlags[control];
+}
+#endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
 // getBaseJitTypeFromArgIfNeeded: Get simdBaseJitType of intrinsic from 1st or 2nd argument depending on the flag
@@ -560,7 +874,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     GenTree* immOpDup = nullptr;
 
-    immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+    immOp = impCloneExpr(immOp, &immOpDup, CHECK_SPILL_ALL,
                          nullptr DEBUGARG("Clone an immediate operand for immediate value bounds check"));
 
     if (immLowerBound != 0)
@@ -957,6 +1271,26 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             {
                 return impNonConstFallback(intrinsic, retType, simdBaseJitType);
             }
+#if defined(TARGET_XARCH)
+            else if (HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic))
+            {
+#if defined(TARGET_X86)
+                var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
+                if (varTypeIsLong(simdBaseType))
+                {
+                    if (!mustExpand)
+                    {
+                        return nullptr;
+                    }
+                }
+                else
+#endif // TARGET_XARCH
+                {
+                    return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+                }
+            }
+#endif // TARGET_XARCH
             else if (!mustExpand)
             {
                 // When the imm-argument is not a constant and we are not being forced to expand, we need to
@@ -1009,11 +1343,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         switch (numArgs)
         {
             case 0:
+            {
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
                 break;
+            }
 
             case 1:
+            {
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
 
                 if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
@@ -1067,8 +1404,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
                 break;
+            }
 
             case 2:
+            {
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1121,8 +1460,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
 #endif
                 break;
+            }
 
             case 3:
+            {
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1164,9 +1505,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
 #endif
                 break;
+            }
 
-#ifdef TARGET_ARM64
             case 4:
+            {
                 op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
                 op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
@@ -1176,7 +1518,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
                 break;
-#endif
+            }
+
             default:
                 break;
         }

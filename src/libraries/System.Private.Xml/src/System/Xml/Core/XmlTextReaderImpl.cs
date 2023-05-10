@@ -463,7 +463,7 @@ namespace System.Xml
             ConvertAbsoluteUnixPathToAbsoluteUri(ref url, resolver: null);
             _namespaceManager = new XmlNamespaceManager(nt);
 
-            if (url == null || url.Length == 0)
+            if (string.IsNullOrEmpty(url))
             {
                 InitStreamInput(input, null);
             }
@@ -506,7 +506,7 @@ namespace System.Xml
             : this((context != null && context.NameTable != null) ? context.NameTable : new NameTable())
         {
             Encoding? enc = context?.Encoding;
-            if (context == null || context.BaseURI == null || context.BaseURI.Length == 0)
+            if (context == null || string.IsNullOrEmpty(context.BaseURI))
             {
                 InitStreamInput(xmlFragment, enc);
             }
