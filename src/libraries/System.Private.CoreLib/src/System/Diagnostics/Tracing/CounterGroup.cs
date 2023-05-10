@@ -72,7 +72,6 @@ namespace System.Diagnostics.Tracing
                 }
                 else if (e.Command == EventCommand.Disable)
                 {
-                    Debug.Assert(e.Command == EventCommand.Disable);
                     // Since we allow sessions to send multiple Enable commands to update the interval, we cannot
                     // rely on ref counting to determine when to enable and disable counters. You will get an arbitrary
                     // number of Enables and one Disable per session.
@@ -147,7 +146,6 @@ namespace System.Diagnostics.Tracing
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
-            Debug.Assert(pollingIntervalInSeconds > 0);
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             if (pollingIntervalInSeconds <= 0)
             {
