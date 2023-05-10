@@ -234,7 +234,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#define TRACE_GC
+//#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -392,6 +392,12 @@ struct GCDebugSpinLock {
     // number of times we went to calling DisablePreemptiveGC in WaitLonger.
     unsigned int num_disable_preemptive_w;
 #endif
+#if defined(DYNAMIC_HEAP_COUNT)
+    // time in microseconds we wait for the more space lock
+    uint64_t msl_wait_time;
+    // number of times we wait for the more space lock
+    uint64_t msl_wait_count;
+#endif //DYNAMIC_HEAP_COUNT
 
     GCDebugSpinLock()
         : lock(-1)
@@ -401,6 +407,9 @@ struct GCDebugSpinLock {
 #if defined (SYNCHRONIZATION_STATS)
         , num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
 #endif
+#if defined(DYNAMIC_HEAP_COUNT)
+        , msl_wait_time(0), msl_wait_count(0)
+#endif //DYNAMIC_HEAP_COUNT
     {
     }
 
@@ -2543,7 +2552,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes (int condemned_gen_number);
 
-#ifdef MULTIPLE_HEAPS
+#ifdef DYNAMIC_HEAP_COUNT
     // check that the fields of a decommissioned heap have their expected values,
     // i.e. were not inadvertently modified
     PER_HEAP_METHOD void check_decommissioned_heap();
@@ -2555,8 +2564,11 @@ private:
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
 
+    // check if we should change the heap count
+    PER_HEAP_ISOLATED_METHOD void check_heap_count();
+
     PER_HEAP_ISOLATED_METHOD bool change_heap_count (int new_n_heaps);
-#endif //MULTIPLE_HEAPS
+#endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -4185,6 +4197,30 @@ private:
     // Set in one GC and updated in the next GC.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED BOOL should_expand_in_full_gc;
 #endif //USE_REGIONS
+
+#ifdef DYNAMIC_HEAP_COUNT
+    struct dynamic_heap_count_data_t
+    {
+        static const unsigned sample_size = 3;
+
+        struct sample
+        {
+            uint64_t    elapsed_between_gcs;    // time between gcs in microseconds
+            uint64_t    gc_elapsed_time;        // time the gc took
+            uint64_t    msl_wait_time;          // time the allocator spent waiting for the msl lock
+            size_t      allocating_thread_count;// number of allocating threads
+            size_t      heap_size;
+        };
+
+        unsigned        sample_index;
+        sample          samples[sample_size];
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+        int             lowest_heap_with_msl_uoh;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
+    };
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+#endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
     //  PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC fields //
