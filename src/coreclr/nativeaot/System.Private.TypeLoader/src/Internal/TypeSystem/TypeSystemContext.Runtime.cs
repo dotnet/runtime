@@ -431,15 +431,6 @@ namespace Internal.TypeSystem
                             MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature, IntPtr.Zero, false);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
                         }
-
-                        // Otherwise, just check to see if there is a method discoverable via GetMethods
-                        foreach (MethodDesc potentialMethod in key._owningType.GetMethods())
-                        {
-                            if (CompareKeyToValue(key, potentialMethod))
-                            {
-                                return potentialMethod;
-                            }
-                        }
                     }
                     else
                     {

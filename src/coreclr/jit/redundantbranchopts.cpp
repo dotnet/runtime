@@ -807,6 +807,24 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         }
     }
 
+    // Verify that dom block dominates all of block's predecessors.
+    //
+    // This will initially be true but if we jump thread through
+    // dom block, it may no longer be true.
+    //
+    if (domBlock != nullptr)
+    {
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            if (!fgDominate(domBlock, predBlock))
+            {
+                JITDUMP("Dom " FMT_BB " is stale (does not dominate pred " FMT_BB "); no threading\n", domBlock->bbNum,
+                        predBlock->bbNum);
+                return false;
+            }
+        }
+    }
+
     // Since flow is going to bypass block, make sure there
     // is nothing in block that can cause a side effect.
     //

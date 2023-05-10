@@ -394,7 +394,6 @@ private:
     //
     void FinalizeInit(DecompositionStatementList* statements)
     {
-        GenTree*        cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
         uint8_t         initPattern = GetInitPattern();
         StructUseDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
 
@@ -424,7 +423,7 @@ private:
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
-            GenTree* asg = m_compiler->gtNewBlkOpNode(m_dst, cns);
+            GenTree* asg = m_compiler->gtNewAssignNode(m_dst, m_src);
             statements->AddStatement(asg);
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
@@ -502,7 +501,6 @@ private:
             for (int i = 0; i < m_entries.Height(); i++)
             {
                 const Entry& entry = m_entries.BottomRef(i);
-                // TODO: Double check that TYP_BYREF do not incur any write barriers.
                 if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
                 {
                     Replacement* rep = entry.FromReplacement;
@@ -522,8 +520,10 @@ private:
             }
         }
 
-        GenTree*     addr       = nullptr;
-        GenTreeFlags indirFlags = GTF_EMPTY;
+        GenTree*       addr               = nullptr;
+        target_ssize_t addrBaseOffs       = 0;
+        FieldSeq*      addrBaseOffsFldSeq = nullptr;
+        GenTreeFlags   indirFlags         = GTF_EMPTY;
 
         if (m_dst->OperIs(GT_BLK))
         {
@@ -589,27 +589,26 @@ private:
 
         if ((addr != nullptr) && (numAddrUses > 1))
         {
-            if (addr->OperIsLocal() && (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                        (addr->AsLclVarCommon()->GetLclNum() != m_dst->AsLclVarCommon()->GetLclNum())))
+            m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
+            if (CanReuseAddressForDecomposedStore(addr))
             {
-                // We will introduce more uses of the address local, so it is
-                // no longer dying here.
-                addr->gtFlags &= ~GTF_VAR_DEATH;
-            }
-            else if (addr->IsInvariant())
-            {
-                // Fall through
+                if (addr->OperIsLocalRead())
+                {
+                    // We will introduce more uses of the address local, so it is
+                    // no longer dying here.
+                    addr->gtFlags &= ~GTF_VAR_DEATH;
+                }
             }
             else
             {
                 unsigned addrLcl = m_compiler->lvaGrabTemp(true DEBUGARG("Spilling address for field-by-field copy"));
                 statements->AddStatement(m_compiler->gtNewTempAssign(addrLcl, addr));
                 addr = m_compiler->gtNewLclvNode(addrLcl, addr->TypeGet());
-                UpdateEarlyRefCount(m_compiler, addr);
             }
         }
 
-        auto grabAddr = [&numAddrUses, addr, this](unsigned offs) {
+        auto grabAddr = [=, &numAddrUses](unsigned offs) {
             assert(numAddrUses > 0);
             numAddrUses--;
 
@@ -622,14 +621,16 @@ private:
             else
             {
                 addrUse = m_compiler->gtCloneExpr(addr);
-                UpdateEarlyRefCount(m_compiler, addrUse);
             }
 
-            if (offs != 0)
+            target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
+            if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
             {
+                GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
+
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
-                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse,
-                                                    m_compiler->gtNewIconNode((ssize_t)offs, TYP_I_IMPL));
+                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
             }
 
             return addrUse;
@@ -655,7 +656,7 @@ private:
         // that it's best to do it last.
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
         {
-            statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+            statements->AddStatement(m_compiler->gtNewAssignNode(m_dst, m_src));
 
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -698,9 +699,6 @@ private:
             if (entry.ToLclNum != BAD_VAR_NUM)
             {
                 dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
-
-                if (m_compiler->lvaGetDesc(entry.ToLclNum)->lvIsStructField)
-                    UpdateEarlyRefCount(m_compiler, dst);
             }
             else if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -710,7 +708,6 @@ private:
                 dst = m_compiler->gtNewLclFldNode(m_dst->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
                 m_compiler->lvaSetVarDoNotEnregister(m_dst->AsLclVarCommon()->GetLclNum()
                                                          DEBUGARG(DoNotEnregisterReason::LocalField));
-                UpdateEarlyRefCount(m_compiler, dst);
             }
             else
             {
@@ -723,9 +720,6 @@ private:
             if (entry.FromLclNum != BAD_VAR_NUM)
             {
                 src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
-
-                if (m_compiler->lvaGetDesc(entry.FromLclNum)->lvIsStructField)
-                    UpdateEarlyRefCount(m_compiler, src);
             }
             else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -734,7 +728,6 @@ private:
                 src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
                 m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum()
                                                          DEBUGARG(DoNotEnregisterReason::LocalField));
-                UpdateEarlyRefCount(m_compiler, src);
             }
             else
             {
@@ -753,7 +746,7 @@ private:
 
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
         {
-            statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+            statements->AddStatement(m_compiler->gtNewAssignNode(m_dst, m_src));
         }
 
         if (remainderStrategy.Type == RemainderStrategy::Primitive)
@@ -833,6 +826,58 @@ private:
     }
 
     //------------------------------------------------------------------------
+    // CanReuseAddressForDecomposedStore: Check if it is safe to reuse the
+    // specified address node for each decomposed store of a block copy.
+    //
+    // Arguments:
+    //   addrNode - The address node
+    //
+    // Return Value:
+    //   True if the caller can reuse the address by cloning.
+    //
+    bool CanReuseAddressForDecomposedStore(GenTree* addrNode)
+    {
+        if (addrNode->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* lcl    = addrNode->AsLclVarCommon();
+            unsigned             lclNum = lcl->GetLclNum();
+            if (m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+            {
+                // Address could be pointing to itself
+                return false;
+            }
+
+            // If we aren't writing a local here then since the address is not
+            // exposed it cannot change.
+            if (!m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                return true;
+            }
+
+            // Otherwise it could still be possible that the address is part of
+            // the struct we're writing.
+            unsigned dstLclNum = m_dst->AsLclVarCommon()->GetLclNum();
+            if (lclNum == dstLclNum)
+            {
+                return false;
+            }
+
+            // It could also be one of the replacement locals we're going to write.
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (m_entries.BottomRef(i).ToLclNum == lclNum)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return addrNode->IsInvariant();
+    }
+
+    //------------------------------------------------------------------------
     // PropagateIndirFlags:
     //   Propagate the specified flags to a GT_IND node.
     //
@@ -849,55 +894,49 @@ private:
 
         indir->gtFlags |= flags;
     }
-
-    //------------------------------------------------------------------------
-    // UpdateEarlyRefCount:
-    //   Update early ref counts if necessary for the specified IR node.
-    //
-    // Parameters:
-    //   comp      - compiler instance
-    //   candidate - the IR node that may be a local that should have its early
-    //               ref counts updated.
-    //
-    static void UpdateEarlyRefCount(Compiler* comp, GenTree* candidate)
-    {
-        if (!candidate->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
-        {
-            return;
-        }
-
-        IncrementRefCount(comp, candidate->AsLclVarCommon()->GetLclNum());
-
-        LclVarDsc* varDsc = comp->lvaGetDesc(candidate->AsLclVarCommon());
-        if (varDsc->lvIsStructField)
-        {
-            IncrementRefCount(comp, varDsc->lvParentLcl);
-        }
-
-        if (varDsc->lvPromoted)
-        {
-            for (unsigned fldLclNum = varDsc->lvFieldLclStart; fldLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt;
-                 fldLclNum++)
-            {
-                IncrementRefCount(comp, fldLclNum);
-            }
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // IncrementRefCount:
-    //   Increment the ref count for the specified local.
-    //
-    // Parameters:
-    //   comp   - compiler instance
-    //   lclNum - the local
-    //
-    static void IncrementRefCount(Compiler* comp, unsigned lclNum)
-    {
-        LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
-        varDsc->incLvRefCntSaturating(1, RCS_EARLY);
-    }
 };
+
+//------------------------------------------------------------------------
+// gtPeelOffsets: Peel all ADD(addr, CNS_INT(x)) nodes off the specified address
+// node and return the base node and sum of offsets peeled.
+//
+// Arguments:
+//   addr   - [in, out] The address node.
+//   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
+//   fldSeq - [out] The combined field sequence for all the peeled offsets.
+//
+void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
+{
+    assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    *offset = 0;
+    *fldSeq = nullptr;
+    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
+    {
+        GenTree* op1 = (*addr)->gtGetOp1();
+        GenTree* op2 = (*addr)->gtGetOp2();
+
+        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+        {
+            assert(op2->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op2->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+            *addr   = op1;
+        }
+        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+        {
+            assert(op1->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op1->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+            *addr   = op2;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // HandleAssignment:

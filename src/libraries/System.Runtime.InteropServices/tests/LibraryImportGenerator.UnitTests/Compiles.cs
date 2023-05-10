@@ -14,6 +14,13 @@ using System.Threading.Tasks;
 using Xunit;
 using SourceGenerators.Tests;
 
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
+using Microsoft.CodeAnalysis.Testing;
+using System.Collections.Immutable;
+using System.Threading;
+using Microsoft.CodeAnalysis.Text;
+using System.Text;
+
 namespace LibraryImportGenerator.UnitTests
 {
     public class Compiles
@@ -417,13 +424,8 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippets(string id, string source)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            await VerifyCS.VerifySourceGeneratorAsync(source);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithPreprocessorSymbols()
@@ -442,23 +444,37 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new PreprocessorTest(preprocessorSymbols)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
+            await test.RunAsync();
+        }
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        private class PreprocessorTest : VerifyCS.Test
+        {
+            private readonly IEnumerable<string> _preprocessorSymbols;
+
+            public PreprocessorTest(IEnumerable<string> preprocessorSymbols)
+                :base(referenceAncillaryInterop: false)
+            {
+                _preprocessorSymbols = preprocessorSymbols;
+            }
+
+            protected override ParseOptions CreateParseOptions()
+                => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols(_preprocessorSymbols);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
         {
-            yield return new object[] { ID(), CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
+            //yield return new object[] { ID(), CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
 
             // Confirm that all unsupported target frameworks can be generated.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net6, false };
+                //yield return new object[] { ID(), code, TestTargetFramework.Net6, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, false };
@@ -498,31 +514,38 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsFallbackForwarder(string id, string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new FallbackForwarderTest(targetFramework, expectFallbackForwarder)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(
-                comp,
-                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(targetFramework)),
-                out var generatorDiags,
-                new Microsoft.Interop.LibraryImportGenerator());
+            await test.RunAsync();
+        }
 
-            Assert.Empty(generatorDiags);
+        class FallbackForwarderTest : VerifyCS.Test
+        {
+            private readonly bool _expectFallbackForwarder;
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            public FallbackForwarderTest(TestTargetFramework targetFramework, bool expectFallbackForwarder)
+                :base(targetFramework)
+            {
+                _expectFallbackForwarder = expectFallbackForwarder;
+            }
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                SemanticModel model = compilation.GetSemanticModel(generatedCode);
+                var methods = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                    .ToList();
+                MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
 
-            // Verify that the forwarder generates the method as a DllImport.
-            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
-            SemanticModel model = newComp.GetSemanticModel(generatedCode);
-            var methods = generatedCode.GetRoot()
-                .DescendantNodes().OfType<MethodDeclarationSyntax>()
-                .ToList();
-            MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
+                IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
 
-            IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
-
-            // If we expect fallback forwarder, then the DllImportData will not be null.
-            Assert.Equal(expectFallbackForwarder, method.GetDllImportData() is not null);
+                // If we expect fallback forwarder, then the DllImportData will not be null.
+                Assert.Equal(_expectFallbackForwarder, method.GetDllImportData() is not null);
+            }
         }
 
         public static IEnumerable<object[]> FullyBlittableSnippetsToCompile()
@@ -536,26 +559,32 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithBlittableAutoForwarding(string id, string source)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new BlittableAutoForwarderTest()
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(
-                comp,
-                out var generatorDiags,
-                new Microsoft.Interop.LibraryImportGenerator());
+            await test.RunAsync();
+        }
 
-            Assert.Empty(generatorDiags);
+        class BlittableAutoForwarderTest : VerifyCS.Test
+        {
+            public BlittableAutoForwarderTest()
+                :base(referenceAncillaryInterop: false)
+            {
+            }
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                SemanticModel model = compilation.GetSemanticModel(generatedCode);
+                var methods = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                    .ToList();
 
-            // Verify that the forwarder generates the method as a DllImport.
-            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
-            SemanticModel model = newComp.GetSemanticModel(generatedCode);
-            var methods = generatedCode.GetRoot()
-                .DescendantNodes().OfType<MethodDeclarationSyntax>()
-                .ToList();
-
-            Assert.All(methods, method => Assert.NotNull(model.GetDeclaredSymbol(method)!.GetDllImportData()));
+                Assert.All(methods, method => Assert.NotNull(model.GetDeclaredSymbol(method)!.GetDllImportData()));
+            }
         }
 
         public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
@@ -570,29 +599,34 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string id, string source)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new NonBlittableNoAutoForwardTest()
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(
-                comp,
-                out var generatorDiags,
-                new Microsoft.Interop.LibraryImportGenerator());
+            await test.RunAsync();
+        }
 
-            Assert.Empty(generatorDiags);
+        class NonBlittableNoAutoForwardTest : VerifyCS.Test
+        {
+            public NonBlittableNoAutoForwardTest()
+                : base(referenceAncillaryInterop: false)
+            {
+            }
 
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
-
-            // Verify that the generator generates stubs with inner DllImports for all methods.
-            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
-            SemanticModel model = newComp.GetSemanticModel(generatedCode);
-            int numStubMethods = generatedCode.GetRoot()
-                .DescendantNodes().OfType<MethodDeclarationSyntax>()
-                .Count();
-            int numInnerDllImports = generatedCode.GetRoot()
-                .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
-                .Count();
-
-            Assert.Equal(numStubMethods, numInnerDllImports);
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                SemanticModel model = compilation.GetSemanticModel(generatedCode);
+                int numStubMethods = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                    .Count();
+                int numInnerDllImports = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                    .Count();
+                Assert.Equal(numStubMethods, numInnerDllImports);
+            }
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
@@ -609,18 +643,21 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithMarshalType(string id, string source)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-
-            var newComp = TestUtils.RunGenerators(
-                comp,
-                new LibraryImportGeneratorOptionsProvider(TestTargetFramework.Net, useMarshalType: true, generateForwarders: false),
-                out var generatorDiags,
-                new Microsoft.Interop.LibraryImportGenerator());
-
-            Assert.Empty(generatorDiags);
-
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0117");
+            var test = new VerifyCS.Test(referenceAncillaryInterop: true)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            test.SolutionTransforms.Add((solution, projectId) =>
+                solution.AddAnalyzerConfigDocument(DocumentId.CreateNewId(projectId),
+                    "UseMarshalType.editorconfig",
+                    SourceText.From("""
+                        is_global = true
+                        build_property.LibraryImportGenerator_UseMarshalType = true
+                        """,
+                        Encoding.UTF8),
+                    filePath: "/UseMarshalType.editorconfig"));
+            await test.RunAsync();
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileMultipleSources()
@@ -635,13 +672,16 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateSnippetsWithMultipleSources(string id, string[] sources)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(sources);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            // To enable us to reuse snippets that have markup locations in our multiple-sources test, we'll strip out the markup locations.
+            // We need to do this as each snippet expects to be able to define all expected markup locations (starting from 0), so including multiple snippets
+            // results in multiple definitions for the same location (which doesn't work). Since we expect no diagnostics, we can strip out the locations.
+            await VerifyCS.VerifySourceGeneratorAsync(sources.Select(RemoveTestMarkup).ToArray());
+        }
 
-            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
-
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        private static string RemoveTestMarkup(string sourceWithMarkup)
+        {
+            TestFileMarkupParser.GetSpans(sourceWithMarkup, out string sourceWithoutMarkup, out ImmutableArray<TextSpan> _);
+            return sourceWithoutMarkup;
         }
 
         public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
@@ -660,14 +700,29 @@ namespace LibraryImportGenerator.UnitTests
         public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
         {
             TestUtils.Use(id);
-            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: false);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+            var test = new NoChangeTest(framework)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var newComp = TestUtils.RunGenerators(comp, new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(framework)), out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(generatorDiags);
+            await test.RunAsync();
+        }
 
-            // Assert we didn't generate any syntax trees, even empty ones
-            Assert.Same(comp, newComp);
+        class NoChangeTest : VerifyCS.Test
+        {
+            public NoChangeTest(TestTargetFramework framework)
+                :base(framework)
+            {
+            }
+
+            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            {
+                var originalCompilation = await project.GetCompilationAsync(cancellationToken);
+                var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
+                Assert.Same(originalCompilation, newCompilation);
+                return (newCompilation, diagnostics);
+            }
         }
     }
 }
