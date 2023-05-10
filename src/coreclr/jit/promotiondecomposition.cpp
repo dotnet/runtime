@@ -46,23 +46,23 @@ class DecompositionPlan
         var_types    Type;
     };
 
-    Compiler*          m_compiler;
-    AggregateInfo**    m_aggregates;
-    PromotionLiveness* m_liveness;
-    GenTree*           m_dst;
-    GenTree*           m_src;
-    bool               m_dstInvolvesReplacements;
-    bool               m_srcInvolvesReplacements;
-    ArrayStack<Entry>  m_entries;
+    Compiler*                       m_compiler;
+    jitstd::vector<AggregateInfo*>& m_aggregates;
+    PromotionLiveness*              m_liveness;
+    GenTree*                        m_dst;
+    GenTree*                        m_src;
+    bool                            m_dstInvolvesReplacements;
+    bool                            m_srcInvolvesReplacements;
+    ArrayStack<Entry>               m_entries;
 
 public:
-    DecompositionPlan(Compiler*          comp,
-                      AggregateInfo**    aggregates,
-                      PromotionLiveness* liveness,
-                      GenTree*           dst,
-                      GenTree*           src,
-                      bool               dstInvolvesReplacements,
-                      bool               srcInvolvesReplacements)
+    DecompositionPlan(Compiler*                       comp,
+                      jitstd::vector<AggregateInfo*>& aggregates,
+                      PromotionLiveness*              liveness,
+                      GenTree*                        dst,
+                      GenTree*                        src,
+                      bool                            dstInvolvesReplacements,
+                      bool                            srcInvolvesReplacements)
         : m_compiler(comp)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
@@ -677,6 +677,12 @@ private:
         {
             const Entry& entry = m_entries.BottomRef(i);
 
+            if (entry.ToReplacement != nullptr)
+            {
+                entry.ToReplacement->NeedsWriteBack = true;
+                entry.ToReplacement->NeedsReadBack  = false;
+            }
+
             if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
             {
                 if (entry.FromReplacement != nullptr)
@@ -737,11 +743,6 @@ private:
             }
 
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
-            if (entry.ToReplacement != nullptr)
-            {
-                entry.ToReplacement->NeedsWriteBack = true;
-                entry.ToReplacement->NeedsReadBack  = false;
-            }
         }
 
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)

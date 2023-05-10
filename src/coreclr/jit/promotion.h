@@ -190,7 +190,7 @@ private:
     }
 
 public:
-    StructUseDeaths() : m_numFields(0)
+    StructUseDeaths() : m_deaths(BitVecOps::UninitVal()), m_numFields(0)
     {
     }
 
@@ -200,20 +200,20 @@ public:
 
 class PromotionLiveness
 {
-    Compiler*           m_compiler;
-    AggregateInfo**     m_aggregates;
-    BitVecTraits*       m_bvTraits                = nullptr;
-    unsigned*           m_structLclToTrackedIndex = nullptr;
-    BasicBlockLiveness* m_bbInfo                  = nullptr;
-    bool                m_hasPossibleBackEdge     = false;
-    BitVec              m_liveIn;
-    BitVec              m_ehLiveVars;
+    Compiler*                       m_compiler;
+    jitstd::vector<AggregateInfo*>& m_aggregates;
+    BitVecTraits*                   m_bvTraits                = nullptr;
+    unsigned*                       m_structLclToTrackedIndex = nullptr;
+    BasicBlockLiveness*             m_bbInfo                  = nullptr;
+    bool                            m_hasPossibleBackEdge     = false;
+    BitVec                          m_liveIn;
+    BitVec                          m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
     friend class PromotionLivenessBitSetTraits;
 
 public:
-    PromotionLiveness(Compiler* compiler, AggregateInfo** aggregates)
+    PromotionLiveness(Compiler* compiler, jitstd::vector<AggregateInfo*>& aggregates)
         : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
     {
     }
@@ -238,10 +238,10 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*         m_prom;
-    AggregateInfo**    m_aggregates;
-    PromotionLiveness* m_liveness;
-    bool               m_madeChanges = false;
+    Promotion*                      m_prom;
+    jitstd::vector<AggregateInfo*>& m_aggregates;
+    PromotionLiveness*              m_liveness;
+    bool                            m_madeChanges = false;
 
 public:
     enum
@@ -250,7 +250,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    ReplaceVisitor(Promotion* prom, AggregateInfo** aggregates, PromotionLiveness* liveness)
+    ReplaceVisitor(Promotion* prom, jitstd::vector<AggregateInfo*>& aggregates, PromotionLiveness* liveness)
         : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_aggregates(aggregates), m_liveness(liveness)
     {
     }

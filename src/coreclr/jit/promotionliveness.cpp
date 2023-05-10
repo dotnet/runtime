@@ -46,9 +46,9 @@ bool StructUseDeaths::IsReplacementDying(unsigned index) const
 
 void PromotionLiveness::Run()
 {
-    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_compiler->lvaTableCnt]{};
+    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_aggregates.size()]{};
     unsigned trackedIndex     = 0;
-    for (unsigned lclNum = 0; lclNum < m_compiler->lvaTableCnt; lclNum++)
+    for (size_t lclNum = 0; lclNum < m_aggregates.size(); lclNum++)
     {
         AggregateInfo* agg = m_aggregates[lclNum];
         if (agg == nullptr)

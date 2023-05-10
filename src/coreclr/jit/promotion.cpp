@@ -1215,7 +1215,10 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     Replacement& rep = replacements[index];
     assert(accessType == rep.AccessType);
     JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
+
     *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+
+    (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
 
     if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
     {
@@ -1414,8 +1417,8 @@ PhaseStatus Promotion::Run()
 #endif
 
     // Pick promotions based on the use information we just collected.
-    bool            anyReplacements = false;
-    AggregateInfo** aggregates      = new (m_compiler, CMK_Promotion) AggregateInfo*[m_compiler->lvaCount]{};
+    bool                           anyReplacements = false;
+    jitstd::vector<AggregateInfo*> aggregates(m_compiler->lvaCount, nullptr, m_compiler->getAllocator(CMK_Promotion));
     for (unsigned i = 0; i < numLocals; i++)
     {
         LocalUses* uses = localsUse.GetUsesByLocal(i);
