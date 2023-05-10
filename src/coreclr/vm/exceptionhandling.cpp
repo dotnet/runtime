@@ -195,8 +195,7 @@ void FreeTrackerMemory(ExceptionTracker* pTracker, TrackerMemoryType mem)
 static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRethrownException, BOOL bIsNewException)
 {
     WRAPPER_NO_CONTRACT;
-    // This should ideally use a threadsafe mechanism for greater accuracy, see https://github.com/dotnet/runtime/issues/85997
-    g_exceptionCount++;
+    InterlockedIncrement((LONG*)&g_exceptionCount);
 
     // Fire an exception thrown ETW event when an exception occurs
     ETW::ExceptionLog::ExceptionThrown(pcfThisFrame, bIsRethrownException, bIsNewException);

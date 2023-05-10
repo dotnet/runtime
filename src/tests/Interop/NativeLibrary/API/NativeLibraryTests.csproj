@@ -3,8 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Finalize in different assembly from Dispose, tries to load the assembly with Dispose after the ALC unload started -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <!-- Doesn't work with ilasm round-trip tests. Tracking: https://github.com/dotnet/runtime/issues/84914 -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

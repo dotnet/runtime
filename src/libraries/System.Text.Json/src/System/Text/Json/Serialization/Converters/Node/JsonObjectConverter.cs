@@ -45,6 +45,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartObject:
                     return ReadObject(ref reader, options.GetNodeOptions());
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedObject(reader.TokenType);

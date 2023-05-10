@@ -242,7 +242,7 @@ namespace System.Xml
                 {
                     Debug.Assert(_cachedNode != null);
                     string? prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
-                    if (prefix != null && prefix.Length != 0)
+                    if (!string.IsNullOrEmpty(prefix))
                     {
                         return $"{prefix}:{_cachedNode.LocalName}";
                     }
