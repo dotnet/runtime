@@ -12,7 +12,7 @@ namespace Microsoft.Interop
         private sealed record ComInterfaceContext(ComInterfaceInfo Info, ComInterfaceContext? Base)
         {
             /// <summary>
-            /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext. Does not guarantee the ordering of the output.
+            /// Takes a list of ComInterfaceInfo, and creates a list of ComInterfaceContext.
             /// </summary>
             public static IEnumerable<ComInterfaceContext> GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
             {

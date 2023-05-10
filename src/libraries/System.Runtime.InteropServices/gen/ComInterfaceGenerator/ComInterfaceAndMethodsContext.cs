@@ -26,9 +26,6 @@ namespace Microsoft.Interop
             /// </summary>
             public IEnumerable<ComMethodContext> InheritedMethods => Methods.Where(m => m.DeclaringInterface != Interface);
 
-            //internal static ComInterfaceAndMethodsContext From((ComInterfaceContext, SequenceEqualImmutableArray<ComMethodContext>) data, CancellationToken _)
-            //    => new ComInterfaceAndMethodsContext(data.Item1, data.Item2);
-
             public static IEnumerable<ComInterfaceAndMethodsContext> CalculateAllMethods(ValueEqualityImmutableDictionary<ComInterfaceContext, SequenceEqualImmutableArray<ComMethodInfo>> ifaceToDeclaredMethodsMap, StubEnvironment environment, CancellationToken ct)
             {
                 Dictionary<ComInterfaceContext, (ImmutableArray<ComMethodContext> Methods, ImmutableArray<ComMethodContext> ShadowingMethods)> allMethodsCache = new();
