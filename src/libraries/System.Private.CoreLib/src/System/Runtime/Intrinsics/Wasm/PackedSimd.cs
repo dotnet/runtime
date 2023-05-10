@@ -1699,6 +1699,177 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<nuint>  CompareGreaterThanOrEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareGreaterThanOrEqual(left, right);
 
+       // Floating-point sign bit operations
+
+        /// <summary>
+        ///   f32x4.neg
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Negate(Vector128<float>  value) => Negate(value);
+        /// <summary>
+        ///   f64x2.neg
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Negate(Vector128<double> value) => Negate(value);
+
+        /// <summary>
+        ///   f32x4.abs
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Abs(Vector128<float>  value) => Abs(value);
+        /// <summary>
+        ///   f64x2.abs
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Abs(Vector128<double> value) => Abs(value);
+
+        // Floating-point min and max
+
+        /// <summary>
+        ///   f32x4.min
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Min(Vector128<float>  left, Vector128<float>  right) => Min(left, right);
+        /// <summary>
+        ///   f64x2.min
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) => Min(left, right);
+
+        /// <summary>
+        ///   f32x4.max
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Max(Vector128<float>  left, Vector128<float>  right) => Max(left, right);
+        /// <summary>
+        ///   f64x2.max
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
+
+        /// <summary>
+        ///   f32x4.pmin
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  PseudoMin(Vector128<float>  left, Vector128<float>  right) => PseudoMin(left, right);
+        /// <summary>
+        ///   f64x2.pmin
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> PseudoMin(Vector128<double> left, Vector128<double> right) => PseudoMin(left, right);
+
+        /// <summary>
+        ///   f32x4.pmax
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  PseudoMax(Vector128<float>  left, Vector128<float>  right) => PseudoMax(left, right);
+        /// <summary>
+        ///   f64x2.pmax
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> PseudoMax(Vector128<double> left, Vector128<double> right) => PseudoMax(left, right);
+
+        // Floating-point arithmetic
+
+        /// <summary>
+        ///   f32x4.add
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Add(Vector128<float>  left, Vector128<float>  right) => Add(left, right);
+        /// <summary>
+        ///   f64x2.add
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) => Add(left, right);
+
+        /// <summary>
+        ///   f32x4.sub
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Subtract(Vector128<float>  left, Vector128<float>  right) => Subtract(left, right);
+        /// <summary>
+        ///   f64x2.sub
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Subtract(left, right);
+
+        /// <summary>
+        ///   f32x4.div
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Divide(Vector128<float>  left, Vector128<float>  right) => Divide(left, right);
+        /// <summary>
+        ///   f64x2.div
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) => Divide(left, right);
+
+        /// <summary>
+        ///   f32x4.mul
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Multiply(Vector128<float>  left, Vector128<float>  right) => Multiply(left, right);
+        /// <summary>
+        ///   f64x2.mul
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
+
+        /// <summary>
+        ///   f32x4.sqrt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Sqrt(Vector128<float>  value) => Sqrt(value);
+        /// <summary>
+        ///   f64x2.sqrt
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
+
+        /// <summary>
+        ///   f32x4.ceil
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Ceiling(Vector128<float>  value) => Ceiling(value);
+        /// <summary>
+        ///   f64x2.ceil
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Ceiling(Vector128<double> value) => Ceiling(value);
+
+        /// <summary>
+        ///   f32x4.floor
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Floor(Vector128<float>  value) => Floor(value);
+        /// <summary>
+        ///   f64x2.floor
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Floor(Vector128<double> value) => Floor(value);
+
+        /// <summary>
+        ///   f32x4.trunc
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  Truncate(Vector128<float>  value) => Truncate(value);
+        /// <summary>
+        ///   f64x2.trunc
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> Truncate(Vector128<double> value) => Truncate(value);
+
+        /// <summary>
+        ///   f32x4.nearest
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float>  RoundToNearest(Vector128<float>  value) => RoundToNearest(value);
+        /// <summary>
+        ///   f64x2.nearest
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> RoundToNearest(Vector128<double> value) => RoundToNearest(value);
+
         // Conversions
 
         /// <summary>

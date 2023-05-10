@@ -4220,4 +4220,7 @@
   <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
     <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
   </data>
+  <data name="OutOfMemory_StringTooLong" xml:space="preserve">
+    <value>The resulting string is too long</value>
+  </data>
 </root>

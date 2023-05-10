@@ -180,6 +180,7 @@ INLINE_OBSERVATION(FOLDABLE_EXPR,             int,    "foldable binary expressio
 INLINE_OBSERVATION(FOLDABLE_EXPR_UN,          int,    "foldable unary expression",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_BRANCH,           int,    "foldable branch",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(FOLDABLE_SWITCH,           int,    "foldable switch",                      INFORMATION, CALLSITE)
+INLINE_OBSERVATION(UNROLLABLE_MEMOP,          int,    "unrollable memmove/memcmp",            INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DIV_BY_CNS,                int,    "dividy by const",                      INFORMATION, CALLSITE)
 INLINE_OBSERVATION(CONSTANT_ARG_FEEDS_TEST,   bool,   "constant argument feeds test",         INFORMATION, CALLSITE)
 INLINE_OBSERVATION(DEPTH,                     int,    "depth",                                INFORMATION, CALLSITE)

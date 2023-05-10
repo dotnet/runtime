@@ -48,7 +48,7 @@ namespace System.Text
 
             ReadOnlySpan<char> remaining = _remaining;
 
-            int idx = remaining.IndexOfAny(string.IndexOfAnyValuesStorage.NewLineChars);
+            int idx = remaining.IndexOfAny(string.SearchValuesStorage.NewLineChars);
 
             if ((uint)idx < (uint)remaining.Length)
             {

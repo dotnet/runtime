@@ -1733,7 +1733,7 @@ namespace System.Xml.Schema
         private void ValidateNameAttribute(XmlSchemaObject xso)
         {
             string? name = xso.NameAttribute;
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 SendValidationEvent(SR.Sch_InvalidNameAttributeEx, null, SR.Sch_NullValue, xso);
             }

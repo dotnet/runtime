@@ -1317,6 +1317,10 @@ void ExtendedDefaultPolicy::NoteBool(InlineObservation obs, bool value)
             m_FoldableSwitch++;
             break;
 
+        case InlineObservation::CALLSITE_UNROLLABLE_MEMOP:
+            m_UnrollableMemop++;
+            break;
+
         case InlineObservation::CALLEE_HAS_SWITCH:
             m_Switch++;
             break;
@@ -1409,7 +1413,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                     // in prejit-root mode.
                     bbLimit += 5 + m_Switch * 10;
                 }
-                bbLimit += m_FoldableBranch + m_FoldableSwitch * 10;
+                bbLimit += m_FoldableBranch + m_FoldableSwitch * 10 + m_UnrollableMemop * 2;
 
                 if ((unsigned)value > bbLimit)
                 {
@@ -1715,6 +1719,13 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
             break;
     }
 
+    if (m_UnrollableMemop > 0)
+    {
+        multiplier += m_UnrollableMemop;
+        JITDUMP("\nInline candidate has %d unrollable memory operations.  Multiplier increased to %g.",
+                m_UnrollableMemop, multiplier);
+    }
+
     if (m_FoldableSwitch > 0)
     {
         multiplier += 6.0;
@@ -1841,6 +1852,7 @@ void ExtendedDefaultPolicy::OnDumpXml(FILE* file, unsigned indent) const
     XATTR_I4(m_FoldableExprUn)
     XATTR_I4(m_FoldableBranch)
     XATTR_I4(m_FoldableSwitch)
+    XATTR_I4(m_UnrollableMemop)
     XATTR_I4(m_Switch)
     XATTR_I4(m_DivByCns)
     XATTR_B(m_ReturnsStructByValue)
