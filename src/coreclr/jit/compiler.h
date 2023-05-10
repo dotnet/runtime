@@ -9673,7 +9673,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
