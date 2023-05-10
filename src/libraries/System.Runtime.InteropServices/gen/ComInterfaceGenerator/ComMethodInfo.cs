@@ -23,8 +23,7 @@ namespace Microsoft.Interop
             [property: Obsolete] IMethodSymbol Symbol,
             MethodDeclarationSyntax Syntax,
             string MethodName,
-            SequenceEqualImmutableArray<ParameterInfo> Parameters,
-            Diagnostic? Diagnostic)
+            SequenceEqualImmutableArray<ParameterInfo> Parameters)
         {
             public static SequenceEqualImmutableArray<(ComMethodInfo? ComMethod, Diagnostic? Diagnostic)> GetMethodsFromInterface((ComInterfaceInfo ifaceContext, INamedTypeSymbol ifaceSymbol) data, CancellationToken _)
             {
@@ -120,7 +119,7 @@ namespace Microsoft.Interop
                 }
 
 
-                var comMethodInfo = new ComMethodInfo(member, comMethodDeclaringSyntax, member.Name, parameters.ToSequenceEqualImmutableArray(), diag);
+                var comMethodInfo = new ComMethodInfo(member, comMethodDeclaringSyntax, member.Name, parameters.ToSequenceEqualImmutableArray());
                 return (comMethodInfo, null);
             }
         }
