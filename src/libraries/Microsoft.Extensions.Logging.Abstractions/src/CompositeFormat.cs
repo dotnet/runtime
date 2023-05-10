@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Logging
 
             if (!TryParse(format, out InternalCompositeFormat? compositeFormat))
             {
-                throw new FormatException("placeholder");
+                throw new FormatException("placeholder InternalCompositeFormat.Parse");
             }
 
             return compositeFormat;
@@ -114,7 +114,7 @@ namespace Microsoft.Extensions.Logging
         {
             if (numArgs < _argsRequired)
             {
-                throw new FormatException("placeholder");
+                throw new FormatException("placeholder InternalCompositeFormat.ValidateNumberOfArgs");
             }
         }
 

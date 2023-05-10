@@ -69,18 +69,24 @@ namespace Microsoft.Extensions.Logging.Test
             public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired)
             {
                 var nextHandler = _nextProcessor.GetLogEntryHandler<TState, TEnrichmentProperties>(metadata, out enabled, out dynamicEnabledCheckRequired);
-                return new TestHandler<TState, TEnrichmentProperties>(nextHandler, _handleLogEntryCallback);
+                return new TestLogEntryHandler<TState, TEnrichmentProperties>(nextHandler, _handleLogEntryCallback);
+            }
+
+            public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull
+            {
+                var nextHandler = _nextProcessor.GetScopeHandler<TState>(metadata, out enabled, out dynamicEnabledCheckRequired);
+                return new TestScopeHandler<TState>(nextHandler, _handleLogEntryCallback);
             }
 
             public bool IsEnabled(LogLevel logLevel) => true;
         }
 
-        private class TestHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
+        private sealed class TestLogEntryHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
         {
-            LogEntryHandler<TState, TEnrichmentProperties> _nextHandler;
+            private readonly LogEntryHandler<TState, TEnrichmentProperties> _nextHandler;
             private readonly Action<string> _handleLogEntryCallback;
 
-            public TestHandler(LogEntryHandler<TState, TEnrichmentProperties> nextHandler, Action<string> handleLogEntryCallback)
+            public TestLogEntryHandler(LogEntryHandler<TState, TEnrichmentProperties> nextHandler, Action<string> handleLogEntryCallback)
             {
                 _nextHandler = nextHandler;
                 _handleLogEntryCallback = handleLogEntryCallback;
@@ -92,6 +98,30 @@ namespace Microsoft.Extensions.Logging.Test
                 _handleLogEntryCallback(message);
 
                 _nextHandler.HandleLogEntry(ref logEntry);
+            }
+
+            public override bool IsEnabled(LogLevel level)
+            {
+                return _nextHandler.IsEnabled(level);
+            }
+        }
+
+        private sealed class TestScopeHandler<TState> : ScopeHandler<TState>
+        {
+            private readonly ScopeHandler<TState> _nextHandler;
+            private readonly Action<string> _handleLogEntryCallback;
+
+            public TestScopeHandler(ScopeHandler<TState> nextHandler, Action<string> handleLogEntryCallback)
+            {
+                _nextHandler = nextHandler;
+                _handleLogEntryCallback = handleLogEntryCallback;
+            }
+
+            public override IDisposable? HandleBeginScope(ref TState state)
+            {
+                _handleLogEntryCallback(state.ToString());
+
+                return _nextHandler.HandleBeginScope(ref state);
             }
 
             public override bool IsEnabled(LogLevel level)

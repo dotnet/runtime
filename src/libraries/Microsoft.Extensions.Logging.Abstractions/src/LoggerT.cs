@@ -47,11 +47,23 @@ namespace Microsoft.Extensions.Logging
             _logger.Log(logLevel, eventId, state, exception, formatter);
         }
 
-        LogEntryPipeline<TState>? ILogEntryPipelineFactory.GetPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
+        ScopePipeline<TState>? ILogEntryPipelineFactory.GetScopePipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
         {
             if (_logger is ILogEntryPipelineFactory factory)
             {
-                return factory.GetPipeline(metadata, userState);
+                return factory.GetScopePipeline(metadata, userState);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        LogEntryPipeline<TState>? ILogEntryPipelineFactory.GetLoggingPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
+        {
+            if (_logger is ILogEntryPipelineFactory factory)
+            {
+                return factory.GetLoggingPipeline(metadata, userState);
             }
             else
             {

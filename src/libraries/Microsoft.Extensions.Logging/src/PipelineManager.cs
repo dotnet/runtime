@@ -9,10 +9,10 @@ namespace Microsoft.Extensions.Logging
     {
         private readonly Dictionary<PipelineKey, object> _pipelines = new Dictionary<PipelineKey, object>();
 
-        public LogEntryPipeline<TState>? GetPipeline<TState>(ILogEntryProcessor processor, ILogMetadata<TState>? metadata, object? userState)
+        public LogEntryPipeline<TState>? GetLoggingPipeline<TState>(ILogEntryProcessor processor, ILogMetadata<TState>? metadata, object? userState)
         {
             object? pipeline;
-            PipelineKey key = new PipelineKey((metadata == null) ? typeof(TState) : metadata, processor, userState);
+            PipelineKey key = new PipelineKey(isLoggingPipeline: true, (metadata == null) ? typeof(TState) : metadata, processor, userState);
             lock (_pipelines)
             {
                 if (!_pipelines.TryGetValue(key, out pipeline))
@@ -33,13 +33,15 @@ namespace Microsoft.Extensions.Logging
 
     public readonly struct PipelineKey
     {
-        public PipelineKey(object typeOrMetadata, ILogEntryProcessor? terminalProcessor, object? userState)
+        public PipelineKey(bool isLoggingPipeline, object typeOrMetadata, ILogEntryProcessor? terminalProcessor, object? userState)
         {
+            IsLoggingPipeline = isLoggingPipeline;
             TypeOrMetadata = typeOrMetadata;
             TerminalProcessor = terminalProcessor;
             UserState = userState;
         }
 
+        public bool IsLoggingPipeline { get; }
         public object TypeOrMetadata { get; }
         public ILogEntryProcessor? TerminalProcessor { get; }
         public object? UserState { get; }

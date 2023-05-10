@@ -46,11 +46,13 @@ namespace Microsoft.Extensions.Logging
     }
     public partial interface ILogEntryPipelineFactory
     {
-        Microsoft.Extensions.Logging.LogEntryPipeline<TState>? GetPipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState);
+        Microsoft.Extensions.Logging.LogEntryPipeline<TState>? GetLoggingPipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState);
+        Microsoft.Extensions.Logging.ScopePipeline<TState>? GetScopePipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState) where TState : notnull;
     }
     public partial interface ILogEntryProcessor
     {
         Microsoft.Extensions.Logging.LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
+        Microsoft.Extensions.Logging.ScopeHandler<TState> GetScopeHandler<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull;
         bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel);
     }
     public partial interface ILogEntryProcessorFactory
@@ -116,15 +118,7 @@ namespace Microsoft.Extensions.Logging
         public abstract void HandleLogEntry(ref Microsoft.Extensions.Logging.LogEntry<TState, TEnrichmentProperties> logEntry);
         public abstract bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level);
     }
-    public partial class LogEntryPipeline
-    {
-        public LogEntryPipeline(object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) { }
-        public bool IsDynamicLevelCheckRequired { get { throw null; } }
-        public bool IsEnabled { get { throw null; } }
-        public bool IsUpToDate { get { throw null; } set { } }
-        public object? UserState { get { throw null; } }
-    }
-    public partial class LogEntryPipeline<TState> : Microsoft.Extensions.Logging.LogEntryPipeline
+    public partial class LogEntryPipeline<TState> : Microsoft.Extensions.Logging.Pipeline
     {
         public LogEntryPipeline(Microsoft.Extensions.Logging.LogEntryHandler<TState, Microsoft.Extensions.Logging.EmptyEnrichmentPropertyValues> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) : base (default(object), default(bool), default(bool)) { }
         public void HandleLogEntry(ref Microsoft.Extensions.Logging.LogEntry<TState, Microsoft.Extensions.Logging.EmptyEnrichmentPropertyValues> logEntry) { }
@@ -227,7 +221,8 @@ namespace Microsoft.Extensions.Logging
     public partial class Logger<T> : Microsoft.Extensions.Logging.ILogEntryPipelineFactory, Microsoft.Extensions.Logging.ILogger, Microsoft.Extensions.Logging.ILogger<T>
     {
         public Logger(Microsoft.Extensions.Logging.ILoggerFactory factory) { }
-        Microsoft.Extensions.Logging.LogEntryPipeline<TState> Microsoft.Extensions.Logging.ILogEntryPipelineFactory.GetPipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState) { throw null; }
+        Microsoft.Extensions.Logging.LogEntryPipeline<TState> Microsoft.Extensions.Logging.ILogEntryPipelineFactory.GetLoggingPipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState) { throw null; }
+        Microsoft.Extensions.Logging.ScopePipeline<TState> Microsoft.Extensions.Logging.ILogEntryPipelineFactory.GetScopePipeline<TState>(Microsoft.Extensions.Logging.ILogMetadata<TState>? metadata, object? userState) { throw null; }
         System.IDisposable Microsoft.Extensions.Logging.ILogger.BeginScope<TState>(TState state) { throw null; }
         bool Microsoft.Extensions.Logging.ILogger.IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         void Microsoft.Extensions.Logging.ILogger.Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception, string> formatter) { }
@@ -251,6 +246,14 @@ namespace Microsoft.Extensions.Logging
         public readonly string? FormatSpecifier { get { throw null; } }
         public readonly string Name { get { throw null; } }
     }
+    public partial class Pipeline
+    {
+        public Pipeline(object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) { }
+        public bool IsDynamicLevelCheckRequired { get { throw null; } }
+        public bool IsEnabled { get { throw null; } }
+        public bool IsUpToDate { get { throw null; } set { } }
+        public object? UserState { get { throw null; } }
+    }
     public readonly partial struct ProcessorContext
     {
         private readonly object _dummy;
@@ -271,6 +274,18 @@ namespace Microsoft.Extensions.Logging
         public virtual void AppendFormatted(int index, System.ReadOnlySpan<char> value, System.Buffers.IBufferWriter<char> buffer) { }
         public virtual void AppendFormatted(int index, string value, System.Buffers.IBufferWriter<char> buffer) { }
         public abstract void AppendFormatted<T>(int index, T value, System.Buffers.IBufferWriter<char> buffer);
+    }
+    public abstract partial class ScopeHandler<TState> where TState : notnull
+    {
+        protected ScopeHandler() { }
+        public abstract System.IDisposable? HandleBeginScope(ref TState state);
+        public abstract bool IsEnabled(Microsoft.Extensions.Logging.LogLevel level);
+    }
+    public partial class ScopePipeline<TState> : Microsoft.Extensions.Logging.Pipeline where TState : notnull
+    {
+        public ScopePipeline(Microsoft.Extensions.Logging.ScopeHandler<TState> handler, object? userState, bool isEnabled, bool isDynamicLevelCheckRequired) : base (default(object), default(bool), default(bool)) { }
+        public System.IDisposable? HandleScope(ref TState scope) { throw null; }
+        public bool IsEnabledDynamic(Microsoft.Extensions.Logging.LogLevel level) { throw null; }
     }
 }
 namespace Microsoft.Extensions.Logging.Abstractions

@@ -4,16 +4,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Extensions.Logging
 {
     internal sealed class DispatchProcessor : ILogEntryProcessor
     {
         private readonly LoggerInformation[] _loggers;
+        private readonly IExternalScopeProvider? _externalScopeProvider;
 
-        public DispatchProcessor(LoggerInformation[] loggers)
+        public DispatchProcessor(LoggerInformation[] loggers, IExternalScopeProvider? externalScopeProvider)
         {
             _loggers = loggers;
+            _externalScopeProvider = externalScopeProvider;
         }
 
         public LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired)
@@ -46,6 +49,13 @@ namespace Microsoft.Extensions.Logging
             enabled = true;
             dynamicCheckRequired = true;
             return new DynamicDispatchToLoggers<TState, TEnrichmentProperties>(this, metadata?.GetStringMessageFormatter());
+        }
+
+        public ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicCheckRequired) where TState : notnull
+        {
+            enabled = true;
+            dynamicCheckRequired = false;
+            return new DynamicDispatchScopeToLoggers<TState>(this);
         }
 
         public bool IsEnabled(LogLevel logLevel)
@@ -102,10 +112,17 @@ namespace Microsoft.Extensions.Logging
 
         private sealed class NullHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
         {
-            public static NullHandler<TState, TEnrichmentProperties> Instance = new NullHandler<TState, TEnrichmentProperties>();
+            public static readonly NullHandler<TState, TEnrichmentProperties> Instance = new NullHandler<TState, TEnrichmentProperties>();
             public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
             {
             }
+            public override bool IsEnabled(LogLevel level) => false;
+        }
+
+        private sealed class NullScopeHandler<TState> : ScopeHandler<TState> where TState : notnull
+        {
+            public static readonly NullScopeHandler<TState> Instance = new NullScopeHandler<TState>();
+            public override IDisposable? HandleBeginScope(ref TState state) => null;
             public override bool IsEnabled(LogLevel level) => false;
         }
 
@@ -133,6 +150,31 @@ namespace Microsoft.Extensions.Logging
             public override bool IsEnabled(LogLevel level) => _nestedHandler.IsEnabled(level);
         }
 
+        private sealed class DispatchViaScopeHandler<TState> : ScopeHandler<TState> where TState : notnull
+        {
+            private ScopeHandler<TState> _nestedHandler;
+
+            public DispatchViaScopeHandler(ScopeHandler<TState> handler)
+            {
+                _nestedHandler = handler;
+            }
+
+            public override IDisposable? HandleBeginScope(ref TState state)
+            {
+                try
+                {
+                    return _nestedHandler.HandleBeginScope(ref state);
+                }
+                catch (Exception ex)
+                {
+                    Logger.ThrowLoggingError(new List<Exception>(new Exception[] { ex }));
+                    return null;
+                }
+            }
+
+            public override bool IsEnabled(LogLevel level) => _nestedHandler.IsEnabled(level);
+        }
+
         private sealed class DynamicDispatchToLoggers<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
         {
             private DispatchProcessor _processor;
@@ -143,6 +185,7 @@ namespace Microsoft.Extensions.Logging
                 _processor = processor;
                 _formatter = formatter;
             }
+
             public override void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry)
             {
                 Func<TState, Exception?, string>? formatter = logEntry.Formatter ?? _formatter;
@@ -173,6 +216,96 @@ namespace Microsoft.Extensions.Logging
                     Logger.ThrowLoggingError(exceptions);
                 }
             }
+
+            public override bool IsEnabled(LogLevel level) => _processor.IsEnabled(level);
+        }
+
+        private sealed class DynamicDispatchScopeToLoggers<TState> : ScopeHandler<TState> where TState : notnull
+        {
+            private DispatchProcessor _processor;
+
+            public DynamicDispatchScopeToLoggers(DispatchProcessor processor)
+            {
+                _processor = processor;
+            }
+
+            public override IDisposable? HandleBeginScope(ref TState state)
+            {
+                LoggerInformation[] loggers = _processor._loggers;
+
+                if (loggers.Length == 1)
+                {
+                    return CreateScope(loggers[0].Logger, ref state);
+                }
+
+                var scope = new Scope(loggers.Length);
+                List<Exception>? exceptions = null;
+                for (int i = 0; i < loggers.Length; i++)
+                {
+                    ref readonly LoggerInformation loggerInfo = ref loggers[i];
+
+                    try
+                    {
+                        scope.SetDisposable(i, CreateScope(loggerInfo.Logger, ref state));
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions ??= new List<Exception>();
+                        exceptions.Add(ex);
+                    }
+                }
+                return scope;
+            }
+
+            private IDisposable? CreateScope(ILogger logger, ref TState state)
+            {
+                if (_processor._externalScopeProvider is { } provider)
+                {
+                    return provider.Push(state);
+                }
+
+                return logger.BeginScope<TState>(state);
+            }
+
+
+
+            //Processors should also handle scopes
+            //ScopeLogger[]? loggers = ScopeLoggers;
+            //ScopeLogger[]? loggers = null;
+
+            //if (loggers == null)
+            //{
+            //    return NullScope.Instance;
+            //}
+
+            //if (loggers.Length == 1)
+            //{
+            //    return loggers[0].CreateScope(state);
+            //}
+
+            //var scope = new Scope(loggers.Length);
+            //List<Exception>? exceptions = null;
+            //for (int i = 0; i < loggers.Length; i++)
+            //{
+            //    ref readonly ScopeLogger scopeLogger = ref loggers[i];
+
+            //    try
+            //    {
+            //        scope.SetDisposable(i, scopeLogger.CreateScope(state));
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        exceptions ??= new List<Exception>();
+            //        exceptions.Add(ex);
+            //    }
+            //}
+
+            //if (exceptions != null && exceptions.Count > 0)
+            //{
+            //    ThrowLoggingError(exceptions);
+            //}
+
+            //return scope;
 
             public override bool IsEnabled(LogLevel level) => _processor.IsEnabled(level);
         }

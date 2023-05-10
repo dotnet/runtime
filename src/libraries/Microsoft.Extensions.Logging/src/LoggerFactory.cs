@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Logging
 
             if ((_factoryOptions.ActivityTrackingOptions & ActivityTrackingOptionsMask) != 0)
             {
-                throw new ArgumentException("placeholder");
+                throw new ArgumentException("placeholder LoggerFactory.ctor");
             }
 
             foreach (ILoggerProvider provider in providers)
@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.Logging
 
         private ILogEntryProcessor GetProcessor(LoggerInformation[] loggerInfos)
         {
-            ILogEntryProcessor processor = new DispatchProcessor(loggerInfos);
+            ILogEntryProcessor processor = new DispatchProcessor(loggerInfos, _scopeProvider);
             for (int i = _processorFactories.Length - 1; i >= 0; i--)
             {
                 processor = _processorFactories[i].GetProcessor(processor);

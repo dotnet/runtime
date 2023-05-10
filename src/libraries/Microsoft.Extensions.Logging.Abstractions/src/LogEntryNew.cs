@@ -28,6 +28,7 @@ namespace Microsoft.Extensions.Logging
     public interface ILogEntryProcessor
     {
         LogEntryHandler<TState, TEnrichmentProperties> GetLogEntryHandler<TState, TEnrichmentProperties>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired);
+        ScopeHandler<TState> GetScopeHandler<TState>(ILogMetadata<TState>? metadata, out bool enabled, out bool dynamicEnabledCheckRequired) where TState : notnull;
         bool IsEnabled(LogLevel logLevel);
     }
 
@@ -53,6 +54,12 @@ namespace Microsoft.Extensions.Logging
     {
         public abstract bool IsEnabled(LogLevel level);
         public abstract void HandleLogEntry(ref LogEntry<TState, TEnrichmentProperties> logEntry);
+    }
+
+    public abstract class ScopeHandler<TState> where TState : notnull
+    {
+        public abstract bool IsEnabled(LogLevel level);
+        public abstract IDisposable? HandleBeginScope(ref TState state);
     }
 
     //TODO: Not sure if we need to keep this?

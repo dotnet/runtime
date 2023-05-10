@@ -99,7 +99,8 @@ namespace Microsoft.Extensions.Logging
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public PipelineKey(object typeOrMetadata, Microsoft.Extensions.Logging.ILogEntryProcessor? terminalProcessor, object? userState) { throw null; }
+        public PipelineKey(bool isLoggingPipeline, object typeOrMetadata, Microsoft.Extensions.Logging.ILogEntryProcessor? terminalProcessor, object? userState) { throw null; }
+        public bool IsLoggingPipeline { get { throw null; } }
         public Microsoft.Extensions.Logging.ILogEntryProcessor? TerminalProcessor { get { throw null; } }
         public object TypeOrMetadata { get { throw null; } }
         public object? UserState { get { throw null; } }

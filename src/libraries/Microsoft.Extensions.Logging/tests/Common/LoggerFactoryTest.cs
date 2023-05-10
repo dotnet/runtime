@@ -423,14 +423,15 @@ namespace Microsoft.Extensions.Logging.Test
             }
             logger.LogInformation("Message2");
 
-            Assert.Equal(loggerProvider.LogText,
+            Assert.Equal(
                 new[]
                 {
                     "Message",
                     "Scope",
                     "Scope2",
                     "Message2",
-                });
+                },
+                loggerProvider.LogText);
             Assert.NotNull(loggerProvider.ScopeProvider);
             Assert.Equal(0, loggerProvider.BeginScopeCalledTimes);
         }
@@ -475,23 +476,25 @@ namespace Microsoft.Extensions.Logging.Test
             }
             logger.LogInformation("Message2");
 
-            Assert.Equal(loggerProvider.LogText,
+            Assert.Equal(
                 new[]
                 {
                     "Message",
                     "Scope",
                     "Scope2",
                     "Message2",
-                });
+                },
+                loggerProvider.LogText);
 
-            Assert.Equal(loggerProvider2.LogText,
+            Assert.Equal(
                 new[]
                 {
                     "Message",
                     "Scope",
                     "Scope2",
                     "Message2",
-                });
+                },
+                loggerProvider.LogText);
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads

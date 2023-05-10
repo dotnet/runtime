@@ -242,7 +242,7 @@ namespace Microsoft.Extensions.Logging
                 LogEntry<TState, EmptyEnrichmentPropertyValues> entry = new LogEntry<TState, EmptyEnrichmentPropertyValues>(metadata.LogLevel, metadata.EventId, ref state, ref properties, exception, null);
                 if (logger is ILogEntryPipelineFactory)
                 {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetPipeline(metadata, logger);
+                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
                     pipeline = pipelineSnapshot;
                 }
                 if (pipelineSnapshot != null)
@@ -312,12 +312,10 @@ namespace Microsoft.Extensions.Logging
             void LogSlowPath(ILogger logger, T1 arg1, T2 arg2, Exception? exception)
             {
                 LogEntryPipeline<LogValues<T1, T2>>? pipelineSnapshot = null;
-                LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
                 EmptyEnrichmentPropertyValues properties = default;
-                LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues> entry = new LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, LogValues<T1, T2>.Callback);
                 if (logger is ILogEntryPipelineFactory)
                 {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetPipeline(metadata, logger);
+                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
                     pipeline = pipelineSnapshot;
                 }
                 if (pipelineSnapshot != null)
@@ -325,13 +323,16 @@ namespace Microsoft.Extensions.Logging
                     if (!pipelineSnapshot.IsEnabled ||
                        (pipelineSnapshot.IsDynamicLevelCheckRequired && needFullEnabledCheck && !pipelineSnapshot.IsEnabledDynamic(logLevel)))
                         return;
+                    LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
+                    LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues> entry = new LogEntry<LogValues<T1, T2>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, LogValues<T1, T2>.Callback);
                     pipelineSnapshot.HandleLogEntry(ref entry);
                 }
                 else
                 {
-                    if (needFullEnabledCheck && logger.IsEnabled(logLevel))
+                    if (needFullEnabledCheck && !logger.IsEnabled(logLevel))
                         return;
-                    logger.Log(entry.LogLevel, entry.EventId, entry.State, entry.Exception, LogValues<T1, T2>.Callback);
+                    LogValues<T1, T2> state = new LogValues<T1, T2>(metadata, arg1, arg2);
+                    logger.Log(logLevel, eventId, state, exception, LogValues<T1, T2>.Callback);
                 }
             }
         }
@@ -415,7 +416,7 @@ namespace Microsoft.Extensions.Logging
                     new LogEntry<LogValues<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>, EmptyEnrichmentPropertyValues>(logLevel, eventId, ref state, ref properties, exception, null);
                 if (logger is ILogEntryPipelineFactory)
                 {
-                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetPipeline(metadata, logger);
+                    pipelineSnapshot = ((ILogEntryPipelineFactory)logger).GetLoggingPipeline(metadata, logger);
                     pipeline = pipelineSnapshot;
                 }
                 if (pipelineSnapshot != null)
@@ -638,13 +639,18 @@ namespace Microsoft.Extensions.Logging
         {
             var logValuesFormatter = new LogValuesFormatter(formatString);
 
-            int actualCount = logValuesFormatter.PropertyCount;
-            if (actualCount != expectedNamedParameterCount)
-            {
-                throw new ArgumentException("placeholder");
-            }
+            ValidateFormatStringParameterCount(formatString, expectedNamedParameterCount, logValuesFormatter.PropertyCount);
 
             return logValuesFormatter;
+        }
+
+        private static void ValidateFormatStringParameterCount(string formatString, int expectedNamedParameterCount, int actualCount)
+        {
+            if (actualCount != expectedNamedParameterCount)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.UnexpectedNumberOfNamedParameters, formatString, expectedNamedParameterCount, actualCount));
+            }
         }
 
         private readonly struct LogValues : IReadOnlyList<KeyValuePair<string, object?>>
@@ -882,10 +888,7 @@ namespace Microsoft.Extensions.Logging
             public static LogValuesMetadata<T0, T1> CreateMetadata(LogLevel level, EventId eventId, string formatString, Attribute[]?[]? parameterAttributes = null)
             {
                 var metadata = new LogValuesMetadata<T0, T1>(formatString, level, eventId, parameterAttributes);
-                if (metadata.PropertyCount != 2)
-                {
-                    throw new ArgumentException("placeholder");
-                }
+                ValidateFormatStringParameterCount(formatString, expectedNamedParameterCount: 2, metadata.PropertyCount);
                 return metadata;
             }
         }
@@ -1155,10 +1158,7 @@ namespace Microsoft.Extensions.Logging
             public static LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> CreateMetadata(LogLevel level, EventId eventId, string formatString, Attribute[]?[]? parameterAttributes = null)
             {
                 var metadata = new LogValuesMetadata<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>(formatString, level, eventId, parameterAttributes);
-                if (metadata.PropertyCount != 20)
-                {
-                    throw new ArgumentException("placeholder");
-                }
+                ValidateFormatStringParameterCount(formatString, expectedNamedParameterCount: 20, metadata.PropertyCount);
                 return metadata;
             }
         }
