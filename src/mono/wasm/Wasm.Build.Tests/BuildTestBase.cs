@@ -625,11 +625,11 @@ namespace Wasm.Build.Tests
 
             // find dotnet*js
             string? dotnetJsPath = Directory.EnumerateFiles(binFrameworkDir)
-                                    .Where(p => Path.GetFileName(p).StartsWith("dotnet.", StringComparison.OrdinalIgnoreCase) &&
+                                    .Where(p => Path.GetFileName(p).StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) &&
                                                     Path.GetFileName(p).EndsWith(".js", StringComparison.OrdinalIgnoreCase))
                                     .SingleOrDefault();
 
-            Assert.True(!string.IsNullOrEmpty(dotnetJsPath), $"[{label}] Expected to find dotnet*js in {binFrameworkDir}");
+            Assert.True(!string.IsNullOrEmpty(dotnetJsPath), $"[{label}] Expected to find dotnet.native*js in {binFrameworkDir}");
             AssertSameFile(Path.Combine(srcDir, "dotnet.native.js"), dotnetJsPath!, label);
 
             if (type != NativeFilesType.FromRuntimePack)
