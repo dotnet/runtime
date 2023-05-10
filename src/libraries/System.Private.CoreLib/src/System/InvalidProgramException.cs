@@ -36,6 +36,7 @@ namespace System
             HResult = HResults.COR_E_INVALIDPROGRAM;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private InvalidProgramException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -28,7 +28,7 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release")]
     public void DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
+        string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         // Build
@@ -45,7 +45,11 @@ public class BuildPublishTests : BuildTestBase
     [InlineData("Release")]
     public void DefaultTemplate_NoAOT_WithWorkload(string config)
     {
-        string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
+        // disable relinking tests for Unicode: github.com/emscripten-core/emscripten/issues/17817
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
+        string id = config == "Release" ?
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}" :
+            $"blz_no_aot_{config}_{Path.GetRandomFileName()}_{s_unicodeChar}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -92,7 +96,7 @@ public class BuildPublishTests : BuildTestBase
     public async Task WithDllImportInMainAssembly(string config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
-        string id = $"blz_dllimp_{config}_";
+        string id = $"blz_dllimp_{config}_{s_unicodeChar}";
         if (build && publish)
             id += "build_then_publish";
         else if (build)
@@ -193,9 +197,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
-            <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
+        string razorClassLibraryFileName = UseWebcil ? "RazorClassLibrary.webcil" : "RazorClassLibrary.dll";
+        AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -218,9 +223,10 @@ public class BuildPublishTests : BuildTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85769")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]

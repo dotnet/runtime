@@ -32,15 +32,15 @@
 
   <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props"
           Condition="'$(BuildTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.props"
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props"
           Condition="'$(BuildTestsOn)' == 'local'" />
-  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleApp.InTree.targets"
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets"
           Condition="'$(BuildTestsOn)' == 'local'" />
 
   <PropertyGroup>
-    <AppleBuildAppDependsOn>PrepareForAppleBuildApp;$(AppleBuildAppDependsOn);_CopyTestArchive</AppleBuildAppDependsOn>
+    <AppleBuildDependsOn>PrepareForAppleBuildApp;$(AppleBuildDependsOn);_CopyTestArchive</AppleBuildDependsOn>
   
-    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local'">AppleBuildApp</BundleTestAppleAppDependsOn>
+    <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOn)' == 'local'">AppleBuild</BundleTestAppleAppDependsOn>
     <BundleTestAppleAppDependsOn Condition="'$(BuildTestsOnHelix)' == 'true'">$(BundleTestAppleAppDependsOn);_BundleAOTTestAppleAppForHelix;_CopyTestArchive</BundleTestAppleAppDependsOn>
   </PropertyGroup>
   
@@ -100,6 +100,7 @@
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
       <_ApplePropertyNames Include="InvariantGlobalization" />
+      <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
 
@@ -138,8 +139,8 @@
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AppleTestRunner.dll</MainLibraryFileName>
     
-      <AppleAppDir>$(PublishDir)</AppleAppDir>
-      <AppleAppBundleDir>$(BundleDir)</AppleAppBundleDir>
+      <AppleBuildDir>$(PublishDir)</AppleBuildDir>
+      <AppleBundleDir>$(BundleDir)</AppleBundleDir>
     </PropertyGroup>
 
     <PropertyGroup>

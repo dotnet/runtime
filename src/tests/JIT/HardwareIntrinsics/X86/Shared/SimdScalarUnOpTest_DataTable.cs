@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.X86
         public SimdScalarUnaryOpTest__DataTable(TOp1[] inArray, int alignment)
         {
             int sizeOfinArray = inArray.Length * Unsafe.SizeOf<TOp1>();
-            if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray)
+            if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray)
             {
                 throw new ArgumentException("Invalid value of alignment");
             }

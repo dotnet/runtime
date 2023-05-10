@@ -17,6 +17,7 @@
     <Compile Include="IPAddressParsing.cs" />
     <Compile Include="IPAddressSpanTest.cs" />
     <Compile Include="IPAddressTest.cs" />
+    <Compile Include="IPNetworkTest.cs" />
     <Compile Include="IPEndPointParsing.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />

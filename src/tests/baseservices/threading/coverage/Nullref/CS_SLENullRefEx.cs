@@ -4,9 +4,11 @@ using System;
 using System.Threading;
 // using System.Runtime.Remoting;
 using System.Runtime.Serialization;
+using Xunit;
 
 public class mytest {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		int                           rValue = 100;
 		SynchronizationLockException  sle    = null;
 		

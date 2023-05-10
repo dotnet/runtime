@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly ldsshrstsfld {}
-.class private auto ansi beforefieldinit ldsshrstsfld
+.class public auto ansi beforefieldinit ldsshrstsfld
        extends [mscorlib]System.Object
 {
   .field private static char c
@@ -51,7 +51,7 @@
     IL_0031:  ret
   }
 
-   .method private hidebysig static int32 Main() cil managed
+   .method public hidebysig static int32 Main() cil managed
   {
   	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
   	    01 00 00 00

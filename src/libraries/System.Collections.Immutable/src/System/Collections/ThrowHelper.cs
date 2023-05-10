@@ -9,7 +9,7 @@ namespace System.Collections
 {
     internal static class ThrowHelper
     {
-        public static void ThrowIfNull(object arg, [CallerArgumentExpression("arg")] string? paramName = null)
+        public static void ThrowIfNull(object arg, [CallerArgumentExpression(nameof(arg))] string? paramName = null)
         {
             if (arg is null)
             {

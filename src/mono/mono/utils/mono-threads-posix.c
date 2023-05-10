@@ -133,6 +133,15 @@ mono_threads_platform_exit (gsize exit_code)
 	pthread_exit ((gpointer) exit_code);
 }
 
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void)
+{
+	/* vanilla POSIX thread creation doesn't support an external eventloop: when the thread main
+	   function returns, the thread is done.
+	*/
+	return FALSE;
+}
+
 #if HOST_FUCHSIA
 int
 mono_thread_info_get_system_max_stack_size (void)

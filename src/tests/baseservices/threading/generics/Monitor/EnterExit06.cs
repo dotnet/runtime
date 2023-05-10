@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 
 public struct ValX1<T> {}
@@ -70,7 +71,8 @@ public class Test_EnterExit06
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<double>.EnterExitTest<int>();
 		Gen<string>.EnterExitTest<int>();

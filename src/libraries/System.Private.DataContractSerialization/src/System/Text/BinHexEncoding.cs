@@ -10,8 +10,7 @@ namespace System.Text
     {
         public override int GetMaxByteCount(int charCount)
         {
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
             if ((charCount % 2) != 0)
                 throw new FormatException(SR.Format(SR.XmlInvalidBinHexLength, charCount.ToString()));
             return charCount / 2;
@@ -25,17 +24,14 @@ namespace System.Text
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             ArgumentNullException.ThrowIfNull(chars);
-            if (charIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
             if (charIndex > chars.Length)
                 throw new ArgumentOutOfRangeException(nameof(charIndex), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
-            if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(charCount);
             if (charCount > chars.Length - charIndex)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - charIndex));
             ArgumentNullException.ThrowIfNull(bytes);
-            if (byteIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
             if (byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
             int byteCount = GetByteCount(chars, charIndex, charCount);
@@ -67,18 +63,15 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             ArgumentNullException.ThrowIfNull(bytes);
-            if (byteIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteIndex);
             if (byteIndex > bytes.Length)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.Format(SR.OffsetExceedsBufferSize, bytes.Length));
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
             if (byteCount > bytes.Length - byteIndex)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, bytes.Length - byteIndex));
             int charCount = GetCharCount(bytes, byteIndex, byteCount);
             ArgumentNullException.ThrowIfNull(chars);
-            if (charIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ValueMustBeNonNegative);
+            ArgumentOutOfRangeException.ThrowIfNegative(charIndex);
             if (charIndex > chars.Length)
                 throw new ArgumentOutOfRangeException(nameof(charIndex), SR.Format(SR.OffsetExceedsBufferSize, chars.Length));
             if (charCount < 0 || charCount > chars.Length - charIndex)

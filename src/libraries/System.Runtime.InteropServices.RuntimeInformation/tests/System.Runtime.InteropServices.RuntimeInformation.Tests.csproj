@@ -10,5 +10,7 @@
     <Compile Include="DescriptionNameTests.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
+             Link="Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -190,37 +191,65 @@ namespace System.Reflection
             }
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetType", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetType(QCallAssembly assembly,
-                                            string name,
-                                            [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
-                                            [MarshalAs(UnmanagedType.Bool)] bool ignoreCase,
-                                            ObjectHandleOnStack type,
-                                            ObjectHandleOnStack keepAlive,
-                                            ObjectHandleOnStack assemblyLoadContext);
+        // For case-sensitive lookups, marshal the strings directly to Utf8 to avoid unnecessary string copies.
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetTypeCore", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial void GetTypeCore(QCallAssembly assembly,
+                                            string typeName,
+                                            ReadOnlySpan<string> nestedTypeNames,
+                                            int nestedTypeNamesLength,
+                                            ObjectHandleOnStack retType);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetTypeCoreIgnoreCase", StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void GetTypeCoreIgnoreCase(QCallAssembly assembly,
+                                            string typeName,
+                                            ReadOnlySpan<string> nestedTypeNames,
+                                            int nestedTypeNamesLength,
+                                            ObjectHandleOnStack retType);
+
+        internal Type? GetTypeCore(string typeName, ReadOnlySpan<string> nestedTypeNames, bool throwOnError, bool ignoreCase)
+        {
+            RuntimeAssembly runtimeAssembly = this;
+            Type? type = null;
+
+            try
+            {
+                if (ignoreCase)
+                {
+                    GetTypeCoreIgnoreCase(new QCallAssembly(ref runtimeAssembly),
+                        typeName,
+                        nestedTypeNames,
+                        nestedTypeNames.Length,
+                        ObjectHandleOnStack.Create(ref type));
+                }
+                else
+                {
+                    GetTypeCore(new QCallAssembly(ref runtimeAssembly),
+                        typeName,
+                        nestedTypeNames,
+                        nestedTypeNames.Length,
+                        ObjectHandleOnStack.Create(ref type));
+                }
+            }
+            catch (FileNotFoundException) when (!throwOnError)
+            {
+                return null;
+            }
+
+            if (type == null && throwOnError)
+                throw new TypeLoadException(SR.Format(SR.ClassLoad_General /* TypeLoad_TypeNotFoundInAssembly */, typeName, FullName));
+
+            return type;
+        }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(
             string name, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
-            ArgumentNullException.ThrowIfNull(name);
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-            RuntimeType? type = null;
-            object? keepAlive = null;
-            AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
-
-            RuntimeAssembly runtimeAssembly = this;
-            GetType(new QCallAssembly(ref runtimeAssembly),
-                    name,
-                    throwOnError,
-                    ignoreCase,
-                    ObjectHandleOnStack.Create(ref type),
-                    ObjectHandleOnStack.Create(ref keepAlive),
-                    ObjectHandleOnStack.Create(ref assemblyLoadContextStack));
-            GC.KeepAlive(keepAlive);
-
-            return type;
+            return TypeNameParser.GetType(name, topLevelAssembly: this,
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExportedTypes")]
@@ -305,6 +334,8 @@ namespace System.Reflection
         }
 
         // ISerializable implementation
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class B
 {
@@ -35,7 +36,8 @@ public class X : B
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var x = new X();
 

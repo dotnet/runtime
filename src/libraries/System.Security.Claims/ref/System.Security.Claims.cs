@@ -41,7 +41,11 @@ namespace System.Security.Claims
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType) { }
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType, string? nameType, string? roleType) { }
         public ClaimsIdentity(System.IO.BinaryReader reader) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity) { }
@@ -80,6 +84,8 @@ namespace System.Security.Claims
         public ClaimsPrincipal() { }
         public ClaimsPrincipal(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> identities) { }
         public ClaimsPrincipal(System.IO.BinaryReader reader) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ClaimsPrincipal(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
         public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }

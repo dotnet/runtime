@@ -48,6 +48,8 @@
              Link="ProductionCode\System\Net\IPAddressParser.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CookieCollectionTest.cs" />

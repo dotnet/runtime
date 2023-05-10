@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoWasmThreads from "consts:monoWasmThreads";
-import { Module, runtimeHelpers } from "./imports";
 import { mono_assert, MemOffset, NumberOrPointer } from "./types";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
+import { Module, runtimeHelpers } from "./globals";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
@@ -70,6 +70,10 @@ export function setU8(offset: MemOffset, value: number): void {
 
 export function setU16(offset: MemOffset, value: number): void {
     assert_int_in_range(value, 0, 0xFFFF);
+    Module.HEAPU16[<any>offset >>> 1] = value;
+}
+
+export function setU16_unchecked(offset: MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 

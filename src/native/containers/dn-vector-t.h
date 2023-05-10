@@ -209,15 +209,30 @@ DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, erase) (DN_DEFINE_VECTOR_IT_T_NAME(name) po
 static inline DN_DEFINE_VECTOR_RESULT_T_NAME(name) \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_erase_fast) (DN_DEFINE_VECTOR_IT_T_NAME(name) position, dn_vector_dispose_func_t dispose_func) \
 { \
-	DN_DEFINE_VECTOR_RESULT_T_NAME(name) result; \
-	result.result = _dn_vector_erase_fast ((dn_vector_it_t *)&position, dispose_func); \
-	result.it = position; \
+	DN_DEFINE_VECTOR_T_NAME(name) *vector = position._internal._vector; \
+	DN_ASSERT (vector && vector->size != 0); \
+	DN_ASSERT (position.it != position._internal._vector->size); \
+	vector->size --; \
+	if (dispose_func) \
+		dispose_func (vector->data + position.it); \
+	vector->data [position.it] = vector->data [vector->size]; \
+	if ((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_MEMORY_INIT) == DN_VECTOR_ATTRIBUTE_MEMORY_INIT) \
+		vector->data [vector->size] = 0; \
+	DN_DEFINE_VECTOR_RESULT_T_NAME(name) result = { true, position }; \
 	return result; \
 } \
 static inline DN_DEFINE_VECTOR_RESULT_T_NAME(name) \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, erase_fast) (DN_DEFINE_VECTOR_IT_T_NAME(name) position) \
 { \
-	return DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_erase_fast) (position, NULL); \
+	DN_DEFINE_VECTOR_T_NAME(name) *vector = position._internal._vector; \
+	DN_ASSERT (vector && vector->size != 0); \
+	DN_ASSERT (position.it != position._internal._vector->size); \
+	vector->size --; \
+	vector->data [position.it] = vector->data [vector->size]; \
+	if ((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_MEMORY_INIT) == DN_VECTOR_ATTRIBUTE_MEMORY_INIT) \
+		vector->data [vector->size] = 0; \
+	DN_DEFINE_VECTOR_RESULT_T_NAME(name) result = { true, position }; \
+	return result; \
 } \
 static inline bool \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_resize) (DN_DEFINE_VECTOR_T_NAME(name) *vector, uint32_t size, dn_vector_dispose_func_t dispose_func) \
@@ -243,22 +258,32 @@ static inline bool \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, push_back) (DN_DEFINE_VECTOR_T_NAME(name) *vector, type element) \
 { \
 	DN_ASSERT (vector); \
-	return dn_vector_push_back ((dn_vector_t *)vector, element); \
+	uint64_t new_capacity = (uint64_t)vector->size + (uint64_t)1; \
+	if (DN_UNLIKELY (new_capacity > (uint64_t)(vector->_internal._capacity))) { \
+		if (DN_UNLIKELY (!_dn_vector_ensure_capacity ((dn_vector_t *)vector, (uint32_t)new_capacity, true))) \
+			return false; \
+	} \
+	vector->data [vector->size] = element; \
+	vector->size ++; \
+	return true; \
 } \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, custom_pop_back) (DN_DEFINE_VECTOR_T_NAME(name) *vector, dn_vector_dispose_func_t dispose_func) \
 { \
-	dn_vector_custom_pop_back ((dn_vector_t*)vector, dispose_func); \
+	DN_ASSERT (vector && vector->size != 0); \
+	vector->size--; \
+	if (dispose_func) \
+		dispose_func (vector->data + vector->size); \
+	if (((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_MEMORY_INIT) == DN_VECTOR_ATTRIBUTE_MEMORY_INIT)) \
+		vector->data [vector->size] = 0; \
 } \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, pop_back) (DN_DEFINE_VECTOR_T_NAME(name) *vector) \
 { \
-	dn_vector_pop_back ((dn_vector_t*)vector); \
-} \
-static inline uint32_t \
-DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, buffer_capacity) (size_t buffer_byte_size) \
-{ \
-	return dn_vector_buffer_capacity_t (buffer_byte_size, type); \
+	DN_ASSERT (vector && vector->size != 0); \
+	vector->size --; \
+	if (((vector->_internal._attributes & (uint32_t)DN_VECTOR_ATTRIBUTE_MEMORY_INIT) == DN_VECTOR_ATTRIBUTE_MEMORY_INIT)) \
+		vector->data [vector->size] = 0; \
 } \
 static inline void \
 DN_DEFINE_VECTOR_T_SYMBOL_NAME(name, for_each) (const DN_DEFINE_VECTOR_T_NAME(name) *vector, dn_vector_for_each_func_t for_each_func, void *user_data) \

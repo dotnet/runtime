@@ -103,6 +103,10 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0046`__ | ControlledExecution.Run method may corrupt the process and should not be used in production code. |
 |  __`SYSLIB0047`__ | XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution. |
 |  __`SYSLIB0048`__ | RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead. |
+|  __`SYSLIB0049`__ | JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties. |
+|  __`SYSLIB0050`__ | Formatter-based serialization is obsolete and should not be used. |
+|  __`SYSLIB0051`__ | This API supports obsolete formatter-based serialization. It should not be called or extended by application code. |
+|  __`SYSLIB0052`__ | This API supports obsolete mechanisms for Regex extensibility. It is not supported. |
 
 ## Analyzer Warnings
 
@@ -211,6 +215,25 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1097`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1098`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
 |  __`SYSLIB1099`__ | _`SYSLIB1092`-`SYSLIB1099` reserved for Microsoft.Interop.ComInteropGenerator._ |
+|  __`SYSLIB1100`__ | Configuration binding generator: type is not supported. |
+|  __`SYSLIB1101`__ | Configuration binding generator: property on type is not supported. |
+|  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 11.|
+|  __`SYSLIB1103`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1104`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1108`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1109`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1110`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1111`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1112`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1113`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1114`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1115`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)

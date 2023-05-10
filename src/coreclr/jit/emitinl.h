@@ -362,6 +362,40 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
 
     id->idReg2((regNumber)encodeMask); // Save in idReg2
 
+#elif defined(TARGET_RISCV64)
+    assert(REGNUM_BITS >= 6);
+    encodeMask = 0;
+
+    if ((regmask & RBM_S1) != RBM_NONE)
+        encodeMask |= 0x01;
+    if ((regmask & RBM_S2) != RBM_NONE)
+        encodeMask |= 0x02;
+    if ((regmask & RBM_S3) != RBM_NONE)
+        encodeMask |= 0x04;
+    if ((regmask & RBM_S4) != RBM_NONE)
+        encodeMask |= 0x08;
+    if ((regmask & RBM_S5) != RBM_NONE)
+        encodeMask |= 0x10;
+
+    id->idReg1((regNumber)encodeMask); // Save in idReg1
+
+    encodeMask = 0;
+
+    if ((regmask & RBM_S6) != RBM_NONE)
+        encodeMask |= 0x01;
+    if ((regmask & RBM_S7) != RBM_NONE)
+        encodeMask |= 0x02;
+    if ((regmask & RBM_S8) != RBM_NONE)
+        encodeMask |= 0x04;
+    if ((regmask & RBM_S9) != RBM_NONE)
+        encodeMask |= 0x08;
+    if ((regmask & RBM_S10) != RBM_NONE)
+        encodeMask |= 0x10;
+    if ((regmask & RBM_S11) != RBM_NONE)
+        encodeMask |= 0x20;
+
+    id->idReg2((regNumber)encodeMask); // Save in idReg2
+
 #else
     NYI("unknown target");
 #endif
@@ -499,6 +533,36 @@ inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
         regmask |= RBM_S7;
     if ((encodeMask & 0x08) != 0)
         regmask |= RBM_S8;
+
+#elif defined(TARGET_RISCV64)
+    assert(REGNUM_BITS >= 6);
+    encodeMask = id->idReg1();
+
+    if ((encodeMask & 0x01) != 0)
+        regmask |= RBM_S1;
+    if ((encodeMask & 0x02) != 0)
+        regmask |= RBM_S2;
+    if ((encodeMask & 0x04) != 0)
+        regmask |= RBM_S3;
+    if ((encodeMask & 0x08) != 0)
+        regmask |= RBM_S4;
+    if ((encodeMask & 0x10) != 0)
+        regmask |= RBM_S5;
+    if ((encodeMask & 0x20) != 0)
+        regmask |= RBM_S6;
+
+    encodeMask = id->idReg2();
+
+    if ((encodeMask & 0x01) != 0)
+        regmask |= RBM_S7;
+    if ((encodeMask & 0x02) != 0)
+        regmask |= RBM_S8;
+    if ((encodeMask & 0x04) != 0)
+        regmask |= RBM_S9;
+    if ((encodeMask & 0x08) != 0)
+        regmask |= RBM_S10;
+    if ((encodeMask & 0x10) != 0)
+        regmask |= RBM_S11;
 
 #else
     NYI("unknown target");

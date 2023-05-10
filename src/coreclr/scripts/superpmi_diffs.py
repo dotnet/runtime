@@ -21,9 +21,12 @@ from jitutil import run_command, TempDir
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", help="Architecture")
+parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
 parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
+parser.add_argument("-base_jit_options", help="Semicolon separated list of base jit options (in format A=B without DOTNET_ prefix)")
+parser.add_argument("-diff_jit_options", help="Semicolon separated list of diff jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 
 def setup_args(args):
@@ -45,6 +48,11 @@ def setup_args(args):
                         "Unable to set arch")
 
     coreclr_args.verify(args,
+                        "type",
+                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        "Invalid type \"{}\"".format)
+
+    coreclr_args.verify(args,
                         "platform",
                         lambda unused: True,
                         "Unable to set platform")
@@ -60,69 +68,273 @@ def setup_args(args):
                         "diff_jit_directory doesn't exist")
 
     coreclr_args.verify(args,
+                        "base_jit_options",
+                        lambda unused: True,
+                        "Unable to set base_jit_options")
+
+    coreclr_args.verify(args,
+                        "diff_jit_options",
+                        lambda unused: True,
+                        "Unable to set diff_jit_options")
+
+    coreclr_args.verify(args,
                         "log_directory",
                         lambda log_directory: True,
                         "log_directory doesn't exist")
 
     return coreclr_args
 
-def copy_dasm_files(spmi_location, upload_directory, tag_name):
-    """Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
-
-    Args:
-        spmi_location (string): Location where .dasm files are present
-        upload_directory (string): Upload directory
-        tag_name (string): tag_name used in zip file name.
+class Diff:
+    """ Class handling asmdiffs and tpdiff invocations
     """
 
-    print("Copy .dasm files")
+    def __init__(self, coreclr_args):
+        """ Constructor
 
-    # Create upload_directory
-    if not os.path.isdir(upload_directory):
-        os.makedirs(upload_directory)
+        Args:
+            coreclr_args (CoreclrArguments) : parsed args
+            ...
+        """
+        self.coreclr_args = coreclr_args
 
-    dasm_file_present = False
-    # Create temp directory to copy all issues to upload. We don't want to create a sub-folder
-    # inside issues_directory because that will also get included twice.
-    with TempDir() as prep_directory:
-        for file_path, dirs, files in walk(spmi_location, topdown=True):
-            # Credit: https://stackoverflow.com/a/19859907
-            dirs[:] = [d for d in dirs]
-            for name in files:
-                if not name.lower().endswith(".dasm"):
-                    continue
+        self.python_path = sys.executable
+        self.script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
-                dasm_src_file = path.join(file_path, name)
-                dasm_dst_file = dasm_src_file.replace(spmi_location, prep_directory)
-                dst_directory = path.dirname(dasm_dst_file)
-                if not os.path.exists(dst_directory):
-                    os.makedirs(dst_directory)
+        # It doesn't really matter where we put the downloaded SPMI artifacts.
+        # Here, they are put in <correlation_payload>/artifacts/spmi.
+        self.spmi_location = os.path.join(self.script_dir, "artifacts", "spmi")
+
+        self.log_directory = coreclr_args.log_directory
+        self.platform_name = coreclr_args.platform
+        self.arch_name = coreclr_args.arch
+
+        self.os_name = "win" if self.platform_name.lower() == "windows" else "unix"
+        self.host_arch_name = "x64" if self.arch_name.endswith("64") else "x86"
+        self.os_name = "universal" if self.arch_name.startswith("arm") else self.os_name
+
+        # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
+        # We pass the full path of the JITs to use as arguments.
+        self.core_root_dir = self.script_dir
+        
+        # Assume everything succeeded. If any step fails, it will change this to True.
+        self.failed = False
+        
+        # List of summary MarkDown files
+        self.summary_md_files = []
+
+
+    def download_mch(self):
+        """ Download MCH files for the diff
+        """
+        print("Running superpmi.py download to get MCH files")
+
+        log_file = os.path.join(self.log_directory, "superpmi_download_{}_{}.log".format(self.platform_name, self.arch_name))
+        run_command([
+            self.python_path,
+            os.path.join(self.script_dir, "superpmi.py"),
+            "download",
+            "--no_progress",
+            "-core_root", self.core_root_dir,
+            "-target_os", self.platform_name,
+            "-target_arch", self.arch_name,
+            "-spmi_location", self.spmi_location,
+            "-log_level", "debug",
+            "-log_file", log_file
+            ], _exit_on_fail=True)
+
+
+    def copy_dasm_files(self, upload_directory, tag_name):
+        """ Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
+
+        Args:
+            upload_directory (string): Upload directory
+            tag_name (string): tag_name used in zip file name.
+        """
+
+        print("Copy .dasm files")
+
+        # Create upload_directory
+        if not os.path.isdir(upload_directory):
+            os.makedirs(upload_directory)
+
+        dasm_file_present = False
+        # Create temp directory to copy all issues to upload. We don't want to create a sub-folder
+        # inside issues_directory because that will also get included twice.
+        with TempDir() as prep_directory:
+            for file_path, dirs, files in walk(self.spmi_location, topdown=True):
+                # Credit: https://stackoverflow.com/a/19859907
+                dirs[:] = [d for d in dirs]
+                for name in files:
+                    if not name.lower().endswith(".dasm"):
+                        continue
+
+                    dasm_src_file = path.join(file_path, name)
+                    dasm_dst_file = dasm_src_file.replace(self.spmi_location, prep_directory)
+                    dst_directory = path.dirname(dasm_dst_file)
+                    if not os.path.exists(dst_directory):
+                        os.makedirs(dst_directory)
+                    try:
+                        shutil.copy2(dasm_src_file, dasm_dst_file)
+                        dasm_file_present = True
+                    except PermissionError as pe_error:
+                        print('Ignoring PermissionError: {0}'.format(pe_error))
+
+            # If there are no diffs, create an zip file with single file in it.
+            # Otherwise, Azdo considers it as failed job.
+            # See https://github.com/dotnet/arcade/issues/8200
+            if not dasm_file_present:
+                no_diff = os.path.join(prep_directory, "nodiff.txt")
+                with open(no_diff, "w") as no_diff_file:
+                    no_diff_file.write("No diffs found!")
+
+            # Zip compress the files we will upload
+            zip_path = os.path.join(prep_directory, "Asmdiffs_" + tag_name)
+            print("Creating archive: " + zip_path)
+            shutil.make_archive(zip_path, 'zip', prep_directory)
+
+            zip_path += ".zip"
+            dst_zip_path = os.path.join(upload_directory, "Asmdiffs_" + tag_name + ".zip")
+            print("Copying {} to {}".format(zip_path, dst_zip_path))
+            try:
+                shutil.copy2(zip_path, dst_zip_path)
+            except PermissionError as pe_error:
+                print('Ignoring PermissionError: {0}'.format(pe_error))
+
+
+    def do_asmdiffs(self):
+        """ Run asmdiffs
+        """
+
+        print("Running superpmi.py asmdiffs")
+
+        # Find the built jit-analyze and put its directory on the PATH
+        jit_analyze_dir = os.path.join(self.script_dir, "jit-analyze")
+        if not os.path.isdir(jit_analyze_dir):
+            print("Error: jit-analyze not found in {} (continuing)".format(jit_analyze_dir))
+        else:
+            # Put the jit-analyze directory on the PATH so superpmi.py can find it.
+            print("Adding {} to PATH".format(jit_analyze_dir))
+            os.environ["PATH"] = jit_analyze_dir + os.pathsep + os.environ["PATH"]
+
+        # Find the portable `git` installation, and put `git.exe` on the PATH, for use by `jit-analyze`.
+        git_directory = os.path.join(self.script_dir, "git", "cmd")
+        git_exe_tool = os.path.join(git_directory, "git.exe")
+        if not os.path.isfile(git_exe_tool):
+            print("Error: `git` not found at {} (continuing)".format(git_exe_tool))
+        else:
+            # Put the git/cmd directory on the PATH so jit-analyze can find it.
+            print("Adding {} to PATH".format(git_directory))
+            os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
+
+        # Figure out which JITs to use
+        base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+        diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+
+        log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}_{}.log".format(self.platform_name, self.arch_name))
+
+        # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
+        overall_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.md")
+        if os.path.isfile(overall_md_asmdiffs_summary_file):
+            os.remove(overall_md_asmdiffs_summary_file)
+
+        overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}_{}.md".format(self.platform_name, self.arch_name))
+        self.summary_md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiffs_summary_file_target))
+
+        _, _, return_code = run_command([
+            self.python_path,
+            os.path.join(self.script_dir, "superpmi.py"),
+            "asmdiffs",
+            "--no_progress",
+            "-core_root", self.core_root_dir,
+            "-target_os", self.platform_name,
+            "-target_arch", self.arch_name,
+            "-arch", self.host_arch_name,
+            "-base_jit_path", base_checked_jit_path,
+            "-diff_jit_path", diff_checked_jit_path,
+            "-spmi_location", self.spmi_location,
+            "-error_limit", "100",
+            "-log_level", "debug",
+            "-log_file", log_file] + self.create_jit_options_args())
+
+        if return_code != 0:
+            print("Failed during asmdiffs. Log file: {}".format(log_file))
+            self.failed = True
+
+        # Prepare .dasm files to upload to AzDO
+        self.copy_dasm_files(self.log_directory, "{}_{}".format(self.platform_name, self.arch_name))
+
+
+    def do_tpdiff(self):
+        """ Run tpdiff
+        """
+
+        print("Running superpmi.py tpdiff")
+
+        # Figure out which JITs to use
+        base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+        diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+
+        log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}_{}.log".format(self.platform_name, self.arch_name))
+
+        # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
+        overall_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.md")
+        if os.path.isfile(overall_md_tpdiff_summary_file):
+            os.remove(overall_md_tpdiff_summary_file)
+
+        overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(self.platform_name, self.arch_name))
+        self.summary_md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
+
+        _, _, return_code = run_command([
+            self.python_path,
+            os.path.join(self.script_dir, "superpmi.py"),
+            "tpdiff",
+            "--no_progress",
+            "-core_root", self.core_root_dir,
+            "-target_os", self.platform_name,
+            "-target_arch", self.arch_name,
+            "-arch", self.host_arch_name,
+            "-base_jit_path", base_release_jit_path,
+            "-diff_jit_path", diff_release_jit_path,
+            "-spmi_location", self.spmi_location,
+            "-error_limit", "100",
+            "-log_level", "debug",
+            "-log_file", log_file] + self.create_jit_options_args())
+
+        if return_code != 0:
+            print("Failed during tpdiff. Log file: {}".format(log_file))
+            self.failed = True
+
+    def create_jit_options_args(self):
+        options = []
+        if self.coreclr_args.base_jit_options is not None:
+            for v in self.coreclr_args.base_jit_options.split(';'):
+                options += "-base_jit_option", v
+
+        if self.coreclr_args.diff_jit_options is not None:
+            for v in self.coreclr_args.diff_jit_options.split(';'):
+                options += "-diff_jit_option", v
+
+        return options
+
+    def summarize(self):
+        """ Summarize the diffs
+        """
+        # If there are diffs, we'll get summary md files in the spmi_location directory.
+        # If there are no diffs, we still want to create this file and indicate there were no diffs.
+
+        for source, target in self.summary_md_files:
+            if os.path.isfile(source):
                 try:
-                    shutil.copy2(dasm_src_file, dasm_dst_file)
-                    dasm_file_present = True
+                    print("Copying summary file {} -> {}".format(source, target))
+                    shutil.copy2(source, target)
                 except PermissionError as pe_error:
                     print('Ignoring PermissionError: {0}'.format(pe_error))
-
-        # If there are no diffs, create an zip file with single file in it.
-        # Otherwise, Azdo considers it as failed job.
-        # See https://github.com/dotnet/arcade/issues/8200
-        if not dasm_file_present:
-            no_diff = os.path.join(prep_directory, "nodiff.txt")
-            with open(no_diff, "w") as no_diff_file:
-                no_diff_file.write("No diffs found!")
-
-        # Zip compress the files we will upload
-        zip_path = os.path.join(prep_directory, "Asmdiffs_" + tag_name)
-        print("Creating archive: " + zip_path)
-        shutil.make_archive(zip_path, 'zip', prep_directory)
-
-        zip_path += ".zip"
-        dst_zip_path = os.path.join(upload_directory, "Asmdiffs_" + tag_name + ".zip")
-        print("Copying {} to {}".format(zip_path, dst_zip_path))
-        try:
-            shutil.copy2(zip_path, dst_zip_path)
-        except PermissionError as pe_error:
-            print('Ignoring PermissionError: {0}'.format(pe_error))
+            else:
+                # Write a basic summary file. Ideally, we should not generate a summary.md file. However, Helix will report
+                # errors when the Helix work item fails to upload this specified file if it doesn't exist. We should change the
+                # upload to be conditional, or otherwise not error.
+                with open(target, "a") as f:
+                    f.write("<empty>")
 
 
 def main(main_args):
@@ -135,154 +347,31 @@ def main(main_args):
         main_args ([type]): Arguments to the script
     """
 
-    python_path = sys.executable
-    script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     coreclr_args = setup_args(main_args)
 
-    # It doesn't really matter where we put the downloaded SPMI artifacts.
-    # Here, they are put in <correlation_payload>/artifacts/spmi.
-    spmi_location = os.path.join(script_dir, "artifacts", "spmi")
+    do_asmdiffs = False
+    do_tpdiff = False
+    if coreclr_args.type == 'asmdiffs':
+        do_asmdiffs = True
+    if coreclr_args.type == 'tpdiff':
+        do_tpdiff = True
+    if coreclr_args.type == 'all':
+        do_asmdiffs = True
+        do_tpdiff = True
 
-    log_directory = coreclr_args.log_directory
-    platform_name = coreclr_args.platform
+    diff = Diff(coreclr_args)
 
-    # Find the built jit-analyze and put its directory on the PATH
-    jit_analyze_dir = os.path.join(script_dir, "jit-analyze")
-    if not os.path.isdir(jit_analyze_dir):
-        print("Error: jit-analyze not found in {} (continuing)".format(jit_analyze_dir))
-    else:
-        # Put the jit-analyze directory on the PATH so superpmi.py can find it.
-        print("Adding {} to PATH".format(jit_analyze_dir))
-        os.environ["PATH"] = jit_analyze_dir + os.pathsep + os.environ["PATH"]
+    diff.download_mch()
 
-    # Find the portable `git` installation, and put `git.exe` on the PATH, for use by `jit-analyze`.
-    git_directory = os.path.join(script_dir, "git", "cmd")
-    git_exe_tool = os.path.join(git_directory, "git.exe")
-    if not os.path.isfile(git_exe_tool):
-        print("Error: `git` not found at {} (continuing)".format(git_exe_tool))
-    else:
-        # Put the git/cmd directory on the PATH so jit-analyze can find it.
-        print("Adding {} to PATH".format(git_directory))
-        os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
+    if do_asmdiffs:
+        diff.do_asmdiffs()
+    if do_tpdiff:
+        diff.do_tpdiff()
 
-    # Figure out which JITs to use
-    os_name = "win" if platform_name.lower() == "windows" else "unix"
-    arch_name = coreclr_args.arch
-    host_arch_name = "x64" if arch_name.endswith("64") else "x86"
-    os_name = "universal" if arch_name.startswith("arm") else os_name
-    base_checked_jit_path = os.path.join(coreclr_args.base_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
-    diff_checked_jit_path = os.path.join(coreclr_args.diff_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
-    base_release_jit_path = os.path.join(coreclr_args.base_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
-    diff_release_jit_path = os.path.join(coreclr_args.diff_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    diff.summarize()
 
-    # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
-    # We pass the full path of the JITs to use as arguments.
-    core_root_dir = script_dir
-
-    print("Running superpmi.py download to get MCH files")
-
-    log_file = os.path.join(log_directory, "superpmi_download_{}_{}.log".format(platform_name, arch_name))
-    run_command([
-        python_path,
-        os.path.join(script_dir, "superpmi.py"),
-        "download",
-        "--no_progress",
-        "-core_root", core_root_dir,
-        "-target_os", platform_name,
-        "-target_arch", arch_name,
-        "-spmi_location", spmi_location,
-        "-log_level", "debug",
-        "-log_file", log_file
-        ], _exit_on_fail=True)
-
-    print("Running superpmi.py asmdiffs")
-
-    log_file = os.path.join(log_directory, "superpmi_asmdiffs_{}_{}.log".format(platform_name, arch_name))
-
-    overall_md_asmdiffs_summary_file = os.path.join(spmi_location, "diff_summary.md")
-    if os.path.isfile(overall_md_asmdiffs_summary_file):
-        os.remove(overall_md_asmdiffs_summary_file)
-
-    _, _, return_code = run_command([
-        python_path,
-        os.path.join(script_dir, "superpmi.py"),
-        "asmdiffs",
-        "--no_progress",
-        "-core_root", core_root_dir,
-        "-target_os", platform_name,
-        "-target_arch", arch_name,
-        "-arch", host_arch_name,
-        "-base_jit_path", base_checked_jit_path,
-        "-diff_jit_path", diff_checked_jit_path,
-        "-spmi_location", spmi_location,
-        "-error_limit", "100",
-        "-log_level", "debug",
-        "-log_file", log_file])
-
-    failed = False
-    if return_code != 0:
-        print("Failed during asmdiffs")
-        failed = True
-
-    print("Running superpmi.py tpdiff")
-
-    log_file = os.path.join(log_directory, "superpmi_tpdiff_{}_{}.log".format(platform_name, arch_name))
-
-    overall_md_tpdiff_summary_file = os.path.join(spmi_location, "tpdiff_summary.md")
-    if os.path.isfile(overall_md_tpdiff_summary_file):
-        os.remove(overall_md_tpdiff_summary_file)
-
-    _, _, return_code = run_command([
-        python_path,
-        os.path.join(script_dir, "superpmi.py"),
-        "tpdiff",
-        "--no_progress",
-        "-core_root", core_root_dir,
-        "-target_os", platform_name,
-        "-target_arch", arch_name,
-        "-arch", host_arch_name,
-        "-base_jit_path", base_release_jit_path,
-        "-diff_jit_path", diff_release_jit_path,
-        "-spmi_location", spmi_location,
-        "-error_limit", "100",
-        "-log_level", "debug",
-        "-log_file", log_file])
-
-    if return_code != 0:
-        print("Failed during tpdiff")
-        failed = True
-
-    # If there are asm diffs, and jit-analyze ran, we'll get a diff_summary.md file in the spmi_location directory.
-    # We make sure the file doesn't exist before we run diffs, so we don't need to worry about superpmi.py creating
-    # a unique, numbered file. If there are no diffs, we still want to create this file and indicate there were no diffs.
-
-    md_files = []
-
-    overall_md_asmdiff_summary_file_target = os.path.join(log_directory, "superpmi_diff_summary_{}_{}.md".format(platform_name, arch_name))
-    md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiff_summary_file_target))
-
-    overall_md_tpdiff_summary_file_target = os.path.join(log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(platform_name, arch_name))
-    md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
-
-    for source, target in md_files:
-        if os.path.isfile(source):
-            try:
-                print("Copying summary file {} -> {}".format(source, target))
-                shutil.copy2(source, target)
-            except PermissionError as pe_error:
-                print('Ignoring PermissionError: {0}'.format(pe_error))
-        else:
-            # Write a basic summary file. Ideally, we should not generate a summary.md file. However, currently I'm seeing
-            # errors where the Helix work item fails to upload this specified file if it doesn't exist. We should change the
-            # upload to be conditional, or otherwise not error.
-            with open(target, "a") as f:
-                f.write("<empty>")
-
-    # Finally prepare files to upload from helix.
-    copy_dasm_files(spmi_location, log_directory, "{}_{}".format(platform_name, arch_name))
-
-    if failed:
-        print("Failure in {}".format(log_file))
+    if diff.failed:
+        print("Failure")
         return 1
 
     return 0

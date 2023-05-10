@@ -11,7 +11,8 @@ namespace projs
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Program p = new Program();
             p.NarrowDouble();
@@ -20,7 +21,7 @@ namespace projs
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public void NarrowDouble()
+        internal void NarrowDouble()
         {
             // GenerateSource1 and GenerateSource2 methods are needed to exercise the bug code path.
             double[] source1 = GenerateSource1();

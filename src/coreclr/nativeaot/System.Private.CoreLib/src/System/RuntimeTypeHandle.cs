@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -50,18 +51,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(RuntimeTypeHandle handle)
         {
-            if (_value == handle._value)
-            {
-                return true;
-            }
-            else if (this.IsNull || handle.IsNull)
-            {
-                return false;
-            }
-            else
-            {
-                return RuntimeImports.AreTypesEquivalent(this.ToEETypePtr(), handle.ToEETypePtr());
-            }
+            return _value == handle._value;
         }
 
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) => new RuntimeTypeHandle(value);
@@ -107,6 +97,8 @@ namespace System
             return type.Module.ModuleHandle;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -116,6 +108,12 @@ namespace System
         internal EETypePtr ToEETypePtr()
         {
             return new EETypePtr(_value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal MethodTable* ToMethodTable()
+        {
+            return (MethodTable*)_value;
         }
 
         internal bool IsNull
@@ -153,14 +151,6 @@ namespace System
                         s += "(" + penultimateLastResortString + ")";
                 }
                 return s;
-            }
-        }
-
-        internal IntPtr RawValue
-        {
-            get
-            {
-                return _value;
             }
         }
 

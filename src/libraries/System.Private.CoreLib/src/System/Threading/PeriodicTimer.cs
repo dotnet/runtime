@@ -18,9 +18,11 @@ namespace System.Threading
     public sealed class PeriodicTimer : IDisposable
     {
         /// <summary>The underlying timer.</summary>
-        private readonly TimerQueueTimer _timer;
+        private readonly ITimer _timer;
         /// <summary>All state other than the _timer, so that the rooted timer's callback doesn't indirectly root itself by referring to _timer.</summary>
         private readonly State _state;
+        /// <summary>The timer's current period.</summary>
+        private TimeSpan _period;
 
         /// <summary>Initializes the timer.</summary>
         /// <param name="period">The period between ticks</param>
@@ -33,8 +35,46 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(period));
             }
 
+            _period = period;
             _state = new State();
+
             _timer = new TimerQueueTimer(s => ((State)s!).Signal(), _state, ms, ms, flowExecutionContext: false);
+        }
+
+        /// <summary>Initializes the timer.</summary>
+        /// <param name="period">The period between ticks</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> used to interpret <paramref name="period"/>.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="period"/> must be <see cref="Timeout.InfiniteTimeSpan"/> or represent a number of milliseconds equal to or larger than 1 and smaller than <see cref="uint.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="timeProvider"/> is null</exception>
+        public PeriodicTimer(TimeSpan period, TimeProvider timeProvider)
+        {
+            if (!TryGetMilliseconds(period, out uint ms))
+            {
+                GC.SuppressFinalize(this);
+                throw new ArgumentOutOfRangeException(nameof(period));
+            }
+
+            if (timeProvider is null)
+            {
+                GC.SuppressFinalize(this);
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
+
+            _period = period;
+            _state = new State();
+            TimerCallback callback = s => ((State)s!).Signal();
+
+            if (timeProvider == TimeProvider.System)
+            {
+                _timer = new TimerQueueTimer(callback, _state, ms, ms, flowExecutionContext: false);
+            }
+            else
+            {
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _timer = timeProvider.CreateTimer(callback, _state, period, period);
+                }
+            }
         }
 
         /// <summary>Gets or sets the period between ticks.</summary>
@@ -46,15 +86,19 @@ namespace System.Threading
         /// </remarks>
         public TimeSpan Period
         {
-            get => _timer._period == Timeout.UnsignedInfinite ? Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(_timer._period);
+            get => _period;
             set
             {
-                if (!TryGetMilliseconds(value, out uint ms))
+                if (!TryGetMilliseconds(value, out _))
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                _timer.Change(ms, ms);
+                _period = value;
+                if (!_timer.Change(value, value))
+                {
+                    ThrowHelper.ThrowObjectDisposedException(this);
+                }
             }
         }
 
@@ -98,7 +142,7 @@ namespace System.Threading
         public void Dispose()
         {
             GC.SuppressFinalize(this);
-            _timer.Close();
+            _timer.Dispose();
             _state.Signal(stopping: true);
         }
 

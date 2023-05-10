@@ -296,9 +296,6 @@ dn_vector_pop_back (dn_vector_t *vector)
 	dn_vector_custom_pop_back (vector, NULL);
 }
 
-#define dn_vector_buffer_capacity_t(buffer_byte_size, type) \
-	_dn_vector_buffer_capacity ((buffer_byte_size), sizeof (type))
-
 void
 dn_vector_for_each (
 	const dn_vector_t *vector,

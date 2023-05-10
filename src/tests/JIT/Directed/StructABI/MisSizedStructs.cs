@@ -4,12 +4,14 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class MisSizedStructs
 {
     public const byte ByteValue = 0xC1;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int BytesSize = 256;
         var bytes = stackalloc byte[BytesSize];

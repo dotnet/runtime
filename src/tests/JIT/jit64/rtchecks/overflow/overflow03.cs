@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class OVFTest
+public class OVFTest
 {
     static public volatile bool rtv;
 
@@ -324,7 +325,8 @@ internal class OVFTest
         }
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 #if OP_DIV
         const string op = "div.ovf";

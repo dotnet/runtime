@@ -3,11 +3,12 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 .assembly extern legacy library mscorlib { auto }
 
 
-.assembly  mutualrecurthdtls
+.assembly  'mutualrecurthd-tls'
 {
 }
 .data tls FieldData = int32(32)
@@ -3242,6 +3243,9 @@ stsfld	int32 Thread_EA::TLSFieldData
 
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  4
   .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,

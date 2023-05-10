@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class Runtime_72363
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var bi = new ListImpl();
         for (int i = 0; i < 100; i++)

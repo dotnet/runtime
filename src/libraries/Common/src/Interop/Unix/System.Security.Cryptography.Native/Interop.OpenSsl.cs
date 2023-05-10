@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -226,7 +227,7 @@ internal static partial class Interop
                 {
                     SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.CertificateHandle, sslAuthenticationOptions.CertificateContext.KeyHandle);
 
-                    if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+                    if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Count > 0)
                     {
                         if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
                         {
@@ -274,7 +275,7 @@ internal static partial class Interop
                 throw CreateSslException(SR.net_ssl_use_private_key_failed);
             }
 
-            if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+            if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Count > 0)
             {
                 if (!Ssl.AddExtraChainCertificates(ssl, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
                 {

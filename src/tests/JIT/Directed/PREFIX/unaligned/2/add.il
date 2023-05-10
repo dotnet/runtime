@@ -4,18 +4,19 @@
 // (04/08/09) Updated the layout field values to match unaligned.0x2. Else the test fails on IA64 if explicit layouts are specified.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'add' {
+.assembly 'add_unaligned_2' {
  //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 
 
-.class explicit _add {
+.class public explicit _add {
 
 .field [2] int32 global0
 .field [6] int32 global1
@@ -25,7 +26,10 @@
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main() {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	6
 .locals init	(class _add target)

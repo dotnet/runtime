@@ -1,6 +1,5 @@
 <Project>
   <PropertyGroup>
-    <SkipInferTargetOSName>true</SkipInferTargetOSName>
     <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
     <!-- Enabling this rule will cause build failures on undocumented public APIs.
          We cannot add it in eng/Versions.props because src/coreclr does not have access to UseIntellisensePackageDocXmlFile, which ensures

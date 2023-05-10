@@ -167,6 +167,8 @@ int windowBits;
 
     /* extract wrap request from windowBits parameter */
     if (windowBits < 0) {
+        if (windowBits < -15)
+            return Z_STREAM_ERROR;
         wrap = 0;
         windowBits = -windowBits;
     }
@@ -797,8 +799,9 @@ int flush;
                 if (copy > have) copy = have;
                 if (copy) {
                     if (state->head != Z_NULL &&
-                        state->head->extra != Z_NULL) {
-                        len = state->head->extra_len - state->length;
+                        state->head->extra != Z_NULL &&
+                        (len = state->head->extra_len - state->length) <
+                            state->head->extra_max) {
                         zmemcpy(state->head->extra + len, next,
                                 len + copy > state->head->extra_max ?
                                 state->head->extra_max - len : copy);
@@ -1282,7 +1285,7 @@ int flush;
                 out = left;
 
 #ifdef USE_PCLMUL_CRC
-		if ((state->wrap) & 2 && x86_cpu_has_pclmul)
+		if (state->flags > 0 && x86_cpu_has_pclmul)
 		    strm->adler = state->check = crc_fold_512to32(state->crc);
 #endif
 

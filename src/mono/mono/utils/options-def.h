@@ -60,6 +60,12 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
 DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
+#if HOST_BROWSER
+DEFINE_BOOL(interp_simd_v128, "interp-simd-v128", FALSE, "Enable interpreter Vector128 support")
+#else
+DEFINE_BOOL(interp_simd_v128, "interp-simd-v128", TRUE, "Enable interpreter Vector128 support")
+#endif
+DEFINE_BOOL(interp_simd_packedsimd, "interp-simd-packedsimd", FALSE, "Enable interpreter WASM PackedSimd support")
 
 #if HOST_BROWSER
 
@@ -110,15 +116,30 @@ DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use 
 DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-checks", TRUE, "Attempt to eliminate redundant null checks in traces")
 // enables performing backward branches without exiting traces
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
+// Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
+DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
 // any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
-DEFINE_INT(jiterpreter_minimum_trace_length, "jiterpreter-minimum-trace-length", 10, "Reject traces shorter than this number of meaningful opcodes")
+DEFINE_INT(jiterpreter_minimum_trace_value, "jiterpreter-minimum-trace-value", 18, "Reject traces that perform less than this amount of (approximate) work")
 // ensure that we don't create trace entry points too close together
 DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
 // once a trace entry point is inserted, we only actually JIT code for it once it's been hit this many times
 DEFINE_INT(jiterpreter_minimum_trace_hit_count, "jiterpreter-minimum-trace-hit-count", 5000, "JIT trace entry points once they are hit this many times")
+// trace prepares turn into a monitor opcode and stay one this long before being converted to enter or nop
+DEFINE_INT(jiterpreter_trace_monitoring_period, "jiterpreter-trace-monitoring-period", 1000, "Monitor jitted traces for this many calls to determine whether to keep them")
+// traces that process less than this many opcodes have a high exit penalty, more than this have a low exit penalty
+DEFINE_INT(jiterpreter_trace_monitoring_short_distance, "jiterpreter-trace-monitoring-short-distance", 4, "Traces that exit after processing this many opcodes have a reduced exit penalty")
+// traces that process this many opcodes have no exit penalty
+DEFINE_INT(jiterpreter_trace_monitoring_long_distance, "jiterpreter-trace-monitoring-long-distance", 10, "Traces that exit after processing this many opcodes have no exit penalty")
+// the average penalty value for a trace is compared against this threshold / 100 to decide whether to discard it
+DEFINE_INT(jiterpreter_trace_monitoring_max_average_penalty, "jiterpreter-trace-monitoring-max-average-penalty", 75, "If the average penalty value for a trace is above this value it will be rejected")
+// 0 = no monitoring, 1 = log when rejecting a trace, 2 = log when accepting or rejecting a trace, 3 = log every recorded bailout
+DEFINE_INT(jiterpreter_trace_monitoring_log, "jiterpreter-trace-monitoring-log", 0, "Logging detail level for trace monitoring")
+// if a trace fails to back branch outside of itself, and there is a prepare point at the branch target, boost
+//  the hit count of that prepare point so it will JIT much sooner
+DEFINE_INT(jiterpreter_back_branch_boost, "jiterpreter-back-branch-boost", 4900, "Boost the hit count of prepare points targeted by a failed backward branch")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted
 DEFINE_INT(jiterpreter_jit_call_trampoline_hit_count, "jiterpreter-jit-call-hit-count", 1000, "Queue specialized do_jit_call trampoline for JIT after this many hits")
 // After a do_jit_call call site is hit this many times without being jitted, we will flush the JIT queue
@@ -131,6 +152,12 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
+
+#ifdef TARGET_WASM
+DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", TRUE, "Use a mrgctx for all gshared methods")
+#else
+DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")
+#endif
 
 /* Cleanup */
 #undef DEFINE_OPTION_FULL

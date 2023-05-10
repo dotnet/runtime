@@ -11,7 +11,7 @@ endif()
 add_library(
     monodroid
     SHARED
-    monodroid.c
+    %MONODROID_SOURCE%
     %AotModulesSource%
 )
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
@@ -58,6 +59,7 @@ namespace System.Security.Cryptography.Xml
             return keyInfoElement;
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -97,7 +99,7 @@ namespace System.Security.Cryptography.Xml
                         }
                     }
 
-                    KeyInfoClause? keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
+                    KeyInfoClause? keyInfoClause = CryptoHelpers.CreateNonTransformFromName<KeyInfoClause>(kicString);
                     // if we don't know what kind of KeyInfoClause we're looking at, use a generic KeyInfoNode:
                     keyInfoClause ??= new KeyInfoNode();
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //((a[0]+a[2])+a[1])
 //permutations for  ((a[0]+a[2])+a[1])
 //((a[0]+a[2])+a[1])
@@ -35,7 +36,8 @@ namespace CseTest
 
     public class Test_Main
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             int[] a = new int[5];

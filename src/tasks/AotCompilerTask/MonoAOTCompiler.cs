@@ -290,6 +290,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _numCompiled;
     private int _totalNumAssemblies;
 
+    private readonly Dictionary<string, string> _symbolNameFixups = new();
+
     private bool ProcessAndValidateArguments()
     {
         if (!File.Exists(CompilerBinaryPath))
@@ -1025,7 +1027,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!TryGetAssemblyName(asmPath, out string? assemblyName))
                 return false;
 
-            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_').Replace(' ', '_');
+            string symbolName = FixupSymbolName(assemblyName);
             symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
@@ -1158,6 +1160,35 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             outItems.Add(dictItem);
         }
         return outItems;
+    }
+
+    private string FixupSymbolName(string name)
+    {
+        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
+            return fixedName;
+
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else
+            {
+                sb.Append('_');
+            }
+        }
+
+        fixedName = sb.ToString();
+        _symbolNameFixups[name] = fixedName;
+        return fixedName;
     }
 
     internal sealed class PrecompileArguments

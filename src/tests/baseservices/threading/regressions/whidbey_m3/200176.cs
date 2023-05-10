@@ -3,10 +3,12 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class Stop {
 
-    public static int Main() {              
+    [Fact]
+    public static int TestEntryPoint() {              
 
         Stop tm = new Stop();
 	try

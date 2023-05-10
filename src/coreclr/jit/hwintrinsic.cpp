@@ -10,11 +10,29 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ size, \
+         /* numArgs */ numarg, \
+        /* category */ category \
+    },
 #include "hwintrinsiclistxarch.h"
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-    {NI_##isa##_##name, #name, InstructionSet_##isa, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ size, \
+         /* numArgs */ numarg, \
+        /* category */ category \
+    },
 #include "hwintrinsiclistarm64.h"
 #else
 #error Unsupported platform
@@ -181,8 +199,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported                         = comp->compSupportsHWIntrinsic(isa);
-    bool isBaselineVector512IsaUsedAndSupported = false;
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
 #ifdef TARGET_XARCH
@@ -202,7 +219,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isBaselineVector512IsaUsedAndSupported = comp->IsBaselineVector512IsaSupported();
+            isa = InstructionSet_Vector512;
         }
     }
 #endif
@@ -237,7 +254,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported)
         {
-            if (comp->compExactlyDependsOn(isa) || isBaselineVector512IsaUsedAndSupported)
+            if (comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
@@ -454,12 +471,19 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 
         if (newobjThis == nullptr)
         {
-            arg = impSIMDPopStack(argType, expectAddr);
-            assert(varTypeIsSIMD(arg->TypeGet()));
+            if (expectAddr)
+            {
+                arg = gtNewLoadValueNode(argType, impPopStack().val);
+            }
+            else
+            {
+                arg = impSIMDPopStack();
+            }
+            assert(varTypeIsSIMD(arg));
         }
         else
         {
-            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+            assert(newobjThis->IsLclVarAddr());
             arg = newobjThis;
 
             // push newobj result on type stack
@@ -554,7 +578,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     GenTree* immOpDup = nullptr;
 
-    immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+    immOp = impCloneExpr(immOp, &immOpDup, CHECK_SPILL_ALL,
                          nullptr DEBUGARG("Clone an immediate operand for immediate value bounds check"));
 
     if (immLowerBound != 0)
@@ -632,7 +656,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 #ifdef DEBUG
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 #ifdef TARGET_XARCH
-    assert((isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
+    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
     assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
@@ -976,11 +1000,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         assert(numArgs >= 0);
 
-        if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid) ||
-                          ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
+        if (!isScalar)
         {
-            assert(!"Unexpected HW Intrinsic");
-            return nullptr;
+            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid)
+            {
+                assert(!"Unexpected HW intrinsic");
+                return nullptr;
+            }
+
+#if defined(TARGET_ARM64)
+            if ((simdSize != 8) && (simdSize != 16))
+#elif defined(TARGET_XARCH)
+            if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
+#endif // TARGET_*
+            {
+                assert(!"Unexpected SIMD size");
+                return nullptr;
+            }
         }
 
         GenTree* op1 = nullptr;
@@ -991,11 +1027,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         switch (numArgs)
         {
             case 0:
+            {
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
                 break;
+            }
 
             case 1:
+            {
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
 
                 if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
@@ -1049,8 +1088,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
                 break;
+            }
 
             case 2:
+            {
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op2 = addRangeCheckIfNeeded(intrinsic, op2, mustExpand, immLowerBound, immUpperBound);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1103,8 +1144,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
 #endif
                 break;
+            }
 
             case 3:
+            {
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
                 op2 = getArgForHWIntrinsic(sigReader.GetOp2Type(), sigReader.op2ClsHnd);
                 op1 = getArgForHWIntrinsic(sigReader.GetOp1Type(), sigReader.op1ClsHnd);
@@ -1146,9 +1189,10 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 }
 #endif
                 break;
+            }
 
-#ifdef TARGET_ARM64
             case 4:
+            {
                 op4 = getArgForHWIntrinsic(sigReader.GetOp4Type(), sigReader.op4ClsHnd);
                 op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, immLowerBound, immUpperBound);
                 op3 = getArgForHWIntrinsic(sigReader.GetOp3Type(), sigReader.op3ClsHnd);
@@ -1158,7 +1202,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 assert(!isScalar);
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
                 break;
-#endif
+            }
+
             default:
                 break;
         }

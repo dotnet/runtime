@@ -60,6 +60,10 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <IncompatibleTestBashScriptExitCode>0</IncompatibleTestBashScriptExitCode>
       <CoreRunArgs>@(RuntimeHostConfigurationOption -> '-p &quot;%(Identity)=%(Value)&quot;', ' ')</CoreRunArgs>
+      <IosTestTarget Condition="'$(TargetOS)' == 'iossimulator'">ios-simulator-64</IosTestTarget>
+      <IosTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</IosTestTarget>
+      <IosTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</IosTestTarget>
+      <IosTestTarget Condition="'$(TargetOS)' == 'tvos'">tvos-device</IosTestTarget>
 
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(GCStressIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
@@ -126,7 +130,7 @@ fi
 
       <BashCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
 <![CDATA[
-if [ -z ${CLRTestExpectedExitCode+x} ]%3B then export CLRTestExpectedExitCode=$(CLRTestExitCode)%3B fi
+export CLRTestExpectedExitCode=$(CLRTestExitCode)
 echo BEGIN EXECUTION]]>
       </BashCLRTestExitCodePrep>
 
@@ -290,7 +294,7 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
-      <WatcherRunFile>"$CORE_ROOT/watchdog" 300</WatcherRunFile>
+      <WatcherRunFile>"$CORE_ROOT/watchdog" $_WatcherTimeoutMins</WatcherRunFile>
 
       <!-- Note that this overwrites CLRTestBashPreCommands rather than adding to it. -->
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetArchitecture)' == 'wasm'"><![CDATA[
@@ -413,7 +417,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'iossimulator'">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator')">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then
@@ -436,7 +440,7 @@ $__Command $HARNESS_RUNNER apple just-run %5c
   --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
   --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
-  --targets ios-simulator-64 %5c
+  --targets $(IosTestTarget) %5c
   -v
 CLRTestExitCode=$?
 
@@ -549,7 +553,19 @@ ReleaseLock()
 cd "$%28dirname "${BASH_SOURCE[0]}")"
 LockFile="lock"
 _RunWithWatcher=0
+_WatcherTimeoutMins=10
 
+if [[ ! -z "$__TestCollectionTimeoutMins" ]]%3B then
+    _WatcherTimeoutMins=$__TestCollectionTimeoutMins
+fi
+
+# The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+# Because of this, we pass a smaller timeout than the test collection one.
+# For simplicity purposes, we will assume there are no work items with just
+# a one-minute max timeout.
+if (( $_WatcherTimeoutMins > 1 ))%3B then
+    _WatcherTimeoutMins="%24((_WatcherTimeoutMins-1))"
+fi
 
 # The __TestEnv variable may be used to specify a script to source before the test.
 if [ -n "$__TestEnv" ]%3B then

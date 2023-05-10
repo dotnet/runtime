@@ -10,12 +10,17 @@ function wasm_exit(exit_code) {
 }
 
 try {
-    const { getAssemblyExports } = await dotnet.create();
+    const { getAssemblyExports, INTERNAL } = await dotnet.withRuntimeOptions(["--jiterpreter-stats-enabled"]).create();
     const exports = await getAssemblyExports("WebAssembly.Browser.RuntimeConfig.Test.dll");
     const testMeaning = exports.Sample.Test.TestMeaning;
     const ret = testMeaning();
     document.getElementById("out").innerHTML = `${ret}`;
     console.debug(`ret: ${ret}`);
+
+    // Test runtimeOptions were applied
+    if (!INTERNAL.jiterpreter_get_options().enableStats) {
+        throw new Error("RuntimeOptions not propagated")
+    }
 
     let exit_code = ret;
     wasm_exit(exit_code);

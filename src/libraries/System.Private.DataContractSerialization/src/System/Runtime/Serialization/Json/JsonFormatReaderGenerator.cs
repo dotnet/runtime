@@ -453,7 +453,7 @@ namespace System.Runtime.Serialization.Json
             {
                 ConstructorInfo? ctor = classContract.UnderlyingType.GetConstructor(Globals.ScanAllMembers, JsonFormatGeneratorStatics.SerInfoCtorArgs);
                 if (ctor == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.SerializationInfo_ConstructorNotFound, DataContract.GetClrTypeFullName(classContract.UnderlyingType))));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.SerializationInfo_ConstructorNotFound, DataContract.GetClrTypeFullName(classContract.UnderlyingType)));
                 _ilg.LoadAddress(_objectLocal);
                 _ilg.ConvertAddress(_objectLocal.LocalType, _objectType!);
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ReadSerializationInfoMethod, _xmlReaderArg, classContract.UnderlyingType);
@@ -990,7 +990,7 @@ namespace System.Runtime.Serialization.Json
                     ClassDataContract? keyValuePairContract = DataContract.GetDataContract(value.LocalType) as ClassDataContract;
                     if (keyValuePairContract == null)
                     {
-                        Fx.Assert("Failed to create contract for KeyValuePair type");
+                        Debug.Fail("Failed to create contract for KeyValuePair type");
                     }
                     DataMember keyMember = keyValuePairContract.Members![0];
                     DataMember valueMember = keyValuePairContract.Members[1];

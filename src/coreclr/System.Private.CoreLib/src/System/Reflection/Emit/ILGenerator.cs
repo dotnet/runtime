@@ -1189,12 +1189,12 @@ namespace System.Reflection.Emit
 
             if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
             {
-                throw new ArgumentException(SR.Argument_NotExceptionType);
+                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             }
             ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor);
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             }
             Emit(OpCodes.Newobj, con);
             Emit(OpCodes.Throw);

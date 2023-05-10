@@ -8,8 +8,6 @@ using System.Linq;
 using System.Text;
 using FluentAssertions;
 using ILCompiler;
-using ILCompiler.DependencyAnalysis;
-using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Mono.Cecil;
@@ -42,7 +40,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				// Ignore NativeAOT injected members
 				"<Module>.StartupCodeMain(Int32,IntPtr)",
-				"<Module>.MainMethodWrapper()"
+				"<Module>.MainMethodWrapper()",
+
+				// Ignore compiler generated code which can't be reasonably matched to the source method
+				"<PrivateImplementationDetails>",
 			};
 
 		public AssemblyChecker (
@@ -127,6 +128,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			foreach (MethodDesc method in testResult.TrimmingResults.CompiledMethodBodies) {
+				AddMethod (method);
+			}
+
+			foreach (MethodDesc method in testResult.TrimmingResults.ReflectedMethods) {
 				AddMethod (method);
 			}
 

@@ -73,6 +73,13 @@ typedef interface ISOSStackRefEnum ISOSStackRefEnum;
 #endif  /* __ISOSStackRefEnum_FWD_DEFINED__ */
 
 
+#ifndef __ISOSMemoryEnum_FWD_DEFINED__
+#define __ISOSMemoryEnum_FWD_DEFINED__
+typedef interface ISOSMemoryEnum ISOSMemoryEnum;
+
+#endif 	/* __ISOSMemoryEnum_FWD_DEFINED__ */
+
+
 #ifndef __ISOSDacInterface_FWD_DEFINED__
 #define __ISOSDacInterface_FWD_DEFINED__
 typedef interface ISOSDacInterface ISOSDacInterface;
@@ -198,6 +205,7 @@ typedef int VCSHeapType;
 typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;
 typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;
 typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;
+typedef enum {FreeUnknownRegion = 0, FreeGlobalHugeRegion = 1, FreeGlobalRegion = 2, FreeRegion = 3, FreeSohSegment = 4, FreeUohSegment = 5 } FreeRegionKind;
 typedef void ( *MODULEMAPTRAVERSE )(
     UINT index,
     CLRDATA_ADDRESS methodTable,
@@ -489,6 +497,17 @@ typedef struct _SOS_StackRefError
 extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0002_v0_0_c_ifspec;
 extern RPC_IF_HANDLE __MIDL_itf_sospriv_0000_0002_v0_0_s_ifspec;
 
+#ifndef _SOS_MemoryRegion_
+#define _SOS_MemoryRegion_
+typedef struct _SOSMemoryRegion
+    {
+    CLRDATA_ADDRESS Start;
+    CLRDATA_ADDRESS Size;
+    CLRDATA_ADDRESS ExtraData;
+    int Heap;
+    } 	SOSMemoryRegion;
+#endif // _SOS_MemoryRegion_
+
 #ifndef __ISOSStackRefErrorEnum_INTERFACE_DEFINED__
 #define __ISOSStackRefErrorEnum_INTERFACE_DEFINED__
 
@@ -592,6 +611,112 @@ EXTERN_C const IID IID_ISOSStackRefErrorEnum;
 
 
 #endif  /* __ISOSStackRefErrorEnum_INTERFACE_DEFINED__ */
+
+
+    
+#ifndef __ISOSMemoryEnum_INTERFACE_DEFINED__
+#define __ISOSMemoryEnum_INTERFACE_DEFINED__
+
+/* interface ISOSMemoryEnum */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSMemoryEnum;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("E4B860EC-337A-40C0-A591-F09A9680690F")
+    ISOSMemoryEnum : public ISOSEnum
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE Next( 
+            /* [in] */ unsigned int count,
+            /* [length_is][size_is][out] */ SOSMemoryRegion memRegion[  ],
+            /* [out] */ unsigned int *pNeeded) = 0;
+        
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSMemoryEnumVtbl
+    {
+        BEGIN_INTERFACE
+        
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSMemoryEnum * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSMemoryEnum * This);
+        
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSMemoryEnum * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *Skip )( 
+            ISOSMemoryEnum * This,
+            /* [in] */ unsigned int count);
+        
+        HRESULT ( STDMETHODCALLTYPE *Reset )( 
+            ISOSMemoryEnum * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetCount )( 
+            ISOSMemoryEnum * This,
+            /* [out] */ unsigned int *pCount);
+        
+        HRESULT ( STDMETHODCALLTYPE *Next )( 
+            ISOSMemoryEnum * This,
+            /* [in] */ unsigned int count,
+            /* [length_is][size_is][out] */ SOSMemoryRegion memRegion[  ],
+            /* [out] */ unsigned int *pNeeded);
+        
+        END_INTERFACE
+    } ISOSMemoryEnumVtbl;
+
+    interface ISOSMemoryEnum
+    {
+        CONST_VTBL struct ISOSMemoryEnumVtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSMemoryEnum_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSMemoryEnum_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSMemoryEnum_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSMemoryEnum_Skip(This,count)	\
+    ( (This)->lpVtbl -> Skip(This,count) ) 
+
+#define ISOSMemoryEnum_Reset(This)	\
+    ( (This)->lpVtbl -> Reset(This) ) 
+
+#define ISOSMemoryEnum_GetCount(This,pCount)	\
+    ( (This)->lpVtbl -> GetCount(This,pCount) ) 
+
+
+#define ISOSMemoryEnum_Next(This,count,memRegion,pNeeded)	\
+    ( (This)->lpVtbl -> Next(This,count,memRegion,pNeeded) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSMemoryEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ISOSStackRefEnum_INTERFACE_DEFINED__
@@ -3084,7 +3209,7 @@ EXTERN_C const IID IID_ISOSDacInterface13;
 
 #if defined(__cplusplus) && !defined(CINTERFACE)
     
-    MIDL_INTERFACE("3176a8ed-597b-4f54-a71f-83695c6a8c5d")
+    MIDL_INTERFACE("3176a8ed-597b-4f54-a71f-83695c6a8c5e")
     ISOSDacInterface13 : public IUnknown
     {
     public:
@@ -3108,36 +3233,78 @@ EXTERN_C const IID IID_ISOSDacInterface13;
             CLRDATA_ADDRESS *pLoaderHeaps,
             LoaderHeapKind *pKinds,
             int *pNeeded) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetHandleTableMemoryRegions( 
+            ISOSMemoryEnum **ppEnum) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetGCBookkeepingMemoryRegions( 
+            ISOSMemoryEnum **ppEnum) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions( 
+            ISOSMemoryEnum **ppEnum) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE LockedFlush( void) = 0;
     };
     
     
 #else 	/* C style interface */
 
+
     typedef struct ISOSDacInterface13Vtbl
     {
         BEGIN_INTERFACE
         
-        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ISOSDacInterface13 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
-        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ISOSDacInterface13 * This);
         
-        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ISOSDacInterface13 * This);
         
-        DECLSPEC_XFGVIRT(ISOSDacInterface13, TraverseLoaderHeap)
         HRESULT ( STDMETHODCALLTYPE *TraverseLoaderHeap )( 
             ISOSDacInterface13 * This,
             CLRDATA_ADDRESS loaderHeapAddr,
             LoaderHeapKind kind,
             VISITHEAP pCallback);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetDomainLoaderAllocator )( 
+            ISOSDacInterface13 * This,
+            CLRDATA_ADDRESS domainAddress,
+            CLRDATA_ADDRESS *pLoaderAllocator);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocatorHeapNames )( 
+            ISOSDacInterface13 * This,
+            int count,
+            const unsigned char **ppNames,
+            int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocatorHeaps )( 
+            ISOSDacInterface13 * This,
+            CLRDATA_ADDRESS loaderAllocator,
+            int count,
+            CLRDATA_ADDRESS *pLoaderHeaps,
+            LoaderHeapKind *pKinds,
+            int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetHandleTableMemoryRegions )( 
+            ISOSDacInterface13 * This,
+            ISOSMemoryEnum **ppEnum);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCBookkeepingMemoryRegions )( 
+            ISOSDacInterface13 * This,
+            ISOSMemoryEnum **ppEnum);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCFreeRegions )( 
+            ISOSDacInterface13 * This,
+            ISOSMemoryEnum **ppEnum);
+        
+        HRESULT ( STDMETHODCALLTYPE *LockedFlush )( 
+            ISOSDacInterface13 * This);
         
         END_INTERFACE
     } ISOSDacInterface13Vtbl;

@@ -571,7 +571,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -607,6 +607,10 @@ void BasicBlock::dspJumpKind()
     {
         case BBJ_EHFINALLYRET:
             printf(" (finret)");
+            break;
+
+        case BBJ_EHFAULTRET:
+            printf(" (falret)");
             break;
 
         case BBJ_EHFILTERRET:
@@ -1023,6 +1027,7 @@ bool BasicBlock::bbFallsThrough() const
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
         case BBJ_EHCATCHRET:
         case BBJ_RETURN:
@@ -1060,6 +1065,7 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             return 0;
 
@@ -1147,23 +1153,17 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
             return 0;
 
         case BBJ_EHFINALLYRET:
-        {
-            // The first block of the handler is labelled with the catch type.
-            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
             {
-                return comp->fgNSuccsOfFinallyRet(this);
-            }
-            else
-            {
-                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                // A FAULT block has no successors.
                 return 0;
             }
-        }
+            return comp->fgNSuccsOfFinallyRet(this);
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1431,16 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-
-    if (compIsForInlining())
-    {
-        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
-        fgBBNumMax   = block->bbNum;
-    }
-    else
-    {
-        block->bbNum = ++fgBBNumMax;
-    }
+    block->bbNum = ++fgBBNumMax;
 
     if (compRationalIRForm)
     {
@@ -1617,16 +1608,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = false;
-    if (bbJumpKind == BBJ_EHFILTERRET)
-    {
-        returnVal = true;
-    }
-
-    if (bbJumpKind == BBJ_EHFINALLYRET)
-    {
-        returnVal = true;
-    }
+    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)
@@ -1679,4 +1661,102 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
         bbFlags &= ~BBF_LOOP_ALIGN;
         JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
+}
+
+//------------------------------------------------------------------------
+// getCalledCount: get the value used to normalized weights for this method
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
+//   otherwise it returns the number of times that profile data says the method was called.
+
+// static
+weight_t BasicBlock::getCalledCount(Compiler* comp)
+{
+    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
+    weight_t calledCount = comp->fgCalledCount;
+
+    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
+    // so return a reasonable value to use until we set it.
+    //
+    if (calledCount == 0)
+    {
+        if (comp->fgIsUsingProfileWeights())
+        {
+            // When we use profile data block counts we have exact counts,
+            // not multiples of BB_UNITY_WEIGHT (100)
+            calledCount = 1;
+        }
+        else
+        {
+            calledCount = comp->fgFirstBB->bbWeight;
+
+            if (calledCount == 0)
+            {
+                calledCount = BB_UNITY_WEIGHT;
+            }
+        }
+    }
+    return calledCount;
+}
+
+//------------------------------------------------------------------------
+// getBBWeight: get the normalized weight of this block
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//    with profie data: number of expected executions of this block, given
+//    one call to the method
+//
+weight_t BasicBlock::getBBWeight(Compiler* comp)
+{
+    if (this->bbWeight == BB_ZERO_WEIGHT)
+    {
+        return BB_ZERO_WEIGHT;
+    }
+    else
+    {
+        weight_t calledCount = getCalledCount(comp);
+
+        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        //
+        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+
+        return fullResult;
+    }
+}
+
+//------------------------------------------------------------------------
+// bbStackDepthOnEntry: return depth of IL stack at block entry
+//
+unsigned BasicBlock::bbStackDepthOnEntry() const
+{
+    return (bbEntryState ? bbEntryState->esStackDepth : 0);
+}
+
+//------------------------------------------------------------------------
+// bbSetStack: update IL stack for block entry
+//
+// Arguments;
+//   stack - new stack for block
+//
+void BasicBlock::bbSetStack(StackEntry* stack)
+{
+    assert(bbEntryState);
+    assert(stack);
+    bbEntryState->esStack = stack;
+}
+
+//------------------------------------------------------------------------
+// bbStackOnEntry: fetch IL stack for block entry
+//
+StackEntry* BasicBlock::bbStackOnEntry() const
+{
+    assert(bbEntryState);
+    return bbEntryState->esStack;
 }

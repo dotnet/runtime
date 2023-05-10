@@ -64,8 +64,9 @@ namespace DebuggerTests
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
-        public int Id { get; init; }
-
+        public int Id { get; set; }
+        public string driver;
+        
         public static string DebuggerTestAppPath
         {
             get
@@ -130,7 +131,7 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string _driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
@@ -141,12 +142,14 @@ namespace DebuggerTests
 
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
+            driver = _driver;
             scripts = SubscribeToScripts(insp);
             startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput, locale);
         }
 
         public virtual async Task InitializeAsync()
         {
+            bool retry = true;
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
                  Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
@@ -164,7 +167,21 @@ namespace DebuggerTests
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            try {
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
+            catch (TaskCanceledException exc) //if timed out for some reason let's try again
+            {
+                if (!retry)
+                    throw exc;
+                retry = false;
+                _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
+                Id = Interlocked.Increment(ref s_idCounter);
+                insp = new Inspector(Id, _testOutput);
+                cli = insp.Client;
+                scripts = SubscribeToScripts(insp);
+                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+            }
         }
 
         public virtual async Task DisposeAsync()

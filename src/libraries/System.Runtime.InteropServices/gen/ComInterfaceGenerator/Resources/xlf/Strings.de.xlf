@@ -94,17 +94,17 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Schnittstellen, die mit „GeneratedComInterfaceAttribute“ attribuiert sind, müssen partiell sein und einen GUID mit „System.Runtime.InteropServices.GuidAttribute“ angeben.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Die Schnittstelle „{0}“ ist mit „GeneratedComInterfaceAttribute“ attribuiert, aber „System.Runtime.InteropServices.GuidAttribute“ fehlt.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
-        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
+        <target state="translated">Ungültige Verwendung von „GeneratedComInterfaceAttribute“.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
@@ -145,6 +145,21 @@
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
         <target state="translated">Die Methode wird in einer anderen partiellen Deklaration als das GeneratedComInterface-Attribut deklariert.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Eine "GeneratedComInterfaceAttribute"-attributierte Schnittstelle kann nur von höchstens einer weiteren "GeneratedComInterfaceAttribute"-Attributschnittstelle abgeleitet werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">Die Schnittstelle '{0}' wird von mindestens zwei Schnittstellen abgeleitet, die mit "GeneratedComInterfaceAttribute" attributiert sind.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Die angegebene Schnittstelle wird von mindestens zwei Schnittstellen abgeleitet, die "GeneratedComInterfaceAttribute" zugeordnet sind.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

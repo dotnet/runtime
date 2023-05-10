@@ -52,7 +52,6 @@ test_vector_alloc (void)
 
 	dn_vector_custom_alloc_params_t params = {0,};
 	params.capacity = 32;
-	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
 
 	vector = dn_vector_custom_alloc_t (&params, int32_t);
 	if (vector->size != 0)
@@ -98,6 +97,7 @@ test_vector_alloc_capacity (void)
 	dn_vector_t *vector = NULL;
 
 	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
 	params.capacity = PREALLOC_SIZE;
 
 	vector = dn_vector_custom_alloc_t (&params, int32_t);
@@ -133,6 +133,7 @@ test_vector_init_capacity (void)
 {
 	dn_vector_t vector;
 	dn_vector_custom_init_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
 	params.capacity = PREALLOC_SIZE;
 
 	if (!dn_vector_custom_init_t (&vector, &params, int32_t))
@@ -777,27 +778,28 @@ test_vector_erase_3 (void)
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match");
 
+	int32_t value = INT32_MAX;
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
-
-	dn_vector_erase (dn_vector_begin (vector));
-
-	if (((uint32_t *)vector->data) [9] != 0)
-		return FAILED ("erase didn't zero memory.");
-
-	dn_vector_free (vector);
-
-	dn_vector_custom_alloc_params_t params = {0, };
-	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
-	vector = dn_vector_custom_alloc_t (&params, int32_t);
-
-	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_erase (dn_vector_begin (vector));
 
 	if (((uint32_t *)vector->data) [9] == 0)
-		return FAILED ("resize zeroed memory, but shouldn't.");
+		return FAILED ("erase initialized memory, but shouldn't.");
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, value);
+
+	dn_vector_erase (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] != 0)
+		return FAILED ("erase didn't initialize memory, but should");
 
 	dn_vector_free (vector);
 
@@ -865,27 +867,29 @@ test_vector_erase_fast_3 (void)
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match");
 
-	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
-
-	dn_vector_erase_fast (dn_vector_begin (vector));
-
-	if (((uint32_t *)vector->data) [9] != 0)
-		return FAILED ("erase didn't zero memory.");
-
-	dn_vector_free (vector);
-
-	dn_vector_custom_alloc_params_t params = {0, };
-	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
-	vector = dn_vector_custom_alloc_t (&params, int32_t);
+	int32_t value = INT32_MAX;
 
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_erase_fast (dn_vector_begin (vector));
 
 	if (((uint32_t *)vector->data) [9] == 0)
-		return FAILED ("resize zeroed memory, but shouldn't.");
+		return FAILED ("erase initialized memory, but shouldn't.");
+
+	dn_vector_free (vector);
+
+	dn_vector_custom_alloc_params_t params = {0, };
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
+	vector = dn_vector_custom_alloc_t (&params, int32_t);
+
+	for (int32_t i = 0; i < 10; ++i)
+		dn_vector_push_back (vector, value);
+
+	dn_vector_erase_fast (dn_vector_begin (vector));
+
+	if (((uint32_t *)vector->data) [9] != 0)
+		return FAILED ("erase didn't initialize memory, but should");
 
 	dn_vector_free (vector);
 
@@ -996,30 +1000,32 @@ test_vector_resize_3 (void)
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match #1");
 
+	int32_t value = INT32_MAX;
+
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_resize (vector, 5);
 
 	for (uint32_t i = 5; i < 10; ++i) {
-		if (((uint32_t *)vector->data) [i] != 0)
-			return FAILED ("resize didn't zero memory.");
+		if (((uint32_t *)vector->data) [i] == 0)
+			return FAILED ("resize initialized memory, but shouldn't.");
 	}
 
 	dn_vector_free (vector);
 
 	dn_vector_custom_alloc_params_t params = {0, };
-	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
 	vector = dn_vector_custom_alloc_t (&params, int32_t);
 
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_resize (vector, 5);
 
 	for (uint32_t i = 5; i < 10; ++i) {
-		if (((uint32_t *)vector->data) [i] != i)
-			return FAILED ("resize zeroed memory, but shouldn't.");
+		if (((uint32_t *)vector->data) [i] != 0)
+			return FAILED ("resize didn't initialize memory, but should");
 	}
 
 	dn_vector_free (vector);
@@ -1077,30 +1083,32 @@ test_vector_clear_3 (void)
 	if (vector->size != 0)
 		return FAILED ("vector size didn't match #1");
 
+	int32_t value = INT32_MAX;
+
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_clear (vector);
 
 	for (int32_t i = 0; i < 10; ++i) {
-		if (((uint32_t *)vector->data) [i] != 0)
-			return FAILED ("clear didn't zero memory.");
+		if (((uint32_t *)vector->data) [i] == 0)
+			return FAILED ("clear initialized memory, but shouldn't.");
 	}
 
 	dn_vector_free (vector);
 
 	dn_vector_custom_alloc_params_t params = {0, };
-	params.attributes = DN_VECTOR_ATTRIBUTE_DISABLE_MEMORY_INIT;
+	params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
 	vector = dn_vector_custom_alloc_t (&params, int32_t);
 
 	for (int32_t i = 0; i < 10; ++i)
-		dn_vector_push_back (vector, i);
+		dn_vector_push_back (vector, value);
 
 	dn_vector_clear (vector);
 
 	for (int32_t i = 0; i < 10; ++i) {
-		if (((uint32_t *)vector->data) [i] != i)
-			return FAILED ("clear zeroed memory, but shouldn't.");
+		if (((uint32_t *)vector->data) [i] != 0)
+			return FAILED ("clear didn't initialize memory, but should.");
 	}
 
 	dn_vector_free (vector);
