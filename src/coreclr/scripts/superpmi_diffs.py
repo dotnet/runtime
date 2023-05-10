@@ -20,14 +20,22 @@ from jitutil import run_command, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
+host_os_help = "OS (windows, osx, linux). Default: current OS."
+
+target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
+
 parser.add_argument("-arch", help="Architecture")
 parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
-parser.add_argument("-platform", help="OS platform")
+parser.add_argument("-host_os", help=host_os_help)
+parser.add_argument("-target_os", help=target_os_help)
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
 parser.add_argument("-base_jit_options", help="Semicolon separated list of base jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-diff_jit_options", help="Semicolon separated list of diff jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
+
+def check_target_os(coreclr_args, target_os):
+    return (target_os is not None) and (target_os in coreclr_args.valid_host_os)
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -53,9 +61,10 @@ def setup_args(args):
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
-                        "platform",
-                        lambda unused: True,
-                        "Unable to set platform")
+                        "target_os",
+                        lambda target_os: check_target_os(coreclr_args, target_os),
+                        lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
+                        modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
 
     coreclr_args.verify(args,
                         "base_jit_directory",
@@ -105,12 +114,12 @@ class Diff:
         self.spmi_location = os.path.join(self.script_dir, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
-        self.platform_name = coreclr_args.platform
+        self.target_os = coreclr_args.target_os
         self.arch_name = coreclr_args.arch
 
-        self.os_name = "win" if self.platform_name.lower() == "windows" else "unix"
+        self.jit_os_name = "win" if self.target_os == "windows" else "unix"
         self.host_arch_name = "x64" if self.arch_name.endswith("64") else "x86"
-        self.os_name = "universal" if self.arch_name.startswith("arm") else self.os_name
+        self.jit_os_name = "universal" if self.arch_name.startswith("arm") else self.jit_os_name
 
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
         # We pass the full path of the JITs to use as arguments.
@@ -123,19 +132,38 @@ class Diff:
         self.summary_md_files = []
 
 
+    def determine_jit_name(self):
+        """ Determine the jit based on the platform.
+
+        Return:
+            (str) : name of the jit for this OS
+        """
+
+        jit_base_name = 'clrjit_{}_{}_{}'.format(self.jit_os_name, self.arch_name, self.host_arch_name)
+
+        if self.host_os == "osx":
+            return "lib" + jit_base_name + ".dylib"
+        elif self.host_os == "linux":
+            return "lib" + jit_base_name + ".so"
+        elif self.host_os == "windows":
+            return jit_base_name + ".dll"
+        else:
+            raise RuntimeError("Unknown OS.")
+
+
     def download_mch(self):
         """ Download MCH files for the diff
         """
         print("Running superpmi.py download to get MCH files")
 
-        log_file = os.path.join(self.log_directory, "superpmi_download_{}_{}.log".format(self.platform_name, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_download_{}_{}.log".format(self.target_os, self.arch_name))
         run_command([
             self.python_path,
             os.path.join(self.script_dir, "superpmi.py"),
             "download",
             "--no_progress",
             "-core_root", self.core_root_dir,
-            "-target_os", self.platform_name,
+            "-target_os", self.target_os,
             "-target_arch", self.arch_name,
             "-spmi_location", self.spmi_location,
             "-log_level", "debug",
@@ -227,17 +255,18 @@ class Diff:
             os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
 
         # Figure out which JITs to use
-        base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
-        diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+        jit_name = self.determine_jit_name()
+        base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", jit_name)
+        diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", jit_name)
 
-        log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}_{}.log".format(self.platform_name, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_asmdiffs_{}_{}.log".format(self.target_os, self.arch_name))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
         overall_md_asmdiffs_summary_file = os.path.join(self.spmi_location, "diff_summary.md")
         if os.path.isfile(overall_md_asmdiffs_summary_file):
             os.remove(overall_md_asmdiffs_summary_file)
 
-        overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}_{}.md".format(self.platform_name, self.arch_name))
+        overall_md_asmdiffs_summary_file_target = os.path.join(self.log_directory, "superpmi_asmdiffs_summary_{}_{}.md".format(self.target_os, self.arch_name))
         self.summary_md_files.append((overall_md_asmdiffs_summary_file, overall_md_asmdiffs_summary_file_target))
 
         _, _, return_code = run_command([
@@ -246,7 +275,7 @@ class Diff:
             "asmdiffs",
             "--no_progress",
             "-core_root", self.core_root_dir,
-            "-target_os", self.platform_name,
+            "-target_os", self.target_os,
             "-target_arch", self.arch_name,
             "-arch", self.host_arch_name,
             "-base_jit_path", base_checked_jit_path,
@@ -261,7 +290,7 @@ class Diff:
             self.failed = True
 
         # Prepare .dasm files to upload to AzDO
-        self.copy_dasm_files(self.log_directory, "{}_{}".format(self.platform_name, self.arch_name))
+        self.copy_dasm_files(self.log_directory, "{}_{}".format(self.target_os, self.arch_name))
 
 
     def do_tpdiff(self):
@@ -271,17 +300,18 @@ class Diff:
         print("Running superpmi.py tpdiff")
 
         # Figure out which JITs to use
-        base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
-        diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", 'clrjit_{}_{}_{}.dll'.format(self.os_name, self.arch_name, self.host_arch_name))
+        jit_name = self.determine_jit_name()
+        base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", jit_name)
+        diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", jit_name)
 
-        log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}_{}.log".format(self.platform_name, self.arch_name))
+        log_file = os.path.join(self.log_directory, "superpmi_tpdiff_{}_{}.log".format(self.target_os, self.arch_name))
 
         # This is the summary file name and location written by superpmi.py. If the file exists, remove it to ensure superpmi.py doesn't created a numbered version.
         overall_md_tpdiff_summary_file = os.path.join(self.spmi_location, "tpdiff_summary.md")
         if os.path.isfile(overall_md_tpdiff_summary_file):
             os.remove(overall_md_tpdiff_summary_file)
 
-        overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(self.platform_name, self.arch_name))
+        overall_md_tpdiff_summary_file_target = os.path.join(self.log_directory, "superpmi_tpdiff_summary_{}_{}.md".format(self.target_os, self.arch_name))
         self.summary_md_files.append((overall_md_tpdiff_summary_file, overall_md_tpdiff_summary_file_target))
 
         _, _, return_code = run_command([
@@ -290,7 +320,7 @@ class Diff:
             "tpdiff",
             "--no_progress",
             "-core_root", self.core_root_dir,
-            "-target_os", self.platform_name,
+            "-target_os", self.target_os,
             "-target_arch", self.arch_name,
             "-arch", self.host_arch_name,
             "-base_jit_path", base_release_jit_path,
