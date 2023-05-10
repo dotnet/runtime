@@ -74,7 +74,7 @@ namespace R2RDump
                 case Machine.ArmThumb2:
                     target = TargetArch.Target_Thumb;
                     break;
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     target = TargetArch.Target_LoongArch64;
                     break;
                 default:
@@ -189,7 +189,7 @@ namespace R2RDump
                     Machine.Arm64 => 4 * 2 + 1,
 
                     // Instructions are dumped as 4-byte hexadecimal integers
-                    (Machine) 0x6264 => 4 * 2 + 1, /* LoongArch64 */
+                    Machine.LoongArch64 => 4 * 2 + 1,
 
                     _ => throw new NotImplementedException()
                 };
@@ -260,7 +260,7 @@ namespace R2RDump
                     }
                     else
                     {
-                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == (Machine) 0x6264 /* LoongArch64 */))
+                        if ((_reader.Machine == Machine.Arm64) || (_reader.Machine == Machine.LoongArch64))
                         {
                             // Replace " hh hh hh hh " byte dump with " hhhhhhhh ".
                             // CoreDisTools should be fixed to dump bytes this way for ARM64.
@@ -341,7 +341,7 @@ namespace R2RDump
                         ProbeArm64Quirks(rtf, imageOffset, rtfOffset, ref fixedTranslatedLine);
                         break;
 
-                    case (Machine) 0x6264: /* LoongArch64 */
+                    case Machine.LoongArch64:
                         //TODO-LoongArch64: maybe should add ProbeLoongArch64Quirks. At least it's unused now.
                         break;
 

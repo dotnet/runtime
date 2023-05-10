@@ -608,7 +608,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     unwindInfo = new Arm64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                 }
-                else if (_readyToRunReader.Machine == (Machine) 0x6264) /* LoongArch64 */
+                else if (_readyToRunReader.Machine == Machine.LoongArch64)
                 {
                     unwindInfo = new LoongArch64.UnwindInfo(_readyToRunReader.Image, unwindOffset);
                 }

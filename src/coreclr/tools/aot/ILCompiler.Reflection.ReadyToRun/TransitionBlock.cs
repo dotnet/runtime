@@ -29,7 +29,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Architecture.Arm64:
                     return Arm64TransitionBlock.Instance;
 
-                case (Architecture) 6: /* LoongArch64 */
+                case Architecture.LoongArch64:
                     return LoongArch64TransitionBlock.Instance;
 
                 default:

@@ -149,7 +149,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     NUM_UNTRACKED_SLOTS_ENCBASE = 5;
                     REGISTER_DELTA_ENCBASE = 3;
                     break;
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     SIZE_OF_RETURN_KIND_FAT = 4;
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
@@ -164,7 +164,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.ArmThumb2:
                     return (x << 1);
                 case Machine.Arm64:
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     return (x << 2);
             }
             return x;
@@ -179,7 +179,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.ArmThumb2:
                     return (x << 2);
                 case Machine.Arm64:
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     return (x << 3);
             }
             return x;
@@ -195,7 +195,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return ((x ^ 7) + 4);
                 case Machine.Arm64:
                     return (x ^ 29);
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     return ((x ^ 22) & 0x3);
             }
             return x;
@@ -210,7 +210,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.ArmThumb2:
                     return (x << 2);
                 case Machine.Arm64:
-                case (Machine) 0x6264: /* LoongArch64 */
+                case Machine.LoongArch64:
                     return (x << 3);
             }
             return x;

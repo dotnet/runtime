@@ -259,7 +259,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
                 sb.AppendLine($"    Has Tailcalls: {_wantsReportOnlyLeaf}");
             }
-            else if (_machine == (Machine) 0x6264) /* LoongArch64 */
+            else if (_machine == Machine.LoongArch64)
             {
                 if (StackBaseRegister != 0xffffffff)
                 {
