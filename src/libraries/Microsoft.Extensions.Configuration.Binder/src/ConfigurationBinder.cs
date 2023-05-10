@@ -371,7 +371,7 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ?  type.GetGenericTypeDefinition() : null;
+                    Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
 
                     if (interfaceGenericType is not null &&
                         (interfaceGenericType == typeof(ICollection<>) || interfaceGenericType == typeof(IList<>)))
@@ -653,7 +653,7 @@ namespace Microsoft.Extensions.Configuration
                         indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -691,7 +691,7 @@ namespace Microsoft.Extensions.Configuration
                         addMethod?.Invoke(collection, new[] { itemBindingPoint.Value });
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     if (options.ErrorOnUnknownConfiguration)
                     {
@@ -767,7 +767,7 @@ namespace Microsoft.Extensions.Configuration
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            bool elementTypeIsEnum  = elementType.IsEnum;
+            bool elementTypeIsEnum = elementType.IsEnum;
 
             if (elementType != typeof(string) && !elementTypeIsEnum)
             {
