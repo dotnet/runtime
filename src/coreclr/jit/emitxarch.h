@@ -133,8 +133,10 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
+#ifdef TARGET_64BIT
 bool AreUpperBitsZero(regNumber reg, emitAttr size);
 bool AreUpperBitsSignExtended(regNumber reg, emitAttr size);
+#endif // TARGET_64BIT
 
 bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
 

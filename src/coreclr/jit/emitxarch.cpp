@@ -504,6 +504,7 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
     return false;
 }
 
+#ifdef TARGET_64BIT
 //------------------------------------------------------------------------
 // AreUpperBitsZero: check if some previously emitted
 //     instruction set the upper bits of reg to zero.
@@ -546,9 +547,7 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                 case INS_cwde:
                 case INS_cdq:
                 case INS_movsx:
-#ifdef TARGET_64BIT
                 case INS_movsxd:
-#endif // TARGET_64BIT
                     return PEEPHOLE_ABORT;
 
                 case INS_movzx:
@@ -556,26 +555,22 @@ bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
                     {
                         result = (id->idOpSize() <= size);
                     }
-#ifdef TARGET_64BIT
                     // movzx always zeroes the upper 32 bits.
                     else if (size == EA_4BYTE)
                     {
                         result = true;
                     }
-#endif // TARGET_64BIT
                     return PEEPHOLE_ABORT;
 
                 default:
                     break;
             }
 
-#ifdef TARGET_64BIT
             // otherwise rely on operation size.
             if (size == EA_4BYTE)
             {
                 result = (id->idOpSize() == EA_4BYTE);
             }
-#endif // TARGET_64BIT
             return PEEPHOLE_ABORT;
         }
         else
@@ -628,20 +623,16 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
                     return PEEPHOLE_ABORT;
 
                 case INS_movsx:
-#ifdef TARGET_64BIT
                 case INS_movsxd:
-#endif // TARGET_64BIT
                     if ((size == EA_1BYTE) || (size == EA_2BYTE))
                     {
                         result = (id->idOpSize() <= size);
                     }
-#ifdef TARGET_64BIT
                     // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
                     else if (size == EA_4BYTE)
                     {
                         result = true;
                     }
-#endif // TARGET_64BIT
                     break;
 
                 default:
@@ -658,6 +649,7 @@ bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 
     return result;
 }
+#endif // TARGET_64BIT
 
 //------------------------------------------------------------------------
 // emitDoesInsModifyFlags: checks if the given instruction modifies flags
@@ -6275,6 +6267,7 @@ bool emitter::IsRedundantMov(
             return true;
         }
 
+#ifdef TARGET_64BIT
         switch (ins)
         {
             case INS_movzx:
@@ -6286,9 +6279,7 @@ bool emitter::IsRedundantMov(
                 break;
 
             case INS_movsx:
-#ifdef TARGET_64BIT
             case INS_movsxd:
-#endif // TARGET_64BIT
                 if (AreUpperBitsSignExtended(src, size))
                 {
                     JITDUMP("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
@@ -6296,7 +6287,6 @@ bool emitter::IsRedundantMov(
                 }
                 break;
 
-#ifdef TARGET_64BIT
             case INS_mov:
                 if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
                 {
@@ -6304,10 +6294,11 @@ bool emitter::IsRedundantMov(
                     return true;
                 }
                 break;
-#endif // TARGET_64BIT
+
             default:
                 break;
         }
+#endif // TARGET_64BIT
     }
 
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
