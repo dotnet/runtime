@@ -25,8 +25,8 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
     LPWSTR newpath = new WCHAR[newlen];
     dn_wcscpy(newpath, dir);
-    wcscat(newpath, DIRECTORY_SEPARATOR_STR_W);
-    wcscat(newpath, file);
+    dn_wcscat(newpath, DIRECTORY_SEPARATOR_STR_W);
+    dn_wcscat(newpath, file);
     return newpath;
 }
 
@@ -364,16 +364,16 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.
             {
                 LPWSTR serverName = fileFullPath;
-                wcscat(newBuffer, W("UNC\\"));
+                dn_wcscat(newBuffer, W("UNC\\"));
                 while (*serverName == '\\')
                 {
                     serverName++;
                 }
-                wcscat(newBuffer, serverName);
+                dn_wcscat(newBuffer, serverName);
             }
             else
             {
-                wcscat(newBuffer, fileFullPath);
+                dn_wcscat(newBuffer, fileFullPath);
             }
             delete[] fileFullPath;
 
