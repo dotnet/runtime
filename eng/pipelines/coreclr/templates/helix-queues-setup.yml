@@ -140,13 +140,6 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64.X86.Rt
 
-    # windows arm
-    - ${{ if eq(parameters.platform, 'windows_arm') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.11.Arm64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Windows.11.Arm64
-
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
