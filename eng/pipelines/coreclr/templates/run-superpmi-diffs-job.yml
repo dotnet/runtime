@@ -66,13 +66,13 @@ jobs:
       - name: PipScript
         value: 'pip3'
       - name: SpmiCollectionLocation
-        value: '$(Build.SourcesDirectory)\artifacts\spmi\'
+        value: '$(Build.SourcesDirectory)/artifacts/spmi/'
       - name: SpmiLogsLocation
-        value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
       - name: SpmiDiffsLocation
-        value: '$(Build.SourcesDirectory)\artifacts\spmi_diffs\'
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_diffs/'
       - name: HelixResultLocation
-        value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+        value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
 
     - name: SetupScriptDirs
       value: ''

@@ -37,6 +37,7 @@ parser.add_argument("-release_directory", help="Path to the directory containing
 is_windows = platform.system() == "Windows"
 target_windows = True
 
+
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
 
@@ -111,6 +112,7 @@ def setup_args(args):
         print("asmdiffs currently only implemented for windows")
         sys.exit(1)
 
+    global target_windows
     target_windows = coreclr_args.platform.lower() == "windows"
 
     return coreclr_args
