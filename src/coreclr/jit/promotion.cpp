@@ -285,7 +285,7 @@ public:
 
         JITDUMP("Picking promotions for V%02u\n", lclNum);
 
-        assert(*replacements == nullptr);
+        assert(*aggregateInfo == nullptr);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
             const Access& access = m_accesses[i];
@@ -1473,11 +1473,10 @@ PhaseStatus Promotion::Run()
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
-        replacer.StartBlock(bb);
         for (Statement* stmt : bb->Statements())
         {
             DISPSTMT(stmt);
-            replacer.StartStatement(stmt);
+            replacer.Reset();
             replacer.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
             if (replacer.MadeChanges())
