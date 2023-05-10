@@ -225,8 +225,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
-                                opcode == CEE_CALLVIRT, pConstrainedResolvedToken, callInfo->thisTransform,
-                                &ni, &isSpecialIntrinsic);
+                                opcode == CEE_CALLVIRT, pConstrainedResolvedToken, callInfo->thisTransform, &ni,
+                                &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
