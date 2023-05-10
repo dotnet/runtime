@@ -25,39 +25,39 @@ internal enum Compatibility
 
 internal sealed class InconclusiveCompatibilityCollection
 {
-    private HashSet<(string AssyName, string TypeName, string UserName)> _data = new();
+    private Dictionary<string, HashSet<string>> _data = new();
 
     public bool IsEmpty => _data.Count == 0;
 
-    public void Add(string assyName, string typeName, string userName)
+    public void Add(string assyName, string namespaceName, string typeName)
     {
-        _data.Add((assyName, typeName, userName));
+        HashSet<string>? incAssyTypes;
+
+        if(!_data.TryGetValue(assyName, out incAssyTypes))
+        {
+            incAssyTypes = new();
+            _data.Add(assyName, incAssyTypes);
+        }
+
+        incAssyTypes.Add(string.Join(':', namespaceName, typeName));
     }
 
+    public HashSet<string> EnumerateForAssembly(string assyName)
+    {
+        if(_data.TryGetValue(assyName, out HashSet<string>? incAssyTypes))
+            return incAssyTypes!;
 
+        return new HashSet<string>();
+    }
 }
 
 internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTypeProvider<Compatibility, object>
 {
     // assembly name -> set of types needed for second pass
-    private HashSet<
+    private InconclusiveCompatibilityCollection _inconclusive = new();
 
-    private void RegisterTypeForSecondPass(string assyName, string typeName)
-    {
-        HashSet<string> hs = null;
-
-        if(!_secondPassTypes.TryGetValue(assyName, out hs))
-        {
-            hs = new HashSet<string>();
-            _secondPassTypes.Add(assyName, hs);
-        }
-
-        hs.Add(typeName);
-    }
-
-    public bool IsSecondPassNeeded => _secondPassTypes.Count > 0;
-
-    //Dictionary<string,
+    public bool IsSecondPassNeeded => !_inconclusive.IsEmpty;
+    public HashSet<string> GetInconclusiveTypesForAssembly(string assyName) => _inconclusive.EnumerateForAssembly(assyName);
 
     public Compatibility GetArrayType(Compatibility elementType, ArrayShape shape) => Compatibility.Incompatible;
     public Compatibility GetByReferenceType(Compatibility elementType) => Compatibility.Compatible;
@@ -79,7 +79,7 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
         };
     }
 
-    public Compatibility GetSZArrayType(bool elementType) => Compatibility.Incompatible;
+    public Compatibility GetSZArrayType(Compatibility elementType) => Compatibility.Incompatible;
 
     public Compatibility GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
@@ -112,7 +112,7 @@ internal sealed class MinimalMarshalingTypeCompatibilityProvider : ISignatureTyp
                 AssemblyReferenceHandle assyRefHandle = (AssemblyReferenceHandle)typeRef.ResolutionScope;
                 AssemblyReference assyRef = reader.GetAssemblyReference(assyRefHandle);
 
-                RegisterTypeForSecondPass(reader.GetString(assyRef.Name), reader.GetString(typeRef.Name));
+                _inconclusive.Add(reader.GetString(assyRef.Name), reader.GetString(typeRef.Namespace), reader.GetString(typeRef.Name));
                 return Compatibility.Inconclusive;
             }
             else
@@ -173,7 +173,7 @@ public class MarshalingPInvokeScanner : Task
 
     private static string[] ScanAssemblies(string[] assemblies)
     {
-        List<string> incompatible = new List<string>();
+        HashSet<string> incompatible = new HashSet<string>();
 
         PathAssemblyResolver resolver = new PathAssemblyResolver(assemblies);
         using MetadataLoadContext mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
@@ -181,8 +181,14 @@ public class MarshalingPInvokeScanner : Task
         MinimalMarshalingTypeCompatibilityProvider mmtcp =  new MinimalMarshalingTypeCompatibilityProvider();
         foreach (string aname in assemblies)
         {
-            if (IsAssemblyIncompatible(aname))
+            if (IsAssemblyIncompatible(aname, mmtcp))
                 incompatible.Add(aname);
+        }
+
+        if (mmtcp.IsSecondPassNeeded)
+        {
+            foreach (string aname in assemblies)
+                ResolveInconclusiveTypes(incompatible, aname, mmtcp);
         }
 
         return incompatible.ToArray();
@@ -191,6 +197,38 @@ public class MarshalingPInvokeScanner : Task
     private static string GetMethodName(MetadataReader mr, MethodDefinition md)
     {
         return mr.GetString(md.Name);
+    }
+
+    private static void ResolveInconclusiveTypes(HashSet<string> incompatible, string assyPath, MinimalMarshalingTypeCompatibilityProvider mmtcp)
+    {
+        string assyName = MetadataReader.GetAssemblyName(assyPath).Name!;
+        HashSet<string> inconclusiveTypes = mmtcp.GetInconclusiveTypesForAssembly(assyName);
+        if(inconclusiveTypes.Count == 0)
+            return;
+
+        using FileStream file = new FileStream(assyPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using PEReader peReader = new PEReader(file);
+        MetadataReader mdtReader = peReader.GetMetadataReader();
+
+        SignatureDecoder<Compatibility, object> decoder = new SignatureDecoder<Compatibility, object>(
+            mmtcp, mdtReader, null!);
+
+        foreach (TypeDefinitionHandle typeDefHandle in mdtReader.TypeDefinitions)
+        {
+            TypeDefinition typeDef = mdtReader.GetTypeDefinition(typeDefHandle);
+            string fullTypeName = string.Join(':', mdtReader.GetString(typeDef.Namespace), mdtReader.GetString(typeDef.Name));
+
+            if (inconclusiveTypes.Contains(fullTypeName))
+                Console.WriteLine("Resolving inconclusive: " + fullTypeName);
+
+            // This is not perfect, but should work right for enums defined in other assemblies,
+            // which is the only case where we use Compatibility.Inconclusive.
+            if (inconclusiveTypes.Contains(fullTypeName) &&
+                mmtcp.GetTypeFromDefinition(mdtReader, typeDefHandle, 0) != Compatibility.Compatible)
+            {
+                incompatible.Add("(unknown assembly)");
+            }
+        }
     }
 
     private static bool IsAssemblyIncompatible(string path, MinimalMarshalingTypeCompatibilityProvider mmtcp)
@@ -240,13 +278,13 @@ public class MarshalingPInvokeScanner : Task
                     mmtcp, mdtReader, null!);
 
                 MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
-                if(!sgn.ReturnType)
+                if(sgn.ReturnType == Compatibility.Incompatible)
                 {
                     Console.WriteLine("   " + GetMethodName(mdtReader, mthDef) + " - incompatible return type.");
                     return true;
                 }
 
-                if(!sgn.ParameterTypes.All(p => p)) // if not all are true
+                if(sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible)) // if not all are true
                 {
                     Console.WriteLine("   " + GetMethodName(mdtReader, mthDef) + " - incompatible parameter type.");
                     return true;
