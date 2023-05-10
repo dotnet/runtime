@@ -1853,6 +1853,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfGCThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
     pInfo->offsetOfNonGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
     pInfo->offsetOfGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();
 }
@@ -1896,6 +1897,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfGCThreadStaticBlocks = 0;
     pInfo->offsetOfNonGCMaxThreadStaticBlocks = 0;
     pInfo->offsetOfGCMaxThreadStaticBlocks = 0;
+    pInfo->offsetOfGCDataPointer = 0;
     
     JIT_TO_EE_TRANSITION_LEAF();
 }

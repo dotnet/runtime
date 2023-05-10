@@ -512,6 +512,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
     JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
     JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
+    JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
 
     assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
@@ -527,6 +528,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     DebugInfo   debugInfo    = stmt->GetDebugInfo();
     block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
     *pBlock                  = block;
+    var_types callType       = call->TypeGet();
     assert(prevBb != nullptr && block != nullptr);
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
@@ -542,8 +544,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
     unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
-    lvaTable[threadStaticBlockLclNum].lvType = TYP_I_IMPL;
-    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, call->TypeGet());
+    lvaTable[threadStaticBlockLclNum].lvType = callType;
+    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, callType);
 
     *callUse = gtClone(threadStaticBlockLcl);
 
@@ -608,16 +610,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
     GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
 
-    if (isGCThreadStatic)
-    {
-        // Need to add extra indirection to access the data pointer.
-        // TODO: Get the offsetOfDataPtr() from runtime.
-
-        typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockValue, GTF_IND_NONFAULTING);
-        typeThreadStaticBlockValue =
-            gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValue, gtNewIconNode(16, TYP_I_IMPL));
-    }
-
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
     lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
@@ -670,6 +662,17 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fgNewBBFromTreeAfter(BBJ_ALWAYS, threadStaticBlockNullCondBB, fallbackValueDef, debugInfo, true);
 
     // fastPathBb
+    if (isGCThreadStatic)
+    {
+        // Need to add extra indirection to access the data pointer.
+
+        threadStaticBlockBaseLclValueUse =
+            gtNewIndir(TYP_I_IMPL, threadStaticBlockBaseLclValueUse, GTF_IND_NONFAULTING);
+        threadStaticBlockBaseLclValueUse =
+            gtNewOperNode(GT_ADD, callType, threadStaticBlockBaseLclValueUse,
+                          gtNewIconNode(threadStaticBlocksInfo.offsetOfGCDataPointer, TYP_I_IMPL));
+    }
+
     GenTree* fastPathValueDef =
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, true);

@@ -3697,6 +3697,7 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfThreadLocalStoragePointer      = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfNonGCThreadStaticBlocks        = pInfo->offsetOfNonGCThreadStaticBlocks;
     value.offsetOfGCThreadStaticBlocks           = pInfo->offsetOfGCThreadStaticBlocks;
+    value.offsetOfGCDataPointer                  = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
     GetThreadLocalStaticBlocksInfo->Add(0, value);
@@ -3707,9 +3708,10 @@ void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_
 {
     printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
            ", offsetOfNonGCMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfNonGCThreadStaticBlocks-%u,"
-           ", offsetOfGCMaxThreadStaticBlocks-%u, offsetOfGCThreadStaticBlocks-%u",
+           ", offsetOfGCMaxThreadStaticBlocks-%u, offsetOfGCThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
            value.tlsIndex.handle, value.offsetOfNonGCMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfNonGCThreadStaticBlocks, value.offsetOfGCMaxThreadStaticBlocks, value.offsetOfGCThreadStaticBlocks);
+           value.offsetOfNonGCThreadStaticBlocks, value.offsetOfGCMaxThreadStaticBlocks,
+           value.offsetOfGCThreadStaticBlocks, value.offsetOfGCDataPointer);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
@@ -3725,6 +3727,7 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     pInfo->offsetOfThreadLocalStoragePointer  = value.offsetOfThreadLocalStoragePointer;
     pInfo->offsetOfNonGCThreadStaticBlocks    = value.offsetOfNonGCThreadStaticBlocks;
     pInfo->offsetOfGCThreadStaticBlocks       = value.offsetOfGCThreadStaticBlocks;
+    pInfo->offsetOfGCDataPointer              = value.offsetOfGCDataPointer;
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,

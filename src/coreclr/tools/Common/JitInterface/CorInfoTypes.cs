@@ -1162,6 +1162,7 @@ namespace Internal.JitInterface
         public CORINFO_CONST_LOOKUP offsetOfGCMaxThreadStaticBlocks;
         public CORINFO_CONST_LOOKUP offsetOfNonGCThreadStaticBlocks;
         public CORINFO_CONST_LOOKUP offsetOfGCThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfGCDataPointer;
     };
 
     // System V struct passing

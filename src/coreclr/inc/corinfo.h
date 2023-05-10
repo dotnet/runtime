@@ -1740,6 +1740,7 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     uint32_t offsetOfGCMaxThreadStaticBlocks;
     uint32_t offsetOfNonGCThreadStaticBlocks;
     uint32_t offsetOfGCThreadStaticBlocks;
+    uint32_t offsetOfGCDataPointer;
 };
 
 //----------------------------------------------------------------------------
