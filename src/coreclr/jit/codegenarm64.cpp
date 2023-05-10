@@ -4864,12 +4864,11 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     if (tree->OperIs(GT_JTEST))
     {
-        ssize_t compareImm = op2->AsIntCon()->IconValue();
-
-        assert(isPow2(((size_t)compareImm)));
+        uint64_t compareImm = op2->AsIntCon()->IntegralValueUnsigned();
+        assert(isPow2(compareImm));
 
         instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_tbz : INS_tbnz;
-        int         imm = genLog2((size_t)compareImm);
+        int         imm = genLog2(compareImm);
 
         GetEmitter()->emitIns_J_R_I(ins, attr, compiler->compCurBB->GetJumpDest(), reg, imm);
     }

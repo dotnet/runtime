@@ -5122,7 +5122,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 GenTreeIntCon* con            = tree->AsIntCon();
                 bool           iconNeedsReloc = con->ImmedValNeedsReloc(this);
-                INT64          imm            = con->LngValue();
+                INT64          imm            = con->IntegralValue();
                 emitAttr       size           = EA_SIZE(emitActualTypeSize(tree));
 
                 if (iconNeedsReloc)

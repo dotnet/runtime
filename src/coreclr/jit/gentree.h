@@ -3120,6 +3120,22 @@ public:
         m_value = value;
     }
 
+    uint64_t IntegralValueUnsigned() const
+    {
+        return Is32BitConst() ? static_cast<uint32_t>(m_value) : m_value;
+    }
+
+    void SetIntegralValueUnsigned(uint64_t value)
+    {
+        if (Is32BitConst())
+        {
+            assert(FitsIn<uint32_t>(value));
+            value = static_cast<int32_t>(value);
+        }
+
+        m_value = value;
+    }
+
     //------------------------------------------------------------------------
     // SetValueTruncating: Set the value, truncating to TYP_INT if necessary.
     //
@@ -3148,14 +3164,12 @@ public:
         static_assert_no_msg(
             (std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value || std::is_same<T, ssize_t>::value));
 
-        if (TypeIs(TYP_LONG))
+        if (Is32BitConst())
         {
-            SetLngValue(value);
+            value = static_cast<int32_t>(value);
         }
-        else
-        {
-            SetIconValue(static_cast<int32_t>(value));
-        }
+
+        SetIntegralValue(value);
     }
 
     int LoVal() const
@@ -3178,6 +3192,16 @@ public:
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
 #endif
+
+private:
+    bool Is32BitConst() const
+    {
+#ifdef TARGET_64BIT
+        return TypeIs(TYP_INT);
+#else
+        return !TypeIs(TYP_LONG);
+#endif
+    }
 };
 
 // node representing a read from a physical register
