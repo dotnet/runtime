@@ -24,10 +24,7 @@ namespace System.Globalization
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                System.Diagnostics.Debug.Write("Collation CompareStringNative is called for culture: " + cultureName + "string1: " + string1.ToString() + "string2: " + string2.ToString() + "\n");
-                var result = Interop.Globalization.CompareStringNative(cultureName, pString1, string1.Length, pString2, string2.Length, options);
-                System.Diagnostics.Debug.Write("Collation CompareStringNative result: " + result + "\n");
-                return result;
+                return Interop.Globalization.CompareStringNative(cultureName, pString1, string1.Length, pString2, string2.Length, options);
             }
         }
     }
