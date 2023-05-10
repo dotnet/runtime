@@ -171,4 +171,16 @@
   <data name="Argument_SizeConstMustBeSpecified" xml:space="preserve">
     <value>SizeConst parameter must be specified for UnmanagedType.ByValTStr type.</value>
   </data>
+  <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
+    <value>The generic parameters are already defined on this MethodBuilder.</value>
+  </data>
+  <data name="Argument_BadSigFormat" xml:space="preserve">
+    <value>Incorrect signature format.</value>
+  </data>
+  <data name="NotSupported_NonReflectedType" xml:space="preserve">
+    <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="NotSupported_SubclassOverride" xml:space="preserve">
+    <value>Derived classes must provide an implementation.</value>
+  </data>
 </root>

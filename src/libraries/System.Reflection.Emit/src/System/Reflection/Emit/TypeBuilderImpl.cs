@@ -320,14 +320,7 @@ namespace System.Reflection.Emit
             => throw new NotSupportedException();
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
-
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException();
-        public override Type MakePointerType() => throw new NotSupportedException();
-        public override Type MakeByRefType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank) => throw new NotSupportedException();
 
         internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |

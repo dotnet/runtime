@@ -135,13 +135,7 @@ namespace System.Reflection.Emit
                 {
                     foreach (GenericTypeParameterBuilderImpl gParam in typeBuilder.GenericTypeParameters)
                     {
-                        GenericParameterHandle handle = AddGenericTypeParameter(typeHandle, gParam);
-                        WriteCustomAttributes(gParam._customAttributes, handle);
-
-                        foreach (Type constraint in gParam.GetGenericParameterConstraints())
-                        {
-                            _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
-                        }
+                        AddGenericTypeParametersAndConstraintsCustomAttributes(typeHandle, gParam);
                     }
                 }
 
@@ -177,6 +171,14 @@ namespace System.Reflection.Emit
                 MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
                 WriteCustomAttributes(method._customAttributes, methodHandle);
                 _nextMethodDefRowId++;
+
+                if (method.IsGenericMethodDefinition)
+                {
+                    foreach (GenericTypeParameterBuilderImpl arg in method.GetGenericArguments())
+                    {
+                        AddGenericTypeParametersAndConstraintsCustomAttributes(methodHandle, arg);
+                    }
+                }
 
                 if (method._parameters != null)
                 {
@@ -289,12 +291,22 @@ namespace System.Reflection.Emit
             return handle;
         }
 
-        private GenericParameterHandle AddGenericTypeParameter(TypeDefinitionHandle typeHandle, GenericTypeParameterBuilderImpl gParam) =>
-            _metadataBuilder.AddGenericParameter(
-                parent: typeHandle,
+        private GenericParameterHandle AddGenericTypeParametersAndConstraintsCustomAttributes(EntityHandle parentHandle, GenericTypeParameterBuilderImpl gParam)
+        {
+            GenericParameterHandle handle = _metadataBuilder.AddGenericParameter(
+                parent: parentHandle,
                 attributes: gParam.GenericParameterAttributes,
                 name: _metadataBuilder.GetOrAddString(gParam.Name),
                 index: gParam.GenericParameterPosition);
+
+            WriteCustomAttributes(gParam._customAttributes, handle);
+            foreach (Type constraint in gParam.GetGenericParameterConstraints())
+            {
+                _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
+            }
+
+            return handle;
+        }
 
         private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
             _metadataBuilder.AddConstant(parent: parameterHandle, value: defaultValue);
