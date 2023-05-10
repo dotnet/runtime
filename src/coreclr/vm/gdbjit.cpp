@@ -2570,7 +2570,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     if (pNIExt)
     {
-      wcscpy(pNIExt, W(".dll"));
+      dn_wcscpy(pNIExt, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))

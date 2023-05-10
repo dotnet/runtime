@@ -24,7 +24,7 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     size_t filelen = dn_wcslen(file);
     size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
     LPWSTR newpath = new WCHAR[newlen];
-    wcscpy(newpath, dir);
+    dn_wcscpy(newpath, dir);
     wcscat(newpath, DIRECTORY_SEPARATOR_STR_W);
     wcscat(newpath, file);
     return newpath;
@@ -360,7 +360,7 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
                 goto CLEAN_UP;
             }
             LPWSTR newBuffer = new WCHAR[dn_wcslen(fileFullPath) + 30];
-            wcscpy(newBuffer, W("\\\\?\\"));
+            dn_wcscpy(newBuffer, W("\\\\?\\"));
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.
             {
                 LPWSTR serverName = fileFullPath;
