@@ -8,8 +8,13 @@ namespace System.Threading
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
 #pragma warning disable IDE0060
-        private static ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
+        private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
         {
+            ArgumentNullException.ThrowIfNull(handle);
+
+            if (handle.IsClosed || handle.IsInvalid)
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
+
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 #pragma warning restore IDE0060
