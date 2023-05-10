@@ -961,18 +961,6 @@
     <Target>M:System.TypedReference.get_IsNull</Target>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.GC.GetGenerationSize(System.Int32)</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.GC.GetLastGCPercentTimeInGC</Target>
-    <Left>ref/net8.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net8.0/System.Private.CoreLib.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Runtime.CompilerServices.RuntimeHelpers.GetObjectValue(System.Object)-&gt;object?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
   </Suppression>

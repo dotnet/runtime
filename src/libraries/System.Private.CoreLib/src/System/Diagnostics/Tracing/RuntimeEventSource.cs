@@ -50,22 +50,12 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _jitTimeCounter;
 
 #if NATIVEAOT
-        /// <summary>
-        /// If EventSource feature is enabled, RuntimeEventSource needs to be initialized
-        /// In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
-        /// </summary>
+        // If EventSource feature is enabled, RuntimeEventSource needs to be initialized for NativeAOT
+        // In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
 #pragma warning disable CA2255
         [ModuleInitializer]
-        internal static void NativeAOTtartupHook()
-        {
-            if (EventSource.IsSupported)
-            {
-                Initialize();
-            }
-        }
 #pragma warning restore CA2255
 #endif
-
         public static void Initialize()
         {
             // initializing more than once may lead to missing events

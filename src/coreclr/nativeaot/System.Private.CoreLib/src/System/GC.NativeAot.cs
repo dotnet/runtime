@@ -70,12 +70,12 @@ namespace System
             return RuntimeImports.RhGetGeneration(obj);
         }
 
-        public static int GetGenerationSize(int gen)
+        internal static int GetGenerationSize(int gen)
         {
             return RuntimeImports.RhGetGenerationSize(gen);
         }
 
-        public static int GetLastGCPercentTimeInGC()
+        internal static int GetLastGCPercentTimeInGC()
         {
             return RuntimeImports.RhGetLastGCPercentTimeInGC();
         }
