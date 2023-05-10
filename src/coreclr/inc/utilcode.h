@@ -37,7 +37,8 @@
 
 #include "contract.h"
 
-#include<minipal/utils.h>
+#include <minipal/utils.h>
+#include <dn-u16.h>
 
 #include "clrnt.h"
 

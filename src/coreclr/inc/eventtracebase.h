@@ -343,7 +343,7 @@ private:
     ComponentSpan GetNextComponentString(LPCWSTR start) const
     {
         const WCHAR ComponentDelimiter = W(':');
-        const WCHAR * end = wcschr(start, ComponentDelimiter);
+        const WCHAR * end = dn_wcschr(start, ComponentDelimiter);
         if (end == nullptr)
         {
             end = start + wcslen(start);
@@ -359,7 +359,7 @@ private:
         {
             auto const length = component.End - component.Start;
             providerName = new WCHAR[length + 1];
-            wcsncpy(providerName, component.Start, length);
+            dn_wcsncpy(providerName, component.Start, length);
             providerName[length] = '\0';
         }
         return providerName;
@@ -392,7 +392,7 @@ private:
         {
             auto const length = component.End - component.Start;
             argument = new WCHAR[length + 1];
-            wcsncpy(argument, component.Start, length);
+            dn_wcsncpy(argument, component.Start, length);
             argument[length] = '\0';
         }
         return argument;
@@ -534,7 +534,7 @@ public:
         while (configToParse != nullptr)
         {
             const WCHAR comma = W(',');
-            auto end = wcschr(configToParse, comma);
+            auto end = dn_wcschr(configToParse, comma);
             configuration.Parse(configToParse);
             XplatEventLoggerController::UpdateProviderContext(configuration);
             if (end == nullptr)

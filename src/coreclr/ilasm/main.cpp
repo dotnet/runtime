@@ -16,8 +16,8 @@
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
-    WCHAR* pchE = wcschr(szArg,W('='));
-    WCHAR* pchC = wcschr(szArg,W(':'));
+    WCHAR* pchE = dn_wcschr(szArg,W('='));
+    WCHAR* pchC = dn_wcschr(szArg,W(':'));
     WCHAR* ret;
     if(pchE == NULL) ret = pchC;
     else if(pchC == NULL) ret = pchE;

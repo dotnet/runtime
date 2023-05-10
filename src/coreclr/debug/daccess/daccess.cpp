@@ -239,7 +239,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
     // Split off parameters.
     //
 
-    paramsStart = wcschr(fullName, W('('));
+    paramsStart = dn_wcschr(fullName, W('('));
     if (paramsStart)
     {
         if (syntax != SPLIT_METHOD ||
@@ -7620,7 +7620,7 @@ HRESULT DacHandleWalker::Next(unsigned int count,
 void DacHandleWalker::WalkHandles()
 {
     SUPPORTS_DAC;
-    
+
     if (mEnumerated)
         return;
 
@@ -7635,8 +7635,8 @@ void DacHandleWalker::WalkHandles()
 #endif // FEATURE_SVR_GC
 
     DacHandleWalkerParam param(&mList);
-    
-    
+
+
     for (dac_handle_table_map *map = g_gcDacGlobals->handle_table_map; SUCCEEDED(param.Result) && map; map = map->pNext)
     {
         for (int i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE && SUCCEEDED(param.Result); ++i)
@@ -7701,7 +7701,7 @@ HRESULT DacHandleWalker::GetCount(unsigned int *pCount)
         WalkHandles();
 
     *pCount = mList.GetCount();
-    
+
     SOSHelperLeave();
     return hr;
 }
@@ -7867,7 +7867,7 @@ void DacStackReferenceWalker::WalkStack()
 
     _ASSERTE(mList.GetCount() == 0);
     _ASSERTE(mThread);
-    
+
     class ProfilerFilterContextHolder
     {
         Thread* m_pThread;
@@ -7983,7 +7983,7 @@ void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObjec
         if (SUCCEEDED(hr))
             obj = TO_TADDR(fixed_obj);
     }
-    
+
     // Report the object and where it was found.
     SOSStackRefData data = {0};
 
@@ -8028,7 +8028,7 @@ void DacStackReferenceWalker::GCReportCallback(PTR_PTR_Object ppObj, ScanContext
         if (SUCCEEDED(hr))
             obj = TO_CDADDR(fixed_addr);
     }
-    
+
     SOSStackRefData data = {0};
     data.HasRegisterInformation = false;
     data.Register = 0;
@@ -8048,7 +8048,7 @@ void DacStackReferenceWalker::GCReportCallback(PTR_PTR_Object ppObj, ScanContext
         data.SourceType = SOS_StackSourceIP;
         data.Source = TO_CDADDR(dsc->pc);
     }
-    
+
     dsc->pList->Add(data);
 }
 
@@ -8344,7 +8344,7 @@ HRESULT DacGCBookkeepingEnumerator::Init()
         mem.Size = card_table_info->size;
         mRegions.Add(mem);
     }
-    
+
     size_t card_table_info_size = g_gcDacGlobals->card_table_info_size;
     TADDR next = card_table_info->next_card_table;
 
@@ -8366,7 +8366,7 @@ HRESULT DacGCBookkeepingEnumerator::Init()
             mem.Size = ct->size;
             mRegions.Add(mem);
         }
-        
+
         next = ct->next_card_table;
         if (next == card_table_info->next_card_table)
             break;
@@ -8374,7 +8374,7 @@ HRESULT DacGCBookkeepingEnumerator::Init()
         if (--maxRegions <= 0)
             break;
     }
-    
+
     return S_OK;
 }
 
@@ -8405,7 +8405,7 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
                     DPTR(dac_handle_table_segment) curr = pFirstSegment;
 
                     do
-                    {                        
+                    {
                         SOSMemoryRegion mem = {0};
                         mem.Start = curr.GetAddr();
                         mem.Size = HANDLE_SEGMENT_SIZE;
@@ -8484,7 +8484,7 @@ HRESULT DacFreeRegionEnumerator::Init()
             for (int i = 0; i < count_free_region_kinds; i++, regionList++)
                 AddFreeList(regionList, FreeRegionKind::FreeGlobalRegion);
     }
-    
+
 #if defined(FEATURE_SVR_GC)
     if (GCHeapUtilities::IsServerHeap())
     {
@@ -8504,7 +8504,7 @@ HRESULT DacFreeRegionEnumerator::Init()
             if (freeable_soh_segment_ptr != nullptr)
                 AddSegmentList(*freeable_soh_segment_ptr, FreeRegionKind::FreeSohSegment);
         }
-        
+
         if (g_gcDacGlobals->freeable_uoh_segment != nullptr)
         {
             DPTR(DPTR(dac_heap_segment)) freeable_uoh_segment_ptr(g_gcDacGlobals->freeable_uoh_segment);

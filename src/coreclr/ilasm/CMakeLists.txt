@@ -103,6 +103,7 @@ else()
         coreclrpal
         mscorrc
         palrt
+        coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 

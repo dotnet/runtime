@@ -175,6 +175,7 @@ else(CLR_CMAKE_HOST_WIN32)
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
+        coreclrminipal
         ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)

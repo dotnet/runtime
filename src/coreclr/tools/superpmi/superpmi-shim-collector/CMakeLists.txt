@@ -74,6 +74,7 @@ if(CLR_CMAKE_HOST_UNIX)
         mscorrc
         coreclrpal
         palrt
+        coreclrminipal
     )
 else()
     target_link_libraries(superpmi-shim-collector

@@ -507,7 +507,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
         // The user may have passed a relative path without a slash, or the current directory.
         // If there is a wildcard, we use it as the file pattern. If there isn't, we assume it's a relative directory
         // name and use it as a directory, with "*" as the file pattern.
-        LPCWSTR wildcard = wcschr(patternAsWchar, '*');
+        LPCWSTR wildcard = dn_wcschr(patternAsWchar, '*');
         if (wildcard == NULL)
         {
             file = W("*");
@@ -522,7 +522,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     else
     {
         dir              = patternAsWchar;
-        LPCWSTR wildcard = wcschr(lastSlash, '*');
+        LPCWSTR wildcard = dn_wcschr(lastSlash, '*');
         if (wildcard == NULL)
         {
             file = W("*");

@@ -978,9 +978,9 @@ Its_An_Id:
                             if(wzFile != NULL)
                             {
                                 if((parser->wzIncludePath != NULL)
-                                 &&(wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
+                                 &&(dn_wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
 #ifdef TARGET_WINDOWS
-                                 &&(wcschr(wzFile,':')==NULL)
+                                 &&(dn_wcschr(wzFile,':')==NULL)
 #endif
                                 )
                                 {
