@@ -1399,12 +1399,12 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     // For longs, we need to change rols into two GT_LSH_HIs and rors into two GT_RSH_LOs
     // so we will get:
     //
-    // shld lo, hi, rotateAmount
+    // shld lo, hiCopy, rotateAmount
     // shld hi, loCopy, rotateAmount
     //
     // or:
     //
-    // shrd lo, hi, rotateAmount
+    // shrd lo, hiCopy, rotateAmount
     // shrd hi, loCopy, rotateAmount
 
     if (oper == GT_ROL)
@@ -1461,8 +1461,8 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = gtLong->gtGetOp1();
             loOp1 = gtLong->gtGetOp2();
 
-            loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp2);
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp1);
+            loOp1 = RepresentOpAsLocalVar(loOp1, gtLong, &gtLong->AsOp()->gtOp2);
 
             count -= 32;
         }

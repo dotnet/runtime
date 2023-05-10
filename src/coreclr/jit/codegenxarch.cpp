@@ -4842,19 +4842,11 @@ void CodeGen::genCodeForShiftLong(GenTree* tree)
 
     unsigned int count = (unsigned int)shiftBy->AsIntConCommon()->IconValue();
 
-    regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
+    regNumber tgtReg = tree->GetRegNum();
+    assert(regLo != tgtReg);
 
-    inst_Mov(targetType, tree->GetRegNum(), regResult, /* canSkip */ true);
-
-    if (oper == GT_LSH_HI)
-    {
-        inst_RV_RV_IV(ins, emitTypeSize(targetType), tree->GetRegNum(), regLo, count);
-    }
-    else
-    {
-        assert(oper == GT_RSH_LO);
-        inst_RV_RV_IV(ins, emitTypeSize(targetType), tree->GetRegNum(), regHi, count);
-    }
+    inst_Mov(targetType, tgtReg, regHi, /* canSkip */ true);
+    inst_RV_RV_IV(ins, emitTypeSize(targetType), tgtReg, regLo, count);
 
     genProduceReg(tree);
 }

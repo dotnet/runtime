@@ -1105,14 +1105,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 
         if (!tree->isContained())
         {
-            if (tree->OperGet() == GT_LSH_HI)
-            {
-                setDelayFree(sourceLoUse);
-            }
-            else
-            {
-                setDelayFree(sourceHiUse);
-            }
+            setDelayFree(sourceLoUse);
         }
     }
     else
