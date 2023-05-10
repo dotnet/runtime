@@ -11,7 +11,6 @@ const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
 function setup(disableLegacyJsInterop) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
-        scriptUrl: import.meta.url,
         fetch: globalThis.fetch,
         require,
         updateMemoryViews,

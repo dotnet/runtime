@@ -105,15 +105,6 @@ export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, por
     };
 }
 
-export function makePreloadMonoMessage<TPort>(port: TPort): MonoWorkerMessagePreload<TPort> {
-    return {
-        [monoSymbol]: {
-            mono_cmd: WorkerMonoCommandType.preload,
-            port
-        }
-    };
-}
-
 export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage<any> {
     return message !== undefined && typeof message === "object" && message !== null && monoSymbol in message;
 }

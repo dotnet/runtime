@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
-import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal, initializeExportsType, initializeReplacementsType, configureEmscriptenStartupType, configureWorkerStartupType, setGlobalObjectsType, passEmscriptenInternalsType, } from "../types/internal";
+import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, setLoaderGlobals } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
@@ -12,6 +12,7 @@ import { resolve_asset_path, start_asset_download } from "./assets";
 import { init_polyfills } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
+import { setupPreloadChannelToMainThread } from "./worker";
 
 
 export const globalObjectsRoot: GlobalObjects = {
@@ -349,7 +350,7 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 }
 
-export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI> {
+export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
     // extract ModuleConfig
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;
@@ -366,43 +367,24 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         throw new Error("MONO_WASM: Can't use moduleFactory callback of createDotnetRuntime function.");
     }
 
-    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
-        // if config file location nor assets are provided
-        module.configSrc = "./mono-config.json";
-    }
+    return module.ENVIRONMENT_IS_PTHREAD
+        ? createEmscriptenWorker()
+        : createEmscriptenMain();
+}
 
-    await init_polyfills(module);
-
-    // download config
-    await mono_wasm_load_config(module);
-
-    const promises = [
+function importModules() {
+    runtimeHelpers.runtimeModuleUrl = resolve_asset_path("js-module-runtime").resolvedUrl!;
+    runtimeHelpers.nativeModuleUrl = resolve_asset_path("js-module-native").resolvedUrl!;
+    return [
         // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
-        import(resolve_asset_path("js-module-runtime").resolvedUrl!),
-        import(resolve_asset_path("js-module-native").resolvedUrl!),
+        import(runtimeHelpers.runtimeModuleUrl),
+        import(runtimeHelpers.nativeModuleUrl),
     ];
+}
 
-    start_asset_download(resolve_asset_path("dotnetwasm")).then(asset => {
-        loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
-    });
-
-    init_globalization();
-
-    // TODO call mono_download_assets(); here in parallel ?
-
-    const es6Modules = await Promise.all(promises);
-    const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0] as {
-        setRuntimeGlobals: setGlobalObjectsType,
-        initializeExports: initializeExportsType,
-        initializeReplacements: initializeReplacementsType,
-        configureEmscriptenStartup: configureEmscriptenStartupType,
-        configureWorkerStartup: configureWorkerStartupType,
-        passEmscriptenInternals: passEmscriptenInternalsType,
-    };
-    const { default: emscriptenFactory } = es6Modules[1] as {
-        default: (unificator: Function) => EmscriptenModuleInternal
-    };
-
+function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+    const { initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
+    const { default: emscriptenFactory } = es6Modules[1];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
@@ -417,8 +399,46 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
 
         return module;
     });
+}
+
+async function createEmscriptenMain(): Promise<RuntimeAPI> {
+    if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
+        // if config file location nor assets are provided
+        module.configSrc = "./mono-config.json";
+    }
+
+    await init_polyfills(module);
+
+    // download config
+    await mono_wasm_load_config(module);
+
+    const promises = importModules();
+
+    const wasmModuleAsset = resolve_asset_path("dotnetwasm");
+    start_asset_download(wasmModuleAsset).then(asset => {
+        loaderHelpers.wasmDownloadPromise.promise_control.resolve(asset);
+    });
+
+    init_globalization();
+    // TODO call mono_download_assets(); here in parallel ?
+    const es6Modules = await Promise.all(promises);
+    initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
 
     return exportedRuntimeAPI;
+}
+
+async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
+    await init_polyfills(module);
+
+    setupPreloadChannelToMainThread();
+
+    await loaderHelpers.afterConfigLoaded.promise;
+
+    const promises = importModules();
+    const es6Modules = await Promise.all(promises);
+    initializeModules(es6Modules as any);
+
+    return module;
 }

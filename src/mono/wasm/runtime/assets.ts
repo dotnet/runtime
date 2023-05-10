@@ -13,7 +13,7 @@ import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    if (loaderHelpers.diagnosticTracing)
+    if (runtimeHelpers.diagnosticTracing)
         console.debug(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
@@ -50,7 +50,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
             if (fileName.startsWith("/"))
                 fileName = fileName.substr(1);
             if (parentDirectory) {
-                if (loaderHelpers.diagnosticTracing)
+                if (runtimeHelpers.diagnosticTracing)
                     console.debug(`MONO_WASM: Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
@@ -60,7 +60,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
                 parentDirectory = "/";
             }
 
-            if (loaderHelpers.diagnosticTracing)
+            if (runtimeHelpers.diagnosticTracing)
                 console.debug(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
@@ -110,7 +110,7 @@ export async function instantiate_wasm_asset(
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
-        if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module streaming");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module streaming");
         const streamingResult = await WebAssembly.instantiateStreaming(response, wasmModuleImports!);
         compiledInstance = streamingResult.instance;
         compiledModule = streamingResult.module;
@@ -119,7 +119,7 @@ export async function instantiate_wasm_asset(
             console.warn("MONO_WASM: WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
         }
         const arrayBuffer = await response.arrayBuffer();
-        if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module buffered");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module buffered");
         if (ENVIRONMENT_IS_SHELL) {
             // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
             compiledModule = new WebAssembly.Module(arrayBuffer);
@@ -195,11 +195,11 @@ export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): b
 export async function wait_for_all_assets() {
     // wait for all assets in memory
     await runtimeHelpers.allAssetsInMemory.promise;
-    if (loaderHelpers.config.assets) {
+    if (runtimeHelpers.config.assets) {
         mono_assert(loaderHelpers.actual_downloaded_assets_count == loaderHelpers.expected_downloaded_assets_count, () => `Expected ${loaderHelpers.expected_downloaded_assets_count} assets to be downloaded, but only finished ${loaderHelpers.actual_downloaded_assets_count}`);
         mono_assert(loaderHelpers.actual_instantiated_assets_count == loaderHelpers.expected_instantiated_assets_count, () => `Expected ${loaderHelpers.expected_instantiated_assets_count} assets to be in memory, but only instantiated ${loaderHelpers.actual_instantiated_assets_count}`);
         loaderHelpers._loaded_files.forEach(value => loaderHelpers.loadedFiles.push(value.url));
-        if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
     }
 }
 

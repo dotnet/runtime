@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { afterLoadWasmModuleToWorker } from "../browser";
 import { afterThreadInitTLS } from "../worker";
 import Internals from "./emscripten-internals";
-import { loaderHelpers } from "../../globals";
+import { loaderHelpers, runtimeHelpers } from "../../globals";
 import { PThreadReplacements } from "../../types/internal";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
@@ -33,7 +33,7 @@ export function replaceEmscriptenPThreadLibrary(replacements: PThreadReplacement
 
 /// We replace Module["PThreads"].allocateUnusedWorker with this version that knows about assets
 function replacementAllocateUnusedWorker(): void {
-    if (loaderHelpers.diagnosticTracing)
+    if (runtimeHelpers.diagnosticTracing)
         console.debug("MONO_WASM: replacementAllocateUnusedWorker");
     const asset = loaderHelpers.resolve_asset_path("js-module-threads");
     const uri = asset.resolvedUrl;

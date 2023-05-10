@@ -38,6 +38,10 @@ export function setLoaderGlobals(
         disableDotnet6Compatibility: true,
         config: { environmentVariables: {} }
     });
+    Object.assign(runtimeHelpers, {
+        config: globalObjects.module.config,
+        diagnosticTracing: false,
+    });
     Object.assign(loaderHelpers, {
         config: globalObjects.module.config,
         diagnosticTracing: false,

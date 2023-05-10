@@ -140,7 +140,7 @@ async function getCacheKey(): Promise<string | null> {
     if (!runtimeHelpers.subtle) {
         return null;
     }
-    const inputs = Object.assign({}, loaderHelpers.config) as any;
+    const inputs = Object.assign({}, runtimeHelpers.config) as any;
     // above already has env variables, runtime options, etc
 
     if (!inputs.assetsHash) {

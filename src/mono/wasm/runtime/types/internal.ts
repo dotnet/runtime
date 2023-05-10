@@ -133,6 +133,9 @@ export type LoaderHelpers = {
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 }
 export type RuntimeHelpers = {
+    config: MonoConfigInternal;
+    diagnosticTracing: boolean;
+
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
@@ -154,6 +157,8 @@ export type RuntimeHelpers = {
     updateMemoryViews: () => void
     runtimeReady: boolean,
 
+    runtimeModuleUrl: string
+    nativeModuleUrl: string
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     memorySnapshotSkippedOrDone: PromiseAndController<void>,
@@ -255,7 +260,6 @@ export type EmscriptenReplacements = {
     updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
-    scriptUrl: string
     noExitRuntime?: boolean;
 }
 export interface ExitStatusError {
@@ -400,6 +404,7 @@ export declare interface EmscriptenModuleInternal {
     __locateFile?: (path: string, prefix?: string) => string;
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;
+    ENVIRONMENT_IS_PTHREAD?: boolean;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
     asm: { memory?: WebAssembly.Memory };
@@ -438,3 +443,16 @@ export type initializeReplacementsType = (replacements: EmscriptenReplacements) 
 export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
 export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
 
+
+export type RuntimeModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
+    initializeExports: initializeExportsType,
+    initializeReplacements: initializeReplacementsType,
+    configureEmscriptenStartup: configureEmscriptenStartupType,
+    configureWorkerStartup: configureWorkerStartupType,
+    passEmscriptenInternals: passEmscriptenInternalsType,
+}
+
+export type NativeModuleExportsInternal = {
+    default: (unificator: Function) => EmscriptenModuleInternal
+}

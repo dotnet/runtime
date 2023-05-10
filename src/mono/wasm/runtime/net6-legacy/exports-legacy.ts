@@ -16,7 +16,7 @@ import { mono_wasm_load_runtime } from "../startup";
 import { BINDINGType, MONOType } from "./export-types";
 import { mono_wasm_load_data_archive } from "../assets";
 import { mono_method_resolve } from "./method-binding";
-import { loaderHelpers } from "../globals";
+import { runtimeHelpers } from "../globals";
 
 export function export_mono_api(): MONOType {
     return {
@@ -37,7 +37,7 @@ export function export_mono_api(): MONOType {
         mono_wasm_add_assembly: <any>null,
         mono_wasm_load_runtime,
 
-        config: loaderHelpers.config,
+        config: runtimeHelpers.config,
         loaded_files: <string[]>[],
 
         // memory accessors

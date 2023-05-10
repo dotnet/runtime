@@ -7,7 +7,8 @@ let node_url: any | undefined = undefined;
 
 export async function init_polyfills(module: DotnetModuleInternal): Promise<void> {
 
-    loaderHelpers.scriptDirectory = detectScriptDirectory();
+    loaderHelpers.scriptUrl = normalizeFileUrl(/* webpackIgnore: true */import.meta.url);
+    loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
     loaderHelpers.locateFile = (path) => {
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
@@ -21,7 +22,7 @@ export async function init_polyfills(module: DotnetModuleInternal): Promise<void
     if (ENVIRONMENT_IS_NODE) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:
-        INTERNAL.require = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(import.meta.url));
+        INTERNAL.require = await import(/* webpackIgnore: true */"module").then(mod => mod.createRequire(/* webpackIgnore: true */import.meta.url));
     } else {
         INTERNAL.require = Promise.resolve(() => { throw new Error("require not supported"); });
     }
@@ -103,11 +104,6 @@ function normalizeFileUrl(filename: string) {
 
 function normalizeDirectoryUrl(dir: string) {
     return dir.slice(0, dir.lastIndexOf("/")) + "/";
-}
-
-export function detectScriptDirectory(): string {
-    loaderHelpers.scriptUrl = normalizeFileUrl(import.meta.url);
-    return normalizeDirectoryUrl(loaderHelpers.scriptUrl);
 }
 
 const protocolRx = /^[a-zA-Z][a-zA-Z\d+\-.]*?:\/\//;

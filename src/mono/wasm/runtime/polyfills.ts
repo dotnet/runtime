@@ -23,7 +23,6 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
 
     // script location
     replacements.scriptDirectory = loaderHelpers.scriptDirectory;
-    Module.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
     if (Module.locateFile === Module.__locateFile) {
         Module.locateFile = loaderHelpers.locateFile;
     }
