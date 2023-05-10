@@ -1139,10 +1139,16 @@ namespace System.Runtime.CompilerServices
 
             Assert.Equal(255, (long)Unsafe.BitCast<sbyte, byte>(sb));
             Assert.Equal(-1, (long)Unsafe.BitCast<byte, sbyte>(b));
+
+            Assert.Equal(255, (long)Unsafe.BitCast<short, ushort>(b));
             Assert.Equal(ushort.MaxValue, (long)Unsafe.BitCast<short, ushort>(sb));
             Assert.Equal(255, (long)Unsafe.BitCast<ushort, short>(b));
+
+            Assert.Equal(255, (long)Unsafe.BitCast<int, uint>(b));
             Assert.Equal(uint.MaxValue, (long)Unsafe.BitCast<int, uint>(sb));
             Assert.Equal(255, (long)Unsafe.BitCast<uint, int>(b));
+
+            Assert.Equal(255, Unsafe.BitCast<long, ulong>(b));
             Assert.Equal(ulong.MaxValue, Unsafe.BitCast<long, ulong>(sb));
             Assert.Equal(255, Unsafe.BitCast<ulong, long>(b));
 
@@ -1215,7 +1221,7 @@ namespace System.Runtime.CompilerServices
 
     [StructLayout(LayoutKind.Sequential)] public record struct S2(byte a, byte b);
     [StructLayout(LayoutKind.Sequential)] public record struct S4(byte a, byte b, byte c, byte d);
-    [StructLayout(LayoutKind.Sequential)] public record struct S8(byte a, byte b, byte c, byte d, byte e, byte f, byte f, byte h);
+    [StructLayout(LayoutKind.Sequential)] public record struct S8(byte a, byte b, byte c, byte d, byte e, byte f, byte g, byte h);
 
     [StructLayout(LayoutKind.Explicit)]
     public struct Byte4
