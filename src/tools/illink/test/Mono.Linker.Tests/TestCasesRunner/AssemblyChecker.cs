@@ -143,6 +143,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (linked == null)
 					return;
 
+				// Compiler generated members can't be annotated with `Kept` attributes directly
+				// For some of them we have special attributes (backing fields for example), but it's impractical to define
+				// special attributes for all types of compiler generated members (there are quite a few of them and they're
+				// going to change/increase over time).
+				// So we're effectively disabling Kept validation on compiler generated members
+				// Note that we still want to go "inside" each such member, as it might have additional attributes
+				// we do want to validate. There's no specific use case right now, but I can easily imagine one
+				// for more detailed testing of for example custom attributes on local functions, or similar.
 				if (!IsCompilerGeneratedMember (original))
 					Assert.Fail ($"Type `{original}' should have been removed");
 			}
@@ -476,17 +484,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		void VerifyMethod (MethodDefinition src, MethodDefinition linked)
 		{
 			bool compilerGenerated = IsCompilerGeneratedMember (src);
-			bool expectedKept = ShouldMethodBeKept (src) || compilerGenerated;
+			bool expectedKept = ShouldMethodBeKept (src);
 			VerifyMethodInternal (src, linked, expectedKept, compilerGenerated);
 		}
 
 		void VerifyMethodInternal (MethodDefinition src, MethodDefinition linked, bool expectedKept, bool compilerGenerated)
 		{
 			if (!expectedKept) {
-				if (linked != null)
-					Assert.Fail ($"Method `{src.FullName}' should have been removed");
+				if (linked == null)
+					return;
 
-				return;
+				// Similar to comment on types, compiler-generated methods can't be annotated with Kept attribute directly
+				// so we're not going to validate kept/remove on them. Note that we're still going to go validate "into" them
+				// to check for other properties (like parameter name presence/removal for example)
+				if (!compilerGenerated)
+					Assert.Fail ($"Method `{src.FullName}' should have been removed");
 			}
 
 			VerifyMethodKept (src, linked, compilerGenerated);
