@@ -3,15 +3,6 @@
 
 #include "jitpch.h"
 
-#define Verify(cond, msg)                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(cond))                                                                                                   \
-        {                                                                                                              \
-            verRaiseVerifyExceptionIfNeeded(INDEBUG(msg) DEBUGARG(__FILE__) DEBUGARG(__LINE__));                       \
-        }                                                                                                              \
-    } while (0)
-
 //------------------------------------------------------------------------
 // impImportCall: import a call-inspiring opcode
 //
@@ -233,9 +224,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
-            call =
-                impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                             isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
+            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
+                                pConstrainedResolvedToken, callInfo->thisTransform, &ni, &isSpecialIntrinsic);
 
             if (compDonotInline())
             {
@@ -1101,13 +1091,7 @@ DONE:
         // Stack empty check for implicit tail calls.
         if (canTailCall && isImplicitTailCall && (verCurrentState.esStackDepth != 0))
         {
-#ifdef TARGET_AMD64
-            // JIT64 Compatibility:  Opportunistic tail call stack mismatch throws a VerificationException
-            // in JIT64, not an InvalidProgramException.
-            Verify(false, "Stack should be empty after tailcall");
-#else  // TARGET_64BIT
             BADCODE("Stack should be empty after tailcall");
-#endif //! TARGET_64BIT
         }
 
         // assert(compCurBB is not a catch, finally or filter block);
@@ -1282,7 +1266,7 @@ DONE:
         //    have to check for anything that might introduce a recursive tail call.
         // * We only instrument root method blocks in OSR methods,
         //
-        if ((opts.IsInstrumentedOptimized() || opts.IsOSR()) && !compIsForInlining())
+        if ((opts.IsInstrumentedAndOptimized() || opts.IsOSR()) && !compIsForInlining())
         {
             // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
             // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
@@ -2136,7 +2120,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
 #endif
 
-    return gtNewBlkOpNode(dst, src);
+    return gtNewAssignNode(dst, src);
 }
 
 GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
@@ -2301,7 +2285,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
                                 unsigned                methodFlags,
-                                int                     memberRef,
+                                CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 bool                    readonlyCall,
                                 bool                    tailCall,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -2312,6 +2296,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     bool       mustExpand  = false;
     bool       isSpecial   = false;
     const bool isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) != 0;
+    int        memberRef   = pResolvedToken->token;
 
     NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
@@ -2455,7 +2440,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             assert(ni > NI_SRCS_UNSAFE_START);
             assert(!mustExpand);
-            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig, pResolvedToken);
         }
         else
         {
@@ -2589,7 +2574,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
 
             // We need these to be able to fold "typeof(...) == typeof(...)"
-            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_RuntimeTypeHandle_ToIntPtr:
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
@@ -2897,10 +2882,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeFieldAddr* lengthFieldAddr =
-                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                GenTreeFieldAddr* lengthFieldAddr = gtNewFieldAddrNode(lengthHnd, ptrToSpan, lengthOffset);
+                GenTree*          length          = gtNewIndir(TYP_INT, lengthFieldAddr);
                 lengthFieldAddr->SetIsSpanLength(true);
-                GenTree* length = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
 
                 GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
@@ -2914,12 +2898,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     index               = gtNewOperNode(GT_MUL, TYP_I_IMPL, index, sizeofNode);
                 }
 
-                CORINFO_FIELD_HANDLE ptrHnd    = info.compCompHnd->getFieldInClass(clsHnd, 0);
-                const unsigned       ptrOffset = info.compCompHnd->getFieldOffset(ptrHnd);
-                GenTreeFieldAddr*    dataFieldAddr =
-                    gtNewFieldAddrNode(genActualType(ptrToSpanClone), ptrHnd, ptrToSpanClone, ptrOffset);
-                GenTree* data   = gtNewFieldIndirNode(TYP_BYREF, nullptr, dataFieldAddr);
-                GenTree* result = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
+                CORINFO_FIELD_HANDLE ptrHnd        = info.compCompHnd->getFieldInClass(clsHnd, 0);
+                const unsigned       ptrOffset     = info.compCompHnd->getFieldOffset(ptrHnd);
+                GenTreeFieldAddr*    dataFieldAddr = gtNewFieldAddrNode(ptrHnd, ptrToSpanClone, ptrOffset);
+                GenTree*             data          = gtNewIndir(TYP_BYREF, dataFieldAddr);
+                GenTree*             result        = gtNewOperNode(GT_ADD, TYP_BYREF, data, index);
 
                 // Prepare result
                 var_types resultType = JITtype2varType(sig->retType);
@@ -2962,15 +2945,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
 
-                GenTreeFieldAddr* lengthFieldAddr =
-                    gtNewFieldAddrNode(genActualType(ptrToSpan), lengthHnd, ptrToSpan, lengthOffset);
+                GenTreeFieldAddr* lengthFieldAddr = gtNewFieldAddrNode(lengthHnd, ptrToSpan, lengthOffset);
+                GenTree*          lengthField     = gtNewIndir(TYP_INT, lengthFieldAddr);
                 lengthFieldAddr->SetIsSpanLength(true);
-                GenTree* lengthField = gtNewFieldIndirNode(TYP_INT, nullptr, lengthFieldAddr);
 
                 return lengthField;
             }
 
-            case NI_System_RuntimeTypeHandle_GetValueInternal:
+            case NI_System_RuntimeTypeHandle_ToIntPtr:
             {
                 GenTree* op1 = impStackTop(0).val;
                 if (op1->gtOper == GT_CALL && (op1->AsCall()->gtCallType == CT_HELPER) &&
@@ -3798,8 +3780,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_SpanHelpers_SequenceEqual:
             case NI_System_Buffer_Memmove:
             {
-                // We'll try to unroll this in lower for constant input.
-                isSpecial = true;
+                if (sig->sigInst.methInstCount == 0)
+                {
+                    // We'll try to unroll this in lower for constant input.
+                    isSpecial = true;
+                }
+                // The generic version is also marked as [Intrinsic] just as a hint for the inliner
                 break;
             }
 
@@ -3908,10 +3894,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     return retNode;
 }
 
-GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
-                                          CORINFO_CLASS_HANDLE  clsHnd,
-                                          CORINFO_METHOD_HANDLE method,
-                                          CORINFO_SIG_INFO*     sig)
+GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
+                                          CORINFO_CLASS_HANDLE    clsHnd,
+                                          CORINFO_METHOD_HANDLE   method,
+                                          CORINFO_SIG_INFO*       sig,
+                                          CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
     // NextCallRetAddr requires a CALL, so return nullptr.
     if (info.compHasNextCallRetAddr)
@@ -3989,6 +3976,37 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SRCS_UNSAFE_As:
         {
             assert((sig->sigInst.methInstCount == 1) || (sig->sigInst.methInstCount == 2));
+
+            if (sig->sigInst.methInstCount == 1)
+            {
+                CORINFO_SIG_INFO exactSig;
+                info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
+                const CORINFO_CLASS_HANDLE inst = exactSig.sigInst.methInst[0];
+                assert(inst != nullptr);
+
+                GenTree* op = impPopStack().val;
+                assert(op->TypeIs(TYP_REF));
+
+                JITDUMP("Expanding Unsafe.As<%s>(...)\n", eeGetClassName(inst));
+
+                bool                 isExact, isNonNull;
+                CORINFO_CLASS_HANDLE oldClass = gtGetClassHandle(op, &isExact, &isNonNull);
+                if ((oldClass != NO_CLASS_HANDLE) &&
+                    ((oldClass == inst) || !info.compCompHnd->isMoreSpecificType(oldClass, inst)))
+                {
+                    JITDUMP("Unsafe.As: Keep using old '%s' type\n", eeGetClassName(oldClass));
+                    return op;
+                }
+
+                // In order to change the class handle of the object we need to spill it to a temp
+                // and update class info for that temp.
+                unsigned localNum = lvaGrabTemp(true DEBUGARG("updating class info"));
+                impAssignTempGen(localNum, op, CHECK_SPILL_ALL);
+
+                // NOTE: we still can't say for sure that it is the exact type of the argument
+                lvaSetClass(localNum, inst, /*isExact*/ false);
+                return gtNewLclvNode(localNum, TYP_REF);
+            }
 
             // ldarg.0
             // ret
@@ -6126,14 +6144,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    if (compIsForImportOnly())
-    {
-        // Don't bother creating the inline candidate during verification.
-        // Otherwise the call to info.compCompHnd->canInline will trigger a recursive verification
-        // that leads to the creation of multiple instances of Compiler.
-        return;
-    }
-
     InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
 
     // Don't inline if not optimizing root method
@@ -7204,7 +7214,7 @@ bool Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
         return false;
     }
 
-    assert(opts.OptimizationDisabled() || opts.IsInstrumentedOptimized());
+    assert(opts.OptimizationDisabled() || opts.IsInstrumentedAndOptimized());
     assert(!compIsForInlining());
 
     // During importation, optionally flag this block as one that
@@ -8115,9 +8125,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     }
                     else if (strcmp(className, "RuntimeTypeHandle") == 0)
                     {
-                        if (strcmp(methodName, "GetValueInternal") == 0)
+                        if (strcmp(methodName, "ToIntPtr") == 0)
                         {
-                            result = NI_System_RuntimeTypeHandle_GetValueInternal;
+                            result = NI_System_RuntimeTypeHandle_ToIntPtr;
                         }
                     }
                     break;

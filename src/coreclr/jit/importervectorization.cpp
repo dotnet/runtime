@@ -645,12 +645,12 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impAssignTempGen(varStrTmp, varStr);
+        impAssignTempGen(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled);
+            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -787,23 +787,23 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     GenTreeLclVar* spanObjRefLcl  = gtNewLclvNode(spanObjRef, TYP_BYREF);
     GenTreeLclVar* spanDataTmpLcl = gtNewLclvNode(spanDataTmp, TYP_BYREF);
 
-    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(TYP_BYREF, lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
-    GenTree*          spanLength     = gtNewFieldIndirNode(TYP_INT, nullptr, spanLengthAddr);
-    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(TYP_BYREF, pointerHnd, spanObjRefLcl);
-    GenTree*          spanData       = gtNewFieldIndirNode(TYP_BYREF, nullptr, spanDataAddr);
+    GenTreeFieldAddr* spanLengthAddr = gtNewFieldAddrNode(lengthHnd, gtClone(spanObjRefLcl), lengthOffset);
+    GenTree*          spanLength     = gtNewIndir(TYP_INT, spanLengthAddr);
+    GenTreeFieldAddr* spanDataAddr   = gtNewFieldAddrNode(pointerHnd, spanObjRefLcl, 0);
+    GenTree*          spanData       = gtNewIndir(TYP_BYREF, spanDataAddr);
 
     GenTree* unrolled =
         impExpandHalfConstEquals(spanDataTmpLcl, spanLength, false, startsWith, (WCHAR*)str, cnsLength, 0, cmpMode);
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, CHECK_SPILL_NONE, true));
-        impAssignTempGen(spanDataTmp, spanData);
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, CHECK_SPILL_NONE, true), CHECK_SPILL_NONE);
+        impAssignTempGen(spanDataTmp, spanData, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impAssignTempGen(rootTmp, unrolled);
+            impAssignTempGen(rootTmp, unrolled, CHECK_SPILL_NONE);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 

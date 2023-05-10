@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
-using Microsoft.Interop.UnitTests;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
+
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.VtableIndexStubGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -31,16 +31,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (compilation, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            });
         }
 
         [Fact]
@@ -59,16 +55,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
+            });
         }
 
         [Fact]
@@ -87,22 +79,19 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
             """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            });
         }
 
         [Fact]
         public async Task SimpleUnmanagedCallConvAttributeForwarded()
         {
             string source = $$"""
+                using System.Runtime.CompilerServices;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
@@ -115,22 +104,19 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.CDecl, signature.CallingConvention);
-            Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (_, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.CDecl, signature.CallingConvention);
+                Assert.Empty(signature.UnmanagedCallingConventionTypes);
+            });
         }
 
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeForwarded()
         {
             string source = $$"""
+                using System.Runtime.CompilerServices;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
@@ -143,28 +129,25 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Equal(new[]
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
             {
-                newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
-                newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
-            },
-            signature.UnmanagedCallingConventionTypes,
-            SymbolEqualityComparer.Default);
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Equal(new[]
+                {
+                    newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
+                    newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
+                },
+                signature.UnmanagedCallingConventionTypes,
+                SymbolEqualityComparer.Default);
+            });
         }
 
         [Fact]
         public async Task ComplexUnmanagedCallConvAttributeWithSuppressGCTransitionForwarded()
         {
             string source = $$"""
+                using System.Runtime.CompilerServices;
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
@@ -178,41 +161,67 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            // Allow the Native nested type name to be missing in the pre-source-generator compilation
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
-
-            var signature = await FindFunctionPointerInvocationSignature(newComp, "INativeAPI", "Method");
-
-            Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
-            Assert.Equal(new[]
+            await VerifySourceGeneratorAsync(source, "INativeAPI", "Method", (newComp, signature) =>
             {
-                newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"),
-                newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
-                newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
-            },
-            signature.UnmanagedCallingConventionTypes,
-            SymbolEqualityComparer.Default);
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Equal(new[]
+                {
+                    newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition"),
+                    newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvCdecl"),
+                    newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"),
+                },
+                signature.UnmanagedCallingConventionTypes,
+                SymbolEqualityComparer.Default);
+            });
         }
 
-        private static async Task<IMethodSymbol> FindFunctionPointerInvocationSignature(Compilation compilation, string userDefinedInterfaceName, string methodName)
+        private static async Task VerifySourceGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
         {
-            INamedTypeSymbol? userDefinedInterface = compilation.Assembly.GetTypeByMetadataName(userDefinedInterfaceName);
-            Assert.NotNull(userDefinedInterface);
+            CallingConventionForwardingTest test = new(interfaceName, methodName, signatureValidator)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
+            await test.RunAsync();
+        }
 
-            IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{userDefinedInterfaceName}.{methodName}").OfType<IMethodSymbol>());
+        class CallingConventionForwardingTest : VerifyCS.Test
+        {
+            private readonly Action<Compilation, IMethodSymbol> _signatureValidator;
+            private readonly string _interfaceName;
+            private readonly string _methodName;
 
-            SyntaxNode emittedImplementationSyntax = await methodImplementation.DeclaringSyntaxReferences[0].GetSyntaxAsync();
+            public CallingConventionForwardingTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
+                : base(referenceAncillaryInterop: true)
+            {
+                _signatureValidator = signatureValidator;
+                _interfaceName = interfaceName;
+                _methodName = methodName;
+            }
 
-            SemanticModel model = compilation.GetSemanticModel(emittedImplementationSyntax.SyntaxTree);
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                _signatureValidator(compilation, FindFunctionPointerInvocationSignature(compilation));
+            }
+            private IMethodSymbol FindFunctionPointerInvocationSignature(Compilation compilation)
+            {
+                INamedTypeSymbol? userDefinedInterface = compilation.Assembly.GetTypeByMetadataName(_interfaceName);
+                Assert.NotNull(userDefinedInterface);
 
-            IOperation body = model.GetOperation(emittedImplementationSyntax)!;
+                INamedTypeSymbol generatedInterfaceImplementation = Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
 
-            return Assert.Single(body.Descendants().OfType<IFunctionPointerInvocationOperation>()).GetFunctionPointerSignature();
+                IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{_interfaceName}.{_methodName}").OfType<IMethodSymbol>());
+
+                SyntaxNode emittedImplementationSyntax = methodImplementation.DeclaringSyntaxReferences[0].GetSyntax();
+
+                SemanticModel model = compilation.GetSemanticModel(emittedImplementationSyntax.SyntaxTree);
+
+                IOperation body = model.GetOperation(emittedImplementationSyntax)!;
+
+                return Assert.Single(body.Descendants().OfType<IFunctionPointerInvocationOperation>()).GetFunctionPointerSignature();
+            }
         }
     }
 }

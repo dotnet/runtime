@@ -215,7 +215,7 @@ namespace System.Xml.Serialization
                         string[] values = ((string)defaultValue!).Split(null);
                         for (int i = 0; i < values.Length; i++)
                         {
-                            if (values[i] == null || values[i].Length == 0)
+                            if (string.IsNullOrEmpty(values[i]))
                                 continue;
                             if (i > 0)
                                 enumDefaultValue += ", ";
@@ -2296,7 +2296,7 @@ namespace System.Xml.Serialization
                     }
                 }
             }
-            if (enumValue == null || enumValue.Length == 0)
+            if (string.IsNullOrEmpty(enumValue))
             {
                 if (element.Any && element.Name.Length == 0)
                 {
