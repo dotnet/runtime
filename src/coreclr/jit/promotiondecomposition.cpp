@@ -47,18 +47,23 @@ class DecompositionPlan
     };
 
     Compiler*         m_compiler;
-    ArrayStack<Entry> m_entries;
+    AggregateInfo** m_aggregates;
+    PromotionLiveness* m_liveness;
     GenTree*          m_dst;
     GenTree*          m_src;
+    bool              m_dstInvolvesReplacements;
     bool              m_srcInvolvesReplacements;
+    ArrayStack<Entry> m_entries;
 
 public:
-    DecompositionPlan(Compiler* comp, GenTree* dst, GenTree* src, bool srcInvolvesReplacements)
+    DecompositionPlan(Compiler* comp, AggregateInfo** aggregates, PromotionLiveness* liveness, GenTree* dst, GenTree* src, bool dstInvolvesReplacements, bool srcInvolvesReplacements)
         : m_compiler(comp)
-        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_aggregates(aggregates)
+        , m_liveness(liveness)
         , m_dst(dst)
         , m_src(src)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
+        , m_entries(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -306,12 +311,18 @@ private:
     //   the rest of the remainder); or by handling a specific 'hole' as a
     //   primitive.
     //
-    RemainderStrategy DetermineRemainderStrategy()
+    RemainderStrategy DetermineRemainderStrategy(const StructUseDeaths& dstDeaths)
     {
+        if (m_dstInvolvesReplacements && dstDeaths.IsRemainderDying())
+        {
+            JITDUMP("  => Remainder strategy: do nothing (remainder dying)\n");
+            return RemainderStrategy(RemainderStrategy::NoRemainder);
+        }
+
         StructSegments remainder = ComputeRemainder();
         if (remainder.IsEmpty())
         {
-            JITDUMP("  => Remainder strategy: do nothing\n");
+            JITDUMP("  => Remainder strategy: do nothing (no remainder)\n");
             return RemainderStrategy(RemainderStrategy::NoRemainder);
         }
 
@@ -379,20 +390,32 @@ private:
     {
         GenTree* cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
         uint8_t  initPattern = GetInitPattern();
+        StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+
+        AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
+        assert((agg != nullptr) && (agg->Replacements.size() > 0));
+        Replacement* firstRep = agg->Replacements.data();
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
-            GenTree* src = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
-            GenTree* dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
-            statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+
+            if (!deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                GenTree* src = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
+                GenTree* dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
+                statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
+            }
+
             entry.ToReplacement->NeedsWriteBack = true;
             entry.ToReplacement->NeedsReadBack  = false;
         }
 
-        RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
             GenTree* asg = m_compiler->gtNewBlkOpNode(m_dst, cns);
@@ -400,10 +423,10 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree*             src    = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
+            GenTree* src = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
             GenTreeLclVarCommon* dstLcl = m_dst->AsLclVarCommon();
-            GenTree*             dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                                                       dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+            GenTree* dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
             m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
         }
@@ -420,7 +443,13 @@ private:
     {
         assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) && m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
-        RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
+        StructUseDeaths dstDeaths;
+        if (m_dstInvolvesReplacements)
+        {
+            dstDeaths = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+        }
+
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(dstDeaths);
 
         // If the remainder is a full block and is going to incur write barrier
         // then avoid incurring multiple write barriers for each source
@@ -509,7 +538,7 @@ private:
         {
             for (int i = 0; i < m_entries.Height(); i++)
             {
-                if (!IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                 {
                     numAddrUses++;
                 }
@@ -532,7 +561,7 @@ private:
                     // See if our first indirection will subsume the null check (usual case).
                     for (int i = 0; i < m_entries.Height(); i++)
                     {
-                        if (IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                         {
                             continue;
                         }
@@ -641,12 +670,19 @@ private:
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            if (IsHandledByRemainder(entry, remainderStrategy))
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
             {
-                assert(entry.FromReplacement != nullptr);
-                JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
+                if (entry.FromReplacement != nullptr)
+                {
+                    JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
                         "as part of the remainder\n",
                         entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+                else if (entry.ToReplacement != nullptr)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum, entry.ToReplacement->Description);
+                }
+
                 continue;
             }
 
@@ -751,20 +787,41 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // IsHandledByRemainder:
-    //   Check if the specified entry is redundant because the remainder would
-    //   handle it anyway. This occurs when we have a source replacement that
-    //   is up-to-date in its struct local and we are going to retain a full
-    //   block operation anyway.
+    // CanSkipEntry:
+    //   Check if the specified entry can be skipped because it is writing to a
+    //   death replacement or because the remainder would handle it anyway.
     //
     // Parameters:
     //   entry             - The init/copy entry
     //   remainderStrategy - The strategy we are using for the remainder
     //
-    bool IsHandledByRemainder(const Entry& entry, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry& entry, const StructUseDeaths& deaths, const RemainderStrategy& remainderStrategy)
     {
-        return (remainderStrategy.Type == RemainderStrategy::FullBlock) && (entry.FromReplacement != nullptr) &&
-               !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+        if (entry.ToReplacement != nullptr)
+        {
+            // Check if this entry is dying anyway.
+            assert(m_dstInvolvesReplacements);
+
+            AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
+            assert((agg != nullptr) && (agg->Replacements.size() > 0));
+            Replacement* firstRep = agg->Replacements.data();
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < (firstRep + agg->Replacements.size())));
+
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+            if (deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                return true;
+            }
+        }
+
+        if (entry.FromReplacement != nullptr)
+        {
+            // Check if the remainder is going to handle it.
+            return (remainderStrategy.Type == RemainderStrategy::FullBlock) &&
+                !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+        }
+
+        return false;
     }
 
     //------------------------------------------------------------------------
@@ -868,6 +925,8 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
 
     if (!dstInvolvesReplacements && !srcInvolvesReplacements)
     {
+        // TODO-CQ: If the destination is an aggregate we can still use liveness
+        // information for the remainder to DCE this.
         return;
     }
 
@@ -959,7 +1018,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
             }
         }
 
-        DecompositionPlan plan(m_compiler, dst, src, srcInvolvesReplacements);
+        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements, srcInvolvesReplacements);
 
         if (src->IsConstInitVal())
         {

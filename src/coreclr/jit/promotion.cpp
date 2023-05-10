@@ -1495,18 +1495,27 @@ PhaseStatus Promotion::Run()
                 continue;
             }
 
-            for (Replacement& rep : aggregates[i]->Replacements)
+            for (size_t j = 0; j < aggregates[i]->Replacements.size(); j++)
             {
+                Replacement& rep = aggregates[i]->Replacements[j];
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
+                    if (!liveness.IsReplacementLiveOut(bb, i, (unsigned)j))
+                    {
+                        JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n", i,
+                            rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
+                    }
+                    else
+                    {
+                        JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                             rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                    GenTree*   readBack = CreateReadBack(m_compiler, i, rep);
-                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-                    DISPSTMT(stmt);
-                    m_compiler->fgInsertStmtNearEnd(bb, stmt);
+                        GenTree* readBack = CreateReadBack(m_compiler, i, rep);
+                        Statement* stmt = m_compiler->fgNewStmtFromTree(readBack);
+                        DISPSTMT(stmt);
+                        m_compiler->fgInsertStmtNearEnd(bb, stmt);
+                    }
                     rep.NeedsReadBack = false;
                 }
 

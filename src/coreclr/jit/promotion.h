@@ -174,6 +174,30 @@ public:
 
 struct BasicBlockLiveness;
 
+class StructUseDeaths
+{
+    BitVec m_deaths;
+    unsigned m_numFields;
+
+    friend class PromotionLiveness;
+
+private:
+    StructUseDeaths(BitVec deaths, unsigned numFields)
+        : m_deaths(deaths)
+        , m_numFields(numFields)
+    {
+    }
+
+public:
+    StructUseDeaths()
+        : m_numFields(0)
+    {
+    }
+
+    bool IsRemainderDying() const;
+    bool IsReplacementDying(unsigned index) const;
+};
+
 class PromotionLiveness
 {
     Compiler* m_compiler;
@@ -183,19 +207,20 @@ class PromotionLiveness
     BasicBlockLiveness* m_bbInfo = nullptr;
     bool m_hasPossibleBackEdge = false;
     BitVec m_liveIn;
-    BitVec m_liveOut;
     BitVec m_ehLiveVars;
+    JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
     friend class PromotionLivenessBitSetTraits;
 
 public:
     PromotionLiveness(Compiler* compiler, AggregateInfo** aggregates)
-        : m_compiler(compiler), m_aggregates(aggregates)
+        : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
     {
     }
 
     void Run();
-
+    bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    StructUseDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 private:
     void MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
     void MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
