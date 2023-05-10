@@ -114,7 +114,8 @@ class Promotion
     friend class DecompositionPlan;
     friend class StructSegments;
 
-    static StructSegments SignificantSegments(Compiler* compiler, ClassLayout* layout);
+    static StructSegments SignificantSegments(Compiler*    compiler,
+                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr = nullptr));
 
     void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,

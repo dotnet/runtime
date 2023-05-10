@@ -924,7 +924,8 @@ void StructSegments::Dump()
 }
 #endif
 
-StructSegments Promotion::SignificantSegments(Compiler* compiler, ClassLayout* layout)
+StructSegments Promotion::SignificantSegments(Compiler*    compiler,
+                                              ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr))
 {
     COMP_HANDLE compHnd = compiler->info.compCompHnd;
 
@@ -1001,6 +1002,13 @@ StructSegments Promotion::SignificantSegments(Compiler* compiler, ClassLayout* l
 #endif
         }
     }
+
+#ifdef DEBUG
+    if (bitVectRepr != nullptr)
+    {
+        *bitVectRepr = segmentBitVect;
+    }
+#endif
 
     // TODO-TP: Cache this per class layout, we call this for every struct
     // operation on a promoted local.

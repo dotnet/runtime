@@ -150,6 +150,7 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
                 bool         isFullFieldDef =
                     isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
                 MarkIndex(baseIndex + 1 + (unsigned)index, isUse, isFullFieldDef, useSet, defSet);
+                index++;
             }
 
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
@@ -233,7 +234,7 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
         m_hasPossibleBackEdge = true;
     }
 
-    bool liveInChanged = BitVecOps::Equal(m_bvTraits, bbInfo.LiveIn, m_liveIn);
+    bool liveInChanged = !BitVecOps::Equal(m_bvTraits, bbInfo.LiveIn, m_liveIn);
 
     if (liveInChanged)
     {
@@ -483,6 +484,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
                         BitVecOps::AddElemD(m_bvTraits, life, varIndex);
                     }
                 }
+
+                index++;
             }
 
             if (BitVecOps::IsMember(m_bvTraits, life, baseIndex))
@@ -539,7 +542,6 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         }
         else
         {
-            index             = ~index;
             unsigned varIndex = baseIndex + 1 + (unsigned)index;
 
             if (BitVecOps::IsMember(m_bvTraits, life, varIndex))

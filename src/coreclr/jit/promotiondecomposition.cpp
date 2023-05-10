@@ -68,6 +68,7 @@ public:
         , m_liveness(liveness)
         , m_dst(dst)
         , m_src(src)
+        , m_dstInvolvesReplacements(dstInvolvesReplacements)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
         , m_entries(comp->getAllocator(CMK_Promotion))
     {
@@ -253,11 +254,11 @@ private:
     //
     StructSegments ComputeRemainder()
     {
-        ClassLayout*   dstLayout = m_dst->GetLayout(m_compiler);
-        StructSegments segments  = Promotion::SignificantSegments(m_compiler, dstLayout);
+        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
 
         // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-        INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(dstLayout->GetSize(), m_compiler));
+        INDEBUG(FixedBitVect * segmentBitVect);
+        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
