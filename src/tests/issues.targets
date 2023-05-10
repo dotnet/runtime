@@ -893,6 +893,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74555</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeArray1/*">
+            <Issue>https://github.com/dotnet/runtime/issues/85747</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 arm32 specific excludes -->
