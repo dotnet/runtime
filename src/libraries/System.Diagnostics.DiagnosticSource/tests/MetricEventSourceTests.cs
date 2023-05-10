@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
     public class MetricEventSourceTests
     {
         ITestOutputHelper _output;
-        const double IntervalSecs = 10;
+        const double IntervalSecs = 4;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
 
         public MetricEventSourceTests(ITestOutputHelper output)
@@ -25,7 +25,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [OuterLoop("Slow and has lots of console spew")]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadata()
         {
             using Meter meter = new Meter("TestMeter1");
@@ -64,6 +64,96 @@ namespace System.Diagnostics.Metrics.Tests
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexing()
+        {
+            using Meter meter = new Meter("TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            using Meter meter2 = new Meter("TestMeter2");
+            Counter<int> c2;
+
+            EventWrittenEventArgs[] events;
+            EventWrittenEventArgs[] events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
+
+                c2 = meter2.CreateCounter<int>("counter2");
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter2"))
+                {
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    c2.Add(5);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    c2.Add(12);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    events2 = listener2.Events.ToArray();
+                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
+                }
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+
+            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexing2()
+        {
+            using Meter meter = new Meter("TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            EventWrittenEventArgs[] events;
+            EventWrittenEventArgs[] events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+                {
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    c.Add(5);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    c.Add(12);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    events2 = listener2.Events.ToArray();
+                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
+                }
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+
+            //AssertBeginInstrumentReportingEventsPresent(events2, c);
+            //AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertCounterEventsPresent(events2, meter.Name, c.Name, "", "", ("0", "17"), ("5", "22"), ("12", "34"));
+            AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
+        }
+
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]
@@ -1104,13 +1194,13 @@ namespace System.Diagnostics.Metrics.Tests
 
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval, params string[]? instruments) :
-            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, 50, 50, instruments)
+            this(output, keywords, "SHARED"/*Guid.NewGuid().ToString()*/, refreshInterval, 50, 50, instruments)
         {
         }
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval,
             int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
-            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, timeSeriesLimit, histogramLimit, instruments)
+            this(output, keywords, "SHARED"/*Guid.NewGuid().ToString()*/, refreshInterval, timeSeriesLimit, histogramLimit, instruments)
         {
         }
 

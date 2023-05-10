@@ -45,6 +45,8 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
+        public const string SharedSessionId = "SHARED";
+
         public static class Keywords
         {
             /// <summary>
@@ -244,14 +246,123 @@ namespace System.Diagnostics.Metrics
                         return;
                     }
 #endif
+
+                    string commandSessionId = GetSessionId(command);
+
                     if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable ||
                         command.Command == EventCommand.Enable)
                     {
                         if (_aggregationManager != null)
                         {
-                            if (command.Command == EventCommand.Enable || command.Command == EventCommand.Update)
+                            bool validShared = true;
+
+                            if (commandSessionId == SharedSessionId && _sessionId == SharedSessionId)
                             {
-                                // trying to add more sessions is not supported
+                                // add the new providers, assuming maxhistograms, maxtimeseries, and refreshinterval are the same
+
+                                if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval)
+                                    && command.Arguments!.TryGetValue("MaxTimeSeries", out string? maxTimeSeriesString)
+                                    && command.Arguments!.TryGetValue("MaxHistograms", out string? maxHistogramsString))
+                                {
+                                    if (!double.TryParse(refreshInterval, out double refreshIntervalSecs))
+                                    {
+                                        // This is fine, just use the existing value
+                                    }
+                                    else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
+                                    {
+                                        // This is fine, just use the existing value
+                                        Parent.Message($"RefreshInterval too small. Using existing value {_aggregationManager._collectionPeriod.Seconds} seconds.");
+                                        //refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs; // change this
+                                    }
+                                    else
+                                    {
+                                        lock (_aggregationManager)
+                                        {
+                                            if (TimeSpan.FromSeconds(refreshIntervalSecs) != _aggregationManager._collectionPeriod)
+                                            {
+                                                validShared = false;
+                                            }
+
+                                        }
+                                    }
+
+                                    //
+                                    int maxTimeSeries;
+                                    if (command.Arguments!.TryGetValue("MaxTimeSeries", out string? maxTimeSeriesString2))
+                                    {
+                                        Parent.Message($"MaxTimeSeries argument received: {maxTimeSeriesString2}");
+                                        if (!int.TryParse(maxTimeSeriesString2, out maxTimeSeries))
+                                        {
+                                            // this is fine
+                                            Parent.Message($"Failed to parse MaxTimeSeries. Using existing value {_aggregationManager._maxTimeSeries}");
+                                            //maxTimeSeries = defaultMaxTimeSeries; // change this
+                                        }
+                                        else
+                                        {
+                                            lock (_aggregationManager)
+                                            {
+                                                if (maxTimeSeries != _aggregationManager._maxTimeSeries)
+                                                {
+                                                    validShared = false;
+                                                }
+
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // this is fine
+                                        Parent.Message($"No MaxTimeSeries argument received. Using existing value {_aggregationManager._maxTimeSeries}");
+                                        //maxTimeSeries = defaultMaxTimeSeries; // change this
+                                    }
+
+                                    //
+
+                                    int maxHistograms;
+                                    if (command.Arguments!.TryGetValue("MaxHistograms", out string? maxHistogramsString2))
+                                    {
+                                        Parent.Message($"MaxHistograms argument received: {maxHistogramsString2}");
+                                        if (!int.TryParse(maxHistogramsString2, out maxHistograms))
+                                        {
+                                            // this is fine
+                                            Parent.Message($"Failed to parse MaxHistograms. Using default {_aggregationManager._maxHistograms}");
+                                            //maxHistograms = defaultMaxHistograms;
+                                        }
+                                        else
+                                        {
+                                            lock (_aggregationManager)
+                                            {
+                                                if (maxHistograms != _aggregationManager._maxHistograms)
+                                                {
+                                                    validShared = false;
+                                                }
+
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // this is fine
+                                        Parent.Message($"No MaxHistogram argument received. Using existing value {_aggregationManager._maxHistograms}");
+                                        //maxHistograms = defaultMaxHistograms; // change this to existing
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                validShared = false;
+                            }
+
+
+
+
+
+
+
+
+                            if ((command.Command == EventCommand.Enable || command.Command == EventCommand.Update) && !validShared)
+                            {
+                                // trying to add more sessions is not supported (assuming the parameters are different)
                                 // EventSource doesn't provide an API that allows us to enumerate the listeners'
                                 // filter arguments independently or to easily track them ourselves. For example
                                 // removing a listener still shows up as EventCommand.Enable as long as at least
@@ -262,26 +373,38 @@ namespace System.Diagnostics.Metrics
                                 return;
                             }
 
-                            _aggregationManager.Dispose();
-                            _aggregationManager = null;
-                            Parent.Message($"Previous session with id {_sessionId} is stopped");
+                            if (command.Command == EventCommand.Disable && _sessionId != SharedSessionId)
+                            {
+                                _sessionId = "";
+
+                                _aggregationManager.Dispose();
+                                _aggregationManager = null;
+                                Parent.Message($"Previous session with id {_sessionId} is stopped");
+                                return;
+                            }
+
+                            if (validShared && command.Command != EventCommand.Disable)
+                            {
+                                if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
+                                {
+                                    Parent.Message($"Metrics argument received: {metricsSpecs}");
+                                    ParseSpecs(metricsSpecs);
+                                    _aggregationManager.Update();
+                                    //_aggregationManager.Start(); // not sure what this will do
+                                }
+                                else
+                                {
+                                    Parent.Message("No Metrics argument received");
+                                }
+
+                                return; // don't do anything else
+                            }
                         }
-                        _sessionId = "";
                     }
                     if ((command.Command == EventCommand.Update || command.Command == EventCommand.Enable) &&
                         command.Arguments != null)
                     {
-                        if (command.Arguments!.TryGetValue("SessionId", out string? id))
-                        {
-                            _sessionId = id!;
-                            Parent.Message($"SessionId argument received: {_sessionId}");
-                        }
-                        else
-                        {
-                            _sessionId = System.Guid.NewGuid().ToString();
-                            Parent.Message($"New session started. SessionId auto-generated: {_sessionId}");
-                        }
-
+                        _sessionId = commandSessionId;
 
                         double defaultIntervalSecs = 1;
                         Debug.Assert(AggregationManager.MinCollectionTimeSecs <= defaultIntervalSecs);
@@ -375,6 +498,27 @@ namespace System.Diagnostics.Metrics
                 {
                     // this will never run
                 }
+            }
+
+            private string GetSessionId(EventCommandEventArgs command)
+            {
+                string sessionId = string.Empty;
+                if ((command.Command == EventCommand.Update || command.Command == EventCommand.Enable) &&
+    command.Arguments != null)
+                {
+                    if (command.Arguments!.TryGetValue("SessionId", out string? id))
+                    {
+                        sessionId = id!;
+                        Parent.Message($"SessionId argument received: {sessionId}");
+                    }
+                    else
+                    {
+                        sessionId = System.Guid.NewGuid().ToString();
+                        Parent.Message($"New session started. SessionId auto-generated: {sessionId}");
+                    }
+                }
+
+                return sessionId;
             }
 
             private bool LogError(Exception e)

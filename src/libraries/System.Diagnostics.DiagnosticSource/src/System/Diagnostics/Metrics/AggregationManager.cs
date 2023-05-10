@@ -21,7 +21,7 @@ namespace System.Diagnostics.Metrics
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
         private readonly List<Predicate<Instrument>> _instrumentConfigFuncs = new();
-        private TimeSpan _collectionPeriod;
+        public TimeSpan _collectionPeriod;
 
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
@@ -30,8 +30,10 @@ namespace System.Diagnostics.Metrics
         private int _currentTimeSeries;
         private int _currentHistograms;
 
-        private readonly int _maxTimeSeries;
-        private readonly int _maxHistograms;
+        private List<Instrument> _instrumentList = new();
+
+        public readonly int _maxTimeSeries;
+        public readonly int _maxHistograms;
         private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
@@ -77,12 +79,16 @@ namespace System.Diagnostics.Metrics
             {
                 InstrumentPublished = (instrument, listener) =>
                 {
-                    _instrumentPublished(instrument);
-                    InstrumentState? state = GetInstrumentState(instrument);
-                    if (state != null)
+                    if (!_instrumentList.Contains(instrument))
                     {
-                        _beginInstrumentMeasurements(instrument);
-                        listener.EnableMeasurementEvents(instrument, state);
+                        _instrumentPublished(instrument);
+                        InstrumentState? state = GetInstrumentState(instrument);
+                        if (state != null)
+                        {
+                            _instrumentList.Add(instrument);
+                            _beginInstrumentMeasurements(instrument);
+                            listener.EnableMeasurementEvents(instrument, state);
+                        }
                     }
                 },
                 MeasurementsCompleted = (instrument, cookie) =>
@@ -146,6 +152,21 @@ namespace System.Diagnostics.Metrics
 
             _listener.Start();
             _initialInstrumentEnumerationComplete();
+        }
+
+        public void Update()
+        {
+            var publishedInstruments = Meter.GetPublishedInstruments();
+
+            if (publishedInstruments is not null)
+            {
+                foreach (Instrument instrument in publishedInstruments)
+                {
+                    _listener.InstrumentPublished?.Invoke(instrument, _listener); // will have duplicates - might not want that behavior
+                }
+            }
+
+            _initialInstrumentEnumerationComplete(); // not sure we want this
         }
 
         private void CollectWorker(CancellationToken cancelToken)
