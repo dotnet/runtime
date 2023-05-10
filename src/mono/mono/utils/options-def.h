@@ -61,7 +61,7 @@ DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM 
 DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
 DEFINE_BOOL(interp_simd_v128, "interp-simd-v128", TRUE, "Enable interpreter Vector128 support")
-DEFINE_BOOL(interp_simd_packedsimd, "interp-simd-packedsimd", TRUE, "Enable interpreter WASM PackedSimd support")
+DEFINE_BOOL(interp_simd_packedsimd, "interp-simd-packedsimd", FALSE, "Enable interpreter WASM PackedSimd support")
 
 #if HOST_BROWSER
 
