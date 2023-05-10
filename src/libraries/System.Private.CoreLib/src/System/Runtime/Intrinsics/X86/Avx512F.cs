@@ -403,6 +403,69 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<uint> ConvertToVector256UInt32WithTruncation(Vector256<float> value) => ConvertToVector256UInt32WithTruncation(value);
 
             /// <summary>
+            /// __m128 _mm_fixupimm_ps(__m128 a, __m128 b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Fixup(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m128d _mm_fixupimm_pd(__m128d a, __m128d b, __m128i tbl, int imm);
+            ///   VFIXUPIMMPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Fixup(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m256 _mm256_fixupimm_ps(__m256 a, __m256 b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Fixup(Vector256<float> left, Vector256<float> right, Vector256<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+            /// <summary>
+            /// __m256d _mm256_fixupimm_pd(__m256d a, __m256d b, __m256i tbl, int imm);
+            ///   VFIXUPIMMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Fixup(Vector256<double> left, Vector256<double> right, Vector256<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+
+            /// <summary>
+            /// __m128 _mm_getexp_ps (__m128 a)
+            ///   VGETEXPPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetExponent(Vector128<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m128d _mm_getexp_pd (__m128d a)
+            ///   VGETEXPPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetExponent(Vector128<double> value) => GetExponent(value);
+            /// <summary>
+            /// __m256 _mm256_getexp_ps (__m256 a)
+            ///   VGETEXPPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetExponent(Vector256<float> value) => GetExponent(value);
+            /// <summary>
+            /// __m256d _mm256_getexp_pd (__m256d a)
+            ///   VGETEXPPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetExponent(Vector256<double> value) => GetExponent(value);
+
+            /// <summary>
+            /// __m128 _mm_getmant_ps (__m128 a)
+            ///   VGETMANTPS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> GetMantissa(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m128d _mm_getmant_pd (__m128d a)
+            ///   VGETMANTPD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> GetMantissa(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256 _mm256_getmant_ps (__m256 a)
+            ///   VGETMANTPS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> GetMantissa(Vector256<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+            /// <summary>
+            /// __m256d _mm256_getmant_pd (__m256d a)
+            ///   VGETMANTPD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> GetMantissa(Vector256<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+            /// <summary>
             /// __m128i _mm_max_epi64 (__m128i a, __m128i b)
             ///   VPMAXSQ xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
             /// </summary>
@@ -459,6 +522,90 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPERMPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<double> PermuteVar4x64(Vector256<double> value, Vector256<long> control) => PermuteVar4x64(value, control);
+
+            /// <summary>
+            /// __m128 _mm_rcp14_ps (__m128 a, __m128 b)
+            ///   VRCP14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Reciprocal14(Vector128<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m128d _mm_rcp14_pd (__m128d a, __m128d b)
+            ///   VRCP14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Reciprocal14(Vector128<double> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256 _mm256_rcp14_ps (__m256 a, __m256 b)
+            ///   VRCP14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Reciprocal14(Vector256<float> value) => Reciprocal14(value);
+            /// <summary>
+            /// __m256d _mm256_rcp14_pd (__m256d a, __m256d b)
+            ///   VRCP14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Reciprocal14(Vector256<double> value) => Reciprocal14(value);
+
+            /// <summary>
+            /// __m128 _mm_rsqrt14_ps (__m128 a, __m128 b)
+            ///   VRSQRT14PS xmm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> ReciprocalSqrt14(Vector128<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m128d _mm_rsqrt14_pd (__m128d a, __m128d b)
+            ///   VRSQRT14PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ReciprocalSqrt14(Vector128<double> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256 _mm256_rsqrt14_ps (__m256 a, __m256 b)
+            ///   VRSQRT14PS ymm1 {k1}{z}, ymm2/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> ReciprocalSqrt14(Vector256<float> value) => ReciprocalSqrt14(value);
+            /// <summary>
+            /// __m256d _mm256_rsqrt14_pd (__m256d a, __m256d b)
+            ///   VRSQRT14PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ReciprocalSqrt14(Vector256<double> value) => ReciprocalSqrt14(value);
+
+            /// <summary>
+            /// __m128 _mm_roundscale_ps (__m128 a, int imm)
+            ///   VRNDSCALEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> RoundScale(Vector128<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m128d _mm_roundscale_pd (__m128d a, int imm)
+            ///   VRNDSCALEPD xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> RoundScale(Vector128<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m256 _mm256_roundscale_ps (__m256 a, int imm)
+            ///   VRNDSCALEPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> RoundScale(Vector256<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+            /// <summary>
+            /// __m256d _mm256_roundscale_pd (__m256d a, int imm)
+            ///   VRNDSCALEPD ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> RoundScale(Vector256<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+
+            /// <summary>
+            /// __m128 _mm_scalef_ps (__m128 a, int imm)
+            ///   VSCALEFPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst
+            /// </summary>
+            public static Vector128<float> Scale(Vector128<float> left, Vector128<float> right) => Scale(left, right);
+            /// <summary>
+            /// __m128d _mm_scalef_pd (__m128d a, int imm)
+            ///   VSCALEFPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> Scale(Vector128<double> left, Vector128<double> right) => Scale(left, right);
+            /// <summary>
+            /// __m256 _mm256_scalef_ps (__m256 a, int imm)
+            ///   VSCALEFPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst
+            /// </summary>
+            public static Vector256<float> Scale(Vector256<float> left, Vector256<float> right) => Scale(left, right);
+            /// <summary>
+            /// __m256d _mm256_scalef_pd (__m256d a, int imm)
+            ///   VSCALEFPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> Scale(Vector256<double> left, Vector256<double> right) => Scale(left, right);
 
             /// <summary>
             /// __m128i _mm_sra_epi64 (__m128i a, __m128i count)
@@ -1221,6 +1368,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> ExtractVector256(Vector512<double> value, [ConstantExpected] byte index) => ExtractVector256(value, index);
 
         /// <summary>
+        /// __m512 _mm512_fixupimm_ps(__m512 a, __m512 b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Fixup(Vector512<float> left, Vector512<float> right, Vector512<int> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+        /// <summary>
+        /// __m512d _mm512_fixupimm_pd(__m512d a, __m512d b, __m512i tbl, int imm);
+        ///   VFIXUPIMMPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Fixup(Vector512<double> left, Vector512<double> right, Vector512<long> table, [ConstantExpected] byte control) => Fixup(left, right, table, control);
+
+        /// <summary>
+        /// __m128 _mm_fixupimm_ss(__m128 a, __m128 b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> FixupScalar(Vector128<float> left, Vector128<float> right, Vector128<int> table, [ConstantExpected] byte control) => FixupScalar(left, right, table, control);
+        /// <summary>
+        /// __m128d _mm_fixupimm_sd(__m128d a, __m128d b, __m128i tbl, int imm);
+        ///   VFIXUPIMMSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> FixupScalar(Vector128<double> left, Vector128<double> right, Vector128<long> table, [ConstantExpected] byte control) => FixupScalar(left, right, table, control);
+
+        /// <summary>
         /// __m512 _mm512_fmadd_ps (__m512 a, __m512 b, __m512 c)
         ///   VFMADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
@@ -1285,6 +1454,74 @@ namespace System.Runtime.Intrinsics.X86
         ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtractNegated(a, b, c);
+
+        /// <summary>
+        /// __m512 _mm512_getexp_ps (__m512 a)
+        ///   VGETEXPPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetExponent(Vector512<float> value) => GetExponent(value);
+        /// <summary>
+        /// __m512d _mm512_getexp_pd (__m512d a)
+        ///   VGETEXPPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetExponent(Vector512<double> value) => GetExponent(value);
+
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> value) => GetExponentScalar(value);
+        /// <summary>
+        /// __m128 _mm_getexp_ss (__m128 a, __m128 b)
+        ///   VGETEXPSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetExponentScalar(Vector128<float> upper, Vector128<float> value) => GetExponentScalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_getexp_sd (__m128d a, __m128d b)
+        ///   VGETEXPSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetExponentScalar(Vector128<double> upper, Vector128<double> value) => GetExponentScalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_getmant_ps (__m512 a)
+        ///   VGETMANTPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}
+        /// </summary>
+        public static Vector512<float> GetMantissa(Vector512<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+        /// <summary>
+        /// __m512d _mm512_getmant_pd (__m512d a)
+        ///   VGETMANTPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<double> GetMantissa(Vector512<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissa(value, control);
+
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(value, control);
+        /// <summary>
+        /// __m128 _mm_getmant_ss (__m128 a, __m128 b)
+        ///   VGETMANTSS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> GetMantissaScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
+        /// <summary>
+        /// __m128d _mm_getmant_sd (__m128d a, __m128d b)
+        ///   VGETMANTSD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> GetMantissaScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected(Max = (byte)(0x0F))] byte control) => GetMantissaScalar(upper, value, control);
 
         /// <summary>
         /// __m512i _mm512_inserti128_si512 (__m512i a, __m128i b, const int imm8)
@@ -1737,6 +1974,130 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERMPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
         public static Vector512<float> PermuteVar16x32(Vector512<float> left, Vector512<int> control) => PermuteVar16x32(left, control);
+
+        /// <summary>
+        /// __m512 _mm512_rcp14_ps (__m512 a, __m512 b)
+        ///   VRCP14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> Reciprocal14(Vector512<float> value) => Reciprocal14(value);
+        /// <summary>
+        /// __m512d _mm512_rcp14_pd (__m512d a, __m512d b)
+        ///   VRCP14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> Reciprocal14(Vector512<double> value) => Reciprocal14(value);
+
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> value) => Reciprocal14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rcp14_ss (__m128 a, __m128 b)
+        ///   VRCP14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> Reciprocal14Scalar(Vector128<float> upper, Vector128<float> value) => Reciprocal14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rcp14_sd (__m128d a, __m128d b)
+        ///   VRCP14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> Reciprocal14Scalar(Vector128<double> upper, Vector128<double> value) => Reciprocal14Scalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_rsqrt14_ps (__m512 a, __m512 b)
+        ///   VRSQRT14PS zmm1 {k1}{z}, zmm2/m512/m32bcst
+        /// </summary>
+        public static Vector512<float> ReciprocalSqrt14(Vector512<float> value) => ReciprocalSqrt14(value);
+        /// <summary>
+        /// __m512d _mm512_rsqrt14_pd (__m512d a, __m512d b)
+        ///   VRSQRT14PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ReciprocalSqrt14(Vector512<double> value) => ReciprocalSqrt14(value);
+
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> value) => ReciprocalSqrt14Scalar(value);
+        /// <summary>
+        /// __m128 _mm_rsqrt14_ss (__m128 a, __m128 b)
+        ///   VRSQRT14SS xmm1 {k1}{z}, xmm2, xmm3/m32
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> ReciprocalSqrt14Scalar(Vector128<float> upper, Vector128<float> value) => ReciprocalSqrt14Scalar(upper, value);
+        /// <summary>
+        /// __m128d _mm_rsqrt14_sd (__m128d a, __m128d b)
+        ///   VRSQRT14SD xmm1 {k1}{z}, xmm2, xmm3/m64
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> ReciprocalSqrt14Scalar(Vector128<double> upper, Vector128<double> value) => ReciprocalSqrt14Scalar(upper, value);
+
+        /// <summary>
+        /// __m512 _mm512_roundscale_ps (__m512 a, int imm)
+        ///   VRNDSCALEPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> RoundScale(Vector512<float> value, [ConstantExpected] byte control) => RoundScale(value, control);
+        /// <summary>
+        /// __m512d _mm512_roundscale_pd (__m512d a, int imm)
+        ///   VRNDSCALEPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> RoundScale(Vector512<double> value, [ConstantExpected] byte control) => RoundScale(value, control);
+
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> value, [ConstantExpected] byte control) => RoundScaleScalar(value, control);
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> value, [ConstantExpected] byte control) => RoundScaleScalar(value, control);
+        /// <summary>
+        /// __m128 _mm_roundscale_ss (__m128 a, __m128 b, int imm)
+        ///   VRNDSCALESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> RoundScaleScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected] byte control) => RoundScaleScalar(upper, value, control);
+        /// <summary>
+        /// __m128d _mm_roundscale_sd (__m128d a, __m128d b, int imm)
+        ///   VRNDSCALESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> RoundScaleScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected] byte control) => RoundScaleScalar(upper, value, control);
+
+        /// <summary>
+        /// __m512 _mm512_scalef_ps (__m512 a, __m512 b)
+        ///   VSCALEFPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
+        /// </summary>
+        public static Vector512<float> Scale(Vector512<float> left, Vector512<float> right) => Scale(left, right);
+        /// <summary>
+        /// __m512d _mm512_scalef_pd (__m512d a, __m512d b)
+        ///   VSCALEFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Scale(Vector512<double> left, Vector512<double> right) => Scale(left, right);
+
+        /// <summary>
+        /// __m128 _mm_scalef_ss (__m128 a, __m128 b)
+        ///   VSCALEFSS xmm1 {k1}{z}, xmm2, xmm3/m32{er}
+        /// </summary>
+        public static Vector128<float> ScaleScalar(Vector128<float> left, Vector128<float> right) => ScaleScalar(left, right);
+        /// <summary>
+        /// __m128d _mm_scalef_sd (__m128d a, __m128d b)
+        ///   VSCALEFSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
+        /// </summary>
+        public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right) => ScaleScalar(left, right);
 
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)

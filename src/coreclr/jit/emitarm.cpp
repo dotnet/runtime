@@ -7089,6 +7089,15 @@ void emitter::emitDispGC(emitAttr attr)
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+#ifdef DEBUG
+    if (!emitComp->opts.disAddr)
+    {
+        return;
+    }
+#else // DEBUG
+    return;
+#endif
+
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
@@ -7836,7 +7845,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 
-    if (varx >= 0 && emitComp->opts.varNames)
+    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
 

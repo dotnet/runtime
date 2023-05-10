@@ -239,22 +239,18 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     // x86 only
     //
     AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-    AddFlagNumeric(TARGET_P4, 9);
-    AddFlagNumeric(USE_FCOMI, 10);
-    AddFlagNumeric(USE_CMOV, 11);
 
     AddFlag(OSR);
     AddFlag(ALT_JIT);
+    AddFlag(FROZEN_ALLOC_ALLOWED);
 
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
 
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    AddFlag(SKIP_VERIFICATION);
     AddFlag(PREJIT);
     AddFlag(RELOC);
-    AddFlag(IMPORT_ONLY);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);

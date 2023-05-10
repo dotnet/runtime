@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 
 namespace Internal.Reflection.Core
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public abstract class ReflectionDomainSetup
     {

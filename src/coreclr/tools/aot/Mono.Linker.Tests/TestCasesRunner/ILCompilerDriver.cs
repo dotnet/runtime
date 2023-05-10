@@ -64,6 +64,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
 
+			foreach (var rootedAssembly in options.AdditionalRootAssemblies) {
+				EcmaModule module = typeSystemContext.GetModuleForSimpleName (rootedAssembly);
+
+				// We only root the module type. The rest will fall out because we treat rootedAssemblies
+				// same as conditionally rooted ones and here we're fulfilling the condition ("something is used").
+				compilationRoots.Add (
+					new GenericRootProvider<ModuleDesc> (module,
+					(ModuleDesc module, IRootingServiceProvider rooter) => rooter.AddReflectionRoot (module.GetGlobalModuleType (), "Command line root")));
+			}
+
 			ILProvider ilProvider = new NativeAotILProvider ();
 
 			Logger logger = new Logger (

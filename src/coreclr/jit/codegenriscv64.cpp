@@ -3351,11 +3351,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     if (varTypeIsFloating(op1Type))
     {
         assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-        bool      IsUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
+        bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
 
-        if (IsUnordered)
+        if (isUnordered)
         {
             BasicBlock* skipLabel = nullptr;
             if (tree->OperIs(GT_LT))
@@ -5919,7 +5919,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     if (size >= 2 * REGSIZE_BYTES)
     {
-        regNumber tempReg2 = rsGetRsvdReg();
+        regNumber tempReg2 = REG_RA;
 
         for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
              size -= regSize, srcOffset += regSize, dstOffset += regSize)

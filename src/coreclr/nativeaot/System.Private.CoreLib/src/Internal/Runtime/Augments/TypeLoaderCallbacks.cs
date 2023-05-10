@@ -12,7 +12,6 @@ using Internal.Metadata.NativeFormat;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class TypeLoaderCallbacks
     {
         public abstract TypeManagerHandle GetModuleForMetadataReader(MetadataReader reader);

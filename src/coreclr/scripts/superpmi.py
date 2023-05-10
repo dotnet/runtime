@@ -3724,7 +3724,8 @@ def download_clrjit_pintool(coreclr_args):
         return
 
     pin_dir_path = get_pintools_path(coreclr_args)
-    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    extension = "zip" if coreclr_args.host_os.lower() == "windows" else "tar.gz"
+    pintools_rel_path = "{}/{}/{}.{}".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower(), extension)
     pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
     local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
     if len(local_files) <= 0:

@@ -25,7 +25,6 @@ namespace Internal.Reflection.Core.Execution
     //
     // This singleton class acts as an entrypoint from System.Private.Reflection.Execution to System.Private.Reflection.Core.
     //
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public sealed class ExecutionDomain
     {
@@ -97,32 +96,23 @@ namespace Internal.Reflection.Core.Execution
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
         //=======================================================================================
-        public Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
+        public Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            QTypeDefinition qTypeDefinition;
-
-            if (ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out qTypeDefinition))
+            QTypeDefinition qTypeDefinition = ExecutionEnvironment.GetMetadataForNamedType(typeHandle);
+#if ECMA_METADATA_SUPPORT
+            if (qTypeDefinition.IsNativeFormatMetadataBased)
+#endif
             {
-#if ECMA_METADATA_SUPPORT
-                if (qTypeDefinition.IsNativeFormatMetadataBased)
-#endif
-                {
-                    return qTypeDefinition.NativeFormatHandle.GetNamedType(qTypeDefinition.NativeFormatReader, typeHandle);
-                }
-#if ECMA_METADATA_SUPPORT
-                else
-                {
-                    return System.Reflection.Runtime.TypeInfos.EcmaFormat.EcmaFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(qTypeDefinition.EcmaFormatReader,
-                        qTypeDefinition.EcmaFormatHandle,
-                        typeHandle);
-                }
-#endif
+                return qTypeDefinition.NativeFormatHandle.GetNamedType(qTypeDefinition.NativeFormatReader, typeHandle);
             }
+#if ECMA_METADATA_SUPPORT
             else
             {
-                Debug.Assert(ExecutionEnvironment.IsReflectionBlocked(typeHandle) || RuntimeAugments.MightBeUnconstructedType(typeHandle));
-                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition);
+                return System.Reflection.Runtime.TypeInfos.EcmaFormat.EcmaFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(qTypeDefinition.EcmaFormatReader,
+                    qTypeDefinition.EcmaFormatHandle,
+                    typeHandle);
             }
+#endif
         }
 
         public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -184,21 +174,6 @@ namespace Internal.Reflection.Core.Execution
             RuntimeTypeHandle[] genericTypeArgumentHandles;
             genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(typeHandle, out genericTypeArgumentHandles);
 
-            // Reflection blocked constructed generic types simply pretend to not be generic
-            // This is reasonable, as the behavior of reflection blocked types is supposed
-            // to be that they expose the minimal information about a type that is necessary
-            // for users of Object.GetType to move from that type to a type that isn't
-            // reflection blocked. By not revealing that reflection blocked types are generic
-            // we are making it appear as if implementation detail types exposed to user code
-            // are all non-generic, which is theoretically possible, and by doing so
-            // we avoid (in all known circumstances) the very complicated case of representing
-            // the interfaces, base types, and generic parameter types of reflection blocked
-            // generic type definitions.
-            if (ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
-            {
-                return RuntimeBlockedTypeInfo.GetRuntimeBlockedTypeInfo(typeHandle, isGenericTypeDefinition: false);
-            }
-
             RuntimeTypeInfo genericTypeDefinition = genericTypeDefinitionHandle.GetTypeForRuntimeTypeHandle();
             int count = genericTypeArgumentHandles.Length;
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[count];
@@ -244,28 +219,6 @@ namespace Internal.Reflection.Core.Execution
             if (runtimeType == null)
                 return default(RuntimeTypeHandle);
             return runtimeType.InternalTypeHandleIfAvailable;
-        }
-
-        public bool SupportsReflection(Type type)
-        {
-            if (type is not RuntimeType)
-                return false;
-
-            if (ExecutionEnvironment.IsReflectionBlocked(type.TypeHandle))
-            {
-                // The type is an internal framework type and is blocked from reflection
-                return false;
-            }
-
-            RuntimeTypeInfo runtimeType = type.CastToRuntimeTypeInfo();
-            if (runtimeType.InternalFullNameOfAssembly == Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName)
-            {
-                // The type is an internal framework type but is reflectable for internal class library use
-                // where we make the type appear in a hidden assembly
-                return false;
-            }
-
-            return true;
         }
 
         public static bool IsPrimitiveType(Type type)
