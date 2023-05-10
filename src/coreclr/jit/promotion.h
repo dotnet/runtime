@@ -96,7 +96,10 @@ struct AggregateInfo
     {
     }
 
-    bool OverlappingReplacements(unsigned offset, unsigned size, Replacement** firstReplacement, Replacement** endReplacement);
+    bool OverlappingReplacements(unsigned      offset,
+                                 unsigned      size,
+                                 Replacement** firstReplacement,
+                                 Replacement** endReplacement);
 };
 
 class Promotion
@@ -176,21 +179,18 @@ struct BasicBlockLiveness;
 
 class StructUseDeaths
 {
-    BitVec m_deaths;
+    BitVec   m_deaths;
     unsigned m_numFields;
 
     friend class PromotionLiveness;
 
 private:
-    StructUseDeaths(BitVec deaths, unsigned numFields)
-        : m_deaths(deaths)
-        , m_numFields(numFields)
+    StructUseDeaths(BitVec deaths, unsigned numFields) : m_deaths(deaths), m_numFields(numFields)
     {
     }
 
 public:
-    StructUseDeaths()
-        : m_numFields(0)
+    StructUseDeaths() : m_numFields(0)
     {
     }
 
@@ -200,14 +200,14 @@ public:
 
 class PromotionLiveness
 {
-    Compiler* m_compiler;
-    AggregateInfo** m_aggregates;
-    BitVecTraits* m_bvTraits = nullptr;
-    unsigned* m_structLclToTrackedIndex = nullptr;
-    BasicBlockLiveness* m_bbInfo = nullptr;
-    bool m_hasPossibleBackEdge = false;
-    BitVec m_liveIn;
-    BitVec m_ehLiveVars;
+    Compiler*           m_compiler;
+    AggregateInfo**     m_aggregates;
+    BitVecTraits*       m_bvTraits                = nullptr;
+    unsigned*           m_structLclToTrackedIndex = nullptr;
+    BasicBlockLiveness* m_bbInfo                  = nullptr;
+    bool                m_hasPossibleBackEdge     = false;
+    BitVec              m_liveIn;
+    BitVec              m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
     friend class PromotionLivenessBitSetTraits;
@@ -221,6 +221,7 @@ public:
     void Run();
     bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructUseDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
+
 private:
     void MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
     void MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
@@ -237,10 +238,10 @@ class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*                    m_prom;
-    AggregateInfo** m_aggregates;
+    Promotion*         m_prom;
+    AggregateInfo**    m_aggregates;
     PromotionLiveness* m_liveness;
-    bool                          m_madeChanges = false;
+    bool               m_madeChanges = false;
 
 public:
     enum

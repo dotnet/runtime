@@ -15,7 +15,7 @@ struct BasicBlockLiveness
 
 bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
 {
-    BitVec liveOut = m_bbInfo[bb->bbNum].LiveOut;
+    BitVec   liveOut   = m_bbInfo[bb->bbNum].LiveOut;
     unsigned baseIndex = m_structLclToTrackedIndex[structLcl];
     return BitVecOps::IsMember(m_bvTraits, liveOut, baseIndex + 1 + replacementIndex);
 }
@@ -24,10 +24,10 @@ StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* 
 {
     assert(lcl->OperIsLocal());
     BitVec aggDeaths;
-    bool found = m_aggDeaths.Lookup(lcl, &aggDeaths);
+    bool   found = m_aggDeaths.Lookup(lcl, &aggDeaths);
     assert(found);
 
-    unsigned lclNum = lcl->GetLclNum();
+    unsigned       lclNum  = lcl->GetLclNum();
     AggregateInfo* aggInfo = m_aggregates[lclNum];
     return StructUseDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
 }
@@ -46,8 +46,8 @@ bool StructUseDeaths::IsReplacementDying(unsigned index) const
 
 void PromotionLiveness::Run()
 {
-    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_compiler->lvaTableCnt] {};
-    unsigned trackedIndex = 0;
+    m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_compiler->lvaTableCnt]{};
+    unsigned trackedIndex     = 0;
     for (unsigned lclNum = 0; lclNum < m_compiler->lvaTableCnt; lclNum++)
     {
         AggregateInfo* agg = m_aggregates[lclNum];
@@ -66,7 +66,7 @@ void PromotionLiveness::Run()
     }
 
     m_bvTraits = new (m_compiler, CMK_Promotion) BitVecTraits(trackedIndex, m_compiler);
-    m_bbInfo = m_compiler->fgAllocateTypeForEachBlk<BasicBlockLiveness>(CMK_Promotion);
+    m_bbInfo   = m_compiler->fgAllocateTypeForEachBlk<BasicBlockLiveness>(CMK_Promotion);
     BitVecOps::AssignNoCopy(m_bvTraits, m_liveIn, BitVecOps::MakeEmpty(m_bvTraits));
     BitVecOps::AssignNoCopy(m_bvTraits, m_ehLiveVars, BitVecOps::MakeEmpty(m_bvTraits));
 
@@ -105,11 +105,11 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
         return;
     }
 
-    jitstd::vector<Replacement>& reps = agg->Replacements;
-    bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
-    bool isDef = !isUse;
+    jitstd::vector<Replacement>& reps  = agg->Replacements;
+    bool                         isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
+    bool                         isDef = !isUse;
 
-    unsigned baseIndex = m_structLclToTrackedIndex[lcl->GetLclNum()];
+    unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
 
     if (accessType == TYP_STRUCT)
@@ -131,9 +131,9 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
         }
         else
         {
-            unsigned offs = lcl->GetLclOffs();
-            unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-            size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
+            unsigned offs  = lcl->GetLclOffs();
+            unsigned size  = lcl->GetLayout(m_compiler)->GetSize();
+            size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
 
             if ((ssize_t)index < 0)
             {
@@ -147,7 +147,8 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
             while ((index < reps.size()) && (reps[index].Offset < offs + size))
             {
                 Replacement& rep = reps[index];
-                bool isFullFieldDef = isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
+                bool         isFullFieldDef =
+                    isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
                 MarkIndex(baseIndex + 1 + (unsigned)index, isUse, isFullFieldDef, useSet, defSet);
             }
 
@@ -159,11 +160,11 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
     }
     else
     {
-        unsigned offs = lcl->GetLclOffs();
-        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
+        unsigned offs  = lcl->GetLclOffs();
+        size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(reps, offs);
         if ((ssize_t)index < 0)
         {
-            unsigned size = genTypeSize(accessType);
+            unsigned size             = genTypeSize(accessType);
             bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
             MarkIndex(baseIndex, isUse, isFullDefOfRemainder, useSet, defSet);
         }
@@ -270,7 +271,7 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
 
         /* If we have nested try's edbEnclosing will provide them */
         assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-                     (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
+               (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
 
         unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
         if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
@@ -405,7 +406,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
     bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
     bool isDef = !isUse;
 
-    unsigned baseIndex = m_structLclToTrackedIndex[lcl->GetLclNum()];
+    unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
 
     if (accessType == TYP_STRUCT)
@@ -420,7 +421,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 
         // We need an external bit set to represent dying fields/remainder on a struct use.
         BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
-        BitVec aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
+        BitVec       aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
         if (lcl->OperIsScalarLocal())
         {
             // Handle remainder and all fields.
@@ -447,9 +448,9 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         }
         else
         {
-            unsigned offs = lcl->GetLclOffs();
-            unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-            size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
+            unsigned offs  = lcl->GetLclOffs();
+            unsigned size  = lcl->GetLayout(m_compiler)->GetSize();
+            size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
 
             if ((ssize_t)index < 0)
             {
@@ -462,11 +463,12 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 
             while ((index < agg->Replacements.size()) && (agg->Replacements[index].Offset < offs + size))
             {
-                unsigned varIndex = baseIndex + 1 + (unsigned)index;
-                Replacement& rep = agg->Replacements[index];
+                unsigned     varIndex = baseIndex + 1 + (unsigned)index;
+                Replacement& rep      = agg->Replacements[index];
                 if (BitVecOps::IsMember(m_bvTraits, life, varIndex))
                 {
-                    bool isFullFieldDef = isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
+                    bool isFullFieldDef =
+                        isDef && (offs <= rep.Offset) && (offs + size >= rep.Offset + genTypeSize(rep.AccessType));
                     if (isFullFieldDef && !BitVecOps::IsMember(m_bvTraits, volatileVars, varIndex))
                     {
                         BitVecOps::RemoveElemD(m_bvTraits, life, varIndex);
@@ -485,7 +487,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 
             if (BitVecOps::IsMember(m_bvTraits, life, baseIndex))
             {
-                bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
+                bool isFullDefOfRemainder =
+                    isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
                 if (isFullDefOfRemainder && !BitVecOps::IsMember(m_bvTraits, volatileVars, baseIndex))
                 {
                     BitVecOps::RemoveElemD(m_bvTraits, life, baseIndex);
@@ -508,8 +511,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
     }
     else
     {
-        unsigned offs = lcl->GetLclOffs();
-        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
+        unsigned offs  = lcl->GetLclOffs();
+        size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
         if ((ssize_t)index < 0)
         {
             unsigned size = genTypeSize(accessType);
@@ -517,7 +520,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
             {
                 lcl->gtFlags &= ~GTF_VAR_DEATH;
 
-                bool isFullDefOfRemainder = isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
+                bool isFullDefOfRemainder =
+                    isDef && (agg->UnpromotedMin >= offs) && (agg->UnpromotedMax <= (offs + size));
                 if (isFullDefOfRemainder && !BitVecOps::IsMember(m_bvTraits, volatileVars, baseIndex))
                 {
                     BitVecOps::RemoveElemD(m_bvTraits, life, baseIndex);
@@ -535,7 +539,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         }
         else
         {
-            index = ~index;
+            index             = ~index;
             unsigned varIndex = baseIndex + 1 + (unsigned)index;
 
             if (BitVecOps::IsMember(m_bvTraits, life, varIndex))

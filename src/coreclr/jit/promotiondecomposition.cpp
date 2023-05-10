@@ -46,17 +46,23 @@ class DecompositionPlan
         var_types    Type;
     };
 
-    Compiler*         m_compiler;
-    AggregateInfo** m_aggregates;
+    Compiler*          m_compiler;
+    AggregateInfo**    m_aggregates;
     PromotionLiveness* m_liveness;
-    GenTree*          m_dst;
-    GenTree*          m_src;
-    bool              m_dstInvolvesReplacements;
-    bool              m_srcInvolvesReplacements;
-    ArrayStack<Entry> m_entries;
+    GenTree*           m_dst;
+    GenTree*           m_src;
+    bool               m_dstInvolvesReplacements;
+    bool               m_srcInvolvesReplacements;
+    ArrayStack<Entry>  m_entries;
 
 public:
-    DecompositionPlan(Compiler* comp, AggregateInfo** aggregates, PromotionLiveness* liveness, GenTree* dst, GenTree* src, bool dstInvolvesReplacements, bool srcInvolvesReplacements)
+    DecompositionPlan(Compiler*          comp,
+                      AggregateInfo**    aggregates,
+                      PromotionLiveness* liveness,
+                      GenTree*           dst,
+                      GenTree*           src,
+                      bool               dstInvolvesReplacements,
+                      bool               srcInvolvesReplacements)
         : m_compiler(comp)
         , m_aggregates(aggregates)
         , m_liveness(liveness)
@@ -247,8 +253,8 @@ private:
     //
     StructSegments ComputeRemainder()
     {
-        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
-        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout);
+        ClassLayout*   dstLayout = m_dst->GetLayout(m_compiler);
+        StructSegments segments  = Promotion::SignificantSegments(m_compiler, dstLayout);
 
         // Validate with "obviously correct" but less scalable fixed bit vector implementation.
         INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(dstLayout->GetSize(), m_compiler));
@@ -388,9 +394,9 @@ private:
     //
     void FinalizeInit(DecompositionStatementList* statements)
     {
-        GenTree* cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
-        uint8_t  initPattern = GetInitPattern();
-        StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+        GenTree*        cns         = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
+        uint8_t         initPattern = GetInitPattern();
+        StructUseDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
 
         AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
         assert((agg != nullptr) && (agg->Replacements.size() > 0));
@@ -423,10 +429,10 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
+            GenTree*             src    = m_compiler->gtNewConWithPattern(remainderStrategy.PrimitiveType, initPattern);
             GenTreeLclVarCommon* dstLcl = m_dst->AsLclVarCommon();
-            GenTree* dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
-                dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+            GenTree*             dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                       dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
             m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
         }
@@ -674,13 +680,15 @@ private:
             {
                 if (entry.FromReplacement != nullptr)
                 {
-                    JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
+                    JITDUMP(
+                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
                         "as part of the remainder\n",
                         entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
                 }
                 else if (entry.ToReplacement != nullptr)
                 {
-                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum, entry.ToReplacement->Description);
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
                 }
 
                 continue;
@@ -817,8 +825,8 @@ private:
         if (entry.FromReplacement != nullptr)
         {
             // Check if the remainder is going to handle it.
-            return (remainderStrategy.Type == RemainderStrategy::FullBlock) &&
-                !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                   (entry.ToLclNum == BAD_VAR_NUM);
         }
 
         return false;
@@ -1018,7 +1026,8 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
             }
         }
 
-        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements, srcInvolvesReplacements);
+        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements,
+                               srcInvolvesReplacements);
 
         if (src->IsConstInitVal())
         {

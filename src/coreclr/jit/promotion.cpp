@@ -126,9 +126,12 @@ inline AccessKindFlags& operator&=(AccessKindFlags& a, AccessKindFlags b)
     return a = (AccessKindFlags)((uint32_t)a & (uint32_t)b);
 }
 
-bool AggregateInfo::OverlappingReplacements(unsigned offset, unsigned size, Replacement** firstReplacement, Replacement** endReplacement)
+bool AggregateInfo::OverlappingReplacements(unsigned      offset,
+                                            unsigned      size,
+                                            Replacement** firstReplacement,
+                                            Replacement** endReplacement)
 {
-    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(Replacements, offset);
+    size_t firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(Replacements, offset);
     if ((ssize_t)firstIndex < 0)
     {
         firstIndex = ~firstIndex;
@@ -175,7 +178,6 @@ bool AggregateInfo::OverlappingReplacements(unsigned offset, unsigned size, Repl
 
     return true;
 }
-
 
 // Tracks all the accesses into one particular struct local.
 class LocalUses
@@ -314,11 +316,11 @@ public:
 
             if (*aggregateInfo == nullptr)
             {
-                *aggregateInfo =
-                    new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion));
+                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion));
             }
 
-            (*aggregateInfo)->Replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
+            (*aggregateInfo)
+                ->Replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
         }
 
         JITDUMP("\n");
@@ -859,7 +861,7 @@ bool StructSegments::CoveringSegment(Segment* result)
     }
 
     result->Start = m_segments[0].Start;
-    result->End = m_segments[m_segments.size() - 1].End;
+    result->End   = m_segments[m_segments.size() - 1].End;
     return true;
 }
 
@@ -1411,8 +1413,8 @@ PhaseStatus Promotion::Run()
 #endif
 
     // Pick promotions based on the use information we just collected.
-    bool                          anyReplacements = false;
-    AggregateInfo** aggregates = new (m_compiler, CMK_Promotion) AggregateInfo*[m_compiler->lvaCount]{};
+    bool            anyReplacements = false;
+    AggregateInfo** aggregates      = new (m_compiler, CMK_Promotion) AggregateInfo*[m_compiler->lvaCount]{};
     for (unsigned i = 0; i < numLocals; i++)
     {
         LocalUses* uses = localsUse.GetUsesByLocal(i);
@@ -1433,7 +1435,8 @@ PhaseStatus Promotion::Run()
         StructSegments unpromotedParts = SignificantSegments(m_compiler, m_compiler->lvaGetDesc(i)->GetLayout());
         for (size_t i = 0; i < reps.size(); i++)
         {
-            unpromotedParts.Subtract(StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
+            unpromotedParts.Subtract(
+                StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
         }
 
         StructSegments::Segment unpromotedSegment;
@@ -1503,16 +1506,18 @@ PhaseStatus Promotion::Run()
                 {
                     if (!liveness.IsReplacementLiveOut(bb, i, (unsigned)j))
                     {
-                        JITDUMP("Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n", i,
-                            rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
+                        JITDUMP(
+                            "Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
+                            "\n",
+                            i, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
                     }
                     else
                     {
                         JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
-                            rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
+                                rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                        GenTree* readBack = CreateReadBack(m_compiler, i, rep);
-                        Statement* stmt = m_compiler->fgNewStmtFromTree(readBack);
+                        GenTree*   readBack = CreateReadBack(m_compiler, i, rep);
+                        Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
                         DISPSTMT(stmt);
                         m_compiler->fgInsertStmtNearEnd(bb, stmt);
                     }
