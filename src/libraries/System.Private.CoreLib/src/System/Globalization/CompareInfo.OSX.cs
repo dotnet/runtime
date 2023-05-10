@@ -20,12 +20,19 @@ namespace System.Globalization
 
             // GetReference may return nullptr if the input span is defaulted. The native layer handles
             // this appropriately; no workaround is needed on the managed side.
-
+            int result;
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                return Interop.Globalization.CompareStringNative(cultureName, pString1, string1.Length, pString2, string2.Length, options);
+                result = Interop.Globalization.CompareStringNative(cultureName, pString1, string1.Length, pString2, string2.Length, options);
             }
+
+            if (result == -2)
+            {
+                throw new ArgumentException("Passed compare options are not supported");
+            }
+
+            return result;
         }
     }
 }

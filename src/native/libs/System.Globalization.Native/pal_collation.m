@@ -114,15 +114,13 @@ int32_t GlobalizationNative_CompareStringNative(const char* localeName, const ch
             // 29: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase
             // 30: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
             // 31: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
-            return [firstString compare:secondString];
-            //return (int32_t)res;
+            return -2;
     }
         
     return [firstString compare:secondString
                         options:options
                         range:string1Range
                         locale:currentLocale];
-    //return (int32_t)result;
 }
 
 #endif
