@@ -1734,7 +1734,6 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -2462,7 +2461,10 @@ class SuperPMIReplayThroughputDiff:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
-                    logging.debug("return_code: %s", return_code)
+
+                if return_code != 0:
+                    command_string = " ".join(command)
+                    logging.debug("'%s': Error return code: %s", command_string, return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)

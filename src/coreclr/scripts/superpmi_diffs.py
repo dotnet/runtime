@@ -34,8 +34,10 @@ parser.add_argument("-base_jit_options", help="Semicolon separated list of base 
 parser.add_argument("-diff_jit_options", help="Semicolon separated list of diff jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 
+
 def check_target_os(coreclr_args, target_os):
     return (target_os is not None) and (target_os in coreclr_args.valid_host_os)
+
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -64,7 +66,7 @@ def setup_args(args):
                         "target_os",
                         lambda target_os: check_target_os(coreclr_args, target_os),
                         lambda target_os: "Unknown target_os {}\nSupported OS: {}".format(target_os, (", ".join(coreclr_args.valid_host_os))),
-                        modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os) # Default to `host_os`
+                        modify_arg=lambda target_os: target_os if target_os is not None else coreclr_args.host_os)  # Default to `host_os`
 
     coreclr_args.verify(args,
                         "base_jit_directory",
@@ -93,6 +95,7 @@ def setup_args(args):
 
     return coreclr_args
 
+
 class Diff:
     """ Class handling asmdiffs and tpdiff invocations
     """
@@ -114,6 +117,7 @@ class Diff:
         self.spmi_location = os.path.join(self.script_dir, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
+        self.host_os = coreclr_args.host_os
         self.target_os = coreclr_args.target_os
         self.arch_name = coreclr_args.arch
 
@@ -124,13 +128,12 @@ class Diff:
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
         # We pass the full path of the JITs to use as arguments.
         self.core_root_dir = self.script_dir
-        
+
         # Assume everything succeeded. If any step fails, it will change this to True.
         self.failed = False
-        
+
         # List of summary MarkDown files
         self.summary_md_files = []
-
 
     def determine_jit_name(self):
         """ Determine the jit based on the platform.
@@ -150,7 +153,6 @@ class Diff:
         else:
             raise RuntimeError("Unknown OS.")
 
-
     def download_mch(self):
         """ Download MCH files for the diff
         """
@@ -167,9 +169,7 @@ class Diff:
             "-target_arch", self.arch_name,
             "-spmi_location", self.spmi_location,
             "-log_level", "debug",
-            "-log_file", log_file
-            ], _exit_on_fail=True)
-
+            "-log_file", log_file], _exit_on_fail=True)
 
     def copy_dasm_files(self, upload_directory, tag_name):
         """ Copies .dasm files to a tempDirectory, zip it, and copy the compressed file to the upload directory.
@@ -228,12 +228,11 @@ class Diff:
             except PermissionError as pe_error:
                 print('Ignoring PermissionError: {0}'.format(pe_error))
 
-
     def do_asmdiffs(self):
         """ Run asmdiffs
         """
 
-        print("Running superpmi.py asmdiffs")
+        print("Running asmdiffs")
 
         # Find the built jit-analyze and put its directory on the PATH
         jit_analyze_dir = os.path.join(self.script_dir, "jit-analyze")
@@ -241,7 +240,7 @@ class Diff:
             print("Error: jit-analyze not found in {} (continuing)".format(jit_analyze_dir))
         else:
             # Put the jit-analyze directory on the PATH so superpmi.py can find it.
-            print("Adding {} to PATH".format(jit_analyze_dir))
+            print("Adding jit-analyze directory {} to PATH".format(jit_analyze_dir))
             os.environ["PATH"] = jit_analyze_dir + os.pathsep + os.environ["PATH"]
 
         # Find the portable `git` installation, and put `git.exe` on the PATH, for use by `jit-analyze`.
@@ -251,7 +250,7 @@ class Diff:
             print("Error: `git` not found at {} (continuing)".format(git_exe_tool))
         else:
             # Put the git/cmd directory on the PATH so jit-analyze can find it.
-            print("Adding {} to PATH".format(git_directory))
+            print("Adding git directory {} to PATH".format(git_directory))
             os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
 
         # Figure out which JITs to use
@@ -292,12 +291,11 @@ class Diff:
         # Prepare .dasm files to upload to AzDO
         self.copy_dasm_files(self.log_directory, "{}_{}".format(self.target_os, self.arch_name))
 
-
     def do_tpdiff(self):
         """ Run tpdiff
         """
 
-        print("Running superpmi.py tpdiff")
+        print("Running tpdiff")
 
         # Figure out which JITs to use
         jit_name = self.determine_jit_name()
