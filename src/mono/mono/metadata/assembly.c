@@ -3191,7 +3191,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		g_assert (!satellite_assembly_resource);
 		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
 		satellite_assembly_resource->resource.id = id;
-		satellite_assembly_resource->satellite_assembly = *satellite_assembly;
+		satellite_assembly_resource->satellite_assembly = *(MonoBundledSatelliteAssemblyData *)satellite_assembly;
 		mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
 	}
 }

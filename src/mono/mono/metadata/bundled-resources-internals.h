@@ -27,9 +27,9 @@ typedef struct _MonoBundledResource {
 } MonoBundledResource;
 
 typedef struct _MonoBundledData {
-	char *name;
-	const unsigned char *data;
-	unsigned int size;
+	const char *name;
+	const uint8_t *data;
+	uint32_t size;
 } MonoBundledData;
 
 typedef struct _MonoBundledDataResource {
@@ -38,19 +38,32 @@ typedef struct _MonoBundledDataResource {
 } MonoBundledDataResource;
 
 typedef struct _MonoBundledSymbolData {
-	const unsigned char *data;
-	unsigned int size;
+	const uint8_t *data;
+	uint32_t size;
 } MonoBundledSymbolData;
+
+typedef struct _MonoBundledAssemblyData {
+	const char *name;
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledAssemblyData;
 
 typedef struct _MonoBundledAssemblyResource {
 	MonoBundledResource resource;
-	MonoBundledAssembly assembly;
+	MonoBundledAssemblyData assembly;
 	MonoBundledSymbolData symbol_data;
 } MonoBundledAssemblyResource;
 
+typedef struct _MonoBundledSatelliteAssemblyData {
+	const char *name;
+	const char *culture;
+	const uint8_t *data;
+	uint32_t size;
+} MonoBundledSatelliteAssemblyData;
+
 typedef struct _MonoBundledSatelliteAssemblyResource {
 	MonoBundledResource resource;
-	MonoBundledSatelliteAssembly satellite_assembly;
+	MonoBundledSatelliteAssemblyData satellite_assembly;
 } MonoBundledSatelliteAssemblyResource;
 
 void
