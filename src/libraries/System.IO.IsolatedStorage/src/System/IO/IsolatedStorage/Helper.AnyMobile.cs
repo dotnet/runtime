@@ -37,13 +37,21 @@ namespace System.IO.IsolatedStorage
                 // In .Net 7 for Android SpecialFolder.LocalApplicationData returns "/data/user/0/{packageName}/files"
                 // while in Xamarin it was "/data/user/0/{packageName}/files/.local/share"
                 // For Android we need to hardcode Xamarin path for compatibility with legacy Xamarin
-                specialFolder =
-                IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData :
-                IsRoaming(scope) ?  OperatingSystem.IsAndroid() ? Environment.SpecialFolder.UserProfile + ".local/share" :
-                Environment.SpecialFolder.LocalApplicationData :
-                Environment.SpecialFolder.ApplicationData;
+                if (OperatingSystem.IsAndroid() && IsRoaming(scope))
+                {
+                    dataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + ".local/share";
+                    Directory.CreateDirectory(dataDirectory);
+                }
+                else
+                {
+                    specialFolder =
+                    IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData :
+                    IsRoaming(scope) ? Environment.SpecialFolder.LocalApplicationData :
+                    Environment.SpecialFolder.ApplicationData;
 
-                dataDirectory = Environment.GetFolderPath(specialFolder, Environment.SpecialFolderOption.Create);
+                    dataDirectory = Environment.GetFolderPath(specialFolder, Environment.SpecialFolderOption.Create);
+                }
+
                 dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
             }
 
