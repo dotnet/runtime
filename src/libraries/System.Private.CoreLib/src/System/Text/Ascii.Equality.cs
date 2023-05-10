@@ -41,7 +41,7 @@ namespace System.Text
         private static bool Equals<TLeft, TRight, TLoader>(ref TLeft left, ref TRight right, nuint length)
             where TLeft : unmanaged, INumberBase<TLeft>
             where TRight : unmanaged, INumberBase<TRight>
-            where TLoader : ILoader<TLeft, TRight>
+            where TLoader : struct, ILoader<TLeft, TRight>
         {
             Debug.Assert(
                 (typeof(TLeft) == typeof(byte) && typeof(TRight) == typeof(byte))
@@ -216,17 +216,9 @@ namespace System.Text
                 Vector128<TRight> leftValues;
                 Vector128<TRight> rightValues;
 
-                Vector128<TRight> loweringMask = typeof(TRight) == typeof(byte)
-                    ? Vector128.Create((byte)0x20).As<byte, TRight>()
-                    : Vector128.Create((ushort)0x20).As<ushort, TRight>();
-
-                Vector128<TRight> vecA = typeof(TRight) == typeof(byte)
-                    ? Vector128.Create((byte)'a').As<byte, TRight>()
-                    : Vector128.Create((ushort)'a').As<ushort, TRight>();
-
-                Vector128<TRight> vecZMinusA = typeof(TRight) == typeof(byte)
-                    ? Vector128.Create((byte)('z' - 'a')).As<byte, TRight>()
-                    : Vector128.Create((ushort)('z' - 'a')).As<ushort, TRight>();
+                Vector128<TRight> loweringMask = Vector128.Create(TRight.CreateTruncating(0x20));
+                Vector128<TRight> vecA = Vector128.Create(TRight.CreateTruncating('a'));
+                Vector128<TRight> vecZMinusA = Vector128.Create(TRight.CreateTruncating(('z' - 'a')));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -297,17 +289,9 @@ namespace System.Text
                 Vector256<TRight> leftValues;
                 Vector256<TRight> rightValues;
 
-                Vector256<TRight> loweringMask = typeof(TRight) == typeof(byte)
-                    ? Vector256.Create((byte)0x20).As<byte, TRight>()
-                    : Vector256.Create((ushort)0x20).As<ushort, TRight>();
-
-                Vector256<TRight> vecA = typeof(TRight) == typeof(byte)
-                    ? Vector256.Create((byte)'a').As<byte, TRight>()
-                    : Vector256.Create((ushort)'a').As<ushort, TRight>();
-
-                Vector256<TRight> vecZMinusA = typeof(TRight) == typeof(byte)
-                    ? Vector256.Create((byte)('z' - 'a')).As<byte, TRight>()
-                    : Vector256.Create((ushort)('z' - 'a')).As<ushort, TRight>();
+                Vector256<TRight> loweringMask = Vector256.Create(TRight.CreateTruncating(0x20));
+                Vector256<TRight> vecA = Vector256.Create(TRight.CreateTruncating('a'));
+                Vector256<TRight> vecZMinusA = Vector256.Create(TRight.CreateTruncating(('z' - 'a')));
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 do
@@ -381,7 +365,7 @@ namespace System.Text
             static abstract Vector256<TRight> Load256(ref TLeft ptr);
         }
 
-        private struct PlainLoader<T> : ILoader<T, T> where T : unmanaged, INumberBase<T>
+        private readonly struct PlainLoader<T> : ILoader<T, T> where T : unmanaged, INumberBase<T>
         {
             public static nuint Count128 => (uint)Vector128<T>.Count;
             public static nuint Count256 => (uint)Vector256<T>.Count;
@@ -389,7 +373,7 @@ namespace System.Text
             public static Vector256<T> Load256(ref T ptr) => Vector256.LoadUnsafe(ref ptr);
         }
 
-        private struct WideningLoader : ILoader<byte, ushort>
+        private readonly struct WideningLoader : ILoader<byte, ushort>
         {
             public static nuint Count128 => sizeof(long);
             public static nuint Count256 => (uint)Vector128<byte>.Count;
