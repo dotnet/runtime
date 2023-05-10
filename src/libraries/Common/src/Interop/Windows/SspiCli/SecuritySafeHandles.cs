@@ -1009,7 +1009,7 @@ namespace System.Net.Security
         }
 
         internal static unsafe int ApplyControlToken(
-            ref SafeDeleteContext? refContext,
+            ref SafeDeleteSslContext? refContext,
             in SecurityBuffer inSecBuffer)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"refContext = {refContext}, inSecBuffer = {inSecBuffer}");

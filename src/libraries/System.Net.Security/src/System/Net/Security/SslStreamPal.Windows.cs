@@ -139,6 +139,7 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
+            bool newContext = context == null;
             Interop.SspiCli.ContextFlags unusedAttributes = default;
 
             scoped InputSecurityBuffers inputBuffers = default;
@@ -163,6 +164,22 @@ namespace System.Net.Security
                             ref resultBuffer,
                             ref unusedAttributes);
 
+            if (!sslAuthenticationOptions.AllowTlsResume && newContext && context != null)
+            {
+                var alertToken = new Interop.SChannel.SCHANNEL_SESSION_TOKEN
+                {
+                    dwTokenType = Interop.SChannel.SCHANNEL_SESSION,
+                    dwFlags = Interop.SChannel.SSL_SESSION_DISABLE_RECONNECTS,
+                };
+
+                byte[] buffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(in alertToken)).ToArray();
+                var securityBuffer = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
+
+                SSPIWrapper.ApplyControlToken(
+                    GlobalSSPI.SSPISecureChannel,
+                    ref context,
+                    in securityBuffer);
+            }
             outputBuffer = resultBuffer.token;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
@@ -278,6 +295,11 @@ namespace System.Net.Security
                 flags =
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
+                if (!authOptions.AllowTlsResume)
+                {
+                    // Works only on server
+                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_DISABLE_RECONNECTS;
+                }
             }
 
             EncryptionPolicy policy = authOptions.EncryptionPolicy;
@@ -325,6 +347,11 @@ namespace System.Net.Security
                 {
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
+                if (!authOptions.AllowTlsResume)
+                {
+                    // Works only on server
+                    flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_DISABLE_RECONNECTS;
+                }
             }
             else
             {
@@ -369,6 +396,10 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
+            if (!isServer)
+            {
+                //credential.dwSessionLifespan = -1;
+            }
             if (certificate != null)
             {
                 credential.cCreds = 1;
@@ -500,7 +531,7 @@ namespace System.Net.Security
             }
         }
 
-        public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
+        public static SecurityStatusPal ApplyAlertToken(SafeDeleteSslContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             var alertToken = new Interop.SChannel.SCHANNEL_ALERT_TOKEN
             {
@@ -521,7 +552,7 @@ namespace System.Net.Security
 
         private static readonly byte[] s_schannelShutdownBytes = BitConverter.GetBytes(Interop.SChannel.SCHANNEL_SHUTDOWN);
 
-        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteContext? securityContext)
+        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext? securityContext)
         {
             var securityBuffer = new SecurityBuffer(s_schannelShutdownBytes, SecurityBufferType.SECBUFFER_TOKEN);
 

@@ -28,6 +28,7 @@ namespace System.Net.Security
             private readonly bool _isServerMode;
             private readonly bool _sendTrustList;
             private readonly bool _checkRevocation;
+            private readonly bool _allowTlsResume;
 
             //
             // SECURITY: X509Certificate.GetCertHash() is virtual hence before going here,
@@ -40,7 +41,8 @@ namespace System.Net.Security
                 bool isServerMode,
                 EncryptionPolicy encryptionPolicy,
                 bool sendTrustList,
-                bool checkRevocation)
+                bool checkRevocation,
+                bool allowTlsResume)
             {
                 _thumbPrint = thumbPrint ?? Array.Empty<byte>();
                 _allowedProtocols = allowedProtocols;
@@ -48,6 +50,7 @@ namespace System.Net.Security
                 _isServerMode = isServerMode;
                 _checkRevocation = checkRevocation;
                 _sendTrustList = sendTrustList;
+                _allowTlsResume = allowTlsResume;
             }
 
             public override int GetHashCode()
@@ -78,6 +81,7 @@ namespace System.Net.Security
                 hashCode ^= _isServerMode ? 0x10000 : 0x20000;
                 hashCode ^= _sendTrustList ? 0x40000 : 0x80000;
                 hashCode ^= _checkRevocation ? 0x100000 : 0x200000;
+                hashCode ^= _allowTlsResume  ? 0 : 0x400000;
 
                 return hashCode;
             }
@@ -97,6 +101,7 @@ namespace System.Net.Security
                     _isServerMode == other._isServerMode &&
                     _sendTrustList == other._sendTrustList &&
                     _checkRevocation == other._checkRevocation &&
+                    _allowTlsResume == other._allowTlsResume &&
                     thumbPrint.AsSpan().SequenceEqual(otherThumbPrint);
             }
         }
@@ -113,7 +118,8 @@ namespace System.Net.Security
             bool isServer,
             EncryptionPolicy encryptionPolicy,
             bool checkRevocation,
-            bool sendTrustList = false)
+            bool allowTlsResume,
+            bool sendTrustList)
         {
             if (s_cachedCreds.IsEmpty)
             {
@@ -121,7 +127,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation);
+            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation, allowTlsResume);
 
             //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
@@ -153,7 +159,8 @@ namespace System.Net.Security
             bool isServer,
             EncryptionPolicy encryptionPolicy,
             bool checkRevocation,
-            bool sendTrustList = false)
+            bool allowTlsResume,
+            bool sendTrustList)
         {
             Debug.Assert(creds != null, "creds == null");
 
@@ -163,7 +170,7 @@ namespace System.Net.Security
                 return;
             }
 
-            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation);
+            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation, allowTlsResume);
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
