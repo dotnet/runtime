@@ -229,17 +229,17 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task ComInterfaceMethodFunctionPointerReturnsInt()
         {
             string source = $$"""
-        using System.Runtime.CompilerServices;
-        using System.Runtime.InteropServices;
-        using System.Runtime.InteropServices.Marshalling;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
 
-        [GeneratedComInterface]
-        [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
-        partial interface IComInterface
-        {
-            void Method();
-        }
-        """;
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
 
             await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
             {
