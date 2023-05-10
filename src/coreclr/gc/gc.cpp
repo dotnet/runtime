@@ -24157,7 +24157,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                 assert (start_region);
                 dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
                 heap_segment_next (start_region) = nullptr;
-                heap_segment_heap (start_region) = hp;
+                set_heap_for_contained_basic_regions (start_region, hp);
                 max_survived = max (max_survived, heap_segment_survived (start_region));
                 hp->thread_start_region (gen, start_region);
                 surv_per_heap[i] += heap_segment_survived (start_region);
