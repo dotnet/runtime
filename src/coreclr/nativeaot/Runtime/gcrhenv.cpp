@@ -1367,11 +1367,31 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     }
 
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue != 0;
+        return true;
+    }
 
-    *value = uiValue != 0;
-    return true;
+    if (publicKey)
+    {
+#ifdef UNICODE
+        keyLength = strlen(publicKey) + 1;
+        pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
+        for (size_t i = 0; i < keyLength; i++)
+            pKey[i] = publicKey[i];
+#else
+        pKey = publicKey;
+#endif
+
+        if (g_pRhConfig->ReadConfigValue(pKey, &uiValue))
+        {
+            *value = uiValue != 0;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 extern GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
@@ -1400,11 +1420,31 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
 
     uint64_t uiValue;
-    if (!g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
-        return false;
+    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    {
+        *value = uiValue;
+        return true;
+    }
 
-    *value = uiValue;
-    return true;
+    if (publicKey)
+    {
+#ifdef UNICODE
+        keyLength = strlen(publicKey) + 1;
+        pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
+        for (size_t i = 0; i < keyLength; i++)
+            pKey[i] = publicKey[i];
+#else
+        pKey = publicKey;
+#endif
+
+        if (g_pRhConfig->ReadConfigValue(pKey, &uiValue))
+        {
+            *value = uiValue;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void GCToEEInterface::LogErrorToHost(const char *message)
