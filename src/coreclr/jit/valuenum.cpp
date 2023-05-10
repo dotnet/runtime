@@ -7017,6 +7017,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
+            case NI_AVX512CD_LeadingZeroCount:
+            case NI_AVX512CD_VL_LeadingZeroCount:
+            {
+                return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
+            }
+
             case NI_BMI1_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
@@ -7302,6 +7308,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
+
+#ifdef TARGET_XARCH
+            case NI_AVX512F_RotateLeft:
+            case NI_AVX512F_VL_RotateLeft:
+            {
+                return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+
+            case NI_AVX512F_RotateRight:
+            case NI_AVX512F_VL_RotateRight:
+            {
+                return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+#endif // TARGET_XARCH
 
 #ifdef TARGET_ARM64
             case NI_AdvSimd_ShiftLeftLogical:

@@ -1954,6 +1954,8 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpWithKReg(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
+    assert(!comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
     var_types   simdBaseType    = node->GetSimdBaseType();
@@ -6971,20 +6973,42 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX2_Shuffle:
                 case NI_AVX2_ShuffleHigh:
                 case NI_AVX2_ShuffleLow:
+                case NI_AVX512F_AlignRight32:
+                case NI_AVX512F_AlignRight64:
+                case NI_AVX512F_Fixup:
+                case NI_AVX512F_GetMantissa:
                 case NI_AVX512F_Permute2x64:
                 case NI_AVX512F_Permute4x32:
                 case NI_AVX512F_Permute4x64:
+                case NI_AVX512F_RotateLeft:
+                case NI_AVX512F_RotateRight:
+                case NI_AVX512F_RoundScale:
                 case NI_AVX512F_ShiftLeftLogical:
                 case NI_AVX512F_ShiftRightArithmetic:
                 case NI_AVX512F_ShiftRightLogical:
                 case NI_AVX512F_Shuffle:
+                case NI_AVX512F_TernaryLogic:
+                case NI_AVX512F_VL_AlignRight32:
+                case NI_AVX512F_VL_AlignRight64:
+                case NI_AVX512F_VL_Fixup:
+                case NI_AVX512F_VL_GetMantissa:
+                case NI_AVX512F_VL_RotateLeft:
+                case NI_AVX512F_VL_RotateRight:
+                case NI_AVX512F_VL_RoundScale:
                 case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX512F_VL_TernaryLogic:
                 case NI_AVX512BW_AlignRight:
                 case NI_AVX512BW_ShiftLeftLogical:
                 case NI_AVX512BW_ShiftRightArithmetic:
                 case NI_AVX512BW_ShiftRightLogical:
                 case NI_AVX512BW_ShuffleHigh:
                 case NI_AVX512BW_ShuffleLow:
+                case NI_AVX512BW_SumAbsoluteDifferencesInBlock32:
+                case NI_AVX512BW_VL_SumAbsoluteDifferencesInBlock32:
+                case NI_AVX512DQ_Range:
+                case NI_AVX512DQ_Reduce:
+                case NI_AVX512DQ_VL_Range:
+                case NI_AVX512DQ_VL_Reduce:
                 {
                     assert(!supportsSIMDScalarLoads);
 
@@ -6994,6 +7018,34 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
                     supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    break;
+                }
+
+                case NI_SSE2_ShiftLeftLogical128BitLane:
+                case NI_SSE2_ShiftRightLogical128BitLane:
+                case NI_AVX2_ShiftLeftLogical128BitLane:
+                case NI_AVX2_ShiftRightLogical128BitLane:
+                case NI_AVX512BW_ShiftLeftLogical128BitLane:
+                case NI_AVX512BW_ShiftRightLogical128BitLane:
+                {
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
+                    {
+                        assert(!supportsSIMDScalarLoads);
+
+                        const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
+                        const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                        supportsAlignedSIMDLoads   = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
+                        supportsUnalignedSIMDLoads = comp->canUseVexEncoding();
+                        supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    }
+                    else
+                    {
+                        assert(supportsAlignedSIMDLoads == false);
+                        assert(supportsGeneralLoads == false);
+                        assert(supportsSIMDScalarLoads == false);
+                        assert(supportsUnalignedSIMDLoads == false);
+                    }
                     break;
                 }
 
@@ -7084,6 +7136,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_AVX_CompareScalar:
+                case NI_AVX512F_FixupScalar:
+                case NI_AVX512F_GetMantissaScalar:
+                case NI_AVX512F_RoundScaleScalar:
+                case NI_AVX512DQ_RangeScalar:
+                case NI_AVX512DQ_ReduceScalar:
                 {
                     assert(supportsAlignedSIMDLoads == false);
                     assert(supportsUnalignedSIMDLoads == false);
@@ -7732,9 +7789,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ShiftLeftLogical:
                         case NI_AVX2_ShiftRightArithmetic:
                         case NI_AVX2_ShiftRightLogical:
+                        case NI_AVX512F_RotateLeft:
+                        case NI_AVX512F_RotateRight:
                         case NI_AVX512F_ShiftLeftLogical:
                         case NI_AVX512F_ShiftRightArithmetic:
                         case NI_AVX512F_ShiftRightLogical:
+                        case NI_AVX512F_VL_RotateLeft:
+                        case NI_AVX512F_VL_RotateRight:
                         case NI_AVX512F_VL_ShiftRightArithmetic:
                         case NI_AVX512BW_ShiftLeftLogical:
                         case NI_AVX512BW_ShiftRightArithmetic:
@@ -7885,17 +7946,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512BW_ShiftLeftLogical128BitLane:
                         case NI_AVX512BW_ShiftRightLogical128BitLane:
                         {
-#if DEBUG
-                            // These intrinsics should have been marked contained by the general-purpose handling
-                            // earlier in the method.
+                            // These intrinsics have op2 as an imm and op1 as a reg/mem when AVX512BW+VL is supported
 
-                            GenTree* lastOp = node->Op(numArgs);
-
-                            if (HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI())
+                            if (!isContainedImm)
                             {
-                                assert(lastOp->isContained());
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
                             }
-#endif
+
+                            if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op1);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                MakeSrcRegOptional(node, op1);
+                            }
                             break;
                         }
 
@@ -8156,12 +8222,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_InsertVector128:
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
+                        case NI_AVX512F_AlignRight32:
+                        case NI_AVX512F_AlignRight64:
                         case NI_AVX512F_GetMantissaScalar:
                         case NI_AVX512F_InsertVector128:
                         case NI_AVX512F_InsertVector256:
                         case NI_AVX512F_RoundScaleScalar:
                         case NI_AVX512F_Shuffle:
+                        case NI_AVX512F_VL_AlignRight32:
+                        case NI_AVX512F_VL_AlignRight64:
                         case NI_AVX512BW_AlignRight:
+                        case NI_AVX512BW_SumAbsoluteDifferencesInBlock32:
+                        case NI_AVX512BW_VL_SumAbsoluteDifferencesInBlock32:
                         case NI_AVX512DQ_InsertVector128:
                         case NI_AVX512DQ_InsertVector256:
                         case NI_AVX512DQ_Range:
@@ -8327,6 +8399,51 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // non-RMW based codegen.
 
                                 MakeSrcContained(node, op1);
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512F_TernaryLogic:
+                        case NI_AVX512F_VL_TernaryLogic:
+                        {
+                            if (!isContainedImm)
+                            {
+                                // Don't contain if we're generating a jmp table fallback
+                                break;
+                            }
+
+                            if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                            {
+                                MakeSrcContained(node, op3);
+                            }
+                            else if (supportsRegOptional)
+                            {
+                                MakeSrcRegOptional(node, op3);
+                            }
+
+                            uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                            const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                            TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                            if (useFlags != TernaryLogicUseFlags::ABC)
+                            {
+                                assert(!node->isRMWHWIntrinsic(comp));
+
+                                // op1, and possibly op2, are never selected
+                                // by the table so we can contain and ignore
+                                // any register allocated to it resulting in
+                                // better non-RMW based codegen.
+
+                                MakeSrcContained(node, op1);
+
+                                if (useFlags == TernaryLogicUseFlags::C)
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else
+                                {
+                                    assert(useFlags == TernaryLogicUseFlags::BC);
+                                }
                             }
                             break;
                         }
