@@ -226,12 +226,6 @@ public class Program
             Assert.Empty(d);
             Assert.Single(r);
 
-            if (!RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out _))
-            {
-                Console.WriteLine(r[0].SourceText);
-            }
-
-
             Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);
         }

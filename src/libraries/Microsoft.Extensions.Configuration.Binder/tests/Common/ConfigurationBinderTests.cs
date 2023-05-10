@@ -407,8 +407,7 @@ namespace Microsoft.Extensions
             Assert.Equal("http://www.bing.com", uri.OriginalString);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         [InlineData("2147483647", typeof(int))]
         [InlineData("4294967295", typeof(uint))]
         [InlineData("32767", typeof(short))]
@@ -456,8 +455,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedValue, getValueValue);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         [InlineData(typeof(int))]
         [InlineData(typeof(uint))]
         [InlineData(typeof(short))]

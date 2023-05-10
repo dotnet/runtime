@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public void Emit()
             {
-                if (!_generationSpec.ShouldEmitMethods(Helpers.GetMethods | Helpers.BindMethods | MethodSpecifier.Configure))
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.GetMethods | MethodSpecifier.BindMethods | MethodSpecifier.Configure))
                 {
                     return;
                 }
@@ -268,7 +268,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindMethods()
             {
-                if (!_generationSpec.ShouldEmitMethods(Helpers.BindMethods))
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.BindMethods))
                 {
                     return;
                 }
@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitGetCoreMethod()
             {
-                if (!_generationSpec.ShouldEmitMethods(Helpers.GetMethods))
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.GetMethods))
                 {
                     return;
                 }
@@ -334,7 +334,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck(voidReturn: false);
 
-                if (_generationSpec.RootConfigTypes.TryGetValue(Helpers.GetMethods, out HashSet<TypeSpec>? types))
+                if (_generationSpec.RootConfigTypes.TryGetValue(MethodSpecifier.GetMethods, out HashSet<TypeSpec>? types))
                 {
                     foreach (TypeSpec type in types)
                     {
@@ -375,7 +375,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitHelperMethods()
             {
-                if (_generationSpec.ShouldEmitMethods(Helpers.GetMethods | MethodSpecifier.Configure))
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetMethods | MethodSpecifier.Configure))
                 {
                     _writer.WriteBlankLine();
                     EmitHasValueOrChildrenMethod();
@@ -390,7 +390,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _precedingBlockExists = true;
                 }
 
-                if (_generationSpec.ShouldEmitMethods(Helpers.RootMethodTakingConfigureOptions))
+                if (_generationSpec.ShouldEmitMethods(MethodSpecifier.RootMethodsWithConfigOptions))
                 {
                     _writer.WriteBlankLine();
                     EmitGetBinderOptionsHelper();

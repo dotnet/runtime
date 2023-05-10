@@ -72,14 +72,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public static bool TypesAreEqual(ITypeSymbol first, ITypeSymbol? second)
                     => first.Equals(second, SymbolEqualityComparer.Default);
-
-            public static MethodSpecifier BindMethods { get; } = MethodSpecifier.Bind_instance | MethodSpecifier.Bind_instance_BinderOptions | MethodSpecifier.Bind_key_instance;
-
-            public static MethodSpecifier GetMethods { get; } = MethodSpecifier.Get_T | MethodSpecifier.Get_T_BinderOptions | MethodSpecifier.Get_TypeOf | MethodSpecifier.Get_TypeOf_BinderOptions;
-
-            public static MethodSpecifier GetValueMethods { get; } = MethodSpecifier.Get_T | MethodSpecifier.Get_T_BinderOptions | MethodSpecifier.Get_TypeOf | MethodSpecifier.Get_TypeOf_BinderOptions;
-
-            public static MethodSpecifier RootMethodTakingConfigureOptions { get; } = MethodSpecifier.Bind_instance_BinderOptions | MethodSpecifier.Get_T_BinderOptions | MethodSpecifier.Get_TypeOf_BinderOptions;
         }
     }
 }

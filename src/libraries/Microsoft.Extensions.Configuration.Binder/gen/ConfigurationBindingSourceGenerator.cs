@@ -60,19 +60,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            try
+            Parser parser = new(context, compilationData.TypeSymbols!);
+            SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
+            if (spec is not null)
             {
-                Parser parser = new(context, compilationData.TypeSymbols!);
-                SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
-                if (spec is not null)
-                {
-                    Emitter emitter = new(context, spec);
-                    emitter.Emit();
-                }
-            }
-            catch (System.Exception ex)
-            {
-                ex.ToString();
+                Emitter emitter = new(context, spec);
+                emitter.Emit();
             }
         }
 

@@ -214,57 +214,49 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetSByteDictionary()
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
 
-        // Reflection fallback: of type info not supported with source gen.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);

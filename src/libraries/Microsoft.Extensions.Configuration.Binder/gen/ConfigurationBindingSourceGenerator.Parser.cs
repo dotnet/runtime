@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(Helpers.BindMethods, binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(MethodSpecifier.BindMethods, binderMethod, namedType, binderOperation.Location);
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
                     conversionOperation switch
@@ -225,7 +225,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(Helpers.GetMethods, binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(MethodSpecifier.GetMethods, binderMethod, namedType, binderOperation.Location);
             }
 
             private void ProcessGetValueCall(BinderInvocationOperation binderOperation)
@@ -288,7 +288,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(Helpers.GetValueMethods, binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(MethodSpecifier.GetValueMethods, binderMethod, namedType, binderOperation.Location);
             }
 
             private void ProcessConfigureCall(BinderInvocationOperation binderOperation)
@@ -663,7 +663,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private TypeSpec? ConstructAndCacheGenericTypeForBind(INamedTypeSymbol type, params ITypeSymbol[] parameters)
             {
                 Debug.Assert(type.IsGenericType);
-                return AddRootConfigType(Helpers.BindMethods, MethodSpecifier.Bind_instance, type.Construct(parameters), location: null);
+                return AddRootConfigType(MethodSpecifier.BindMethods, MethodSpecifier.Bind_instance, type.Construct(parameters), location: null);
             }
 
             private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location, ITypeSymbol elementType)
