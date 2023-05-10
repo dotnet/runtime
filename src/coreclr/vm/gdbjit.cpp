@@ -1846,8 +1846,8 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     }
     if (isUserDebug == FALSE)
     {
-        dn_wcsncpy(wszModuleName, tmp, wcslen(tmp));
-        wszModuleName[wcslen(tmp)] = W('\0');
+        dn_wcsncpy(wszModuleName, tmp, dn_wcslen(tmp));
+        wszModuleName[dn_wcslen(tmp)] = W('\0');
         if (dn_wcscmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;

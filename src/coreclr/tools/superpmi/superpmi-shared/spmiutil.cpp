@@ -87,7 +87,7 @@ WCHAR* GetEnvironmentVariableWithDefaultW(const WCHAR* envVarName, const WCHAR* 
     {
         if (defaultValue != nullptr)
         {
-            dwRetVal  = (DWORD)wcslen(defaultValue) + 1; // add one for null terminator
+            dwRetVal  = (DWORD)dn_wcslen(defaultValue) + 1; // add one for null terminator
             retString = new WCHAR[dwRetVal];
             memcpy_s(retString, dwRetVal * sizeof(WCHAR), defaultValue, dwRetVal * sizeof(WCHAR));
         }
@@ -178,8 +178,8 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
 // All lengths in this function exclude the terminal NULL.
 WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    const size_t extensionLength    = wcslen(extension);
-    const size_t fileNameLength     = wcslen(fileName);
+    const size_t extensionLength    = dn_wcslen(extension);
+    const size_t fileNameLength     = dn_wcslen(fileName);
     const size_t randomStringLength = 8;
     const size_t maxPathLength      = MAX_PATH - 50;
 

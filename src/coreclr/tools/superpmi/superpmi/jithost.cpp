@@ -12,7 +12,7 @@
 WCHAR* GetPrefixedEnvironmentVariable(const WCHAR* prefix, size_t prefixLen, const WCHAR* key, JitInstance& jitInstance)
 {
     // Prepend prefix to the provided key
-    size_t   keyLen       = wcslen(key);
+    size_t   keyLen       = dn_wcslen(key);
     size_t   keyBufferLen = keyLen + prefixLen + 1;
     WCHAR* keyBuffer =
         reinterpret_cast<WCHAR*>(jitInstance.allocateArray(sizeof(WCHAR) * keyBufferLen));
@@ -178,7 +178,7 @@ const WCHAR* JitHost::getStringConfigValue(const WCHAR* key)
     if (result != nullptr && needToDup)
     {
         // Now we need to dup it, so you can call freeStringConfigValue() on what we return.
-        size_t   resultLenInChars = wcslen(result) + 1;
+        size_t   resultLenInChars = dn_wcslen(result) + 1;
         WCHAR* dupResult = (WCHAR*)jitInstance.allocateLongLivedArray(sizeof(WCHAR) * resultLenInChars);
         wcscpy_s(dupResult, resultLenInChars, result);
         result = dupResult;

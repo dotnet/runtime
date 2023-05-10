@@ -846,7 +846,7 @@ DEFINE_METHOD(STRING,               CTORF_SBYTEPTR,         Ctor,               
 DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN, Ctor,                     SM_PtrSByt_Int_Int_RetStr)
 DEFINE_METHOD(STRING,               CTORF_SBYTEPTR_START_LEN_ENCODING, Ctor,            SM_PtrSByt_Int_Int_Encoding_RetStr)
 DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,               SM_Str_IntPtr_Int_RetVoid)
-DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
+DEFINE_METHOD(STRING,               WCSLEN,                 dn_wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
 

@@ -346,7 +346,7 @@ private:
         const WCHAR * end = dn_wcschr(start, ComponentDelimiter);
         if (end == nullptr)
         {
-            end = start + wcslen(start);
+            end = start + dn_wcslen(start);
         }
 
         return ComponentSpan(start, end);
@@ -457,7 +457,7 @@ private:
 #ifdef FEATURE_EVENT_TRACE
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
-        auto length = wcslen(providerName);
+        auto length = dn_wcslen(providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             if (_wcsicmp(provider->Name, providerName) == 0)

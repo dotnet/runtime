@@ -1106,7 +1106,7 @@ BOOL Assembler::EmitClass(Class *pClass)
 
     WszMultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
 
-    L = wcslen(wzFullName);
+    L = dn_wcslen(wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
     {
         wcscat_s(wzFullName,dwUniBuf,W("$UNNAMED_TYPE$"));

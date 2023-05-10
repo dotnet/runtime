@@ -525,7 +525,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         // If we managed to get the member's properties then extract the name.
         if (pMemberProps)
         {
-            int MemberNameLen = (INT)wcslen(pMemberProps->pName);
+            int MemberNameLen = (INT)dn_wcslen(pMemberProps->pName);
             strMemberName = new WCHAR[MemberNameLen + 1];
 
             memcpy(strMemberName, pMemberProps->pName, (MemberNameLen + 1) * sizeof(WCHAR));

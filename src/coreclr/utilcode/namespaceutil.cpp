@@ -36,9 +36,9 @@ int ns::GetFullLength(                  // Number of chars in full name.
 
     int iLen = 1;                       // Null terminator.
     if (szNameSpace)
-        iLen += (int)wcslen(szNameSpace);
+        iLen += (int)dn_wcslen(szNameSpace);
     if (szName)
-        iLen += (int)wcslen(szName);
+        iLen += (int)dn_wcslen(szName);
     if (szNameSpace && *szNameSpace && szName && *szName)
         ++iLen;
     return iLen;
@@ -229,7 +229,7 @@ int ns::SplitPath(                      // true ok, false trunction.
             ++ptr;
         else
             ptr = szPath;
-        iLen = (int)wcslen(ptr);
+        iLen = (int)dn_wcslen(ptr);
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;
@@ -473,9 +473,9 @@ int ns::MakePath(                       // true ok, false out of memory
 
     int iLen = 2;
     if (szNameSpace)
-        iLen += (int)wcslen(szNameSpace);
+        iLen += (int)dn_wcslen(szNameSpace);
     if (szName)
-        iLen += (int)wcslen(szName);
+        iLen += (int)dn_wcslen(szName);
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));
     if (!szOut)
         return false;
@@ -586,9 +586,9 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
     int iTypeName = 0;
     int iAssemblyName = 0;
     if (szTypeName)
-        iTypeName = (int)wcslen(szTypeName);
+        iTypeName = (int)dn_wcslen(szTypeName);
     if (szAssemblyName)
-        iAssemblyName = (int)wcslen(szAssemblyName);
+        iAssemblyName = (int)dn_wcslen(szAssemblyName);
 
     int iLen = ASSEMBLY_SEPARATOR_LEN + iTypeName + iAssemblyName + 1; // Space for null terminator
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));

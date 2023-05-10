@@ -328,7 +328,7 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     DWORD* pNextLevelRva)
 {
     HRESULT hr = S_OK;
-    DWORD nameLength = (DWORD)wcslen(pwzName);
+    DWORD nameLength = (DWORD)dn_wcslen(pwzName);
     WCHAR entryName[50];
     assert(nameLength < 50);     // this implementation won't support matching a name longer
     // than 50 characters. We only look up the hard coded name

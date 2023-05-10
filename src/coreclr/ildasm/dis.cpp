@@ -143,7 +143,7 @@ static void UnicodeToFile(_In_ __nullterminated const WCHAR* wz, FILE* pF)
 {
     unsigned endofline = 0x000A000D;
     int L;
-    if((L=(int)wcslen(wz))) fwrite(wz,L*sizeof(WCHAR),1,pF);
+    if((L=(int)dn_wcslen(wz))) fwrite(wz,L*sizeof(WCHAR),1,pF);
     fwrite(&endofline,4,1,pF);
 }
 static void ToGUIOrFile(_In_ __nullterminated const char* sz, void* GUICookie)

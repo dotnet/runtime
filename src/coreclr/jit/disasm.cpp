@@ -1199,7 +1199,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
     {
         bool fFirst = (pwzBytes == wzBytes);
 
-        cchBytes = wcslen(pwzBytes);
+        cchBytes = dn_wcslen(pwzBytes);
 
         if (cchBytes <= cchBytesMax)
         {

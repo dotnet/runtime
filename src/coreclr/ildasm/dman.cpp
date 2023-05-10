@@ -125,7 +125,7 @@ void DumpScope(void* GUICookie)
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
         {
-            UINT32 L = (UINT32)wcslen(scopeName)*3+3;
+            UINT32 L = (UINT32)dn_wcslen(scopeName)*3+3;
             char* sz = new char[L];
             memset(sz,0,L);
             WszWideCharToMultiByte(CP_UTF8,0,scopeName,-1,sz,L,NULL,NULL);
@@ -423,7 +423,7 @@ void DumpComTypeFQN(
         }
     }
 
-    UINT32 L = (UINT32)wcslen(pCTD->wzName)*3+3;
+    UINT32 L = (UINT32)dn_wcslen(pCTD->wzName)*3+3;
     char* sz = new char[L];
     memset(sz,0,L);
     WszWideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
@@ -446,7 +446,7 @@ void DumpImplementation(mdToken tkImplementation,
             if(i < nFiles)
             {
                 {
-                    UINT32 L = (UINT32)wcslen(rFile[i].name)*3+3;
+                    UINT32 L = (UINT32)dn_wcslen(rFile[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
                     WszWideCharToMultiByte(CP_UTF8,0,rFile[i].name,-1,sz,L,NULL,NULL);
@@ -466,7 +466,7 @@ void DumpImplementation(mdToken tkImplementation,
             if(i < nAsmRefs)
             {
                 {
-                    UINT32 L = (UINT32)wcslen(rAsmRef[i].name)*3+3;
+                    UINT32 L = (UINT32)dn_wcslen(rAsmRef[i].name)*3+3;
                     char* sz = new char[L];
                     memset(sz,0,L);
                     WszWideCharToMultiByte(CP_UTF8,0,rAsmRef[i].name,-1,sz,L,NULL,NULL);
@@ -512,7 +512,7 @@ void DumpComType(LocalComTypeDescr* pCTD,
 
     char* pc=&szString[strlen(szString)];
     {
-        UINT32 L = (UINT32)wcslen(pCTD->wzName)*3+3;
+        UINT32 L = (UINT32)dn_wcslen(pCTD->wzName)*3+3;
         char* sz = new char[L];
         memset(sz,0,L);
         WszWideCharToMultiByte(CP_UTF8,0,pCTD->wzName,-1,sz,L,NULL,NULL);
@@ -628,7 +628,7 @@ static BOOL ConvertToLegalFileNameInPlace(__inout LPWSTR wzName)
 
     for (size_t i = 0; i < (sizeof(rwzReserved) / sizeof(WCHAR *)); i++)
     {
-        _ASSERTE(wcslen(rwzReserved[i]) == 3);
+        _ASSERTE(dn_wcslen(rwzReserved[i]) == 3);
         if (_wcsnicmp(wzName, rwzReserved[i], 3) == 0)
         {
             LPWSTR pwc = wzName + 3;
@@ -801,7 +801,7 @@ void DumpManifestResources(void* GUICookie)
 
 #define NAME_ARRAY_ADD(index, str)                                                    \
             {                                                                         \
-                size_t __dwBufLen = wcslen(str) + 1;                                  \
+                size_t __dwBufLen = dn_wcslen(str) + 1;                                  \
                                                                                       \
                 qbNameArray[index].Init();                                            \
                 WCHAR *__wpc = (WCHAR *)qbNameArray[index].AllocNoThrow(__dwBufLen);  \
@@ -813,7 +813,7 @@ void DumpManifestResources(void* GUICookie)
 
             // add the Win32 resource file name to avoid conflict between the native and a managed resource file
             WCHAR *pwc = dn_wcsrchr(wzName, L'.');
-            if (pwc == NULL) pwc = &wzName[wcslen(wzName)];
+            if (pwc == NULL) pwc = &wzName[dn_wcslen(wzName)];
             wcscpy_s(pwc, 2048 - (pwc - wzFileName), W(".res"));
 
             NAME_ARRAY_ADD(1, wzName);
@@ -845,7 +845,7 @@ void DumpManifestResources(void* GUICookie)
                     BOOL fAlias = ConvertToLegalFileNameInPlace(wzName);
 
                     // check for duplicate file name
-                    WCHAR *wpc = wzName + wcslen(wzName);
+                    WCHAR *wpc = wzName + dn_wcslen(wzName);
                     for (int iIndex = 1;; iIndex++)
                     {
                         BOOL fConflict = FALSE;

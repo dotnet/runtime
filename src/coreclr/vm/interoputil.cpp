@@ -539,7 +539,7 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
 
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)dn_wcslen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -2318,7 +2318,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     // Get the name of the class.
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)dn_wcslen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -3578,7 +3578,7 @@ static void GetComClassHelper(
         NewArrayHolder<WCHAR> wszRefServer = NULL;
         if (pClassFactInfo->m_strServerName)
         {
-            size_t len = wcslen(pClassFactInfo->m_strServerName)+1;
+            size_t len = dn_wcslen(pClassFactInfo->m_strServerName)+1;
             wszRefServer = new WCHAR[len];
             wcscpy_s(wszRefServer, len, pClassFactInfo->m_strServerName);
         }

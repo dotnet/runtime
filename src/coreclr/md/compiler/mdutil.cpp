@@ -488,7 +488,7 @@ ULONG _GetSizeOfConstantBlob(
         if (cchString != (ULONG) -1)
             ulSize = cchString * sizeof(WCHAR);
         else
-            ulSize = (ULONG)(sizeof(WCHAR) * wcslen((LPWSTR)pValue));
+            ulSize = (ULONG)(sizeof(WCHAR) * dn_wcslen((LPWSTR)pValue));
         break;
 
     case ELEMENT_TYPE_CLASS:
