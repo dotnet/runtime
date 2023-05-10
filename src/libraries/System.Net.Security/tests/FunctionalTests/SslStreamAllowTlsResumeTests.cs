@@ -83,8 +83,8 @@ namespace System.Net.Security.Tests
                                     client.AuthenticateAsClientAsync(clientOptions),
                                     server.AuthenticateAsServerAsync(serverOptions));
 
-                Assert.False(CheckResumeFlag(client));
-                Assert.False(CheckResumeFlag(server));
+                Assert.False(CheckResumeFlag(client), $"TLS session resumed in round ${i}");
+                Assert.False(CheckResumeFlag(server), $"TLS session resumed in round ${i}");
                 client.Dispose();
                 server.Dispose();
             }

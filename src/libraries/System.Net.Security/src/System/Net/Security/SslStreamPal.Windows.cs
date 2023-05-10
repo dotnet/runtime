@@ -175,10 +175,15 @@ namespace System.Net.Security
                 byte[] buffer = MemoryMarshal.AsBytes(new ReadOnlySpan<Interop.SChannel.SCHANNEL_SESSION_TOKEN>(in alertToken)).ToArray();
                 var securityBuffer = new SecurityBuffer(buffer, SecurityBufferType.SECBUFFER_TOKEN);
 
-                SSPIWrapper.ApplyControlToken(
+                SecurityStatusPal result = SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(SSPIWrapper.ApplyControlToken(
                     GlobalSSPI.SSPISecureChannel,
                     ref context,
-                    in securityBuffer);
+                    in securityBuffer));
+
+                if (result.ErrorCode != SecurityStatusPalErrorCode.OK)
+                {
+                    return result;
+                }
             }
             outputBuffer = resultBuffer.token;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
