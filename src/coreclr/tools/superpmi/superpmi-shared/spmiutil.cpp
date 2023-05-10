@@ -158,7 +158,9 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
         *quote = W(' ');
     }
 
-    // Convert non-ASCII to ASCII for simplicity.
+    // Convert non-ASCII to ASCII for simplicity and remove any
+    // illegal or annoying characters from the file name by
+    // converting them to underscores.
     for (quote = fileName; *quote != '\0'; quote++)
     {
         WCHAR ch = *quote;
@@ -166,12 +168,20 @@ void ReplaceIllegalCharacters(WCHAR* fileName)
         {
             *quote = W('_');
         }
-    }
-
-    // Remove any illegal or annoying characters from the file name by converting them to underscores.
-    while ((quote = wcspbrk(fileName, W("()=<>:\"/\\|?! *.,"))) != nullptr)
-    {
-        *quote = W('_');
+        else
+        {
+            switch (ch)
+            {
+                case W('('): case W(')'): case W('='): case W('<'):
+                case W('>'): case W(':'): case W('"'): case W('/'):
+                case W('\\'): case W('|'): case W('?'): case W('!'):
+                case W('*'): case W('.'): case W(','):
+                    *quote = W('_');
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }
 
