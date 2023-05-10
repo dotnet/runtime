@@ -782,9 +782,9 @@ void DumpManifestResources(void* GUICookie)
             static WCHAR wzFileName[2048];
 
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzFileName,2048);
-            wzName = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
+            wzName = dn_wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_W);
 #ifdef HOST_WINDOWS
-            if(wzName == NULL) wzName = wcsrchr(wzFileName,':');
+            if(wzName == NULL) wzName = dn_wcsrchr(wzFileName,':');
 #endif
             if (wzName == NULL) wzName = wzFileName;
             else wzName++;
@@ -812,7 +812,7 @@ void DumpManifestResources(void* GUICookie)
             NAME_ARRAY_ADD(0, wzName);
 
             // add the Win32 resource file name to avoid conflict between the native and a managed resource file
-            WCHAR *pwc = wcsrchr(wzName, L'.');
+            WCHAR *pwc = dn_wcsrchr(wzName, L'.');
             if (pwc == NULL) pwc = &wzName[wcslen(wzName)];
             wcscpy_s(pwc, 2048 - (pwc - wzFileName), W(".res"));
 

@@ -454,7 +454,7 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
         // Get just the module name; remove the path
-        const WCHAR* appName = wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
+        const WCHAR* appName = dn_wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
         appName = appName ? appName + 1 : appPath;
 
         CopyStringToBucket(targetParam, maxLength, appName);

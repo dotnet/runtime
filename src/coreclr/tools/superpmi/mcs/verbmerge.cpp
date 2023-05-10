@@ -501,7 +501,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     LPCWSTR        dir    = nullptr;
     LPCWSTR        file   = nullptr;
 
-    LPWSTR lastSlash = wcsrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
+    LPWSTR lastSlash = dn_wcsrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
     if (lastSlash == NULL)
     {
         // The user may have passed a relative path without a slash, or the current directory.

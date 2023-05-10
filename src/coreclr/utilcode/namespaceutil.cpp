@@ -81,7 +81,7 @@ WCHAR *ns::FindSep(                     // Pointer to separator or null.
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(szPath);
-    WCHAR *ptr = (WCHAR*)wcsrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
+    WCHAR *ptr = (WCHAR*)dn_wcsrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
     if((ptr == NULL) || (ptr == szPath)) return NULL;
     if(*(ptr - 1) == NAMESPACE_SEPARATOR_WCHAR) // here ptr is at least szPath+1
         --ptr;

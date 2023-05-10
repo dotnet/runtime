@@ -273,8 +273,8 @@ void DisplayFile(_In_z_ WCHAR* szFile, BOOL isFile, ULONG DumpFilter, _In_opt_z_
     // print bar that separates different files
     pDisplayString("////////////////////////////////////////////////////////////////\n");
 
-    WCHAR *pExt = wcsrchr(szFile, W('.'));
-    WCHAR *pFname = wcsrchr(szFile, DIRECTORY_SEPARATOR_CHAR_W);
+    WCHAR *pExt = dn_wcsrchr(szFile, W('.'));
+    WCHAR *pFname = dn_wcsrchr(szFile, DIRECTORY_SEPARATOR_CHAR_W);
     if (pFname == NULL)
     {
         pFname = szFile;

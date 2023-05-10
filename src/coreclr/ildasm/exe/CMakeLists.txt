@@ -94,6 +94,7 @@ else()
         coreclrpal
         mscorrc
         palrt
+        coreclrminipal
     )
 endif(CLR_CMAKE_HOST_WIN32)
 

@@ -1100,9 +1100,9 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     else
     {
         WCHAR* pwc;
-        if ((pwc = wcsrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
+        if ((pwc = dn_wcsrchr(m_wzOutputFileName, DIRECTORY_SEPARATOR_CHAR_A)) != NULL) pwc++;
 #ifdef TARGET_WINDOWS
-        else if ((pwc = wcsrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
+        else if ((pwc = dn_wcsrchr(m_wzOutputFileName, ':')) != NULL) pwc++;
 #endif
         else pwc = m_wzOutputFileName;
 

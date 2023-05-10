@@ -81,7 +81,7 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        WCHAR* ptr = ::wcsrchr(coreCLRLoadedPath, '/');
+        WCHAR* ptr = dn_wcsrchr(coreCLRLoadedPath, '/');
 
         // Move past the / character.
         ptr = ptr + 1;
@@ -452,7 +452,7 @@ bool NearDiffer::compareOffsets(
     //
     // Since the mov/movk sequence is specific to the replay address constant, we don't assume the baseline
     // and diff have the same number of instructions (e.g., it's possible to skip a `movk` if it is zero).
-    // 
+    //
     // Some version of this logic might apply to ARM as well.
     //
     if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)

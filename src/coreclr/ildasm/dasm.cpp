@@ -6965,7 +6965,7 @@ void DumpMI(_In_ __nullterminated const char *str)
 
 void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie)
 {
-    const WCHAR* pch = wcsrchr(pwzFileName,L'.');
+    const WCHAR* pch = dn_wcsrchr(pwzFileName,L'.');
 
     DumpMI((char*)GUICookie); // initialize the print function for DumpMetaInfo
 
@@ -7775,7 +7775,7 @@ ReportAndExit:
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
-            pwc = wcsrchr(wzResFileName,L'.');
+            pwc = dn_wcsrchr(wzResFileName,L'.');
             if(pwc == NULL) pwc = &wzResFileName[wcslen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");
             DWORD ret = DumpResourceToFile(wzResFileName);

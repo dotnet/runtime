@@ -632,7 +632,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             if (pAsm->m_fGeneratePDB)
             {
                 wcscpy_s(wzPdbFilename, MAX_FILENAME_LENGTH, wzOutputFilename);
-                WCHAR* extPos = wcsrchr(wzPdbFilename, W('.'));
+                WCHAR* extPos = dn_wcsrchr(wzPdbFilename, W('.'));
                 if (extPos != NULL)
                     *extPos = 0;
                 wcscat_s(wzPdbFilename, MAX_FILENAME_LENGTH, W(".pdb"));
@@ -834,7 +834,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     if (exitval || !bGeneratePdb)
     {
         // PE file was not created, or no debug info required. Kill PDB if any
-        WCHAR* pc = wcsrchr(wzOutputFilename,W('.'));
+        WCHAR* pc = dn_wcsrchr(wzOutputFilename,W('.'));
         if(pc==NULL)
         {
             pc = &wzOutputFilename[wcslen(wzOutputFilename)];
