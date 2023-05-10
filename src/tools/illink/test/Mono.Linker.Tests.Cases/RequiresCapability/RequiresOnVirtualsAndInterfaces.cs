@@ -211,7 +211,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// https://github.com/dotnet/runtime/issues/86008
 			// This is a bug in illink, the fact that there's no warning is an analysis hole
-			[ExpectedWarning ("IL2026", "--ImplementationClass.RequiresMethod--")]
+			[ExpectedWarning ("IL2026", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot | Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			static void TestAnnotatedReflectionAccess ()
