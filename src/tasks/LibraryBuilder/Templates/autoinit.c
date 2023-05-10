@@ -17,9 +17,12 @@
 #include <mono/metadata/assembly.h>
 
 #include "library-builder.h"
-#include "mono-bundled-source.h"
 
+#if defined(BUNDLED_RESOURCES)
 void mono_register_resources_bundle (void);
+extern uint8_t %RUNTIME_CONFIG_DATA%[];
+extern const uint32_t %RUNTIME_CONFIG_DATA_LEN%;
+#endif
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)

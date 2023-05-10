@@ -58,7 +58,6 @@
     <ItemGroup>
       <BundledSources Include="$(BundleOutputDirectory)$(BundleResourceFile)" />
       <BundledSources Include="$(BundleOutputDirectory)$(BundleSourceFile)" />
-      <BundledSources Include="$(BundleOutputDirectory)mono-bundled-source.h" />
     </ItemGroup>
 
     <ItemGroup>

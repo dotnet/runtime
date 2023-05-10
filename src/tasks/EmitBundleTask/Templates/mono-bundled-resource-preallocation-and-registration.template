@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "%BundleHeader%"
+%ResourceSymbols%
 
 typedef enum {
 	MONO_BUNDLED_DATA,
