@@ -1256,15 +1256,15 @@ TEST(mono_type_is_byref_works)
     CHECK(mono_type_is_byref(paramType));
 }
 
-//TEST(mono_get_corlib_returns_corlib_image)
-//{
-//    MonoImage *corlib = mono_get_corlib();
-//    CHECK(mono_image_get_assembly(corlib) != NULL);
-//    if (g_Mode == CoreCLR)
-//        CHECK_EQUAL_STR("System.Private.CoreLib", mono_image_get_name(corlib));
-//    else
-//        CHECK_EQUAL_STR("mscorlib", mono_image_get_name(corlib));
-//}
+TEST(mono_get_corlib_returns_corlib_image)
+{
+    MonoImage *corlib = mono_get_corlib();
+    CHECK(mono_image_get_assembly(corlib) != NULL);
+    if (g_Mode == CoreCLR)
+        CHECK_EQUAL_STR("System.Private.CoreLib", mono_image_get_name(corlib));
+    else
+        CHECK_EQUAL_STR("mscorlib", mono_image_get_name(corlib));
+}
 
 TEST(mono_get_enum_class_returns_enum_class)
 {
@@ -1749,18 +1749,14 @@ TEST(mono_custom_attrs_has_attr_can_check_property_attribute)
     // TODO
 }
 
-//TEST(mono_custom_attrs_has_attr_can_check_assembly_attribute)
-//{
-//    MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
-//    MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
-//
-//    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_assembly(g_assembly));
-//
-//    CHECK(mono_custom_attrs_has_attr(customAttrInfo, klassTestAttribute));
-//    CHECK(!mono_custom_attrs_has_attr(customAttrInfo, klassAnotherTestAttribute));
-//
-//    mono_custom_attrs_free(customAttrInfo);
-//}
+TEST(mono_custom_attrs_has_attr_can_check_assembly_attribute)
+{
+    MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
+    MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
+
+    CHECK(mono_unity_assembly_has_attribute(g_assembly, klassTestAttribute));
+    CHECK(!mono_unity_assembly_has_attribute(g_assembly, klassAnotherTestAttribute));
+}
 
 #define kHelloString "Hello"
 #define kHelloWorldString "Hello, World!"
