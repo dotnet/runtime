@@ -192,9 +192,9 @@ Copyright (c) .NET Foundation. All rights reserved.
          is a NativeAOT app, value of SelfContained doesn't matter. -->
     <NETSdkError Condition="'$(RunILLink)' != 'false' And '$(SelfContained)' != 'true'" ResourceName="ILLinkNotSupportedError" />
 
-    <!-- Using a version of ILLink that doesn't match the target framework is not supported. -->
-    <Warning Condition="'$(SuppressILLinkTargetFrameworkVersionWarning)' != 'true' And '$(TargetFramework)' != 'net8.0'"
-             Text="Unsupported TargetFramework. This version of ILLink.Tasks only supports net8.0." />
+    <Warning Condition="'$(SuppressILLinkExplicitPackageReferenceWarning)' != 'true' And
+                        '%(PackageReference.Identity)' == 'Microsoft.NET.ILLink.Tasks' And '%(PackageReference.IsImplicitlyDefined)' != 'true'"
+             Text="Delete explicit 'Microsoft.NET.ILLink.Tasks' package reference in your project file. Explicit 'Microsoft.NET.ILLink.Tasks' package reference can run into version errors." />
 
     <PropertyGroup Condition=" '$(ILLinkWarningLevel)' == '' ">
       <ILLinkWarningLevel Condition=" '$(EffectiveAnalysisLevel)' != '' And
