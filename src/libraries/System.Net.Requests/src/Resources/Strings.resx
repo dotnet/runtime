@@ -168,12 +168,6 @@
   <data name="net_ftp_active_address_different" xml:space="preserve">
     <value>The data connection was made from an address that is different than the address to which the FTP connection was made.</value>
   </data>
-  <data name="net_ftp_invalid_method_name" xml:space="preserve">
-    <value>FTP Method names cannot be null or empty.</value>
-  </data>
-  <data name="net_ftp_invalid_renameto" xml:space="preserve">
-    <value>The RenameTo filename cannot be null or empty.</value>
-  </data>
   <data name="net_ftp_invalid_response_filename" xml:space="preserve">
     <value>The server returned the filename ({0}) which is not valid.</value>
   </data>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -34,7 +35,7 @@ namespace System.Net.Http.Headers
             get { return _dispositionType; }
             set
             {
-                CheckDispositionTypeFormat(value, nameof(value));
+                CheckDispositionTypeFormat(value);
                 _dispositionType = value;
             }
         }
@@ -139,7 +140,7 @@ namespace System.Net.Http.Headers
 
         public ContentDispositionHeaderValue(string dispositionType)
         {
-            CheckDispositionTypeFormat(dispositionType, nameof(dispositionType));
+            CheckDispositionTypeFormat(dispositionType);
             _dispositionType = dispositionType;
         }
 
@@ -270,12 +271,9 @@ namespace System.Net.Http.Headers
             return typeLength;
         }
 
-        private static void CheckDispositionTypeFormat(string dispositionType, string parameterName)
+        private static void CheckDispositionTypeFormat(string dispositionType, [CallerArgumentExpression(nameof(dispositionType))] string? parameterName = null)
         {
-            if (string.IsNullOrEmpty(dispositionType))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(dispositionType, parameterName);
 
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             int dispositionTypeLength = GetDispositionTypeExpressionLength(dispositionType, 0, out string? tempDispositionType);

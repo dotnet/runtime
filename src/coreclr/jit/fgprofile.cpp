@@ -41,11 +41,6 @@
 //
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForImportOnly())
-    {
-        return false;
-    }
-
     return (fgPgoSchema != nullptr);
 }
 
@@ -2135,7 +2130,7 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewAssignNode(tmpNode3, objUse->GetNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
@@ -3627,7 +3622,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 //    for the OSR entry block.
 //
 // Arguments:
-//    block - block in question
+//    block - block in question (OSR entry)
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
@@ -3666,7 +3661,13 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
     }
 
     assert(nEdges == nSucc);
-    assert(info->m_weight > BB_ZERO_WEIGHT);
+
+    if (info->m_weight == BB_ZERO_WEIGHT)
+    {
+        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        EntryWeightZero();
+        return;
+    }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //

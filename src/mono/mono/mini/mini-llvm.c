@@ -11753,7 +11753,8 @@ MONO_RESTORE_WARNING
 		case OP_TAILCALL:
 		case OP_TAILCALL_REG:
 		case OP_TAILCALL_MEMBASE:
-		case OP_CKFINITE: {
+		case OP_CKFINITE:
+		case OP_LOAD_GOTADDR: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));
