@@ -1453,7 +1453,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if (returnSpillVarDsc->lvSingleDef)
+                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
                 {
                     lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
                 }
@@ -2776,15 +2776,6 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         optimizeJump = true;
     }
 
-    // If we are optimizing using real profile weights
-    // then don't optimize a conditional jump to an unconditional jump
-    // until after we have computed the edge weights
-    //
-    if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
-    {
-        optimizeJump = false;
-    }
-
     if (optimizeJump)
     {
 #ifdef DEBUG
@@ -3156,15 +3147,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
                 optimizeJump = false;
             }
 
-            // If we are optimize using real profile weights
-            // then don't optimize a switch jump to an unconditional jump
-            // until after we have computed the edge weights
-            //
-            if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
-            {
-                optimizeJump = false;
-            }
-
             if (optimizeJump)
             {
                 bNewDest = bDest->bbJumpDest;
@@ -3463,24 +3445,14 @@ bool Compiler::fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNu
     while (count < limit)
     {
         count++;
+        unsigned       storeLclNum;
         GenTree* const tree = stmt->GetRootNode();
-        if (tree->OperIs(GT_ASG) && !tree->OperIsBlkOp())
+        if (tree->OperIsStoreLcl(&storeLclNum) && (storeLclNum == lclNum) && !tree->OperIsBlkOp())
         {
-            GenTree* const op1 = tree->AsOp()->gtOp1;
-
-            if (op1->IsLocal())
+            GenTree* const data = tree->Data();
+            if (data->OperIsArrLength() || data->OperIsConst() || data->OperIsCompare())
             {
-                const unsigned op1LclNum = op1->AsLclVarCommon()->GetLclNum();
-
-                if (op1LclNum == lclNum)
-                {
-                    GenTree* const op2 = tree->AsOp()->gtOp2;
-
-                    if (op2->OperIsArrLength() || op2->OperIsConst() || op2->OperIsCompare())
-                    {
-                        return true;
-                    }
-                }
+                return true;
             }
         }
 
@@ -3634,36 +3606,29 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // Otherwise check the first stmt.
     // Verify the branch is just a simple local compare.
     //
+    unsigned       storeLclNum;
     GenTree* const firstTree = firstStmt->GetRootNode();
-
-    if (firstTree->gtOper != GT_ASG)
+    if (!firstTree->OperIsStoreLclVar(&storeLclNum))
     {
         return false;
     }
 
-    GenTree* const lhs = firstTree->AsOp()->gtOp1;
-    if (!lhs->OperIs(GT_LCL_VAR))
-    {
-        return false;
-    }
-
-    const unsigned lhsLcl = lhs->AsLclVarCommon()->GetLclNum();
-    if (lhsLcl != *lclNum)
+    if (storeLclNum != *lclNum)
     {
         return false;
     }
 
     // Could allow unary here too...
     //
-    GenTree* const rhs = firstTree->AsOp()->gtOp2;
-    if (!rhs->OperIsBinary())
+    GenTree* const data = firstTree->Data();
+    if (!data->OperIsBinary())
     {
         return false;
     }
 
     // op1 must be some combinations of casts of local or constant
     // (or unary)
-    op1 = rhs->AsOp()->gtOp1;
+    op1 = data->AsOp()->gtOp1;
     while (op1->gtOper == GT_CAST)
     {
         op1 = op1->AsOp()->gtOp1;
@@ -3676,7 +3641,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // op2 must be some combinations of casts of local or constant
     // (or unary)
-    op2 = rhs->AsOp()->gtOp2;
+    op2 = data->AsOp()->gtOp2;
 
     // A binop may not actually have an op2.
     //

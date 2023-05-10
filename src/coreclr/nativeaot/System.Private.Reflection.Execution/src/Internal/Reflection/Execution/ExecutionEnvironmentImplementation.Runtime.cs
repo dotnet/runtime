@@ -138,20 +138,7 @@ namespace Internal.Reflection.Execution
                 typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
             }
 
-            // If the type is reflection blocked, we pretend there are no enum values defined
-            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
-            {
-                names = Array.Empty<string>();
-                values = Array.Empty<object>();
-                isFlags = false;
-                return;
-            }
-
-            QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeDefHandle, out qTypeDefinition))
-            {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeDefHandle));
-            }
+            QTypeDefinition qTypeDefinition = ReflectionExecution.ExecutionEnvironment.GetMetadataForNamedType(typeDefHandle);
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {

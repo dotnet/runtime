@@ -1811,6 +1811,8 @@ void PopulateHandleTableDacVars(GcDacVars* gcDacVars)
     static_assert(offsetof(HandleTableMap, dwMaxIndex) == offsetof(dac_handle_table_map, dwMaxIndex), "handle table map DAC layout mismatch");
     static_assert(offsetof(HandleTableBucket, pTable) == offsetof(dac_handle_table_bucket, pTable), "handle table bucket DAC layout mismatch");
     static_assert(offsetof(HandleTableBucket, HandleTableIndex) == offsetof(dac_handle_table_bucket, HandleTableIndex), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(HandleTable, pSegmentList) == offsetof(dac_handle_table, pSegmentList), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(_TableSegmentHeader, pNextSegment) == offsetof(dac_handle_table_segment, pNextSegment), "handle table bucket DAC layout mismatch");
 
 #ifndef DACCESS_COMPILE
     gcDacVars->handle_table_map = reinterpret_cast<dac_handle_table_map*>(&g_HandleTableMap);

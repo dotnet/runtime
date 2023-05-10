@@ -1493,6 +1493,33 @@ def format_pct(pct):
 def compute_and_format_pct(base, diff):
     return format_pct(compute_pct(base, diff))
 
+def write_jit_options(coreclr_args, write_fh):
+    """ If any custom JIT options are specified then write their values out to a summmary
+
+    Args:
+        coreclr_args: args class instance
+        write_fh: file to output to
+    
+    """
+    base_options = []
+    diff_options = []
+    
+    if coreclr_args.jitoption:
+        base_options += coreclr_args.jitoption
+        diff_options += coreclr_args.jitoption
+
+    if coreclr_args.base_jit_option:
+        base_options += coreclr_args.base_jit_option
+
+    if coreclr_args.diff_jit_option:
+        diff_options += coreclr_args.diff_jit_option
+
+    if len(base_options) > 0:
+        write_fh.write("Base JIT options: {}\n\n".format(";".join(base_options)))
+
+    if len(diff_options) > 0:
+        write_fh.write("Diff JIT options: {}\n\n".format(";".join(diff_options)))
+
 class DetailsSection:
     def __init__(self, write_fh, summary_text):
         self.write_fh = write_fh
@@ -2051,6 +2078,8 @@ class SuperPMIReplayAsmDiffs:
                     html_color(base_color, "{:,d} ({:1.2f}%)".format(missing_base_contexts, missing_base_contexts / diffed_contexts * 100)),
                     html_color(diff_color, "{:,d} ({:1.2f}%)".format(missing_diff_contexts, missing_diff_contexts / diffed_contexts * 100))))
 
+        write_jit_options(self.coreclr_args, write_fh)
+
         def has_diffs(row):
             return int(row["Contexts with diffs"]) > 0
 
@@ -2502,6 +2531,8 @@ class SuperPMIReplayThroughputDiff:
                 write_fh.write("{} Base JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
             if diff_jit_with_native_pgo:
                 write_fh.write("{} Diff JIT was compiled with native PGO. Results may be misleading. Specify -p:NoPgoOptimize=true when building.".format(html_color("red", "Warning:")))
+
+        write_jit_options(self.coreclr_args, write_fh)
 
         # We write two tables, an overview one with just significantly
         # impacted collections and a detailed one that includes raw
@@ -3065,7 +3096,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)
@@ -3693,7 +3724,8 @@ def download_clrjit_pintool(coreclr_args):
         return
 
     pin_dir_path = get_pintools_path(coreclr_args)
-    pintools_rel_path = "{}/{}/{}.zip".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower())
+    extension = "zip" if coreclr_args.host_os.lower() == "windows" else "tar.gz"
+    pintools_rel_path = "{}/{}/{}.{}".format(az_pintools_root_folder, pintools_current_version, coreclr_args.host_os.lower(), extension)
     pintool_uri = "{}/{}".format(az_blob_storage_superpmi_container_uri, pintools_rel_path)
     local_files = download_files([pintool_uri], pin_dir_path, verbose=False, is_azure_storage=True, fail_if_not_found=False)
     if len(local_files) <= 0:

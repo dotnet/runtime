@@ -251,6 +251,12 @@
         </Method>
       </Type>
 
+      <Type Name="System.Tests.Types.ModifiedTypeTests+ModifiedTypeHolder">
+        <Method Name="M_GenericWithParameterConstraint1" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
       <Type Name="System.Tests.ArrayTests">
         <Method Name="Sort_Array_Generic" Dynamic="Required All">
           <GenericArgument Name="System.Byte, System.Private.CoreLib" />

@@ -1375,7 +1375,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
     const TCHAR* pKey = privateKey;
 #endif
 
-    uint32_t uiValue;
+    uint64_t uiValue;
     if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
         return false;
 
@@ -1394,7 +1394,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     const TCHAR* pKey = privateKey;
 #endif
 
-    uint32_t uiValue;
+    uint64_t uiValue;
     if (!g_pRhConfig->ReadConfigValue(pKey, &uiValue))
         return false;
 

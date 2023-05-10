@@ -38,7 +38,7 @@ namespace System.Net.Primitives.Functional.Tests
         public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString.AsSpan());
         public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString.AsSpan(), out address);
         public virtual bool TryFormat(IPAddress address, Span<char> destination, out int charsWritten) => address.TryFormat(destination, out charsWritten);
-        public virtual bool TryFormat(IPAddress address, Span<byte> utf8Destination, out int bytesWritten) => ((IUtf8SpanFormattable)address).TryFormat(utf8Destination, out bytesWritten, default, null);
+        public virtual bool TryFormat(IPAddress address, Span<byte> utf8Destination, out int bytesWritten) => address.TryFormat(utf8Destination, out bytesWritten);
 
         [Theory]
         [MemberData(nameof(ValidIpv4Addresses))]

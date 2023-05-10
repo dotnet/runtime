@@ -29,8 +29,8 @@ namespace System.Net.WebSockets
         private const int InvalidCloseStatusCodesTo = 999;
 
         // [0x21, 0x7E] except separators "()<>@,;:\\\"/[]?={} ".
-        private static readonly IndexOfAnyValues<char> s_validSubprotocolChars =
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly SearchValues<char> s_validSubprotocolChars =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
         {
