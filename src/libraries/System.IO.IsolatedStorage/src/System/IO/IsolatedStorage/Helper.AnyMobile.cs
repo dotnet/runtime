@@ -39,7 +39,7 @@ namespace System.IO.IsolatedStorage
                 // For Android we need to hardcode Xamarin path for compatibility with legacy Xamarin
                 specialFolder =
                 IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData :
-                IsRoaming(scope) ?  OperatingSystem.IsAndroid() ? OperatingSystem.SpecialFolder.UserProfile + ".local/share" :
+                IsRoaming(scope) ?  OperatingSystem.IsAndroid() ? Environment.SpecialFolder.UserProfile + ".local/share" :
                 Environment.SpecialFolder.LocalApplicationData :
                 Environment.SpecialFolder.ApplicationData;
 
