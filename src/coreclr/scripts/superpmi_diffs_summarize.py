@@ -27,6 +27,7 @@ parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff
 
 target_windows = True
 
+
 def setup_args(args):
     """ Setup the args.
 
@@ -225,6 +226,7 @@ def main(main_args):
 
     return 0
 
+
 def html_color_diff(lines):
     new_text = ""
 
@@ -270,6 +272,7 @@ def html_color_diff(lines):
 
     commit_block()
     return "<pre><code>" + new_text + "</code></pre>"
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

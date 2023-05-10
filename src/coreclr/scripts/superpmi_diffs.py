@@ -16,7 +16,7 @@ import argparse
 from os import walk, path
 import shutil
 from coreclr_arguments import *
-from jitutil import run_command, TempDir
+from jitutil import run_command, TempDir, determine_jit_name
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -120,10 +120,7 @@ class Diff:
         self.host_os = coreclr_args.host_os
         self.target_os = coreclr_args.target_os
         self.arch_name = coreclr_args.arch
-
-        self.jit_os_name = "win" if self.target_os == "windows" else "unix"
         self.host_arch_name = "x64" if self.arch_name.endswith("64") else "x86"
-        self.jit_os_name = "universal" if self.arch_name.startswith("arm") else self.jit_os_name
 
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
         # We pass the full path of the JITs to use as arguments.
@@ -134,24 +131,6 @@ class Diff:
 
         # List of summary MarkDown files
         self.summary_md_files = []
-
-    def determine_jit_name(self):
-        """ Determine the jit based on the platform.
-
-        Return:
-            (str) : name of the jit for this OS
-        """
-
-        jit_base_name = 'clrjit_{}_{}_{}'.format(self.jit_os_name, self.arch_name, self.host_arch_name)
-
-        if self.host_os == "osx":
-            return "lib" + jit_base_name + ".dylib"
-        elif self.host_os == "linux":
-            return "lib" + jit_base_name + ".so"
-        elif self.host_os == "windows":
-            return jit_base_name + ".dll"
-        else:
-            raise RuntimeError("Unknown OS.")
 
     def download_mch(self):
         """ Download MCH files for the diff
@@ -254,7 +233,7 @@ class Diff:
             os.environ["PATH"] = git_directory + os.pathsep + os.environ["PATH"]
 
         # Figure out which JITs to use
-        jit_name = self.determine_jit_name()
+        jit_name = determine_jit_name(self.host_os, self.target_os, self.host_arch_name, self.arch_name, use_cross_compile_jit=True)
         base_checked_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "checked", jit_name)
         diff_checked_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "checked", jit_name)
 
@@ -298,7 +277,7 @@ class Diff:
         print("Running tpdiff")
 
         # Figure out which JITs to use
-        jit_name = self.determine_jit_name()
+        jit_name = determine_jit_name(self.host_os, self.target_os, self.host_arch_name, self.arch_name, use_cross_compile_jit=True)
         base_release_jit_path = os.path.join(self.coreclr_args.base_jit_directory, "release", jit_name)
         diff_release_jit_path = os.path.join(self.coreclr_args.diff_jit_directory, "release", jit_name)
 
