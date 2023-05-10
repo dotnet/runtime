@@ -2138,7 +2138,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	/*
 	 * For generic delegates, create a generic wrapper, and return an instance to help AOT.
 	 */
-	if (method->is_inflated && subtype == WRAPPER_SUBTYPE_NONE) {
+	if (method->is_inflated && (subtype == WRAPPER_SUBTYPE_NONE || subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL)) {
 		ctx = &((MonoMethodInflated*)method)->context;
 		method = ((MonoMethodInflated*)method)->declaring;
 
@@ -2154,7 +2154,10 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * Check cache
 	 */
 	if (ctx) {
-		cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
+		if (callvirt)
+			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_virtual_cache, mono_aligned_addr_hash, NULL);
+		else
+			cache = get_cache (&((MonoMethodInflated*)orig_method)->owner->wrapper_caches.delegate_invoke_cache, mono_aligned_addr_hash, NULL);
 		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
@@ -6377,6 +6380,7 @@ void
 mono_wrapper_caches_free (MonoWrapperCaches *cache)
 {
 	free_hash (cache->delegate_invoke_cache);
+	free_hash (cache->delegate_invoke_virtual_cache);
 	free_hash (cache->delegate_begin_invoke_cache);
 	free_hash (cache->delegate_end_invoke_cache);
 	free_hash (cache->delegate_bound_static_invoke_cache);

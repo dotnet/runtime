@@ -1269,14 +1269,8 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					ref->method = wrapper;
 				}
 			} else {
-				/*
-				 * These wrappers are associated with a signature, not with a method.
-				 * Since we can't decode them into methods, they need a target method.
-				 */
 				MonoClass *klass;
 				MonoMethod *invoke;
-				// if (!target)
-				// 	return FALSE;
 
 
 				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
@@ -1287,6 +1281,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 						ref->method = mono_marshal_get_delegate_invoke_internal(invoke, TRUE, FALSE, NULL);
 						break;
 					}
+
+					/*
+					 * These wrappers are associated with a signature, not with a method.
+					 * Since we can't decode them into methods, they need a target method.
+					 */
+					if (!target)
+						return FALSE;
 					info = mono_marshal_get_wrapper_info (target);
 					if (info) {
 						if (info->subtype != subtype)
@@ -1296,7 +1297,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 							return FALSE;
 					}
 				}
-				if (sig_matches_target (module, target, p, &p))
+				if (target && sig_matches_target (module, target, p, &p))
 					ref->method = target;
 				else
 					return FALSE;
