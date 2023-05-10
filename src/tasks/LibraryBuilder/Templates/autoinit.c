@@ -38,32 +38,29 @@ initialize_runtimeconfig (const char *bundle_path)
     if (!arg)
         LOG_ERROR ("Out of memory.\n");
 
-    const char *file_name = "runtimeconfig.bin";
-    MonoBundledDataResource *runtimeConfig = mono_bundled_resources_get_data_resource (file_name);
+#if defined(BUNDLED_RESOURCES)
+    arg->kind = 1;
+    arg->runtimeconfig.data.data = %RUNTIME_CONFIG_DATA%;
+    arg->runtimeconfig.data.data_len = %RUNTIME_CONFIG_DATA_LEN%;
+#else
+    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
+    char *file_path = (char *)malloc (str_len);
+    if (!file_path)
+        LOG_ERROR ("Out of memory.\n");
 
-    if (runtimeConfig) {
-        arg->kind = 1;
-        arg->runtimeconfig.data.data = (const char *)runtimeConfig->data.data;
-        arg->runtimeconfig.data.data_len = runtimeConfig->data.size;
-    } else {
-        size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
-        char *file_path = (char *)malloc (str_len);
-        if (!file_path)
-            LOG_ERROR ("Out of memory.\n");
+    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+    if (num_char <= 0 || num_char >= str_len)
+        LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
 
-        int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
-        if (num_char <= 0 || num_char >= str_len)
-            LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
-
-        struct stat buffer;
-        if (stat (file_path, &buffer) != 0) {
-            free (file_path);
-            return;
-        }
-
-        arg->kind = 0;
-        arg->runtimeconfig.name.path = file_path;
+    struct stat buffer;
+    if (stat (file_path, &buffer) != 0) {
+        free (file_path);
+        return;
     }
+
+    arg->kind = 0;
+    arg->runtimeconfig.name.path = file_path;
+#endif // BUNDLED_RESOURCES
 
     monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
 }

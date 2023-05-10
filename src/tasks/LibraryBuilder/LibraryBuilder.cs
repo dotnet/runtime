@@ -90,6 +90,11 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public bool BundlesResources { get; set; }
 
+    /// <summary>
+    /// An Item containing the bundled runtimeconfig.bin metadata populated by EmitBundle task
+    /// </summary>
+    public ITaskItem[] BundledRuntimeConfig { get; set; } = default!;
+
     public bool StripDebugSymbols { get; set; }
 
     /// <summary>
@@ -150,6 +155,10 @@ public class LibraryBuilderTask : AppBuilderTask
 
         if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
+            if (BundlesResources && BundledRuntimeConfig.Length == 0)
+            {
+                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' is required when bundling and using the default runtime callback.");
+            }
             WriteAutoInitializationFromTemplate();
             extraSources.AppendLine("    autoinit.c");
         }
@@ -278,10 +287,26 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void WriteAutoInitializationFromTemplate()
     {
-        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
-            Utils.GetEmbeddedResource("autoinit.c")
+        string autoInitialization = Utils.GetEmbeddedResource("autoinit.c")
                 .Replace("%ASSEMBLIES_LOCATION%", !string.IsNullOrEmpty(AssembliesLocation) ? AssembliesLocation : "DOTNET_LIBRARY_ASSEMBLY_PATH")
-                .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
+                .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier);
+
+        if (BundlesResources)
+        {
+            var bundledRuntimeConfigInfo = BundledRuntimeConfig.First();
+            string dataSymbol = bundledRuntimeConfigInfo.GetMetadata("DataSymbol");
+            if (string.IsNullOrEmpty(dataSymbol))
+                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataSymbol' metadata.");
+            string lenSymbol = bundledRuntimeConfigInfo.GetMetadata("LenSymbol");
+            if (string.IsNullOrEmpty(lenSymbol))
+                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'LenSymbol' metadata.");
+
+            autoInitialization = autoInitialization
+                .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
+                .Replace("%RUNTIME_CONFIG_DATA_LEN%", lenSymbol);
+        }
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"), autoInitialization);
     }
 
     private void GenerateAssembliesLoader()

@@ -21,12 +21,16 @@
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
       <_ExtraLibrarySources Include="@(BundledSources)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
+      <_BundledRuntimeConfig Include="@(_BundledResources)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('runtimeconfig.bin'))" />
     </ItemGroup>
+
+    <Message Text="Identity is %(_BundledResources.Identity)" />
 
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
       BundlesResources="$(_BundlesResources)"
+      BundledRuntimeConfig="@(_BundledRuntimeConfig)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
