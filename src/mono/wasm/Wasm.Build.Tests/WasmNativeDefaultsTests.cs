@@ -40,8 +40,8 @@ namespace Wasm.Build.Tests
 
             if (!forPublish)
             {
-                /* Debug by default makes WasmNativeStrip=false, which requires relinking */
-                data.Add("Debug",     "",                                         /*aot*/ false,   /*build*/ true,  /*publish*/      true);
+                /* Debug config, when building does trigger relinking */
+                data.Add("Debug",     "",                                         /*aot*/ false,   /*build*/ false,  /*publish*/      true);
             }
 
             if (forPublish)
