@@ -1512,9 +1512,9 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 		image = open_from_satellite_bundle (alc, filename, status, culture);
 	}
 	else {
-		const char *name = g_path_get_basename (filename);
+		char *name = g_path_get_basename (filename);
 		image = open_from_bundle_internal (alc, name, status);
-		g_free ((void *)name);
+		g_free (name);
 	}
 	if (image) {
 		mono_image_addref (image);
