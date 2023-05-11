@@ -3533,7 +3533,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // Does user explicitly prevent using this STRESS_MODE through the command line?
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+        (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
     {
         return false;
     }
@@ -3542,7 +3542,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
     if (strStressModeNames != nullptr)
     {
-        if (wcsstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
+        if (u16_strstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
         {
             return true;
         }
