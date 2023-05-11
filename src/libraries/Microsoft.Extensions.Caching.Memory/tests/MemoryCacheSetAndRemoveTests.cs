@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             var notNullCallback = new PostEvictionCallbackRegistration()
             {
-                EvictionCallback = (_, _ , _, _) => {}
+                EvictionCallback = (_, _, _, _) => {}
             };
 
             options.PostEvictionCallbacks.Add(notNullCallback);
