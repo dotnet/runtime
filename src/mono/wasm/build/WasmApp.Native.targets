@@ -684,7 +684,7 @@
 
   <Target Name="_ScanAssembliesDecideLightweightMarshaler">
      <ItemGroup>
-      <AssembliesToScan Include="$(_WasmIntermediateOutputPath)\*.dll" /> <!-- ### REALLY? ### -->
+      <AssembliesToScan Include="$(WasmAppDir)\managed\*.dll" /> <!-- ### REALLY? ### -->
     </ItemGroup>
     
     <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
