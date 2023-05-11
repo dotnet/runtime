@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Buffers
@@ -528,8 +529,7 @@ namespace System.Buffers
         /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
         internal static int GetPartitionCount()
         {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT");
-            int partitionCount = value is not null && TryParseInt32(value, out int result) && result > 0 ?
+            int partitionCount = TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", out int result) && result > 0 ?
                 result :
                 int.MaxValue; // no limit other than processor count
             return Math.Min(partitionCount, Environment.ProcessorCount);
@@ -539,36 +539,41 @@ namespace System.Buffers
         /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
         internal static int GetMaxArraysPerPartition()
         {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION");
-            return value is not null && TryParseInt32(value, out int result) && result > 0 ?
+            return TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", out int result) && result > 0 ?
                 result :
                 8; // arbitrary limit
         }
 
-        /// <summary>Simple Int32 parsing.</summary>
-        internal static bool TryParseInt32(ReadOnlySpan<char> value, out int result)
+        /// <summary>Look up an environment variable and try to parse it as an Int32.</summary>
+        /// <remarks>This avoids using anything that might in turn recursively use the ArrayPool.</remarks>
+        internal static bool TryGetInt32EnvironmentVariable(string variable, out int result)
         {
             // Avoid globalization stack, as it might in turn be using ArrayPool.
 
-            value = value.Trim(' ');
-            if (value.Length is > 0 and <= 10) // int.MaxValue.ToString().Length == 10
+            Span<char> value = stackalloc char[32]; // max integer length is 10; allow some extra spaces
+            uint length = Interop.Kernel32.GetEnvironmentVariable(variable, ref MemoryMarshal.GetReference(value), (uint)value.Length);
+            if (length > 0 && length <= (uint)value.Length)
             {
-                long tempResult = 0;
-                foreach (char c in value)
+                value = value.Slice(0, (int)length).Trim(' ');
+                if (!value.IsEmpty && value.Length <= 10)
                 {
-                    uint digit = (uint)(c - '0');
-                    if (digit > 9)
+                    long tempResult = 0;
+                    foreach (char c in value)
                     {
-                        goto Fail;
+                        uint digit = (uint)(c - '0');
+                        if (digit > 9)
+                        {
+                            goto Fail;
+                        }
+
+                        tempResult = tempResult * 10 + digit;
                     }
 
-                    tempResult = tempResult * 10 + digit;
-                }
-
-                if (tempResult is > 0 and <= int.MaxValue)
-                {
-                    result = (int)tempResult;
-                    return true;
+                    if (tempResult is >= 0 and <= int.MaxValue)
+                    {
+                        result = (int)tempResult;
+                        return true;
+                    }
                 }
             }
 

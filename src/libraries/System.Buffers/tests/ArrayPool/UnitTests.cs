@@ -3,12 +3,14 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
@@ -603,6 +605,65 @@ namespace System.Buffers.ArrayPool.Tests
             yield return new object[] { ArrayPool<byte>.Create(1024*1024, 50) };
             yield return new object[] { ArrayPool<byte>.Create(1024*1024, 1) };
             yield return new object[] { ArrayPool<byte>.Shared };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("", "")]
+        [InlineData("0", "0")]
+        [InlineData("1", "2")]
+        [InlineData("2", "1")]
+        [InlineData("4", "123")]
+        [InlineData("1000", "123")]
+        [InlineData("   1    ", "   2   ")]
+        public void SharedPool_SetEnvironmentVariables_ValuesRespected(string partitionCount, string maxArraysPerPartition)
+        {
+            // This test relies on private reflection into the shared pool implementation.
+            // If those details change, this test will need to be updated accordingly.
+
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", partitionCount);
+            psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", maxArraysPerPartition);
+
+            RemoteExecutor.Invoke((partitionCount, maxArraysPerPartition) =>
+            {
+                Type partitionsType = ArrayPool<byte>.Shared.GetType().GetNestedType("Partitions", BindingFlags.NonPublic)?.MakeGenericType(typeof(byte));
+                Assert.NotNull(partitionsType);
+                FieldInfo partitionCountField = partitionsType.GetField("s_partitionCount", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(partitionCountField);
+                int partitionCountValue = (int)partitionCountField.GetValue(null);
+                if (int.TryParse(partitionCount.Trim(' '), CultureInfo.InvariantCulture, out int expectedPartitionCount) && expectedPartitionCount > 0)
+                {
+                    Assert.Equal(Math.Min(expectedPartitionCount, Environment.ProcessorCount), partitionCountValue);
+                }
+                else
+                {
+                    Assert.Equal(Environment.ProcessorCount, partitionCountValue);
+                }
+
+                Type partitionType = ArrayPool<byte>.Shared.GetType().GetNestedType("Partition", BindingFlags.NonPublic)?.MakeGenericType(typeof(byte));
+                Assert.NotNull(partitionType);
+                FieldInfo maxArraysPerPartitionField = partitionType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(maxArraysPerPartitionField);
+                int maxArraysPerPartitionValue = (int)maxArraysPerPartitionField.GetValue(null);
+                if (int.TryParse(maxArraysPerPartition.Trim(' '), CultureInfo.InvariantCulture, out int expectedMaxArraysPerPartition) && expectedMaxArraysPerPartition > 0)
+                {
+                    Assert.Equal(expectedMaxArraysPerPartition, maxArraysPerPartitionValue);
+                }
+                else
+                {
+                    Assert.Equal(8, maxArraysPerPartitionValue);
+                }
+
+                // Make sure the pool is still usable
+                for (int i = 0; i < 2; i++)
+                {
+                    byte[] array = ArrayPool<byte>.Shared.Rent(123);
+                    Assert.NotNull(array);
+                    Assert.InRange(array.Length, 123, int.MaxValue);
+                    ArrayPool<byte>.Shared.Return(array);
+                }
+
+            }, partitionCount, maxArraysPerPartition, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
     }
 }
