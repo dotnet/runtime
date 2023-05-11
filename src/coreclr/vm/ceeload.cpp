@@ -41,6 +41,7 @@
 #include "inlinetracking.h"
 #include "threads.h"
 #include "nativeimage.h"
+#include "hostinformation.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -4390,28 +4391,27 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
 static LPCWSTR s_pCommandLine = NULL;
 
-// Retrieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_pCommandLine;
-}
+// Info for computing the command line if requested - owned by caller of CorHost2::ExecuteAssembly
+static LPCWSTR s_assemblyPath = NULL;
+static int s_appArgc = 0;
+static LPCWSTR* s_appArgv = NULL;
 
-LPCWSTR GetCommandLineForDiagnostics()
+void SaveCommandLineInfoForDiagnostics(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 {
-    // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
-
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-    if (pCmdLine == nullptr)
+    CONTRACTL
     {
-        // Use the result from GetCommandLineW() instead
-        pCmdLine = GetCommandLineW();
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
     }
+    CONTRACTL_END;
 
-    return pCmdLine;
+    s_assemblyPath = pwzAssemblyPath;
+    s_appArgc = argc;
+    s_appArgv = argv;
 }
 
+#ifdef TARGET_UNIX
 void Append_Next_Item(LPWSTR* ppCursor, SIZE_T* pRemainingLen, LPCWSTR pItem, bool addSpace)
 {
     // read the writeback args and setup pCursor and remainingLen
@@ -4440,7 +4440,7 @@ void Append_Next_Item(LPWSTR* ppCursor, SIZE_T* pRemainingLen, LPCWSTR pItem, bo
     *pRemainingLen = remainingLen;
 }
 
-void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
+void CreateCommandLineForDiagnostics(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 {
     CONTRACTL
     {
@@ -4453,10 +4453,6 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     // Get the command line.
     LPCWSTR osCommandLine = GetCommandLineW();
 
-#ifndef TARGET_UNIX
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
-#else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
     // osCommandLine contains the full path to the executable.
     SIZE_T  commandLineLen = (wcslen(osCommandLine) + 1);
@@ -4484,7 +4480,46 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
         Append_Next_Item(&pCursor, &remainingLen, argv[i], moreArgs);
     }
 
-    s_pCommandLine = pNewCommandLine;
+    if (InterlockedCompareExchangeT<LPCWSTR>(&s_pCommandLine, pNewCommandLine, NULL) != NULL)
+    {
+        delete[] pNewCommandLine;
+    }
+}
+#endif
+
+LPCWSTR GetCommandLineForDiagnostics()
+{
+    // Get the saved managed command line.
+    if (s_pCommandLine != NULL)
+        return s_pCommandLine;
+
+#ifndef TARGET_UNIX
+    // On Windows, use the OS command line which contains the executable and all arguments.
+    s_pCommandLine = GetCommandLineW();
+    return s_pCommandLine;
+#else
+    // Get the command line from the host
+    SString cmdLine;
+    if (HostInformation::GetProperty(HOST_PROPERTY_COMMAND_LINE, cmdLine))
+    {
+        LPCWSTR cmdLineLocal = cmdLine.GetCopyOfUnicodeString();
+        if (InterlockedCompareExchangeT(&s_pCommandLine, cmdLineLocal, NULL) != NULL)
+        {
+            delete cmdLineLocal;
+        }
+
+        return s_pCommandLine;
+    }
+
+    // Get a computed command line if we have saved command line info
+    if (s_assemblyPath != NULL)
+    {
+        CreateCommandLineForDiagnostics(s_assemblyPath, s_appArgc, s_appArgv);
+        return s_pCommandLine;
+    }
+
+    // Fall back to the result from GetCommandLineW() instead
+    return GetCommandLineW();
 #endif
 }
 

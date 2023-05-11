@@ -240,7 +240,7 @@ static PTRARRAYREF SetCommandLineArgs(PCWSTR pwzAssemblyPath, int argc, PCWSTR* 
     CONTRACTL_END;
 
     // Record the command line.
-    SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
+    SaveCommandLineInfoForDiagnostics(pwzAssemblyPath, argc, argv);
 
     PCWSTR exePath = Bundle::AppIsBundle() ? static_cast<PCWSTR>(Bundle::AppBundle->Path()) : pwzAssemblyPath;
 

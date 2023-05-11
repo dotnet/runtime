@@ -1890,7 +1890,7 @@ struct VASigCookieEx : public VASigCookie
 };
 
 // Save the command line for the current process.
-void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
+void SaveCommandLineInfoForDiagnostics(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
 
 LPCWSTR GetCommandLineForDiagnostics();
 
