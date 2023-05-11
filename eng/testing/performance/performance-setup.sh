@@ -342,6 +342,7 @@ fi
 if [[ "$iosnativeaot" == "true" ]]; then
     configurations="$configurations"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
 
 if [[ "$nopgo" == "true" ]]; then
     configurations="$configurations PGOType=nopgo"
