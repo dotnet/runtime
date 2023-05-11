@@ -32,11 +32,13 @@ public class BuildPublishTests : BuildTestBase
         CreateBlazorWasmTemplateProject(id);
 
         // Build
-        BlazorBuildInternal(id, config, publish: false);
+        //BlazorBuildInternal(id, config, publish: false);
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         AssertBlazorBootJson(config, isPublish: false);
 
         // Publish
-        BlazorBuildInternal(id, config, publish: true);
+        //BlazorBuildInternal(id, config, publish: true);
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
         AssertBlazorBootJson(config, isPublish: true);
     }
 

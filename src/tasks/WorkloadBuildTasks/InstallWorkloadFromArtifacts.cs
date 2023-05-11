@@ -67,6 +67,8 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!InstallAllManifests())
                     return false;
 
+                // HACK
+
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
 

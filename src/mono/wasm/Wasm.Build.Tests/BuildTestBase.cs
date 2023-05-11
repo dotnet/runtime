@@ -1286,7 +1286,7 @@ namespace Wasm.Build.Tests
         string?             Label                     = null,
         string?             TargetFramework           = null,
         string?             MainJS                    = null,
-        WasmTemplate        FromTemplate              = WasmTemplate.wasmbrowser,
+        WasmTemplate        FromTemplate              = WasmTemplate.none,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     )
     {
