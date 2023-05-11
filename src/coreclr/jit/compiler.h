@@ -10469,7 +10469,6 @@ public:
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    bool verIsByRefLike(const typeInfo& ti);
 
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,

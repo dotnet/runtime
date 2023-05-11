@@ -2633,19 +2633,6 @@ typeInfo Compiler::verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_L
     return verMakeTypeInfo(ciType, classHandle);
 }
 
-bool Compiler::verIsByRefLike(const typeInfo& ti)
-{
-    if (ti.IsByRef())
-    {
-        return true;
-    }
-    if (!ti.IsType(TI_STRUCT))
-    {
-        return false;
-    }
-    return info.compCompHnd->getClassAttribs(ti.GetClassHandleForValueClass()) & CORINFO_FLG_BYREF_LIKE;
-}
-
 /*****************************************************************************
  *
  *  Check if a TailCall is legal.
@@ -2712,19 +2699,18 @@ bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
     args = sig.args;
     while (argCount--)
     {
-        typeInfo tiDeclared = verParseArgSigToTypeInfo(&sig, args).NormaliseForStack();
-
-        // Check that the argument is not a byref for tailcalls.
-        if (verIsByRefLike(tiDeclared))
-        {
-            return false;
-        }
-
         // For unsafe code, we might have parameters containing pointer to the stack location.
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        if (ciType == CORINFO_TYPE_PTR)
+        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF) || (ciType == CORINFO_TYPE_REFANY))
+        {
+            return false;
+        }
+
+        // Check that the argument is not a byref-like for tailcalls.
+        if ((ciType == CORINFO_TYPE_VALUECLASS) &&
+            ((info.compCompHnd->getClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE) != 0))
         {
             return false;
         }
@@ -2739,33 +2725,20 @@ bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
     if (!(mflags & CORINFO_FLG_STATIC))
     {
         // Always update the popCount. This is crucial for the stack calculation to be correct.
-        typeInfo tiThis = impStackTop(popCount).seTypeInfo;
         popCount++;
 
         if (opcode == CEE_CALLI)
         {
-            // For CALLI, we don't know the methodClassHnd. Therefore, let's check the "this" object
-            // on the stack.
-            if (tiThis.IsValueClass())
-            {
-                tiThis.MakeByRef();
-            }
-
-            if (verIsByRefLike(tiThis))
+            // For CALLI, we don't know the methodClassHnd. Therefore, let's check the "this" object on the stack.
+            if (impStackTop(popCount).val->TypeGet() != TYP_REF)
             {
                 return false;
             }
         }
         else
         {
-            // Check type compatibility of the this argument
-            typeInfo tiDeclaredThis = verMakeTypeInfo(methodClassHnd);
-            if (tiDeclaredThis.IsValueClass())
-            {
-                tiDeclaredThis.MakeByRef();
-            }
-
-            if (verIsByRefLike(tiDeclaredThis))
+            // Check that the "this" argument is not a byref.
+            if (TypeHandleToVarType(methodClassHnd) != TYP_REF)
             {
                 return false;
             }
