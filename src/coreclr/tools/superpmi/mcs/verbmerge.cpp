@@ -24,9 +24,9 @@ LPWSTR verbMerge::MergePathStrings(LPCWSTR dir, LPCWSTR file)
     size_t filelen = dn_wcslen(file);
     size_t newlen  = dirlen + 1 /* slash */ + filelen + 1 /* null */;
     LPWSTR newpath = new WCHAR[newlen];
-    dn_wcscpy(newpath, dir);
-    dn_wcscat(newpath, DIRECTORY_SEPARATOR_STR_W);
-    dn_wcscat(newpath, file);
+    dn_wcscpy(newpath, newlen, dir);
+    dn_wcscat(newpath, newlen, DIRECTORY_SEPARATOR_STR_W);
+    dn_wcscat(newpath, newlen, file);
     return newpath;
 }
 
@@ -359,21 +359,22 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
                 LogError("can't access the relative path with UNC");
                 goto CLEAN_UP;
             }
-            LPWSTR newBuffer = new WCHAR[dn_wcslen(fileFullPath) + 30];
-            dn_wcscpy(newBuffer, W("\\\\?\\"));
+            size_t newBufferLen = dn_wcslen(fileFullPath) + 30;
+            LPWSTR newBuffer = new WCHAR[newBufferLen];
+            dn_wcscpy(newBuffer, newBufferLen, W("\\\\?\\"));
             if (*fileFullPath == '\\') // It is UNC path, use \\?\UNC\serverName to access it.
             {
                 LPWSTR serverName = fileFullPath;
-                dn_wcscat(newBuffer, W("UNC\\"));
+                dn_wcscat(newBuffer, newBufferLen, W("UNC\\"));
                 while (*serverName == '\\')
                 {
                     serverName++;
                 }
-                dn_wcscat(newBuffer, serverName);
+                dn_wcscat(newBuffer, newBufferLen, serverName);
             }
             else
             {
-                dn_wcscat(newBuffer, fileFullPath);
+                dn_wcscat(newBuffer, newBufferLen, fileFullPath);
             }
             delete[] fileFullPath;
 
@@ -501,7 +502,7 @@ int verbMerge::DoWork(const char* nameOfOutputFile, const char* pattern, bool re
     LPCWSTR        dir    = nullptr;
     LPCWSTR        file   = nullptr;
 
-    LPWSTR lastSlash = dn_wcsrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
+    LPWSTR lastSlash = (WCHAR*)dn_wcsrchr(patternAsWchar, DIRECTORY_SEPARATOR_CHAR_A);
     if (lastSlash == NULL)
     {
         // The user may have passed a relative path without a slash, or the current directory.

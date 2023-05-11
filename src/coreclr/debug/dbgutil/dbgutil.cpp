@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <memory>
+#include <dn-u16.h>
 #include "corhlpr.h"
 
 #ifdef HOST_WINDOWS

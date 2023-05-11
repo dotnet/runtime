@@ -359,7 +359,7 @@ private:
         {
             auto const length = component.End - component.Start;
             providerName = new WCHAR[length + 1];
-            dn_wcsncpy(providerName, component.Start, length);
+            dn_wcsncpy(providerName, length + 1, component.Start, length);
             providerName[length] = '\0';
         }
         return providerName;
@@ -392,7 +392,7 @@ private:
         {
             auto const length = component.End - component.Start;
             argument = new WCHAR[length + 1];
-            dn_wcsncpy(argument, component.Start, length);
+            dn_wcsncpy(argument, length + 1, component.Start, length);
             argument[length] = '\0';
         }
         return argument;

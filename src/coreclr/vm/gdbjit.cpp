@@ -1828,12 +1828,12 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     BOOL isUserDebug = FALSE;
 
     NewArrayHolder<WCHAR> wszModuleName = new WCHAR[g_cBytesNeeded];
-    LPWSTR pComma = dn_wcschr(g_wszModuleNames, W(','));
+    LPWSTR pComma = (LPWSTR)dn_wcschr(g_wszModuleNames, W(','));
     LPWSTR tmp = g_wszModuleNames;
 
     while (pComma != NULL)
     {
-        dn_wcsncpy(wszModuleName, tmp, pComma - tmp);
+        dn_wcsncpy(wszModuleName, g_cBytesNeeded, tmp, pComma - tmp);
         wszModuleName[pComma - tmp] = W('\0');
 
         if (dn_wcscmp(wszModuleName, wszModuleFile) == 0)
@@ -1842,11 +1842,11 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
             break;
         }
         tmp = pComma + 1;
-        pComma = dn_wcschr(tmp, W(','));
+        pComma = (LPWSTR)dn_wcschr(tmp, W(','));
     }
     if (isUserDebug == FALSE)
     {
-        dn_wcsncpy(wszModuleName, tmp, dn_wcslen(tmp));
+        dn_wcsncpy(wszModuleName, g_cBytesNeeded, tmp, dn_wcslen(tmp));
         wszModuleName[dn_wcslen(tmp)] = W('\0');
         if (dn_wcscmp(wszModuleName, wszModuleFile) == 0)
         {
@@ -2570,7 +2570,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     if (pNIExt)
     {
-      dn_wcscpy(pNIExt, W(".dll"));
+      dn_wcscpy(pNIExt, dn_wcslen(pNIExt) + 1, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))

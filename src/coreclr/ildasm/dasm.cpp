@@ -7775,7 +7775,7 @@ ReportAndExit:
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
             WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
-            pwc = dn_wcsrchr(wzResFileName,L'.');
+            pwc = (WCHAR*)dn_wcsrchr(wzResFileName,L'.');
             if(pwc == NULL) pwc = &wzResFileName[dn_wcslen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");
             DWORD ret = DumpResourceToFile(wzResFileName);

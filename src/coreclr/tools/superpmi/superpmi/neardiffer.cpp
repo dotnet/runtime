@@ -81,7 +81,7 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        WCHAR* ptr = dn_wcsrchr(coreCLRLoadedPath, '/');
+        WCHAR* ptr = (WCHAR*)dn_wcsrchr(coreCLRLoadedPath, '/');
 
         // Move past the / character.
         ptr = ptr + 1;

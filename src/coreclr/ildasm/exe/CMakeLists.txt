@@ -88,6 +88,7 @@ if(CLR_CMAKE_HOST_WIN32)
         shlwapi.lib
         bcrypt.lib
         RuntimeObject.lib
+        coreclrminipal
     )
 else()
     list(APPEND ILDASM_LINK_LIBRARIES

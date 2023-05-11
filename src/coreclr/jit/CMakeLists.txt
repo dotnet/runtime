@@ -550,6 +550,7 @@ else()
        bcrypt.lib
        crypt32.lib
        RuntimeObject.lib
+       coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
 

@@ -72,6 +72,7 @@ else()
         PRIVATE
         version.lib
         advapi32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )

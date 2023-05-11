@@ -16,8 +16,8 @@
 
 WCHAR* EqualOrColon(_In_ __nullterminated WCHAR* szArg)
 {
-    WCHAR* pchE = dn_wcschr(szArg,W('='));
-    WCHAR* pchC = dn_wcschr(szArg,W(':'));
+    WCHAR* pchE = (WCHAR*)dn_wcschr(szArg,W('='));
+    WCHAR* pchC = (WCHAR*)dn_wcschr(szArg,W(':'));
     WCHAR* ret;
     if(pchE == NULL) ret = pchC;
     else if(pchC == NULL) ret = pchE;
@@ -632,7 +632,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
             if (pAsm->m_fGeneratePDB)
             {
                 wcscpy_s(wzPdbFilename, MAX_FILENAME_LENGTH, wzOutputFilename);
-                WCHAR* extPos = dn_wcsrchr(wzPdbFilename, W('.'));
+                WCHAR* extPos = (WCHAR*)dn_wcsrchr(wzPdbFilename, W('.'));
                 if (extPos != NULL)
                     *extPos = 0;
                 wcscat_s(wzPdbFilename, MAX_FILENAME_LENGTH, W(".pdb"));
@@ -834,7 +834,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     if (exitval || !bGeneratePdb)
     {
         // PE file was not created, or no debug info required. Kill PDB if any
-        WCHAR* pc = dn_wcsrchr(wzOutputFilename,W('.'));
+        WCHAR* pc = (WCHAR*)dn_wcsrchr(wzOutputFilename,W('.'));
         if(pc==NULL)
         {
             pc = &wzOutputFilename[dn_wcslen(wzOutputFilename)];

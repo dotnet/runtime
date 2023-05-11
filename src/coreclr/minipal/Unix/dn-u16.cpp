@@ -8,7 +8,7 @@ typedef char16_t WCHAR;
 
 size_t dn_wcslen(const WCHAR* str)
 {
-    if (str == NULL)
+    if (str == nullptr)
         return 0;
 
     size_t nChar = 0;
@@ -39,19 +39,22 @@ int dn_wcsncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
     return diff;
 }
 
-WCHAR* dn_wcscat(WCHAR* dst, const WCHAR* src)
+WCHAR* dn_wcscat(WCHAR* dst, size_t dstLen, const WCHAR* src)
 {
-    if (dst == NULL || src == NULL)
+    if (dst == nullptr || src == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     WCHAR* start = dst;
+    WCHAR* end = dst + dstLen;
 
     // find end of source string
     while (*dst)
     {
         dst++;
+        if (dst >= end)
+            return nullptr;
     }
 
     // concatenate new string
@@ -60,6 +63,8 @@ WCHAR* dn_wcscat(WCHAR* dst, const WCHAR* src)
     while (*src && loopCount < srcLength)
     {
         *dst++ = *src++;
+        if (dst >= end)
+            return nullptr;
         loopCount++;
     }
 
@@ -68,19 +73,22 @@ WCHAR* dn_wcscat(WCHAR* dst, const WCHAR* src)
     return start;
 }
 
-WCHAR* dn_wcscpy(WCHAR* dst, const WCHAR* src)
+WCHAR* dn_wcscpy(WCHAR* dst, size_t dstLen, const WCHAR* src)
 {
-    if (dst == NULL || src == NULL)
+    if (dst == nullptr || src == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     WCHAR* start = dst;
+    WCHAR* end = dst + dstLen;
 
     // copy source string to destination string
     while (*src)
     {
         *dst++ = *src++;
+        if (dst >= end)
+            return nullptr;
     }
 
     // add terminating null
@@ -88,29 +96,31 @@ WCHAR* dn_wcscpy(WCHAR* dst, const WCHAR* src)
     return start;
 }
 
-WCHAR* dn_wcsncpy(WCHAR* dst, const WCHAR* src, size_t count)
+WCHAR* dn_wcsncpy(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count)
 {
-    size_t length = sizeof(WCHAR) * count;
+    ::memset(dst, 0, dstLen * sizeof(WCHAR));
 
-    memset(dst, 0, length);
     size_t srcLength = dn_wcslen(src);
-    length = (count < srcLength) ? count : srcLength;
-    memcpy(dst, src, length * sizeof(WCHAR));
+    size_t length = (count < srcLength) ? count : srcLength;
+    if (length > dstLen)
+        return nullptr;
+
+    ::memcpy(dst, src, length * sizeof(WCHAR));
     return dst;
 }
 
 const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
 {
-    if (str == NULL || strCharSet == NULL)
+    if (str == nullptr || strCharSet == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     // No characters to examine
     if (dn_wcslen(strCharSet) == 0)
         return str;
 
-    const WCHAR* ret = NULL;
+    const WCHAR* ret = nullptr;
     int i;
     while (*str != (WCHAR)'\0')
     {
@@ -124,7 +134,7 @@ const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
             }
             else if (*(str + i) == (WCHAR)'\0')
             {
-                ret = NULL;
+                ret = nullptr;
                 goto LEAVE;
             }
             else if (*(str + i) != *(strCharSet + i))
@@ -139,29 +149,29 @@ const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
     return ret;
 }
 
-WCHAR* dn_wcschr(const WCHAR* str, WCHAR ch)
+const WCHAR* dn_wcschr(const WCHAR* str, WCHAR ch)
 {
     while (*str)
     {
         if (*str == ch)
-            return (WCHAR*)str;
+            return str;
         str++;
     }
 
     // Check if the comparand was \000
     if (*str == ch)
-        return (WCHAR*)str;
+        return str;
 
-    return NULL;
+    return nullptr;
 }
 
-WCHAR* dn_wcsrchr(const WCHAR* str, WCHAR ch)
+const WCHAR* dn_wcsrchr(const WCHAR* str, WCHAR ch)
 {
-    WCHAR* last = NULL;
+    const WCHAR* last = nullptr;
     while (*str)
     {
         if (*str == ch)
-            last = (WCHAR*)str;
+            last = str;
         str++;
     }
 

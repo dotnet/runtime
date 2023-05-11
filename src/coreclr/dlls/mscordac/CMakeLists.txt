@@ -166,6 +166,7 @@ if(CLR_CMAKE_HOST_WIN32)
         oleaut32.lib
         uuid.lib
         user32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
