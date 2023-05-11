@@ -8858,6 +8858,24 @@ static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do hea
     return value;
 }
 
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
+static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
+#include "valuenumfuncs.h"
+
+#ifdef FEATURE_HW_INTRINSICS
+
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
+#if defined(TARGET_XARCH)
+#include "hwintrinsiclistxarch.h"
+#elif defined (TARGET_ARM64)
+#include "hwintrinsiclistarm64.h"
+#else
+#error Unsupported platform
+#endif
+
+#endif // FEATURE_HW_INTRINSICS
+
 const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
 {
 #define GTNODE(en, st, cm, ivn, ok)        \
