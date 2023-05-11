@@ -180,7 +180,7 @@ struct _DiagnosticsEnablePerfmapPayload_Internal {
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
 struct _DiagnosticsEnablePerfmapPayload {
-	uint8_t _internal [sizeof (struct _DiagnosticsSetEnvironmentVariablePayload_Internal)];
+	uint8_t _internal [sizeof (struct _DiagnosticsEnablePerfmapPayload_Internal)];
 };
 #endif
 
