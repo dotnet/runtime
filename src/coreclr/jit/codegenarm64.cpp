@@ -4683,15 +4683,17 @@ void CodeGen::genCodeForCCMP(GenTreeCCMP* ccmp)
 }
 
 //------------------------------------------------------------------------
-// genCodeForSelect: Produce code for a GT_SELECT node.
+// genCodeForSelect: Produce code for a GT_SELECT/GT_SELECT_INV node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForSelect(GenTreeOp* tree)
 {
-    assert(tree->OperIs(GT_SELECT, GT_SELECTCC));
-    GenTree* opcond = nullptr;
+    assert(tree->OperIs(GT_SELECT, GT_SELECTCC, GT_SELECT_INV, GT_SELECT_INVCC));
+    GenTree*   opcond  = nullptr;
+    const bool isCsinv = tree->OperIs(GT_SELECT_INV, GT_SELECT_INVCC);
+
     if (tree->OperIs(GT_SELECT))
     {
         opcond = tree->AsConditional()->gtCond;
@@ -4719,7 +4721,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     }
     else
     {
-        assert(tree->OperIs(GT_SELECTCC));
+        assert(tree->OperIs(GT_SELECTCC, GT_SELECT_INVCC));
         cond = tree->AsOpCC()->gtCondition;
     }
 
@@ -4731,16 +4733,19 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
     regNumber               srcReg2   = op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
 
-    emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
+    emit->emitIns_R_R_R_COND(isCsinv ? INS_csinv : INS_csel, attr, targetReg, srcReg1, srcReg2,
+                             JumpKindToInsCond(prevDesc.jumpKind1));
 
     // Some conditions require an additional condition check.
     if (prevDesc.oper == GT_OR)
     {
-        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, srcReg1, targetReg, JumpKindToInsCond(prevDesc.jumpKind2));
+        emit->emitIns_R_R_R_COND(isCsinv ? INS_csinv : INS_csel, attr, targetReg, srcReg1, targetReg,
+                                 JumpKindToInsCond(prevDesc.jumpKind2));
     }
     else if (prevDesc.oper == GT_AND)
     {
-        emit->emitIns_R_R_R_COND(INS_csel, attr, targetReg, targetReg, srcReg2, JumpKindToInsCond(prevDesc.jumpKind2));
+        emit->emitIns_R_R_R_COND(isCsinv ? INS_csinv : INS_csel, attr, targetReg, targetReg, srcReg2,
+                                 JumpKindToInsCond(prevDesc.jumpKind2));
     }
 
     regSet.verifyRegUsed(targetReg);
@@ -4748,19 +4753,18 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForCincOrCinv: Produce code for a GT_CINC/GT_CINCCC/GT_CINV/GT_CINVCC node.
+// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
 //
 // Arguments:
 //    tree   - The node.
-//    isCinc - If true, emit the 'cinc' instruction otherwise the 'cinv' instruction.
 //
-void CodeGen::genCodeForCincOrCinv(GenTreeOp* condOp, const bool isCinc)
+void CodeGen::genCodeForCinc(GenTreeOp* condOp)
 {
-    assert(condOp->OperIs(GT_CINC, GT_CINCCC, GT_CINV, GT_CINVCC));
+    assert(condOp->OperIs(GT_CINC, GT_CINCCC));
 
     GenTree* opcond = nullptr;
     GenTree* op     = condOp->gtOp1;
-    if (condOp->OperIs(GT_CINC, GT_CINV))
+    if (condOp->OperIs(GT_CINC))
     {
         opcond = condOp->gtOp1;
         op     = condOp->gtOp2;
@@ -4775,7 +4779,7 @@ void CodeGen::genCodeForCincOrCinv(GenTreeOp* condOp, const bool isCinc)
 
     GenCondition cond;
 
-    if (condOp->OperIs(GT_CINC, GT_CINV))
+    if (condOp->OperIs(GT_CINC))
     {
         assert(!opcond->isContained());
         // Condition has been generated into a register - move it into flags.
@@ -4784,7 +4788,7 @@ void CodeGen::genCodeForCincOrCinv(GenTreeOp* condOp, const bool isCinc)
     }
     else
     {
-        assert(condOp->OperIs(GT_CINCCC, GT_CINVCC));
+        assert(condOp->OperIs(GT_CINCCC));
         cond = condOp->AsOpCC()->gtCondition;
     }
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
@@ -4802,8 +4806,7 @@ void CodeGen::genCodeForCincOrCinv(GenTreeOp* condOp, const bool isCinc)
     }
 
     assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
-    GetEmitter()->emitIns_R_R_COND(isCinc ? INS_cinc : INS_cinv, attr, targetReg, srcReg,
-                                   JumpKindToInsCond(prevDesc.jumpKind1));
+    GetEmitter()->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
     genProduceReg(condOp);
 }

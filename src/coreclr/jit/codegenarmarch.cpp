@@ -355,20 +355,17 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_SELECT_INV:
         case GT_SELECT:
             genCodeForSelect(treeNode->AsConditional());
             break;
 
         case GT_CINC:
         case GT_CINCCC:
-            genCodeForCincOrCinv(treeNode->AsOp(), true);
+            genCodeForCinc(treeNode->AsOp());
             break;
 
-        case GT_CINV:
-        case GT_CINVCC:
-            genCodeForCincOrCinv(treeNode->AsOp(), false);
-            break;
-
+        case GT_SELECT_INVCC:
         case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
             break;

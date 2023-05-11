@@ -254,9 +254,9 @@ GTNODE(CINC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(CINCCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
 // Maps to arm64 cinv instruction. It negates the operand when the condition is true.
 // Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? ~op1 : op1
-GTNODE(CINV             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(SELECT_INV             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 // Variant of CINV that reuses flags computed by a previous node with the specified condition.
-GTNODE(CINVCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
+GTNODE(SELECT_INVCC           , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------

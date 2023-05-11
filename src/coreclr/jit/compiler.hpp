@@ -3986,7 +3986,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
         case GT_CINCCC:
-        case GT_CINVCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:

@@ -1680,7 +1680,7 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP, GT_CINCCC, GT_CINVCC))
+        if (OperIs(GT_CCMP, GT_CINCCC, GT_SELECT_INVCC))
         {
             return true;
         }
@@ -8751,7 +8751,7 @@ struct GenTreeOpCC : public GenTreeOp
         : GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ FALSE)), gtCondition(condition)
     {
 #ifdef TARGET_ARM64
-        assert(OperIs(GT_SELECTCC, GT_CINCCC, GT_CINVCC));
+        assert(OperIs(GT_SELECTCC, GT_CINCCC, GT_SELECT_INVCC));
 #else
         assert(OperIs(GT_SELECTCC));
 #endif
