@@ -196,7 +196,7 @@ public class GenerateWasmBootJson : Task
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
-                    if (fileName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
+                    if (fileName.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase))
                     {
                         behavior = "dotnetwasm";
                     }
