@@ -154,18 +154,11 @@ namespace System
             {
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
-                private readonly uint m_nameHash;
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
-                    m_nameHash = 0;
-
-                    if (RequiresStringComparison())
-                    {
-                        m_nameHash = m_name.HashCaseInsensitive();
-                    }
                 }
 
                 public bool Match(MdUtf8String name)
@@ -186,7 +179,6 @@ namespace System
 
                 // Does the current match type require a string comparison?
                 // If not, we know Match will always return true and the call can be skipped
-                // If so, we know we can have a valid hash to check against from GetHashToMatch
                 public bool RequiresStringComparison()
                 {
                     return (m_listType == MemberListType.CaseSensitive) ||
@@ -194,13 +186,6 @@ namespace System
                 }
 
                 public bool CaseSensitive() => m_listType == MemberListType.CaseSensitive;
-
-                public uint GetHashToMatch()
-                {
-                    Debug.Assert(RequiresStringComparison());
-
-                    return m_nameHash;
-                }
             }
 
             private sealed class MemberInfoCache<T> where T : MemberInfo
@@ -622,12 +607,6 @@ namespace System
                         {
                             if (filter.RequiresStringComparison())
                             {
-                                if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                {
-                                    Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                    continue;
-                                }
-
                                 if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                     continue;
                             }
@@ -684,12 +663,6 @@ namespace System
                             {
                                 if (filter.RequiresStringComparison())
                                 {
-                                    if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                    {
-                                        Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                        continue;
-                                    }
-
                                     if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                         continue;
                                 }
@@ -793,12 +766,6 @@ namespace System
                     {
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                 continue;
                         }
@@ -922,12 +889,6 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeFieldHandle.MatchesNameHash(runtimeFieldHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)))
                                 continue;
                         }
@@ -1010,7 +971,7 @@ namespace System
                             #endregion
 
                             RuntimeFieldInfo runtimeFieldInfo =
-                            new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
+                                new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
                         }
@@ -1535,10 +1496,31 @@ namespace System
 
             #region Internal Members
 
+
+            /// <summary>
+            /// Generic cache for rare scenario specific data. It is used to cache either Enum names, Enum values,
+            /// the Activator cache or function pointer parameters.
+            /// </summary>
             internal object? GenericCache
             {
                 get => m_genericCache;
                 set => m_genericCache = value;
+            }
+
+            internal Type[] FunctionPointerReturnAndParameterTypes
+            {
+                get
+                {
+                    Debug.Assert(m_runtimeType.IsFunctionPointer);
+                    Type[]? value = (Type[]?)GenericCache;
+                    if (value == null)
+                    {
+                        GenericCache = value = RuntimeTypeHandle.GetArgumentTypesFromFunctionPointer(m_runtimeType);
+                        Debug.Assert(value.Length > 0);
+                    }
+
+                    return value;
+                }
             }
 
             internal bool DomainInitialized
@@ -1564,6 +1546,11 @@ namespace System
                         if (!m_runtimeType.GetRootElementType().IsGenericTypeDefinition && m_runtimeType.ContainsGenericParameters)
                             return null;
 
+                        // Exclude function pointer; it requires a grammar update and parsing support for Type.GetType() and friends.
+                        // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names.
+                        if (m_runtimeType.IsFunctionPointer)
+                            return null;
+
                         // No assembly.
                         return ConstructName(ref m_fullname, TypeNameFormatFlags.FormatNamespace | TypeNameFormatFlags.FormatFullInst);
 
@@ -1576,12 +1563,16 @@ namespace System
                 }
             }
 
-            internal string GetNameSpace()
+            internal string? GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
                 if (m_namespace == null)
                 {
                     Type type = m_runtimeType;
+
+                    if (type.IsFunctionPointer)
+                        return null;
+
                     type = type.GetRootElementType();
 
                     while (type.IsNested)
@@ -1788,15 +1779,6 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
-            ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark);
-        }
-
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
@@ -1817,7 +1799,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
-                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
+                            "To get here something somewhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
@@ -3350,7 +3332,8 @@ namespace System
             {
                 string? fullname = FullName;
 
-                // FullName is null if this type contains generic parameters but is not a generic type definition.
+                // FullName is null if this type contains generic parameters but is not a generic type definition
+                // or if it is a function pointer.
                 if (fullname == null)
                     return null;
 
@@ -3362,7 +3345,7 @@ namespace System
         {
             get
             {
-                string ns = Cache.GetNameSpace();
+                string? ns = Cache.GetNameSpace();
                 if (string.IsNullOrEmpty(ns))
                 {
                     return null;
@@ -3691,6 +3674,50 @@ namespace System
                 return CheckValueStatus.Success;
         }
 
+        #endregion
+
+        #region Function Pointer
+        public override bool IsFunctionPointer => RuntimeTypeHandle.IsFunctionPointer(this);
+        public override bool IsUnmanagedFunctionPointer => RuntimeTypeHandle.IsUnmanagedFunctionPointer(this);
+
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            // Requires a modified type to return the modifiers.
+            return EmptyTypes;
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            Type[] parameters = Cache.FunctionPointerReturnAndParameterTypes;
+            Debug.Assert(parameters.Length > 0);
+
+            if (parameters.Length == 1)
+            {
+                return EmptyTypes;
+            }
+
+            return parameters.AsSpan(1).ToArray();
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            if (!IsFunctionPointer)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+            }
+
+            return Cache.FunctionPointerReturnAndParameterTypes[0];
+        }
         #endregion
 
         #endregion
@@ -4121,9 +4148,6 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
-        private static partial uint HashCaseInsensitive(void* sz, int cSz);
-
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
@@ -4172,11 +4196,6 @@ namespace System
             {
                 return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
-        }
-
-        internal uint HashCaseInsensitive()
-        {
-            return HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }
 
         public override string ToString()

@@ -15,12 +15,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Pass no options.
             MyJsonContext context = new();
-            JsonSerializerOptions options = context.Options; // New options instance created and binded at this point.
+            JsonSerializerOptions options = context.Options; // New options instance created and bound at this point.
             Assert.NotNull(options);
 
             // Pass options.
             options = new JsonSerializerOptions();
-            context = new MyJsonContext(options); // Provided options are binded at this point.
+            context = new MyJsonContext(options); // Provided options are bound at this point.
             Assert.Same(options, context.Options);
         }
 
@@ -29,30 +29,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
-            Assert.IsType<MyJsonContext>(options.TypeInfoResolver);
-        }
 
-        [Fact]
-        public void AddContext_SupportsMultipleContexts()
-        {
-            JsonSerializerOptions options = new();
-            options.AddContext<SingleTypeContext<int>>();
-            options.AddContext<SingleTypeContext<string>>();
-
-            Assert.NotNull(options.GetTypeInfo(typeof(int)));
-            Assert.NotNull(options.GetTypeInfo(typeof(string)));
-            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(bool)));
-        }
-
-        [Fact]
-        public void AddContext_AppendsToExistingResolver()
-        {
-            JsonSerializerOptions options = new();
-            options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
-            options.AddContext<MyJsonContext>(); // this context always throws
-
-            // should always consult the default resolver, never falling back to the throwing resolver.
-            options.GetTypeInfo(typeof(int));
+            // Options can be bound only once.
+            CauseInvalidOperationException(() => options.AddContext<MyJsonContext>());
+            CauseInvalidOperationException(() => options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>());
         }
 
         private static void CauseInvalidOperationException(Action action)
@@ -68,15 +48,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Context binds with options when instantiated with parameterless ctor.
             MyJsonContextThatSetsOptionsInParameterlessCtor context = new();
-            Assert.NotNull(context.Options);
-            Assert.Same(context, context.Options.TypeInfoResolver);
+            FieldInfo optionsField = typeof(JsonSerializerContext).GetField("_options", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(optionsField);
+            Assert.NotNull((JsonSerializerOptions)optionsField.GetValue(context));
 
-            // Those options are overwritten when context is binded via options.AddContext<TContext>();
+            // Those options are overwritten when context is bound via options.AddContext<TContext>();
             JsonSerializerOptions options = new();
-            Assert.Null(options.TypeInfoResolver);
             options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>(); // No error.
-            Assert.NotNull(options.TypeInfoResolver);
-            Assert.NotSame(options, ((JsonSerializerContext)options.TypeInfoResolver).Options);
+            FieldInfo resolverField = typeof(JsonSerializerOptions).GetField("_typeInfoResolver", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(resolverField);
+            Assert.Same(options, ((JsonSerializerContext)resolverField.GetValue(options)).Options);
         }
 
         [Fact]
@@ -85,26 +66,25 @@ namespace System.Text.Json.Serialization.Tests
             // Bind the options.
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
-            Assert.False(options.IsReadOnly);
 
-            // Pass the options to a context constructor
-            _ = new MyJsonContext(options);
-            Assert.True(options.IsReadOnly);
+            // Attempt to bind the instance again.
+            Assert.Throws<InvalidOperationException>(() => new MyJsonContext(options));
         }
 
         [Fact]
-        public void OptionsMutableAfterBinding()
+        public void OptionsImmutableAfterBinding()
         {
             // Bind via AddContext
             JsonSerializerOptions options = new();
             options.PropertyNameCaseInsensitive = true;
             options.AddContext<MyJsonContext>();
-            Assert.False(options.IsReadOnly);
+            CauseInvalidOperationException(() => options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
             // Bind via context ctor
             options = new JsonSerializerOptions();
             MyJsonContext context = new MyJsonContext(options);
-            Assert.True(options.IsReadOnly);
+            Assert.Same(options, context.Options);
+            CauseInvalidOperationException(() => options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
         }
 
         [Fact]
@@ -149,14 +129,6 @@ namespace System.Text.Json.Serialization.Tests
             public EmptyContext(JsonSerializerOptions options) : base(options) { }
             protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
             public override JsonTypeInfo? GetTypeInfo(Type type) => JsonTypeInfo.CreateJsonTypeInfo(type, Options);
-        }
-
-        private class SingleTypeContext<T> : JsonSerializerContext, IJsonTypeInfoResolver
-        {
-            public SingleTypeContext() : base(null) { }
-            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
-            public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
-            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => type == typeof(T) ? JsonTypeInfo.CreateJsonTypeInfo(type, options) : null;
         }
     }
 }

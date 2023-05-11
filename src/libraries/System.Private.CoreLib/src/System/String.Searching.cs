@@ -71,7 +71,7 @@ namespace System
         {
             if (!char.IsAscii(value))
             {
-                return CompareInfo.Invariant.IndexOf(this, value, CompareOptions.OrdinalIgnoreCase);
+                return Ordinal.IndexOfOrdinalIgnoreCase(this, new ReadOnlySpan<char>(in value));
             }
 
             if (char.IsAsciiLetter(value))

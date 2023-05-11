@@ -25,11 +25,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Needed for unreached()
 #include "error.h"
 
-#ifdef TARGET_64BIT
-#define BitScanForwardPtr BitScanForward64
-#else
-#define BitScanForwardPtr BitScanForward
-#endif
+#if defined(_MSC_VER)
+
+// Define wrappers over the non-underscore versions of the BitScan* APIs. The PAL defines these already.
+// We've #undef'ed the definitions in winnt.h for these names to avoid confusion.
+
+inline BOOLEAN BitScanForward(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanForward(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanReverse(Index, Mask);
+}
+
+#if defined(HOST_64BIT)
+inline BOOLEAN BitScanForward64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanForward64(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanReverse64(Index, Mask);
+}
+#endif // defined(HOST_64BIT)
+
+#endif // _MSC_VER
 
 template <typename T, int size>
 inline constexpr unsigned ArrLen(T (&)[size])
@@ -241,8 +264,17 @@ public:
     // bitVectInit() - Initializes a bit vector of a given size
     static FixedBitVect* bitVectInit(UINT size, Compiler* comp);
 
+    // bitVectGetSize() - Get number of bits in the bit set
+    UINT bitVectGetSize()
+    {
+        return bitVectSize;
+    }
+
     // bitVectSet() - Sets the given bit
     void bitVectSet(UINT bitNum);
+
+    // bitVectClear() - Clears the given bit
+    void bitVectClear(UINT bitNum);
 
     // bitVectTest() - Tests the given bit
     bool bitVectTest(UINT bitNum);
@@ -751,6 +783,8 @@ public:
 
     static uint32_t BitScanReverse(uint64_t value);
 
+    static uint64_t DoubleToUInt64Bits(double value);
+
     static uint32_t LeadingZeroCount(uint32_t value);
 
     static uint32_t LeadingZeroCount(uint64_t value);
@@ -775,9 +809,15 @@ public:
 
     static uint64_t RotateRight(uint64_t value, uint32_t offset);
 
+    static uint32_t SingleToUInt32Bits(float value);
+
     static uint32_t TrailingZeroCount(uint32_t value);
 
     static uint32_t TrailingZeroCount(uint64_t value);
+
+    static float UInt32BitsToSingle(uint32_t value);
+
+    static double UInt64BitsToDouble(uint64_t value);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

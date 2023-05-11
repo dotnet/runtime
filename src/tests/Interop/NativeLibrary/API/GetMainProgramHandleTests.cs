@@ -45,7 +45,7 @@ class GetMainProgramHandleTests
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(NativeLibraryToLoad.GetDirectory(), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {
@@ -64,7 +64,7 @@ class GetMainProgramHandleTests
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(NativeLibraryToLoad.GetDirectory(), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {
@@ -83,7 +83,7 @@ class GetMainProgramHandleTests
         // On non-Windows platforms, symbols from globally loaded shared libraries will also be discoverable.
         // Globally loading symbols is not the .NET default, so we use a call to dlopen in native code
         // with the right flags to test the scenario.
-        IntPtr handle = LoadLibraryGlobally(Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
+        IntPtr handle = LoadLibraryGlobally(Path.Combine(NativeLibraryToLoad.GetDirectory(), NativeLibraryToLoad.GetLibraryFileName("GloballyLoadedNativeLibrary")));
 
         try
         {

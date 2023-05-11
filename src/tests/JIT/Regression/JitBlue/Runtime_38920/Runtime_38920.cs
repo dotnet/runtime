@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class TestStructs
 {
@@ -85,7 +86,8 @@ public class TestStructs
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int b = 1;
         int c = 2;

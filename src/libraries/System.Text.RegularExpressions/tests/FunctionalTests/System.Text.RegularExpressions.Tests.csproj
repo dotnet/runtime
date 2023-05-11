@@ -5,14 +5,13 @@
     <!-- SYSLIB0036 is about obsoletion of regex members -->
     <!-- SYSLIB1045 is for switching to GeneratedRegex -->
     <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036;SYSLIB1045</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest> <!-- to avoid OOMs with source generation in wasm: https://github.com/dotnet/runtime/pull/60701 -->
 
-    <!-- Remove once the repo moves to a sufficiently high-enough version for file-scoped types -->
-    <MicrosoftCodeAnalysisVersion>4.4.0-1.22356.23</MicrosoftCodeAnalysisVersion>
-
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttRegexTests.cs" />
@@ -40,7 +39,7 @@
     <Compile Include="RegexPcreTests.cs" />
     <Compile Include="RegexRustTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="RegexAssert.netfx.cs" />
     <Compile Include="RegexParserTests.netfx.cs" />

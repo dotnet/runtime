@@ -22,7 +22,7 @@ namespace System
         [Intrinsic]
         public Type GetType()
         {
-            return Type.GetTypeFromEETypePtr(this.GetEETypePtr());
+            return Type.GetTypeFromMethodTable(m_pEEType);
         }
 
         [Intrinsic]
@@ -38,7 +38,7 @@ namespace System
             ref byte src = ref this.GetRawData();
             ref byte dst = ref clone.GetRawData();
 
-            if (this.GetEETypePtr().HasPointers)
+            if (this.GetEETypePtr().ContainsGCPointers)
                 Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
             else
                 Buffer.Memmove(ref dst, ref src, byteCount);

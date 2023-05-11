@@ -19,9 +19,9 @@ namespace System.Text.Json.Reflection
 
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-        private INamedTypeSymbol? _namedTypeSymbol;
+        private readonly INamedTypeSymbol? _namedTypeSymbol;
 
-        private IArrayTypeSymbol? _arrayTypeSymbol;
+        private readonly IArrayTypeSymbol? _arrayTypeSymbol;
 
         private Type? _elementType;
 

@@ -21,6 +21,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
         public bool CanDeriveNewPublicKey => false;
 
+        public bool SupportsRawDerivation => true;
+
         private static bool IsValueOrFriendlyNameValid(string friendlyNameOrValue)
         {
             if (string.IsNullOrEmpty(friendlyNameOrValue))

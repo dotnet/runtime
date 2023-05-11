@@ -27,7 +27,7 @@ namespace System.ComponentModel.DataAnnotations
         // Also we use this ability in Validator.CreateValidationContext()??
         : IServiceProvider
     {
-        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered.";
+        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
 
         #region Member Fields
 
@@ -169,6 +169,27 @@ namespace System.ComponentModel.DataAnnotations
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
         public IDictionary<object, object?> Items => _items;
+
+        internal Type? MemberType
+        {
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "The ctors are marked with RequiresUnreferencedCode.")]
+            get
+            {
+                Type? propertyType = _propertyType;
+
+                if (propertyType is null && MemberName != null)
+                {
+                    _propertyType = propertyType = ValidationAttributeStore.Instance.GetPropertyType(this);
+                }
+
+                return propertyType;
+            }
+
+            set => _propertyType = value;
+        }
+
+        private Type? _propertyType;
 
         #endregion
 

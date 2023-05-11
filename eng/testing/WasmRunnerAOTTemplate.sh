@@ -4,6 +4,8 @@
 [[SetCommands]]
 [[SetCommandsEcho]]
 
+export PATH="$HOME/.jsvu/bin:$PATH"
+
 EXECUTION_DIR=$(dirname $0)
 if [[ -n "$3" ]]; then
 	SCENARIO=$3
@@ -40,12 +42,18 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 		fi
 	fi
 
-	if [[ -z "$MAIN_JS" ]]; then
-		MAIN_JS="--js-file=test-main.js"
-	fi
-
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
 		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
+		if [[ "$SCENARIO" != "WasmTestOnNodeJS" && "$SCENARIO" != "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS --engine-arg=--module"
+		fi
+		if [[ "$SCENARIO" == "WasmTestOnNodeJS" || "$SCENARIO" == "wasmtestonnodejs" ]]; then
+			JS_ENGINE_ARGS="$JS_ENGINE_ARGS  --engine-arg=--experimental-wasm-eh"
+		fi
+	fi
+
+	if [[ -z "$MAIN_JS" ]]; then
+		MAIN_JS="--js-file=test-main.js"
 	fi
 fi
 
@@ -53,6 +61,7 @@ if [[ -z "$XHARNESS_ARGS" ]]; then
 	XHARNESS_ARGS="$JS_ENGINE $JS_ENGINE_ARGS $MAIN_JS"
 fi
 
+echo PATH=$PATH
 echo EXECUTION_DIR=$EXECUTION_DIR
 echo SCENARIO=$SCENARIO
 echo XHARNESS_OUT=$XHARNESS_OUT

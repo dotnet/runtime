@@ -94,7 +94,7 @@ public class FullRangeComparisonTest
     public static void Ne_short_consume(short a1, short a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{ne|e}} {{[a-z0-9]+}}, {{.*}}
 
@@ -106,7 +106,7 @@ public class FullRangeComparisonTest
     public static void Lt_int_consume(int a1, int a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
         //
         // X64-FULL-LINE:        cmov{{l|ge}} {{[a-z0-9]+}}, {{.*}}
 
@@ -118,7 +118,7 @@ public class FullRangeComparisonTest
     public static void Le_long_consume(long a1, long a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{le|gt}}
         //
         // X64-FULL-LINE:        cmov{{le|g}} {{[a-z0-9]+}}, {{.*}}
 
@@ -130,7 +130,7 @@ public class FullRangeComparisonTest
     public static void Gt_ushort_consume(ushort a1, ushort a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         //
         // X64-FULL-LINE:        cmov{{g|le}} {{[a-z0-9]+}}, {{.*}}
 
@@ -142,7 +142,7 @@ public class FullRangeComparisonTest
     public static void Ge_uint_consume(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{ae|b}} {{[a-z0-9]+}}, {{.*}}
 
@@ -154,7 +154,7 @@ public class FullRangeComparisonTest
     public static void Eq_ulong_consume(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{eq|ne}}
         //
         // X64-FULL-LINE:        cmov{{e|ne}} {{[a-z0-9]+}}, {{.*}}
 
@@ -166,7 +166,7 @@ public class FullRangeComparisonTest
     public static void Ne_float_int_consume(float f1, float f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
         // X64-FULL-LINE-NEXT:   cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
@@ -179,7 +179,7 @@ public class FullRangeComparisonTest
     public static void Lt_double_long_consume(double f1, double f2, long a1, long a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{be|a}} {{[a-z0-9]+}}, {{.*}}
 
@@ -191,7 +191,7 @@ public class FullRangeComparisonTest
     public static void Eq_double_long_consume(double f1, double f2, long a1, long a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{eq|ne}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-31]}}, {{x[0-31]}}, {{x[0-31]}}, {{eq|ne}}
         //
         // X64-FULL-LINE:        cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
         // X64-FULL-LINE-NEXT:   cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
@@ -204,7 +204,7 @@ public class FullRangeComparisonTest
     public static void Ne_double_int_consume(double f1, double f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
         // X64-FULL-LINE-NEXT:   cmov{{p|np|ne|e}} {{[a-z0-9]+}}, {{.*}}
@@ -219,7 +219,7 @@ public class FullRangeComparisonTest
     public static void Ne_else_byte_consume(byte a1, byte a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{ne|e}} {{[a-z0-9]+}}, {{.*}}
 
@@ -231,7 +231,7 @@ public class FullRangeComparisonTest
     public static void Lt_else_short_consume(short a1, short a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
         //
         // X64-FULL-LINE:        cmov{{l|ge}} {{[a-z0-9]+}}, {{.*}}
 
@@ -243,7 +243,7 @@ public class FullRangeComparisonTest
     public static void Le_else_int_consume(int a1, int a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
         //
         // X64-FULL-LINE:        cmov{{le|g}} {{[a-z0-9]+}}, {{.*}}
 
@@ -255,7 +255,7 @@ public class FullRangeComparisonTest
     public static void Gt_else_long_consume(long a1, long a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{gt|le}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{gt|le}}
         //
         // X64-FULL-LINE:        cmov{{g|le}} {{[a-z0-9]+}}, {{.*}}
 
@@ -267,7 +267,7 @@ public class FullRangeComparisonTest
     public static void Ge_else_ushort_consume(ushort a1, ushort a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         //
         // X64-FULL-LINE:        cmov{{ge|l}} {{[a-z0-9]+}}, {{.*}}
 
@@ -279,7 +279,7 @@ public class FullRangeComparisonTest
     public static void Eq_else_uint_consume(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
         //
         // X64-FULL-LINE:        cmov{{e|ne}} {{[a-z0-9]+}}, {{.*}}
 
@@ -291,7 +291,7 @@ public class FullRangeComparisonTest
     public static void Ne_else_ulong_consume(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{ne|e}} {{[a-z0-9]+}}, {{.*}}
 
@@ -303,7 +303,7 @@ public class FullRangeComparisonTest
     public static void Lt_else_float_int_consume(float f1, float f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{be|a}} {{[a-z0-9]+}}, {{.*}}
 
@@ -315,7 +315,7 @@ public class FullRangeComparisonTest
     public static void Le_else_double_int_consume(double f1, double f2, int a1, int a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, hi
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
@@ -329,7 +329,7 @@ public class FullRangeComparisonTest
     public static byte Lt_else_byte_return(byte a1, byte a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{lt|ge}}
         //
         // X64-FULL-LINE:        cmov{{l|ge}} {{[a-z0-9]+}}, {{.*}}
 
@@ -340,7 +340,7 @@ public class FullRangeComparisonTest
     public static short Le_else_short_return(short a1, short a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
         //
         // X64-FULL-LINE:        cmov{{le|g}} {{[a-z0-9]+}}, {{.*}}
 
@@ -351,7 +351,7 @@ public class FullRangeComparisonTest
     public static int Gt_else_int_return(int a1, int a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         //
         // X64-FULL-LINE:        cmov{{g|le}} {{[a-z0-9]+}}, {{.*}}
 
@@ -362,7 +362,7 @@ public class FullRangeComparisonTest
     public static long Ge_else_long_return(long a1, long a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{ge|lt}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{ge|lt}}
         //
         // X64-FULL-LINE:        cmov{{ge|l}} {{[a-z0-9]+}}, {{.*}}
 
@@ -373,7 +373,7 @@ public class FullRangeComparisonTest
     public static ushort Eq_else_ushort_return(ushort a1, ushort a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{eq|ne}}
         //
         // X64-FULL-LINE:        cmov{{e|ne}} {{[a-z0-9]+}}, {{.*}}
 
@@ -384,7 +384,7 @@ public class FullRangeComparisonTest
     public static uint Ne_else_uint_return(uint a1, uint a2)
     {
         // ARM64-FULL-LINE:      cmp {{w[0-9]+}}, {{w[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ne|eq}}
         //
         // X64-FULL-LINE:        cmov{{e|ne}} {{[a-z0-9]+}}, {{.*}}
 
@@ -395,7 +395,7 @@ public class FullRangeComparisonTest
     public static ulong Lt_else_ulong_return(ulong a1, ulong a2)
     {
         // ARM64-FULL-LINE:      cmp {{x[0-9]+}}, {{x[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{lt|ge}}
+        // ARM64-FULL-LINE-NEXT: csel {{x[0-9]+}}, {{x[0-9]+}}, {{x[0-9]+}}, {{hs|lo}}
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
@@ -406,7 +406,7 @@ public class FullRangeComparisonTest
     public static int Le_else_float_int_return(float a1, float a2)
     {
         // ARM64-FULL-LINE:      fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{le|gt}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, ls
         //
         // X64-FULL-LINE:        cmov{{b|ae}} {{[a-z0-9]+}}, {{.*}}
 
@@ -417,7 +417,7 @@ public class FullRangeComparisonTest
     public static int Gt_else_double_int_return(double a1, double a2)
     {
         // ARM64-FULL-LINE:      fcmp {{d[0-9]+}}, {{d[0-9]+}}
-        // ARM64-NEXT-FULL-LINE: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        // ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         //
         // X64-FULL-LINE:        cmov{{be|a}} {{[a-z0-9]+}}, {{.*}}
 

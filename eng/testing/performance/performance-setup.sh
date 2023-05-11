@@ -23,7 +23,7 @@ monoaot=false
 monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
-configurations="CompliationMode=$compilation_mode RunKind=$kind"
+configurations="CompilationMode=$compilation_mode RunKind=$kind"
 perf_fork=""
 perf_fork_branch="main"
 run_from_perf_repo=false
@@ -139,6 +139,18 @@ while (($# > 0)); do
       wasmaot=true
       shift 1
       ;;
+    --nopgo)
+      nopgo=true
+      shift 1
+      ;;
+    --dynamicpgo)
+      dynamicpgo=true
+      shift 1
+      ;;
+    --fullpgo)
+      fullpgo=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -213,6 +225,9 @@ while (($# > 0)); do
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
+      echo "  --nopgo                        Set for No PGO runs"
+      echo "  --dynamicpgo                   Set for dynamic PGO runs"
+      echo "  --fullpgo                      Set for Full PGO runs"
       echo ""
       exit 1
       ;;
@@ -255,6 +270,8 @@ if [[ "$internal" == true ]]; then
         queue=OSX.1015.Amd64.Iphone.Perf
     elif [[ "$logical_machine" == "perfampere" ]]; then
         queue=Ubuntu.2004.Arm64.Perf
+    elif [[ "$logical_machine" == "cloudvm" ]]; then
+        queue=Ubuntu.1804.Amd64
     elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
@@ -314,6 +331,17 @@ fi
 if [[ "$iosmono" == "true" ]]; then
     configurations="$configurations iOSLlvmBuild=$iosllvmbuild"
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
+if [[ "$nopgo" == "true" ]]; then
+    configurations="$configurations PGOType=nopgo"
+fi
+if [[ "$dynamicpgo" == "true" ]]; then
+    configurations="$configurations PGOType=dynamicpgo"
+fi
+if [[ "$fullpgo" == "true" ]]; then
+    configurations="$configurations PGOType=fullpgo"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
 cleaned_branch_name="main"
@@ -378,6 +406,16 @@ if [[ -n "$dotnet_versions" ]]; then
     setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
 fi
 
+if [[ "$nopgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-pgo"
+fi
+if [[ "$dynamicpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --dynamic-pgo"
+fi
+if [[ "$fullpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --full-pgo"
+fi
+
 if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
@@ -398,37 +436,13 @@ fi
 
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
-        if [[ "$kind" != "ios_scenarios_net6" ]]; then
-            # LLVM Mono .app
-            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
-            mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
-        fi
+        # LLVM Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
     else
-        # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
-        if [[ "$kind" != "ios_scenarios_net6" ]]; then
-            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
-            mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
-        fi
-        mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
-        mkdir -p $payload_directory/MauiBlazorMacCatalystDefault && cp -rv $source_directory/MauiBlazorMacCatalystDefault/MauiBlazorMacCatalystDefault.app $payload_directory/MauiBlazorMacCatalystDefault
-        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
-        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $payload_directory/MauiBlazoriOSDefault.ipa
-        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa
-
-        # Get the .app so we can resign in the xharness item
-        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
-        unzip -d $source_directory/MauiiOSDefaultIPA $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
-        mv $source_directory/MauiiOSDefaultIPA/Payload/MauiTesting.app $payload_directory/
-
-        # Get the .app so we can resign in the xharness item for Maui Blazor
-        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
-        unzip -d $source_directory/MauiBlazoriOSDefaultIPA $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
-        mv $source_directory/MauiBlazoriOSDefaultIPA/Payload/MauiBlazorTesting.app $payload_directory/
-
-        # Get the .app so we can resign in the xharness item for podcast
-        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
-        unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
-        mv $source_directory/MauiiOSPodcastIPA/Payload/Microsoft.NetConf2021.Maui.app $payload_directory/
+        # NoLLVM Mono .app
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
     fi
 fi
 

@@ -796,6 +796,10 @@ get_rttype_ins_relation (MonoCompile *cfg, MonoInst *ins1, MonoInst *ins2, gbool
 			}
 		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_IS_PRIMITIVE (t2)) {
 			rel = t1->type == t2->type ? CMP_EQ : CMP_NE;
+		} else if (MONO_TYPE_IS_PRIMITIVE (t1) && MONO_TYPE_ISSTRUCT (t2)) {
+			rel = CMP_NE;
+		} else if (MONO_TYPE_IS_PRIMITIVE (t2) && MONO_TYPE_ISSTRUCT (t1)) {
+			rel = CMP_NE;
 		}
 	}
 	return rel;
@@ -1009,6 +1013,49 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
 			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
 			ins->type = STACK_I4;
+			return ins;
+		} else if (!strcmp (cmethod->name, "CreateSpan") && fsig->param_count == 1) {
+			MonoGenericContext* ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType* arg_type = ctx->method_inst->type_argv [0];
+			MonoType* t = mini_get_underlying_type (arg_type);
+			g_assert (!MONO_TYPE_IS_REFERENCE (t) && t->type != MONO_TYPE_VALUETYPE);
+
+			// This OP_LDTOKEN_FIELD later changes into a OP_VMOVE.
+			MonoClassField* field = (MonoClassField*) args [0]->inst_p1;
+			if (args [0]->opcode != OP_LDTOKEN_FIELD)
+					return NULL;
+
+			int alignment = 0;
+			const int element_size = mono_type_size (t, &alignment);
+			const int num_elements = mono_type_size (field->type, &alignment) / element_size;
+			const int obj_size = MONO_ABI_SIZEOF (MonoObject);
+			
+			MonoInst* span = mono_compile_create_var (cfg, fsig->ret, OP_LOCAL);
+			MonoInst* span_addr;
+			EMIT_NEW_TEMPLOADA (cfg, span_addr, span->inst_c0);
+
+			MonoInst* ptr_inst;
+			if (cfg->compile_aot) {
+				NEW_RVACONST (cfg, ptr_inst, mono_class_get_image (mono_field_get_parent (field)), args [0]->inst_c0);
+				MONO_ADD_INS (cfg->cbb, ptr_inst);
+			} else {
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+				const int swizzle = 1;
+#else
+				const int swizzle = element_size;
+#endif
+				gpointer data_ptr = (gpointer)mono_field_get_rva (field, swizzle);
+				EMIT_NEW_PCONST (cfg, ptr_inst, data_ptr); 
+			}
+
+			MonoClassField* field_ref = mono_class_get_field_from_name_full (span->klass, "_reference", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, span_addr->dreg, field_ref->offset - obj_size, ptr_inst->dreg);
+			MonoClassField* field_len = mono_class_get_field_from_name_full (span->klass, "_length", NULL);
+			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STOREI4_MEMBASE_IMM, span_addr->dreg, field_len->offset - obj_size, num_elements);
+			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
 			return ins;
 		} else
 			return NULL;

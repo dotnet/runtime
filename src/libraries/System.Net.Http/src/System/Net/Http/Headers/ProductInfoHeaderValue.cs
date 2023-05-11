@@ -8,18 +8,12 @@ namespace System.Net.Http.Headers
 {
     public class ProductInfoHeaderValue : ICloneable
     {
-        private ProductHeaderValue? _product;
-        private string? _comment;
+        private readonly ProductHeaderValue? _product;
+        private readonly string? _comment;
 
-        public ProductHeaderValue? Product
-        {
-            get { return _product; }
-        }
+        public ProductHeaderValue? Product => _product;
 
-        public string? Comment
-        {
-            get { return _comment; }
-        }
+        public string? Comment => _comment;
 
         public ProductInfoHeaderValue(string productName, string? productVersion)
             : this(new ProductHeaderValue(productName, productVersion))
@@ -35,7 +29,7 @@ namespace System.Net.Http.Headers
 
         public ProductInfoHeaderValue(string comment)
         {
-            HeaderUtilities.CheckValidComment(comment, nameof(comment));
+            HeaderUtilities.CheckValidComment(comment);
             _comment = comment;
         }
 

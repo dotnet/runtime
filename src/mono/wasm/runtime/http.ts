@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
-import { fetch_like } from "./polyfills";
 import { mono_assert } from "./types";
-import { VoidPtr } from "./types/emscripten";
+import type { VoidPtr } from "./types/emscripten";
 
 export function http_wasm_supports_streaming_response(): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
@@ -25,7 +24,7 @@ export function http_wasm_abort_response(res: ResponseExtension): void {
     if (res.__reader) {
         res.__reader.cancel().catch((err) => {
             if (err && err.name !== "AbortError") {
-                Module.printErr("MONO_WASM: Error in http_wasm_abort_response: " + err);
+                Module.err("MONO_WASM: Error in http_wasm_abort_response: " + err);
             }
             // otherwise, it's expected
         });
@@ -57,7 +56,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const res = await fetch_like(url, options) as ResponseExtension;
+        const res = await runtimeHelpers.fetch_like(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });

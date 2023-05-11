@@ -7,7 +7,7 @@
 #ifdef FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_XARCH
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Simple SIMD intrinsics
     // - take Vector128/256<T> parameters
@@ -40,10 +40,8 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #elif defined(TARGET_ARM64)
-
-enum HWIntrinsicCategory : unsigned int
+enum HWIntrinsicCategory : uint8_t
 {
     // Most of the Arm64 intrinsic fall into SIMD category:
     // - vector or scalar intrinsics that operate on one-or-many SIMD registers
@@ -69,11 +67,9 @@ enum HWIntrinsicCategory : unsigned int
     // - have to be addressed specially
     HW_Category_Special
 };
-
 #else
 #error Unsupported platform
 #endif
-
 enum HWIntrinsicFlag : unsigned int
 {
     HW_Flag_NoFlag = 0,
@@ -159,7 +155,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_MaybeCommutative = 0x80000,
 
     // The intrinsic has no EVEX compatible form
-    HW_Flag_NoEvexSemantics = 0x100000
+    HW_Flag_NoEvexSemantics = 0x100000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
@@ -176,14 +172,29 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic supports some sort of containment analysis
     HW_Flag_SupportsContainment = 0x2000,
+
+    // The intrinsic needs consecutive registers
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
 #else
 #error Unsupported platform
 #endif
+
+    // The intrinsic has some barrier special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Barrier = 0x200000,
+
+    // The intrinsic has some other special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
+
+    HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
+
+    // MaybeNoJmpTable IMM
+    // the imm intrinsic may not need jumptable fallback when it gets non-const argument
+    HW_Flag_MaybeNoJmpTableIMM = 0x800000,
 };
 
 #if defined(TARGET_XARCH)
 // This mirrors the System.Runtime.Intrinsics.X86.FloatComparisonMode enumeration
-enum class FloatComparisonMode : unsigned char
+enum class FloatComparisonMode : uint8_t
 {
     // _CMP_EQ_OQ
     OrderedEqualNonSignaling = 0,
@@ -282,7 +293,7 @@ enum class FloatComparisonMode : unsigned char
     UnorderedTrueSignaling = 31,
 };
 
-enum class FloatRoundingMode : unsigned char
+enum class FloatRoundingMode : uint8_t
 {
     // _MM_FROUND_TO_NEAREST_INT
     ToNearestInteger = 0x00,
@@ -305,18 +316,121 @@ enum class FloatRoundingMode : unsigned char
     // _MM_FROUND_NO_EXC
     NoException = 0x08,
 };
+
+enum class TernaryLogicUseFlags : uint8_t
+{
+    // Indicates no flags are present
+    None = 0,
+
+    // Indicates the ternary logic uses A
+    A = 1 << 0,
+
+    // Indicates the ternary logic uses B
+    B = 1 << 1,
+
+    // Indicates the ternary logic uses C
+    C = 1 << 2,
+
+    // Indicates the ternary logic uses A and B
+    AB = (A | B),
+
+    // Indicates the ternary logic uses A and C
+    AC = (A | C),
+
+    // Indicates the ternary logic uses B and C
+    BC = (B | C),
+
+    // Indicates the ternary logic uses A, B, and C
+    ABC = (A | B | C),
+};
+
+enum class TernaryLogicOperKind : uint8_t
+{
+    // Indicates no operation is done
+    None = 0,
+
+    // value
+    Select = 1,
+
+    // constant true (1)
+    True = 2,
+
+    // constant false (0)
+    False = 3,
+
+    // ~value
+    Not = 4,
+
+    // left & right
+    And = 5,
+
+    // ~(left & right)
+    Nand = 6,
+
+    // left | right
+    Or = 7,
+
+    // ~(left | right)
+    Nor = 8,
+
+    // left ^ right
+    Xor = 9,
+
+    // ~(left ^ right)
+    Xnor = 10,
+
+    // cond ? left : right
+    Cond = 11,
+
+    // returns 0 if two+ of the three input bits are 0; else 1
+    Major = 12,
+
+    // returns 0 if two+ of the three input bits are 1; else 0
+    Minor = 13,
+};
+
+struct TernaryLogicInfo
+{
+    // We have 256 entries, so we compress as much as possible
+    // This gives us 3-bytes per entry (21-bits)
+
+    TernaryLogicOperKind oper1 : 4;
+    TernaryLogicUseFlags oper1Use : 3;
+
+    TernaryLogicOperKind oper2 : 4;
+    TernaryLogicUseFlags oper2Use : 3;
+
+    TernaryLogicOperKind oper3 : 4;
+    TernaryLogicUseFlags oper3Use : 3;
+
+    static const TernaryLogicInfo& lookup(uint8_t control);
+
+    TernaryLogicUseFlags GetAllUseFlags() const
+    {
+        uint8_t useFlagsBits = 0;
+
+        useFlagsBits |= static_cast<uint8_t>(oper1Use);
+        useFlagsBits |= static_cast<uint8_t>(oper2Use);
+        useFlagsBits |= static_cast<uint8_t>(oper3Use);
+
+        return static_cast<TernaryLogicUseFlags>(useFlagsBits);
+    }
+};
 #endif // TARGET_XARCH
 
 struct HWIntrinsicInfo
 {
-    NamedIntrinsic         id;
-    const char*            name;
-    CORINFO_InstructionSet isa;
-    int                    simdSize;
-    int                    numArgs;
-    instruction            ins[10];
-    HWIntrinsicCategory    category;
-    HWIntrinsicFlag        flags;
+    // 32-bit: 36-bytes (34+2 trailing padding)
+    // 64-bit: 40-bytes (38+2 trailing padding)
+
+    const char*         name;     // 4 or 8-bytes
+    HWIntrinsicFlag     flags;    // 4-bytes
+    NamedIntrinsic      id;       // 2-bytes
+    uint16_t            ins[10];  // 10 * 2-bytes
+    uint8_t             isa;      // 1-byte
+    int8_t              simdSize; // 1-byte
+    int8_t              numArgs;  // 1-byte
+    HWIntrinsicCategory category; // 1-byte
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
@@ -361,7 +475,8 @@ struct HWIntrinsicInfo
 
     static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
     {
-        return lookup(id).isa;
+        uint8_t result = lookup(id).isa;
+        return static_cast<CORINFO_InstructionSet>(result);
     }
 
 #ifdef TARGET_XARCH
@@ -523,9 +638,13 @@ struct HWIntrinsicInfo
 
             case NI_SSE41_Ceiling:
             case NI_SSE41_CeilingScalar:
+            case NI_AVX_Ceiling:
+            {
+                FALLTHROUGH;
+            }
+
             case NI_SSE41_RoundToPositiveInfinity:
             case NI_SSE41_RoundToPositiveInfinityScalar:
-            case NI_AVX_Ceiling:
             case NI_AVX_RoundToPositiveInfinity:
             {
                 return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
@@ -533,9 +652,13 @@ struct HWIntrinsicInfo
 
             case NI_SSE41_Floor:
             case NI_SSE41_FloorScalar:
+            case NI_AVX_Floor:
+            {
+                FALLTHROUGH;
+            }
+
             case NI_SSE41_RoundToNegativeInfinity:
             case NI_SSE41_RoundToNegativeInfinityScalar:
-            case NI_AVX_Floor:
             case NI_AVX_RoundToNegativeInfinity:
             {
                 return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);
@@ -593,7 +716,9 @@ struct HWIntrinsicInfo
             assert(!"Unexpected type");
             return INS_invalid;
         }
-        return lookup(id).ins[type - TYP_BYTE];
+
+        uint16_t result = lookup(id).ins[type - TYP_BYTE];
+        return static_cast<instruction>(result);
     }
 
     static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
@@ -751,6 +876,14 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
 
+#ifdef TARGET_ARM64
+    static bool NeedsConsecutiveRegisters(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NeedsConsecutiveRegisters) != 0;
+    }
+#endif
+
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -808,6 +941,12 @@ struct HWIntrinsicInfo
                 return 2;
 #endif
 
+#ifdef TARGET_XARCH
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+                return 2;
+#endif // TARGET_XARCH
+
             default:
                 unreached();
         }
@@ -826,6 +965,24 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
 #endif // TARGET_ARM64
+
+    static bool HasSpecialSideEffect(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffectMask) != 0;
+    }
+
+    static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
+
+    static bool MaybeNoJmpTableImm(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeNoJmpTableIMM) != 0;
+    }
 };
 
 #ifdef TARGET_ARM64

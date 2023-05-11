@@ -283,7 +283,7 @@ namespace System.Net
                                     pResponse,
                                     null,
                                     &bytesSent,
-                                    SafeLocalAllocHandle.Zero,
+                                    null,
                                     0,
                                     asyncResult == null ? null : asyncResult._pOverlapped,
                                     null);
@@ -310,7 +310,7 @@ namespace System.Net
                                 pResponse,
                                 null,
                                 &bytesSent,
-                                SafeLocalAllocHandle.Zero,
+                                null,
                                 0,
                                 asyncResult == null ? null : asyncResult._pOverlapped,
                                 null);

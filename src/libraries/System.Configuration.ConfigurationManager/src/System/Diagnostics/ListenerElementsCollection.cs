@@ -82,12 +82,12 @@ namespace System.Diagnostics
         private static readonly ConfigurationProperty s_propName = new("name", typeof(string), null, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsKey);
         private static readonly ConfigurationProperty s_propOutputOpts = new("traceOutputOptions", typeof(TraceOptions), TraceOptions.None, ConfigurationPropertyOptions.None);
 
-        private ConfigurationProperty _propListenerTypeName;
-        private bool _allowReferences;
+        private readonly ConfigurationProperty _propListenerTypeName;
+        private readonly bool _allowReferences;
         private StringDictionary _attributes;
         internal bool _isAddedByDefault;
 
-        private static ConditionalWeakTable<TraceListener, string> s_initData = new();
+        private static readonly ConditionalWeakTable<TraceListener, string> s_initData = new();
 
         public ListenerElement(bool allowReferences) : base(typeof(TraceListener))
         {

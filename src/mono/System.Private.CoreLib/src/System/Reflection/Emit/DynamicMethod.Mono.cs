@@ -76,7 +76,7 @@ namespace System.Reflection.Emit
             }
             catch (MethodAccessException mae)
             {
-                throw new TargetInvocationException("Method cannot be invoked.", mae);
+                throw new TargetInvocationException(SR.TargetInvocation_MethodCannotBeInvoked, mae);
             }
         }
 

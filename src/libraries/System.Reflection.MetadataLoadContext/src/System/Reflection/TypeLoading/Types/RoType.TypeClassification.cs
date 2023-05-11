@@ -4,7 +4,7 @@
 namespace System.Reflection.TypeLoading
 {
     // Lazy-cached storage of group identification apis such as IsEnum and IsValueType
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         //
         // Splitting these bits into two latches - those that requires acquiring the BaseType (which could trigger a FileNotFoundException)
@@ -68,7 +68,7 @@ namespace System.Reflection.TypeLoading
         private volatile BaseTypeClassification _lazyBaseTypeClassification;
 
         // Keep this separate from the other TypeClassification computations as it locks in the core assembly name.
-        protected sealed override bool IsPrimitiveImpl()
+        protected override bool IsPrimitiveImpl()
         {
             CoreTypes coreTypes = Loader.GetAllFoundCoreTypes();
             foreach (CoreType primitiveType in s_primitiveTypes)

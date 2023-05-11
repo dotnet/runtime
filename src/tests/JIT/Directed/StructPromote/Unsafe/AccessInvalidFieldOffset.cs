@@ -9,8 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System;
+using Xunit;
 
-class TestStructAccessThroughRef
+public class TestStructAccessThroughRef
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -53,7 +54,8 @@ class TestStructAccessThroughRef
         Debug.Assert(a.smallField == 0x7);
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestStructCasts();
         return 100;

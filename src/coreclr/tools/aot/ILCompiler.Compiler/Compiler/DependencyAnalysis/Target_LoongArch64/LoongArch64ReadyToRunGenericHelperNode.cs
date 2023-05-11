@@ -30,7 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitMOV(result, (ushort)0);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell
@@ -78,8 +82,8 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, factory.Target.PointerSize);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 1);
+                            encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, 0);
+                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);

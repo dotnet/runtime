@@ -13,6 +13,22 @@
 #include <cstdlib>
 #include <intrin.h>
 
+// Don't allow using the windows.h #defines for the BitScan* APIs. Using the #defines means our
+// `BitOperations::BitScan*` functions have their name mapped, which is confusing and messes up
+// Visual Studio source browsing.
+#ifdef BitScanForward
+#undef BitScanForward
+#endif
+#ifdef BitScanReverse
+#undef BitScanReverse
+#endif
+#ifdef BitScanForward64
+#undef BitScanForward64
+#endif
+#ifdef BitScanReverse64
+#undef BitScanReverse64
+#endif
+
 #include "jitconfig.h"
 #include "jit.h"
 #include "iallocator.h"

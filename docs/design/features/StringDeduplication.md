@@ -197,7 +197,7 @@ We do have some libraries that rely on `ReferenceEquals`. We need to figure out 
 
 - Additional checks in heap verification
 
-Heap verification will now include checks to verify that no one changes the string content after it’s hash is computed. This can be turned on when a certain level of COMPlus_HeapVerify is specified.
+Heap verification will now include checks to verify that no one changes the string content after it’s hash is computed. This can be turned on when a certain level of DOTNET_HeapVerify is specified.
 
 - Stress mode
 

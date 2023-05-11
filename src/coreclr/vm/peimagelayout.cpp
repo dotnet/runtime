@@ -58,7 +58,7 @@ PEImageLayout* PEImageLayout::CreateFromHMODULE(HMODULE hModule, PEImage* pOwner
 }
 #endif
 
-PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
+PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping)
 {
     STANDARD_VM_CONTRACT;
 
@@ -85,14 +85,14 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner)
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
     // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader());
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
     // ignore R2R if the image is not a file.
     if ((pFlat->HasReadyToRunHeader() && pOwner->IsFile()) ||
         pFlat->HasWriteableSections())
     {
-        return new ConvertedImageLayout(pFlat);
+        return new ConvertedImageLayout(pFlat, disableMapping);
     }
 
     // we can use flat layout for this
@@ -103,6 +103,8 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 {
     STANDARD_VM_CONTRACT;
 
+    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
+
     if (pOwner->IsFile())
     {
         if (!pOwner->IsInBundle()
@@ -111,19 +113,26 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 #endif
             )
         {
-            PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
-            if (pAlloc->GetBase() != NULL)
-                return pAlloc.Extract();
+#if defined(TARGET_UNIX)
+            if (!disableMapping)
+#endif
+            {
+
+                PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
+                if (pAlloc->GetBase() != NULL)
+                    return pAlloc.Extract();
 
 #if TARGET_WINDOWS
-            // OS loader is always right. If a file cannot be loaded, do not try any further.
-            // Even if we may be able to load it, we do not want to support such files.
-            return NULL;
+                // For regular PE files always use OS loader on Windows.
+                // If a file cannot be loaded, do not try any further.
+                // Even if we may be able to load it, we do not want to support such files.
+                return NULL;
 #endif
+            }
         }
     }
 
-    return PEImageLayout::LoadConverted(pOwner);
+    return PEImageLayout::LoadConverted(pOwner, disableMapping);
 }
 
 PEImageLayout* PEImageLayout::LoadFlat(PEImage* pOwner)
@@ -411,7 +420,7 @@ void ConvertedImageLayout::FreeImageParts()
     }
 }
 
-ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
+ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disableMapping)
 {
     CONTRACTL
     {
@@ -432,14 +441,17 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source)
     LOG((LF_LOADER, LL_INFO100, "PEImage: Opening manually mapped stream\n"));
 
 #ifdef TARGET_WINDOWS
-    loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
-    if (loadedImage == NULL)
+    if (!disableMapping)
     {
-        FreeImageParts();
-    }
-    else
-    {
-        relocationMustWriteCopy = true;
+        loadedImage = source->LoadImageByMappingParts(this->m_imageParts);
+        if (loadedImage == NULL)
+        {
+            FreeImageParts();
+        }
+        else
+        {
+            relocationMustWriteCopy = true;
+        }
     }
 #endif //TARGET_WINDOWS
 

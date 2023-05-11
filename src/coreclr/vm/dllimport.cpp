@@ -2102,15 +2102,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // FEATURE_COMINTEROP
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-                // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
 
-#ifdef _DEBUG // There are five more pointer values for _DEBUG
-                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 8 + 8);
-                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 8 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
-#else // _DEBUG
-                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 3 + 8);
-                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
-#endif // _DEBUG
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
                 pcsEmit->EmitADD();
 
                 pcsEmit->EmitLDIND_I();
@@ -4532,7 +4525,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     // Retrieve the type
     //
     TypeHandle stubClassType;
-    stubClassType = TypeName::GetTypeUsingCASearchRules(typeName.GetUnicode(), pTargetMT->GetAssembly());
+    stubClassType = TypeName::GetTypeReferencedByCustomAttribute(typeName.GetUnicode(), pTargetMT->GetAssembly());
 
     MethodTable *pStubClassMT = stubClassType.AsMethodTable();
 

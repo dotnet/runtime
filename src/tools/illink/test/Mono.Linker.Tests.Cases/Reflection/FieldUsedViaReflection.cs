@@ -60,14 +60,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestNameUnknownBindingFlags (BindingFlags bindingFlags)
 		{
-			// Since the binding flags are not known linker should mark all fields on the type
+			// Since the binding flags are not known trimming tools should mark all fields on the type
 			var field = typeof (UnknownBindingFlags).GetField ("field", bindingFlags);
 		}
 
 		[Kept]
 		static void TestNameUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
 		{
-			// Since the binding flags and name are not known linker should mark all fields on the type
+			// Since the binding flags and name are not known trimming tools should mark all fields on the type
 			var field = typeof (UnknownBindingFlagsAndName).GetField (name, bindingFlags);
 		}
 

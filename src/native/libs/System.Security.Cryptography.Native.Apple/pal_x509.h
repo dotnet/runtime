@@ -30,10 +30,9 @@ Returns 1 on success, 0 on failure, any other value on invalid state.
 
 Output:
 pPublicKeyOut: Receives a CFRetain()ed SecKeyRef for the public key
-pOSStatusOut: Receives the result of SecCertificateCopyKey or SecCertificateCopyPublicKey, depending on the OS version.
 */
 PALEXPORT int32_t
-AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut, int32_t* pOSStatusOut);
+AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKeyOut);
 
 /*
 Determines the data type of the provided input.

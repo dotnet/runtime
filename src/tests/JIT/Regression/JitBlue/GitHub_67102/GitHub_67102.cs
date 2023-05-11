@@ -10,10 +10,12 @@
 //       needed and because of that we would see mismatch in assigned
 //       interval for those two registers.
 using System;
+using Xunit;
 
 public class Program_67102
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Func<double, double, Size>(new OrientationBasedMeasures().MinorMajorSize)(1, 2);
         return 100;

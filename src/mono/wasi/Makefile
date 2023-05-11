@@ -10,6 +10,7 @@ endif
 
 DOTNET=$(TOP)/dotnet.sh
 
+WASI_SDK_PATH?=$(TOP)/src/mono/wasi/wasi-sdk
 CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
@@ -60,7 +61,7 @@ run-tests-%:
 	$(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	$(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+	WASI_SDK_PATH=$(WASI_SDK_PATH) $(DOTNET) build $(TOP)/src/mono/wasi//Wasi.Build.Tests/ /t:Test /bl $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
@@ -75,6 +76,18 @@ submit-debugger-tests-helix: build-debugger-tests-helix
 		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
 		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
 		/p:_Scenarios=wasmdebuggertests \
+		$(_MSBUILD_WASM_BUILD_ARGS) \
+		$(MSBUILD_ARGS)
+
+submit-wbt-helix:
+	PATH="$(JSVU):$(PATH)" \
+		$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \
+	WASI_SDK_PATH=$(WASI_SDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
+		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
+		/p:TestRunNamePrefixSuffix=WasiBuildTests /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
+		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -v:m -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
+		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
+		/p:_Scenarios=buildwasmapps \
 		$(_MSBUILD_WASM_BUILD_ARGS) \
 		$(MSBUILD_ARGS)
 

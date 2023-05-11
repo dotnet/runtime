@@ -1045,7 +1045,10 @@ namespace Internal.IL
                     // magic fields the compiler synthetized, the data blob might bring more dependencies
                     // and we need to scan those.
                     _dependencies.Add(_compilation.GetFieldRvaData(field), reason);
-                    // TODO: lazy cctor dependency
+                    // RVA static fields in generic types not implemented
+                    Debug.Assert(!field.OwningType.HasInstantiation);
+                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType), "Cctor context");
                     return;
                 }
 
@@ -1178,15 +1181,17 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            var type = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
-            if (type.IsRuntimeDeterminedSubtype)
+            var elementType = (TypeDesc)_methodIL.GetObject(token);
+            if (elementType.IsRuntimeDeterminedSubtype)
             {
-                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "newarr");
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, elementType.MakeArrayType()), "newarr");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewArray), "newarr");
             }
             else
             {
-                _dependencies.Add(_factory.ConstructedTypeSymbol(type), "newarr");
+                if (elementType.IsVoid)
+                    ThrowHelper.ThrowInvalidProgramException();
+                _dependencies.Add(_factory.ConstructedTypeSymbol(elementType.MakeArrayType()), "newarr");
             }
         }
 

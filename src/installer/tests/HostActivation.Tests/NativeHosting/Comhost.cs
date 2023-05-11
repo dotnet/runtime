@@ -214,8 +214,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 // Include the test type libraries in the ComHost tests.
                 TypeLibraries = new Dictionary<int, string>
                 {
-                    { 1, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Server.tlb") },
-                    { 2, Path.Combine(RepoDirectories.Artifacts, "corehost_test", "Nested.tlb") }
+                    { 1, Path.Combine(RepoDirectories.HostTestArtifacts, "Server.tlb") },
+                    { 2, Path.Combine(RepoDirectories.HostTestArtifacts, "Nested.tlb") }
                 };
 
                 ComHost.Create(

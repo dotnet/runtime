@@ -25,7 +25,7 @@ namespace Mono.Linker.Dataflow
 
 		public void Add (TrimAnalysisAssignmentPattern pattern)
 		{
-			// In the linker, each pattern should have a unique origin (which has ILOffset)
+			// While trimming, each pattern should have a unique origin (which has ILOffset)
 			// but we don't track the correct ILOffset for return instructions.
 			// https://github.com/dotnet/linker/issues/2778
 			// For now, work around it with a separate bit.

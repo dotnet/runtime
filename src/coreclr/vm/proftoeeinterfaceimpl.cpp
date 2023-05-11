@@ -77,22 +77,22 @@
 //  The above restrictions are lifted for certain tests that run with these environment
 //  variables set. (These are only available on DEBUG builds--including chk--not retail
 //  builds.)
-//    * COMPlus_TestOnlyEnableSlowELTHooks:
+//    * DOTNET_TestOnlyEnableSlowELTHooks:
 //         * If nonzero, then on startup the runtime will act as if a profiler was loaded
 //             on startup and requested ELT slow-path (even if no profiler is loaded on
 //             startup). This will also allow the SetEnterLeaveFunctionHooks(2) info
 //             functions to be called outside of Initialize(). If a profiler later
 //             attaches and calls these functions, then the slow-path wrapper will call
 //             into the profiler's ELT hooks.
-//    * COMPlus_TestOnlyEnableObjectAllocatedHook:
+//    * DOTNET_TestOnlyEnableObjectAllocatedHook:
 //         * If nonzero, then on startup the runtime will act as if a profiler was loaded
 //             on startup and requested ObjectAllocated callback (even if no profiler is loaded
 //             on startup). If a profiler later attaches and calls these functions, then the
 //             ObjectAllocated notifications will call into the profiler's ObjectAllocated callback.
-//    * COMPlus_TestOnlyEnableICorProfilerInfo:
+//    * DOTNET_TestOnlyEnableICorProfilerInfo:
 //         * If nonzero, then attaching profilers allows to call ICorProfilerInfo interface,
 //             which would otherwise be disallowed for attaching profilers
-//    * COMPlus_TestOnlyAllowedEventMask
+//    * DOTNET_TestOnlyAllowedEventMask
 //         * If a profiler needs to work around the restrictions of either
 //             COR_PRF_ALLOWABLE_AFTER_ATTACH or COR_PRF_MONITOR_IMMUTABLE it may set
 //             this environment variable. Its value should be a bitmask containing all
@@ -125,6 +125,7 @@
 #include "safemath.h"
 #include "threadsuspend.h"
 #include "inlinetracking.h"
+#include "frozenobjectheap.h"
 
 #ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
@@ -570,6 +571,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo13)
     {
         *pInterface = static_cast<ICorProfilerInfo13 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo14)
+    {
+        *pInterface = static_cast<ICorProfilerInfo14 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -7586,6 +7591,102 @@ HRESULT ProfToEEInterfaceImpl::GetObjectIDFromHandle(
     return S_OK;
 }
 
+HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** ppEnum)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF, LL_INFO1000, "**PROF: EnumerateNonGCObjects.\n"));
+
+    if (NULL == ppEnum)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+
+    *ppEnum = NULL;
+
+    NewHolder<ProfilerObjectEnum> pEnum(new (nothrow) ProfilerObjectEnum());
+    if (pEnum == NULL || !pEnum->Init())
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    *ppEnum = (ICorProfilerObjectEnum*)pEnum.Extract();
+
+    return hr;
+}
+
+HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
+                                                  ULONG *pcObjectRanges,
+                                                  COR_PRF_NONGC_HEAP_RANGE ranges[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
+        CAN_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    if ((cObjectRanges > 0) && (ranges == nullptr))
+    {
+        // Copy GetGenerationBounds's behavior for consistency
+        return E_INVALIDARG;
+    }
+
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    CrstHolder ch(&foh->m_Crst);
+
+    const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
+    FrozenObjectSegment** segments = foh->m_FrozenSegments.GetElements();
+    if (segments != nullptr && segmentsCount > 0)
+    {
+        const ULONG segmentsToInspect = min(cObjectRanges, (ULONG)segmentsCount);
+
+        for (unsigned segIdx = 0; segIdx < segmentsToInspect; segIdx++)
+        {
+            uint8_t* firstObj = segments[segIdx]->m_pStart + sizeof(ObjHeader);
+
+            // Start of the segment (first object)
+            ranges[segIdx].rangeStart = (ObjectID)firstObj;
+
+            // Total size reserved for a segment
+            ranges[segIdx].rangeLengthReserved = (UINT_PTR)segments[segIdx]->m_Size;
+
+            // Size of the segment that is currently in use
+            ranges[segIdx].rangeLength = (UINT_PTR)(segments[segIdx]->m_pCurrent - firstObj);
+        }
+
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = (ULONG)segmentsCount;
+        }
+    }
+    else
+    {
+        if (pcObjectRanges != nullptr)
+        {
+            *pcObjectRanges = 0;
+        }
+    }
+    return S_OK;
+}
 
 /*
  * GetStringLayout
@@ -9140,6 +9241,15 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
     _ASSERTE((GetThreadNULLOk() == NULL) || (GetThreadNULLOk()->PreemptiveGCDisabled()));
 
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+
+    if (hp->IsInFrozenSegment((Object*)objectId))
+    {
+        range->generation = (COR_PRF_GC_GENERATION)INT32_MAX;
+        range->rangeStart = 0;
+        range->rangeLength = 0;
+        range->rangeLengthReserved = 0;
+        return CORPROF_E_NOT_GC_OBJECT;
+    }
 
     uint8_t* pStart;
     uint8_t* pAllocated;

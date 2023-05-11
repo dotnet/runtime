@@ -17,7 +17,7 @@ namespace System.Globalization
         private const int MinCalendarYear = 1318;
         private const int MaxCalendarYear = 1500;
 
-        private struct DateMapping
+        private readonly struct DateMapping
         {
             internal DateMapping(int MonthsLengthFlags, int GYear, int GMonth, int GDay)
             {
@@ -25,8 +25,8 @@ namespace System.Globalization
                 GregorianDate = new DateTime(GYear, GMonth, GDay);
             }
 
-            internal int HijriMonthsLengthFlags;
-            internal DateTime GregorianDate;
+            internal readonly int HijriMonthsLengthFlags;
+            internal readonly DateTime GregorianDate;
         }
 
         private static readonly DateMapping[] s_hijriYearInfo = InitDateMapping();

@@ -166,7 +166,6 @@ namespace ILCompiler
             {
                 // Either single file, or multifile library, or multifile consumption.
                 EcmaModule entrypointModule = null;
-                bool systemModuleIsInputModule = false;
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -178,13 +177,11 @@ namespace ILCompiler
                         entrypointModule = module;
                     }
 
-                    if (module == typeSystemContext.SystemModule)
-                        systemModuleIsInputModule = true;
-
-                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 bool nativeLib = Get(_command.NativeLib);
+                bool SplitExeInitialization = Get(_command.SplitExeInitialization);
                 if (multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -205,11 +202,9 @@ namespace ILCompiler
                 }
                 else
                 {
-                    if (entrypointModule == null && !nativeLib)
+                    if (entrypointModule == null && (!nativeLib || SplitExeInitialization))
                         throw new Exception("No entrypoint module");
 
-                    if (!systemModuleIsInputModule)
-                        compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
                 }
 
@@ -221,12 +216,31 @@ namespace ILCompiler
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                    if (SplitExeInitialization)
+                    {
+                        compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
+                    }
                 }
                 else if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
+                    compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: !SplitExeInitialization));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(runtimeOptions));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
+                    if (SplitExeInitialization)
+                    {
+                        compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
+                    }
+                }
+
+                foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
+                {
+                    if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
+                    {
+                        // Skip adding UnmanagedEntryPointsRootProvider for modules that have been already registered as an input module
+                        continue;
+                    }
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(unmanagedEntryPointsAssembly);
+                    compilationRoots.Add(new UnmanagedEntryPointsRootProvider(module));
                 }
 
                 foreach (var rdXmlFilePath in Get(_command.RdXmlFilePaths))
@@ -334,8 +348,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
-                    new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
+                mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 
@@ -471,6 +484,15 @@ namespace ILCompiler
                     preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, scanResults.GetPreinitializationPolicy());
                     builder.UsePreinitializationManager(preinitManager);
                 }
+
+                // If we have a scanner, we can inline threadstatics storage using the information
+                // we collected at scanning time.
+                // Inlined storage implies a single type manager, thus we do not do it in multifile case.
+                // This could be a command line switch if we really wanted to.
+                if (!multiFile)
+                {
+                    builder.UseInlinedThreadStatics(scanResults.GetInlinedThreadStatics());
+                }
             }
 
             string ilDump = Get(_command.IlDump);
@@ -522,7 +544,7 @@ namespace ILCompiler
                 ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, exportsFile);
                 foreach (var compilationRoot in compilationRoots)
                 {
-                    if (compilationRoot is ExportedMethodsRootProvider provider)
+                    if (compilationRoot is UnmanagedEntryPointsRootProvider provider)
                         defFileWriter.AddExportedMethods(provider.ExportedMethods);
                 }
 
@@ -616,11 +638,9 @@ namespace ILCompiler
         {
             ModuleDesc systemModule = context.SystemModule;
 
-            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc foundType = systemModule.GetTypeByCustomAttributeTypeName(typeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
+
             if (foundType == null)
                 throw new CommandLineException($"Type '{typeName}' not found");
 

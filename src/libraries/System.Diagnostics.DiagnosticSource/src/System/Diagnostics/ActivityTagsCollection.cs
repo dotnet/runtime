@@ -21,7 +21,7 @@ namespace System.Diagnostics
     /// </summary>
     public class ActivityTagsCollection : IDictionary<string, object?>
     {
-        private List<KeyValuePair<string, object?>> _list = new List<KeyValuePair<string, object?>>();
+        private readonly List<KeyValuePair<string, object?>> _list = new List<KeyValuePair<string, object?>>();
 
         /// <summary>
         /// Create a new instance of the collection.

@@ -25,7 +25,6 @@
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DiagnosticUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializer.cs" />
@@ -35,6 +34,7 @@
     <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
     <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExceptionUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExportOptions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" />
@@ -57,7 +57,6 @@
     <Compile Include="$(RuntimeSerializationSources)\ScopedKnownTypes.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SerializationOption.cs" />
     <Compile Include="$(RuntimeSerializationSources)\SpecialTypeDataContract.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\SurrogateDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatGeneratorStatics.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlFormatReaderGenerator.cs" />

@@ -40,7 +40,7 @@ namespace System.Runtime
 {
     internal static class Constants
     {
-#if TARGET_ARM64 && TARGET_OSX
+#if TARGET_ARM64 && (TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS)
         public const uint PageSize = 0x4000;                   // 16k
         public const nuint PageSizeMask = 0x3FFF;
 #else

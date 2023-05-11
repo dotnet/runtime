@@ -21,6 +21,7 @@
 #include "jit-icalls.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+#include "llvmonly-runtime.h"
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
@@ -42,17 +43,19 @@ mono_ldftn (MonoMethod *method)
 
 	if (mono_llvm_only) {
 		// FIXME: No error handling
+		if (mono_method_signature_internal (method)->pinvoke) {
+			addr = mono_compile_method_checked (method, error);
+			mono_error_assert_ok (error);
+			g_assert (addr);
 
-		addr = mono_compile_method_checked (method, error);
-		mono_error_assert_ok (error);
-		g_assert (addr);
+			return addr;
+		} else {
+			/* Managed function pointers are ftndesc's */
+			addr = mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
+			mono_error_assert_ok (error);
 
-		if (mono_method_needs_static_rgctx_invoke (method, FALSE))
-			/* The caller doesn't pass it */
-			g_assert_not_reached ();
-
-		addr = mini_add_method_trampoline (method, addr, mono_method_needs_static_rgctx_invoke (method, FALSE), FALSE);
-		return addr;
+			return addr;
+		}
 	}
 
 	/* if we need the address of a native-to-managed wrapper, just compile it now, trampoline needs thread local
@@ -1594,6 +1597,11 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
+
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1607,6 +1615,11 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
 	ERROR_DECL (error);
 	gpointer res;
+
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, error);
 	if (!is_ok (error)) {
@@ -1703,6 +1716,16 @@ mono_dummy_jit_icall (void)
 void
 mono_dummy_jit_icall_val (gpointer val)
 {
+}
+
+/* Dummy icall place holder function representing runtime init call. */
+/* When used, function will be replaced with a direct icall to a custom */
+/* runtime init function called from start of native-to-managed wrapper. */
+/* This function should never end up being called. */
+void
+mono_dummy_runtime_init_callback (void)
+{
+	g_assert (!"Runtime incorrectly configured to support runtime init callback from native-to-managed wrapper.");
 }
 
 void

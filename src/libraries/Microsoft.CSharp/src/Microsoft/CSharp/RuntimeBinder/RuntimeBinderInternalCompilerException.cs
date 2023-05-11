@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -46,6 +47,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> that holds the serialized object data about the exception being thrown.</param>
         /// <param name="context">The <see cref="StreamingContext"/>  that contains contextual information about the source or destination.</param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected RuntimeBinderInternalCompilerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

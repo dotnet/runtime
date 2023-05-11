@@ -361,18 +361,6 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
     return (void*)RhpUniversalTransition;
 }
 
-extern CrstStatic g_CastCacheLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireCastCacheLock()
-{
-    g_CastCacheLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseCastCacheLock()
-{
-    g_CastCacheLock.Leave();
-}
-
 extern CrstStatic g_ThunkPoolLock;
 
 EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()

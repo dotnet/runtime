@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
 using System.Reflection;
 using System.ServiceProcess;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -17,6 +17,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public class UseWindowsServiceTests
     {
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
+
         private static MethodInfo? _addWindowsServiceLifetimeMethod = null;
 
         [Fact]
@@ -28,6 +30,26 @@ namespace Microsoft.Extensions.Hosting
 
             var lifetime = host.Services.GetRequiredService<IHostLifetime>();
             Assert.IsType<ConsoleLifetime>(lifetime);
+        }
+
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        public void CanCreateService()
+        {
+            using var serviceTester = WindowsServiceTester.Create(() =>
+            {
+                using IHost host = new HostBuilder()
+                    .UseWindowsService()
+                    .Build();
+                host.Run();
+            });
+
+            serviceTester.Start();
+            serviceTester.WaitForStatus(ServiceControllerStatus.Running);
+            serviceTester.Stop();
+            serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
+
+            var status = serviceTester.QueryServiceStatus();
+            Assert.Equal(0, status.win32ExitCode);
         }
 
         [Fact]
@@ -66,7 +88,7 @@ namespace Microsoft.Extensions.Hosting
             var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
             {
                 ApplicationName = appName,
-            }); 
+            });
 
             // Emulate calling builder.Services.AddWindowsService() from inside a Windows service.
             AddWindowsServiceLifetime(builder.Services);
@@ -82,7 +104,7 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void ServiceCollectionExtensionMethodCanBeCalledOnDefaultConfiguration()
         {
-            var builder = new HostApplicationBuilder(); 
+            var builder = new HostApplicationBuilder();
 
             // Emulate calling builder.Services.AddWindowsService() from inside a Windows service.
             AddWindowsServiceLifetime(builder.Services);

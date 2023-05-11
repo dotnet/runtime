@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -10,6 +11,15 @@ namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
+        private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
+#if NET8_0_OR_GREATER
+        private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(SpecialCharacters);
+#else
+        private static ReadOnlySpan<char> s_specialCharacters => SpecialCharacters.AsSpan();
+#endif
+        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text)
+            => text.IndexOfAny(s_specialCharacters) >= 0;
+
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
             int lastLineFeedIndex = data.LastIndexOf(JsonConstants.LineFeed);
@@ -66,22 +76,6 @@ namespace System.Text.Json
         // A hex digit is valid if it is in the range: [0..9] | [A..F] | [a..f]
         // Otherwise, return false.
         public static bool IsHexDigit(byte nextByte) => HexConverter.IsHexChar(nextByte);
-
-        // https://tools.ietf.org/html/rfc8259
-        // Does the span contain '"', '\',  or any control characters (i.e. 0 to 31)
-        // IndexOfAny(34, 92, < 32)
-        // Borrowed and modified from SpanHelpers.Byte:
-        // https://github.com/dotnet/corefx/blob/fc169cddedb6820aaabbdb8b7bece2a3df0fd1a5/src/Common/src/CoreLib/System/SpanHelpers.Byte.cs#L473-L604
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
-        {
-            return IndexOfOrLessThan(
-                    ref MemoryMarshal.GetReference(span),
-                    JsonConstants.Quote,
-                    JsonConstants.BackSlash,
-                    lessThan: 32,   // Space ' '
-                    span.Length);
-        }
 
         public static bool TryGetEscapedDateTime(ReadOnlySpan<byte> source, out DateTime value)
         {

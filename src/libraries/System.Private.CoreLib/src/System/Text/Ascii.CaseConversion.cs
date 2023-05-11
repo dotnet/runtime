@@ -161,7 +161,7 @@ namespace System.Text
         {
             if (MemoryMarshal.AsBytes(source).Overlaps(MemoryMarshal.AsBytes(destination)))
             {
-                throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
             }
 
             nuint numElementsToConvert;
@@ -238,7 +238,7 @@ namespace System.Text
                 // Unaligned read and check for non-ASCII data.
 
                 Vector128<TFrom> srcVector = Vector128.LoadUnsafe(ref *pSrc);
-                if (VectorContainsAnyNonAsciiData(srcVector))
+                if (VectorContainsNonAsciiChar(srcVector))
                 {
                     goto Drain64;
                 }
@@ -291,7 +291,7 @@ namespace System.Text
                     // Unaligned read & check for non-ASCII data.
 
                     srcVector = Vector128.LoadUnsafe(ref *pSrc, i);
-                    if (VectorContainsAnyNonAsciiData(srcVector))
+                    if (VectorContainsNonAsciiChar(srcVector))
                     {
                         goto Drain64;
                     }
@@ -461,30 +461,6 @@ namespace System.Text
         Return:
 
             return i;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool VectorContainsAnyNonAsciiData<T>(Vector128<T> vector)
-            where T : unmanaged
-        {
-            if (sizeof(T) == 1)
-            {
-                if (vector.ExtractMostSignificantBits() != 0) { return true; }
-            }
-            else if (sizeof(T) == 2)
-            {
-                if (VectorContainsNonAsciiChar(vector.AsUInt16()))
-                {
-                    return true;
-                }
-            }
-            else
-            {
-                Debug.Fail("Unknown types provided.");
-                throw new NotSupportedException();
-            }
-
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

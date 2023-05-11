@@ -4,7 +4,7 @@ namespace Mono.Linker.Tests.Cases.Generics
 {
 	class DerivedClassWithMethodOfSameNameAsBaseButDifferentNumberOfGenericParametersUnusedBaseWillGetStripped
 	{
-		public static void Main (string[] args)
+		public static void Main ()
 		{
 			MyDerived obj = new MyDerived ();
 			obj.Method<int, int> (1);

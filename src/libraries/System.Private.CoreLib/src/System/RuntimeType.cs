@@ -25,7 +25,12 @@ namespace System
         public override int MetadataToken => RuntimeTypeHandle.GetToken(this);
         public override Module Module => GetRuntimeModule();
         public override Type? ReflectedType => DeclaringType;
-        public override RuntimeTypeHandle TypeHandle => new RuntimeTypeHandle(this);
+        public override RuntimeTypeHandle TypeHandle
+        {
+            [Intrinsic] // to avoid round-trip "handle -> RuntimeType -> handle" in JIT
+            get => new RuntimeTypeHandle(this);
+        }
+
         public override Type UnderlyingSystemType => this;
 
         public object Clone() => this;
@@ -234,19 +239,19 @@ namespace System
 
             return GetTypeCode(underlyingType) switch
             {
-                TypeCode.SByte => Enum.IsDefinedPrimitive(this, (sbyte)value),
+                TypeCode.SByte => Enum.IsDefinedPrimitive(this, (byte)(sbyte)value),
                 TypeCode.Byte => Enum.IsDefinedPrimitive(this, (byte)value),
-                TypeCode.Int16 => Enum.IsDefinedPrimitive(this, (short)value),
+                TypeCode.Int16 => Enum.IsDefinedPrimitive(this, (ushort)(short)value),
                 TypeCode.UInt16 => Enum.IsDefinedPrimitive(this, (ushort)value),
-                TypeCode.Int32 => Enum.IsDefinedPrimitive(this, (int)value),
+                TypeCode.Int32 => Enum.IsDefinedPrimitive(this, (uint)(int)value),
                 TypeCode.UInt32 => Enum.IsDefinedPrimitive(this, (uint)value),
-                TypeCode.Int64 => Enum.IsDefinedPrimitive(this, (long)value),
+                TypeCode.Int64 => Enum.IsDefinedPrimitive(this, (ulong)(long)value),
                 TypeCode.UInt64 => Enum.IsDefinedPrimitive(this, (ulong)value),
                 TypeCode.Single => Enum.IsDefinedPrimitive(this, (float)value),
                 TypeCode.Double => Enum.IsDefinedPrimitive(this, (double)value),
                 TypeCode.Char => Enum.IsDefinedPrimitive(this, (char)value),
                 _ =>
-                    underlyingType == typeof(nint) ? Enum.IsDefinedPrimitive(this, (nint)value) :
+                    underlyingType == typeof(nint) ? Enum.IsDefinedPrimitive(this, (nuint)(nint)value) :
                     underlyingType == typeof(nuint) ? Enum.IsDefinedPrimitive(this, (nuint)value) :
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
             };

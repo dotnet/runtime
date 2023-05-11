@@ -81,9 +81,6 @@
   <data name="Format_TooLarge" xml:space="preserve">
     <value>The value is too large to be represented by this format specifier.</value>
   </data>
-  <data name="ArgumentOutOfRange_MustBeNonNeg" xml:space="preserve">
-    <value>The number must be greater than or equal to zero.</value>
-  </data>
   <data name="Overflow_BigIntInfinity" xml:space="preserve">
     <value>BigInteger cannot represent infinity.</value>
   </data>

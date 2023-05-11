@@ -4,6 +4,7 @@
 using System.IO;
 using System.Globalization;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
@@ -164,6 +165,8 @@ namespace System.Reflection
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public virtual FileStream[] GetFiles(bool getResourceModules) { throw NotImplemented.ByDesign; }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override string ToString()

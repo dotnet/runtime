@@ -83,28 +83,21 @@ namespace System.Net.Http
                 // the latter can't in turn have an explicit dependency on the former.
 
                 // Get the relevant types needed.
-                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpMessageHandlerType = Type.GetType("System.Net.Http.HttpMessageHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpResponseHeadersType = Type.GetType("System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http", throwOnError: false);
+                Type? httpMessageHandlerType = Type.GetType("System.Net.Http.HttpMessageHandler, System.Net.Http", throwOnError: false);
+                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http", throwOnError: false);
+                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http", throwOnError: false);
+                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http", throwOnError: false);
+                Type? httpResponseHeadersType = Type.GetType("System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http", throwOnError: false);
+                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http", throwOnError: false);
+                Type? taskOfHttpResponseMessageType = Type.GetType("System.Threading.Tasks.Task`1[[System.Net.Http.HttpResponseMessage, System.Net.Http]], System.Runtime", throwOnError: false);
 
                 if (socketsHttpHandlerType == null || httpMessageHandlerType == null || httpClientType == null || httpRequestMessageType == null ||
-                    httpResponseMessageType == null || httpResponseHeadersType == null || httpContentType == null)
+                    httpResponseMessageType == null || httpResponseHeadersType == null || httpContentType == null || taskOfHttpResponseMessageType == null)
                 {
                     Debug.Fail("Unable to load required type.");
                     return null;
                 }
-
-                // Workaround until https://github.com/dotnet/runtime/issues/72833 is fixed
-                [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                   Justification = "The type HttpResponseMessage is a reference type")]
-                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-                static Type GetTaskOfHttpResponseMessageType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
-
-                Type taskOfHttpResponseMessageType = GetTaskOfHttpResponseMessageType(httpResponseMessageType);
 
                 // Get the methods on those types.
                 ConstructorInfo? socketsHttpHandlerCtor = socketsHttpHandlerType.GetConstructor(Type.EmptyTypes);

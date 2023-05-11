@@ -32,6 +32,7 @@ namespace System.Text.Json.SourceGeneration
             internal const string JsonContextVarName = "jsonContext";
             private const string NumberHandlingPropName = "NumberHandling";
             private const string UnmappedMemberHandlingPropName = "UnmappedMemberHandling";
+            private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
             private const string JsonTypeInfoReturnValueLocalVariableName = "jsonTypeInfo";
@@ -41,9 +42,9 @@ namespace System.Text.Json.SourceGeneration
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
 
-            private static AssemblyName _assemblyName = typeof(Emitter).Assembly.GetName();
+            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
             private static readonly string s_generatedCodeAttributeSource = $@"
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{_assemblyName.Name}"", ""{_assemblyName.Version}"")]
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]
 ";
 
             // global::fully.qualified.name for referenced types
@@ -65,6 +66,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonCollectionInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues";
             private const string JsonIgnoreConditionTypeRef = "global::System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonNumberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonNumberHandling";
+            private const string JsonObjectCreationHandlingTypeRef = "global::System.Text.Json.Serialization.JsonObjectCreationHandling";
             private const string JsonUnmappedMemberHandlingTypeRef = "global::System.Text.Json.Serialization.JsonUnmappedMemberHandling";
             private const string JsonMetadataServicesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonMetadataServices";
             private const string JsonObjectInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonObjectInfoValues";
@@ -657,6 +659,14 @@ namespace {{@namespace}}
 """;
                 }
 
+                if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
+                {
+                    objectInfoInitSource += $"""
+
+        {JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};
+""";
+                }
+
                 string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
 
                 return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
@@ -762,6 +772,12 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerO
     {propertyInfoVarName}.IsRequired = true;");
                     }
 
+                    if (memberMetadata.ObjectCreationHandling != null)
+                    {
+                        sb.Append($@"
+    {propertyInfoVarName}.ObjectCreationHandling = {GetObjectCreationHandlingAsStr(memberMetadata.ObjectCreationHandling.Value)};");
+                    }
+
                     sb.Append($@"
     {PropVarName}[{i}] = {propertyInfoVarName};
 ");
@@ -830,7 +846,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                         sb.Append(@$"
     {InfoVarName} = new()
     {{
-        Name = ""{spec.Property.JsonPropertyName ?? spec.Property.ClrName}"",
+        Name = ""{spec.Property.ClrName}"",
         ParameterType = typeof({spec.Property.TypeGenerationSpec.TypeRef}),
         Position = {spec.ParameterIndex},
         HasDefaultValue = false,
@@ -1322,33 +1338,16 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
             {
                 StringBuilder sb = new();
 
+                // JsonSerializerContext.GetTypeInfo override -- returns cached metadata via JsonSerializerOptions
                 sb.Append(
 @$"/// <inheritdoc/>
 public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
-{{");
-                // This method body grows linearly over the number of generated types.
-                // In line with https://github.com/dotnet/runtime/issues/77897 we should
-                // eventually replace this method with a direct call to Options.GetTypeInfo().
-                // We can't do this currently because Options.GetTypeInfo throws whereas
-                // this GetTypeInfo returns null for unsupported types, so we need new API to support it.
-                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
-                {
-                    if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
-                    {
-                        sb.Append($@"
-    if (type == typeof({metadata.TypeRef}))
-    {{
-        return this.{metadata.TypeInfoPropertyName};
-    }}
+{{
+    {OptionsInstanceVariableName}.TryGetTypeInfo(type, out {JsonTypeInfoTypeRef}? typeInfo);
+    return typeInfo;
+}}
 ");
-                    }
-                }
-
-                sb.AppendLine(@"
-    return null;
-}");
-
-                // Explicit IJsonTypeInfoResolver implementation
+                // Explicit IJsonTypeInfoResolver implementation -- the source of truth for metadata resolution
                 sb.AppendLine();
                 sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{");
@@ -1403,12 +1402,22 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
             }
 
             private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
-                 numberHandling.HasValue
-                    ? $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}"
-                    : "default";
+                numberHandling switch
+                {
+                    null => "default",
+                    >= 0 => $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}",
+                    < 0 => $"({JsonNumberHandlingTypeRef})({(int)numberHandling.Value})"
+                };
+
+            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
+                creationHandling >= 0
+                ? $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}"
+                : $"({JsonObjectCreationHandlingTypeRef})({(int)creationHandling})";
 
             private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
-                $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}";
+                unmappedMemberHandling >= 0
+                ? $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}"
+                : $"({JsonUnmappedMemberHandlingTypeRef})({(int)unmappedMemberHandling})";
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 

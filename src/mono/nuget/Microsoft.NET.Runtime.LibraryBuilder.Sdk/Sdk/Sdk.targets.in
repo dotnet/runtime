@@ -1,0 +1,21 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <!-- Property overrides -->
+  <PropertyGroup>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETCoreTasks}\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${TargetFrameworkForNETFrameworkTasks}\</_TasksDir>
+
+    <GenerateAppBundle>false</GenerateAppBundle>
+    <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
+
+    <LibraryBuilderTasksAssemblyPath>$(_TasksDir)LibraryBuilder.dll</LibraryBuilderTasksAssemblyPath>
+  </PropertyGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.props" />
+  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidBuild.props" />
+  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleBuild.props" />
+  
+  <Import Project="$(MSBuildThisFileDirectory)\LibraryBuilder.targets" />
+  <Import Condition="'$(TargetsAndroid)' == 'true'" Project="$(MSBuildThisFileDirectory)\AndroidBuild.targets" />
+  <Import Condition="'$(TargetsAppleMobile)' == 'true'" Project="$(MSBuildThisFileDirectory)\AppleBuild.targets" />
+</Project>

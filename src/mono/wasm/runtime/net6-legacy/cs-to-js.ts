@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { _are_promises_supported } from "../cancelable-promise";
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_get_jsobj_from_js_handle, _lookup_js_owned_object, setup_managed_proxy, mono_wasm_get_js_handle, teardown_managed_proxy, assert_not_disposed } from "../gc-handles";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { ManagedObject } from "../marshal";
@@ -13,7 +13,7 @@ import { conv_string_root } from "../strings";
 import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
-import { legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 

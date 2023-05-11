@@ -175,17 +175,17 @@ CrashReportWriter::WriteCrashReport()
     }
     CloseArray();               // threads
     CloseObject();              // payload
-#ifdef __APPLE__
     OpenObject("parameters");
     if (exceptionType != nullptr)
     {
         WriteValue("ExceptionType", exceptionType);
     }
+#ifdef __APPLE__
     WriteSysctl("kern.osproductversion", "OSVersion");
     WriteSysctl("hw.model", "SystemModel");
     WriteValue("SystemManufacturer", "apple");
-    CloseObject();              // parameters
 #endif // __APPLE__
+    CloseObject();              // parameters
 }
 
 #ifdef __APPLE__
@@ -376,7 +376,7 @@ void
 CrashReportWriter::WriteValue32(const char* key, uint32_t value)
 {
     char buffer[16];
-    snprintf(buffer, sizeof(buffer), "0x%x", value);
+    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "0x%x", value);
     WriteValue(key, buffer);
 }
 
@@ -384,7 +384,7 @@ void
 CrashReportWriter::WriteValue64(const char* key, uint64_t value)
 {
     char buffer[32];
-    snprintf(buffer, sizeof(buffer), "0x%" PRIx64, value);
+    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "0x%" PRIx64, value);
     WriteValue(key, buffer);
 }
 

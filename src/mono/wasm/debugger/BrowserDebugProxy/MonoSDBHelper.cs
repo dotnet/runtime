@@ -359,7 +359,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal enum StepSize
     {
         Minimal,
-        Line
+        LineColumn
     }
 
     internal sealed record ArrayDimensions
@@ -789,8 +789,8 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         private static int debuggerObjectId;
         private static int cmdId = 1; //cmdId == 0 is used by events which come from runtime
-        private static int MINOR_VERSION = 61;
-        private static int MAJOR_VERSION = 2;
+        private const int MINOR_VERSION = 61;
+        private const int MAJOR_VERSION = 2;
 
         private int VmMinorVersion { get; set; }
         private int VmMajorVersion { get; set; }
@@ -799,9 +799,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
 
-        private MonoProxy proxy;
+        private readonly MonoProxy proxy;
         private DebugStore store;
-        private SessionId sessionId;
+        private readonly SessionId sessionId;
 
         internal readonly ILogger logger;
 
@@ -1431,7 +1431,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.Step);
             commandParamsWriter.Write(thread_id);
-            commandParamsWriter.Write((int)StepSize.Line);
+            commandParamsWriter.Write((int)StepSize.LineColumn);
             commandParamsWriter.Write((int)kind);
             commandParamsWriter.Write((int)(StepFilter.StaticCtor)); //filter
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, throwOnError: false);

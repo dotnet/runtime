@@ -57,11 +57,6 @@ set __SkipGenerateLayout=0
 set __GenerateLayoutOnly=0
 set __Ninja=1
 set __CMakeArgs=
-
-@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
-@REM    -priority=1
-@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
-@REM and allow the "-priority=1" syntax.
 set __Priority=0
 
 set __BuildNeedTargetArg=
@@ -75,7 +70,6 @@ if /i "%1" == "--"                       (set processedArgs=!processedArgs! %1&s
 @REM The following arguments do not support '/', '-', or '--' prefixes
 if /i "%1" == "x64"                      (set __BuildArch=x64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                      (set __BuildArch=x86&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "arm"                      (set __BuildArch=arm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -116,7 +110,7 @@ if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestB
 if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "NativeAOT"             (set __TestBuildMode=nativeaot&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=allTargets"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "ExcludeMonoFailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -126,7 +120,7 @@ if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 @REM The following arguments also consume two subsequent arguments
 if /i "%arg%" == "CMakeArgs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2 %3"&shift&shift&shift&goto Arg_Loop)
@@ -150,6 +144,8 @@ if [!processedArgs!]==[] (
 )
 
 if defined __TestArgParsing (
+    echo.
+    echo.args: "%__args%"
     echo.
     echo.PROCESSED ARGS: "%processedArgs%"
     echo.
@@ -178,6 +174,7 @@ if defined __TestArgParsing (
     echo.__GenerateLayoutOnly=%__GenerateLayoutOnly%
     echo.__Ninja=%__Ninja%
     echo.__CMakeArgs=%__CMakeArgs%
+    echo.__Priority=%__Priority%
     echo.
 )
 
@@ -192,9 +189,9 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing test build dir^: !__TestBinDir!
+    echo %__MsgPrefix%Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
-    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    echo %__MsgPrefix%Removing test intermediate dir^: !__TestIntermediatesDir!
     rmdir /s /q !__TestIntermediatesDir!
 )
 
@@ -236,9 +233,9 @@ if %__Ninja% == 0 (
     set __CommonMSBuildArgs=%__CommonMSBuildArgs% /p:UseVisualStudioNativeBinariesLayout=true
 )
 
-set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary /maxcpucount %__UnprocessedBuildArgs%
+set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary /maxcpucount %__BuildNeedTargetArg% %__UnprocessedBuildArgs%
 
-echo Common MSBuild args: %__msbuildArgs%
+echo %__MsgPrefix%Common MSBuild args: %__msbuildArgs%
 
 if defined __TestArgParsing (
     EXIT /b 0
@@ -297,7 +294,7 @@ if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
     exit /b 1
 )
 
-echo Environment setup
+echo %__MsgPrefix%Environment setup
 
 set __CmakeBuildToolArgs=
 
@@ -339,7 +336,7 @@ set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command 
   /p:UsePartialNGENOptimization=false /maxcpucount %__Logging%^
   %__msbuildArgs%
 
-echo %BuildCommand%
+echo %__MsgPrefix%%BuildCommand%
 %BuildCommand%
 
 if errorlevel 1 (
@@ -373,7 +370,7 @@ echo All arguments are optional and case-insensitive, and the '-' prefix is opti
 echo.
 echo.-? -h --help: View this message.
 echo.
-echo Build architecture: one of "x64", "x86", "arm", "arm64" ^(default: x64^).
+echo Build architecture: one of "x64", "x86", "arm64" ^(default: x64^).
 echo Build type: one of "Debug", "Checked", "Release" ^(default: Debug^).
 echo.
 echo -Rebuild: Clean up all test artifacts prior to building tests.

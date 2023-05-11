@@ -1183,6 +1183,13 @@ namespace System.Collections.Immutable
             throw new NotSupportedException();
         }
 
+        private static bool IsCompatibleObject(object? value)
+        {
+            // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
+            // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
+            return (value is T) || (default(T) == null && value == null);
+        }
+
         /// <summary>
         /// Determines whether the <see cref="IList"/> contains a specific value.
         /// </summary>
@@ -1192,9 +1199,13 @@ namespace System.Collections.Immutable
         /// </returns>
         bool IList.Contains(object? value)
         {
-            ImmutableArray<T> self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return self.Contains((T)value!);
+            if (IsCompatibleObject(value))
+            {
+                ImmutableArray<T> self = this;
+                self.ThrowInvalidOperationIfNotInitialized();
+                return self.Contains((T)value!);
+            }
+            return false;
         }
 
         /// <summary>
@@ -1206,9 +1217,13 @@ namespace System.Collections.Immutable
         /// </returns>
         int IList.IndexOf(object? value)
         {
-            ImmutableArray<T> self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return self.IndexOf((T)value!);
+            if (IsCompatibleObject(value))
+            {
+                ImmutableArray<T> self = this;
+                self.ThrowInvalidOperationIfNotInitialized();
+                return self.IndexOf((T)value!);
+            }
+            return -1;
         }
 
         /// <summary>

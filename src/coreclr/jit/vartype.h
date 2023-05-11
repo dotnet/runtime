@@ -17,6 +17,15 @@ enum var_types_classification
     VTF_BYR = 0x0010, // type is Byref
     VTF_I   = 0x0020, // is machine sized
     VTF_S   = 0x0040, // is a struct type
+    VTF_VEC = 0x0080, // is a vector type
+};
+
+enum var_types_register
+{
+    VTR_UNKNOWN = 0,
+    VTR_INT     = 1,
+    VTR_FLOAT   = 2,
+    VTR_MASK    = 3,
 };
 
 #include "vartypesdef.h"
@@ -44,6 +53,7 @@ enum var_types_classification
 /*****************************************************************************/
 
 const extern BYTE varTypeClassification[TYP_COUNT];
+const extern BYTE varTypeRegister[TYP_COUNT];
 
 // make any class with a TypeGet member also have a function TypeGet() that does the same thing
 template <class T>
@@ -61,30 +71,26 @@ inline var_types TypeGet(var_types v)
     return v;
 }
 
+template <class T>
+inline bool varTypeIsSIMD(T vt)
+{
 #ifdef FEATURE_SIMD
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
-    switch (TypeGet(vt))
-    {
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-        case TYP_SIMD32:
-            return true;
-        default:
-            return false;
-    }
-}
-#else  // FEATURE_SIMD
-
-// Always return false if FEATURE_SIMD is not enabled
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
+    return ((varTypeClassification[TypeGet(vt)] & VTF_VEC) != 0);
+#else
+    // Always return false if FEATURE_SIMD is not enabled
     return false;
+#endif
 }
-#endif // !FEATURE_SIMD
+
+template <class T>
+inline bool varTypeIsMask(T vt)
+{
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    return (TypeGet(vt) == TYP_MASK);
+#else // FEATURE_SIMD
+    return false;
+#endif
+}
 
 template <class T>
 inline bool varTypeIsIntegral(T vt)
@@ -285,11 +291,14 @@ inline bool varTypeIsComposite(T vt)
 template <class T>
 inline bool varTypeIsPromotable(T vt)
 {
-    return (varTypeIsStruct(vt) || (TypeGet(vt) == TYP_BLK)
-#if !defined(TARGET_64BIT)
-            || varTypeIsLong(vt)
-#endif // !defined(TARGET_64BIT)
-                );
+#ifndef TARGET_64BIT
+    if (varTypeIsLong(vt))
+    {
+        return true;
+    }
+#endif
+
+    return varTypeIsStruct(vt);
 }
 
 template <class T>
@@ -298,12 +307,28 @@ inline bool varTypeIsStruct(T vt)
     return ((varTypeClassification[TypeGet(vt)] & VTF_S) != 0);
 }
 
+template <class T, class U>
+inline bool varTypeUsesSameRegType(T vt, U vu)
+{
+    return varTypeRegister[TypeGet(vt)] == varTypeRegister[TypeGet(vu)];
+}
+
+template <class T>
+inline bool varTypeUsesIntReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_INT;
+}
+
 template <class T>
 inline bool varTypeUsesFloatReg(T vt)
 {
-    // Note that not all targets support SIMD, but if they don't, varTypeIsSIMD will
-    // always return false.
-    return varTypeIsFloating(vt) || varTypeIsSIMD(vt);
+    return varTypeRegister[TypeGet(vt)] == VTR_FLOAT;
+}
+
+template <class T>
+inline bool varTypeUsesMaskReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_MASK;
 }
 
 template <class T>

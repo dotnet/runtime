@@ -35,7 +35,7 @@ namespace DebuggerTests
         private static readonly ConcurrentDictionary<int, WeakReference<Action<RunLoopExitState>>> s_exitHandlers = new();
         private static readonly ConcurrentDictionary<string, RunLoopExitState> s_statusTable = new();
 
-        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput)
+        public static Task Start(string appPath, string pagePath, string url, ITestOutputHelper testOutput, string locale = "en-US")
         {
             TestHarnessOptions options = new()
             {
@@ -43,7 +43,8 @@ namespace DebuggerTests
                 PagePath = pagePath,
                 DevToolsUrl = new Uri(url),
                 WebServerUseCors = false,
-                WebServerUseCrossOriginPolicy = true
+                WebServerUseCrossOriginPolicy = true,
+                Locale = locale
             };
 
             lock (proxyLock)
@@ -131,7 +132,7 @@ namespace DebuggerTests
             s_statusTable[id] = status;
             // we have the explicit state now, so we can drop the reference
             // to the proxy
-            s_proxyTable.TryRemove(id, out WeakReference<DebuggerProxyBase> _);
+            s_proxyTable.TryRemove(id, out _);
 
             if (s_exitHandlers.TryRemove(intId, out WeakReference<Action<RunLoopExitState>>? handlerRef)
                 && handlerRef.TryGetTarget(out Action<RunLoopExitState>? handler))

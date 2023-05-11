@@ -996,7 +996,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
         Done
     }
 
-    private IEnlistmentNotificationInternal _iEnlistmentNotification;
+    private readonly IEnlistmentNotificationInternal _iEnlistmentNotification;
     private OletxVolatileEnlistmentState _state = OletxVolatileEnlistmentState.Active;
     private OletxVolatileEnlistmentContainer? _container;
     internal bool EnlistDuringPrepareRequired;

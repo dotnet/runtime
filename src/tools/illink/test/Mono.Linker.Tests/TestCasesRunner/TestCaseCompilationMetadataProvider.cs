@@ -25,10 +25,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual TestRunCharacteristics Characteristics =>
 			TestRunCharacteristics.TargetingNetCore | TestRunCharacteristics.SupportsDefaultInterfaceMethods | TestRunCharacteristics.SupportsStaticInterfaceMethods;
 
+		private static bool IsIgnoredByTrimmer (CustomAttribute attr)
+		{
+			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.Trimmer);
+		}
+
 		public virtual bool IsIgnored (out string reason)
 		{
 			var ignoreAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (IgnoreTestCaseAttribute));
-			if (ignoreAttribute != null) {
+			if (ignoreAttribute != null && IsIgnoredByTrimmer (ignoreAttribute)) {
 				if (ignoreAttribute.ConstructorArguments.Count == 1) {
 					reason = (string) ignoreAttribute.ConstructorArguments.First ().Value;
 					return true;

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace ShiftTest
 {
@@ -27,7 +28,8 @@ namespace ShiftTest
             arg_data <<= 4;
             return arg_data;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int loc_data = 0x7FFFFFFF;
 

@@ -2645,7 +2645,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -2694,7 +2694,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                     /* Get hold of the next register bit */
 
-                    tmpMask = genFindLowestReg(regMask);
+                    tmpMask = genFindLowestBit(regMask);
                     assert(tmpMask);
 
                     /* Remember the new state of this register */
@@ -4183,7 +4183,8 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
+            (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
             ClassLayout* layout = varDsc->GetLayout();
             unsigned     slots  = layout->GetSlotCount();
@@ -4626,7 +4627,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
     while (regMask)
     {
         // Get hold of the next register bit.
-        regMaskTP tmpMask = genFindLowestReg(regMask);
+        regMaskTP tmpMask = genFindLowestBit(regMask);
         assert(tmpMask);
 
         // Remember the new state of this register.

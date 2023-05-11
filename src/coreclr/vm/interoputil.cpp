@@ -94,7 +94,6 @@ HRESULT GetHRFromCLRErrorInfo(IErrorInfo* pErr)
     SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pErr);
     return pSimpleWrap->IErrorInfo_hr();
 }
-#endif // FEATURE_COMINTEROP
 
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 {
@@ -108,9 +107,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 
     HRESULT hr = E_FAIL;
 
-#ifdef FEATURE_COMINTEROP
     Exception* pException = NULL;
-#endif
 
     GCPROTECT_BEGIN(pThrownObject)
     {
@@ -120,7 +117,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             hr = EnsureComStartedNoThrow();
             if (SUCCEEDED(hr) && pThrownObject != NULL)
             {
-#ifdef FEATURE_COMINTEROP
                 IErrorInfo* pErr = NULL;
                 EX_TRY
                 {
@@ -144,7 +140,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                     hr = GET_EXCEPTION()->GetHR();
                 }
                 EX_END_CATCH(SwallowAllExceptions);
-#endif // FEATURE_COMINTEROP
             }
         }
         EX_CATCH
@@ -158,7 +153,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
-#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
@@ -1045,6 +1039,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
     return DEFAULT_CLASS_INTERFACE_TYPE;
 }
 
+#ifdef FEATURE_COMINTEROP
 //--------------------------------------------------------------------------------
 // GetErrorInfo helper, enables and disables GC during call-outs
 HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
@@ -1060,7 +1055,6 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
 
     *ppIErrInfo = NULL;
 
-#ifdef FEATURE_COMINTEROP
     GCX_PREEMP();
 
     HRESULT hr = S_OK;
@@ -1075,12 +1069,9 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
-#else // FEATURE_COMINTEROP
-    // Indicate no error object
-    return S_FALSE;
-#endif
 }
 
+#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
@@ -1846,7 +1837,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         {
             GCX_COOP();
 
-            DefItfType = TypeName::GetTypeUsingCASearchRules(defItf.GetUnicode(), pClassMT->GetAssembly());
+            DefItfType = TypeName::GetTypeReferencedByCustomAttribute(defItf.GetUnicode(), pClassMT->GetAssembly());
 
             // If the type handle isn't a named type, then throw an exception using
             // the name of the type obtained from pCurrInterfaces.
@@ -2118,7 +2109,7 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                 {
                     // Load the COM source interface specified in the CA.
                     TypeHandle ItfType;
-                    ItfType = TypeName::GetTypeUsingCASearchRules(pCurrInterfaces, pMT->GetAssembly());
+                    ItfType = TypeName::GetTypeReferencedByCustomAttribute(pCurrInterfaces, pMT->GetAssembly());
 
                     // If the type handle isn't a named type, then throw an exception using
                     // the name of the type obtained from pCurrInterfaces.

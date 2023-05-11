@@ -20,7 +20,7 @@ namespace Mono.Linker.Steps
 			base.Process (context);
 			var redundantSuppressions = context.Suppressions.GetUnusedSuppressions ();
 
-			// Suppressions targeting warning caused by anything but the linker should not be reported.
+			// Suppressions targeting warning caused by anything but the ILLink tool should not be reported.
 			// Suppressions targeting RedundantSuppression warning should not be reported.
 			redundantSuppressions = redundantSuppressions
 				.Where (suppression => ((DiagnosticId) suppression.SuppressMessageInfo.Id).GetDiagnosticCategory () == DiagnosticCategory.Trimming)

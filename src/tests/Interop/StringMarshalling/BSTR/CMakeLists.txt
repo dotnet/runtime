@@ -10,7 +10,7 @@ if(CLR_CMAKE_HOST_WIN32)
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
-target_link_libraries(BStrTestNative ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(BStrTestNative PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # add the install targets
 install (TARGETS BStrTestNative DESTINATION bin)

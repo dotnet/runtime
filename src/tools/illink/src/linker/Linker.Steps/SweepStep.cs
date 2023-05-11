@@ -636,7 +636,7 @@ namespace Mono.Linker.Steps
 #pragma warning restore RS0030
 				if (td == null) {
 					// Forwarded type cannot be resolved but it was marked
-					// linker is running in --skip-unresolved true mode
+					// ILLink is running in --skip-unresolved true mode
 					var anr = (AssemblyNameReference) exportedType.Scope;
 					exportedType.Scope = importer.ImportReference (anr);
 					return;

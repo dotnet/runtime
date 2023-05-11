@@ -21,6 +21,7 @@ parameters:
   timeoutInMinutes: ''
   enableMicrobuild: ''
   gatherAssetManifests: false
+  disableComponentGovernance: false
 
   variables: {} ## any extra variables to add to the defaults defined below
 
@@ -48,6 +49,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
@@ -125,7 +127,7 @@ jobs:
           value: 'priority1'
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - name: priorityArg
-          value: '-priority=1'
+          value: '-priority 1'
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''

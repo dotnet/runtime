@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
 #else
     public
 #endif
-     enum JsonNumberHandling
+    enum JsonNumberHandling
     {
         /// <summary>
         /// Numbers will only be read from <see cref="JsonTokenType.Number"/> tokens and will only be written as JSON numbers (without quotes).

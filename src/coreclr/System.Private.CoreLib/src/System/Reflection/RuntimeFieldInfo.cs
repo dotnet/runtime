@@ -9,9 +9,9 @@ namespace System.Reflection
     internal abstract class RuntimeFieldInfo : FieldInfo
     {
         #region Private Data Members
-        private BindingFlags m_bindingFlags;
-        protected RuntimeTypeCache m_reflectedTypeCache;
-        protected RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
+        protected readonly RuntimeTypeCache m_reflectedTypeCache;
+        protected readonly RuntimeType m_declaringType;
         #endregion
 
         #region Constructor

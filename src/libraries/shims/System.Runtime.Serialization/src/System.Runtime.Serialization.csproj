@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>ECMA</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Json\src\System.Runtime.Serialization.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Schema\src\System.Runtime.Serialization.Schema.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
+  </ItemGroup>
+
+</Project>

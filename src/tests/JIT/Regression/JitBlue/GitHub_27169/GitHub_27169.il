@@ -3,7 +3,7 @@
 
 // initblk is expected to use only the low byte of the initialization value that's on the stack
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly GitHub_27169 {}
 .assembly extern xunit.core {}
 

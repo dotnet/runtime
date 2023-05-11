@@ -42,10 +42,10 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        private static readonly IndexOfAnyValues<char> s_reservedToNameChars = IndexOfAnyValues.Create("\t\r\n=;,");
+        private static readonly SearchValues<char> s_reservedToNameChars = SearchValues.Create("\t\r\n=;,");
 
-        private static readonly IndexOfAnyValues<char> s_domainChars =
-            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+        private static readonly SearchValues<char> s_domainChars =
+            SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -699,9 +699,7 @@ namespace System.Net
 
         public override bool Equals([NotNullWhen(true)] object? comparand)
         {
-            Cookie? other = comparand as Cookie;
-
-            return other != null
+            return comparand is Cookie other
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
@@ -711,7 +709,12 @@ namespace System.Net
 
         public override int GetHashCode()
         {
-            return (Name + "=" + Value + ";" + Path + "; " + Domain + "; " + Version).GetHashCode();
+            return HashCode.Combine(
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Name),
+                StringComparer.Ordinal.GetHashCode(Value),
+                StringComparer.Ordinal.GetHashCode(Path),
+                StringComparer.OrdinalIgnoreCase.GetHashCode(Domain),
+                Version);
         }
 
         public override string ToString()

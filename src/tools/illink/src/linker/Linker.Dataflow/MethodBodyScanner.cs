@@ -138,8 +138,8 @@ namespace Mono.Linker.Dataflow
 				return;
 			}
 
-			if (knownStacks.ContainsKey (newOffset)) {
-				knownStacks[newOffset] = MergeStack (knownStacks[newOffset], newStack);
+			if (knownStacks.TryGetValue (newOffset, out Stack<StackSlot>? value)) {
+				knownStacks[newOffset] = MergeStack (value, newStack);
 			} else {
 				knownStacks.Add (newOffset, new Stack<StackSlot> (newStack.Reverse ()));
 			}
@@ -189,7 +189,7 @@ namespace Mono.Linker.Dataflow
 					if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByReference) {
 						string displayName = $"local variable V_{localReference.LocalDefinition.Index}";
 						throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (
-							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Linker dataflow tracking has failed.""",
+							$"""In method {method.FullName}, local variable V_{localVariable.Index} references {displayName} of type {localReference.ReferencedType.GetDisplayName ()} which is a reference. Dataflow tracking has failed.""",
 							(int) DiagnosticId.LinkerUnexpectedError,
 							origin: new MessageOrigin (method, ilOffset)));
 					}
@@ -292,12 +292,12 @@ namespace Mono.Linker.Dataflow
 			foreach (Instruction operation in methodIL.Instructions) {
 				int curBasicBlock = blockIterator.MoveNext (operation);
 
-				if (knownStacks.ContainsKey (operation.Offset)) {
+				if (knownStacks.TryGetValue (operation.Offset, out Stack<StackSlot>? knownValue)) {
 					if (currentStack == null) {
 						// The stack copy constructor reverses the stack
-						currentStack = new Stack<StackSlot> (knownStacks[operation.Offset].Reverse ());
+						currentStack = new Stack<StackSlot> (knownValue.Reverse ());
 					} else {
-						currentStack = MergeStack (currentStack, knownStacks[operation.Offset]);
+						currentStack = MergeStack (currentStack, knownValue);
 					}
 				}
 
@@ -1140,7 +1140,7 @@ namespace Mono.Linker.Dataflow
 			ValueNodeList methodParams,
 			out MultiValue methodReturnValue);
 
-		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for the linker are nearly always less than 32 elements.
+		// Limit tracking array values to 32 values for performance reasons. There are many arrays much longer than 32 elements in .NET, but the interesting ones for trimming are nearly always less than 32 elements.
 		private const int MaxTrackedArrayValues = 32;
 
 		private static void MarkArrayValuesAsUnknown (ArrayValue arrValue, int curBasicBlock)
@@ -1169,7 +1169,7 @@ namespace Mono.Linker.Dataflow
 						MarkArrayValuesAsUnknown (arrValue, curBasicBlock);
 					} else {
 						// When we know the index, we can record the value at that index.
-						StoreMethodLocalValue (arrValue.IndexValues, valueToStore.Value, indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
+						StoreMethodLocalValue (arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue (valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
 					}
 				}
 			}

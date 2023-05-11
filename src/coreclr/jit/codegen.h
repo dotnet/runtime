@@ -46,6 +46,9 @@ private:
     CORINFO_FIELD_HANDLE absBitmaskFlt;
     CORINFO_FIELD_HANDLE absBitmaskDbl;
 
+    // Bit mask used in zeroing the 3rd element of a SIMD12
+    CORINFO_FIELD_HANDLE zroSimd12Elm3;
+
     // Bit mask used in U8 -> double conversion to adjust the result.
     CORINFO_FIELD_HANDLE u8ToDblBitmask;
 
@@ -74,15 +77,6 @@ private:
     void genPrepForCompiler();
 
     void genMarkLabelsForCodegen();
-
-    inline RegState* regStateForType(var_types t)
-    {
-        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
-    }
-    inline RegState* regStateForReg(regNumber reg)
-    {
-        return genIsValidFloatReg(reg) ? &floatRegState : &intRegState;
-    }
 
     regNumber genFramePointerReg()
     {
@@ -233,7 +227,7 @@ protected:
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
@@ -257,7 +251,7 @@ protected:
     //
 
     void genEstablishFramePointer(int delta, bool reportUnwindData);
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genFnPrologCalleeRegArgs();
 #else
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
@@ -273,7 +267,7 @@ protected:
     void genClearStackVec3ArgUpperBits();
 #endif // UNIX_AMD64_ABI && FEATURE_SIMD
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool genInstrWithConstant(instruction ins,
                               emitAttr    attr,
                               regNumber   reg1,
@@ -437,7 +431,27 @@ protected:
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
-#endif // TARGET_LOONGARCH64
+
+#elif defined(TARGET_RISCV64)
+
+    // A set of information that is used by funclet prolog and epilog generation.
+    // It is collected once, before funclet prologs and epilogs are generated,
+    // and used by all funclet prologs and epilogs, which must all be the same.
+    struct FuncletFrameInfoDsc
+    {
+        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
+                                             // (negative)
+        int fiSP_to_FPRA_save_delta;         // FP/RA register save offset from SP (positive)
+        int fiSP_to_PSP_slot_delta;          // PSP slot offset from SP (positive)
+        int fiCallerSP_to_PSP_slot_delta;    // PSP slot offset from Caller SP (negative)
+        int fiFrameType;                     // Funclet frame types are numbered. See genFuncletProlog() for details.
+        int fiSpDelta1;                      // Stack pointer delta 1 (negative)
+    };
+
+    FuncletFrameInfoDsc genFuncletInfo;
+
+#endif // TARGET_ARM, TARGET_ARM64, TARGET_AMD64, TARGET_LOONGARCH64, TARGET_RISCV64
 
 #if defined(TARGET_XARCH)
 
@@ -766,6 +780,9 @@ protected:
 #endif
 
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
+#if defined(FEATURE_SIMD)
+    void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
 
@@ -780,9 +797,9 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
@@ -883,8 +900,8 @@ protected:
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
-    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
-    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForCCMP(GenTreeCCMP* ccmp);
+    void genCodeForCinc(GenTreeOp* cinc);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -902,6 +919,10 @@ protected:
 
     void genCompareFloat(GenTree* treeNode);
     void genCompareInt(GenTree* treeNode);
+#ifdef TARGET_XARCH
+    bool genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
+#endif
 
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
@@ -909,6 +930,8 @@ protected:
 #endif
     void genSimdUpperSave(GenTreeIntrinsic* node);
     void genSimdUpperRestore(GenTreeIntrinsic* node);
+
+    void genSimd12UpperClear(regNumber tgtReg);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
     // two reads/writes on 64-bit targets. These routines abstract reading/writing of Vector3
@@ -919,6 +942,10 @@ protected:
     void genLoadIndTypeSimd12(GenTreeIndir* treeNode);
     void genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode);
     void genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode);
+#ifdef TARGET_XARCH
+    void genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset);
+    void genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsigned offset);
+#endif // TARGET_XARCH
 #ifdef TARGET_X86
     void genStoreSimd12ToStack(regNumber dataReg, regNumber tmpReg);
     void genPutArgStkSimd12(GenTreePutArgStk* treeNode);
@@ -937,13 +964,14 @@ protected:
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
+    void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
@@ -1022,6 +1050,30 @@ protected:
 
 #endif // !defined(TARGET_64BIT)
 
+    //-------------------------------------------------------------------------
+    // genUpdateLifeStore: Do liveness udpate after tree store instructions
+    // were emitted, update result var's home if it was stored on stack.
+    //
+    // Arguments:
+    //     tree        -  Gentree node
+    //     targetReg   -  of the tree
+    //     varDsc      -  result value's variable
+    //
+    // Return Value:
+    //     None.
+    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    {
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(tree);
+        }
+        else
+        {
+            genUpdateLife(tree);
+            varDsc->SetRegNum(REG_STK);
+        }
+    }
+
     // Do liveness update for register produced by the current node in codegen after
     // code has been emitted for it.
     void genProduceReg(GenTree* tree);
@@ -1077,11 +1129,10 @@ protected:
 
 #ifdef TARGET_XARCH
     void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
-    void genCodeForBT(GenTreeOp* bt);
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
-    void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
+    void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
@@ -1094,7 +1145,7 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpObj(GenTreeObj* cpObjNode);
+    void genCodeForCpObj(GenTreeBlk* cpObjNode);
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 #ifndef TARGET_X86
@@ -1103,6 +1154,7 @@ protected:
     void genCodeForPhysReg(GenTreePhysReg* tree);
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
+    void genCodeForReuseVal(GenTree* treeNode);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
     void genAlignStackBeforeCall(GenTreeCall* call);
@@ -1180,7 +1232,7 @@ protected:
     void genTableBasedSwitch(GenTree* tree);
     void genCodeForArrIndex(GenTreeArrIndex* treeNode);
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
     instruction genGetInsForOper(genTreeOps oper, var_types type);
@@ -1192,13 +1244,12 @@ protected:
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
-    void genCodeForJumpTrue(GenTreeOp* jtrue);
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
@@ -1227,9 +1278,9 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genSimpleReturn(GenTree* treeNode);
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
     void genReturn(GenTree* treeNode);
 
@@ -1245,6 +1296,7 @@ protected:
 #endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
+    void genCodeForMemmove(GenTreeBlk* tree);
 
     bool genIsRegCandidateLocal(GenTree* tree)
     {
@@ -1489,6 +1541,8 @@ public:
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
+    void inst_RV_RV_TT_IV(
+        instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
 #endif
 
     void inst_set_SV_var(GenTree* tree);
@@ -1533,13 +1587,13 @@ public:
 #endif // TARGET_XARCH
 
 #if defined(TARGET_ARM64)
-    static insCflags InsCflagsForCcmp(GenCondition cond);
     static insCond JumpKindToInsCond(emitJumpKind condition);
+    static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
 #endif
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions
     // such as X86's SETcc. A sequence of instructions rather than just a single one is required for
     // certain floating point conditions.
@@ -1586,7 +1640,8 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
-#endif // !TARGET_LOONGARCH64
+    void genCodeForJTrue(GenTreeOp* jtrue);
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 };
 
 // A simple phase that just invokes a method on the codegen instance

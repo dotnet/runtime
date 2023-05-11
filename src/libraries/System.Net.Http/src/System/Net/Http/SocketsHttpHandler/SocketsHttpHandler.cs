@@ -133,10 +133,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxAutomaticRedirections = value;
@@ -148,10 +145,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);INTERNAL_ASYMMETRIC_IMPLEMENTATIONS</DefineConstants>
@@ -269,8 +269,6 @@
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
     <Compile Include="System\Security\Cryptography\Aes.cs" />
     <Compile Include="System\Security\Cryptography\AesAEAD.cs" />

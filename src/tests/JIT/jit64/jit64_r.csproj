@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*_r.??proj" />
+    <MergedWrapperProjectReference Include="*/**/*_small.??proj" />
+    <MergedWrapperProjectReference Include="valuetypes/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="valuetypes/nullable/castclass/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

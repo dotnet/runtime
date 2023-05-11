@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority> <!-- This is a regression test for a crossgen only scenario -->
   </PropertyGroup>

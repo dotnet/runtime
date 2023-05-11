@@ -248,7 +248,7 @@ namespace System.Net.Mime
                 string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
-        public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
+        public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
 
         [MemberNotNull(nameof(_dispositionType))]
         private void ParseValue()

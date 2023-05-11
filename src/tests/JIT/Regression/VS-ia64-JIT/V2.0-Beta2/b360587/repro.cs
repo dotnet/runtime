@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class MyDispose : IDisposable
 {
@@ -283,7 +284,8 @@ public class Test_repro
         return 0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_repro t = new Test_repro();
         int retVal = 0;

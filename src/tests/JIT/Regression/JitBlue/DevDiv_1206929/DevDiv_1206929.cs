@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace ReadMemBytes
 {
@@ -26,7 +27,8 @@ namespace ReadMemBytes
 
             return count;
         }
-        public static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             byte* buffer = stackalloc byte[4];
             buffer[0] = 0;
