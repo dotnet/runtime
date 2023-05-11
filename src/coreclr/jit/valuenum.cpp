@@ -8835,7 +8835,7 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
 
 #endif // FEATURE_HW_INTRINSICS
 
-/* static */ constexpr uint8_t ValueNumStore::GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind)
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForGenTree(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind)
 {
     uint8_t value = 0;
     genTreeOps gtOper = static_cast<genTreeOps>(oper);
@@ -8852,7 +8852,7 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
     return value;
 }
 
-/* static */ constexpr uint8_t ValueNumStore::GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
+/* static */ constexpr uint8_t ValueNumStore::GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
 {
     uint8_t value = static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
     value |= static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift;
@@ -8863,22 +8863,13 @@ static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtr
 
 const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
 {
-#define GTNODE(en, st, cm, ivn, ok)        \
-    GetGT(               \
-        GT_##en,                           \
-        (cm),                              \
-        (ivn),                             \
-        static_cast<GenTreeOperKind>(ok)),
+#define GTNODE(en, st, cm, ivn, ok) GetOpAttribsForGenTree(GT_##en, cm, ivn, static_cast<GenTreeOperKind>(ok)),
 #include "gtlist.h"
 
     0, // VNF_Boundary
 
 #define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
-    GetFunc(                                                   \
-        (arity) + static_cast<int>(extra),                                       \
-        (commute),                                                               \
-        (knownNonNull),                                                          \
-        (sharedStatic)),
+    GetOpAttribsForFunc((arity) + static_cast<int>(extra), commute, knownNonNull, sharedStatic),
 #include "valuenumfuncs.h"
 };
 
@@ -8898,7 +8889,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These control-flow operations need no values.
                                                  GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
 
-void ValueNumStore::InitValueNumStoreStatics()
+void ValueNumStore::ValidateValueNumStoreStatics()
 {
 #if DEBUG
     uint8_t arr[VNF_COUNT] = {};

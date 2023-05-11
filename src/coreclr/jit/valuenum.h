@@ -305,8 +305,8 @@ private:
     };
 
     // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
-    static constexpr uint8_t GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind);
-    static constexpr uint8_t GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    static constexpr uint8_t GetOpAttribsForGenTree(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind);
+    static constexpr uint8_t GetOpAttribsForFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
     static const uint8_t s_vnfOpAttribs[];
 
     // Returns "true" iff gtOper is a legal value number function.
@@ -400,8 +400,8 @@ private:
     GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
-    // Initializes any static variables of ValueNumStore.
-    static void InitValueNumStoreStatics();
+    // Validate that the new initializer for s_vnfOpAttribs matches the old code.
+    static void ValidateValueNumStoreStatics();
 
     // Initialize an empty ValueNumStore.
     ValueNumStore(Compiler* comp, CompAllocator allocator);
