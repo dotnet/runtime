@@ -1134,6 +1134,9 @@ namespace System.Runtime.CompilerServices
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<int, EmptyA>(5));
             Assert.Throws<NotSupportedException>(() => Unsafe.BitCast<EmptyA, int>(empty1));
 
+            Assert.Equal(uint.MaxValue, (long)Unsafe.BitCast<int, uint>(-1));
+            Assert.Equal(uint.MaxValue, (ulong)Unsafe.BitCast<int, uint>(-1));
+
             byte b = 255;
             sbyte sb = -1;
 

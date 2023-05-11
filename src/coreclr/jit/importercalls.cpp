@@ -4058,15 +4058,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             assert(sig->sigInst.methInstCount == 2);
 
             CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
-            ClassLayout* fromLayout = nullptr;
-            var_types    fromType   = TypeHandleToVarType(fromTypeHnd, &fromLayout);
+            ClassLayout*         fromLayout  = nullptr;
+            var_types            fromType    = TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
-            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
-            ClassLayout* toLayout = nullptr;
-            var_types    toType   = TypeHandleToVarType(toTypeHnd, &toLayout);
+            CORINFO_CLASS_HANDLE toTypeHnd = sig->sigInst.methInst[1];
+            ClassLayout*         toLayout  = nullptr;
+            var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : info.compCompHnd->getClassSize(fromTypeHnd);
-            unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : info.compCompHnd->getClassSize(toTypeHnd);
+            unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : genTypeSize(fromType);
+            unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : genTypeSize(toType);
 
             // Runtime requires all types to be at least 1-byte
             assert((fromSize != 0) && (toSize != 0));
@@ -4103,7 +4103,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                     return op1;
                 }
             }
-            else if (((toType != TYP_STRUCT) && (genActualType(valType) == toType)) || ClassLayout::AreCompatible(fromLayout, toLayout))
+            else if (((toType != TYP_STRUCT) && (genActualType(valType) == toType)) ||
+                     ClassLayout::AreCompatible(fromLayout, toLayout))
             {
                 return op1;
             }
@@ -4129,7 +4130,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 else if (TargetArchitecture::Is64Bit || (fromType == TYP_FLOAT))
                 {
                     toType = varTypeToSigned(toType);
-                    op1    = impImplicitR4orR8Cast(op1, fromType);
                     return gtNewBitCastNode(toType, op1);
                 }
             }
