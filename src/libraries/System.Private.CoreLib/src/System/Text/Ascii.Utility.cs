@@ -1395,7 +1395,6 @@ namespace System.Text
         }
 
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
