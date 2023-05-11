@@ -13,8 +13,8 @@ namespace System.Globalization
     {
         // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
         // Matches HighCharTable below.
-        private static readonly IndexOfAnyValues<char> s_nonSpecialAsciiChars =
-            IndexOfAnyValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
+            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;

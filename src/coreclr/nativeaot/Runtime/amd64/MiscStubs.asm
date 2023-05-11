@@ -3,7 +3,7 @@
 
 include AsmMacros.inc
 
-EXTERN RhpGetThreadStaticBaseForTypeSlow : PROC
+EXTERN RhpGetInlinedThreadStaticBaseSlow : PROC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
@@ -39,41 +39,20 @@ ProbeLoop:
 
 LEAF_END RhpStackProbe, _TEXT
 
-LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
-        ; On entry and thorough the procedure:
-        ;   rcx - TypeManagerSlot*
-        ;   rdx - type index
+LEAF_ENTRY RhpGetInlinedThreadStaticBase, _TEXT
         ; On exit:
         ;   rax - the thread static base for the given type
 
-        ;; rax = GetThread(), TRASHES r8
-        INLINE_GETTHREAD rax, r8
-
-        mov     r8d, [rcx + 8]         ; Get ModuleIndex out of the TypeManagerSlot
+        ;; rcx = &tls_InlinedThreadStatics, TRASHES r8
+        INLINE_GET_TLS_VAR rcx, r8, tls_InlinedThreadStatics
 
         ;; get per-thread storage
-        mov     rax, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-
-        ;; get per-module storage
+        mov     rax, [rcx]
         test    rax, rax
-        jz      RhpGetThreadStaticBaseForTypeSlow
-        cmp     r8d, [rax + OFFSETOF__Array__m_Length]
-        jae     RhpGetThreadStaticBaseForTypeSlow
-        mov     rax, [rax + r8 * 8 + 10h]
+        jz      RhpGetInlinedThreadStaticBaseSlow   ;; rcx contains the storage ref
 
-        ;; get the actual per-type storage
-        test    rax, rax
-        jz      RhpGetThreadStaticBaseForTypeSlow
-        cmp     edx, [rax + OFFSETOF__Array__m_Length]
-        jae     RhpGetThreadStaticBaseForTypeSlow
-        mov     rax, [rax + rdx * 8 + 10h]
-
-        ;; if have storage, return it
-        test    rax, rax
-        jz      RhpGetThreadStaticBaseForTypeSlow
-
+        ;; return it
         ret
-
-LEAF_END RhpGetThreadStaticBaseForType, _TEXT
+LEAF_END RhpGetInlinedThreadStaticBase, _TEXT
 
 end

@@ -873,7 +873,8 @@ void emitIns_R_R_R_I_LdStPair(instruction ins,
                               int         varx1 = -1,
                               int         varx2 = -1,
                               int         offs1 = -1,
-                              int         offs2 = -1);
+                              int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
+                                              DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 

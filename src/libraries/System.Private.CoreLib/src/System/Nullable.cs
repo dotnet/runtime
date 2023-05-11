@@ -103,21 +103,6 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(nullableType);
 
-#if NATIVEAOT
-            // This is necessary to handle types without reflection metadata
-            if (nullableType.TryGetEEType(out EETypePtr nullableEEType))
-            {
-                if (nullableEEType.IsGeneric)
-                {
-                    if (nullableEEType.IsNullable)
-                    {
-                        return Type.GetTypeFromEETypePtr(nullableEEType.NullableType);
-                    }
-                }
-                return null;
-            }
-#endif
-
             if (nullableType.IsGenericType && !nullableType.IsGenericTypeDefinition)
             {
                 // Instantiated generic type only

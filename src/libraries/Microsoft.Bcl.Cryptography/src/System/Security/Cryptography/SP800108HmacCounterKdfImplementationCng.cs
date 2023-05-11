@@ -103,10 +103,28 @@ namespace System.Security.Cryptography
 
         private static byte[] HashOneShot(HashAlgorithmName hashAlgorithm, byte[] data)
         {
-            using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
+            using (HashAlgorithm hash = CreateHash(hashAlgorithm))
             {
-                hash.AppendData(data);
-                return hash.GetHashAndReset();
+                return hash.ComputeHash(data);
+            }
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "Weak algorithms are used as instructed by the caller")]
+        private static HashAlgorithm CreateHash(HashAlgorithmName hashAlgorithm)
+        {
+            switch (hashAlgorithm.Name)
+            {
+                case HashAlgorithmNames.SHA1:
+                    return SHA1.Create();
+                case HashAlgorithmNames.SHA256:
+                    return SHA256.Create();
+                case HashAlgorithmNames.SHA384:
+                    return SHA384.Create();
+                case HashAlgorithmNames.SHA512:
+                    return SHA512.Create();
+                default:
+                    Debug.Fail($"Unexpected hash algorithm '{hashAlgorithm.Name}'.");
+                    throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
             }
         }
     }

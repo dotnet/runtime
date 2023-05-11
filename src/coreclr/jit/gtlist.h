@@ -89,8 +89,7 @@ GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)            // single-dimension (SZ) array length
 GTNODE(MDARR_LENGTH     , GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array length of a specific dimension
 GTNODE(MDARR_LOWER_BOUND, GenTreeMDArr       ,0,GTK_UNOP|GTK_EXOP)            // multi-dimension (MD) array lower bound of a specific dimension
-GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field load
-GTNODE(FIELD_ADDR       , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field address
+GTNODE(FIELD_ADDR       , GenTreeFieldAddr   ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Field address
 GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP) // Initialization value for an initBlk
@@ -101,6 +100,8 @@ GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
 GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
+
+GTNODE(LZCNT            , GenTreeOp          ,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):

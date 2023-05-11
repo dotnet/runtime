@@ -491,14 +491,11 @@ namespace System.Reflection.Emit
             int[]? interfaceTokens = null;
             if (interfaces != null)
             {
+                interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
                 {
                     // cannot contain null in the interface list
                     ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
-                }
-                interfaceTokens = new int[interfaces.Length + 1];
-                for (i = 0; i < interfaces.Length; i++)
-                {
                     interfaceTokens[i] = m_module.GetTypeTokenInternal(interfaces[i]);
                 }
             }
@@ -1144,15 +1141,18 @@ namespace System.Reflection.Emit
 
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            for (int i = 0; i < names.Length; i++)
-                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
-
             if (m_inst != null)
+            {
                 throw new InvalidOperationException();
+            }
 
             m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(name, i, this));
+            }
 
             return m_inst;
         }

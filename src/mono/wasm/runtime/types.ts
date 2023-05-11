@@ -135,6 +135,7 @@ export type RuntimeHelpers = {
     preferredIcuAsset: string | null,
     invariantMode: boolean,
     updateMemoryViews: () => void
+    runtimeReady: boolean,
 }
 
 export type AOTProfilerOptions = {

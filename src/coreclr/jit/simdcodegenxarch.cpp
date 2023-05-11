@@ -47,15 +47,15 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
     GenTree* addr = treeNode->Addr();
     genConsumeAddress(addr);
 
+    GenTree*  data    = treeNode->Data();
+    regNumber dataReg = genConsumeReg(data);
+
     if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         genEmitStoreLclTypeSimd12(treeNode, addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
         genUpdateLife(treeNode);
         return;
     }
-
-    GenTree*  data    = treeNode->Data();
-    regNumber dataReg = genConsumeReg(data);
 
     emitter* emit = GetEmitter();
 
@@ -548,7 +548,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
             zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
         }
 
-        GetEmitter()->emitIns_SIMD_R_R_C(INS_andpd, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
+        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
     }
 }
 

@@ -155,10 +155,12 @@ namespace Internal.Runtime.TypeLoader
                 int baseSize = 0;
 
                 bool isValueType;
+                bool hasDispatchMap;
                 bool hasFinalizer;
                 bool isNullable;
                 bool isArray;
                 bool isGeneric;
+                bool hasSealedVTable;
                 uint flags;
                 ushort runtimeInterfacesLength = 0;
                 IntPtr typeManager = IntPtr.Zero;
@@ -171,10 +173,12 @@ namespace Internal.Runtime.TypeLoader
                 baseSize = (int)pTemplateEEType->RawBaseSize;
                 isValueType = pTemplateEEType->IsValueType;
                 hasFinalizer = pTemplateEEType->IsFinalizable;
+                hasDispatchMap = pTemplateEEType->HasDispatchMap;
                 isNullable = pTemplateEEType->IsNullable;
                 flags = pTemplateEEType->Flags;
                 isArray = pTemplateEEType->IsArray;
                 isGeneric = pTemplateEEType->IsGeneric;
+                hasSealedVTable = pTemplateEEType->HasSealedVTableEntries;
                 typeManager = pTemplateEEType->PointerToTypeManager;
                 Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
 
@@ -223,9 +227,6 @@ namespace Internal.Runtime.TypeLoader
                 if (rareFlags != 0)
                     optionalFields.SetFieldValue(EETypeOptionalFieldTag.RareFlags, rareFlags);
 
-                // Dispatch map is fetched from template type
-                optionalFields.ClearField(EETypeOptionalFieldTag.DispatchMap);
-
                 // Compute size of optional fields encoding
                 cbOptionalFieldsSize = optionalFields.Encode();
 
@@ -249,9 +250,10 @@ namespace Internal.Runtime.TypeLoader
                     int cbEEType = (int)MethodTable.GetSizeofEEType(
                         numVtableSlots,
                         runtimeInterfacesLength,
+                        hasDispatchMap,
                         hasFinalizer,
                         cbOptionalFieldsSize > 0,
-                        (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
+                        hasSealedVTable,
                         isGeneric,
                         numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
@@ -298,6 +300,12 @@ namespace Internal.Runtime.TypeLoader
                     for (int i = 0; i < numVtableSlots; i++)
                         pVtable[i] = pTemplateVtable[i];
 
+                    // Copy dispatch map from the template type
+                    if (hasDispatchMap)
+                    {
+                        pEEType->DispatchMap = pTemplateEEType->DispatchMap;
+                    }
+
                     // Copy Pointer to finalizer method from the template type
                     if (hasFinalizer)
                     {
@@ -306,7 +314,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 // Copy the sealed vtable entries if they exist on the template type
-                if ((rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
+                if (hasSealedVTable)
                 {
                     uint cbSealedVirtualSlotsTypeOffset = pEEType->GetFieldOffset(EETypeField.ETF_SealedVirtualSlots);
                     *((void**)((byte*)pEEType + cbSealedVirtualSlotsTypeOffset)) = pTemplateEEType->GetSealedVirtualTable();
@@ -316,7 +324,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
                     MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
-                    pEEType->WritableData = writableDataPtr;
+                    pEEType->WritableData = (void*)writableDataPtr;
                 }
 
                 pEEType->DynamicTemplateType = pTemplateEEType;
