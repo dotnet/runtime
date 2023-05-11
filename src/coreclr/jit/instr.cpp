@@ -1233,7 +1233,6 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //    op1Reg       -- The first operand register
 //    op2          -- The second operand, which may be a memory node or a node producing a register
 //    isRMW        -- true if the instruction is RMW; otherwise, false
-//    simdBaseType -- the base data type for this intrinsic.
 void CodeGen::inst_RV_RV_TT(
     instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
 {

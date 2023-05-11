@@ -1040,12 +1040,21 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                         break;
                     }
                 }
+                // There are special case when all elements in the vector are 1/0,
+                // there are exsiting optimization for those case, filter them out
+                // of the embedded broadcast.
+                if (isCreatedFromScalar && (FirstElement == UINT32_MAX || FirstElement == UINT32_MIN))
+                {
+                    isCreatedFromScalar = false;
+                }
                 break;
             }
 
             case TYP_DOUBLE:
+#if defined(TARGET_AMD64)
             case TYP_LONG:
             case TYP_ULONG:
+#endif // TARGET_AMD64
             {
                 uint64_t FirstElement = static_cast<uint64_t>(node->gtSimdVal.u64[0]);
                 for (int i = 1; i < ElementCount; i++)
@@ -1057,9 +1066,15 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                         break;
                     }
                 }
+                // There are special case when all elements in the vector are 1/0,
+                // there are exsiting optimization for those case, filter them out
+                // of the embedded broadcast.
+                if (isCreatedFromScalar && (FirstElement == UINT64_MAX || FirstElement == UINT64_MIN))
+                {
+                    isCreatedFromScalar = false;
+                }
                 break;
             }
-
             default:
                 isCreatedFromScalar = false;
                 break;
@@ -1102,6 +1117,7 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                     constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
                     break;
                 }
+#if defined(TARGET_AMD64)
                 case TYP_LONG:
                 {
                     int64_t scalar = static_cast<int64_t>(node->gtSimdVal.i64[0]);
@@ -1114,6 +1130,9 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                     constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
                     break;
                 }
+#endif // TARGET_AMD64
+                default:
+                    unreached();
             }
             GenTreeHWIntrinsic* createScalar =
                 comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe,
