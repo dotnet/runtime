@@ -190,7 +190,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
 			simd_intrins = INTERP_SIMD_INTRINSIC_V128_CONDITIONAL_SELECT;
 			break;
-		/*
 		case SN_Create:
 			if (csignature->param_count == 1 && atype == csignature->params [0]->type) {
 				simd_opcode = MINT_SIMD_INTRINS_P_P;
@@ -223,6 +222,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				return TRUE;
 			}
 			break;
+		/*
 		case SN_CreateScalar:
 		case SN_CreateScalarUnsafe:
 			simd_opcode = MINT_SIMD_INTRINS_P_P;
