@@ -7097,10 +7097,6 @@ void gc_heap::gc_thread_function ()
             {
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
-#ifdef DYNAMIC_HEAP_COUNT
-            // check if we should adjust the number of heaps
-            check_heap_count();
-#endif //DYNAMIC_HEAP_COUNT
         }
         else
         {
@@ -7113,6 +7109,10 @@ void gc_heap::gc_thread_function ()
             }
             set_gc_done();
         }
+#ifdef DYNAMIC_HEAP_COUNT
+        // check if we should adjust the number of heaps
+        check_heap_count();
+#endif //DYNAMIC_HEAP_COUNT
     }
 }
 #ifdef _MSC_VER
@@ -22355,15 +22355,6 @@ void gc_heap::gc1()
 //        rethread_fl_items ();
 #endif //USE_REGIONS
 
-        gc_t_join.join (this, gc_join_merge_temp_fl);
-        if (gc_t_join.joined ())
-        {
-#ifdef USE_REGIONS
-//            merge_fl_from_other_heaps ();
-#endif //USE_REGIONS
-            gc_t_join.restart ();
-        }
-
         update_end_gc_time_per_heap();
         add_to_history_per_heap();
         alloc_context_count = 0;
@@ -22459,6 +22450,7 @@ void gc_heap::rethread_fl_items(int gen_idx)
 
 void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps)
 {
+#ifdef _DEBUG
     uint64_t start_us = GetHighPrecisionTimeStamp ();
 
     size_t total_num_fl_items_rethreaded_stage2 = 0;
@@ -22496,6 +22488,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
 
     dprintf (8888, ("rethreaded %Id items, merging took %I64dus (%I64dms)",
         total_num_fl_items_rethreaded_stage2, elapsed, (elapsed / 1000)));
+#endif //_DEBUG
 
     for (int hn = 0; hn < to_n_heaps; hn++)
     {
@@ -22504,12 +22497,12 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         allocator* gen_allocator = generation_allocator (gen);
         gen_allocator->merge_items (hp, to_n_heaps, from_n_heaps);
 
-        // we don't keep track of the size of the items staying on the same heap
-        assert (hp->free_list_space_per_heap[hn] == 0);
-
         size_t free_list_space_decrease = 0;
         if (hn < from_n_heaps)
         {
+            // we don't keep track of the size of the items staying on the same heap
+            assert (hp->free_list_space_per_heap[hn] == 0);
+
             for (int to_hn = 0; to_hn < to_n_heaps; to_hn++)
             {
                 free_list_space_decrease += hp->free_list_space_per_heap[to_hn];
@@ -22535,6 +22528,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         generation_free_list_space (gen) += free_list_space_increase;
     }
 
+#ifdef _DEBUG
     // verification to make sure we have the same # of fl items total
     size_t total_fl_items_count = 0;
     size_t total_fl_items_for_oh_count = 0;
@@ -22557,6 +22551,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
     {
         GCToOSInterface::DebugBreak ();
     }
+#endif //_DEBUG
 }
 #endif //DYNAMIC_HEAP_COUNT
 
@@ -24779,183 +24774,216 @@ void gc_heap::check_heap_count ()
         return;        
     }
 
-    // acquire data for the current sample
-    uint64_t    msl_wait_time = 0;
-    size_t      allocating_thread_count = 0;
-    size_t      heap_size = 0;
-    for (int i = 0; i < n_heaps; i++)
+    if (heap_number == 0)
     {
-        gc_heap* hp = g_heaps[i];
-
-        allocating_thread_count += hp->alloc_contexts_used;
-
-        msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
-        hp->more_space_lock_soh.msl_wait_time = 0;
-
-        msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
-        hp->more_space_lock_uoh.msl_wait_time = 0;
-
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+        // acquire data for the current sample
+        uint64_t    msl_wait_time = 0;
+        size_t      allocating_thread_count = 0;
+        size_t      heap_size = 0;
+        for (int i = 0; i < n_heaps; i++)
         {
-            dynamic_data* dd = hp->dynamic_data_of (gen_idx);
+            gc_heap* hp = g_heaps[i];
 
-            // estimate the size of each generation as the live data size plus the budget
-            heap_size += dd_promoted_size (dd) + dd_desired_allocation (dd);
-            dprintf (5555, ("h%d g%d promoted: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
+            allocating_thread_count += hp->alloc_contexts_used;
+
+            msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
+            hp->more_space_lock_soh.msl_wait_time = 0;
+
+            msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
+            hp->more_space_lock_uoh.msl_wait_time = 0;
+
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                dynamic_data* dd = hp->dynamic_data_of (gen_idx);
+
+                // estimate the size of each generation as the live data size plus the budget
+                heap_size += dd_promoted_size (dd) + dd_desired_allocation (dd);
+                dprintf (5555, ("h%d g%d promoted: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
+            }
+        }
+
+        dynamic_data* hp0_dd0 = g_heaps[0]->dynamic_data_of (0);
+
+        // persist data for the current sample
+        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
+
+        sample.msl_wait_time = msl_wait_time;
+        sample.elapsed_between_gcs = dd_time_clock (hp0_dd0) - dd_previous_time_clock (hp0_dd0);
+        sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd0);
+        sample.allocating_thread_count = allocating_thread_count;
+        sample.heap_size = heap_size;
+
+        dprintf (5555, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
+            dynamic_heap_count_data.sample_index,
+            sample.msl_wait_time,
+            sample.elapsed_between_gcs,
+            sample.gc_elapsed_time,
+            sample.heap_size/(1024*1024)));
+
+        dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
+
+        if (settings.gc_index < prev_change_heap_count_gc_index + 3)
+        {
+            // reconsider the decision every few gcs
+            return;
+        }
+
+        if (gc_heap::background_running_p())
+        {
+            // can't have background gc running while we change the number of heaps
+            // so it's useless to compute a new number of heaps here
+            dynamic_heap_count_data.new_n_heaps = n_heaps;
+        }
+        else
+        {
+            // compute the % overhead from msl waiting time and gc time for each of the samples
+            float percent_overhead[dynamic_heap_count_data_t::sample_size];
+            for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
+            {
+                dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
+                uint64_t overhead_time = (sample.msl_wait_time / n_heaps) + sample.gc_elapsed_time;
+                percent_overhead[i] = overhead_time * 100.0f / sample.elapsed_between_gcs;
+                if (percent_overhead[i] < 0)
+                    percent_overhead[i] = 0;
+                else if (percent_overhead[i] > 100)
+                    percent_overhead[i] = 100;
+                dprintf (5555, ("sample %d: percent_overhead: %d%%", i, (int)percent_overhead[i]));
+            }
+            // compute the median of the percent overhead samples
+        #define compare_and_swap(i, j)                                       \
+            {                                                                \
+                if (percent_overhead[i] < percent_overhead[j])               \
+                {                                                            \
+                    float t = percent_overhead[i];                           \
+                              percent_overhead[i] = percent_overhead[j];     \
+                                                    percent_overhead[j] = t; \
+                }                                                            \
+            }
+            compare_and_swap (1, 0);
+            compare_and_swap (2, 0);
+            compare_and_swap (2, 1);
+        #undef compare_and_swap
+
+            // the middle element is the median overhead percentage
+            float median_percent_overhead = percent_overhead[1];
+            dprintf (5555, ("median overhead: %d%%", median_percent_overhead));
+
+            // estimate the space cost of adding a heap as the min gen0 size plus
+            // 2 basic regions (for gen 1 and gen 2) plus
+            // 2 large regions (for LOH and POH)
+            // this neglects other space (like the mark list and the mark list piece)
+            // but it likely overestimates the contribution from regions
+            size_t basic_region_size = global_region_allocator.get_region_alignment();
+            size_t large_region_size = global_region_allocator.get_large_region_alignment();
+            size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0) + basic_region_size*2 + large_region_size*2;
+
+            // compute the % space cost of adding a heap
+            float percent_heap_space_cost_per_heap = heap_space_cost_per_heap * 100.0f / heap_size;
+
+            // compute reasonable step sizes for the heap count
+
+            // on the way up, we essentially multiply the heap count by 1.5, so we go 1, 2, 3, 5, 8 ...
+            // we don't go all the way to the number of CPUs, but stay 1 or 2 short
+            int step_up = (n_heaps + 1) / 2;
+            int extra_heaps = 1 + (n_max_heaps >= 32);
+            step_up = min (step_up, n_max_heaps - extra_heaps - n_heaps);
+
+            // on the way down, we essentially divide the heap count by 1.5
+            int step_down = (n_heaps + 1) / 3;
+
+            // estimate the potential time benefit of going up a step
+            float overhead_reduction_per_step_up = median_percent_overhead * step_up / (n_heaps + step_up);
+
+            // estimate the potential time cost of going down a step
+            float overhead_increase_per_step_down = median_percent_overhead * step_down / (n_heaps - step_down);
+
+            // estimate the potential space cost of going up a step
+            float space_cost_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
+
+            // estimate the potential space saving of going down a step
+            float space_cost_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
+
+    #ifdef STRESS_DYNAMIC_HEAP_COUNT
+            // quick hack for initial testing
+            int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
+
+            // if we are adjusting down, make sure we adjust lower than the lowest uoh msl heap
+            if ((new_n_heaps < n_heaps) && (dynamic_heap_count_data.lowest_heap_with_msl_uoh != -1))
+            {
+                new_n_heaps = min (dynamic_heap_count_data.lowest_heap_with_msl_uoh, new_n_heaps);
+            }
+    #else //STRESS_DYNAMIC_HEAP_COUNT
+            int new_n_heaps = n_heaps;
+            // if we can save at least 1% more in time than we spend in space, increase number of heaps
+            if (overhead_reduction_per_step_up - space_cost_increase_per_step_up >= 1.0f)
+            {
+                new_n_heaps += step_up;
+            }
+            // if we can save at least 1% more in space than we spend in time, decrease number of heaps
+            else if (space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
+            {
+                new_n_heaps -= step_down;
+            }
+
+            dprintf (5555, ("or: %d, si: %d,  sd: %d, oi: %d => %d -> %d",
+                (int)overhead_reduction_per_step_up,
+                (int)space_cost_increase_per_step_up,
+                (int)space_cost_decrease_per_step_down,
+                (int)overhead_increase_per_step_down,
+                n_heaps,
+                new_n_heaps));
+
+            assert (1 <= new_n_heaps);
+            assert (new_n_heaps <= n_max_heaps);
+    #endif //STRESS_DYNAMIC_HEAP_COUNT
+
+            dynamic_heap_count_data.new_n_heaps = new_n_heaps;
+
+            if (new_n_heaps != n_heaps)
+            {
+                // can't have threads allocating while we change the number of heaps
+                GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+
+                if (gc_heap::background_running_p())
+                {
+                    // background GC is running - reset the new heap count
+                    dynamic_heap_count_data.new_n_heaps = n_heaps;
+                }
+            }
         }
     }
-
-    dynamic_data* hp0_dd0 = g_heaps[0]->dynamic_data_of (0);
-
-    // persist data for the current sample
-    dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[dynamic_heap_count_data.sample_index];
-
-    sample.msl_wait_time = msl_wait_time;
-    sample.elapsed_between_gcs = dd_time_clock (hp0_dd0) - dd_previous_time_clock (hp0_dd0);
-    sample.gc_elapsed_time = dd_gc_elapsed_time (hp0_dd0);
-    sample.allocating_thread_count = allocating_thread_count;
-    sample.heap_size = heap_size;
-
-    dprintf (5555, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
-        dynamic_heap_count_data.sample_index,
-        sample.msl_wait_time,
-        sample.elapsed_between_gcs,
-        sample.gc_elapsed_time,
-        sample.heap_size/(1024*1024)));
-
-    dynamic_heap_count_data.sample_index = (dynamic_heap_count_data.sample_index + 1) % dynamic_heap_count_data_t::sample_size;
-
-    if (gc_heap::background_running_p())
-    {
-        // don't change the heap count while background GC is running
-        return;
-    }
-
-    if (settings.gc_index < prev_change_heap_count_gc_index + 3)
+    else if (settings.gc_index < prev_change_heap_count_gc_index + 3)
     {
         // reconsider the decision every few gcs
         return;
     }
 
-    // compute the % overhead from msl waiting time and gc time for each of the samples
-    float percent_overhead[dynamic_heap_count_data_t::sample_size];
-    for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
+    if (GCScan::GetGcRuntimeStructuresValid())
     {
-        dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-        uint64_t overhead_time = (sample.msl_wait_time / n_heaps) + sample.gc_elapsed_time;
-        percent_overhead[i] = overhead_time * 100.0f / sample.elapsed_between_gcs;
-        if (percent_overhead[i] < 0)
-            percent_overhead[i] = 0;
-        else if (percent_overhead[i] > 100)
-            percent_overhead[i] = 100;
-        dprintf (5555, ("sample %d: percent_overhead: %d%%", i, (int)percent_overhead[i]));
-    }
-    // compute the median of the percent overhead samples
-#define compare_and_swap(i, j)                                       \
-    {                                                                \
-        if (percent_overhead[i] < percent_overhead[j])               \
-        {                                                            \
-            float t = percent_overhead[i];                           \
-                      percent_overhead[i] = percent_overhead[j];     \
-                                            percent_overhead[j] = t; \
-        }                                                            \
-    }
-    compare_and_swap (1, 0);
-    compare_and_swap (2, 0);
-    compare_and_swap (2, 1);
-#undef compare_and_swap
-
-    // the middle element is the median overhead percentage
-    float median_percent_overhead = percent_overhead[1];
-    dprintf (5555, ("median overhead: %d%%", median_percent_overhead));
-
-    // estimate the space cost of adding a heap as the min gen0 size plus
-    // 2 basic regions (for gen 1 and gen 2) plus
-    // 2 large regions (for LOH and POH)
-    // this neglects other space (like the mark list and the mark list piece)
-    // but it likely overestimates the contribution from regions
-    size_t basic_region_size = global_region_allocator.get_region_alignment();
-    size_t large_region_size = global_region_allocator.get_large_region_alignment();
-    size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0) + basic_region_size*2 + large_region_size*2;
-
-    // compute the % space cost of adding a heap
-    float percent_heap_space_cost_per_heap = heap_space_cost_per_heap * 100.0f / heap_size;
-
-    // compute reasonable step sizes for the heap count
-
-    // on the way up, we essentially multiply the heap count by 1.5, so we go 1, 2, 3, 5, 8 ...
-    // we don't go all the way to the number of CPUs, but stay 1 or 2 short
-    int step_up = (n_heaps + 1) / 2;
-    int extra_heaps = 1 + (n_max_heaps >= 32);
-    step_up = min (step_up, n_max_heaps - extra_heaps - n_heaps);
-
-    // on the way down, we essentially divide the heap count by 1.5
-    int step_down = (n_heaps + 1) / 3;
-
-    // estimate the potential time benefit of going up a step
-    float overhead_reduction_per_step_up = median_percent_overhead * step_up / (n_heaps + step_up);
-
-    // estimate the potential time cost of going down a step
-    float overhead_increase_per_step_down = median_percent_overhead * step_down / (n_heaps - step_down);
-
-    // estimate the potential space cost of going up a step
-    float space_cost_increase_per_step_up = percent_heap_space_cost_per_heap * step_up;
-
-    // estimate the potential space saving of going down a step
-    float space_cost_decrease_per_step_down = percent_heap_space_cost_per_heap * step_down;
-
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
-    // quick hack for initial testing
-    int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
-
-    // if we are adjusting down, make sure we adjust lower than the lowest uoh msl heap
-    if ((new_n_heaps < n_heaps) && (dynamic_heap_count_data.lowest_heap_with_msl_uoh != -1))
-    {
-        new_n_heaps = min (dynamic_heap_count_data.lowest_heap_with_msl_uoh, new_n_heaps);
-    }
-#else //STRESS_DYNAMIC_HEAP_COUNT
-    int new_n_heaps = n_heaps;
-    // if we can save at least 1% more in time than we spend in space, increase number of heaps
-    if (overhead_reduction_per_step_up - space_cost_increase_per_step_up >= 1.0f)
-    {
-        new_n_heaps += step_up;
-    }
-    // if we can save at least 1% more in space than we spend in time, decrease number of heaps
-    else if (space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
-    {
-        new_n_heaps -= step_down;
+        // join for heap count decision
+        gc_t_join.join (this, gc_join_merge_temp_fl);
+        if (gc_t_join.joined ())
+        {
+            gc_t_join.restart ();
+        }
     }
 
-    dprintf (5555, ("or: %d, si: %d,  sd: %d, oi: %d => %d -> %d",
-        (int)overhead_reduction_per_step_up,
-        (int)space_cost_increase_per_step_up,
-        (int)space_cost_decrease_per_step_down,
-        (int)overhead_increase_per_step_down,
-        n_heaps,
-        new_n_heaps));
-
-    assert (1 <= new_n_heaps);
-    assert (new_n_heaps <= n_max_heaps);
-#endif //STRESS_DYNAMIC_HEAP_COUNT
-
-    if (new_n_heaps == n_heaps)
+    if (dynamic_heap_count_data.new_n_heaps == n_heaps)
     {
+        // heap count stays the same, no work to do
         return;
     }
 
-    // can't have threads allocating while we change the number of heaps
-    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+    change_heap_count (dynamic_heap_count_data.new_n_heaps);
 
-    if (!gc_heap::background_running_p())
+    if (heap_number == 0)
     {
-        change_heap_count (new_n_heaps);
-
+        GCToEEInterface::RestartEE(TRUE);
         prev_change_heap_count_gc_index = settings.gc_index;
     }
-    GCToEEInterface::RestartEE(TRUE);
 }
 
-bool gc_heap::change_heap_count (int new_n_heaps)
+bool gc_heap::prepare_to_change_heap_count (int new_n_heaps)
 {
     dprintf (5555, ("trying to change heap count %d -> %d", n_heaps, new_n_heaps));
 
@@ -25073,211 +25101,257 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             }
         }
     }
+    return true;
+}
 
-    // after having checked for sufficient resources, we are now committed to actually change the heap count
-    dprintf (3, ("switching heap count from %d to %d heaps", old_n_heaps, new_n_heaps));
+bool gc_heap::change_heap_count (int new_n_heaps)
+{
+    // use this variable for clarity - n_heaps will change during the transition
+    int old_n_heaps = n_heaps;
 
-    // spread finalization data out to heaps coming into service
-    // if this step fails, we can still continue
-    int from_heap_number = 0;
-    for (int i = old_n_heaps; i < new_n_heaps; i++)
+    if (heap_number == 0)
     {
-        gc_heap* to_hp = g_heaps[i];
-        gc_heap* from_hp = g_heaps[from_heap_number];
-
-        if (!from_hp->finalize_queue->SplitFinalizationData (to_hp->finalize_queue))
+        if (!prepare_to_change_heap_count (new_n_heaps))
         {
-            // we can live with this failure - it just means finalization data
-            // are still on the old heap, which is correct, but suboptimal
-            dprintf (3, ("failed to split finalization data between heaps %d and %d", from_heap_number, i));
+            // we don't have sufficient resources - reset the new heap count
+            dynamic_heap_count_data.new_n_heaps = n_heaps;
         }
-
-        from_heap_number = (from_heap_number + 1) % old_n_heaps;
-    }
-
-    // prepare for the switch by fixing the allocation contexts on the old heaps,
-    // and setting the survived size for the existing regions to their allocated size
-    for (int i = 0; i < old_n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        if (GCScan::GetGcRuntimeStructuresValid())
-        {
-            hp->fix_allocation_contexts (TRUE);
-        }
-
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-        {
-            generation* gen = hp->generation_of (gen_idx);
-            for (heap_segment* region = heap_segment_rw (generation_start_segment (gen));
-                 region != nullptr;
-                 region = heap_segment_next (region))
-            {
-                // prepare the regions by pretending all their allocated space survives
-                heap_segment_survived (region) = heap_segment_allocated (region) - heap_segment_mem (region);
-            }
-        }
-    }
-
-    // inititalize the new heaps
-    if (old_n_heaps < new_n_heaps)
-    {
-        // initialize the region lists of the new heaps
-        for (int i = old_n_heaps; i < new_n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-
-            hp->check_decommissioned_heap();
-
-            hp->recommission_heap();
-        }
-
-        // wake up threads for the new heaps
-        gc_idle_thread_event.Set();
-    }
-
-    if (new_n_heaps < old_n_heaps)
-    {
-        // move all regions from the heaps about to be retired to another heap < new_n_heaps
-        assert (new_n_heaps > 0);
-
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-        {
-            for (int i = new_n_heaps; i < old_n_heaps; i++)
-            {
-                gc_heap* hp = g_heaps[i];
-
-                int dest_heap_number = i % new_n_heaps;
-                gc_heap* hpd = g_heaps[dest_heap_number];
-                generation* hpd_gen = hpd->generation_of (gen_idx);
-
-                generation* gen = hp->generation_of (gen_idx);
-
-                heap_segment* start_region = generation_start_segment (gen);
-                heap_segment* tail_ro_region = generation_tail_ro_region (gen);
-                heap_segment* tail_region = generation_tail_region (gen);
-
-                for (heap_segment* region = start_region; region != nullptr; region = heap_segment_next(region))
-                {
-                    set_heap_for_contained_basic_regions (region, hpd);
-                }
-                if (tail_ro_region != nullptr)
-                {
-                    // the first r/w region is the one after tail_ro_region
-                    heap_segment* start_rw_region = heap_segment_next (tail_ro_region);
-
-                    heap_segment* hpd_tail_ro_region = generation_tail_ro_region (hpd_gen);
-                    if (hpd_tail_ro_region != nullptr)
-                    {
-                        // insert the list of r/o regions between the r/o and the r/w regions already present
-                        heap_segment_next (tail_ro_region) = heap_segment_next (hpd_tail_ro_region);
-                        heap_segment_next (hpd_tail_ro_region) = start_region;
-                    }
-                    else
-                    {
-                        // put the list of r/o regions before the r/w regions present
-                        heap_segment_next (tail_ro_region) = generation_start_segment (hpd_gen);
-                        generation_start_segment (hpd_gen) = start_region;
-                    }
-                    generation_tail_ro_region (hpd_gen) = tail_ro_region;
-
-                    // we took care of our r/o regions, we still have to do the r/w regions
-                    start_region = start_rw_region;
-                }
-                // put the r/w regions at the tail of hpd_gen
-                heap_segment* hpd_tail_region = generation_tail_region (hpd_gen);
-                heap_segment_next (hpd_tail_region) = start_region;
-                generation_tail_region (hpd_gen) = tail_region;
-
-                generation_start_segment (gen) = nullptr;
-                generation_tail_ro_region (gen) = nullptr;
-                generation_tail_region (gen) = nullptr;
-            }
-        }
-    }
-
-    // transfer the free regions from the heaps going idle
-    for (int i = new_n_heaps; i < old_n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-        int dest_heap_number = i % new_n_heaps;
-        gc_heap* hpd = g_heaps[dest_heap_number];
-
-        for (int kind = 0; kind < count_free_region_kinds; kind++)
-        {
-            hpd->free_regions[kind].transfer_regions(&hp->free_regions[kind]);
-        }
-    }
-
-    // update number of heaps
-    n_heaps = new_n_heaps;
-    gc_t_join.update_n_threads(new_n_heaps);
-#ifdef BACKGROUND_GC
-    bgc_t_join.update_n_threads(new_n_heaps);
-#endif //BACKGROUND_GC
-
-    // even out the regions over the current number of heaps
-    equalize_promoted_bytes (max_generation);
-
-    // establish invariants for the heaps now in operation
-    for (int i = 0; i < new_n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        // establish invariants regarding the ephemeral segment
-        generation* gen0 = hp->generation_of (0);
-        if ((hp->ephemeral_heap_segment == nullptr) ||
-            (heap_segment_heap (hp->ephemeral_heap_segment) != hp))
-        {
-            hp->ephemeral_heap_segment = heap_segment_rw (generation_start_segment (gen0));
-            hp->alloc_allocated = heap_segment_allocated (hp->ephemeral_heap_segment);
-        }
-
-        // establish invariants regarding the allocation segment
-        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-        {
-            generation* gen = hp->generation_of (gen_idx);
-            heap_segment *allocation_region = generation_allocation_segment (gen);
-            if ((allocation_region == nullptr) ||
-                (heap_segment_heap (allocation_region) != hp))
-            {
-                generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
-            }
-        }
-    }
-
-    // rethread the free lists
-    for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
-    {
-        for (int i = 0; i < old_n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-
-            hp->rethread_fl_items (gen_idx);
-        }
-        merge_fl_from_other_heaps (gen_idx, new_n_heaps, old_n_heaps);
-    }
-
-    // there should be no items in the bgc_alloc_lock on any heap - check that
-    for (int i = 0; i < old_n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        hp->bgc_alloc_lock->check();
-    }
-
-    // put heaps that going idle now into the decommissioned state
-    for (int i = n_heaps; i < old_n_heaps; i++)
-    {
-        gc_heap* hp = g_heaps[i];
-
-        hp->decommission_heap();
     }
 
     if (GCScan::GetGcRuntimeStructuresValid())
     {
-        // make sure no allocation contexts point to idle heaps
-        fix_allocation_contexts_heaps();
+        // join for sufficient resources decision
+        gc_t_join.join (this, gc_join_merge_temp_fl);
+        if (gc_t_join.joined ())
+        {
+            gc_t_join.restart ();
+        }
+    }
+
+    if (dynamic_heap_count_data.new_n_heaps == n_heaps)
+        return false;
+
+    if (heap_number == 0)
+    {
+        // after having checked for sufficient resources, we are now committed to actually change the heap count
+        dprintf (3, ("switching heap count from %d to %d heaps", old_n_heaps, new_n_heaps));
+
+        // spread finalization data out to heaps coming into service
+        // if this step fails, we can still continue
+        int from_heap_number = 0;
+        for (int i = old_n_heaps; i < new_n_heaps; i++)
+        {
+            gc_heap* to_hp = g_heaps[i];
+            gc_heap* from_hp = g_heaps[from_heap_number];
+
+            if (!from_hp->finalize_queue->SplitFinalizationData (to_hp->finalize_queue))
+            {
+                // we can live with this failure - it just means finalization data
+                // are still on the old heap, which is correct, but suboptimal
+                dprintf (3, ("failed to split finalization data between heaps %d and %d", from_heap_number, i));
+            }
+
+            from_heap_number = (from_heap_number + 1) % old_n_heaps;
+        }
+
+        // prepare for the switch by fixing the allocation contexts on the old heaps,
+        // and setting the survived size for the existing regions to their allocated size
+        for (int i = 0; i < old_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            if (GCScan::GetGcRuntimeStructuresValid())
+            {
+                hp->fix_allocation_contexts (TRUE);
+            }
+
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                generation* gen = hp->generation_of (gen_idx);
+                for (heap_segment* region = heap_segment_rw (generation_start_segment (gen));
+                     region != nullptr;
+                     region = heap_segment_next (region))
+                {
+                    // prepare the regions by pretending all their allocated space survives
+                    heap_segment_survived (region) = heap_segment_allocated (region) - heap_segment_mem (region);
+                }
+            }
+        }
+
+        // inititalize the new heaps
+        if (old_n_heaps < new_n_heaps)
+        {
+            // initialize the region lists of the new heaps
+            for (int i = old_n_heaps; i < new_n_heaps; i++)
+            {
+                gc_heap* hp = g_heaps[i];
+
+                hp->check_decommissioned_heap();
+
+                hp->recommission_heap();
+            }
+        }
+
+        if (new_n_heaps < old_n_heaps)
+        {
+            // move all regions from the heaps about to be retired to another heap < new_n_heaps
+            assert (new_n_heaps > 0);
+
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                for (int i = new_n_heaps; i < old_n_heaps; i++)
+                {
+                    gc_heap* hp = g_heaps[i];
+
+                    int dest_heap_number = i % new_n_heaps;
+                    gc_heap* hpd = g_heaps[dest_heap_number];
+                    generation* hpd_gen = hpd->generation_of (gen_idx);
+
+                    generation* gen = hp->generation_of (gen_idx);
+
+                    heap_segment* start_region = generation_start_segment (gen);
+                    heap_segment* tail_ro_region = generation_tail_ro_region (gen);
+                    heap_segment* tail_region = generation_tail_region (gen);
+
+                    for (heap_segment* region = start_region; region != nullptr; region = heap_segment_next(region))
+                    {
+                        set_heap_for_contained_basic_regions (region, hpd);
+                    }
+                    if (tail_ro_region != nullptr)
+                    {
+                        // the first r/w region is the one after tail_ro_region
+                        heap_segment* start_rw_region = heap_segment_next (tail_ro_region);
+
+                        heap_segment* hpd_tail_ro_region = generation_tail_ro_region (hpd_gen);
+                        if (hpd_tail_ro_region != nullptr)
+                        {
+                            // insert the list of r/o regions between the r/o and the r/w regions already present
+                            heap_segment_next (tail_ro_region) = heap_segment_next (hpd_tail_ro_region);
+                            heap_segment_next (hpd_tail_ro_region) = start_region;
+                        }
+                        else
+                        {
+                            // put the list of r/o regions before the r/w regions present
+                            heap_segment_next (tail_ro_region) = generation_start_segment (hpd_gen);
+                            generation_start_segment (hpd_gen) = start_region;
+                        }
+                        generation_tail_ro_region (hpd_gen) = tail_ro_region;
+
+                        // we took care of our r/o regions, we still have to do the r/w regions
+                        start_region = start_rw_region;
+                    }
+                    // put the r/w regions at the tail of hpd_gen
+                    heap_segment* hpd_tail_region = generation_tail_region (hpd_gen);
+                    heap_segment_next (hpd_tail_region) = start_region;
+                    generation_tail_region (hpd_gen) = tail_region;
+
+                    generation_start_segment (gen) = nullptr;
+                    generation_tail_ro_region (gen) = nullptr;
+                    generation_tail_region (gen) = nullptr;
+                }
+            }
+        }
+
+        // transfer the free regions from the heaps going idle
+        for (int i = new_n_heaps; i < old_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+            int dest_heap_number = i % new_n_heaps;
+            gc_heap* hpd = g_heaps[dest_heap_number];
+
+            for (int kind = 0; kind < count_free_region_kinds; kind++)
+            {
+                hpd->free_regions[kind].transfer_regions(&hp->free_regions[kind]);
+            }
+        }
+        // update number of heaps
+        n_heaps = new_n_heaps;
+
+        // even out the regions over the current number of heaps
+        equalize_promoted_bytes (max_generation);
+
+        // establish invariants for the heaps now in operation
+        for (int i = 0; i < new_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            // establish invariants regarding the ephemeral segment
+            generation* gen0 = hp->generation_of (0);
+            if ((hp->ephemeral_heap_segment == nullptr) ||
+                (heap_segment_heap (hp->ephemeral_heap_segment) != hp))
+            {
+                hp->ephemeral_heap_segment = heap_segment_rw (generation_start_segment (gen0));
+                hp->alloc_allocated = heap_segment_allocated (hp->ephemeral_heap_segment);
+            }
+
+            // establish invariants regarding the allocation segment
+            for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+            {
+                generation* gen = hp->generation_of (gen_idx);
+                heap_segment *allocation_region = generation_allocation_segment (gen);
+                if ((allocation_region == nullptr) ||
+                    (heap_segment_heap (allocation_region) != hp))
+                {
+                    generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
+                }
+            }
+        }
+    }
+
+    if (GCScan::GetGcRuntimeStructuresValid())
+    {
+        // join for rethreading the free lists
+        gc_t_join.join (this, gc_join_merge_temp_fl);
+        if (gc_t_join.joined ())
+        {
+            gc_t_join.restart ();
+        }
+
+        // rethread the free lists
+        for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
+        {
+            rethread_fl_items (gen_idx);
+
+            // join for merging the free lists
+            gc_t_join.join (this, gc_join_merge_temp_fl);
+            if (gc_t_join.joined ())
+            {
+                merge_fl_from_other_heaps (gen_idx, new_n_heaps, old_n_heaps);
+
+                gc_t_join.restart ();
+            }
+        }
+        // there should be no items in the bgc_alloc_lock
+        bgc_alloc_lock->check();
+    }
+
+    if (heap_number == 0)
+    {
+        // udate the number of heaps in the joins
+        gc_t_join.update_n_threads(new_n_heaps);
+    #ifdef BACKGROUND_GC
+        bgc_t_join.update_n_threads(new_n_heaps);
+    #endif //BACKGROUND_GC
+
+        // put heaps that going idle now into the decommissioned state
+        for (int i = n_heaps; i < old_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            hp->decommission_heap();
+        }
+
+        if (GCScan::GetGcRuntimeStructuresValid())
+        {
+            // make sure no allocation contexts point to idle heaps
+            fix_allocation_contexts_heaps();
+        }
+
+        if (old_n_heaps < new_n_heaps)
+        {
+            // wake up threads for the new heaps
+            gc_idle_thread_event.Set();
+        }
     }
 
     return true;
@@ -47440,7 +47514,7 @@ HRESULT GCHeap::Initialize()
         if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicHeapCount())
         {
             // ... start with only 1 heap
-            gc_heap::change_heap_count (1);
+            gc_heap::g_heaps[0]->change_heap_count (1);
         }
 #endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);

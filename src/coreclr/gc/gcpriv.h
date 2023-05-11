@@ -2566,9 +2566,10 @@ private:
     PER_HEAP_METHOD void recommission_heap();
 
     // check if we should change the heap count
-    PER_HEAP_ISOLATED_METHOD void check_heap_count();
+    PER_HEAP_METHOD void check_heap_count();
 
-    PER_HEAP_ISOLATED_METHOD bool change_heap_count (int new_n_heaps);
+    PER_HEAP_METHOD bool prepare_to_change_heap_count (int new_n_heaps);
+    PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -4216,6 +4217,7 @@ private:
         unsigned        sample_index;
         sample          samples[sample_size];
 
+        int             new_n_heaps;
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
         int             lowest_heap_with_msl_uoh;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
