@@ -1137,20 +1137,20 @@ namespace System.Runtime.CompilerServices
             byte b = 255;
             sbyte sb = -1;
 
-            Assert.Equal(255, (long)Unsafe.BitCast<sbyte, byte>(sb));
-            Assert.Equal(-1, (long)Unsafe.BitCast<byte, sbyte>(b));
+            Assert.Equal(255l, (long)Unsafe.BitCast<sbyte, byte>(sb));
+            Assert.Equal(-1l, (long)Unsafe.BitCast<byte, sbyte>(b));
 
-            Assert.Equal(255, (long)Unsafe.BitCast<short, ushort>(b));
+            Assert.Equal(255l, (long)Unsafe.BitCast<short, ushort>(b));
             Assert.Equal(ushort.MaxValue, (long)Unsafe.BitCast<short, ushort>(sb));
-            Assert.Equal(255, (long)Unsafe.BitCast<ushort, short>(b));
+            Assert.Equal(255l, (long)Unsafe.BitCast<ushort, short>(b));
 
-            Assert.Equal(255, (long)Unsafe.BitCast<int, uint>(b));
+            Assert.Equal(255l, (long)Unsafe.BitCast<int, uint>(b));
             Assert.Equal(uint.MaxValue, (long)Unsafe.BitCast<int, uint>(sb));
-            Assert.Equal(255, (long)Unsafe.BitCast<uint, int>(b));
+            Assert.Equal(255l, (long)Unsafe.BitCast<uint, int>(b));
 
-            Assert.Equal(255, Unsafe.BitCast<long, ulong>(b));
+            Assert.Equal(255ul, Unsafe.BitCast<long, ulong>(b));
             Assert.Equal(ulong.MaxValue, Unsafe.BitCast<long, ulong>(sb));
-            Assert.Equal(255, Unsafe.BitCast<ulong, long>(b));
+            Assert.Equal(255l, Unsafe.BitCast<ulong, long>(b));
 
             S2 s2 = BitConverter.IsLittleEndian ? new S2(255, 0) : new S2(0, 255);
             S4 s4 = BitConverter.IsLittleEndian ? new S4(255, 0, 0, 0) : new S4(0, 0, 0, 255);
@@ -1166,16 +1166,16 @@ namespace System.Runtime.CompilerServices
 
             Assert.Equal(s8, Unsafe.BitCast<ulong, S8>(b));
             Assert.Equal(s8, Unsafe.BitCast<long, S8>(b));
-            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S4>(sb));
+            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S8>(sb));
 
-            Assert.Equal(255, Unsafe.BitCast<S2, ushort>(s2));
-            Assert.Equal(255, Unsafe.BitCast<S2, short>(s2));
-            Assert.Equal(255, Unsafe.BitCast<S4, uint>(s4));
+            Assert.Equal((ushort)255, Unsafe.BitCast<S2, ushort>(s2));
+            Assert.Equal((short)255, Unsafe.BitCast<S2, short>(s2));
+            Assert.Equal(255u, Unsafe.BitCast<S4, uint>(s4));
             Assert.Equal(255, Unsafe.BitCast<S4, int>(s4));
-            Assert.Equal(255, Unsafe.BitCast<S8, ulong>(s8));
-            Assert.Equal(255, Unsafe.BitCast<S8, long>(s8));
+            Assert.Equal(255ul, Unsafe.BitCast<S8, ulong>(s8));
+            Assert.Equal(255l, Unsafe.BitCast<S8, long>(s8));
 
-            byte* misalignedPtr = (byte*)NativeMemory.AllocAligned(9, 64) + 1;
+            byte* misalignedPtr = (byte*)NativeMemory.AlignedAlloc(9, 64) + 1;
             new Span<byte>(misalignedPtr, 8).Clear();
 
             *misalignedPtr = 255;
@@ -1190,17 +1190,17 @@ namespace System.Runtime.CompilerServices
 
             Assert.Equal(s8, Unsafe.BitCast<ulong, S8>(*misalignedPtr));
             Assert.Equal(s8, Unsafe.BitCast<long, S8>(*misalignedPtr));
-            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S4>(*(sbyte*)misalignedPtr));
+            Assert.Equal(new S8(255, 255, 255, 255, 255, 255, 255, 255), Unsafe.BitCast<long, S8>(*(sbyte*)misalignedPtr));
 
             *(S2*)misalignedPtr = s2;
-            Assert.Equal(255, Unsafe.BitCast<S2, ushort>(*(S2*)misalignedPtr));
-            Assert.Equal(255, Unsafe.BitCast<S2, short>(*(S2*)misalignedPtr));
+            Assert.Equal((ushort)255, Unsafe.BitCast<S2, ushort>(*(S2*)misalignedPtr));
+            Assert.Equal((short)255, Unsafe.BitCast<S2, short>(*(S2*)misalignedPtr));
             *(S4*)misalignedPtr = s4;
-            Assert.Equal(255, Unsafe.BitCast<S4, uint>(*(S4*)misalignedPtr));
+            Assert.Equal(255u, Unsafe.BitCast<S4, uint>(*(S4*)misalignedPtr));
             Assert.Equal(255, Unsafe.BitCast<S4, int>(*(S4*)misalignedPtr));
             *(S8*)misalignedPtr = s8;
-            Assert.Equal(255, Unsafe.BitCast<S8, ulong>(*(S8*)misalignedPtr));
-            Assert.Equal(255, Unsafe.BitCast<S8, long>(*(S8*)misalignedPtr));
+            Assert.Equal(255ul, Unsafe.BitCast<S8, ulong>(*(S8*)misalignedPtr));
+            Assert.Equal(255l, Unsafe.BitCast<S8, long>(*(S8*)misalignedPtr));
 
             Half h = Unsafe.ReadUnaligned<Half>(ref Unsafe.As<S2, byte>(ref s2));
             float s = Unsafe.ReadUnaligned<float>(ref Unsafe.As<S4, byte>(ref s4));

@@ -4058,10 +4058,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             assert(sig->sigInst.methInstCount == 2);
 
             CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
-            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
+            ClassLayout* fromLayout = nullptr;
+            var_types    fromType   = TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
-            unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
-            unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
+            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
+            ClassLayout* toLayout = nullptr;
+            var_types    toType   = TypeHandleToVarType(toTypeHnd, &toLayout);
+
+            unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : info.compCompHnd->getClassSize(fromTypeHnd);
+            unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : info.compCompHnd->getClassSize(toTypeHnd);
 
             // Runtime requires all types to be at least 1-byte
             assert((fromSize != 0) && (toSize != 0));
@@ -4072,15 +4077,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 return nullptr;
             }
 
-            ClassLayout* fromLayout = nullptr;
-            var_types    fromType   = TypeHandleToVarType(fromTypeHnd, &fromLayout);
-
-            ClassLayout* toLayout = nullptr;
-            var_types    toType   = TypeHandleToVarType(toTypeHnd, &toLayout);
-
             assert((fromType != TYP_REF) && (toType != TYP_REF));
 
             GenTree* op1 = impPopStack().val;
+
+            op1 = impImplicitR4orR8Cast(op1, fromType);
+            op1 = impImplicitIorI4Cast(op1, fromType);
 
             var_types valType      = op1->gtType;
             GenTree*  effectiveVal = op1->gtEffectiveVal();
@@ -4089,11 +4091,20 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 valType = lvaGetDesc(effectiveVal->AsLclVar()->GetLclNum())->TypeGet();
             }
 
-            if ((fromTypeHnd == toTypeHnd) || ClassLayout::AreCompatible(fromLayout, toLayout) ||
-                (varTypeIsIntegral(fromType) && varTypeIsIntegral(toType) &&
-                 (!varTypeIsSmall(valType) || (varTypeIsSigned(valType) == varTypeIsSigned(toType)))))
+            // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
+            if (varTypeIsSmall(toType)
             {
-                // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
+                if (genActualTypeIsInt(valType))
+                {
+                    if (fgCastNeeded(op1, toType))
+                    {
+                        op1 = gtNewCastNode(TYP_INT, op1, false, toType);
+                    }
+                    return op1;
+                }
+            }
+            else if (((toType != TYP_STRUCT) && (genActualType(valType) == toType)) || ClassLayout::AreCompatible(fromLayout, toLayout))
+            {
                 return op1;
             }
 
