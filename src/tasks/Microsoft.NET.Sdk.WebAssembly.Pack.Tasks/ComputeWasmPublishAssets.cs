@@ -266,9 +266,9 @@ public class ComputeWasmPublishAssets : Task
                 {
                     filesToRemove.Add(resolved);
                 }
-                else if (resolvedNativeAssetToPublish.TryGetValue("dotnet.wasm", out var resolved))
+                else if (resolvedNativeAssetToPublish.TryGetValue("dotnet.wasm", out var resolved2))
                 {
-                    filesToRemove.Add(resolved);
+                    filesToRemove.Add(resolved2);
                 }
                 continue;
             }
@@ -291,7 +291,7 @@ public class ComputeWasmPublishAssets : Task
         static bool IsDotNetWasm(string key)
         {
             var name = Path.GetFileName(key);
-            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal) 
+            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal)
                 || string.Equals("dotnet.wasm", name, StringComparison.Ordinal);
         }
     }
