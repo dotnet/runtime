@@ -1234,7 +1234,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define EVEX_B_BIT 0x0000001000000000ULL
 
 //------------------------------------------------------------------------
-// AddEvexPrefix: Add default EVEX perfix with only LL' bits set.
+// AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
 // Arguments:
 //    ins -- processor instruction to check.
@@ -1269,10 +1269,21 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
     return code;
 }
 
+//------------------------------------------------------------------------
+// AddEvexPrefix: set Evex.b bit if EvexbContext is set in instruction descritor.
+//
+// Arguments:
+//    id -- instruction descriptor
+//    code -- opcode bits.
+//
+// Return Value:
+//    encoded code with Evex.b set if needed.
+//
 emitter::code_t emitter::AddEvexbBitIfNeeded(const instrDesc* id, code_t code)
 {
-    if (hasEvexPrefix(code) && id->idIsEvexbContext())
+    if (id->idIsEvexbContext())
     {
+        hasEvexPrefix(code);
         code |= EVEX_B_BIT;
     }
     return code;
@@ -6689,13 +6700,11 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-#if defined(TARGET_XARCH)
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext();
     }
-#endif //  TARGET_XARCH
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6820,13 +6829,11 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
-#if defined(TARGET_XARCH)
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext();
     }
-#endif //  TARGET_XARCH
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6873,13 +6880,11 @@ void emitter::emitIns_R_R_S(
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-#if defined(TARGET_XARCH)
     if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext();
     }
-#endif //  TARGET_XARCH
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
@@ -8438,7 +8443,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs, INS_OPTS_NONE);
+    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs);
 }
 
 //------------------------------------------------------------------------

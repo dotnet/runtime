@@ -750,6 +750,8 @@ void CodeGen::inst_RV_SH(
 //
 // Arguments:
 //    op - The operand node for which to obtain the descriptor
+//    instOptions - The optional parameter to track if embedded broadcast is enabled
+//    simdBaseType - The base data type of the emitting instruction.
 //
 // Return Value:
 //    The operand descriptor for "op".
@@ -808,16 +810,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                     assert(hwintrinsic->isContained());
                     assert(hwintrinsic->OperIsMemoryLoad());
                     assert(hwintrinsic->GetOperandCount() == 1);
-                    GenTree* BroadcastScalar = hwintrinsic->Op(1);
-                    if (BroadcastScalar->OperIs(GT_LCL_ADDR))
+                    GenTree* broadcastScalar = hwintrinsic->Op(1);
+                    if (broadcastScalar->OperIs(GT_LCL_ADDR))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
                     }
                     else
                     {
-                        assert(BroadcastScalar->OperIs(GT_LCL_VAR));
-                        return OperandDesc(simdBaseType, BroadcastScalar);
+                        assert(broadcastScalar->OperIs(GT_LCL_VAR));
+                        return OperandDesc(simdBaseType, broadcastScalar);
                     }
                 }
 
@@ -1210,6 +1212,13 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
     }
 }
 
+//------------------------------------------------------------------------
+// IsEmbeddedBroadcastEnabled: determine if embedded broadcast can be enabled
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    op        -- The second operand of the instruction.
+//
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 {

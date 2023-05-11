@@ -870,7 +870,6 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 
 //------------------------------------------------------------------------
 // HasEmbeddedBroadcast: Do we consider embedded broadcast while encoding.
-// TODO-XArch-AVX512: Add eventual check on the instrDesc
 //
 // Arguments:
 //    id - Instruction descriptor.

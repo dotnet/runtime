@@ -818,7 +818,7 @@ protected:
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:   47 bits
-        // amd64: 46 bits
+        // amd64: 47 bits
         // arm:   48 bits
         // arm64: 50 bits
         // loongarch64: 46 bits
@@ -3689,7 +3689,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
                 return EA_8BYTE;
 
             default:
-                break;
+                unreached();
         }
     }
     switch (ins)

@@ -19144,6 +19144,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX512F_BroadcastScalarToVector512:
         {
+            // These intrinsic operations are contained as part of the operand of embedded broadcast compatiable
+            // instriction
             return true;
         }
 
@@ -25085,7 +25087,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 // OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible inintrsic.
 //
 // Return Value:
-// true if the intrisic node lowering instruction is embedded broadcast compatible.
+//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
 //
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
