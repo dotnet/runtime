@@ -251,7 +251,7 @@ namespace Wasm.Build.Tests
                                          options.MainJS ?? "test-main.js",
                                          options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
-                                         options.HasIcudt,
+                                         /*options.HasIcudt unused*/ true,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
                 }
 
