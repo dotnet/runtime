@@ -48,7 +48,7 @@ list(APPEND SOURCES ${ASM_HELPERS_SOURCES})
 include(../lib.cmake)
 
 # Specify non-default Windows libs to be used for Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64))
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     target_link_libraries(ijwhost PRIVATE Ole32.lib)
 endif()
 
