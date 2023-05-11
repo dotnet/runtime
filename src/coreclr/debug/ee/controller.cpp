@@ -8379,8 +8379,8 @@ bool DebuggerUserBreakpoint::IsFrameInDebuggerNamespace(FrameInfo * pFrame)
         {
             MAKE_WIDEPTR_FROMUTF8(wszNamespace, szNamespace); // throw
             MAKE_WIDEPTR_FROMUTF8(wszClassName, szClassName);
-            if (strcmp_u16(wszClassName, W("Debugger")) == 0 &&
-                strcmp_u16(wszNamespace, W("System.Diagnostics")) == 0)
+            if (u16_strcmp(wszClassName, W("Debugger")) == 0 &&
+                u16_strcmp(wszNamespace, W("System.Diagnostics")) == 0)
             {
                 // This will continue stepping
                 return true;

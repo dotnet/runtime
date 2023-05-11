@@ -1223,7 +1223,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
         WCHAR *end;
         uint64_t result;
         errno = 0;
-        result = strtoui64_u16(out, &end, 16);
+        result = u16_strtoui64(out, &end, 16);
         // errno is ERANGE if the number is out of range, and end is set to pvalue if
         // no valid conversion exists.
         if (errno == ERANGE || end == out)

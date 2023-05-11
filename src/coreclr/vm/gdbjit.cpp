@@ -1828,27 +1828,27 @@ static inline bool isListedModule(const WCHAR *wszModuleFile)
     BOOL isUserDebug = FALSE;
 
     NewArrayHolder<WCHAR> wszModuleName = new WCHAR[g_cBytesNeeded];
-    LPWSTR pComma = (LPWSTR)strchr_u16(g_wszModuleNames, W(','));
+    LPWSTR pComma = (LPWSTR)u16_strchr(g_wszModuleNames, W(','));
     LPWSTR tmp = g_wszModuleNames;
 
     while (pComma != NULL)
     {
-        strncpy_u16(wszModuleName, g_cBytesNeeded, tmp, pComma - tmp);
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, pComma - tmp);
         wszModuleName[pComma - tmp] = W('\0');
 
-        if (strcmp_u16(wszModuleName, wszModuleFile) == 0)
+        if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
             break;
         }
         tmp = pComma + 1;
-        pComma = (LPWSTR)strchr_u16(tmp, W(','));
+        pComma = (LPWSTR)u16_strchr(tmp, W(','));
     }
     if (isUserDebug == FALSE)
     {
-        strncpy_u16(wszModuleName, g_cBytesNeeded, tmp, strlen_u16(tmp));
-        wszModuleName[strlen_u16(tmp)] = W('\0');
-        if (strcmp_u16(wszModuleName, wszModuleFile) == 0)
+        u16_strncpy_s(wszModuleName, g_cBytesNeeded, tmp, u16_strlen(tmp));
+        wszModuleName[u16_strlen(tmp)] = W('\0');
+        if (u16_strcmp(wszModuleName, wszModuleFile) == 0)
         {
             isUserDebug = TRUE;
         }
@@ -2562,15 +2562,15 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 #endif
 
     // remove '.ni.dll' or '.ni.exe' suffix from wszModuleFile
-    LPWSTR pNIExt = const_cast<LPWSTR>(strstr_u16(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
+    LPWSTR pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.exe"))); // where '.ni.exe' start at
     if (!pNIExt)
     {
-      pNIExt = const_cast<LPWSTR>(strstr_u16(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
+      pNIExt = const_cast<LPWSTR>(u16_strstr(wszModuleFile, W(".ni.dll"))); // where '.ni.dll' start at
     }
 
     if (pNIExt)
     {
-      strcpy_u16(pNIExt, strlen_u16(pNIExt) + 1, W(".dll"));
+      u16_strcpy_s(pNIExt, u16_strlen(pNIExt) + 1, W(".dll"));
     }
 
     if (isListedModule(wszModuleFile))

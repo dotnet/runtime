@@ -28,7 +28,7 @@ bool gcGenAnalysisDump = false;
         {
             // Get the managed command line.
             LPCWSTR pCmdLine = GetCommandLineForDiagnostics();
-            match = strncmp_u16(pCmdLine, gcGenAnalysisCmd, strlen_u16(gcGenAnalysisCmd)) == 0;
+            match = u16_strncmp(pCmdLine, gcGenAnalysisCmd, u16_strlen(gcGenAnalysisCmd)) == 0;
         }
         if (match && !CLRConfig::IsConfigOptionSpecified(W("GCGenAnalysisGen")))
         {

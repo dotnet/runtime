@@ -510,7 +510,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, s
 bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!str) return true;
-    size_t byteCount = (strlen_u16(str) + 1) * sizeof(*str);
+    size_t byteCount = (u16_strlen(str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
     {

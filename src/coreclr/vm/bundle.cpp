@@ -67,7 +67,7 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     if (!pathIsBundleRelative)
     {
 #ifdef TARGET_UNIX
-        if (strncmp_u16(m_basePath, path, m_basePath.GetCount()) == 0)
+        if (u16_strncmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #else
         if (_wcsnicmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #endif // TARGET_UNIX

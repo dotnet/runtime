@@ -155,14 +155,14 @@ HRESULT GetCurrentModuleFileName(_Out_writes_(*pcchBuffer) LPWSTR pBuffer, __ino
     }
 
     // Pick off the part after the path.
-    WCHAR* appName = (WCHAR*)strrchr_u16(appPath, DIRECTORY_SEPARATOR_CHAR_W);
+    WCHAR* appName = (WCHAR*)u16_strrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
 
     // If no backslash, use the whole name; if there is a backslash, skip it.
     appName = appName ? appName + 1 : appPath;
 
-    if (*pcchBuffer < strlen_u16(appName))
+    if (*pcchBuffer < u16_strlen(appName))
     {
-        *pcchBuffer = static_cast<DWORD>(strlen_u16(appName)) + 1;
+        *pcchBuffer = static_cast<DWORD>(u16_strlen(appName)) + 1;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
 

@@ -81,7 +81,7 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        WCHAR* ptr = (WCHAR*)strrchr_u16(coreCLRLoadedPath, '/');
+        WCHAR* ptr = (WCHAR*)u16_strrchr(coreCLRLoadedPath, '/');
 
         // Move past the / character.
         ptr = ptr + 1;
@@ -736,9 +736,9 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
         disasm_1->CchFormatInstr(instrMnemonic_1, 64);
         WCHAR instrMnemonic_2[64]; // I never know how much to allocate...
         disasm_2->CchFormatInstr(instrMnemonic_2, 64);
-        if (strcmp_u16(instrMnemonic_1, L"ret") == 0)
+        if (u16_strcmp(instrMnemonic_1, L"ret") == 0)
             haveSeenRet = true;
-        if (strcmp_u16(instrMnemonic_1, L"rep ret") == 0)
+        if (u16_strcmp(instrMnemonic_1, L"rep ret") == 0)
             haveSeenRet = true;
 
         // First, check to see if these instructions are actually identical.
