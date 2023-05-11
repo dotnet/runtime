@@ -13089,6 +13089,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     CallArg* thisArg = call->gtArgs.GetThisArg();
     if (thisArg != nullptr)
     {
+        bool      isValueClassThis = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0);
+        var_types sigType          = isValueClassThis ? TYP_BYREF : TYP_REF;
+
+        lclVarInfo[0].lclTypeInfo    = sigType;
         lclVarInfo[0].lclVerTypeInfo = verMakeTypeInfo(pInlineInfo->inlineCandidateInfo->clsHandle);
         lclVarInfo[0].lclHasLdlocaOp = false;
 
@@ -13097,14 +13101,11 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // the inlining multiplier) for anything in that assembly.
         // But we only need to normalize it if it is a TYP_STRUCT
         // (which we need to do even if we have already set foundSIMDType).
-        if (!foundSIMDType && isSIMDorHWSIMDClass(&(lclVarInfo[0].lclVerTypeInfo)))
+        if (!foundSIMDType && isValueClassThis && isSIMDorHWSIMDClass(pInlineInfo->inlineCandidateInfo->clsHandle))
         {
             foundSIMDType = true;
         }
 #endif // FEATURE_SIMD
-
-        var_types sigType         = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0) ? TYP_BYREF : TYP_REF;
-        lclVarInfo[0].lclTypeInfo = sigType;
 
         GenTree* thisArgNode = thisArg->GetEarlyNode();
 
@@ -13112,7 +13113,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                ((thisArgNode->TypeGet() == TYP_I_IMPL) && // "this" is unmgd but the method's class doesnt care
                 (clsAttr & CORINFO_FLG_VALUECLASS)));
 
-        if (genActualType(thisArgNode->TypeGet()) != genActualType(sigType))
+        if (genActualType(thisArgNode) != genActualType(sigType))
         {
             if (sigType == TYP_REF)
             {
@@ -13126,7 +13127,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             assert(sigType == TYP_BYREF);
             assert((genActualType(thisArgNode->TypeGet()) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
 
-            lclVarInfo[0].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
+            lclVarInfo[0].lclVerTypeInfo = typeInfo(TYP_I_IMPL);
         }
     }
 
@@ -13141,25 +13142,21 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     unsigned i;
     for (i = (thisArg ? 1 : 0); i < ilArgCnt; i++, argLst = info.compCompHnd->getArgNext(argLst))
     {
-        var_types sigType = (var_types)eeGetArgType(argLst, &methInfo->args);
-
-        lclVarInfo[i].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->args, argLst);
+        CORINFO_CLASS_HANDLE argSigClass;
+        CorInfoType          argSigJitType = strip(info.compCompHnd->getArgType(&methInfo->args, argLst, &argSigClass));
+        var_types            sigType       = TypeHandleToVarType(argSigJitType, argSigClass);
 
 #ifdef FEATURE_SIMD
-        if ((!foundSIMDType || (sigType == TYP_STRUCT)) && isSIMDorHWSIMDClass(&(lclVarInfo[i].lclVerTypeInfo)))
+        // If this is a SIMD class (i.e. in the SIMD assembly), then we will consider that we've
+        // found a SIMD type, even if this may not be a type we recognize (the assumption is that
+        // it is likely to use a SIMD type, and therefore we want to increase the inlining multiplier).
+        if (!foundSIMDType && varTypeIsStruct(sigType) && isSIMDorHWSIMDClass(argSigClass))
         {
-            // If this is a SIMD class (i.e. in the SIMD assembly), then we will consider that we've
-            // found a SIMD type, even if this may not be a type we recognize (the assumption is that
-            // it is likely to use a SIMD type, and therefore we want to increase the inlining multiplier).
             foundSIMDType = true;
-            if (sigType == TYP_STRUCT)
-            {
-                var_types structType = impNormStructType(lclVarInfo[i].lclVerTypeInfo.GetClassHandle());
-                sigType              = structType;
-            }
         }
 #endif // FEATURE_SIMD
 
+        lclVarInfo[i].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->args, argLst);
         lclVarInfo[i].lclTypeInfo    = sigType;
         lclVarInfo[i].lclHasLdlocaOp = false;
 
@@ -13269,8 +13266,11 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     for (i = 0; i < methInfo->locals.numArgs; i++)
     {
-        bool      isPinned;
-        var_types type = (var_types)eeGetArgType(localsSig, &methInfo->locals, &isPinned);
+        CORINFO_CLASS_HANDLE sigClass;
+        ClassLayout*         layout;
+        CorInfoTypeWithMod   sigJitTypeWithMod = info.compCompHnd->getArgType(&methInfo->locals, localsSig, &sigClass);
+        var_types            type              = TypeHandleToVarType(strip(sigJitTypeWithMod), sigClass, &layout);
+        bool                 isPinned          = (sigJitTypeWithMod & ~CORINFO_TYPE_MASK) != 0;
 
         lclVarInfo[i + ilArgCnt].lclHasLdlocaOp = false;
         lclVarInfo[i + ilArgCnt].lclTypeInfo    = type;
@@ -13301,45 +13301,34 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         // If this local is a struct type with GC fields, inform the inliner. It may choose to bail
         // out on the inline.
-        if (type == TYP_STRUCT)
+        if ((type == TYP_STRUCT) && layout->HasGCPtr())
         {
-            CORINFO_CLASS_HANDLE lclHandle = lclVarInfo[i + ilArgCnt].lclVerTypeInfo.GetClassHandle();
-            DWORD                typeFlags = info.compCompHnd->getClassAttribs(lclHandle);
-            if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) != 0)
+            inlineResult->Note(InlineObservation::CALLEE_HAS_GC_STRUCT);
+            if (inlineResult->IsFailure())
             {
-                inlineResult->Note(InlineObservation::CALLEE_HAS_GC_STRUCT);
+                return;
+            }
+
+            // Do further notification in the case where the call site is rare; some policies do
+            // not track the relative hotness of call sites for "always" inline cases.
+            if (pInlineInfo->iciBlock->isRunRarely())
+            {
+                inlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
                 if (inlineResult->IsFailure())
                 {
                     return;
                 }
-
-                // Do further notification in the case where the call site is rare; some policies do
-                // not track the relative hotness of call sites for "always" inline cases.
-                if (pInlineInfo->iciBlock->isRunRarely())
-                {
-                    inlineResult->Note(InlineObservation::CALLSITE_RARE_GC_STRUCT);
-                    if (inlineResult->IsFailure())
-                    {
-
-                        return;
-                    }
-                }
             }
         }
-
-        localsSig = info.compCompHnd->getArgNext(localsSig);
 
 #ifdef FEATURE_SIMD
-        if ((!foundSIMDType || (type == TYP_STRUCT)) && isSIMDorHWSIMDClass(&(lclVarInfo[i + ilArgCnt].lclVerTypeInfo)))
+        if (!foundSIMDType && varTypeIsStruct(type) && isSIMDorHWSIMDClass(sigClass))
         {
             foundSIMDType = true;
-            if (type == TYP_STRUCT)
-            {
-                var_types structType = impNormStructType(lclVarInfo[i + ilArgCnt].lclVerTypeInfo.GetClassHandle());
-                lclVarInfo[i + ilArgCnt].lclTypeInfo = structType;
-            }
         }
 #endif // FEATURE_SIMD
+
+        localsSig = info.compCompHnd->getArgNext(localsSig);
     }
 
 #ifdef FEATURE_SIMD
@@ -13347,6 +13336,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     {
         foundSIMDType = true;
     }
+
     pInlineInfo->hasSIMDTypeArgLocalOrReturn = foundSIMDType;
 #endif // FEATURE_SIMD
 }

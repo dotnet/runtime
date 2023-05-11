@@ -289,13 +289,6 @@ public:
         return m_cls;
     }
 
-    CORINFO_CLASS_HANDLE GetClassHandleForValueClass() const
-    {
-        assert(IsType(TI_STRUCT));
-        assert(m_cls != NO_CLASS_HANDLE);
-        return m_cls;
-    }
-
     CORINFO_CLASS_HANDLE GetClassHandleForObjRef() const
     {
         assert(IsType(TI_REF));
