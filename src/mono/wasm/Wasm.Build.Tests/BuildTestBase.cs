@@ -684,7 +684,7 @@ namespace Wasm.Build.Tests
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
-                useWebcil ? $"{projectName}${WebcilInWasmExtension}" : $"{projectName}.dll";
+                useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
