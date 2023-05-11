@@ -20,7 +20,7 @@
 #define FMT_CODE_ADDR "%p"
 
 Volatile<bool> PerfMap::s_enabled = false;
-VolatilePtr<PerfMap> PerfMap::s_Current = nullptr;
+PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
@@ -67,46 +67,47 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             s_Current->OpenFileForPid(currentPid);
             s_enabled = true;
         }
-    }
 
-    if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
-    {   
-        const char* jitdumpPath;
-        char jitdumpPathBuffer[4096];
+        if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
+        {   
+            const char* jitdumpPath;
+            char jitdumpPathBuffer[4096];
 
-        CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-        if (value.IsSet())
-        {
-            jitdumpPath = value.AsString();
+            CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+            if (value.IsSet())
+            {
+                jitdumpPath = value.AsString();
+            }
+            else
+            {
+                GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
+                jitdumpPath = jitdumpPathBuffer;
+            }
+
+            PAL_PerfJitDump_Start(jitdumpPath);
+
+            if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
+            {
+                s_ShowOptimizationTiers = true;
+            }
+            
+            s_enabled = true;
         }
-        else
-        {
-            GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
-            jitdumpPath = jitdumpPathBuffer;
-        }
-
-        PAL_PerfJitDump_Start(jitdumpPath);
-
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
-        {
-            s_ShowOptimizationTiers = true;
-        }
-        
-        s_enabled = true;
     }
 
     if (sendExisting)
     {
-        if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
+        AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
+            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        while (assemblyIterator.Next(pDomainAssembly.This()))
         {
-            AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
-                (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-            while (assemblyIterator.Next(pDomainAssembly.This()))
-            {
-                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-                PerfMap::LogImageLoad(pAssembly->GetPEAssembly());
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
+            PerfMap::LogImageLoad(pAssembly->GetPEAssembly());
 
+            // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
+            if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
+            {
                 Module *pModule = pAssembly->GetModule();
                 if (pModule->IsReadyToRun())
                 {
@@ -360,8 +361,9 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
             {
                 s_Current->WriteLine(line);
             }
+
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
         }
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 
@@ -400,16 +402,20 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
         // Emit an entry for each section if it is used.
         if (methodRegionInfo.hotSize > 0)
         {
+            CrstHolder ch(&(s_csPerfMap));
             PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.hotStartAddress, methodRegionInfo.hotSize, name.GetUTF8(), nullptr, nullptr);
         }
 
         if (methodRegionInfo.coldSize > 0)
         {
+            CrstHolder ch(&(s_csPerfMap));
+
             if (s_ShowOptimizationTiers)
             {
                 pMethod->GetFullMethodInfo(name);
                 name.Append(W("[PreJit-cold]"));
             }
+
             PAL_PerfJitDump_LogMethod((void*)methodRegionInfo.coldStartAddress, methodRegionInfo.coldSize, name.GetUTF8(), nullptr, nullptr);
         }
     }
@@ -451,8 +457,9 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             {
                 s_Current->WriteLine(line);
             }
+
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
         }
-        PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }

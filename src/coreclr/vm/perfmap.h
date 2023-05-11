@@ -19,7 +19,7 @@ private:
     static Volatile<bool> s_enabled;
 
     // The one and only PerfMap for the process.
-    static VolatilePtr<PerfMap> s_Current;
+    static PerfMap * s_Current;
 
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
@@ -33,7 +33,7 @@ private:
     CFileStream * m_FileStream;
 
     // The perfinfo file to log images to.
-    PerfInfo* m_PerfInfo;
+    PerfInfo * m_PerfInfo;
 
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
