@@ -20,8 +20,6 @@ struct Replacement
     // a basic block, i.e. all predecessors would have read the replacement
     // back before transferring control if necessary.
     bool NeedsReadBack = false;
-    // Arbitrary flag bit used e.g. by decomposition. Assumed to be false.
-    bool Handled = false;
 #ifdef DEBUG
     const char* Description;
 #endif
@@ -46,6 +44,8 @@ class Promotion
     friend class LocalUses;
     friend class LocalsUseVisitor;
     friend class ReplaceVisitor;
+    friend class DecompositionPlan;
+    friend class StructSegments;
 
     void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
     void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
@@ -107,6 +107,7 @@ public:
 };
 
 class DecompositionStatementList;
+class DecompositionPlan;
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
@@ -150,17 +151,15 @@ private:
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
     void EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result);
-    void UpdateEarlyRefCount(GenTree* candidate);
-    void IncrementRefCount(unsigned lclNum);
-    void InitFieldByField(Replacement*                firstRep,
-                          Replacement*                endRep,
-                          unsigned char               initVal,
-                          DecompositionStatementList* result);
-    void CopyIntoFields(Replacement*                firstRep,
-                        Replacement*                endRep,
-                        GenTreeLclVarCommon*        dst,
-                        GenTree*                    src,
-                        DecompositionStatementList* result);
+    void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
+    void CopyBetweenFields(GenTree*                    dst,
+                           Replacement*                dstFirstRep,
+                           Replacement*                dstEndRep,
+                           GenTree*                    src,
+                           Replacement*                srcFirstRep,
+                           Replacement*                srcEndRep,
+                           DecompositionStatementList* statements,
+                           DecompositionPlan*          plan);
 };
 
 #endif

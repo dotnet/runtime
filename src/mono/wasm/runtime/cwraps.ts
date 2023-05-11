@@ -5,7 +5,7 @@ import type {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
-} from "./types";
+} from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { disableLegacyJsInterop, Module } from "./globals";
@@ -57,7 +57,7 @@ const fn_signatures: SigLine[] = [
     [false, "mono_wasm_invoke_method_ref", "void", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
-    [true, "mono_wasm_assembly_get_entry_point", "number", ["number"]],
+    [true, "mono_wasm_assembly_get_entry_point", "number", ["number", "number"]],
     [true, "mono_wasm_class_get_type", "number", ["number"]],
 
     // MONO.diagnostics
@@ -98,10 +98,10 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
     [true, "mono_jiterp_value_copy", "void", ["number", "number", "number"]],
     [true, "mono_jiterp_get_member_offset", "number", ["number"]],
-    [false, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
-    [false, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
-    [false, "mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
-    [false, "mono_jiterp_write_number_unaligned", "void", ["number", "number", "number"]],
+    [true, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
+    [true, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
+    [true, "mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
+    [true, "mono_jiterp_write_number_unaligned", "void", ["number", "number", "number"]],
     [true, "mono_jiterp_type_is_byref", "number", ["number"]],
     [true, "mono_jiterp_get_size_of_stackval", "number", []],
     [true, "mono_jiterp_parse_option", "number", ["string"]],
@@ -125,6 +125,10 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_boost_back_branch_target", "void", ["number"]],
     [true, "mono_jiterp_is_imethod_var_address_taken", "number", ["number", "number"]],
     [true, "mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
+    [true, "mono_jiterp_get_simd_intrinsic", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
+    [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -246,6 +250,10 @@ export interface t_Cwraps {
     mono_jiterp_boost_back_branch_target(destination: number): void;
     mono_jiterp_is_imethod_var_address_taken(imethod: VoidPtr, offsetBytes: number): number;
     mono_jiterp_get_opcode_value_table_entry(opcode: number): number;
+    mono_jiterp_get_simd_intrinsic(arity: number, index: number): VoidPtr;
+    mono_jiterp_get_simd_opcode(arity: number, index: number): number;
+    mono_jiterp_get_arg_offset (imethod: number, sig: number, index: number): number;
+    mono_jiterp_get_opcode_info(opcode: number, type: number): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
@@ -260,6 +268,42 @@ export const enum I52Error {
     OUT_OF_RANGE = 2,
 }
 
+const fastCwrapTypes = ["void", "number", null];
+
+function cwrap (name: string, returnType: string | null, argTypes: string[] | undefined, opts: any, throwOnError: boolean) : Function {
+    // Attempt to bypass emscripten's generated wrapper if it is safe to do so
+    let fce =
+        // Special cwrap options disable the fast path
+        (typeof (opts) === "undefined") &&
+        // Only attempt to do fast calls if all the args and the return type are either number or void
+        (fastCwrapTypes.indexOf(returnType) >= 0) &&
+        (!argTypes || argTypes.every(atype => fastCwrapTypes.indexOf(atype) >= 0)) &&
+        // Module["asm"] may not be defined yet if we are early enough in the startup process
+        //  in that case, we need to rely on emscripten's lazy wrappers
+        Module["asm"]
+            ? <Function>((<any>Module["asm"])[name])
+            : undefined;
+
+    // If the argument count for the wasm function doesn't match the signature, fall back to cwrap
+    if (fce && argTypes && (fce.length !== argTypes.length)) {
+        console.error(`MONO_WASM: argument count mismatch for cwrap ${name}`);
+        fce = undefined;
+    }
+
+    // We either failed to find the raw wasm func or for some reason we can't use it directly
+    if (typeof (fce) !== "function")
+        fce = Module.cwrap(name, returnType, argTypes, opts);
+
+    if (typeof (fce) !== "function") {
+        const msg = `cwrap ${name} not found or not a function`;
+        if (throwOnError)
+            throw new Error(msg);
+        else
+            console.error("MONO_WASM: " + msg);
+    }
+    return fce;
+}
+
 export function init_c_exports(): void {
     const lfns = WasmEnableLegacyJsInterop && !disableLegacyJsInterop ? legacy_interop_cwraps : [];
     const fns = [...fn_signatures, ...lfns];
@@ -269,18 +313,12 @@ export function init_c_exports(): void {
         if (lazy) {
             // lazy init on first run
             wf[name] = function (...args: any[]) {
-                const fce = Module.cwrap(name, returnType, argTypes, opts);
-                if (typeof (fce) !== "function")
-                    throw new Error(`cwrap ${name} not found or not a function`);
+                const fce = cwrap(name, returnType, argTypes, opts, true);
                 wf[name] = fce;
                 return fce(...args);
             };
         } else {
-            const fce = Module.cwrap(name, returnType, argTypes, opts);
-            // throw would be preferable, but it causes really hard to debug startup errors and
-            //  unhandled promise rejections so this is more useful
-            if (typeof (fce) !== "function")
-                console.error(`cwrap ${name} not found or not a function`);
+            const fce = cwrap(name, returnType, argTypes, opts, false);
             wf[name] = fce;
         }
     }

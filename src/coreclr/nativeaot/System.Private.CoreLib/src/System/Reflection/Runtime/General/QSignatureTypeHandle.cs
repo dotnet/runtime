@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Runtime.General
 {
-    [ReflectionBlocked]
     [CLSCompliant(false)]
     public partial struct QSignatureTypeHandle
     {

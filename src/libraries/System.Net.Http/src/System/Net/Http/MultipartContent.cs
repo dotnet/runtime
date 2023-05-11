@@ -43,10 +43,7 @@ namespace System.Net.Http
 
         public MultipartContent(string subtype, string boundary)
         {
-            if (string.IsNullOrWhiteSpace(subtype))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(subtype));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(subtype);
             ValidateBoundary(boundary);
 
             _boundary = boundary;
@@ -68,10 +65,7 @@ namespace System.Net.Http
         {
             // NameValueHeaderValue is too restrictive for boundary.
             // Instead validate it ourselves and then quote it.
-            if (string.IsNullOrWhiteSpace(boundary))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(boundary));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(boundary);
 
             // RFC 2046 Section 5.1.1
             // boundary := 0*69<bchars> bcharsnospace

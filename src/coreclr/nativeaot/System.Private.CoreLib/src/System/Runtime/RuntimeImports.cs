@@ -21,7 +21,6 @@ namespace System.Runtime
     //      E.g., the class and methods are marked internal assuming that only the base class library needs them
     //            but if a class library wants to factor differently (such as putting the GCHandle methods in an
     //            optional library, those methods can be moved to a different file/namespace/dll
-    [ReflectionBlocked]
     public static partial class RuntimeImports
     {
         private const string RuntimeLibrary = "*";
@@ -98,6 +97,14 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGeneration")]
         internal static extern int RhGetGeneration(object obj);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetGenerationSize")]
+        internal static extern int RhGetGenerationSize(int gen);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLastGCPercentTimeInGC")]
+        internal static extern int RhGetLastGCPercentTimeInGC();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGcLatencyMode")]

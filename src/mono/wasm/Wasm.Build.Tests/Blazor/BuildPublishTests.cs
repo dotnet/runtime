@@ -33,11 +33,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        AssertBlazorBootJson(config, isPublish: false, isNet7AndBelow: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        AssertBlazorBootJson(config, isPublish: true, isNet7AndBelow: false);
     }
 
     [Theory]
@@ -226,6 +226,7 @@ public class BuildPublishTests : BuildTestBase
         Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/85769")]
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [InlineData("Debug")]
     [InlineData("Release")]

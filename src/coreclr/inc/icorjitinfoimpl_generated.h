@@ -476,22 +476,6 @@ CORINFO_CLASS_HANDLE getArgClass(
 CorInfoHFAElemType getHFAType(
           CORINFO_CLASS_HANDLE hClass) override;
 
-JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength) override;
-
-int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result) override;
-
-void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper) override;
-
 bool runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter) override;

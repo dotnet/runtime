@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoConfig, APIType } from "./types-api";
+import type { MonoConfig, APIType } from "./types";
 
-import { runtimeHelpers } from "./globals";
 import { mono_wasm_get_assembly_exports } from "./invoke-cs";
 import { mono_wasm_set_module_imports } from "./invoke-js";
 import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU16, getU32, getU52, getU8, setB32, setF32, setF64, setI16, setI32, setI52, setI64Big, setI8, setU16, setU32, setU52, setU8 } from "./memory";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
+import { runtimeHelpers } from "./globals";
 
 export function export_api(): any {
     const api: APIType = {

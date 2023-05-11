@@ -1004,7 +1004,7 @@ public class ILInliningVersioningTest<T>
         ValidateTestHasCrossModuleImplementation("TestGenericLdtokenFields", linesWithILInliningVersioningTest);
         TestGenericLdtokenFields();
 
-        ValidateTestHasCrossModuleImplementation("TestRVAField", linesWithILInliningVersioningTest, expectedToBePresent: false /* RVA field cross module referencing not implemented yet. */);
+        ValidateTestHasCrossModuleImplementation("TestRVAField", linesWithILInliningVersioningTest);
         TestRVAField();
 
         ValidateTestHasCrossModuleImplementation("TestILBodyChange", linesWithILInliningVersioningTest);
