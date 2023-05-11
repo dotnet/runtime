@@ -19,6 +19,7 @@
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$(CORE_ROOT)\MonoTargetsTasks\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <MarshalingPInvokeScannerPath>$(CORE_ROOT)\MarshalingPInvokeScanner\MarshalingPInvokeScanner.dll</MarshalingPInvokeScannerPath>
     <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
