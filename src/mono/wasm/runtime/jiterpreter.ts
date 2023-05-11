@@ -97,6 +97,8 @@ export const disabledOpcodes: Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames: Array<string> = [
+    "WidenFourAsciiBytesToUtf16AndWriteToBuffer",
+    "ToBase64CharsLarge"
 ];
 
 export class InstrumentedTraceState {

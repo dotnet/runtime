@@ -3509,12 +3509,14 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
-function append_stloc_simd_zero(builder: WasmBuilder, offset: number) {
+/*
+function append_stloc_simd_zero (builder: WasmBuilder, offset: number) {
     builder.local("pLocals");
     builder.appendSimd(WasmSimdOpcode.v128_const);
     builder.appendBytes(new Uint8Array(sizeOfV128));
     append_stloc_tail(builder, offset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
 }
+*/
 
 function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
@@ -3525,9 +3527,8 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
         return true;
     }
 
-    return false;
-
     switch (index) {
+        /*
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
             // Zero then write scalar component
             builder.local("pLocals");
@@ -3556,6 +3557,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i64_load);
             append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i64_store);
             return true;
+        */
 
         case SimdIntrinsic2.V128_I1_CREATE:
             append_simd_2_load(builder, ip, WasmSimdOpcode.v128_load8_splat);
