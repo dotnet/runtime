@@ -97,7 +97,7 @@ namespace System.Reflection.Emit
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(name, nameof(names));
-                _typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+                _typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
             }
 
             return _typeParameters;

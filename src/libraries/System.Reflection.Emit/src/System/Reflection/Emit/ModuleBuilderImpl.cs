@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
@@ -119,6 +120,8 @@ namespace System.Reflection.Emit
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
+            // All generic parameters for all types and methods should be written in specific order
+            ImmutableSortedDictionary<int, Type[]>.Builder paramsBuilder = ImmutableSortedDictionary.CreateBuilder<int, Type[]>();
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -133,10 +136,8 @@ namespace System.Reflection.Emit
 
                 if (typeBuilder.IsGenericType)
                 {
-                    foreach (GenericTypeParameterBuilderImpl gParam in typeBuilder.GenericTypeParameters)
-                    {
-                        AddGenericTypeParametersAndConstraintsCustomAttributes(typeHandle, gParam);
-                    }
+                    int parentIndex = CodedIndex.TypeOrMethodDef(typeHandle);
+                    paramsBuilder.Add(parentIndex, typeBuilder.GenericTypeParameters);
                 }
 
                 if ((typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
@@ -159,12 +160,21 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
-                WriteMethods(typeBuilder);
+                WriteMethods(typeBuilder, paramsBuilder);
                 WriteFields(typeBuilder);
+            }
+
+            // Now write all generic parameters in order
+            foreach (var pair in paramsBuilder.ToImmutableSortedDictionary())
+            {
+                foreach (GenericTypeParameterBuilderImpl param in pair.Value)
+                {
+                    AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
+                }
             }
         }
 
-        private void WriteMethods(TypeBuilderImpl typeBuilder)
+        private void WriteMethods(TypeBuilderImpl typeBuilder, ImmutableSortedDictionary<int, Type[]>.Builder parametersBuilder)
         {
             foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
             {
@@ -174,10 +184,13 @@ namespace System.Reflection.Emit
 
                 if (method.IsGenericMethodDefinition)
                 {
-                    foreach (GenericTypeParameterBuilderImpl arg in method.GetGenericArguments())
+                    int parentIndex = CodedIndex.TypeOrMethodDef(methodHandle);
+                    Type[] gParams = method.GetGenericArguments();
+                    for (int i = 0; i < gParams.Length; i++)
                     {
-                        AddGenericTypeParametersAndConstraintsCustomAttributes(methodHandle, arg);
+                        ((GenericTypeParameterBuilderImpl)gParams[i])._parentHandle = methodHandle;
                     }
+                    parametersBuilder.Add(parentIndex, gParams);
                 }
 
                 if (method._parameters != null)
@@ -291,7 +304,7 @@ namespace System.Reflection.Emit
             return handle;
         }
 
-        private GenericParameterHandle AddGenericTypeParametersAndConstraintsCustomAttributes(EntityHandle parentHandle, GenericTypeParameterBuilderImpl gParam)
+        private void AddGenericTypeParametersAndConstraintsCustomAttributes(EntityHandle parentHandle, GenericTypeParameterBuilderImpl gParam)
         {
             GenericParameterHandle handle = _metadataBuilder.AddGenericParameter(
                 parent: parentHandle,
@@ -304,8 +317,6 @@ namespace System.Reflection.Emit
             {
                 _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
             }
-
-            return handle;
         }
 
         private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>

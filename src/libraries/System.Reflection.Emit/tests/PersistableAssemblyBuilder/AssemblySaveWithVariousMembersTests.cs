@@ -256,7 +256,7 @@ namespace System.Reflection.Emit.Tests
         [InlineData(1, "TestInterface[]")] // not [*]
         [InlineData(2, "TestInterface[,]")]
         [InlineData(3, "TestInterface[,,]")]
-        public void SaveArrayType(int rank, string name)
+        public void SaveArrayTypeSignature(int rank, string name)
         {
             using (TempFile file = TempFile.Create())
             {
@@ -289,7 +289,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SaveByRefType()
+        public void SaveByRefTypeSignature()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -316,7 +316,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SavePointerType()
+        public void SavePointerTypeSignature()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -352,7 +352,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(SaveGenericType_TestData))]
-        public void SaveGenericType(string[] genericParams, Type[] typeArguments, string stringRepresentation)
+        public void SaveGenericTypeSignature(string[] genericParams, Type[] typeArguments, string stringRepresentation)
         {
             using (TempFile file = TempFile.Create())
             {
@@ -378,6 +378,46 @@ namespace System.Reflection.Emit.Tests
         {
             Assert.True(paramType.IsGenericType);
             Assert.Equal(stringRepresentation, paramType.ToString());
+            Assert.False(paramType.IsGenericParameter);
+            Assert.False(paramType.IsGenericTypeDefinition);
+            Assert.False(paramType.IsGenericTypeParameter);
+            Assert.False(paramType.IsGenericMethodParameter);
+        }
+
+        [Fact]
+        public void SaveGenericTypeSignatureWithGenericParameter()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                TypeBuilder tb = CreateAssemblyAndDefineType(out AssemblyBuilder assemblyBuilder, out MethodInfo saveMethod);
+                GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(new string[] { "U", "T", "P" });
+                MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
+                GenericTypeParameterBuilder[] methodParams = mb.DefineGenericParameters(new string[] { "M", "N" });
+                Type genericType = tb.MakeGenericType(typeParams);
+                mb.SetReturnType(methodParams[0]);
+                mb.SetParameters(new Type[] { typeof(INoMethod), genericType, typeParams[1] });
+                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+
+                Type testType = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First().GetTypes()[0];
+                MethodInfo testMethod = testType.GetMethod("TestMethod");
+                Type paramType = testMethod.GetParameters()[1].ParameterType;
+                Type genericParameter = testMethod.GetParameters()[2].ParameterType;
+
+                Assert.False(testMethod.GetParameters()[0].ParameterType.IsGenericType);
+                AssertGenericType("TestInterface[U,T,P]", paramType);
+                Assert.False(genericParameter.IsGenericType);
+                Assert.True(genericParameter.IsGenericParameter);
+                Assert.False(genericParameter.IsGenericTypeDefinition);
+                Assert.True(genericParameter.IsGenericTypeParameter);
+                Assert.False(genericParameter.IsGenericMethodParameter);
+                Assert.Equal("T", genericParameter.Name);
+                Assert.False(testMethod.ReturnType.IsGenericType);
+                Assert.True(testMethod.ReturnType.IsGenericParameter);
+                Assert.False(testMethod.ReturnType.IsGenericTypeDefinition);
+                Assert.False(testMethod.ReturnType.IsGenericTypeParameter);
+                Assert.True(testMethod.ReturnType.IsGenericMethodParameter);
+                Assert.Equal("M", testMethod.ReturnType.Name);
+            }
         }
     }
 

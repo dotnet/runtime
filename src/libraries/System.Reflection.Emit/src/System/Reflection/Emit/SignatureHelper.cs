@@ -79,7 +79,7 @@ namespace System.Reflection.Emit
                 int rank = type.GetArrayRank();
                 if (rank == 1)
                 {
-                    WriteSimpleSignature(signature.SZArray(), elementType, module);
+                    WriteSignatureForType(signature.SZArray(), elementType, module);
                 }
                 else
                 {
@@ -90,20 +90,11 @@ namespace System.Reflection.Emit
             }
             else if (type.IsPointer)
             {
-                Type elementType = type.GetElementType()!;
-                if (elementType == typeof(void))
-                {
-                    signature.VoidPointer();
-                }
-                else
-                {
-                    WriteSignatureForType(signature.Pointer(), elementType, module);
-                }
+                WriteSignatureForType(signature.Pointer(), type.GetElementType()!, module);
             }
             else if (type.IsByRef)
             {
-                Type elementType = type.GetElementType()!;
-                WriteSimpleSignature(signature, elementType, module);
+                WriteSimpleSignature(signature, type.GetElementType()!, module);
             }
             else if (type.IsGenericType)
             {
@@ -127,6 +118,14 @@ namespace System.Reflection.Emit
                     }
                 }
             }
+            else if (type.IsGenericMethodParameter)
+            {
+                signature.GenericMethodTypeParameter(type.GenericParameterPosition);
+            }
+            else if (type.IsGenericParameter)
+            {
+                signature.GenericTypeParameter(type.GenericParameterPosition);
+            }
             else
             {
                 WriteSimpleSignature(signature, type, module);
@@ -139,6 +138,9 @@ namespace System.Reflection.Emit
 
             switch (typeId)
             {
+                case CoreTypeId.Void:
+                    signature.Builder.WriteByte((byte)SignatureTypeCode.Void);
+                    return;
                 case CoreTypeId.Boolean:
                     signature.Boolean();
                     return;
@@ -188,7 +190,7 @@ namespace System.Reflection.Emit
                     signature.String();
                     return;
                 case CoreTypeId.TypedReference:
-                    signature.Builder.WriteByte((byte)SignatureTypeCode.TypedReference);
+                    signature.TypedReference();
                     return;
             }
 

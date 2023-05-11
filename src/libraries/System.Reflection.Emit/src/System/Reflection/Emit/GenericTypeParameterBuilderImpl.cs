@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.Emit
 {
@@ -19,12 +20,14 @@ namespace System.Reflection.Emit
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal List<Type>? _interfaces;
         private MethodBuilderImpl? _methodBuilder;
+        internal EntityHandle _parentHandle;
 
-        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder)
+        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder, EntityHandle parentHandle)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
+            _parentHandle = parentHandle;
         }
 
         public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
