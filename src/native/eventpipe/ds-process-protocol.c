@@ -787,7 +787,7 @@ enable_perfmap_command_try_parse_payload (
 
 	instance->incoming_buffer = buffer;
 
-	if (!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->value))
+	if (!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->perfMapType))
 		ep_raise_error ();
 
 ep_on_exit:
