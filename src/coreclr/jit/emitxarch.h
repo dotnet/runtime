@@ -136,8 +136,8 @@ static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
 #ifdef TARGET_64BIT
-bool AreUpper32BitsZero(regNumber reg);
-bool AreUpper32BitsSignExtended(regNumber reg);
+bool AreUpperBitsZero(regNumber reg, emitAttr size);
+bool AreUpperBitsSignExtended(regNumber reg, emitAttr size);
 #endif // TARGET_64BIT
 
 bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
