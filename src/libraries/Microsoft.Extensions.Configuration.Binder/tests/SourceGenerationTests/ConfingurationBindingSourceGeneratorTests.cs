@@ -123,7 +123,7 @@ public class Program
         config.GetValue(typeof(bool?), ""key"");
         config.GetValue<MyClass>(""key"", new MyClass());
         config.GetValue<byte[]>(""key"", new byte[] { });
-        config.GetValue(typeof(CultureInfo), ""key"", CultureInfo.GetCultureInfo(""""));
+        config.GetValue(typeof(CultureInfo), ""key"", CultureInfo.InvariantCulture);
 	}
 	
 	public class MyClass
