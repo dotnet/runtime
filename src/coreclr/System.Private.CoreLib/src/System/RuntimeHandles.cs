@@ -52,6 +52,7 @@ namespace System
         /// </summary>
         /// <param name="value">A <see cref="RuntimeTypeHandle"/> object to retrieve an internal pointer representation from.</param>
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
+        [Intrinsic]
         public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
         public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
@@ -75,10 +76,6 @@ namespace System
             => ReferenceEquals(handle.m_type, m_type);
 
         public IntPtr Value => m_type?.m_handle ?? 0;
-
-        [Intrinsic]
-        internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
-            => handle.m_type?.GetUnderlyingNativeHandle() ?? 0;
 
         internal RuntimeTypeHandle(RuntimeType type)
         {
@@ -771,12 +768,6 @@ namespace System
         internal IRuntimeMethodInfo GetMethodInfo()
         {
             return m_value;
-        }
-
-        // Used by EE
-        private static IntPtr GetValueInternal(RuntimeMethodHandle rmh)
-        {
-            return rmh.Value;
         }
 
         // ISerializable interface

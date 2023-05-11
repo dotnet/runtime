@@ -55,6 +55,11 @@ namespace System.Text.Json.Serialization
         internal virtual bool SupportsCreateObjectDelegate => false;
 
         /// <summary>
+        /// Indicates that the converter is compatible with <see cref="JsonObjectCreationHandling.Populate"/>.
+        /// </summary>
+        internal virtual bool CanPopulate => false;
+
+        /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
         internal bool CanUseDirectReadOrWrite { get; set; }

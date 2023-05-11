@@ -10,19 +10,18 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System
 {
     public partial class String
     {
-        // Avoid paying the init cost of all the IndexOfAnyValues unless they are actually used.
-        internal static class IndexOfAnyValuesStorage
+        // Avoid paying the init cost of all the SearchValues unless they are actually used.
+        internal static class SearchValuesStorage
         {
             /// <summary>
-            /// IndexOfAnyValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
-            /// No need to allocate the IndexOfAnyValues as a regular Span.IndexOfAny will use the same implementation.
+            /// SearchValues would use SpanHelpers.IndexOfAnyValueType for 5 values in this case.
+            /// No need to allocate the SearchValues as a regular Span.IndexOfAny will use the same implementation.
             /// </summary>
             public const string NewLineCharsExceptLineFeed = "\r\f\u0085\u2028\u2029";
 
@@ -32,21 +31,18 @@ namespace System
             /// also specifically excludes VT from the list of newline functions, so we do not include
             /// it in the needle list.
             /// </summary>
-            public static readonly IndexOfAnyValues<char> NewLineChars =
-                IndexOfAnyValues.Create(NewLineCharsExceptLineFeed + "\n");
+            public static readonly SearchValues<char> NewLineChars =
+                SearchValues.Create(NewLineCharsExceptLineFeed + "\n");
         }
 
         internal const int StackallocIntBufferSizeLimit = 128;
         internal const int StackallocCharBufferSizeLimit = 256;
 
-        private static void FillStringChecked(string dest, int destPos, string src)
+        private static void CopyStringContent(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
-            if (src.Length > dest.Length - destPos)
-            {
-                throw new IndexOutOfRangeException();
-            }
+            Debug.Assert(src.Length <= dest.Length - destPos);
 
             Buffer.Memmove(
                 destination: ref Unsafe.Add(ref dest._firstChar, destPos),
@@ -98,7 +94,7 @@ namespace System
 
                 if (totalLength < 0) // Check for a positive overflow
                 {
-                    throw new OutOfMemoryException();
+                    ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                 }
             }
 
@@ -118,7 +114,7 @@ namespace System
                 Debug.Assert(s != null);
                 Debug.Assert(position <= totalLength - s.Length, "We didn't allocate enough space for the result string!");
 
-                FillStringChecked(result, position, s);
+                CopyStringContent(result, position, s);
                 position += s.Length;
             }
 
@@ -256,10 +252,18 @@ namespace System
 
             int str0Length = str0.Length;
 
-            string result = FastAllocateString(str0Length + str1.Length);
+            int totalLength = str0Length + str1.Length;
 
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0Length, str1);
+            // Can't overflow to a positive number so just check < 0
+            if (totalLength < 0)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString(totalLength);
+
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0Length, str1);
 
             return result;
         }
@@ -281,12 +285,18 @@ namespace System
                 return Concat(str0, str1);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length;
 
-            string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
+            if (totalLength > int.MaxValue)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString((int)totalLength);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
 
             return result;
         }
@@ -313,13 +323,19 @@ namespace System
                 return Concat(str0, str1, str2);
             }
 
-            int totalLength = str0.Length + str1.Length + str2.Length + str3.Length;
+            // It can overflow to a positive number so we accumulate the total length as a long.
+            long totalLength = (long)str0.Length + (long)str1.Length + (long)str2.Length + (long)str3.Length;
 
-            string result = FastAllocateString(totalLength);
-            FillStringChecked(result, 0, str0);
-            FillStringChecked(result, str0.Length, str1);
-            FillStringChecked(result, str0.Length + str1.Length, str2);
-            FillStringChecked(result, str0.Length + str1.Length + str2.Length, str3);
+            if (totalLength > int.MaxValue)
+            {
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
+            }
+
+            string result = FastAllocateString((int)totalLength);
+            CopyStringContent(result, 0, str0);
+            CopyStringContent(result, str0.Length, str1);
+            CopyStringContent(result, str0.Length + str1.Length, str2);
+            CopyStringContent(result, str0.Length + str1.Length + str2.Length, str3);
 
             return result;
         }
@@ -448,7 +464,7 @@ namespace System
             // If it's too long, fail, or if it's empty, return an empty string.
             if (totalLengthLong > int.MaxValue)
             {
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalLengthLong;
             if (totalLength == 0)
@@ -471,7 +487,7 @@ namespace System
                         break;
                     }
 
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
             }
@@ -932,7 +948,7 @@ namespace System
             long totalSeparatorsLength = (long)(values.Length - 1) * separator.Length;
             if (totalSeparatorsLength > int.MaxValue)
             {
-                ThrowHelper.ThrowOutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             }
             int totalLength = (int)totalSeparatorsLength;
 
@@ -944,7 +960,7 @@ namespace System
                     totalLength += value.Length;
                     if (totalLength < 0) // Check for overflow
                     {
-                        ThrowHelper.ThrowOutOfMemoryException();
+                        ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
                     }
                 }
             }
@@ -971,7 +987,7 @@ namespace System
                     }
 
                     // Fill in the value.
-                    FillStringChecked(result, copiedLength, value);
+                    CopyStringContent(result, copiedLength, value);
                     copiedLength += valueLen;
                 }
 
@@ -1296,7 +1312,7 @@ namespace System
 
             long dstLength = this.Length + ((long)(newValue.Length - oldValueLength)) * indices.Length;
             if (dstLength > int.MaxValue)
-                throw new OutOfMemoryException();
+                ThrowHelper.ThrowOutOfMemoryException_StringTooLong();
             string dst = FastAllocateString((int)dstLength);
 
             Span<char> dstSpan = new Span<char>(ref dst._firstChar, dst.Length);
@@ -1442,7 +1458,7 @@ namespace System
 
             while (true)
             {
-                int idx = text.IndexOfAny(IndexOfAnyValuesStorage.NewLineChars);
+                int idx = text.IndexOfAny(SearchValuesStorage.NewLineChars);
 
                 if ((uint)idx >= (uint)text.Length)
                 {
@@ -1486,7 +1502,7 @@ namespace System
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
-            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+            int idxOfFirstNewlineChar = this.AsSpan().IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
             if ((uint)idxOfFirstNewlineChar >= (uint)Length)
             {
                 return this;
@@ -1501,7 +1517,7 @@ namespace System
             var builder = new ValueStringBuilder(stackalloc char[StackallocCharBufferSizeLimit]);
             while (true)
             {
-                int idx = remaining.IndexOfAny(IndexOfAnyValuesStorage.NewLineCharsExceptLineFeed);
+                int idx = remaining.IndexOfAny(SearchValuesStorage.NewLineCharsExceptLineFeed);
                 if ((uint)idx >= (uint)remaining.Length) break; // no more newline chars
                 stride = remaining[idx] == '\r' && (uint)(idx + 1) < (uint)remaining.Length && remaining[idx + 1] == '\n' ? 2 : 1;
                 builder.Append('\n');

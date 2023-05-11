@@ -203,7 +203,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		[KeptMember (".ctor()")]
 		private abstract class AbstractMethods
 		{
-			[Kept (By = Tool.Trimmer)] // NativeAOT test infra doesn't check reflection-only methods (without entry point) yet
+			[Kept]
 			[DynamicDependency (nameof (TargetMethod))]
 			public abstract void SourceAbstractViaReflection ();
 

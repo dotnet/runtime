@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { runtimeHelpers } from "../../imports";
+import { runtimeHelpers } from "../../globals";
 import type { Mock } from "../mock";
 import { mock } from "../mock";
 

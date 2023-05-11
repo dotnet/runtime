@@ -882,6 +882,13 @@ static int ccount = 0;
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
 	} while (0)
 
+#define MONO_EMIT_EXPLICIT_NULL_CHECK(cfg, reg) do { \
+		cfg->flags |= MONO_CFG_HAS_CHECK_THIS; \
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, (reg), 0);	\
+		MONO_EMIT_NEW_COND_EXC (cfg, EQ, "NullReferenceException");		\
+		MONO_EMIT_NEW_UNALU (cfg, OP_NOT_NULL, -1, reg); \
+	} while (0)
+
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
 #define MONO_EMIT_NULL_CHECK(cfg, reg, out_of_page) do { \
 		if (cfg->explicit_null_checks || (out_of_page)) { \

@@ -1080,12 +1080,18 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
 #ifdef HOST_64BIT
+#ifndef TARGET_RISCV64
     // There is no API to get the total virtual address space size on
     // Unix, so we use a constant value representing 128TB, which is
     // the approximate size of total user virtual address space on
     // the currently supported Unix systems.
     static const uint64_t _128TB = (1ull << 47);
     return _128TB;
+#else // TARGET_RISCV64
+    // For RISC-V Linux Kernel SV39 virtual memory limit is 256gb.
+    static const uint64_t _256GB = (1ull << 38);
+    return _256GB;
+#endif // TARGET_RISCV64
 #else
     return (size_t)-1;
 #endif

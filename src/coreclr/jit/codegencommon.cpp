@@ -85,6 +85,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     negBitmaskDbl  = nullptr;
     absBitmaskFlt  = nullptr;
     absBitmaskDbl  = nullptr;
+    zroSimd12Elm3  = nullptr;
     u8ToDblBitmask = nullptr;
 #endif // defined(TARGET_XARCH)
 
@@ -1732,55 +1733,42 @@ void CodeGen::genGenerateMachineCode()
         printf(" for ");
 
 #if defined(TARGET_X86)
-        if (compiler->info.genCPU == CPU_X86)
+        if (compiler->canUseEvexEncoding())
         {
-            printf("generic X86 CPU");
+            printf("X86 with AVX512");
         }
-        else if (compiler->info.genCPU == CPU_X86_PENTIUM_4)
+        else if (compiler->canUseVexEncoding())
         {
-            printf("Pentium 4");
+            printf("X86 with AVX");
         }
-#elif defined(TARGET_AMD64)
-        if (compiler->info.genCPU == CPU_X64)
-        {
-            if (compiler->canUseEvexEncoding())
-            {
-                printf("X64 CPU with AVX512");
-            }
-            else if (compiler->canUseVexEncoding())
-            {
-                printf("X64 CPU with AVX");
-            }
-            else
-            {
-                printf("X64 CPU with SSE2");
-            }
-        }
-#elif defined(TARGET_ARM)
-        if (compiler->info.genCPU == CPU_ARM)
-        {
-            printf("generic ARM CPU");
-        }
-#elif defined(TARGET_ARM64)
-        if (compiler->info.genCPU == CPU_ARM64)
-        {
-            printf("generic ARM64 CPU");
-        }
-#elif defined(TARGET_LOONGARCH64)
-        if (compiler->info.genCPU == CPU_LOONGARCH64)
-        {
-            printf("generic LOONGARCH64 CPU");
-        }
-#elif defined(TARGET_RISCV64)
-        if (compiler->info.genCPU == CPU_RISCV64)
-        {
-            printf("generic RISCV64 CPU");
-        }
-#endif
         else
         {
-            printf("unknown architecture");
+            printf("generic X86");
         }
+#elif defined(TARGET_AMD64)
+        if (compiler->canUseEvexEncoding())
+        {
+            printf("X64 with AVX512");
+        }
+        else if (compiler->canUseVexEncoding())
+        {
+            printf("X64 with AVX");
+        }
+        else
+        {
+            printf("generic X64");
+        }
+#elif defined(TARGET_ARM)
+        printf("generic ARM");
+#elif defined(TARGET_ARM64)
+        printf("generic ARM64");
+#elif defined(TARGET_LOONGARCH64)
+        printf("generic LOONGARCH64");
+#elif defined(TARGET_RISCV64)
+        printf("generic RISCV64");
+#else
+        printf("unknown architecture");
+#endif
 
         if (TargetOS::IsWindows)
         {
@@ -4474,7 +4462,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 dblInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
@@ -4514,7 +4502,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 fltInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
@@ -5969,6 +5957,7 @@ void CodeGen::genFnProlog()
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
 #endif // TARGET_AMD64
+    compiler->unwindEndProlog();
 
 //-------------------------------------------------------------------------
 //
@@ -6296,7 +6285,6 @@ void CodeGen::genFnProlog()
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
     GetEmitter()->emitEndProlog();
-    compiler->unwindEndProlog();
 }
 #ifdef _PREFAST_
 #pragma warning(pop)

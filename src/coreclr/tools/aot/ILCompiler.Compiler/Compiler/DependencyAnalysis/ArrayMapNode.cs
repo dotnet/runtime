@@ -52,20 +52,10 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
-                if (!type.IsSzArray)
+                if (!type.IsArray)
                     continue;
 
                 var arrayType = (ArrayType)type;
-
-                // This optimization is not compatible with canInlineTypeCheck on JIT/EE interface returning
-                // CORINFO_INLINE_TYPECHECK_PASS unconditionally.
-                //
-                // If we're generating a template for this type, we can skip generating the hashtable entry
-                // since the type loader can just create this type at runtime if something needs it. It's
-                // okay to have multiple EETypes for the same array type.
-                // var canonArrayType = arrayType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                // if (arrayType != canonArrayType && factory.NativeLayout.TemplateTypeLayout(canonArrayType).Marked)
-                //     continue;
 
                 // Look at the constructed type symbol. If a constructed type wasn't emitted, then the array map entry isn't valid for use
                 IEETypeNode arrayTypeSymbol = factory.ConstructedTypeSymbol(arrayType);

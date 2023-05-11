@@ -5,11 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
-    <!-- This test isn't technically incompatible with GCStress, but it ends up running very slowly
-         in some configurations, e.g. GCStress=3 on Linux/arm32 measured at 15 minutes.
-    -->
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ExceptionThrown_V1.cs" />
