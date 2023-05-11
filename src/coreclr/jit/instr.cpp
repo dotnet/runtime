@@ -797,8 +797,8 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             assert(op->OperIsHWIntrinsic());
 
 #if defined(FEATURE_HW_INTRINSICS)
-            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            GenTreeHWIntrinsic* hwintrinsic  = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
@@ -848,15 +848,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                             // broadcast -> LCL_VAR(TYP_(U)INT)
                             assert(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR, GT_CNS_INT));
                             GenTree* scalar = hwintrinsic->Op(1);
-                            if(hwintrinsic->Op(1)->OperIs(GT_LCL_VAR))
+                            if (hwintrinsic->Op(1)->OperIs(GT_LCL_VAR))
                             {
                                 assert(scalar->isContained());
                                 return genOperandDesc(scalar);
                             }
                             else
                             {
-                                ssize_t scalarValue = scalar->AsIntCon()->IconValue();
-                                UNATIVE_OFFSET cnum   = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType), genTypeSize(simdBaseType), simdBaseType);
+                                ssize_t        scalarValue = scalar->AsIntCon()->IconValue();
+                                UNATIVE_OFFSET cnum = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
+                                                                          genTypeSize(simdBaseType), simdBaseType);
                                 return OperandDesc(compiler->eeFindJitDataOffs(cnum));
                             }
                         }
@@ -1233,12 +1234,8 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //    op2          -- The second operand, which may be a memory node or a node producing a register
 //    isRMW        -- true if the instruction is RMW; otherwise, false
 //    simdBaseType -- the base data type for this intrinsic.
-void CodeGen::inst_RV_RV_TT(instruction ins,
-                            emitAttr    size,
-                            regNumber   targetReg,
-                            regNumber   op1Reg,
-                            GenTree*    op2,
-                            bool        isRMW)
+void CodeGen::inst_RV_RV_TT(
+    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));

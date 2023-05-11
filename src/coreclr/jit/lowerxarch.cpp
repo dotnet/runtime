@@ -1003,19 +1003,26 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
     }
 }
 
+//----------------------------------------------------------------------------------------------
+// TryLowerConstVec: Unfold the Vector to Broadcast->CreateScalarUnsafe->ConstScalar form
+//                   when the constant vector has all the same elements and is an operand
+//                   of an embedded broadcast compatible instruction.
+//
+//  Arguments:
+//     node - The constant vector node
 GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
 {
-    LIR::Use use;
-    bool foundUse = BlockRange().TryGetUse(node, &use);
+    LIR::Use            use;
+    bool                foundUse         = BlockRange().TryGetUse(node, &use);
     GenTreeHWIntrinsic* embBroadcastNode = nullptr;
-    if(foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
+    if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
     {
-        embBroadcastNode = use.User()->AsHWIntrinsic();
-        var_types simdType = embBroadcastNode->TypeGet();
-        var_types simdBaseType = embBroadcastNode->GetSimdBaseType();
-        CorInfoType simdBaseJitType = embBroadcastNode->GetSimdBaseJitType();
-        bool isCreatedFromScalar = true;
-        
+        embBroadcastNode                = use.User()->AsHWIntrinsic();
+        var_types   simdType            = embBroadcastNode->TypeGet();
+        var_types   simdBaseType        = embBroadcastNode->GetSimdBaseType();
+        CorInfoType simdBaseJitType     = embBroadcastNode->GetSimdBaseJitType();
+        bool        isCreatedFromScalar = true;
+
         int ElementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
         switch (simdBaseType)
         {
@@ -1024,10 +1031,10 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
             case TYP_UINT:
             {
                 uint32_t FirstElement = static_cast<uint32_t>(node->gtSimdVal.u32[0]);
-                for(int i = 1; i < ElementCount; i++)
+                for (int i = 1; i < ElementCount; i++)
                 {
                     uint32_t ElementToCheck = static_cast<uint32_t>(node->gtSimdVal.u32[i]);
-                    if(FirstElement != ElementToCheck)
+                    if (FirstElement != ElementToCheck)
                     {
                         isCreatedFromScalar = false;
                         break;
@@ -1035,16 +1042,16 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                 }
                 break;
             }
-                
+
             case TYP_DOUBLE:
             case TYP_LONG:
             case TYP_ULONG:
             {
                 uint64_t FirstElement = static_cast<uint64_t>(node->gtSimdVal.u64[0]);
-                for(int i = 1; i < ElementCount; i++)
+                for (int i = 1; i < ElementCount; i++)
                 {
                     uint64_t ElementToCheck = static_cast<uint64_t>(node->gtSimdVal.u64[i]);
-                    if(FirstElement != ElementToCheck)
+                    if (FirstElement != ElementToCheck)
                     {
                         isCreatedFromScalar = false;
                         break;
@@ -1057,59 +1064,62 @@ GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
                 isCreatedFromScalar = false;
                 break;
         }
-        if(isCreatedFromScalar)
+        if (isCreatedFromScalar)
         {
             NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
-            if(simdType == TYP_SIMD32)
+            if (simdType == TYP_SIMD32)
             {
                 broadcastName = NI_AVX2_BroadcastScalarToVector256;
             }
-            else if(simdType == TYP_SIMD64)
+            else if (simdType == TYP_SIMD64)
             {
                 broadcastName = NI_AVX512F_BroadcastScalarToVector512;
             }
             GenTree* constScalar = nullptr;
-            switch(simdBaseType)
+            switch (simdBaseType)
             {
                 case TYP_FLOAT:
                 {
                     float scalar = static_cast<float>(node->gtSimdVal.f32[0]);
-                    constScalar = comp->gtNewDconNode(scalar, simdBaseType);
+                    constScalar  = comp->gtNewDconNode(scalar, simdBaseType);
                     break;
                 }
                 case TYP_DOUBLE:
                 {
                     double scalar = static_cast<double>(node->gtSimdVal.f64[0]);
-                    constScalar = comp->gtNewDconNode(scalar, simdBaseType);
+                    constScalar   = comp->gtNewDconNode(scalar, simdBaseType);
                     break;
-                }  
+                }
                 case TYP_INT:
                 {
                     int32_t scalar = static_cast<int32_t>(node->gtSimdVal.i32[0]);
-                    constScalar = comp->gtNewIconNode(scalar, simdBaseType);
+                    constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
                     break;
                 }
                 case TYP_UINT:
                 {
-                    uint32_t scalar =  static_cast<uint32_t>(node->gtSimdVal.u32[0]);
-                    constScalar = comp->gtNewIconNode(scalar, TYP_INT);
+                    uint32_t scalar = static_cast<uint32_t>(node->gtSimdVal.u32[0]);
+                    constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
                     break;
                 }
                 case TYP_LONG:
                 {
                     int64_t scalar = static_cast<int64_t>(node->gtSimdVal.i64[0]);
-                    constScalar = comp->gtNewIconNode(scalar, simdBaseType);
+                    constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
                     break;
                 }
                 case TYP_ULONG:
-                {   
+                {
                     uint64_t scalar = static_cast<uint64_t>(node->gtSimdVal.u64[0]);
-                    constScalar = comp->gtNewIconNode(scalar, TYP_LONG);
+                    constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
                     break;
                 }
             }
-            GenTreeHWIntrinsic* createScalar  = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType, 16);
-            GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName, simdBaseJitType, genTypeSize(simdType));
+            GenTreeHWIntrinsic* createScalar =
+                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe,
+                                               simdBaseJitType, 16);
+            GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
+                                                                               simdBaseJitType, genTypeSize(simdType));
             BlockRange().InsertBefore(node, broadcastNode);
             BlockRange().InsertBefore(broadcastNode, createScalar);
             BlockRange().InsertBefore(createScalar, constScalar);

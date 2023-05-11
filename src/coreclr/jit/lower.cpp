@@ -590,14 +590,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #ifdef TARGET_XARCH
         case GT_CNS_VEC:
         {
-            if(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
             {
                 return TryLowerConstVec(node->AsVecCon());
             }
             else
                 break;
         }
-            
+
 #endif // TARGET_XARCH
 
 #endif // FEATURE_HW_INTRINSICS

@@ -728,7 +728,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(
         assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
     }
 
-    bool      isRMW        = node->isRMWHWIntrinsic(compiler);
+    bool isRMW = node->isRMWHWIntrinsic(compiler);
     inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW);
 }
 
