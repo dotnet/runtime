@@ -1413,7 +1413,6 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
 
 // All the places where we could be stopped because there was a suspension should call should_move_heap to check if we need to return
 // so we can try another heap or we can continue the allocation on the same heap.
-NOINLINE
 enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
 {
 retry:
@@ -6944,7 +6943,9 @@ bool gc_heap::create_gc_thread ()
     return GCToEEInterface::CreateThread(gc_thread_stub, this, false, ".NET Server GC");
 }
 
+#ifdef DYNAMIC_HEAP_COUNT
 static size_t prev_change_heap_count_gc_index;
+#endif //DYNAMIC_HEAP_COUNT
 
 #ifdef _MSC_VER
 #pragma warning(disable:4715) //IA64 xcompiler recognizes that without the 'break;' the while(1) will never end and therefore not return a value for that code path
@@ -14137,11 +14138,16 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    // we'll actually start with one heap in this case
-    g_mark_list_total_size = mark_list_size;
-#else //DYNAMIC_HEAP_COUNT
-    g_mark_list_total_size = mark_list_size*n_heaps;
+    if (GCConfig::GetGCDynamicHeapCount() && GCConfig::GetHeapCount() == 0)
+    {
+        // we'll actually start with one heap in this case
+        g_mark_list_total_size = mark_list_size;
+    }
+    else
 #endif //DYNAMIC_HEAP_COUNT
+    {
+        g_mark_list_total_size = mark_list_size*n_heaps;
+    }
     g_mark_list = make_mark_list (g_mark_list_total_size);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -33448,16 +33454,8 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
         }
 
         generation* gen = generation_of (gen_number);
-        heap_segment* prev_region = generation_tail_region (gen);
-        if (prev_region != nullptr)
-        {
-            heap_segment_next (prev_region) = new_region;
-            generation_tail_region (gen) = new_region;
-        }
-        else
-        {
-            thread_start_region (gen, new_region);
-        }
+        heap_segment_next (generation_tail_region (gen)) = new_region;
+        generation_tail_region (gen) = new_region;
 
         verify_regions (gen_number, false, settings.concurrent);
     }
@@ -47408,7 +47406,7 @@ HRESULT GCHeap::Initialize()
     if (hr == S_OK)
     {
 #ifdef DYNAMIC_HEAP_COUNT
-        // if no heap count was specified...
+        // if no heap count was specified, and we are told to adjust heap count dynamically ...
         if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicHeapCount())
         {
             // ... start with only 1 heap
