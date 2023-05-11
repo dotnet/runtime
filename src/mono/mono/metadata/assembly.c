@@ -1473,7 +1473,7 @@ open_from_bundle_internal (MonoAssemblyLoadContext *alc, const char *filename, M
 	if (!assembly)
 		return NULL;
 
-	return mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, filename, NULL);
+	return mono_image_open_from_data_internal (alc, (char *)assembly->assembly.data, assembly->assembly.size, FALSE, status, FALSE, assembly->resource.id, NULL);
 }
 
 static MonoImage *
@@ -1486,7 +1486,7 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 	if (!satellite_assembly)
 		return NULL;
 
-	return mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, bundle_name, NULL);
+	return mono_image_open_from_data_internal (alc, (char *)satellite_assembly->satellite_assembly.data, satellite_assembly->satellite_assembly.size, FALSE, status, FALSE, satellite_assembly->resource.id, NULL);
 
 }
 
@@ -3139,25 +3139,24 @@ mono_assembly_get_name_internal (MonoAssembly *assembly)
 /**
  * mono_register_bundled_assemblies:
  */
-MONO_DEPRECATED
 void
 mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {
 	for (int i = 0; assemblies [i]; ++i) {
-		const char *id = assemblies [i]->name;
-		MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (id);
+		const MonoBundledAssembly *assembly = assemblies [i];
+		MonoBundledAssemblyResource *assembly_resource = mono_bundled_resources_get_assembly_resource (assembly->name);
 		if (!assembly_resource) {
 			assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
 			assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
-			assembly_resource->resource.id = id;
-			assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
+			assembly_resource->resource.id = assembly->name;
+			assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;
 		} else {
-			g_assert (assembly_resource->resource.type == MONO_BUNDLED_ASSEMBLY);
-			g_assert (!strcmp(assembly_resource->resource.id, id));
 			// Ensure the MonoBundledAssemblyData has not been initialized
 			g_assert (!assembly_resource->assembly.name && !assembly_resource->assembly.data && assembly_resource->assembly.size == 0);
 		}
-		assembly_resource->assembly = *(MonoBundledAssemblyData *)assemblies [i];
+		assembly_resource->assembly.name = assembly->name;
+		assembly_resource->assembly.data = (const uint8_t *)assembly->data;
+		assembly_resource->assembly.size = (uint32_t)assembly->size;
 		mono_bundled_resources_add ((MonoBundledResource **)&assembly_resource, 1);
 	}
 }
@@ -3181,7 +3180,6 @@ mono_create_new_bundled_satellite_assembly (const char *name, const char *cultur
 /**
  * mono_register_bundled_satellite_assemblies:
  */
-MONO_DEPRECATED
 void
 mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly **satellite_assemblies)
 {
@@ -3192,8 +3190,11 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		g_assert (!satellite_assembly_resource);
 		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
 		satellite_assembly_resource->resource.id = id;
-		satellite_assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
-		satellite_assembly_resource->satellite_assembly = *(MonoBundledSatelliteAssemblyData *)satellite_assembly;
+		satellite_assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;
+		satellite_assembly_resource->satellite_assembly.name = satellite_assembly->name;
+		satellite_assembly_resource->satellite_assembly.culture = satellite_assembly->culture;
+		satellite_assembly_resource->satellite_assembly.data = (const uint8_t *)satellite_assembly->data;
+		satellite_assembly_resource->satellite_assembly.size = (uint32_t)satellite_assembly->size;
 		mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
 	}
 }

@@ -62,7 +62,7 @@ MONO_API_FUNCTION(uint16_t, mono_assembly_name_get_version, (MonoAssemblyName *a
 MONO_API_FUNCTION(mono_byte*, mono_assembly_name_get_pubkeytoken, (MonoAssemblyName *aname))
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY void, mono_assembly_name_free, (MonoAssemblyName *aname))
 
-MONO_API_FUNCTION(void, mono_register_bundled_assemblies, (const MonoBundledAssembly **assemblies) /* MONO_DEPRECATED */)
+MONO_API_FUNCTION(void, mono_register_bundled_assemblies, (const MonoBundledAssembly **assemblies))
 MONO_API_FUNCTION(void, mono_register_symfile_for_assembly, (const char* assembly_name, const mono_byte *raw_contents, int size))
 MONO_API_FUNCTION(const mono_byte *, mono_get_symfile_bytes_from_bundle, (const char* assembly_name, int *size))
 
