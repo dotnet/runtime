@@ -651,9 +651,10 @@ namespace System.Buffers.ArrayPool.Tests
 
             RemoteExecutor.Invoke((partitionCount, maxArraysPerPartition, expectedPartitionCount, expectedMaxArraysPerPartition) =>
             {
-                Type partitionsType = ArrayPool<byte>.Shared.GetType().GetNestedType("Partitions", BindingFlags.NonPublic)?.MakeGenericType(typeof(byte));
-                Assert.NotNull(partitionsType);
-                FieldInfo partitionCountField = partitionsType.GetField("s_partitionCount", BindingFlags.NonPublic | BindingFlags.Static);
+                Type staticsType = typeof(ArrayPool<>).Assembly.GetType("System.Buffers.SharedArrayPoolStatics");
+                Assert.NotNull(staticsType);
+
+                FieldInfo partitionCountField = staticsType.GetField("s_partitionCount", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(partitionCountField);
                 int partitionCountValue = (int)partitionCountField.GetValue(null);
                 if (int.Parse(expectedPartitionCount) > 0)
@@ -665,9 +666,7 @@ namespace System.Buffers.ArrayPool.Tests
                     Assert.Equal(Environment.ProcessorCount, partitionCountValue);
                 }
 
-                Type partitionType = ArrayPool<byte>.Shared.GetType().GetNestedType("Partition", BindingFlags.NonPublic)?.MakeGenericType(typeof(byte));
-                Assert.NotNull(partitionType);
-                FieldInfo maxArraysPerPartitionField = partitionType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo maxArraysPerPartitionField = staticsType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(maxArraysPerPartitionField);
                 int maxArraysPerPartitionValue = (int)maxArraysPerPartitionField.GetValue(null);
                 if (int.Parse(expectedMaxArraysPerPartition) > 0)

@@ -294,8 +294,6 @@ namespace System.Buffers
         /// <summary>Provides a collection of partitions, each of which is a pool of arrays.</summary>
         private sealed class Partitions
         {
-            /// <summary>Number of partitions to employ.</summary>
-            private static readonly int s_partitionCount = SharedArrayPoolStatics.GetPartitionCount();
             /// <summary>The partitions.</summary>
             private readonly Partition[] _partitions;
 
@@ -303,7 +301,7 @@ namespace System.Buffers
             public Partitions()
             {
                 // Create the partitions.  We create as many as there are processors, limited by our max.
-                var partitions = new Partition[s_partitionCount];
+                var partitions = new Partition[SharedArrayPoolStatics.s_partitionCount];
                 for (int i = 0; i < partitions.Length; i++)
                 {
                     partitions[i] = new Partition();
@@ -321,7 +319,7 @@ namespace System.Buffers
                 // Try to push on to the associated partition first.  If that fails,
                 // round-robin through the other partitions.
                 Partition[] partitions = _partitions;
-                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_partitionCount); // mod by constant in tier 1
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)SharedArrayPoolStatics.s_partitionCount); // mod by constant in tier 1
                 for (int i = 0; i < partitions.Length; i++)
                 {
                     if (partitions[index].TryPush(array)) return true;
@@ -341,7 +339,7 @@ namespace System.Buffers
                 // Try to pop from the associated partition first.  If that fails, round-robin through the other partitions.
                 T[]? arr;
                 Partition[] partitions = _partitions;
-                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_partitionCount); // mod by constant in tier 1
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)SharedArrayPoolStatics.s_partitionCount); // mod by constant in tier 1
                 for (int i = 0; i < partitions.Length; i++)
                 {
                     if ((arr = partitions[index].TryPop()) is not null) return arr;
@@ -363,11 +361,8 @@ namespace System.Buffers
         /// <summary>Provides a simple, bounded stack of arrays, protected by a lock.</summary>
         private sealed class Partition
         {
-            /// <summary>The maximum number of arrays per array size to store per partition.</summary>
-            private static readonly int s_maxArraysPerPartition = SharedArrayPoolStatics.GetMaxArraysPerPartition();
-
             /// <summary>The arrays in the partition.</summary>
-            private readonly T[]?[] _arrays = new T[s_maxArraysPerPartition][];
+            private readonly T[]?[] _arrays = new T[SharedArrayPoolStatics.s_maxArraysPerPartition][];
             /// <summary>Number of arrays stored in <see cref="_arrays"/>.</summary>
             private int _count;
             /// <summary>Timestamp set by Trim when it sees this as 0.</summary>
@@ -416,17 +411,17 @@ namespace System.Buffers
 
             public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure, int bucketSize)
             {
-                const int TrimAfterMS = 60 * 1000;           // Trim after 60 seconds for low/moderate pressure
-                const int HighTrimAfterMS = 10 * 1000;       // Trim after 10 seconds for high pressure
+                const int TrimAfterMS = 60 * 1000;                                  // Trim after 60 seconds for low/moderate pressure
+                const int HighTrimAfterMS = 10 * 1000;                              // Trim after 10 seconds for high pressure
 
-                const int LargeBucket = 16384;               // If the bucket is larger than this we'll trim an extra when under high pressure
+                const int LargeBucket = 16384;                                      // If the bucket is larger than this we'll trim an extra when under high pressure
 
-                const int ModerateTypeSize = 16;             // If T is larger than this we'll trim an extra when under high pressure
-                const int LargeTypeSize = 32;                // If T is larger than this we'll trim an extra (additional) when under high pressure
+                const int ModerateTypeSize = 16;                                    // If T is larger than this we'll trim an extra when under high pressure
+                const int LargeTypeSize = 32;                                       // If T is larger than this we'll trim an extra (additional) when under high pressure
 
-                const int LowTrimCount = 1;                  // Trim one item when pressure is low
-                const int MediumTrimCount = 2;               // Trim two items when pressure is moderate
-                int HighTrimCount = s_maxArraysPerPartition; // Trim all items when pressure is high
+                const int LowTrimCount = 1;                                         // Trim one item when pressure is low
+                const int MediumTrimCount = 2;                                      // Trim two items when pressure is moderate
+                int HighTrimCount = SharedArrayPoolStatics.s_maxArraysPerPartition; // Trim all items when pressure is high
 
                 if (_count == 0)
                 {
@@ -525,9 +520,14 @@ namespace System.Buffers
 
     internal static class SharedArrayPoolStatics
     {
+        /// <summary>Number of partitions to employ.</summary>
+        internal static readonly int s_partitionCount = GetPartitionCount();
+        /// <summary>The maximum number of arrays per array size to store per partition.</summary>
+        internal static readonly int s_maxArraysPerPartition = GetMaxArraysPerPartition();
+
         /// <summary>Gets the maximum number of partitions to shard arrays into.</summary>
         /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
-        internal static int GetPartitionCount()
+        private static int GetPartitionCount()
         {
             int partitionCount = TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", out int result) && result > 0 ?
                 result :
@@ -537,7 +537,7 @@ namespace System.Buffers
 
         /// <summary>Gets the maximum number of arrays of a given size allowed to be cached per partition.</summary>
         /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
-        internal static int GetMaxArraysPerPartition()
+        private static int GetMaxArraysPerPartition()
         {
             return TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", out int result) && result > 0 ?
                 result :
@@ -546,7 +546,7 @@ namespace System.Buffers
 
         /// <summary>Look up an environment variable and try to parse it as an Int32.</summary>
         /// <remarks>This avoids using anything that might in turn recursively use the ArrayPool.</remarks>
-        internal static bool TryGetInt32EnvironmentVariable(string variable, out int result)
+        private static bool TryGetInt32EnvironmentVariable(string variable, out int result)
         {
             // Avoid globalization stack, as it might in turn be using ArrayPool.
 
