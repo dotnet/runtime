@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         // Method groups
         BindMethods = Bind_instance | Bind_instance_BinderOptions | Bind_key_instance,
         GetMethods = Get_T | Get_T_BinderOptions | Get_TypeOf | Get_TypeOf_BinderOptions,
-        GetValueMethods = Get_T | Get_T_BinderOptions | Get_TypeOf | Get_TypeOf_BinderOptions,
+        GetValueMethods = GetValue_T_key | GetValue_T_key_defaultValue | GetValue_TypeOf_key | GetValue_TypeOf_key_defaultValue,
         RootMethodsWithConfigOptions = Bind_instance_BinderOptions | Get_T_BinderOptions | Get_TypeOf_BinderOptions,
     }
 }

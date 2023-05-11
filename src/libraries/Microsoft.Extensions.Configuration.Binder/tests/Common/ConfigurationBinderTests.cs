@@ -193,11 +193,35 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
 #if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("empty"));
+            // Ensure exception messages are in sync
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<bool?>("empty"));
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<int?>("empty"));
 #else
             Assert.Null(config.GetValue<bool?>("empty"));
             Assert.Null(config.GetValue<int?>("empty"));
 #endif
+        }
+
+        [Fact]
+        public void GetScalar()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            Assert.True(config.GetValue<bool>("Boolean"));
+            Assert.Equal(-2, config.GetValue<int>("Integer"));
+            Assert.Equal(11, config.GetValue<int>("Nested:Integer"));
+
+            Assert.True((bool)config.GetValue(typeof(bool), "Boolean"));
+            Assert.Equal(-2, (int)config.GetValue(typeof(int), "Integer"));
+            Assert.Equal(11, (int)config.GetValue(typeof(int), "Nested:Integer"));
         }
 
         [Fact]
@@ -213,13 +237,13 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("Boolean"));
-#else
             Assert.True(config.GetValue<bool?>("Boolean"));
             Assert.Equal(-2, config.GetValue<int?>("Integer"));
             Assert.Equal(11, config.GetValue<int?>("Nested:Integer"));
-#endif
+
+            Assert.True((bool)config.GetValue(typeof(bool?), "Boolean"));
+            Assert.Equal(-2, (int)config.GetValue(typeof(int?), "Integer"));
+            Assert.Equal(11, (int)config.GetValue(typeof(int?), "Nested:Integer"));
         }
 
         [Fact]
@@ -253,17 +277,31 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            Assert.Throws<NotSupportedException>(() => config.GetValue<bool>("Boolean"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Integer"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Nested:Integer"));
-            Assert.Throws<NotSupportedException>(() => config.GetValue<ComplexOptions>("Object"));
-#else
+            // Generic overloads.
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
-#endif
+
+            // Generic overloads with default value.
+            Assert.True(config.GetValue("Boolean", true));
+            Assert.Equal(1, config.GetValue("Integer", 1));
+            Assert.Equal(1, config.GetValue("Nested:Integer", 1));
+            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+
+            // Type overloads.
+            Assert.Null(config.GetValue(typeof(bool), "Boolean"));
+            Assert.Null(config.GetValue(typeof(int), "Integer"));
+            Assert.Null(config.GetValue(typeof(int), "Nested:Integer"));
+            Assert.Null(config.GetValue(typeof(ComplexOptions), "Object"));
+
+            // Type overloads with default value.
+            Assert.True((bool)config.GetValue(typeof(bool), "Boolean", true));
+            Assert.Equal(1, (int)config.GetValue(typeof(int), "Integer", 1));
+            Assert.Equal(1, (int)config.GetValue(typeof(int), "Nested:Integer", 1));
+            Assert.Equal(new NestedConfig(""), config.GetValue("Object", new NestedConfig("")));
+
+            // GetSection tests.
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
@@ -370,7 +408,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue
+        [Fact]
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -391,7 +429,7 @@ namespace Microsoft.Extensions
             Assert.Same(config.GetValue("Object", foo), foo);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue.
+        [Fact]
         public void GetUri()
         {
             var dic = new Dictionary<string, string>
