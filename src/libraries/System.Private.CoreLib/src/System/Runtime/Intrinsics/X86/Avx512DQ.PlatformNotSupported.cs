@@ -191,6 +191,48 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPMULLQ ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
             /// </summary>
             public static Vector256<ulong> MultiplyLow(Vector256<ulong> left, Vector256<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_range_ps(__m128 a, __m128 b, int imm);
+            ///   VRANGEPS xmm1 {k1}{z}, xmm2, xmm3/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Range(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_range_pd(__m128d a, __m128d b, int imm);
+            ///   VRANGEPD xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Range(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_range_ps(__m256 a, __m256 b, int imm);
+            ///   VRANGEPS ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Range(Vector256<float> left, Vector256<float> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_range_pd(__m256d a, __m256d b, int imm);
+            ///   VRANGEPD ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Range(Vector256<double> left, Vector256<double> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128 _mm_reduce_ps(__m128 a, int imm);
+            ///   VREDUCEPS xmm1 {k1}{z}, xmm2/m128/m32bcst, imm8
+            /// </summary>
+            public static Vector128<float> Reduce(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128d _mm_reduce_pd(__m128d a, int imm);
+            ///   VREDUCEPD xmm1 {k1}{z}, xmm2/m128/m64bcst, imm8
+            /// </summary>
+            public static Vector128<double> Reduce(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_reduce_ps(__m256 a, int imm);
+            ///   VREDUCEPS ymm1 {k1}{z}, ymm2/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Reduce(Vector256<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256d _mm256_reduce_pd(__m256d a, int imm);
+            ///   VREDUCEPD ymm1 {k1}{z}, ymm2/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Reduce(Vector256<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         }
 
         public new abstract class X64 : Avx512F.X64
@@ -417,6 +459,62 @@ namespace System.Runtime.Intrinsics.X86
         ///   VORPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> Or(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_range_ps(__m512 a, __m512 b, int imm);
+        ///   VRANGEPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Range(Vector512<float> left, Vector512<float> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_range_pd(__m512d a, __m512d b, int imm);
+        ///   VRANGEPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Range(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_range_ss(__m128 a, __m128 b, int imm);
+        ///   VRANGESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> RangeScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_range_sd(__m128d a, __m128d b, int imm);
+        ///   VRANGESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> RangeScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = (byte)(0x0F))] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512 _mm512_reduce_ps(__m512 a, int imm);
+        ///   VREDUCEPS zmm1 {k1}{z}, zmm2/m512/m32bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<float> Reduce(Vector512<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512d _mm512_reduce_pd(__m512d a, int imm);
+        ///   VREDUCEPD zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}, imm8
+        /// </summary>
+        public static Vector512<double> Reduce(Vector512<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128 _mm_reduce_ss(__m128 a, int imm);
+        ///   VREDUCESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// </summary>
+        public static Vector128<float> ReduceScalar(Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_reduce_sd(__m128d a, int imm);
+        ///   VREDUCESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// </summary>
+        public static Vector128<double> ReduceScalar(Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128 _mm_reduce_ss(__m128 a, __m128 b, int imm);
+        ///   VREDUCESS xmm1 {k1}{z}, xmm2, xmm3/m32{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<float> ReduceScalar(Vector128<float> upper, Vector128<float> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_reduce_sd(__m128d a, __m128d b, int imm);
+        ///   VREDUCESD xmm1 {k1}{z}, xmm2, xmm3/m64{sae}, imm8
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector128<double> ReduceScalar(Vector128<double> upper, Vector128<double> value, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_xor_ps (__m512 a, __m512 b)

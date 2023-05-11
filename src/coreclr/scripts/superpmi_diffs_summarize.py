@@ -20,9 +20,13 @@ from coreclr_arguments import *
 
 parser = argparse.ArgumentParser(description="description")
 
-parser.add_argument("-diff_summary_dir", help="Path to diff summary directory")
-parser.add_argument("-arch", help="Architecture")
-parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-diff_summary_dir", required=True, help="Path to diff summary directory")
+parser.add_argument("-arch", required=True, help="Architecture")
+parser.add_argument("-platform", required=True, help="OS platform")
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+
+target_windows = True
+
 
 def setup_args(args):
     """ Setup the args.
@@ -48,14 +52,35 @@ def setup_args(args):
                         "Unable to set arch")
 
     coreclr_args.verify(args,
+                        "platform",
+                        lambda unused: True,
+                        "Unable to set platform")
+
+    coreclr_args.verify(args,
                         "type",
                         lambda type: type in ["asmdiffs", "tpdiff", "all"],
                         "Invalid type \"{}\"".format)
 
+    do_asmdiffs = False
+    do_tpdiff = False
+    if coreclr_args.type == 'asmdiffs':
+        do_asmdiffs = True
+    if coreclr_args.type == 'tpdiff':
+        do_tpdiff = True
+    if coreclr_args.type == 'all':
+        do_asmdiffs = True
+        do_tpdiff = True
+
+    if coreclr_args.platform.lower() != "windows" and do_asmdiffs:
+        print("asmdiffs currently only implemented for windows")
+        sys.exit(1)
+
+    target_windows = coreclr_args.platform.lower() == "windows"
+
     return coreclr_args
 
 
-def append_diff_file(f, arch, file_name, full_file_path):
+def append_diff_file(f, file_name, full_file_path):
     """ Append a single summary file to the consolidated diff file.
 
     Args:
@@ -112,6 +137,7 @@ def main(main_args):
 
     diff_summary_dir = coreclr_args.diff_summary_dir
     arch = coreclr_args.arch
+    platform_name = coreclr_args.platform.lower()
 
     do_asmdiffs = False
     do_tpdiff = False
@@ -128,31 +154,31 @@ def main(main_args):
     # (Don't name it "superpmi_xxx.md" or we might consolidate it into itself.)
     # If there are no summary files found, add a "No diffs found" text to be explicit about that.
     #
-    # Note that we currently do this summarizing in an architecture-specific job. That means that diffs run
-    # in a Windows x64 job and those run in a Windows x86 job will be summarized in two separate files.
+    # Note that we currently do this summarizing in an architecture-specific job. That means that diffs that run
+    # in a Windows x64 job and those that run in a Windows x86 job will be summarized in two separate files.
     # We should create a job that depends on all the diff jobs, downloads all the .md file artifacts,
     # and consolidates everything together in one file.
 
-    final_md_path = os.path.join(diff_summary_dir, "overall_{}_summary_windows_{}.md".format(coreclr_args.type, arch))
+    final_md_path = os.path.join(diff_summary_dir, "overall_{}_summary_{}_{}.md".format(coreclr_args.type, platform_name, arch))
     print("Consolidating final {}".format(final_md_path))
     with open(final_md_path, "a") as f:
 
         if do_asmdiffs:
-            f.write("# ASM diffs generated on Windows {}\n\n".format(arch))
+            f.write("# ASM diffs generated on {} {}\n\n".format(platform_name, arch))
 
             any_asmdiffs_found = False
             for dirpath, _, files in os.walk(diff_summary_dir):
                 for file_name in files:
                     if file_name.startswith("superpmi_asmdiffs") and file_name.endswith(".md"):
                         full_file_path = os.path.join(dirpath, file_name)
-                        if append_diff_file(f, arch, file_name, full_file_path):
+                        if append_diff_file(f, file_name, full_file_path):
                             any_asmdiffs_found = True
 
             if not any_asmdiffs_found:
                 f.write("No asmdiffs found\n")
 
         if do_tpdiff:
-            f.write("# Throughput impact on Windows {}\n\n".format(arch))
+            f.write("# Throughput impact on {} {}\n\n".format(platform_name, arch))
             f.write("The following shows the impact on throughput " +
                     "in terms of number of instructions executed inside the JIT. " +
                     "Negative percentages/lower numbers are better.\n\n")
@@ -162,7 +188,7 @@ def main(main_args):
                 for file_name in files:
                     if file_name.startswith("superpmi_tpdiff") and file_name.endswith(".md"):
                         full_file_path = os.path.join(dirpath, file_name)
-                        if append_diff_file(f, arch, file_name, full_file_path):
+                        if append_diff_file(f, file_name, full_file_path):
                             any_tpdiff_found = True
 
             if not any_tpdiff_found:
@@ -199,6 +225,7 @@ def main(main_args):
     print("##vso[task.uploadsummary]{}".format(final_md_path))
 
     return 0
+
 
 def html_color_diff(lines):
     new_text = ""
@@ -245,6 +272,7 @@ def html_color_diff(lines):
 
     commit_block()
     return "<pre><code>" + new_text + "</code></pre>"
+
 
 if __name__ == "__main__":
     args = parser.parse_args()

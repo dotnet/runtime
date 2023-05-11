@@ -158,6 +158,17 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPSRLVW ymm1 {k1}{z}, ymm2, ymm3/m256
             /// </summary>
             public static Vector256<ushort> ShiftRightLogicalVariable(Vector256<ushort> value, Vector256<ushort> count) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m128i _mm_dbsad_epu8 (__m128i a, __m128i b, int imm8)
+            ///   VDBPSADBW xmm1 {k1}{z}, xmm2, xmm3/m128
+            /// </summary>
+            public static Vector128<ushort> SumAbsoluteDifferencesInBlock32(Vector128<byte> left, Vector128<byte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_dbsad_epu8 (__m256i a, __m256i b, int imm8)
+            ///   VDBPSADBW ymm1 {k1}{z}, ymm2, ymm3/m256
+            /// </summary>
+            public static Vector256<ushort> SumAbsoluteDifferencesInBlock32(Vector256<byte> left, Vector256<byte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
         }
 
         public new abstract class X64 : Avx512F.X64
@@ -658,6 +669,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
         /// </summary>
         public static Vector512<ushort> SumAbsoluteDifferences(Vector512<byte> left, Vector512<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512i _mm512_dbsad_epu8 (__m512i a, __m512i b)
+        ///   VDBPSADBW zmm1 {k1}{z}, zmm2, zmm3/m512
+        /// </summary>
+        public static Vector512<ushort> SumAbsoluteDifferencesInBlock32(Vector512<byte> left, Vector512<byte> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512i _mm512_unpackhi_epi8 (__m512i a, __m512i b)

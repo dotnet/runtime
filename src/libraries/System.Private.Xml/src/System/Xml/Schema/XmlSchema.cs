@@ -174,7 +174,7 @@ namespace System.Xml.Schema
             {
                 ns = new XmlSerializerNamespaces();
                 ns.Add("xs", XmlSchema.Namespace);
-                if (_targetNs != null && _targetNs.Length != 0)
+                if (!string.IsNullOrEmpty(_targetNs))
                 {
                     ns.Add("tns", _targetNs);
                 }
