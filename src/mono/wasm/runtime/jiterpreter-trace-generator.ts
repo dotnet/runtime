@@ -3525,6 +3525,8 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
         return true;
     }
 
+    return false;
+
     switch (index) {
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
             // Zero then write scalar component

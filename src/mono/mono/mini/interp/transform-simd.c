@@ -222,7 +222,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 				return TRUE;
 			}
 			break;
-		/*
 		case SN_CreateScalar:
 		case SN_CreateScalarUnsafe:
 			simd_opcode = MINT_SIMD_INTRINS_P_P;
@@ -231,7 +230,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_CREATE_SCALAR;
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_CREATE_SCALAR;
 			break;
-		*/
 		case SN_Equals:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS;
