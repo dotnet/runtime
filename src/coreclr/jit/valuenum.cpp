@@ -8942,7 +8942,7 @@ void ValueNumStore::InitValueNumStoreStatics()
             // These HW_Intrinsic's have an extra VNF_SimdType arg.
             //
             VNFunc   func     = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-            unsigned oldArity = VNFuncArity(func);
+            unsigned oldArity = (arr[func] & VNFOA_ArityMask) >> VNFOA_ArityShift;
             unsigned newArity = oldArity + 1;
 
             ValueNumFuncSetArity(func, newArity);
