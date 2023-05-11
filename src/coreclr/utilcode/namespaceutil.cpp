@@ -36,9 +36,9 @@ int ns::GetFullLength(                  // Number of chars in full name.
 
     int iLen = 1;                       // Null terminator.
     if (szNameSpace)
-        iLen += (int)dn_wcslen(szNameSpace);
+        iLen += (int)strlen_u16(szNameSpace);
     if (szName)
-        iLen += (int)dn_wcslen(szName);
+        iLen += (int)strlen_u16(szName);
     if (szNameSpace && *szNameSpace && szName && *szName)
         ++iLen;
     return iLen;
@@ -81,7 +81,7 @@ WCHAR *ns::FindSep(                     // Pointer to separator or null.
     STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(szPath);
-    WCHAR *ptr = (WCHAR*)dn_wcsrchr(szPath, NAMESPACE_SEPARATOR_WCHAR);
+    WCHAR *ptr = (WCHAR*)strrchr_u16(szPath, NAMESPACE_SEPARATOR_WCHAR);
     if((ptr == NULL) || (ptr == szPath)) return NULL;
     if(*(ptr - 1) == NAMESPACE_SEPARATOR_WCHAR) // here ptr is at least szPath+1
         --ptr;
@@ -229,7 +229,7 @@ int ns::SplitPath(                      // true ok, false trunction.
             ++ptr;
         else
             ptr = szPath;
-        iLen = (int)dn_wcslen(ptr);
+        iLen = (int)strlen_u16(ptr);
         iCopyMax = min(iCopyMax, iLen);
         wcsncpy_s(szName, cchName, ptr, iCopyMax);
         szName[iCopyMax] = 0;
@@ -473,9 +473,9 @@ int ns::MakePath(                       // true ok, false out of memory
 
     int iLen = 2;
     if (szNameSpace)
-        iLen += (int)dn_wcslen(szNameSpace);
+        iLen += (int)strlen_u16(szNameSpace);
     if (szName)
-        iLen += (int)dn_wcslen(szName);
+        iLen += (int)strlen_u16(szName);
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));
     if (!szOut)
         return false;
@@ -586,9 +586,9 @@ bool ns::MakeAssemblyQualifiedName(                                        // tr
     int iTypeName = 0;
     int iAssemblyName = 0;
     if (szTypeName)
-        iTypeName = (int)dn_wcslen(szTypeName);
+        iTypeName = (int)strlen_u16(szTypeName);
     if (szAssemblyName)
-        iAssemblyName = (int)dn_wcslen(szAssemblyName);
+        iAssemblyName = (int)strlen_u16(szAssemblyName);
 
     int iLen = ASSEMBLY_SEPARATOR_LEN + iTypeName + iAssemblyName + 1; // Space for null terminator
     WCHAR *szOut = (WCHAR *) qb.AllocNoThrow(iLen * sizeof(WCHAR));

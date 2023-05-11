@@ -149,7 +149,7 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
     // replace it by the PID of our process
     // only the first occurrence will be replaced
     const WCHAR* pidLit =  W("{pid}");
-    const WCHAR* pidPtr = dn_wcsstr(original, pidLit);
+    const WCHAR* pidPtr = strstr_u16(original, pidLit);
     if (pidPtr != nullptr)
     {
         // copy the file name up to the "{pid}" occurrence
@@ -163,11 +163,11 @@ void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength)
         wcscat_s(replaced, replacedLength, pidStr);
 
         // append the rest of the filename
-        wcscat_s(replaced, replacedLength, original + pidInx + dn_wcslen(pidLit));
+        wcscat_s(replaced, replacedLength, original + pidInx + strlen_u16(pidLit));
     }
     else
     {
-        size_t originalLength = dn_wcslen(original);
+        size_t originalLength = strlen_u16(original);
         wcsncpy_s(replaced, replacedLength, original, originalLength);
     }
 }

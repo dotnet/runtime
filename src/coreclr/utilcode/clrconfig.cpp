@@ -143,7 +143,7 @@ namespace
 
         WCHAR buff[64];
         const WCHAR* fallbackPrefix = NULL;
-        const size_t namelen = dn_wcslen(name);
+        const size_t namelen = strlen_u16(name);
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         if (noPrefix)
@@ -249,7 +249,7 @@ namespace
         {
             errno = 0;
             LPWSTR endPtr;
-            DWORD configMaybe = dn_wcstoul(val, &endPtr, radix);
+            DWORD configMaybe = strtoul_u16(val, &endPtr, radix);
             BOOL fSuccess = ((errno != ERANGE) && (endPtr != val));
             if (fSuccess)
             {
@@ -324,7 +324,7 @@ namespace
         *pwszTrimmed = NULL;
 
         // Get pointers into internal string that show where to do the trimming.
-        size_t cchOrig = dn_wcslen(wszOrig);
+        size_t cchOrig = strlen_u16(wszOrig);
         if (!FitsIn<DWORD>(cchOrig))
             return COR_E_OVERFLOW;
         DWORD cchAfterTrim = (DWORD) cchOrig;

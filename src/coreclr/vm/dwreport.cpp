@@ -269,7 +269,7 @@ int DwGetAppDescription(                // Number of characters written.
     }
 
     // If the description is a single space, ignore it.
-    if (dn_wcscmp(fileDescription, W(" ")) == 0)
+    if (strcmp_u16(fileDescription, W(" ")) == 0)
     {
         return 0;
     }
@@ -401,7 +401,7 @@ int DwGetAssemblyVersion(               // Number of characters written.
     }
 
     // If the assembly version is a single space, ignore it.
-    if (dn_wcscmp(assemblyVersion, W(" ")) == 0)
+    if (strcmp_u16(assemblyVersion, W(" ")) == 0)
     {
         return 0;
     }

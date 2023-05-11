@@ -225,7 +225,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         aDispIds[cNames] = DISPID_UNKNOWN;
 
     // Retrieve the appropriate string comparation function.
-    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? dn_wcscmp : SString::_wcsicmp;
+    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? strcmp_u16 : SString::_wcsicmp;
 
     GCPROTECT_BEGIN(ParamArray)
     {
@@ -525,7 +525,7 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         // If we managed to get the member's properties then extract the name.
         if (pMemberProps)
         {
-            int MemberNameLen = (INT)dn_wcslen(pMemberProps->pName);
+            int MemberNameLen = (INT)strlen_u16(pMemberProps->pName);
             strMemberName = new WCHAR[MemberNameLen + 1];
 
             memcpy(strMemberName, pMemberProps->pName, (MemberNameLen + 1) * sizeof(WCHAR));

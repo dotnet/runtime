@@ -414,11 +414,11 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-            size_t pathLen = dn_wcslen(mutableFilePath);
+            size_t pathLen = strlen_u16(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
             const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = dn_wcslen(nidll);  // used for ni.exe as well
+            const size_t dllLen = strlen_u16(nidll);  // used for ni.exe as well
 
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
@@ -9617,9 +9617,9 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 
-    // Now we know it's safe to call dn_wcslen. The buffer is local, so we know the pages are there.
+    // Now we know it's safe to call strlen_u16. The buffer is local, so we know the pages are there.
     // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = dn_wcslen(pString) + 1;
+    SIZE_T dwActualLenWithNull = strlen_u16(pString) + 1;
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);

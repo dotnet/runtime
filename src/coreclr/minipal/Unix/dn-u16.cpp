@@ -6,7 +6,7 @@ typedef char16_t WCHAR;
 #include <dn-u16.h>
 #include <string.h>
 
-size_t dn_wcslen(const WCHAR* str)
+size_t strlen_u16(const WCHAR* str)
 {
     if (str == nullptr)
         return 0;
@@ -18,12 +18,12 @@ size_t dn_wcslen(const WCHAR* str)
     return nChar;
 }
 
-int dn_wcscmp(const WCHAR* str1, const WCHAR* str2)
+int strcmp_u16(const WCHAR* str1, const WCHAR* str2)
 {
-    return dn_wcsncmp(str1, str2, 0x7fffffff);
+    return strncmp_u16(str1, str2, 0x7fffffff);
 }
 
-int dn_wcsncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
+int strncmp_u16(const WCHAR* str1, const WCHAR* str2, size_t count)
 {
     int diff = 0;
     for (size_t i = 0; i < count; i++)
@@ -39,7 +39,7 @@ int dn_wcsncmp(const WCHAR* str1, const WCHAR* str2, size_t count)
     return diff;
 }
 
-WCHAR* dn_wcscat(WCHAR* dst, size_t dstLen, const WCHAR* src)
+WCHAR* strcat_u16(WCHAR* dst, size_t dstLen, const WCHAR* src)
 {
     if (dst == nullptr || src == nullptr)
     {
@@ -58,7 +58,7 @@ WCHAR* dn_wcscat(WCHAR* dst, size_t dstLen, const WCHAR* src)
     }
 
     // concatenate new string
-    size_t srcLength = dn_wcslen(src);
+    size_t srcLength = strlen_u16(src);
     size_t loopCount = 0;
     while (*src && loopCount < srcLength)
     {
@@ -73,7 +73,7 @@ WCHAR* dn_wcscat(WCHAR* dst, size_t dstLen, const WCHAR* src)
     return start;
 }
 
-WCHAR* dn_wcscpy(WCHAR* dst, size_t dstLen, const WCHAR* src)
+WCHAR* strcpy_u16(WCHAR* dst, size_t dstLen, const WCHAR* src)
 {
     if (dst == nullptr || src == nullptr)
     {
@@ -96,11 +96,11 @@ WCHAR* dn_wcscpy(WCHAR* dst, size_t dstLen, const WCHAR* src)
     return start;
 }
 
-WCHAR* dn_wcsncpy(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count)
+WCHAR* strncpy_u16(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count)
 {
     ::memset(dst, 0, dstLen * sizeof(WCHAR));
 
-    size_t srcLength = dn_wcslen(src);
+    size_t srcLength = strlen_u16(src);
     size_t length = (count < srcLength) ? count : srcLength;
     if (length > dstLen)
         return nullptr;
@@ -109,7 +109,7 @@ WCHAR* dn_wcsncpy(WCHAR* dst, size_t dstLen, const WCHAR* src, size_t count)
     return dst;
 }
 
-const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
+const WCHAR* strstr_u16(const WCHAR *str, const WCHAR *strCharSet)
 {
     if (str == nullptr || strCharSet == nullptr)
     {
@@ -117,7 +117,7 @@ const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
     }
 
     // No characters to examine
-    if (dn_wcslen(strCharSet) == 0)
+    if (strlen_u16(strCharSet) == 0)
         return str;
 
     const WCHAR* ret = nullptr;
@@ -149,7 +149,7 @@ const WCHAR* dn_wcsstr(const WCHAR *str, const WCHAR *strCharSet)
     return ret;
 }
 
-const WCHAR* dn_wcschr(const WCHAR* str, WCHAR ch)
+const WCHAR* strchr_u16(const WCHAR* str, WCHAR ch)
 {
     while (*str)
     {
@@ -165,7 +165,7 @@ const WCHAR* dn_wcschr(const WCHAR* str, WCHAR ch)
     return nullptr;
 }
 
-const WCHAR* dn_wcsrchr(const WCHAR* str, WCHAR ch)
+const WCHAR* strrchr_u16(const WCHAR* str, WCHAR ch)
 {
     const WCHAR* last = nullptr;
     while (*str)
@@ -183,17 +183,17 @@ extern "C" uint32_t PAL_wcstoul(const WCHAR* nptr, WCHAR** endptr, int base);
 extern "C" uint64_t PAL__wcstoui64(const WCHAR* nptr, WCHAR** endptr, int base);
 extern "C" double PAL_wcstod(const WCHAR* nptr, WCHAR** endptr);
 
-uint32_t dn_wcstoul(const WCHAR* nptr, WCHAR** endptr, int base)
+uint32_t strtoul_u16(const WCHAR* nptr, WCHAR** endptr, int base)
 {
     return PAL_wcstoul(nptr, endptr, base);
 }
 
-uint64_t dn_wcstoui64(const WCHAR* nptr, WCHAR** endptr, int base)
+uint64_t strtoui64_u16(const WCHAR* nptr, WCHAR** endptr, int base)
 {
     return PAL__wcstoui64(nptr, endptr, base);
 }
 
-double dn_wcstod(const WCHAR* nptr, WCHAR** endptr)
+double strtod_u16(const WCHAR* nptr, WCHAR** endptr)
 {
     return PAL_wcstod(nptr, endptr);
 }

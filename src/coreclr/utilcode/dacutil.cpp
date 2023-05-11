@@ -106,7 +106,7 @@ LiveProcDataTarget::GetImageBase(
     // about right now is the base of mscorwks.
     //
 
-    if (dn_wcscmp(name, MAIN_CLR_DLL_NAME_W))
+    if (strcmp_u16(name, MAIN_CLR_DLL_NAME_W))
     {
         return E_NOINTERFACE;
     }

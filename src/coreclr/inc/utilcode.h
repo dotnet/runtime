@@ -217,7 +217,7 @@ typedef LPSTR   LPUTF8;
 // most development in the EE, especially anything like metadata or class
 // names.  See the BESTFIT version if you're printing out info to the console.
 #define MAKE_MULTIBYTE_FROMWIDE(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)dn_wcslen(widestr);        \
+    int __l##ptrname = (int)strlen_u16(widestr);        \
     if (__l##ptrname > MAKE_MAX_LENGTH)         \
         MAKE_TOOLONGACTION;                     \
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -235,7 +235,7 @@ typedef LPSTR   LPUTF8;
 // representable.  This is reasonable for writing to the console, but
 // shouldn't be used for most string conversions.
 #define MAKE_MULTIBYTE_FROMWIDE_BESTFIT(ptrname, widestr, codepage) \
-    int __l##ptrname = (int)dn_wcslen(widestr);        \
+    int __l##ptrname = (int)strlen_u16(widestr);        \
     if (__l##ptrname > MAKE_MAX_LENGTH)         \
         MAKE_TOOLONGACTION;                     \
     __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -285,7 +285,7 @@ typedef LPSTR   LPUTF8;
 
 #define MAKE_UTF8PTR_FROMWIDE_NOTHROW(ptrname, widestr) \
     CQuickBytes __qb##ptrname; \
-    int __l##ptrname = (int)dn_wcslen(widestr); \
+    int __l##ptrname = (int)strlen_u16(widestr); \
     LPUTF8 ptrname = 0; \
     if (__l##ptrname <= MAKE_MAX_LENGTH) { \
         __l##ptrname = (int)((__l##ptrname + 1) * 2 * sizeof(char)); \
@@ -437,7 +437,7 @@ LPWSTR DuplicateString(
 
     if (wszString != NULL)
     {
-        return DuplicateString(wszString, dn_wcslen(wszString));
+        return DuplicateString(wszString, strlen_u16(wszString));
     }
     else
     {
@@ -627,7 +627,7 @@ public:
         if (id == UICULTUREID_DONTCARE)
             return FALSE;
 
-        return dn_wcscmp(id, m_LangId) == 0;
+        return strcmp_u16(id, m_LangId) == 0;
     }
 
     HRESOURCEDLL GetLibraryHandle()
@@ -2381,7 +2381,7 @@ inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
     ULONG *ptr = (ULONG *)szStr;
 
     // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= dn_wcslen(szStr));
+    _ASSERTE(cchStr <= strlen_u16(szStr));
     SIZE_T cDwordCount = (cchStr + 1) / 2;
 
     for (SIZE_T i = 0; i < cDwordCount; i++)

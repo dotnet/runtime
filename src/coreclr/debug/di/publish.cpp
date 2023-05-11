@@ -418,7 +418,7 @@ CorpubProcess::CorpubProcess(DWORD dwProcessId,
             if (ret > 0)
             {
                 // Recompute string length because we don't know if 'ret' is in bytes or char.
-                SIZE_T len = dn_wcslen(szName) + 1;
+                SIZE_T len = strlen_u16(szName) + 1;
                 m_szProcessName = new (nothrow) WCHAR[len];
                 if (m_szProcessName != NULL)
                 {
@@ -602,7 +602,7 @@ HRESULT AllocateAndReadRemoteString(
     if (SUCCEEDED(hr))
     {
         // Ensure that the string we just read is actually null terminated.
-        // We can't call dn_wcslen() on it yet, since that may AV on a non-null terminated string.
+        // We can't call strlen_u16() on it yet, since that may AV on a non-null terminated string.
         WCHAR * pString = *ppNewLocalBuffer;
 
         if (pString[ceSize - 1] == W('\0'))
@@ -612,7 +612,7 @@ HRESULT AllocateAndReadRemoteString(
         }
         pString[ceSize - 1] = W('\0');
 
-        SIZE_T ceTestLen = dn_wcslen(pString);
+        SIZE_T ceTestLen = strlen_u16(pString);
         if (ceTestLen == ceSize - 1)
         {
             // String was not previously null-terminated.

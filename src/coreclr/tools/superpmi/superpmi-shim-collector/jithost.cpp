@@ -119,7 +119,7 @@ int JitHost::getIntConfigValue(const WCHAR* key, int defaultValue)
     // even record that it was called (since it would get recorded into the
     // global state). (See the superpmi.exe tool implementation of JitHost::getIntConfigValue()
     // for the special-case implementation of this.)
-    if (dn_wcscmp(key, W("SuperPMIMethodContextNumber")) == 0)
+    if (strcmp_u16(key, W("SuperPMIMethodContextNumber")) == 0)
     {
         return defaultValue;
     }

@@ -2848,7 +2848,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
             return;
         }
         LPWSTR endPtr;
-        DWORD dwCustomObjectAllocationEventsPerTypePerSec = dn_wcstoul(
+        DWORD dwCustomObjectAllocationEventsPerTypePerSec = strtoul_u16(
             wszCustomObjectAllocationEventsPerTypePerSec,
             &endPtr,
             10          // Base 10 conversion
@@ -6376,7 +6376,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     // if we do not have a module path yet, we put the module name
-    if(bIsDynamicAssembly || ModuleILPath==NULL || dn_wcslen(ModuleILPath) <= 2)
+    if(bIsDynamicAssembly || ModuleILPath==NULL || strlen_u16(ModuleILPath) <= 2)
     {
         moduleName.SetUTF8(pModule->GetSimpleName());
         ModuleILPath = (PWCHAR)moduleName.GetUnicode();

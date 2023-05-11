@@ -2165,7 +2165,7 @@ void ParseDefaultStackSize(LPCWSTR valueStr)
     {
         LPWSTR end;
         errno = 0;
-        unsigned long value = dn_wcstoul(valueStr, &end, 16); // Base 16 without a prefix
+        unsigned long value = strtoul_u16(valueStr, &end, 16); // Base 16 without a prefix
 
         if ((errno == ERANGE)     // Parsed value doesn't fit in an unsigned long
             || (valueStr == end)  // No characters parsed

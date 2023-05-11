@@ -21,7 +21,7 @@ class UTSemReadWrite;
         }                                                   \
         else                                                \
         {                                                   \
-            int cbBuffer = ((int)dn_wcslen(wszInput) * 3) + 1; \
+            int cbBuffer = ((int)strlen_u16(wszInput) * 3) + 1; \
             (szOutput) = (char *)_alloca(cbBuffer);         \
             Unicode2UTF((wszInput), (szOutput), cbBuffer);  \
         }                                                   \

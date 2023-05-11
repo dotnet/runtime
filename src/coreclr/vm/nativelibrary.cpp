@@ -642,12 +642,12 @@ namespace
         if (g_hostpolicy_embedded)
         {
 #ifdef TARGET_WINDOWS
-            if (dn_wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            if (strcmp_u16(wszLibName, W("hostpolicy.dll")) == 0)
             {
                 return WszGetModuleHandle(NULL);
             }
 #else
-            if (dn_wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            if (strcmp_u16(wszLibName, W("libhostpolicy")) == 0)
             {
                 return PAL_LoadLibraryDirect(NULL);
             }

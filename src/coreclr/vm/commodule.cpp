@@ -618,7 +618,7 @@ static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pw
 
     if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
     {
-        COUNT_T oldSuffixLen = (COUNT_T)dn_wcslen(pwzOldSuffix);
+        COUNT_T oldSuffixLen = (COUNT_T)strlen_u16(pwzOldSuffix);
         fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
     }
 }

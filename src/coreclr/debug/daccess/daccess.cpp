@@ -239,7 +239,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
     // Split off parameters.
     //
 
-    paramsStart = dn_wcschr(fullName, W('('));
+    paramsStart = strchr_u16(fullName, W('('));
     if (paramsStart)
     {
         if (syntax != SPLIT_METHOD ||
@@ -258,7 +258,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
     else
     {
         *params = NULL;
-        memberEnd = fullName + (dn_wcslen(fullName) - 1);
+        memberEnd = fullName + (strlen_u16(fullName) - 1);
     }
 
     if (syntax != SPLIT_TYPE)
@@ -5681,7 +5681,7 @@ static int FormatCLRStubName(
     // Compute the address as a string safely.
     WCHAR addrString[Max64BitHexString + 1];
     FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
-    size_t addStringLen = dn_wcslen(addrString);
+    size_t addStringLen = strlen_u16(addrString);
 
     // Compute maximum length, include the null terminator.
     size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
@@ -5692,7 +5692,7 @@ static int FormatCLRStubName(
     size_t stubManagedNameLen = 0;
     if (stubNameMaybe != NULL)
     {
-        stubManagedNameLen = dn_wcslen(stubNameMaybe);
+        stubManagedNameLen = strlen_u16(stubNameMaybe);
         formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
         formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
     }
@@ -6461,7 +6461,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     // It is possible that the module is in-memory. That is the wszFilePath here is empty.
     // We will try to use the module name instead in this case for hosting debugger
     // to find match.
-    if (dn_wcslen(wszFilePath) == 0)
+    if (strlen_u16(wszFilePath) == 0)
     {
         mdImage->GetModuleFileNameHintForDAC().DacGetUnicode(cchFilePath, wszFilePath, &uniPathChars);
         if (uniPathChars > cchFilePath)
@@ -7323,9 +7323,9 @@ STDAPI OutOfProcessExceptionEventCallback(_In_ PDWORD pContext,
         return hr;
     }
 
-    if ((pwszEventName == NULL) || (*pchSize <= dn_wcslen(gmb.wzEventTypeName)))
+    if ((pwszEventName == NULL) || (*pchSize <= strlen_u16(gmb.wzEventTypeName)))
     {
-        *pchSize = static_cast<DWORD>(dn_wcslen(gmb.wzEventTypeName)) + 1;
+        *pchSize = static_cast<DWORD>(strlen_u16(gmb.wzEventTypeName)) + 1;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
 
@@ -7447,9 +7447,9 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(_In_ PDWORD pContext,
     // Return pwszName as an emptry string to let WER use localized version of "Parameter n"
     *pwszName = W('\0');
 
-    if ((pwszValue == NULL) || (*pchValue <= dn_wcslen(pwszBucketValues[dwIndex])))
+    if ((pwszValue == NULL) || (*pchValue <= strlen_u16(pwszBucketValues[dwIndex])))
     {
-        *pchValue = static_cast<DWORD>(dn_wcslen(pwszBucketValues[dwIndex]))+ 1;
+        *pchValue = static_cast<DWORD>(strlen_u16(pwszBucketValues[dwIndex]))+ 1;
         return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
     }
 

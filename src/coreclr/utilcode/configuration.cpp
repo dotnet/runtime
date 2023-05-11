@@ -40,7 +40,7 @@ static LPCWSTR GetConfigurationValue(LPCWSTR name)
     for (int i = 0; i < numberOfKnobs; ++i)
     {
         _ASSERT(knobNames[i] != nullptr);
-        if (dn_wcscmp(name, knobNames[i]) == 0)
+        if (strcmp_u16(name, knobNames[i]) == 0)
         {
             return knobValues[i];
         }
@@ -61,7 +61,7 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, const CLRConfig::ConfigDWOR
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return dn_wcstoul(knobValue, nullptr, 0);
+        return strtoul_u16(knobValue, nullptr, 0);
     }
 
     return legacyValue;
@@ -72,7 +72,7 @@ DWORD Configuration::GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue)
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return dn_wcstoul(knobValue, nullptr, 0);
+        return strtoul_u16(knobValue, nullptr, 0);
     }
 
     return defaultValue;
@@ -83,7 +83,7 @@ ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultVa
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return dn_wcstoui64(knobValue, nullptr, 0);
+        return strtoui64_u16(knobValue, nullptr, 0);
     }
 
     return defaultValue;
@@ -117,7 +117,7 @@ bool Configuration::GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWO
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return (dn_wcscmp(knobValue, W("true")) == 0);
+        return (strcmp_u16(knobValue, W("true")) == 0);
     }
 
     return (legacyValue != 0);
@@ -140,7 +140,7 @@ bool Configuration::GetKnobBooleanValue(LPCWSTR name, bool defaultValue)
     LPCWSTR knobValue = GetConfigurationValue(name);
     if (knobValue != nullptr)
     {
-        return (dn_wcscmp(knobValue, W("true")) == 0);
+        return (strcmp_u16(knobValue, W("true")) == 0);
     }
 
     return defaultValue;

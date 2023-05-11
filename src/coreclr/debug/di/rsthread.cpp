@@ -9975,7 +9975,7 @@ HRESULT CordbEval::NewString(LPCWSTR string)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    return NewStringWithLength(string, (UINT)dn_wcslen(string));
+    return NewStringWithLength(string, (UINT)strlen_u16(string));
 }
 
 //---------------------------------------------------------------------------------------

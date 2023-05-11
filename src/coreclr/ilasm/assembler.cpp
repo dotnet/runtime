@@ -927,7 +927,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     WszMultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
-        WCHAR* p = (WCHAR*)dn_wcsstr(wzFieldName,W("$PST04"));
+        WCHAR* p = (WCHAR*)strstr_u16(wzFieldName,W("$PST04"));
         if(p) *p = W('\0');
     }
 

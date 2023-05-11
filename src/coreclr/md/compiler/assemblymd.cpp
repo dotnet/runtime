@@ -214,7 +214,7 @@ STDMETHODIMP RegMeta::GetExportedTypeProps(   // S_OK or error.
             if (bTruncation || !szName)
                 *pchName = ns::GetFullLength(wzTypeNamespace, wzTypeName);
             else
-                *pchName = (ULONG)(dn_wcslen(szName) + 1);
+                *pchName = (ULONG)(strlen_u16(szName) + 1);
         }
     }
     if (ptkImplementation)
