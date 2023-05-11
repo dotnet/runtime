@@ -317,8 +317,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
 			[ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2815
-			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Derived.RUCMethod--")]
 			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
 			[ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.NativeAot)]

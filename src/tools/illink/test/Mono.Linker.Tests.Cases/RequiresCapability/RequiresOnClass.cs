@@ -535,24 +535,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "BaseWithoutRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()")]
 			[ExpectedWarning ("IL3050", "InterfaceWithoutRequires.Method()", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method()", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2533
-			// NativeAOT has a correct override resolution and in this case the method is not an override - so it should warn
-			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method(Int32)")]
 			[ExpectedWarning ("IL3050", "ImplementationWithRequiresOnType.Method(Int32)", ProducedBy = Tool.NativeAot)]
-			// ILLink incorrectly skips warnings for derived method, under the assumption that
-			// it will be covered by the base method. But in this case the base method
-			// is unannotated (and the mismatch produces no warning because the derived
-			// type has RUC).
-			// https://github.com/dotnet/linker/issues/2533
-			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "DerivedWithRequiresOnTypeOverBaseWithNoRequires.Method()")]
 			static void TestDAMAccess ()
 			{
 				// Warns because BaseWithoutRequiresOnType.Method has Requires on the method

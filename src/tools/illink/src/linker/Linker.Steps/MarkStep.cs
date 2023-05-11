@@ -3088,32 +3088,42 @@ namespace Mono.Linker.Steps
 			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
 				return;
 
-			bool skipWarningsForOverride;
 			bool isReflectionAccessCoveredByRUC;
+			bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (method);
+			bool forceRUCCheck = false;
 			RequiresUnreferencedCodeAttribute? requiresUnreferencedCode;
-			if (dependencyKind == DependencyKind.AttributeProperty) {
+			switch (dependencyKind) {
+			case DependencyKind.AttributeProperty:
 				// Property assignment in an attribute instance.
 				// This case is more like a direct method call than reflection, and should
 				// be logically similar to what is done in ReflectionMethodBodyScanner for method calls.
-				skipWarningsForOverride = false;
 				isReflectionAccessCoveredByRUC = Annotations.DoesMethodRequireUnreferencedCode (method, out requiresUnreferencedCode);
-			} else {
-				// All override methods should have the same annotations as their base methods
-				// (else we will produce warning IL2046 or IL2092 or some other warning).
-				// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-				skipWarningsForOverride = dependencyKind == DependencyKind.DynamicallyAccessedMember && method.IsVirtual && Annotations.GetBaseMethods (method) != null;
+				break;
+
+			case DependencyKind.Ldftn:
+			case DependencyKind.Ldvirtftn:
+			case DependencyKind.Ldtoken:
+				// Compiler generated code accessed via a token is considered a "hard" reference
+				// even though we also have to treat it as reflection access.
+				// So we need to enforce RUC check/warn in this case.
+				forceRUCCheck = true;
+				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
+				break;
+
+			default:
 				// If the method being accessed has warnings suppressed due to Requires attributes,
 				// we need to issue a warning for the reflection access. This is true even for instance
 				// methods, which can be reflection-invoked without ever calling a constructor of the
 				// accessed type.
 				isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (method, out requiresUnreferencedCode);
+				break;
 			}
 
-			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
+			if (isReflectionAccessCoveredByRUC && (!isCompilerGenerated || forceRUCCheck))
 				ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method);
-			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
+			if (isReflectionAccessCoveredByDAM) {
 				// ReflectionMethodBodyScanner handles more cases for data flow annotations
 				// so don't warn for those.
 				switch (dependencyKind) {

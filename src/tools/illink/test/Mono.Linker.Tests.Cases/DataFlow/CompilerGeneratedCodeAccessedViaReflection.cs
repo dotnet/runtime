@@ -144,11 +144,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators) + "()", "--RUCTypeWithIterators--")]
 			// Expect to see warnings about RUC on type, for all static state machine members.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.StaticIteratorCallsMethodWithRequires) + "()", "--RUCTypeWithIterators--")]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithIterators.StaticIteratorCallsMethodWithRequires) + ">",
-				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithIterators.InstanceIteratorCallsMethodWithRequires) + ">", "(Int32)",
-				ProducedBy = Tool.Trimmer)] // state machine ctor
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithCorrectDataflow) + ">", "<t_IteratorWithCorrectDataflow>",
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2118", "<" + nameof (IteratorWithProblematicDataflow) + ">", "<t_IteratorWithProblematicDataflow>",
@@ -401,10 +397,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas) + "()", "--RUCTypeWithLambdas--")]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLambdas.MethodWithLambdas) + "()", "--RUCTypeWithLambdas--", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLambdas.MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-				ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLambdas.MethodWithLambdas) + ">", "--RUCTypeWithLambdas--",
-				ProducedBy = Tool.Trimmer)]
 			public static void Test (Lambdas test = null)
 			{
 				typeof (Lambdas).RequiresAll ();
@@ -543,12 +535,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ProducedBy = Tool.Trimmer)]
 			// Expect RUC warnings for static, compiler-generated code warnings for instance.
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions) + "()", "--RUCTypeWithLocalFunctions--")]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "LocalFunctionWithCapturedState",
-				ProducedBy = Tool.Trimmer)] // displayclass ctor
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "StaticLocalFunction",
-				ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "<" + nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + ">", "LocalFunction",
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", nameof (RUCTypeWithLocalFunctions.MethodWithLocalFunctions) + "()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
 			public static void Test (LocalFunctions test = null)
 			{
