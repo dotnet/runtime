@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -36,27 +35,6 @@ namespace System.Buffers
         private readonly Partitions?[] _buckets = new Partitions[NumBuckets];
         /// <summary>Whether the callback to trim arrays in response to memory pressure has been created.</summary>
         private int _trimCallbackCreated;
-
-        /// <summary>Gets the maximum number of partitions to shard arrays into.</summary>
-        /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
-        private static int GetPartitionCount()
-        {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT");
-            int partitionCount = value is not null && int.TryParse(value, CultureInfo.InvariantCulture, out int result) && result > 0 ?
-                result :
-                int.MaxValue; // no limit other than processor count
-            return Math.Min(partitionCount, Environment.ProcessorCount);
-        }
-
-        /// <summary>Gets the maximum number of arrays of a given size allowed to be cached per partition.</summary>
-        /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
-        private static int GetMaxArraysPerPartition()
-        {
-            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION");
-            return value is not null && int.TryParse(value, CultureInfo.InvariantCulture, out int result) && result > 0 ?
-                result :
-                8; // arbitrary limit
-        }
 
         /// <summary>Allocate a new <see cref="Partitions"/> and try to store it into the <see cref="_buckets"/> array.</summary>
         private Partitions CreatePerCorePartitions(int bucketIndex)
@@ -316,7 +294,7 @@ namespace System.Buffers
         private sealed class Partitions
         {
             /// <summary>Number of partitions to employ.</summary>
-            private static readonly int s_partitionCount = GetPartitionCount();
+            private static readonly int s_partitionCount = SharedArrayPoolStatics.GetPartitionCount();
             /// <summary>The partitions.</summary>
             private readonly Partition[] _partitions;
 
@@ -385,7 +363,7 @@ namespace System.Buffers
         private sealed class Partition
         {
             /// <summary>The maximum number of arrays per array size to store per partition.</summary>
-            private static readonly int s_maxArraysPerPartition = GetMaxArraysPerPartition();
+            private static readonly int s_maxArraysPerPartition = SharedArrayPoolStatics.GetMaxArraysPerPartition();
 
             /// <summary>The arrays in the partition.</summary>
             private readonly T[]?[] _arrays = new T[s_maxArraysPerPartition][];
@@ -541,6 +519,62 @@ namespace System.Buffers
                 Array = array;
                 MillisecondsTimeStamp = 0;
             }
+        }
+    }
+
+    internal static class SharedArrayPoolStatics
+    {
+        /// <summary>Gets the maximum number of partitions to shard arrays into.</summary>
+        /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
+        internal static int GetPartitionCount()
+        {
+            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT");
+            int partitionCount = value is not null && TryParseInt32(value, out int result) && result > 0 ?
+                result :
+                int.MaxValue; // no limit other than processor count
+            return Math.Min(partitionCount, Environment.ProcessorCount);
+        }
+
+        /// <summary>Gets the maximum number of arrays of a given size allowed to be cached per partition.</summary>
+        /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
+        internal static int GetMaxArraysPerPartition()
+        {
+            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION");
+            return value is not null && TryParseInt32(value, out int result) && result > 0 ?
+                result :
+                8; // arbitrary limit
+        }
+
+        /// <summary>Simple Int32 parsing.</summary>
+        internal static bool TryParseInt32(ReadOnlySpan<char> value, out int result)
+        {
+            // Avoid globalization stack, as it might in turn be using ArrayPool.
+
+            value = value.Trim(' ');
+            if (value.Length is > 0 and <= 10) // int.MaxValue.ToString().Length == 10
+            {
+                long tempResult = 0;
+                foreach (char c in value)
+                {
+                    uint digit = (uint)(c - '0');
+                    if (digit > 9)
+                    {
+                        goto Fail;
+                    }
+
+                    tempResult = tempResult * 10 + digit;
+                }
+
+                if (tempResult is > 0 and <= int.MaxValue)
+                {
+                    result = (int)tempResult;
+                    return true;
+                }
+            }
+
+        Fail:
+            result = 0;
+            return false;
         }
     }
 }
