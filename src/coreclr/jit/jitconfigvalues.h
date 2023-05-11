@@ -38,7 +38,6 @@ CONFIG_INTEGER(JitBreakEmitOutputInstr, W("JitBreakEmitOutputInstr"), -1)
 CONFIG_INTEGER(JitBreakMorphTree, W("JitBreakMorphTree"), 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, W("JitBreakOnBadCode"), 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, W("JITBreakOnMinOpts"), 0) // Halt if jit switches to MinOpts
-CONFIG_INTEGER(JitBreakOnUnsafeCode, W("JitBreakOnUnsafeCode"), 0)
 CONFIG_INTEGER(JitCloneLoops, W("JitCloneLoops"), 1) // If 0, don't clone. Otherwise clone loops for optimizations.
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, W("JitCloneLoopsWithGdvTests"), 1) // If 0, don't clone loops based on
                                                                              // invariant type/method address tests
@@ -203,7 +202,6 @@ CONFIG_METHODSET(JitForceProcedureSplitting, W("JitForceProcedureSplitting"))
 CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
-CONFIG_METHODSET(JitImportBreak, W("JitImportBreak"))
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
 CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))
 CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName"))                   // Forces MinOpts for a named function

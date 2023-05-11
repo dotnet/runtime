@@ -162,7 +162,7 @@ namespace Internal.TypeSystem
         internal static FunctionPointerRuntimeTypeHandleHashtable FunctionPointerTypesCache { get; }
             = new FunctionPointerRuntimeTypeHandleHashtable();
 
-        private TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
+        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)
@@ -197,7 +197,7 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
                     for (int i = 0; i < genericParameters.Length; i++)
@@ -430,15 +430,6 @@ namespace Internal.TypeSystem
                         {
                             MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature, IntPtr.Zero, false);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
-                        }
-
-                        // Otherwise, just check to see if there is a method discoverable via GetMethods
-                        foreach (MethodDesc potentialMethod in key._owningType.GetMethods())
-                        {
-                            if (CompareKeyToValue(key, potentialMethod))
-                            {
-                                return potentialMethod;
-                            }
                         }
                     }
                     else

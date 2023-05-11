@@ -129,11 +129,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var inputReference in sandbox.InputDirectory.Files ()) {
 				var ext = inputReference.ExtensionWithDot;
 				if (ext == ".dll" || ext == ".exe") {
-					if (caseDefinedOptions.AssembliesAction.Contains (("link", inputReference.FileNameWithoutExtension))) {
-						builder.AddLinkAssembly (inputReference);
-					} else {
-						builder.AddReference (inputReference);
-					}
+					// It's important to add all assemblies as "link" assemblies since the default configuration
+					// is to run the compiler in multi-file mode which will not process anything which is just in the reference set.
+					builder.AddLinkAssembly (inputReference);
 				}
 			}
 			var coreAction = caseDefinedOptions.TrimMode ?? "skip";

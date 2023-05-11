@@ -7471,6 +7471,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
 #endif
+
+					if (cfg->compile_aot)
+						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 
@@ -10026,6 +10030,10 @@ calli_end:
 							EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 							store = mini_emit_storing_write_barrier (cfg, ptr, sp [1]);
 						} else {
+							if (MONO_TYPE_ISSTRUCT (field->type))
+								/* The decomposition might end up calling a copy/wbarrier function which doesn't do null checks */
+								MONO_EMIT_EXPLICIT_NULL_CHECK (cfg, sp [0]->dreg);
+
 							EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 						}
 					}

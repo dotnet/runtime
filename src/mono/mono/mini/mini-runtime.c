@@ -1661,9 +1661,13 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = mini_method_get_rgctx (patch_info->data.method);
 		break;
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
-		int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
+		if (mono_opt_experimental_gshared_mrgctx) {
+			g_assert_not_reached ();
+		} else {
+			int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
 
-		target = GINT_TO_POINTER (MONO_RGCTX_SLOT_INDEX (slot));
+			target = GINT_TO_POINTER (MONO_RGCTX_SLOT_INDEX (slot));
+		}
 		break;
 	}
 	case MONO_PATCH_INFO_BB_OVF:
@@ -1672,9 +1676,13 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	case MONO_PATCH_INFO_NONE:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
-		int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
+		if (mono_opt_experimental_gshared_mrgctx) {
+			g_assert_not_reached ();
+		} else {
+			int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
 
-		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
+			target = mono_create_rgctx_lazy_fetch_trampoline (slot);
+		}
 		break;
 	}
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -4549,7 +4557,7 @@ mini_init (const char *filename)
 #if ENABLE_WEAK_ATTR
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 #endif
-
+	callbacks.find_jit_info_in_aot = mono_aot_find_jit_info;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
@@ -4561,6 +4569,17 @@ mini_init (const char *filename)
 	callbacks.init_class = init_class;
 	callbacks.get_trace = mono_get_trace;
 	callbacks.get_frame_info = mono_get_frame_info;
+	callbacks.get_cached_class_info = mono_aot_get_cached_class_info;
+	callbacks.get_class_from_name = mono_aot_get_class_from_name;
+
+	if (mono_llvm_only) {
+		callbacks.build_imt_trampoline = mini_llvmonly_get_imt_trampoline;
+		mono_set_always_build_imt_trampolines (TRUE);
+	} else if (mono_aot_only) {
+		callbacks.build_imt_trampoline = mono_aot_get_imt_trampoline;
+	} else {
+		callbacks.build_imt_trampoline = mono_arch_build_imt_trampoline;
+	}
 
 	mono_install_callbacks (&callbacks);
 
@@ -4630,10 +4649,6 @@ mini_init (const char *filename)
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
-	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
-	mono_install_get_class_from_name (mono_aot_get_class_from_name);
-	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
-
 	mono_profiler_state.context_enable = mini_profiler_context_enable;
 	mono_profiler_state.context_get_this = mini_profiler_context_get_this;
 	mono_profiler_state.context_get_argument = mini_profiler_context_get_argument;
@@ -4680,15 +4695,6 @@ mini_init (const char *filename)
 		/* This helps catch code allocation requests */
 		mono_code_manager_set_read_only (mono_mem_manager_get_ambient ()->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
-	}
-
-	if (mono_llvm_only) {
-		mono_install_imt_trampoline_builder (mini_llvmonly_get_imt_trampoline);
-		mono_set_always_build_imt_trampolines (TRUE);
-	} else if (mono_aot_only) {
-		mono_install_imt_trampoline_builder (mono_aot_get_imt_trampoline);
-	} else {
-		mono_install_imt_trampoline_builder (mono_arch_build_imt_trampoline);
 	}
 
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/

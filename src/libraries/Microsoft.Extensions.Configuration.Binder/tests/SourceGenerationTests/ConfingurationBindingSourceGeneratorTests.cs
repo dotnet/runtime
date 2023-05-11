@@ -30,8 +30,10 @@ public class Program
 		ConfigurationBuilder configurationBuilder = new();
 		IConfigurationRoot config = configurationBuilder.Build();
 
-		MyClass options = new();
-		config.Bind(options);
+		MyClass configObj = new();
+		config.Bind(configObj);
+        config.Bind(configObj, options => { })
+        config.Bind(""key"", configObj);
 	}
 	
 	public class MyClass
@@ -66,7 +68,10 @@ public class Program
 		ConfigurationBuilder configurationBuilder = new();
 		IConfigurationRoot config = configurationBuilder.Build();
 
-		MyClass options = config.Get<MyClass>();
+		MyClass configObj = config.Get<MyClass>();
+        configObj = config.Get(typeof(MyClass2));
+        configObj = config.Get<MyClass>(binderOptions => { });
+        configObj = config.Get(typeof(MyClass2), binderOptions => { });
 	}
 	
 	public class MyClass
@@ -74,8 +79,24 @@ public class Program
 		public string MyString { get; set; }
 		public int MyInt { get; set; }
 		public List<int> MyList { get; set; }
+        public int[] MyArray { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
 	}
+
+    public class MyClass2
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass3
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass4
+    {
+        public int MyInt { get; set; }
+    }
 }";
 
             await VerifyAgainstBaselineUsingFile("TestGetCallGen.generated.txt", testSourceCode);
@@ -107,8 +128,14 @@ public class Program
 		public string MyString { get; set; }
 		public int MyInt { get; set; }
 		public List<int> MyList { get; set; }
+        public List<MyClass2> MyList2 { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
 	}
+
+    public class MyClass2
+    {
+        public int MyInt { get; set; }
+    }
 }";
 
             await VerifyAgainstBaselineUsingFile("TestConfigureCallGen.generated.txt", testSourceCode);

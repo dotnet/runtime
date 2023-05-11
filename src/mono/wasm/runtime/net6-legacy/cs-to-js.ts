@@ -13,7 +13,7 @@ import { conv_string_root } from "../strings";
 import { MarshalType, MonoType, MarshalError, MonoTypeNull, MonoArray, MonoArrayNull, MonoObject, MonoObjectNull, GCHandle, MonoStringRef, MonoObjectRef, MonoString, JSHandleDisposed, is_nullish, WasmRoot } from "../types";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
-import { legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root } from "./js-to-cs";
 import { mono_bind_method, mono_method_get_call_signature_ref } from "./method-binding";
 

@@ -607,6 +607,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
+        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
         size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
@@ -782,17 +783,18 @@ protected:
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6; // options for instructions
-        unsigned _idLclVar : 1; // access a local on stack
+        opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6;    // options for instructions
+        unsigned _idLclVar : 1;    // access a local on stack
+        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-        // TODO-LoongArch64: maybe delete on future.
-        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                // accessing a local on stack.
-        unsigned _idLclVar : 1; // access a local on stack.
+            // TODO-LoongArch64: maybe delete on future.
+            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                  // accessing a local on stack.
+        unsigned _idLclVar : 1;   // access a local on stack.
 #endif
 
 #ifdef TARGET_RISCV64
@@ -815,7 +817,7 @@ protected:
         // x86:   46 bits
         // amd64: 46 bits
         // arm:   48 bits
-        // arm64: 49 bits
+        // arm64: 50 bits
         // loongarch64: 46 bits
 
         //
@@ -827,7 +829,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
@@ -867,7 +869,7 @@ protected:
         // x86:   52/48 bits
         // amd64: 53/48 bits
         // arm:   54/50 bits
-        // arm64: 56/51 bits
+        // arm64: 57/52 bits
         // loongarch64: 53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -885,7 +887,7 @@ protected:
         // x86:   12/16 bits
         // amd64: 11/16 bits
         // arm:   10/14 bits
-        // arm64: 8/13 bits
+        // arm64: 7/12 bits
         // loongarch64: 11/16 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
@@ -1203,6 +1205,7 @@ protected:
             idAddr()->_idReg3 = reg;
             assert(reg == idAddr()->_idReg3);
         }
+
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
@@ -1214,27 +1217,130 @@ protected:
             idAddr()->_idReg4 = reg;
             assert(reg == idAddr()->_idReg4);
         }
+
+        bool idHasReg1() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW | IS_R1_WR)) != 0;
+        }
+        bool idIsReg1Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW)) != 0;
+        }
+        bool idIsReg1Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RW | IS_R1_WR)) != 0;
+        }
+
+        bool idHasReg2() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW | IS_R2_WR)) != 0;
+        }
+        bool idIsReg2Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW)) != 0;
+        }
+        bool idIsReg2Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RW | IS_R2_WR)) != 0;
+        }
+
         bool idHasReg3() const
         {
-            switch (idInsFmt())
-            {
-                case IF_RWR_RRD_RRD:
-                case IF_RWR_RRD_RRD_CNS:
-                case IF_RWR_RRD_RRD_RRD:
-                    return true;
-                default:
-                    return false;
-            }
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW | IS_R3_WR)) != 0;
         }
+        bool idIsReg3Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW)) != 0;
+        }
+        bool idIsReg3Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RW | IS_R3_WR)) != 0;
+        }
+
         bool idHasReg4() const
         {
-            switch (idInsFmt())
-            {
-                case IF_RWR_RRD_RRD_RRD:
-                    return true;
-                default:
-                    return false;
-            }
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW | IS_R4_WR)) != 0;
+        }
+        bool idIsReg4Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW)) != 0;
+        }
+        bool idIsReg4Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RW | IS_R4_WR)) != 0;
+        }
+
+        bool idHasMemGen() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW | IS_GM_WR)) != 0;
+        }
+        bool idHasMemGenRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW)) != 0;
+        }
+        bool idHasMemGenWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RW | IS_GM_WR)) != 0;
+        }
+
+        bool idHasMemStk() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR)) != 0;
+        }
+        bool idHasMemStkRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW)) != 0;
+        }
+        bool idHasMemStkWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RW | IS_SF_WR)) != 0;
+        }
+
+        bool idHasMemAdr() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW | IS_AM_WR)) != 0;
+        }
+        bool idHasMemAdrRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW)) != 0;
+        }
+        bool idHasMemAdrWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RW | IS_AM_WR)) != 0;
+        }
+
+        bool idHasMem() const
+        {
+            return idHasMemGen() || idHasMemStk() || idHasMemAdr();
+        }
+        bool idHasMemRead() const
+        {
+            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
+        }
+        bool idHasMemWrite() const
+        {
+            return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
@@ -1432,6 +1538,16 @@ protected:
         {
             _idLclVar = 1;
         }
+#ifdef TARGET_ARM64
+        bool idIsLclVarPair() const
+        {
+            return _idLclVarPair != 0;
+        }
+        void idSetIsLclVarPair()
+        {
+            _idLclVarPair = 1;
+        }
+#endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_ARM)
@@ -1484,7 +1600,7 @@ protected:
         {
             _idDspReloc = val;
         }
-        bool idIsReloc()
+        bool idIsReloc() const
         {
             return idIsDspReloc() || idIsCnsReloc();
         }
@@ -1536,7 +1652,8 @@ protected:
     }; // End of  struct instrDesc
 
 #if defined(TARGET_XARCH)
-    insFormat getMemoryOperation(instrDesc* id);
+    insFormat getMemoryOperation(instrDesc* id) const;
+    insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
     void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
 #endif
@@ -1819,6 +1936,22 @@ protected:
 
 #endif // TARGET_XARCH
 
+#ifdef TARGET_ARM64
+    struct instrDescLclVarPair : instrDesc // contains 2 gc vars to be tracked
+    {
+        instrDescLclVarPair() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+
+    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
+    {
+        instrDescLclVarPairCns() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+#endif
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -1910,6 +2043,7 @@ protected:
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
 
+    static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(instrDesc* id);
@@ -2600,7 +2734,26 @@ private:
 #endif // EMITTER_STATS
         return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
-#endif // !TARGET_ARM64
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+    instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
+    {
+        instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
+        result->idSetIsLclVarPair();
+        return result;
+    }
+
+    instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+        instrDescLclVarPairCns* result =
+            (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
+        result->idSetIsLargeCns();
+        result->idSetIsLclVarPair();
+        result->idcCnsVal = cns;
+        return result;
+    }
+#endif // TARGET_ARM64
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
@@ -2686,6 +2839,8 @@ private:
 
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
+#else
+    instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -2694,9 +2849,9 @@ private:
     static const unsigned emitFmtCount;
 #endif
 
-    bool emitIsScnsInsDsc(instrDesc* id);
+    bool emitIsSmallInsDsc(instrDesc* id) const;
 
-    size_t emitSizeOfInsDsc(instrDesc* id);
+    size_t emitSizeOfInsDsc(instrDesc* id) const;
 
     /************************************************************************/
     /*        The following keeps track of stack-based GC values            */
@@ -3079,7 +3234,7 @@ inline void emitter::instrDesc::checkSizes()
  *  fields allocated).
  */
 
-inline bool emitter::emitIsScnsInsDsc(instrDesc* id)
+inline bool emitter::emitIsSmallInsDsc(instrDesc* id) const
 {
     return id->idIsSmallDsc();
 }
@@ -3249,6 +3404,36 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();
 }
+#else
+inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
+{
+#if EMITTER_STATS
+    emitTotalIDescCnt++;
+    emitTotalIDescCnsCnt++;
+#endif // EMITTER_STATS
+
+    if (instrDesc::fitsInSmallCns(cns))
+    {
+        instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
+        id->idSmallCns(cns);
+#if EMITTER_STATS
+        emitSmallCnsCnt++;
+        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
+            emitSmallCns[SMALL_CNS_TSZ - 1]++;
+        else
+            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+#endif
+        return id;
+    }
+    else
+    {
+        instrDescLclVarPairCns* id = emitAllocInstrLclVarPairCns(attr, cns);
+#if EMITTER_STATS
+        emitLargeCnsCnt++;
+#endif
+        return id;
+    }
+}
 #endif // !TARGET_ARM64
 
 inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_t dsp)
@@ -3329,10 +3514,22 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     }
     else if (id->idIsLargeCns())
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPairCns);
+        }
+#endif
         return sizeof(instrDescCns);
     }
     else
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPair);
+        }
+#endif
         return sizeof(instrDesc);
     }
 }

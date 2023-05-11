@@ -335,7 +335,7 @@ namespace System.Reflection.Emit
             if ((position < 0) || parameters == null || (position > parameters.Length))
                 throw new ArgumentOutOfRangeException(nameof(position));
 
-            ParameterBuilder pb = new ParameterBuilder(this, position, attributes, strParamName);
+            ParameterBuilder pb = new RuntimeParameterBuilder(this, position, attributes, strParamName);
             pinfo ??= new ParameterBuilder[parameters.Length + 1];
             pinfo[position] = pb;
             return pb;

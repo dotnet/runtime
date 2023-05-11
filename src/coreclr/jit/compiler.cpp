@@ -1919,6 +1919,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compLocallocUsed             = false;
     compLocallocOptimized        = false;
     compQmarkRationalized        = false;
+    compAssignmentRationalized   = false;
     compQmarkUsed                = false;
     compFloatingPointUsed        = false;
 
@@ -1927,8 +1928,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compNeedsGSSecurityCookie = false;
     compGSReorderStackLayout  = false;
 
-    compGeneratingProlog = false;
-    compGeneratingEpilog = false;
+    compGeneratingProlog       = false;
+    compGeneratingEpilog       = false;
+    compGeneratingUnwindProlog = false;
+    compGeneratingUnwindEpilog = false;
 
     compPostImportationCleanupDone = false;
     compLSRADone                   = false;
@@ -2248,38 +2251,10 @@ void Compiler::compSetProcessor()
 
     const JitFlags& jitFlags = *opts.jitFlags;
 
-#if defined(TARGET_ARM)
-    info.genCPU = CPU_ARM;
-#elif defined(TARGET_ARM64)
-    info.genCPU      = CPU_ARM64;
-#elif defined(TARGET_AMD64)
-    info.genCPU = CPU_X64;
-#elif defined(TARGET_X86)
-    if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
-        info.genCPU = CPU_X86_PENTIUM_4;
-    else
-        info.genCPU = CPU_X86;
-#elif defined(TARGET_LOONGARCH64)
-    info.genCPU                   = CPU_LOONGARCH64;
-#elif defined(TARGET_RISCV64)
-    info.genCPU = CPU_RISCV64;
-#endif
-
     //
     // Processor specific optimizations
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_AMD64
-    opts.compUseCMOV = true;
-#elif defined(TARGET_X86)
-    opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
-#ifdef DEBUG
-    if (opts.compUseCMOV)
-        opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
-#endif // DEBUG
-
-#endif // TARGET_X86
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
     opts.compSupportsISA.Reset();
@@ -2687,19 +2662,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     bool altJitConfig = !pfAltJit->isEmpty();
 
-    //  If we have a non-empty AltJit config then we change all of these other
-    //  config values to refer only to the AltJit. Otherwise, a lot of DOTNET_* variables
-    //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the DOTNET_AltJit configuration is set.
-    //
-    if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
-    {
-        if (JitConfig.JitImportBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
-        {
-            assert(!"JitImportBreak reached");
-        }
-    }
-
     bool verboseDump = false;
 
     if (!altJitConfig || opts.altJit)
@@ -2756,11 +2718,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     lvaEnregEHVars       = (compEnregLocals() && JitConfig.EnableEHWriteThru());
     lvaEnregMultiRegVars = (compEnregLocals() && JitConfig.EnableMultiRegLocals());
-
-    if (compIsForImportOnly())
-    {
-        return;
-    }
 
 #if FEATURE_TAILCALL_OPT
     // By default opportunistic tail call optimization is enabled.
@@ -3452,8 +3409,15 @@ bool Compiler::compJitHaltMethod()
  *    It should reflect the usefulness:overhead ratio.
  */
 
-const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+const LPCWSTR Compiler::s_compStressModeNamesW[STRESS_COUNT + 1] = {
 #define STRESS_MODE(mode) W("STRESS_") W(#mode),
+
+    STRESS_MODES
+#undef STRESS_MODE
+};
+
+const char* Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
+#define STRESS_MODE(mode) "STRESS_" #mode,
 
     STRESS_MODES
 #undef STRESS_MODE
@@ -3502,12 +3466,41 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     {
         if (verbose)
         {
-            printf("\n\n*** JitStress: %ws ***\n\n", s_compStressModeNames[stressArea]);
+            printf("\n\n*** JitStress: %s ***\n\n", s_compStressModeNames[stressArea]);
         }
         compActiveStressModes[stressArea] = 1;
     }
 
     return doStress;
+}
+
+//------------------------------------------------------------------------
+// compStressAreaHash: Get (or compute) a hash code for a stress area.
+//
+// Arguments:
+//   stressArea - stress mode
+//
+// Returns:
+//   A hash code for the specific stress area.
+//
+unsigned Compiler::compStressAreaHash(compStressArea area)
+{
+    static LONG s_hashCodes[STRESS_COUNT];
+    assert(static_cast<unsigned>(area) < ArrLen(s_hashCodes));
+
+    unsigned result = (unsigned)s_hashCodes[area];
+    if (result == 0)
+    {
+        result = HashStringA(s_compStressModeNames[area]);
+        if (result == 0)
+        {
+            result = 1;
+        }
+
+        InterlockedExchange(&s_hashCodes[area], (LONG)result);
+    }
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -3540,7 +3533,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // Does user explicitly prevent using this STRESS_MODE through the command line?
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
+        (wcsstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
     {
         return false;
     }
@@ -3549,7 +3542,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
     if (strStressModeNames != nullptr)
     {
-        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
+        if (wcsstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
         {
             return true;
         }
@@ -3591,7 +3584,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
     // Get a hash which can be compared with 'weight'
     assert(stressArea != 0);
-    const unsigned hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
+    const unsigned hash = (info.compMethodHash() ^ compStressAreaHash(stressArea) ^ stressLevel) % MAX_STRESS_WEIGHT;
 
     assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
     return (hash < weight);
@@ -4405,8 +4398,7 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 
         /* { editor brace-matching workaround for following printf */
         printf("} Jitted Method %4d at" FMT_ADDR "method %s size %08x%s%s\n", methodNumber, DBG_ADDR(methodCodePtr),
-               info.compFullName, methodCodeSize, isNYI ? " NYI" : (compIsForImportOnly() ? " import only" : ""),
-               opts.altJit ? " altjit" : "");
+               info.compFullName, methodCodeSize, isNYI ? " NYI" : "", opts.altJit ? " altjit" : "");
     }
 #endif // DEBUG
 }
@@ -4493,6 +4485,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
+    // If we're going to instrument code, we may need to prepare before
+    // we import. Also do this before we read in any profile data.
+    //
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
+    {
+        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
+    }
+
     // Incorporate profile data.
     //
     // Note: the importer is sensitive to block weights, so this has
@@ -4501,14 +4501,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
     activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-
-    // If we're going to instrument code, we may need to prepare before
-    // we import.
-    //
-    if (compileFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-    {
-        DoPhase(this, PHASE_IBCPREP, &Compiler::fgPrepareToInstrumentMethod);
-    }
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4584,13 +4576,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // been run, and inlinee compiles have exited, so we should only
     // get this far if we are jitting the root method.
     noway_assert(!compIsForInlining());
-
-    // Maybe the caller was not interested in generating code
-    if (compIsForImportOnly())
-    {
-        compFunctionTraceEnd(nullptr, 0, false);
-        return;
-    }
 
     // Prepare for the morph phases
     //
@@ -4751,6 +4736,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
+
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -6199,10 +6186,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     }
 
 #endif // DEBUG
-
-    // Set this before the first 'BADCODE'
-    // Skip verification where possible
-    assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
 
     /* Setup an error trap */
 
@@ -9713,17 +9696,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_NO_OP:
                 break;
 
-            case GT_FIELD:
-                if (tree->gtFlags & GTF_FLD_VOLATILE)
-                {
-                    chars += printf("[FLD_VOLATILE]");
-                }
-                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
-                {
-                    chars += printf("[FLD_TGT_HEAP]");
-                }
-                break;
-
             case GT_INDEX_ADDR:
                 if (tree->gtFlags & GTF_INX_RNGCHK)
                 {
@@ -9750,10 +9722,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
-                if (tree->gtFlags & GTF_IND_ASG_LHS)
-                {
-                    chars += printf("[IND_ASG_LHS]");
-                }
                 if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
                     chars += printf("[IND_UNALIGNED]");
@@ -9765,6 +9733,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_NONNULL)
                 {
                     chars += printf("[IND_NONNULL]");
+                }
+                if (tree->gtFlags & GTF_IND_INITCLASS)
+                {
+                    chars += printf("[IND_INITCLASS]");
                 }
                 break;
 
@@ -10323,7 +10295,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
+    assert(tree->OperIs(GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     tree->SetIndirExceptionFlags(this);

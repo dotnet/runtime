@@ -1465,6 +1465,7 @@ MINI_OP(OP_ARM64_CBZX, "arm64_cbzx", NONE, IREG, NONE)
 /* Branch if sreg1 != 0 */
 MINI_OP(OP_ARM64_CBNZW, "arm64_cbnzw", NONE, IREG, NONE)
 MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
+MINI_OP(OP_ARM64_HINT, "arm64_hint", NONE, NONE, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */
@@ -1802,8 +1803,6 @@ MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
-MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
 
 MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
@@ -1818,6 +1817,8 @@ MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #endif // TARGET_ARM64 || TARGET_AMD64
 
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
+MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
+MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
 

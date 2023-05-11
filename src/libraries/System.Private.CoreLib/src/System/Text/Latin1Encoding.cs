@@ -553,16 +553,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes);
             }
 
-            return string.Create(bytes.Length, (encoding: this, bytes), static (chars, args) =>
+            string result = string.FastAllocateString(bytes.Length);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                Debug.Assert(chars.Length == args.bytes.Length);
-
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes, args.bytes.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes, bytes.Length, pChars, result.Length);
+            }
+            return result;
         }
 
         public override unsafe string GetString(byte[] bytes, int index, int count)
@@ -586,14 +583,13 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            return string.Create(count, (encoding: this, bytes, index), static (chars, args) =>
+            string result = string.FastAllocateString(count);
+            fixed (byte* pBytes = bytes)
+            fixed (char* pChars = result)
             {
-                fixed (byte* pBytes = args.bytes)
-                fixed (char* pChars = chars)
-                {
-                    args.encoding.GetCharsCommon(pBytes + args.index, chars.Length, pChars, chars.Length);
-                }
-            });
+                GetCharsCommon(pBytes + index, count, pChars, count);
+            }
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

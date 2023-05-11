@@ -239,7 +239,6 @@ FUNCTIONS
     CorInfoType getTypeForPrimitiveValueClass(CORINFO_CLASS_HANDLE cls)
     CorInfoType getTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls)
     bool canCast(CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent)
-    bool areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     TypeCompareState compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)
     TypeCompareState compareTypesForEquality(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
     CORINFO_CLASS_HANDLE mergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
@@ -274,11 +273,6 @@ FUNCTIONS
     int getExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet);
     CORINFO_CLASS_HANDLE getArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType getHFAType(CORINFO_CLASS_HANDLE hClass);
-    JITINTERFACE_HRESULT GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers);
-    uint32_t GetErrorMessage(char16_t * buffer, uint32_t bufferLength);
-    [ManualNativeWrapper] int FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void ThrowExceptionForJitResult(JITINTERFACE_HRESULT result);
-    void ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper);
     [ManualNativeWrapper] bool runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
