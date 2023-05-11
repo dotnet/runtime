@@ -645,10 +645,7 @@ namespace System.Runtime.Loader
 
         private static Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
-            if (string.IsNullOrEmpty(requestedSimpleName))
-            {
-                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(requestedSimpleName, "AssemblyName.Name");
 
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;

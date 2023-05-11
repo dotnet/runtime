@@ -66,10 +66,6 @@ inline var_types genActualType(T value);
 #include "simd.h"
 #include "simdashwintrinsic.h"
 
-// This is only used locally in the JIT to indicate that
-// a verification block should be inserted
-#define SEH_VERIFICATION_EXCEPTION 0xe0564552 // VER
-
 /*****************************************************************************
  *                  Forward declarations
  */
@@ -626,21 +622,8 @@ public:
 
 #ifdef FEATURE_SIMD
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-    unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
+#endif                                       // FEATURE_SIMD
 
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)lvSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        assert(simdBaseJitType < (1 << 5));
-        lvSimdBaseJitType = (unsigned char)simdBaseJitType;
-    }
-
-    var_types GetSimdBaseType() const;
-#endif                             // FEATURE_SIMD
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
     unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
@@ -953,11 +936,6 @@ public:
         return lvUsedInSIMDIntrinsic;
     }
 #else
-    // If feature_simd not enabled, return false
-    bool lvIsSIMDType() const
-    {
-        return false;
-    }
     bool lvIsUsedInSIMDIntrinsic() const
     {
         return false;
@@ -1111,7 +1089,6 @@ public:
     bool lvNormalizeOnLoad() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -1119,7 +1096,6 @@ public:
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
-               // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
                // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
                !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
@@ -2524,8 +2500,6 @@ public:
 
     GenTreeLclFld* gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data);
 
-    GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile = false);
-
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
 
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
@@ -2759,6 +2733,16 @@ public:
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdTernaryLogicNode(var_types   type,
+                                       GenTree*    op1,
+                                       GenTree*    op2,
+                                       GenTree*    op3,
+                                       GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+#endif // TARGET_XARCH
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
@@ -3032,6 +3016,8 @@ public:
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
+
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -3945,7 +3931,7 @@ protected:
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
                           unsigned                methodFlags,
-                          int                     memberRef,
+                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
@@ -3967,7 +3953,8 @@ protected:
     GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
-                                    CORINFO_SIG_INFO*     sig);
+                                    CORINFO_SIG_INFO*     sig,
+        CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
@@ -4050,7 +4037,7 @@ public:
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
     void impAssignTempGen(unsigned         lclNum,
                           GenTree*         val,
-                          unsigned         curLevel   = CHECK_SPILL_NONE,
+                          unsigned         curLevel,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -5568,7 +5555,6 @@ public:
     inline void fgConvertBBToThrowBB(BasicBlock* block);
 
     bool fgCastNeeded(GenTree* tree, var_types toType);
-    GenTree* fgDoNormalizeOnStore(GenTree* tree);
 
     // The following check for loops that don't execute calls
     bool fgLoopCallMarked;
@@ -5913,12 +5899,12 @@ private:
     void fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg);
     void fgMarkGlobalUses(Statement* stmt);
 
-    GenTree* fgMorphLocal(GenTreeLclVarCommon* lclNode);
+    GenTree* fgMorphLeafLocal(GenTreeLclVarCommon* lclNode);
 #ifdef TARGET_X86
     GenTree* fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode);
 #endif // TARGET_X86
     GenTree* fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode);
-    GenTree* fgMorphLocalVar(GenTree* tree);
+    GenTree* fgMorphExpandLocal(GenTreeLclVarCommon* lclNode);
 
 public:
     bool fgAddrCouldBeNull(GenTree* addr);
@@ -5985,7 +5971,7 @@ public:
 private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
-    GenTree* fgOptimizeIndir(GenTreeIndir* indir);
+    GenTree* fgMorphFinalizeIndir(GenTreeIndir* indir);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnStore(GenTree* store);
     GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
@@ -7642,19 +7628,20 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
-    GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
+    GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
+    GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_ConditionalOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
+    bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
@@ -8656,29 +8643,6 @@ private:
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
     GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
 
-    // Get the type for the hardware SIMD vector.
-    // This is the maximum SIMD type supported for this target.
-    var_types getSIMDVectorType()
-    {
-#if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            // TODO-XArch-AVX512 : Return TYP_SIMD64 once Vector<T> supports AVX512.
-            return TYP_SIMD32;
-        }
-        else
-        {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
-            return TYP_SIMD16;
-        }
-#elif defined(TARGET_ARM64)
-        return TYP_SIMD16;
-#else
-        assert(!"getSIMDVectorType() unimplemented on target arch");
-        unreached();
-#endif
-    }
-
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
     {
@@ -8701,14 +8665,13 @@ private:
     unsigned getSIMDVectorRegisterByteLength()
     {
 #if defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        if (compExactlyDependsOn(InstructionSet_AVX2))
         {
             // TODO-XArch-AVX512 : Return ZMM_REGSIZE_BYTES once Vector<T> supports AVX512.
             return YMM_REGSIZE_BYTES;
         }
         else
         {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8739,13 +8702,11 @@ private:
             }
             else
             {
-                compVerifyInstructionSetUnusable(InstructionSet_AVX512F);
                 return YMM_REGSIZE_BYTES;
             }
         }
         else
         {
-            compVerifyInstructionSetUnusable(InstructionSet_AVX);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -8969,44 +8930,12 @@ public:
         return threshold;
     }
 
-    //------------------------------------------------------------------------
-    // largestEnregisterableStruct: The size in bytes of the largest struct that can be enregistered.
-    //
-    // Notes: It is not guaranteed that the struct of this size or smaller WILL be a
-    //        candidate for enregistration.
-
-    unsigned largestEnregisterableStructSize()
-    {
-#ifdef FEATURE_SIMD
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (opts.IsReadyToRun())
-        {
-            // Return constant instead of maxSIMDStructBytes, as maxSIMDStructBytes performs
-            // checks that are effected by the current level of instruction set support would
-            // otherwise cause the highest level of instruction set support to be reported to crossgen2.
-            // and this api is only ever used as an optimization or assert, so no reporting should
-            // ever happen.
-            return ZMM_REGSIZE_BYTES;
-        }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned vectorRegSize = maxSIMDStructBytes();
-        assert(vectorRegSize >= TARGET_POINTER_SIZE);
-        return vectorRegSize;
-#else  // !FEATURE_SIMD
-        return TARGET_POINTER_SIZE;
-#endif // !FEATURE_SIMD
-    }
-
     // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
     // structs will fit the criteria.
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        // Do not use maxSIMDStructBytes as that api in R2R on X86 and X64 may notify the JIT
-        // about the size of a struct under the assumption that the struct size needs to be recorded.
-        // By using largestEnregisterableStructSize here, the detail of whether or not Vector256<T> is
-        // enregistered or not will not be messaged to the R2R compiler.
-        return (structSize >= minSIMDStructBytes()) && (structSize <= largestEnregisterableStructSize());
+        return (structSize >= minSIMDStructBytes()) && (structSize <= maxSIMDStructBytes());
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9103,17 +9032,6 @@ private:
 #else
         return false;
 #endif
-    }
-
-    // Ensure that code will not execute if an instruction set is usable. Call only
-    // if the instruction set has previously reported as unusable, but the status
-    // has not yet been recorded to the AOT compiler.
-    void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa) const
-    {
-        // use compExactlyDependsOn to capture are record the use of the ISA.
-        bool isaUsable = compExactlyDependsOn(isa);
-        // Assert that the is unusable. If true, this function should never be called.
-        assert(!isaUsable);
     }
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
@@ -9343,8 +9261,6 @@ public:
 
         codeOptimize compCodeOpt; // what type of code optimizations
 
-        bool compUseCMOV;
-
 // optimize maximally and/or favor speed over size?
 
 #define DEFAULT_MIN_OPTS_CODE_SIZE 60000
@@ -9471,9 +9387,16 @@ public:
             return jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
         }
 
-        bool IsInstrumentedOptimized() const
+        bool IsInstrumentedAndOptimized() const
         {
-            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+            return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+        }
+
+        bool CanBeInstrumentedOrIsOptimized() const
+        {
+            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
+                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
@@ -9762,7 +9685,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
@@ -9818,7 +9740,8 @@ public:
 // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNames[STRESS_COUNT + 1];
+    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
+    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
     BYTE                 compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
@@ -9826,6 +9749,7 @@ public:
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
     bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
+    static unsigned compStressAreaHash(compStressArea area);
 
 #ifdef DEBUG
 
@@ -9983,22 +9907,6 @@ public:
         IL_OFFSET*                   compStmtOffsets; // sorted
         unsigned                     compStmtOffsetsCount;
         ICorDebugInfo::BoundaryTypes compStmtOffsetsImplicit;
-
-#define CPU_X86 0x0100 // The generic X86 CPU
-#define CPU_X86_PENTIUM_4 0x0110
-
-#define CPU_X64 0x0200       // The generic x64 CPU
-#define CPU_AMD_X64 0x0210   // AMD x64 CPU
-#define CPU_INTEL_X64 0x0240 // Intel x64 CPU
-
-#define CPU_ARM 0x0300   // The generic ARM CPU
-#define CPU_ARM64 0x0400 // The generic ARM64 CPU
-
-#define CPU_LOONGARCH64 0x0800 // The generic LOONGARCH64 CPU
-
-#define CPU_RISCV64 0x1000 // The generic RISCV64 CPU
-
-        unsigned genCPU; // What CPU are we running on
 
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
@@ -10363,7 +10271,6 @@ public:
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
-    bool compIsForImportOnly();
     bool compIsForInlining() const;
     bool compDonotInline();
 
@@ -10557,10 +10464,6 @@ public:
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     bool verIsByRefLike(const typeInfo& ti);
 
-    void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                                       DEBUGARG(unsigned line));
-    void verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* reason) DEBUGARG(const char* file)
-                                             DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);

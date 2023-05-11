@@ -1332,53 +1332,6 @@ CorInfoHFAElemType interceptor_ICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
 }
 
 /*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-// Returns the HRESULT of the current exception
-HRESULT interceptor_ICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mc->cr->AddCall("GetErrorHRESULT");
-    return original_ICorJitInfo->GetErrorHRESULT(pExceptionPointers);
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t interceptor_ICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t *buffer, uint32_t bufferLength)
-{
-    mc->cr->AddCall("GetErrorMessage");
-    return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
-}
-
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-int interceptor_ICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    mc->cr->AddCall("FilterException");
-    int temp = original_ICorJitInfo->FilterException(pExceptionPointers);
-    mc->recFilterException(pExceptionPointers, temp);
-    return temp;
-}
-
-void interceptor_ICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    mc->cr->AddCall("ThrowExceptionForJitResult");
-    original_ICorJitInfo->ThrowExceptionForJitResult(result);
-}
-
-// Throws an exception defined by the given throw helper.
-void interceptor_ICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    mc->cr->AddCall("ThrowExceptionForHelper");
-    original_ICorJitInfo->ThrowExceptionForHelper(throwHelper);
-}
-
-/*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
  * constant from invocation to invocation.  Thus they may be embedded in
  * persisted information like statically generated code. (This is of course

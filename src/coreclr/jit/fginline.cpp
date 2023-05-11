@@ -384,7 +384,7 @@ private:
         }
 
         GenTree* dst = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* asg = m_compiler->gtNewBlkOpNode(dst, src);
+        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
 
         // If inlinee was comma, new inlinee is (, , , lcl = inlinee).
         if (inlinee->OperIs(GT_COMMA))
@@ -1128,8 +1128,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
-
-                compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 
 #ifdef DEBUG
                 if (pParam->pThis->verbose)
