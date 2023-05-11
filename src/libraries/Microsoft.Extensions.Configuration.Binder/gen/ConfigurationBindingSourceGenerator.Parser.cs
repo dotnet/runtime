@@ -328,8 +328,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 TypeSpec? spec = GetOrCreateTypeSpec(type, location);
                 if (spec != null)
                 {
-                    GetRootConfigTypeCache(method).Add(spec);
-                    GetRootConfigTypeCache(methodGroup).Add(spec);
+                    AddToRootConfigTypeCache(method, spec);
+                    AddToRootConfigTypeCache(methodGroup, spec);
 
                     _methodsToGen |= method;
                 }
@@ -404,20 +404,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (spec is not null)
                     {
-                        GetRootConfigTypeCache(MethodSpecifier.BindCore).Add(spec);
+                        AddToRootConfigTypeCache(MethodSpecifier.BindCore, spec);
                         _methodsToGen |= MethodSpecifier.BindCore;
                     }
                 }
             }
 
-            private HashSet<TypeSpec> GetRootConfigTypeCache(MethodSpecifier method)
+            private void AddToRootConfigTypeCache(MethodSpecifier method, TypeSpec spec)
             {
+                Debug.Assert(spec is not null);
+
                 if (!_rootConfigTypes.TryGetValue(method, out HashSet<TypeSpec> types))
                 {
                     _rootConfigTypes[method] = types = new HashSet<TypeSpec>();
                 }
 
-                return types;
+                types.Add(spec);
             }
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
@@ -542,7 +544,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 spec = GetOrCreateTypeSpec(type);
 
-                if (spec == null)
+                if (spec is null)
                 {
                     ReportUnsupportedType(type, descriptor);
                     return false;
@@ -551,7 +553,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
 
-            private ArraySpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
+            private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
             {
                 if (!TryGetTypeSpec(arrayType.ElementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
@@ -559,15 +561,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 // We want a BindCore method for List<TElement> as a temp holder for the array values.
-                EnumerableSpec? listSpec = ConstructAndCacheGenericTypeForBindCore(_typeSymbols.List, arrayType.ElementType) as EnumerableSpec;
+                EnumerableSpec? listSpec = ConstructGenericTypeSpec(_typeSymbols.List_Unconstructed, arrayType.ElementType) as EnumerableSpec;
                 // We know the element type is supported.
                 Debug.Assert(listSpec != null);
+                if (listSpec is not null)
+                {
+                    AddToRootConfigTypeCache(MethodSpecifier.BindCore, listSpec);
+                }
 
-                return new ArraySpec(arrayType)
+                return new EnumerableSpec(arrayType)
                 {
                     Location = location,
                     ElementType = elementSpec,
                     ConcreteType = listSpec,
+                    PopulationStrategy = CollectionPopulationStrategy.Array,
                 };
             }
 
@@ -593,12 +600,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     return CreateDictionarySpec(type, location, keyType, elementType);
                 }
-                else if (IsCandidateEnumerable(type, out elementType))
-                {
-                    return CreateEnumerableSpec(type, location, elementType);
-                }
 
-                return null;
+                return CreateEnumerableSpec(type, location);
             }
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, Location? location, ITypeSymbol keyType, ITypeSymbol elementType)
@@ -615,54 +618,132 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return null;
                 }
 
-                DictionarySpec? concreteType = null;
-                if (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary) || IsInterfaceMatch(type, _typeSymbols.IDictionary))
+                ConstructionStrategy constructionStrategy;
+                CollectionPopulationStrategy populationStrategy;
+                INamedTypeSymbol? concreteType = null;
+                INamedTypeSymbol? populationCastType = null;
+
+                if (HasPublicParameterlessCtor(type))
                 {
-                    // We know the key and element types are supported.
-                    concreteType = ConstructAndCacheGenericTypeForBindCore(_typeSymbols.Dictionary, keyType, elementType) as DictionarySpec;
-                    Debug.Assert(concreteType != null);
+                    constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
+
+                    if (HasAddMethod(type, keyType, elementType))
+                    {
+                        populationStrategy = CollectionPopulationStrategy.Add;
+                    }
+                    else if (GetInterface(type, _typeSymbols.GenericIDictionary) is not null)
+                    {
+                        populationCastType = _typeSymbols.GenericIDictionary_Unconstructed;
+                        populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                    }
+                    else
+                    {
+                        ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                        return null;
+                    }
                 }
-                else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType, keyType))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary) || IsInterfaceMatch(type, _typeSymbols.IDictionary))
+                {
+                    concreteType = _typeSymbols.Dictionary_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyDictionary))
+                {
+                    concreteType = _typeSymbols.Dictionary_Unconstructed;
+                    populationCastType = _typeSymbols.GenericIDictionary_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                }
+                else
                 {
                     ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
                     return null;
                 }
 
-                return new DictionarySpec(type)
+                DictionarySpec spec = new(type)
                 {
                     Location = location,
                     KeyType = (ParsableFromStringTypeSpec)keySpec,
                     ElementType = elementSpec,
-                    ConstructionStrategy = ConstructionStrategy.ParameterlessConstructor,
-                    ConcreteType = concreteType
+                    ConstructionStrategy = constructionStrategy,
+                    PopulationStrategy = populationStrategy,
                 };
-            }
 
-            private TypeSpec? ConstructAndCacheGenericTypeForBindCore(INamedTypeSymbol type, params ITypeSymbol[] parameters)
-            {
-                Debug.Assert(type.IsGenericType);
-                TypeSpec spec = GetOrCreateTypeSpec(type.Construct(parameters));
-                GetRootConfigTypeCache(MethodSpecifier.BindCore).Add(spec);
+                Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
+                spec.ConcreteType = ConstructGenericCollectionTypeSpec(concreteType, keyType, elementType);
+                spec.PopulationCastType = ConstructGenericCollectionTypeSpec(populationCastType, keyType, elementType);
+
                 return spec;
             }
 
-            private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location, ITypeSymbol elementType)
+            private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location)
             {
-                if (!TryGetTypeSpec(elementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetElementType(type, out ITypeSymbol? elementType) ||
+                    !TryGetTypeSpec(elementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
-                EnumerableSpec? concreteType = null;
-                if (IsInterfaceMatch(type, _typeSymbols.ISet))
+
+                ConstructionStrategy constructionStrategy;
+                CollectionPopulationStrategy populationStrategy;
+                INamedTypeSymbol? concreteType = null;
+                INamedTypeSymbol? populationCastType = null;
+
+                if (HasPublicParameterlessCtor(type))
                 {
-                    concreteType = ConstructAndCacheGenericTypeForBindCore(_typeSymbols.HashSet, elementType) as EnumerableSpec;
+                    constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
+
+                    if (HasAddMethod(type, elementType))
+                    {
+                        populationStrategy = CollectionPopulationStrategy.Add;
+                    }
+                    else if (GetInterface(type, _typeSymbols.GenericICollection) is not null)
+                    {
+                        populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                        populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                    }
+                    else
+                    {
+                        ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                        return null;
+                    }
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.ICollection) ||
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericICollection) ||
                     IsInterfaceMatch(type, _typeSymbols.GenericIList))
                 {
-                    concreteType = ConstructAndCacheGenericTypeForBindCore(_typeSymbols.List, elementType) as EnumerableSpec;
+                    concreteType = _typeSymbols.List_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
                 }
-                else if (!CanConstructObject(type, location) || !HasAddMethod(type, elementType))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericIEnumerable))
+                {
+                    concreteType = _typeSymbols.List_Unconstructed;
+                    populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.ISet))
+                {
+                    concreteType = _typeSymbols.HashSet_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Add;
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlySet))
+                {
+                    concreteType = _typeSymbols.HashSet_Unconstructed;
+                    populationCastType = _typeSymbols.ISet_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                }
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection))
+                {
+                    concreteType = _typeSymbols.List_Unconstructed;
+                    populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                    constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
+                    populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                }
+                else
                 {
                     ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
                     return null;
@@ -670,13 +751,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 RegisterHasChildrenHelperForGenIfRequired(elementSpec);
 
-                return new EnumerableSpec(type)
+                EnumerableSpec spec = new(type)
                 {
                     Location = location,
                     ElementType = elementSpec,
-                    ConstructionStrategy = ConstructionStrategy.ParameterlessConstructor,
-                    ConcreteType = concreteType
+                    ConstructionStrategy = constructionStrategy,
+                    PopulationStrategy = populationStrategy,
                 };
+
+                Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
+                spec.ConcreteType = ConstructGenericCollectionTypeSpec(concreteType, elementType);
+                spec.PopulationCastType = ConstructGenericCollectionTypeSpec(populationCastType, elementType);
+
+                return spec;
             }
 
             private ObjectSpec? CreateObjectSpec(INamedTypeSymbol type, Location? location)
@@ -684,9 +771,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Debug.Assert(!_createdSpecs.ContainsKey(type));
 
                 // Add spec to cache before traversing properties to avoid stack overflow.
-
-                if (!CanConstructObject(type, location))
+                if (!HasPublicParameterlessCtor(type))
                 {
+                    ReportUnsupportedType(type, Helpers.NeedPublicParameterlessConstructor, location);
                     _createdSpecs.Add(type, null);
                     return null;
                 }
@@ -702,8 +789,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             if (property.Type is ITypeSymbol { } propertyType)
                             {
-                                TypeSpec? propertyTypeSpec = GetOrCreateTypeSpec(propertyType);
+                                AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => Helpers.TypesAreEqual(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                                 string propertyName = property.Name;
+                                string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
+
+                                TypeSpec? propertyTypeSpec = GetOrCreateTypeSpec(propertyType);
+                                PropertySpec spec;
 
                                 if (propertyTypeSpec is null)
                                 {
@@ -711,17 +802,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 }
                                 else
                                 {
-                                    AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => Helpers.TypesAreEqual(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
-                                    string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-
-                                    PropertySpec spec = new PropertySpec(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
-                                    if (spec.CanGet || spec.CanSet)
-                                    {
-                                        objectSpec.Properties[configKeyName] = (spec);
-                                    }
-
                                     RegisterHasChildrenHelperForGenIfRequired(propertyTypeSpec);
                                 }
+
+
+                                spec = new PropertySpec(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
+                                objectSpec.Properties[configKeyName] = spec;
                             }
                         }
                     }
@@ -742,13 +828,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private bool IsCandidateEnumerable(INamedTypeSymbol type, out ITypeSymbol? elementType)
+            private bool TryGetElementType(INamedTypeSymbol type, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? @interface = GetInterface(type, _typeSymbols.ICollection);
+                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIEnumerable);
 
-                if (@interface is not null)
+                if (candidate is not null)
                 {
-                    elementType = @interface.TypeArguments[0];
+                    elementType = candidate.TypeArguments[0];
                     return true;
                 }
 
@@ -758,11 +844,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsCandidateDictionary(INamedTypeSymbol type, out ITypeSymbol? keyType, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? @interface = GetInterface(type, _typeSymbols.GenericIDictionary);
-                if (@interface is not null)
+                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIDictionary) ?? GetInterface(type, _typeSymbols.IReadOnlyDictionary);
+
+                if (candidate is not null)
                 {
-                    keyType = @interface.TypeArguments[0];
-                    elementType = @interface.TypeArguments[1];
+                    keyType = candidate.TypeArguments[0];
+                    elementType = candidate.TypeArguments[1];
                     return true;
                 }
 
@@ -828,24 +915,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private bool CanConstructObject(INamedTypeSymbol type, Location? location)
+            private static bool HasPublicParameterlessCtor(INamedTypeSymbol type)
             {
                 if (type.IsAbstract || type.TypeKind == TypeKind.Interface)
                 {
-                    ReportUnsupportedType(type, Helpers.AbstractOrInterfaceNotSupported, location);
-                    return false;
-                }
-                else if (!HasPublicParameterlessCtor(type))
-                {
-                    ReportUnsupportedType(type, Helpers.NeedPublicParameterlessConstructor, location);
                     return false;
                 }
 
-                return true;
-            }
-
-            private static bool HasPublicParameterlessCtor(ITypeSymbol type)
-            {
                 if (type is not INamedTypeSymbol namedType)
                 {
                     return false;
@@ -878,7 +954,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private static bool HasAddMethod(INamedTypeSymbol type, ITypeSymbol element, ITypeSymbol key)
+            private static bool HasAddMethod(INamedTypeSymbol type, ITypeSymbol key, ITypeSymbol element)
             {
                 INamedTypeSymbol current = type;
                 while (current != null)
@@ -896,6 +972,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
+
+            private CollectionSpec? ConstructGenericCollectionTypeSpec(INamedTypeSymbol? collectionType, params ITypeSymbol[] parameters) =>
+                (collectionType is not null ? ConstructGenericTypeSpec(collectionType, parameters) : null) as CollectionSpec;
+
+            private TypeSpec? ConstructGenericTypeSpec(INamedTypeSymbol type, params ITypeSymbol[] parameters)
+            {
+                Debug.Assert(type.IsGenericType);
+                INamedTypeSymbol constructedType = type.Construct(parameters);
+                return GetOrCreateTypeSpec(constructedType);
+            }
 
             private void ReportUnsupportedType(ITypeSymbol type, DiagnosticDescriptor descriptor, Location? location = null)
             {

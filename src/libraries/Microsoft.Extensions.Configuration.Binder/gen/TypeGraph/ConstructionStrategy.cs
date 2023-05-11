@@ -7,5 +7,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         NotApplicable = 0,
         ParameterlessConstructor = 1,
+        ParameterizedConstructor = 2,
     }
 }
