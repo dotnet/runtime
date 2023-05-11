@@ -35,8 +35,7 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
   * **Desktop Development with C++** with all default components.
-* To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
-  * For Arm32, check the box for _MSVC v143* VS 2022 C++ ARM build tools (Latest)_.
+* To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
   * **C++/CLI support for v142 build tools (Latest)**.
