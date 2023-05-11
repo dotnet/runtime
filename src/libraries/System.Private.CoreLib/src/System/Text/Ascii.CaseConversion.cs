@@ -464,41 +464,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void Widen8To16AndAndWriteTo(Vector128<byte> narrowVector, char* pDest, nuint destOffset)
-        {
-            if (Vector256.IsHardwareAccelerated)
-            {
-                Vector256<ushort> wide = Vector256.WidenLower(narrowVector.ToVector256Unsafe());
-                wide.StoreUnsafe(ref *(ushort*)pDest, destOffset);
-            }
-            else
-            {
-                Vector128.WidenLower(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset);
-                Vector128.WidenUpper(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset + 8);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void Narrow16To8AndAndWriteTo(Vector128<ushort> wideVector, byte* pDest, nuint destOffset)
-        {
-            Vector128<byte> narrow = Vector128.Narrow(wideVector, wideVector);
-
-            if (Sse2.IsSupported)
-            {
-                // MOVQ is supported even on x86, unaligned accesses allowed
-                Sse2.StoreScalar((ulong*)(pDest + destOffset), narrow.AsUInt64());
-            }
-            else if (Vector64.IsHardwareAccelerated)
-            {
-                narrow.GetLower().StoreUnsafe(ref *pDest, destOffset);
-            }
-            else
-            {
-                Unsafe.WriteUnaligned<ulong>(pDest + destOffset, narrow.AsUInt64().ToScalar());
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void ChangeWidthAndWriteTo<TFrom, TTo>(Vector128<TFrom> vector, TTo* pDest, nuint elementOffset)
             where TFrom : unmanaged
             where TTo : unmanaged
@@ -546,25 +511,6 @@ namespace System.Text
             else if (sizeof(T) == 2)
             {
                 return Vector128.LessThan(left.AsInt16(), right.AsInt16()).As<short, T>();
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<TTo> NarrowOrWidenLowerVectorUnsigned<TFrom, TTo>(Vector128<TFrom> vector)
-            where TFrom : unmanaged
-            where TTo : unmanaged
-        {
-            if (sizeof(TFrom) == 1 && sizeof(TTo) == 2)
-            {
-                return Vector128.WidenLower(vector.AsByte()).As<ushort, TTo>();
-            }
-            else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
-            {
-                return Vector128.Narrow(vector.AsUInt16(), vector.AsUInt16()).As<byte, TTo>();
             }
             else
             {
