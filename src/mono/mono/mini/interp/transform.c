@@ -1225,6 +1225,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 		ERROR_DECL (error);
+		mono_class_init_internal (method->klass);
 		gpointer addr = mono_aot_get_method (method, error);
 		if (addr && is_ok (error)) {
 			MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
