@@ -73,38 +73,14 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 MonoBundledResource *
 mono_bundled_resources_get (const char *id);
 
-static inline MonoBundledAssemblyResource *
-mono_bundled_resources_get_assembly_resource (const char *id)
-{
-	MonoBundledAssemblyResource *assembly =
-		(MonoBundledAssemblyResource*)mono_bundled_resources_get (id);
-	if (!assembly)
-		return NULL;
-	assert (assembly->resource.type == MONO_BUNDLED_ASSEMBLY);
-	return assembly;
-}
+MonoBundledAssemblyResource *
+mono_bundled_resources_get_assembly_resource (const char *id);
 
-static inline MonoBundledSatelliteAssemblyResource *
-mono_bundled_resources_get_satellite_assembly_resource (const char *id)
-{
-	MonoBundledSatelliteAssemblyResource *satellite_assembly =
-		(MonoBundledSatelliteAssemblyResource*)mono_bundled_resources_get (id);
-	if (!satellite_assembly)
-		return NULL;
-	assert (satellite_assembly->resource.type == MONO_BUNDLED_SATELLITE_ASSEMBLY);
-	return satellite_assembly;
-}
+MonoBundledSatelliteAssemblyResource *
+mono_bundled_resources_get_satellite_assembly_resource (const char *id);
 
-static inline MonoBundledDataResource *
-mono_bundled_resources_get_data_resource (const char *id)
-{
-	MonoBundledDataResource *data =
-		(MonoBundledDataResource*)mono_bundled_resources_get (id);
-	if (!data)
-		return NULL;
-	assert (data->resource.type == MONO_BUNDLED_DATA);
-	return data;
-}
+MonoBundledDataResource *
+mono_bundled_resources_get_data_resource (const char *id);
 
 bool
 mono_bundled_resources_contains_assemblies (void);

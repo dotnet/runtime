@@ -145,6 +145,39 @@ mono_bundled_resources_get (const char *id)
 	return g_hash_table_lookup (bundled_resources, id);
 }
 
+MonoBundledAssemblyResource *
+mono_bundled_resources_get_assembly_resource (const char *id)
+{
+	MonoBundledAssemblyResource *assembly =
+		(MonoBundledAssemblyResource*)mono_bundled_resources_get (id);
+	if (!assembly)
+		return NULL;
+	g_assert (assembly->resource.type == MONO_BUNDLED_ASSEMBLY);
+	return assembly;
+}
+
+MonoBundledSatelliteAssemblyResource *
+mono_bundled_resources_get_satellite_assembly_resource (const char *id)
+{
+	MonoBundledSatelliteAssemblyResource *satellite_assembly =
+		(MonoBundledSatelliteAssemblyResource*)mono_bundled_resources_get (id);
+	if (!satellite_assembly)
+		return NULL;
+	g_assert (satellite_assembly->resource.type == MONO_BUNDLED_SATELLITE_ASSEMBLY);
+	return satellite_assembly;
+}
+
+MonoBundledDataResource *
+mono_bundled_resources_get_data_resource (const char *id)
+{
+	MonoBundledDataResource *data =
+		(MonoBundledDataResource*)mono_bundled_resources_get (id);
+	if (!data)
+		return NULL;
+	g_assert (data->resource.type == MONO_BUNDLED_DATA);
+	return data;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_contains_assemblies returns whether or not assemblies
