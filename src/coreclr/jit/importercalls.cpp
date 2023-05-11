@@ -4092,7 +4092,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             }
 
             // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
-            if (varTypeIsSmall(toType)
+            if (varTypeIsSmall(toType))
             {
                 if (genActualTypeIsInt(valType))
                 {
