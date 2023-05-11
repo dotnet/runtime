@@ -548,7 +548,7 @@ namespace System.Diagnostics
                         _waitInProgress = null;
                     }
                 }
-            }, CancellationToken.None);
+            }, CancellationToken.None); // We should avoid this Task.Run being cancelled and the delegate being skipped
         }
 
         private void ChildReaped(int exitCode, bool configureConsole)
