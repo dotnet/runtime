@@ -179,6 +179,53 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
+        public async Task ComInterfaceMethodHasMemberFunctionCallingConventionByDefault()
+        {
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
+
+            await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
+            });
+        }
+
+        [Fact]
+        public async Task ComInterfacePreserveSigMethodHasMemberFunctionCallingConventionByDefault()
+        {
+            string source = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                partial interface IComInterface
+                {
+                    [PreserveSig]
+                    int Method();
+                }
+                """;
+
+            await VerifyComInterfaceGeneratorAsync(source, "IComInterface", "Method", (newComp, signature) =>
+            {
+                Assert.Equal(SignatureCallingConvention.Unmanaged, signature.CallingConvention);
+                Assert.Equal(newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvMemberFunction"), Assert.Single(signature.UnmanagedCallingConventionTypes), SymbolEqualityComparer.Default);
+            });
+        }
+
+        [Fact]
         public async Task ComInterfaceMethodFunctionPointerReturnsInt()
         {
             string source = $$"""
