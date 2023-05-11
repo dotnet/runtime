@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace HostApiInvokerApp
 {
@@ -271,6 +274,21 @@ namespace HostApiInvokerApp
 
         public static bool RunTest(string apiToTest, string[] args)
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                AssemblyLoadContext.Default.ResolvingUnmanagedDll += (Assembly asm, string libraryName) =>
+                {
+                    string fileName = OperatingSystem.IsMacOS()
+                        ? $"lib{libraryName}.dylib"
+                        : $"lib{libraryName}.so";
+                    string pathMaybe = Path.Combine(AppContext.BaseDirectory, "native", fileName);
+                    if (File.Exists(pathMaybe))
+                        return NativeLibrary.Load(pathMaybe, asm, null);
+
+                    return IntPtr.Zero;
+                };
+            }
+
             switch (apiToTest)
             {
                 case nameof(hostfxr.hostfxr_resolve_sdk2):

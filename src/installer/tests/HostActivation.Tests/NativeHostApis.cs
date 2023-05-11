@@ -492,7 +492,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command command = useAppHost
                 ? Command.Create(fixture.TestProject.AppExe, args).DotNetRoot(RepoDirectoriesProvider.Default.BuiltDotnet)
                 : fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, args);
- 
+
             var result = command
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -537,11 +537,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         "corebreadcrumbs");
                     Directory.CreateDirectory(BreadcrumbLocation);
 
-                    // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
+                    // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it to a
+                    // subdirectory next to the app, which will look in that subdirectory. We don't use
+                    // the app directory itself to avoid confusion around detection of self-contained.
                     var fixture = HostApiInvokerAppFixture;
-                    FileUtils.CopyIntoDirectory(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrFilePath,
-                        Path.GetDirectoryName(fixture.TestProject.AppDll));
+                    var destDir = Path.Combine(fixture.TestProject.BuiltApp.Location, "native");
+                    Directory.CreateDirectory(destDir);
+                    FileUtils.CopyIntoDirectory(fixture.BuiltDotnet.GreatestVersionHostFxrFilePath, destDir);
                 }
             }
 
