@@ -8816,21 +8816,24 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 #endif // DEBUG
 
 // Static fields, methods.
-static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
-                                                       GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                       GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
-                                                       GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
-                                                       // These need special semantics:
-                                                       GT_COMMA, // == second argument (but with exception(s) from first).
-                                                       GT_ARR_ADDR, GT_BOUNDS_CHECK,
-                                                       GT_BLK,      // May reference heap memory.
-                                                       GT_INIT_VAL, // Not strictly a pass-through.
-                                                       GT_MDARR_LENGTH,
-                                                       GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
-                                                       GT_BITCAST,           // Needs to encode the target type.
 
-                                                       // These control-flow operations need no values.
-                                                       GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
+static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
+#include "valuenumfuncs.h"
+
+#ifdef FEATURE_HW_INTRINSICS
+
+#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
+#if defined(TARGET_XARCH)
+#include "hwintrinsiclistxarch.h"
+#elif defined (TARGET_ARM64)
+#include "hwintrinsiclistarm64.h"
+#else
+#error Unsupported platform
+#endif
+
+#endif // FEATURE_HW_INTRINSICS
 
 /* static */ constexpr uint8_t ValueNumStore::GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind)
 {
@@ -8858,24 +8861,6 @@ static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do hea
     return value;
 }
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
-static_assert((arity) >= 0 || !(extra), "valuenumfuncs.h has EncodesExtraTypeArg==true and arity<0 for " #vnf);
-#include "valuenumfuncs.h"
-
-#ifdef FEATURE_HW_INTRINSICS
-
-#define HARDWARE_INTRINSIC(isa, name, size, argCount, extra, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
-static_assert((size) != 0 || !(extra), "hwintrinsicslist<arch>.h has EncodesExtraTypeArg==true and size==0 for " #isa " " #name);
-#if defined(TARGET_XARCH)
-#include "hwintrinsiclistxarch.h"
-#elif defined (TARGET_ARM64)
-#include "hwintrinsiclistarm64.h"
-#else
-#error Unsupported platform
-#endif
-
-#endif // FEATURE_HW_INTRINSICS
-
 const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
 {
 #define GTNODE(en, st, cm, ivn, ok)        \
@@ -8897,8 +8882,25 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
 #include "valuenumfuncs.h"
 };
 
+static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
+                                                 GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
+                                                 GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
+                                                 // These need special semantics:
+                                                 GT_COMMA, // == second argument (but with exception(s) from first).
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
+                                                 GT_BLK,      // May reference heap memory.
+                                                 GT_INIT_VAL, // Not strictly a pass-through.
+                                                 GT_MDARR_LENGTH,
+                                                 GT_MDARR_LOWER_BOUND, // 'dim' value must be considered
+                                                 GT_BITCAST,           // Needs to encode the target type.
+
+                                                 // These control-flow operations need no values.
+                                                 GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
+
 void ValueNumStore::InitValueNumStoreStatics()
 {
+#if DEBUG
     uint8_t arr[VNF_COUNT] = {};
     for (unsigned i = 0; i < GT_COUNT; i++)
     {
@@ -8987,6 +8989,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     {
         assert(arr[i] == s_vnfOpAttribs[i]);
     }
+#endif // DEBUG
 }
 
 #ifdef DEBUG

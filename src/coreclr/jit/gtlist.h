@@ -12,7 +12,7 @@
 //                       , GenTree struct flavor
 //                                           ,commutative
 //                                             ,illegal as VN func
-  //                                             ,oper kind | DEBUG oper kind
+//                                               ,oper kind | DEBUG oper kind
 
 GTNODE(NONE             , char               ,0,0,GTK_SPECIAL)
 

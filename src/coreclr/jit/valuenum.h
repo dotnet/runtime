@@ -288,6 +288,13 @@ private:
     static const unsigned VNFOA_KnownNonNullShift     = 5;
     static const unsigned VNFOA_SharedStaticShift     = 6;
 
+    static_assert(unsigned(VNFOA_IllegalGenTreeOp) == (1 << VNFOA_IllegalGenTreeOpShift));
+    static_assert(unsigned(VNFOA_Commutative) == (1 << VNFOA_CommutativeShift));
+    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+    static_assert(unsigned(VNFOA_KnownNonNull) == (1 << VNFOA_KnownNonNullShift));
+    static_assert(unsigned(VNFOA_SharedStatic) == (1 << VNFOA_SharedStaticShift));
+
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib
     {
@@ -297,8 +304,10 @@ private:
         VCA_ReservedBits = 0x01, // i.e. (VCA_UnsignedSrc)
     };
 
-    // An array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
-    //static const UINT8* s_vnfOpAttribs;
+    // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
+    static constexpr uint8_t GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind);
+    static constexpr uint8_t GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    static const uint8_t s_vnfOpAttribs[];
 
     // Returns "true" iff gtOper is a legal value number function.
     // (Requires InitValueNumStoreStatics to have been run.)
@@ -363,10 +372,6 @@ public:
 #endif // FEATURE_SIMD
 
 private:
-    static constexpr uint8_t GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind);
-    static constexpr uint8_t GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
-    static const uint8_t s_vnfOpAttribs[];
-
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -395,9 +400,6 @@ private:
     GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
-    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-
     // Initializes any static variables of ValueNumStore.
     static void InitValueNumStoreStatics();
 
