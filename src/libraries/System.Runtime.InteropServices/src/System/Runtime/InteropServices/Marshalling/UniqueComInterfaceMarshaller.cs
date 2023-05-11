@@ -27,11 +27,12 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 return null;
             }
-            if (ComWrappers.TryGetComInstance(managed, out nint unknown))
+            nint unknown;
+            if (!ComWrappers.TryGetComInstance(managed, out unknown))
             {
-                return (void*)unknown;
+                unknown = StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
             }
-            return (void*)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
+            return ComInterfaceMarshaller<T>.CastIUnknownToInterfaceType(unknown);
         }
 
         public static T? ConvertToManaged(void* unmanaged)

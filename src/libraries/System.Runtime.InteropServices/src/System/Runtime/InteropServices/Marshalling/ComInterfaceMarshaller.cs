@@ -26,11 +26,12 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 return null;
             }
-            if (ComWrappers.TryGetComInstance(managed, out nint unknown))
+            nint unknown;
+            if (!ComWrappers.TryGetComInstance(managed, out unknown))
             {
-                return (void*)unknown;
+                unknown = StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
             }
-            return (void*)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
+            return CastIUnknownToInterfaceType(unknown);
         }
 
         public static T? ConvertToManaged(void* unmanaged)
@@ -40,6 +41,30 @@ namespace System.Runtime.InteropServices.Marshalling
                 return default;
             }
             return (T)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance((nint)unmanaged, CreateObjectFlags.Unwrap);
+        }
+
+        private static readonly Guid? TargetInterfaceIID;
+
+        static ComInterfaceMarshaller()
+        {
+            if (StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(T).TypeHandle) is { } interfaceDetails)
+            {
+                TargetInterfaceIID = interfaceDetails.Iid;
+            }
+        }
+
+        internal static void* CastIUnknownToInterfaceType(nint unknown)
+        {
+            if (TargetInterfaceIID is null)
+            {
+                return unknown;
+            }
+            if (Marshal.QueryInterface(unknown, ref TargetInterfaceIID, out nint interfacePointer) != 0)
+            {
+                throw new InvalidCastException($"Unable to cast the provided managed object to a COM interface with ID '{iid:B}'");
+            }
+            Marshal.Release(unknown);
+            return (void*)interfacePointer;
         }
     }
 }
