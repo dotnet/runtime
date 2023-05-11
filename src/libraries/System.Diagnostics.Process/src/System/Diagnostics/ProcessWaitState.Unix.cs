@@ -505,7 +505,7 @@ namespace System.Diagnostics
             Debug.Assert(_waitInProgress == null);
             Debug.Assert(!_isChild);
 
-            return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
+            Task task = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
             {
                 // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
                 // to handle quickly completing processes, but fall back to longer polling to minimize
@@ -548,7 +548,14 @@ namespace System.Diagnostics
                         _waitInProgress = null;
                     }
                 }
-            }, CancellationToken.None); // We should avoid this Task.Run being cancelled and the delegate being skipped
+            }, cancellationToken);
+
+            if (task.IsCanceled) // Task.Run is canceled and the delegate is skipped
+            {
+                // Translate the result to be a completed task so we can safely Wait() it later
+                return Task.CompletedTask;
+            }
+            return _waitInProgress = task;
         }
 
         private void ChildReaped(int exitCode, bool configureConsole)
