@@ -550,11 +550,10 @@ namespace System.Buffers
         {
             // Avoid globalization stack, as it might in turn be using ArrayPool.
 
-            Span<char> value = stackalloc char[32]; // max integer length is 10; allow some extra spaces
-            uint length = Interop.Kernel32.GetEnvironmentVariable(variable, ref MemoryMarshal.GetReference(value), (uint)value.Length);
-            if (length > 0 && length <= (uint)value.Length)
+            if (Environment.GetEnvironmentVariableCore_NoArrayPool(variable) is string envVar &&
+                envVar.Length is > 0 and <= 32) // arbitrary limit that allows for some spaces around the maximum length of a non-negative Int32 (10 digits)
             {
-                value = value.Slice(0, (int)length).Trim(' ');
+                ReadOnlySpan<char> value = envVar.AsSpan().Trim(' ');
                 if (!value.IsEmpty && value.Length <= 10)
                 {
                     long tempResult = 0;

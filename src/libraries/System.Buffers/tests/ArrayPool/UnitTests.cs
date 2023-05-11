@@ -608,14 +608,39 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("", "")]
-        [InlineData("0", "0")]
-        [InlineData("1", "2")]
-        [InlineData("2", "1")]
-        [InlineData("4", "123")]
-        [InlineData("1000", "123")]
-        [InlineData("   1    ", "   2   ")]
-        public void SharedPool_SetEnvironmentVariables_ValuesRespected(string partitionCount, string maxArraysPerPartition)
+        [InlineData("", "", "2147483647", "8")]
+        [InlineData("0", "0", "2147483647", "8")]
+        [InlineData("1", "2", "1", "2")]
+        [InlineData("2", "1", "2", "1")]
+        [InlineData("4", "123", "4", "123")]
+        [InlineData("1000", "123", "1000", "123")]
+        [InlineData("   1    ", "   2   ", "1", "2")]
+        [InlineData(
+            "                                                                                         1 ",
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "2" + 
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     " +
+            "                                                                                                                     ",
+            "2147483647", "8")]
+        public void SharedPool_SetEnvironmentVariables_ValuesRespected(
+            string partitionCount, string maxArraysPerPartition, string expectedPartitionCount, string expectedMaxArraysPerPartition)
         {
             // This test relies on private reflection into the shared pool implementation.
             // If those details change, this test will need to be updated accordingly.
@@ -624,16 +649,16 @@ namespace System.Buffers.ArrayPool.Tests
             psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", partitionCount);
             psi.Environment.Add("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", maxArraysPerPartition);
 
-            RemoteExecutor.Invoke((partitionCount, maxArraysPerPartition) =>
+            RemoteExecutor.Invoke((partitionCount, maxArraysPerPartition, expectedPartitionCount, expectedMaxArraysPerPartition) =>
             {
                 Type partitionsType = ArrayPool<byte>.Shared.GetType().GetNestedType("Partitions", BindingFlags.NonPublic)?.MakeGenericType(typeof(byte));
                 Assert.NotNull(partitionsType);
                 FieldInfo partitionCountField = partitionsType.GetField("s_partitionCount", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(partitionCountField);
                 int partitionCountValue = (int)partitionCountField.GetValue(null);
-                if (int.TryParse(partitionCount.Trim(' '), CultureInfo.InvariantCulture, out int expectedPartitionCount) && expectedPartitionCount > 0)
+                if (int.Parse(expectedPartitionCount) > 0)
                 {
-                    Assert.Equal(Math.Min(expectedPartitionCount, Environment.ProcessorCount), partitionCountValue);
+                    Assert.Equal(Math.Min(int.Parse(expectedPartitionCount), Environment.ProcessorCount), partitionCountValue);
                 }
                 else
                 {
@@ -645,9 +670,9 @@ namespace System.Buffers.ArrayPool.Tests
                 FieldInfo maxArraysPerPartitionField = partitionType.GetField("s_maxArraysPerPartition", BindingFlags.NonPublic | BindingFlags.Static);
                 Assert.NotNull(maxArraysPerPartitionField);
                 int maxArraysPerPartitionValue = (int)maxArraysPerPartitionField.GetValue(null);
-                if (int.TryParse(maxArraysPerPartition.Trim(' '), CultureInfo.InvariantCulture, out int expectedMaxArraysPerPartition) && expectedMaxArraysPerPartition > 0)
+                if (int.Parse(expectedMaxArraysPerPartition) > 0)
                 {
-                    Assert.Equal(expectedMaxArraysPerPartition, maxArraysPerPartitionValue);
+                    Assert.Equal(int.Parse(expectedMaxArraysPerPartition), maxArraysPerPartitionValue);
                 }
                 else
                 {
@@ -663,7 +688,7 @@ namespace System.Buffers.ArrayPool.Tests
                     ArrayPool<byte>.Shared.Return(array);
                 }
 
-            }, partitionCount, maxArraysPerPartition, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
+            }, partitionCount, maxArraysPerPartition, expectedPartitionCount, expectedMaxArraysPerPartition, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
     }
 }
