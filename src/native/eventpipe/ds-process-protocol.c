@@ -819,7 +819,7 @@ process_protocol_helper_enable_perfmap (
 	}
 
 	ds_ipc_result_t ipc_result;
-	ipc_result = ds_rt_enable_perfmap (payload->value);
+	ipc_result = ds_rt_enable_perfmap (payload->perfMapType);
 	if (ipc_result != DS_IPC_S_OK) {
 		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
