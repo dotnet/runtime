@@ -26,6 +26,7 @@
 
   <PropertyGroup>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <SelfContained Condition="'$(PublishTrimmed)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">

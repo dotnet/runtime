@@ -9,6 +9,7 @@
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
+    <SelfContained>true</SelfContained>
     <RunAnalyzers>false</RunAnalyzers>
 
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
