@@ -167,7 +167,7 @@ enum VNFunc
 {
     // Implicitly, elements of genTreeOps here.
     VNF_Boundary = GT_COUNT,
-#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic) VNF_##nm,
+#define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
 #include "valuenumfuncs.h"
     VNF_COUNT
 };
@@ -363,22 +363,10 @@ public:
 #endif // FEATURE_SIMD
 
 private:
-    // This struct mainly exists to give a place to put the constexpr code for creating
-    // the OpAttribs table. It also gives a scope for the helpers functions used during
-    // initialization.
-    struct VnfOpAttribsType
-    {
-    public:
-        constexpr VnfOpAttribsType();
-        const UINT8& operator[](size_t idx) const { return m_arr[idx]; }
+    static constexpr uint8_t GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind);
+    static constexpr uint8_t GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
+    static const uint8_t s_vnfOpAttribs[];
 
-        static constexpr unsigned GetArity(unsigned oper);
-        static constexpr unsigned GetCommutative(unsigned oper);
-        static constexpr unsigned GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic);
-
-        UINT8 m_arr[VNF_COUNT];
-    } static const s_vnfOpAttribs;
-    static const uint8_t s_vnfOpAttribs2[];
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -407,6 +395,12 @@ private:
     GenTreeFlags GetFoldedArithOpResultHandleFlags(ValueNum vn);
 
 public:
+    static_assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
+    static_assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
+
+    // Initializes any static variables of ValueNumStore.
+    static void InitValueNumStoreStatics();
+
     // Initialize an empty ValueNumStore.
     ValueNumStore(Compiler* comp, CompAllocator allocator);
 

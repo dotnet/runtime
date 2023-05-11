@@ -8832,77 +8832,94 @@ static const genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do hea
                                                        // These control-flow operations need no values.
                                                        GT_JTRUE, GT_RETURN, GT_SWITCH, GT_RETFILT, GT_CKFINITE};
 
-/* static */ constexpr ValueNumStore::VnfOpAttribsType ValueNumStore::s_vnfOpAttribs = ValueNumStore::VnfOpAttribsType();
-
-/* static */ constexpr unsigned ValueNumStore::VnfOpAttribsType::GetArity(unsigned oper)
+/* static */ constexpr uint8_t ValueNumStore::GetGT(unsigned oper, bool commute, bool illegalAsVNFunc, GenTreeOperKind kind)
 {
+    uint8_t value = 0;
     genTreeOps gtOper = static_cast<genTreeOps>(oper);
-    unsigned   arity  = 0;
-    if (GenTree::OperIsUnary(gtOper))
-    {
-        arity = 1;
-    }
-    else if (GenTree::OperIsBinary(gtOper))
-    {
-        arity = 2;
-    }
-    else if (GenTree::StaticOperIs(gtOper, GT_SELECT))
+    uint8_t arity = (kind & GTK_UNOP) >> 1;
+    arity |= (kind & GTK_BINOP) >> 1;
+    if (GenTree::StaticOperIs(gtOper, GT_SELECT))
     {
         arity = 3;
     }
 
-    return (arity << VNFOA_ArityShift) & VNFOA_ArityMask;
-}
-
-/* static */ constexpr unsigned ValueNumStore::VnfOpAttribsType::GetCommutative(unsigned oper)
-{
-    genTreeOps gtOper = static_cast<genTreeOps>(oper);
-    return GenTree::OperIsCommutative(gtOper) ? VNFOA_Commutative : 0;
-}
-
-/* static */ constexpr unsigned ValueNumStore::VnfOpAttribsType::GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
-{
-    unsigned value = 0;
-    value |= static_cast<unsigned>(commute) << VNFOA_CommutativeShift;
-    value |= static_cast<unsigned>(knownNonNull) << VNFOA_KnownNonNullShift;
-    value |= static_cast<unsigned>(sharedStatic) << VNFOA_SharedStaticShift;
-    value |= (((arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
+    value |= (arity << VNFOA_ArityShift) & VNFOA_ArityMask;
+    value |= static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
+    value |= static_cast<uint8_t>(illegalAsVNFunc) << VNFOA_IllegalGenTreeOpShift;
     return value;
 }
 
-const uint8_t ValueNumStore::s_vnfOpAttribs2[VNF_COUNT] =
+/* static */ constexpr uint8_t ValueNumStore::GetFunc(int arity, bool commute, bool knownNonNull, bool sharedStatic)
 {
-#define GTNODE(en, st, cm, ok) static_cast<uint8_t>(VnfOpAttribsType::GetArity(GT_##en) | VnfOpAttribsType::GetCommutative(GT_##en)),
+    uint8_t value = static_cast<uint8_t>(commute) << VNFOA_CommutativeShift;
+    value |= static_cast<uint8_t>(knownNonNull) << VNFOA_KnownNonNullShift;
+    value |= static_cast<uint8_t>(sharedStatic) << VNFOA_SharedStaticShift;
+    value |= ((static_cast<uint8_t>(arity & ~(arity >> 31)) << VNFOA_ArityShift) & VNFOA_ArityMask);
+    return value;
+}
+
+const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] =
+{
+#define GTNODE(en, st, cm, ivn, ok)        \
+    GetGT(               \
+        GT_##en,                           \
+        (cm),                              \
+        (ivn),                             \
+        static_cast<GenTreeOperKind>(ok)),
 #include "gtlist.h"
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic) \
-    static_cast<uint8_t>(VnfOpAttribsType::GetFunc(                     \
-        arity/* + (((VNF_##vnf >= VNF_HWI_FIRST) && (VNF_##vnf < (VNF_HWI_FIRST + (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START))) && Compiler::vnEncodesResultTypeForHWIntrinsic(static_cast<NamedIntrinsic>(VNF_##vnf - VNF_HWI_FIRST + NI_HW_INTRINSIC_START + 1))) ? 1 : 0)*/, \
-        commute/* || ((VNF_##vnf >= VNF_HWI_FIRST) && (VNF_##vnf < (VNF_HWI_FIRST + (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START))) && HWIntrinsicInfo::IsCommutative(static_cast<NamedIntrinsic>(VNF_##vnf - VNF_HWI_FIRST + NI_HW_INTRINSIC_START + 1)))*/, \
-        knownNonNull, \
-        sharedStatic)),
+    0, // VNF_Boundary
+
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)  \
+    GetFunc(                                                   \
+        (arity) + static_cast<int>(extra),                                       \
+        (commute),                                                               \
+        (knownNonNull),                                                          \
+        (sharedStatic)),
 #include "valuenumfuncs.h"
 };
 
-
-constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
+void ValueNumStore::InitValueNumStoreStatics()
 {
-    // Make sure we have the constants right...
-    assert(unsigned(VNFOA_Arity1) == (1 << VNFOA_ArityShift));
-    assert(VNFOA_ArityMask == (VNFOA_MaxArity << VNFOA_ArityShift));
-
+    uint8_t arr[VNF_COUNT] = {};
     for (unsigned i = 0; i < GT_COUNT; i++)
     {
-        m_arr[i] |= GetArity(i);
-        m_arr[i] |= GetCommutative(i);
+        genTreeOps gtOper = static_cast<genTreeOps>(i);
+        unsigned   arity  = 0;
+        if (GenTree::OperIsUnary(gtOper))
+        {
+            arity = 1;
+        }
+        else if (GenTree::OperIsBinary(gtOper))
+        {
+            arity = 2;
+        }
+        else if (GenTree::StaticOperIs(gtOper, GT_SELECT))
+        {
+            arity = 3;
+        }
+
+        arr[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
+
+        if (GenTree::OperIsCommutative(gtOper))
+        {
+            arr[i] |= VNFOA_Commutative;
+        }
     }
 
     // I so wish this wasn't the best way to do this...
 
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
-    m_arr[vnfNum] |= GetFunc(arity, commute, knownNonNull, sharedStatic);                                 \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra)                                        \
+    if (commute)                                                                                                       \
+        arr[vnfNum] |= VNFOA_Commutative;                                                                     \
+    if (knownNonNull)                                                                                                  \
+        arr[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
+    if (sharedStatic)                                                                                                  \
+        arr[vnfNum] |= VNFOA_SharedStatic;                                                                    \
+    if (arity > 0)                                                                                                     \
+        arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);                                       \
     vnfNum++;
 
 #include "valuenumfuncs.h"
@@ -8910,8 +8927,8 @@ constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
     assert(vnfNum == VNF_COUNT);
 
 #define ValueNumFuncSetArity(vnfNum, arity)                                                                            \
-    m_arr[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */                     \
-    m_arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
+    arr[vnfNum] &= ~VNFOA_ArityMask;                               /* clear old arity value   */ \
+    arr[vnfNum] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask) /* set the new arity value */
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -8934,7 +8951,7 @@ constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
         if (HWIntrinsicInfo::IsCommutative(id))
         {
             VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
-            m_arr[func] |= VNFOA_Commutative;
+            arr[func] |= VNFOA_Commutative;
         }
     }
 
@@ -8944,13 +8961,19 @@ constexpr ValueNumStore::VnfOpAttribsType::VnfOpAttribsType() : m_arr()
 
     for (unsigned i = 0; i < ArrLen(genTreeOpsIllegalAsVNFunc); i++)
     {
-        m_arr[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
+        arr[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
+    }
+
+    assert(ArrLen(arr) == ArrLen(s_vnfOpAttribs));
+    for (unsigned i = 0; i < ArrLen(arr); i++)
+    {
+        assert(arr[i] == s_vnfOpAttribs[i]);
     }
 }
 
 #ifdef DEBUG
 // Define the name array.
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic) #vnf,
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic, extra) #vnf,
 
 const char* ValueNumStore::VNFuncNameArr[] = {
 #include "valuenumfuncs.h"
