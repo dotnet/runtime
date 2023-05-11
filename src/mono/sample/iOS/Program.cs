@@ -30,16 +30,10 @@ public static class Program
     public static async Task Main(string[] args)
 #endif
     {
-        // unsafe {
-        //     // Register a managed callback (will be called by UIButton, see main.m)
-        //     delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
-        //     ios_register_button_click(unmanagedPtr);
-        // }
-        try {
-            var del = (Func<string, string>)Delegate.CreateDelegate (typeof (Func<string, string>), null, typeof (object).GetMethod ("ToString"));
-            del ("Foo");
-        } catch(Exception e) {
-            Console.WriteLine(e);
+        unsafe {
+            // Register a managed callback (will be called by UIButton, see main.m)
+            delegate* unmanaged<void> unmanagedPtr = &OnButtonClick;
+            ios_register_button_click(unmanagedPtr);
         }
         const string msg = "Hello World!\n.NET 8.0";
         for (int i = 0; i < msg.Length; i++)
