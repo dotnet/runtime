@@ -1204,8 +1204,6 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     }
     CONTRACT_END;
 
-    MethodTable *pApproxParentMT = pMT->GetParentMethodTable();
-
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
@@ -1213,7 +1211,11 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 
     LoadExactParentAndInterfacesTransitively(pMT);
 
-    PropagateCovariantReturnMethodImplSlots(pMT);
+    if (pMT->GetClass()->HasCovariantOverride())
+    {
+        MethodTableBuilder::CopyExactParentSlots(pMT);
+        PropagateCovariantReturnMethodImplSlots(pMT);
+    }
 
 #ifdef EnC_SUPPORTED
     // Generics for EnC - create static FieldDescs.

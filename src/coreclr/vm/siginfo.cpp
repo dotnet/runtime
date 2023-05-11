@@ -3503,6 +3503,7 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBas
     }
     else
     {
+        _ASSERTE(pModule1->IsFullModule()); // Only full modules have typedefs
         if (FAILED(hr = pModule1->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tk1, &enclosingTypeTk1, pInternalImport1)))
         {
             if (hr != CLDB_E_RECORD_NOTFOUND)
@@ -3524,7 +3525,7 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBas
     }
     else
     {
-        _ASSERTE(pModule1->IsFullModule());
+        _ASSERTE(pModule2->IsFullModule()); // Only full modules have typedefs
         if (FAILED(hr = pModule2->m_pEnclosingTypeMap->GetEnclosingTypeNoThrow(tk2, &enclosingTypeTk2, pInternalImport2)))
         {
             if (hr != CLDB_E_RECORD_NOTFOUND)

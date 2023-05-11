@@ -9190,6 +9190,83 @@ InsertMethodTable(
     return FALSE;
 } // InsertMethodTable
 
+//*******************************************************************************
+// --------------------------------------------------------------------------------------------
+// Copy virtual slots inherited from parent:
+//
+// In types where covariant returns are used, inherited virtual slots may not yet be fully
+// resolved during initial MethodTable building. This method will update them based on the
+// values computed during exact parent calculation of the parent type.
+/* static */
+void MethodTableBuilder::CopyExactParentSlots(MethodTable *pMT)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(pMT));
+    }
+    CONTRACTL_END;
+
+    DWORD nParentVirtuals = pMT->GetNumParentVirtuals();
+    if (nParentVirtuals == 0)
+        return;
+
+    //
+    // Update all inherited virtual slots to match exact parent
+    //
+
+    if (!pMT->IsCanonicalMethodTable())
+    {
+        //
+        // Copy all slots for non-canonical methodtables to avoid touching methoddescs.
+        //
+        MethodTable * pCanonMT = pMT->GetCanonicalMethodTable();
+
+        // Do not write into vtable chunks shared with parent. It would introduce race
+        // with code:MethodDesc::SetStableEntryPointInterlocked.
+        //
+        // Non-canonical method tables either share everything or nothing so it is sufficient to check
+        // just the first indirection to detect sharing.
+        if (pMT->GetVtableIndirections()[0] != pCanonMT->GetVtableIndirections()[0])
+        {
+            MethodTable::MethodDataWrapper hCanonMTData(MethodTable::GetMethodData(pCanonMT, FALSE));
+            for (DWORD i = 0; i < nParentVirtuals; i++)
+            {
+                pMT->CopySlotFrom(i, hCanonMTData, pCanonMT);
+            }
+        }
+    }
+    else
+    {
+        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+
+        MethodTable * pParentMT = pMT->GetParentMethodTable();
+        MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentMT, FALSE));
+
+        for (DWORD i = 0; i < nParentVirtuals; i++)
+        {
+            // fix up wrongly-inherited method descriptors
+            MethodDesc* pMD = hMTData->GetImplMethodDesc(i);
+            CONSISTENCY_CHECK(CheckPointer(pMD));
+            CONSISTENCY_CHECK(pMD == pMT->GetMethodDescForSlot(i));
+
+            if (pMD->GetMethodTable() == pMT)
+                continue;
+
+            // We need to re-inherit this slot from the exact parent.
+
+            DWORD indirectionIndex = MethodTable::GetIndexOfVtableIndirection(i);
+            if (pMT->GetVtableIndirections()[indirectionIndex] == pParentMT->GetVtableIndirections()[indirectionIndex])
+            {
+                // The slot lives in a chunk shared from the parent MT
+                continue;
+            }
+
+            // The slot lives in an unshared chunk. We need to update the slot contents
+            pMT->CopySlotFrom(i, hParentMTData, pParentMT);
+        }
+    }
+} // MethodTableBuilder::CopyExactParentSlots
 
 bool InstantiationIsAllTypeVariables(const Instantiation &inst)
 {
