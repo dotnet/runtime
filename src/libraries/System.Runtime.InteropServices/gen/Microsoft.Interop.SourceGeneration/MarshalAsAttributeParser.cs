@@ -98,6 +98,11 @@ namespace Microsoft.Interop
                 }
             }
 
+            if (unmanagedType == UnmanagedType.Interface)
+            {
+                return ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, type);
+            }
+
             if (isArrayType)
             {
                 if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })

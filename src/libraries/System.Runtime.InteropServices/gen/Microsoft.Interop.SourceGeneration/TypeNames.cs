@@ -140,5 +140,7 @@ namespace Microsoft.Interop
         public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
 
         public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
+
+        public const string System_Runtime_InteropServices_Marshalling_ComInterfaceMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller`1";
     }
 }
