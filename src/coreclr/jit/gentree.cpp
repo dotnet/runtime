@@ -26103,8 +26103,7 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
-    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) ||
-           HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {

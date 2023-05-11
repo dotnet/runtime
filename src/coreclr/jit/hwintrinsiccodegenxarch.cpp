@@ -2390,11 +2390,11 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     assert(HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
 
-    var_types   baseType = node->GetSimdBaseType();
-    emitAttr    attr     = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    GenTree*    op1      = node->Op(1);
-    GenTree*    op2      = node->Op(2);
-    GenTree*    op3      = node->Op(3);
+    var_types baseType = node->GetSimdBaseType();
+    emitAttr  attr     = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+    GenTree*  op1      = node->Op(1);
+    GenTree*  op2      = node->Op(2);
+    GenTree*  op3      = node->Op(3);
 
     regNumber targetReg = node->GetRegNum();
 

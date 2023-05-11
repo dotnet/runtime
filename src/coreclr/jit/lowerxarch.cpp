@@ -8081,9 +8081,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Since multiplication is commutative this gives us the
                         // full range of support to emit the best codegen.
 
-                        bool     supportsOp1RegOptional = false;
-                        bool     supportsOp2RegOptional = false;
-                        bool     supportsOp3RegOptional = false;
+                        bool supportsOp1RegOptional = false;
+                        bool supportsOp2RegOptional = false;
+                        bool supportsOp3RegOptional = false;
 
                         LIR::Use use;
                         GenTree* user = nullptr;
@@ -8165,11 +8165,13 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Set op regOptional only if none of them is containable.
 
                         // Prefer to make op3 contained as it doesn't require reordering operands
-                        if (((resultOpNum != 3) || !isOp2Cns) && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                        if (((resultOpNum != 3) || !isOp2Cns) &&
+                            IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
                         {
                             MakeSrcContained(node, op3);
                         }
-                        else if ((resultOpNum != 2) && isOp2Cns && IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
+                        else if ((resultOpNum != 2) && isOp2Cns &&
+                                 IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
                             MakeSrcContained(node, op1);
 
