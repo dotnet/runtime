@@ -30,7 +30,15 @@ namespace Microsoft.Extensions
                 .Build();
 
             var result = configuration.Get<RootConfig>();
+            Assert.Equal("Dummy", result.Nested.MyProp);
 
+            result = (RootConfig)configuration.Get(typeof(RootConfig));
+            Assert.Equal("Dummy", result.Nested.MyProp);
+
+            result = result = configuration.Get<RootConfig>(options => { });
+            Assert.Equal("Dummy", result.Nested.MyProp);
+
+            result = (RootConfig)configuration.Get(typeof(RootConfig), options => { });
             Assert.Equal("Dummy", result.Nested.MyProp);
         }
 
@@ -71,15 +79,31 @@ namespace Microsoft.Extensions
 
             var options = config.Get<ConfigurationInterfaceOptions>();
             var childOptions = options.Section.Get<DerivedOptions>();
+            Test();
 
-            Assert.True(childOptions.Boolean);
-            Assert.Equal(-2, childOptions.Integer);
-            Assert.Equal(11, childOptions.Nested.Integer);
-            Assert.Equal("Derived:Sup", childOptions.Virtual);
+            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions));
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions));
+            Test();
 
-            Assert.Equal("Section", options.Section.Key);
-            Assert.Equal("Section", options.Section.Path);
-            Assert.Null(options.Section.Value);
+            options = config.Get<ConfigurationInterfaceOptions>(options => { });
+            childOptions = options.Section.Get<DerivedOptions>(options => { });
+            Test();
+
+            options = (ConfigurationInterfaceOptions)config.Get(typeof(ConfigurationInterfaceOptions), options => { });
+            childOptions = (DerivedOptions)options.Section.Get(typeof(DerivedOptions), options => { });
+            Test();
+
+            void Test()
+            {
+                Assert.True(childOptions.Boolean);
+                Assert.Equal(-2, childOptions.Integer);
+                Assert.Equal(11, childOptions.Nested.Integer);
+                Assert.Equal("Derived:Sup", childOptions.Virtual);
+
+                Assert.Equal("Section", options.Section.Key);
+                Assert.Equal("Section", options.Section.Path);
+                Assert.Null(options.Section.Value);
+            }
         }
 
         [Fact]
@@ -168,8 +192,12 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("empty"));
+#else
             Assert.Null(config.GetValue<bool?>("empty"));
             Assert.Null(config.GetValue<int?>("empty"));
+#endif
         }
 
         [Fact]
@@ -185,9 +213,13 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.GetValue<bool?>("Boolean"));
+#else
             Assert.True(config.GetValue<bool?>("Boolean"));
             Assert.Equal(-2, config.GetValue<int?>("Integer"));
             Assert.Equal(11, config.GetValue<int?>("Nested:Integer"));
+#endif
         }
 
         [Fact]
@@ -221,18 +253,25 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.GetValue<bool>("Boolean"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Integer"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<int>("Nested:Integer"));
+            Assert.Throws<NotSupportedException>(() => config.GetValue<ComplexOptions>("Object"));
+#else
             Assert.False(config.GetValue<bool>("Boolean"));
             Assert.Equal(0, config.GetValue<int>("Integer"));
             Assert.Equal(0, config.GetValue<int>("Nested:Integer"));
             Assert.Null(config.GetValue<ComplexOptions>("Object"));
+#endif
             Assert.False(config.GetSection("Boolean").Get<bool>());
             Assert.Equal(0, config.GetSection("Integer").Get<int>());
             Assert.Equal(0, config.GetSection("Nested:Integer").Get<int>());
             Assert.Null(config.GetSection("Object").Get<ComplexOptions>());
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void ThrowsIfPropertyInConfigMissingInModel()
+        [Fact]
+        public void ThrowsIfPropertyInConfigMissingInModel_Bind()
         {
             var dic = new Dictionary<string, string>
             {
@@ -256,8 +295,8 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void ThrowsIfPropertyInConfigMissingInNestedModel()
+        [Fact]
+        public void ThrowsIfPropertyInConfigMissingInNestedModel_Bind()
         {
             var dic = new Dictionary<string, string>
             {
@@ -282,6 +321,56 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void ThrowsIfPropertyInConfigMissingInModel_Get()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(ComplexOptions), "'ThisDoesNotExistInTheModel'");
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [Fact]
+        public void ThrowsIfPropertyInConfigMissingInNestedModel_Get()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Nested:ThisDoesNotExistInTheModel", "42"},
+                {"Integer", "-2"},
+                {"Boolean", "TRUe"},
+                {"Nested:Integer", "11"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var instance = new ComplexOptions();
+
+            string expectedMessage = SR.Format(SR.Error_MissingConfig,
+                nameof(BinderOptions.ErrorOnUnknownConfiguration), nameof(BinderOptions), typeof(NestedOptions), "'ThisDoesNotExistInTheModel'");
+
+            var ex = Assert.Throws<InvalidOperationException>(
+                () => config.Bind(instance, o => o.ErrorOnUnknownConfiguration = true));
+
+            Assert.Equal(expectedMessage, ex.Message);
+        }
+
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue
         public void GetDefaultsWhenDataDoesNotExist()
         {
             var dic = new Dictionary<string, string>
@@ -302,7 +391,7 @@ namespace Microsoft.Extensions
             Assert.Same(config.GetValue("Object", foo), foo);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for GetValue.
         public void GetUri()
         {
             var dic = new Dictionary<string, string>
@@ -318,7 +407,7 @@ namespace Microsoft.Extensions
             Assert.Equal("http://www.bing.com", uri.OriginalString);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         [InlineData("2147483647", typeof(int))]
         [InlineData("4294967295", typeof(uint))]
         [InlineData("32767", typeof(short))]
@@ -366,7 +455,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedValue, getValueValue);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         [InlineData(typeof(int))]
         [InlineData(typeof(uint))]
         [InlineData(typeof(short))]
@@ -623,28 +712,6 @@ namespace Microsoft.Extensions
         }
 
         [Theory]
-        [InlineData("PrivateSetter")]
-        [InlineData("ProtectedSetter")]
-        [InlineData("InternalSetter")]
-        [InlineData("InternalProperty")]
-        [InlineData("PrivateProperty")]
-        [InlineData("ProtectedProperty")]
-        [InlineData("ProtectedPrivateSet")]
-        public void GetCanSetNonPublicWhenSet(string property)
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {property, "stuff"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
-            Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
-        }
-
-        [Theory]
         [InlineData("InternalReadOnly")]
         [InlineData("PrivateReadOnly")]
         [InlineData("ProtectedReadOnly")]
@@ -658,8 +725,13 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            var ex = Assert.Throws<NotSupportedException>(() => config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+#else
             var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
             Assert.Null(options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [Theory]
@@ -706,8 +778,47 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new ComplexOptions();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            var ex = Assert.Throws<NotSupportedException>(() => config.Bind(options, o => o.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+#else
             config.Bind(options, o => o.BindNonPublicProperties = true);
             Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
+        }
+
+        [Theory]
+        [InlineData("PrivateSetter")]
+        [InlineData("ProtectedSetter")]
+        [InlineData("InternalSetter")]
+        [InlineData("InternalProperty")]
+        [InlineData("PrivateProperty")]
+        [InlineData("ProtectedProperty")]
+        [InlineData("ProtectedPrivateSet")]
+        public void GetCanSetNonPublicWhenSet(string property)
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {property, "stuff"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            var ex = Assert.Throws<NotSupportedException>(() => config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+
+            ex = Assert.Throws<NotSupportedException>(() => config.Get(typeof(ComplexOptions), o => o.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+#else
+            var options = config.Get<ComplexOptions>(o => o.BindNonPublicProperties = true);
+            Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+
+            options = (ComplexOptions)config.Get(typeof(ComplexOptions), o => o.BindNonPublicProperties = true);
+            Assert.Equal("stuff", options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [Theory]
@@ -725,8 +836,12 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new ComplexOptions();
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            Assert.Throws<NotSupportedException>(() => config.Bind(options, o => o.BindNonPublicProperties = true));
+#else
             config.Bind(options, o => o.BindNonPublicProperties = true);
             Assert.Null(options.GetType().GetTypeInfo().GetDeclaredProperty(property).GetValue(options));
+#endif
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
@@ -1393,8 +1508,8 @@ namespace Microsoft.Extensions
             Assert.Null(test.ExposeTestVirtualSet());
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need to honor binder options.
-        public void CanBindPrivatePropertiesFromBaseClass()
+        [Fact]
+        public void PrivatePropertiesFromBaseClass_Bind()
         {
             ConfigurationBuilder configurationBuilder = new();
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
@@ -1404,8 +1519,39 @@ namespace Microsoft.Extensions
             IConfiguration config = configurationBuilder.Build();
 
             var test = new ClassOverridingVirtualProperty();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            var ex = Assert.Throws<NotSupportedException>(() => config.Bind(test, b => b.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+#else
             config.Bind(test, b => b.BindNonPublicProperties = true);
             Assert.Equal("a", test.ExposePrivatePropertyValue());
+#endif
+        }
+
+        [Fact]
+        public void PrivatePropertiesFromBaseClass_Get()
+        {
+            ConfigurationBuilder configurationBuilder = new();
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            {
+                { "PrivateProperty", "a" }
+            });
+            IConfiguration config = configurationBuilder.Build();
+
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            var ex = Assert.Throws<NotSupportedException>(() => config.Get<ClassOverridingVirtualProperty>(b => b.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+
+            ex = Assert.Throws<NotSupportedException>(() => config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true));
+            Assert.Contains("BinderOptions.BindNonPublicProperties", ex.ToString());
+#else
+            var test = config.Get<ClassOverridingVirtualProperty>(b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+
+            test = (ClassOverridingVirtualProperty)config.Get(typeof(ClassOverridingVirtualProperty), b => b.BindNonPublicProperties = true);
+            Assert.Equal("a", test.ExposePrivatePropertyValue());
+#endif
         }
 
         [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.

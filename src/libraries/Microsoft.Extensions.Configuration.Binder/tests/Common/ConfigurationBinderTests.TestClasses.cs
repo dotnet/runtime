@@ -323,7 +323,7 @@ namespace Microsoft.Extensions
                 public Dictionary<string, TestSettingsEnum> Enums { get; set; }
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInAnArrayAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -346,7 +346,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums[1]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagUnset_NoExceptionIsThrownWhenFailingToParseEnumsInADictionaryAndValidItemsArePreserved()
             {
                 var dic = new Dictionary<string, string>
@@ -370,7 +370,7 @@ namespace Microsoft.Extensions
                 Assert.Equal(TestSettingsEnum.Option2, model.Enums["Fourth"]);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInAnArray()
             {
                 var dic = new Dictionary<string, string>
@@ -393,7 +393,7 @@ namespace Microsoft.Extensions
                     exception.Message);
             }
 
-            [Fact]
+            [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
             public void WithFlagSet_AnExceptionIsThrownWhenFailingToParseEnumsInADictionary()
             {
                 var dic = new Dictionary<string, string>

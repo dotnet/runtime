@@ -832,8 +832,10 @@ private:
             }
         }
 
-        GenTree*     addr       = nullptr;
-        GenTreeFlags indirFlags = GTF_EMPTY;
+        GenTree*       addr               = nullptr;
+        target_ssize_t addrBaseOffs       = 0;
+        FieldSeq*      addrBaseOffsFldSeq = nullptr;
+        GenTreeFlags   indirFlags         = GTF_EMPTY;
 
         if (m_dst->OperIs(GT_BLK))
         {
@@ -899,6 +901,8 @@ private:
 
         if ((addr != nullptr) && (numAddrUses > 1))
         {
+            m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
             if (CanReuseAddressForDecomposedStore(addr))
             {
                 if (addr->OperIsLocalRead())
@@ -916,7 +920,7 @@ private:
             }
         }
 
-        auto grabAddr = [&numAddrUses, addr, this](unsigned offs) {
+        auto grabAddr = [=, &numAddrUses](unsigned offs) {
             assert(numAddrUses > 0);
             numAddrUses--;
 
@@ -931,11 +935,14 @@ private:
                 addrUse = m_compiler->gtCloneExpr(addr);
             }
 
-            if (offs != 0)
+            target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
+            if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
             {
+                GenTreeIntCon* offsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
+                offsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
+
                 var_types addrType = varTypeIsGC(addrUse) ? TYP_BYREF : TYP_I_IMPL;
-                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse,
-                                                    m_compiler->gtNewIconNode((ssize_t)offs, TYP_I_IMPL));
+                addrUse            = m_compiler->gtNewOperNode(GT_ADD, addrType, addrUse, offsetNode);
             }
 
             return addrUse;
@@ -1170,6 +1177,48 @@ private:
         indir->gtFlags |= flags;
     }
 };
+
+//------------------------------------------------------------------------
+// gtPeelOffsets: Peel all ADD(addr, CNS_INT(x)) nodes off the specified address
+// node and return the base node and sum of offsets peeled.
+//
+// Arguments:
+//   addr   - [in, out] The address node.
+//   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
+//   fldSeq - [out] The combined field sequence for all the peeled offsets.
+//
+void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
+{
+    assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
+    *offset = 0;
+    *fldSeq = nullptr;
+    while ((*addr)->OperIs(GT_ADD) && !(*addr)->gtOverflow())
+    {
+        GenTree* op1 = (*addr)->gtGetOp1();
+        GenTree* op2 = (*addr)->gtGetOp2();
+
+        if (op2->IsCnsIntOrI() && !op2->AsIntCon()->IsIconHandle())
+        {
+            assert(op2->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op2->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(*fldSeq, intCon->gtFieldSeq);
+            *addr   = op1;
+        }
+        else if (op1->IsCnsIntOrI() && !op1->AsIntCon()->IsIconHandle())
+        {
+            assert(op1->TypeIs(TYP_I_IMPL));
+            GenTreeIntCon* intCon = op1->AsIntCon();
+            *offset += (target_ssize_t)intCon->IconValue();
+            *fldSeq = m_fieldSeqStore->Append(intCon->gtFieldSeq, *fldSeq);
+            *addr   = op2;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // HandleAssignment:

@@ -2734,6 +2734,16 @@ public:
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdTernaryLogicNode(var_types   type,
+                                       GenTree*    op1,
+                                       GenTree*    op2,
+                                       GenTree*    op3,
+                                       GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+#endif // TARGET_XARCH
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,
@@ -3006,6 +3016,8 @@ public:
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
+
+    void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq);
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
@@ -3922,6 +3934,7 @@ protected:
                           CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
+                          bool                    callvirt,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
                           CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                           NamedIntrinsic*         pIntrinsicName,
@@ -9673,7 +9686,6 @@ public:
         STRESS_MODE(MAKE_CSE)                                                                   \
         STRESS_MODE(LEGACY_INLINE)                                                              \
         STRESS_MODE(CLONE_EXPR)                                                                 \
-        STRESS_MODE(USE_CMOV)                                                                   \
         STRESS_MODE(FOLD)                                                                       \
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
@@ -9729,7 +9741,8 @@ public:
 // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNames[STRESS_COUNT + 1];
+    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
+    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
     BYTE                 compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
@@ -9737,6 +9750,7 @@ public:
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
     bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
+    static unsigned compStressAreaHash(compStressArea area);
 
 #ifdef DEBUG
 

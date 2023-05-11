@@ -58,10 +58,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateSubprotocol(string subProtocol)
         {
-            if (string.IsNullOrWhiteSpace(subProtocol))
-            {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(subProtocol);
 
             int indexOfInvalidChar = subProtocol.AsSpan().IndexOfAnyExcept(s_validSubprotocolChars);
             if (indexOfInvalidChar >= 0)

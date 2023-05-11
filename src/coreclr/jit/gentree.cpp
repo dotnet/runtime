@@ -19348,6 +19348,13 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             // in the case `op3` is a constant and none of the nibbles are
             // `0`, then we don't have to be RMW and can actually "drop" `op1`
 
+            GenTree* op4 = hwintrinsic->Op(4);
+
+            if (!op4->IsIntegralConst())
+            {
+                return true;
+            }
+
             GenTree* op3 = hwintrinsic->Op(3);
 
             if (!op3->IsCnsVec())
@@ -19381,6 +19388,26 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             }
 
             return false;
+        }
+
+        case NI_AVX512F_TernaryLogic:
+        case NI_AVX512F_VL_TernaryLogic:
+        {
+            // We may not be RMW depending on the control byte as there
+            // are many operations that do not use all three inputs.
+
+            GenTree* op4 = hwintrinsic->Op(4);
+
+            if (!op4->IsIntegralConst())
+            {
+                return true;
+            }
+
+            uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+            const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+            TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+            return useFlags == TernaryLogicUseFlags::ABC;
         }
 
         default:
@@ -19539,30 +19566,10 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         // Abs(v) = v & ~new vector<T>(-0.0);
         assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-        GenTreeVecCon* bitMask = gtNewVconNode(type);
+        GenTree* bitMask;
 
-        if (simdBaseType == TYP_FLOAT)
-        {
-            for (unsigned i = 0; i < (simdSize / 4); i++)
-            {
-                // This is -0.0f. We use the bit pattern to avoid
-                // compiler issues on some platforms.
-
-                bitMask->gtSimdVal.u32[i] = 0x80000000;
-            }
-        }
-        else
-        {
-            assert(simdBaseType == TYP_DOUBLE);
-
-            for (unsigned i = 0; i < (simdSize / 8); i++)
-            {
-                // This is -0.0. We use the bit pattern to avoid
-                // compiler issues on some platforms.
-
-                bitMask->gtSimdVal.u64[i] = 0x8000000000000000;
-            }
-        }
+        bitMask = gtNewDconNode(-0.0, simdBaseType);
+        bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, simdBaseJitType, simdSize);
 
         return gtNewSimdBinOpNode(GT_AND_NOT, type, op1, bitMask, simdBaseJitType, simdSize);
     }
@@ -19664,7 +19671,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
     if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
     {
-        assert(op2->TypeIs(TYP_INT));
+        assert(genActualType(op2) == TYP_INT);
     }
     else
     {
@@ -19828,6 +19835,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
 
             // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
+            // We expect op1 to have already been spilled
+
             std::swap(op1, op2);
             break;
         }
@@ -20935,6 +20944,9 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                     v = gtNewSimdHWIntrinsicNode(type, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), NI_SSE2_Shuffle,
                                                  CORINFO_TYPE_INT, simdSize);
 
+                    // Validate we can't use AVX512F_VL_TernaryLogic here
+                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
                 }
@@ -21170,6 +21182,9 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                  CORINFO_TYPE_INT, simdSize);
                     v = gtNewSimdHWIntrinsicNode(type, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), NI_SSE2_Shuffle,
                                                  CORINFO_TYPE_INT, simdSize);
+
+                    // Validate we can't use AVX512F_VL_TernaryLogic here
+                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -21692,6 +21707,13 @@ GenTree* Compiler::gtNewSimdCndSelNode(
 
 #if defined(TARGET_XARCH)
     assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
+
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    {
+        GenTree* control = gtNewIconNode(0xCA); // (B & A) | (C & ~A)
+        return gtNewSimdTernaryLogicNode(type, op1, op2, op3, control, simdBaseJitType, simdSize);
+    }
+
     if (simdSize == 32)
     {
         intrinsic = NI_Vector256_ConditionalSelect;
@@ -23107,6 +23129,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
+                // Validate we can't use AVX512F_VL_TernaryLogic here
+                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
                 tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
@@ -23144,6 +23169,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                // Validate we can't use AVX512F_VL_TernaryLogic here
+                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -23246,6 +23274,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
+                // Validate we can't use AVX512F_VL_TernaryLogic here
+                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
 
@@ -23281,6 +23312,9 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     }
 
                     GenTree* vecCon2 = gtCloneExpr(vecCon1);
+
+                    // Validate we can't use AVX512F_VL_TernaryLogic here
+                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
 
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24093,6 +24127,66 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
+#if defined(TARGET_XARCH)
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdTernaryLogicNode: Creates a new simd TernaryLogic node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The value of the first operand: 'A'
+//    op2                 - The value of the second operand: 'B'
+//    op3                 - The value of the third operand: 'C'
+//    op4                 - The constant control byte used to determine how 'A', 'B', and 'C' are manipulated
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created TernaryLogic node that performs the specified operation on 'A', 'B', and 'C'.
+//
+GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
+                                             GenTree*    op1,
+                                             GenTree*    op2,
+                                             GenTree*    op3,
+                                             GenTree*    op4,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize)
+{
+    assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    assert(op3 != nullptr);
+    assert(op3->TypeIs(type));
+
+    assert(op4 != nullptr);
+    assert(genActualType(op4) == TYP_INT);
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+    if (simdSize == 64)
+    {
+        intrinsic = NI_AVX512F_TernaryLogic;
+    }
+    else
+    {
+        assert((simdSize == 16) || (simdSize == 32));
+        intrinsic = NI_AVX512F_VL_TernaryLogic;
+    }
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
+}
+#endif // TARGET_XARCH
+
 GenTree* Compiler::gtNewSimdUnOpNode(
     genTreeOps op, var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
@@ -24109,6 +24203,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
 
     NamedIntrinsic intrinsic = NI_Illegal;
     GenTree*       op2       = nullptr;
+    GenTree*       op3       = nullptr;
 
     switch (op)
     {
@@ -24124,10 +24219,22 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             }
-            op2 = gtNewZeroConNode(type);
 
-            // Zero - op1
-            return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize);
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // op1 ^ -0.0
+
+                op2 = gtNewDconNode(-0.0, simdBaseType);
+                op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize);
+
+                return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                // Zero - op1
+                op2 = gtNewZeroConNode(type);
+                return gtNewSimdBinOpNode(GT_SUB, type, op2, op1, simdBaseJitType, simdSize);
+            }
         }
 
         case GT_NOT:
@@ -24135,14 +24242,41 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             if (simdSize == 64)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+
+                if (genTypeSize(simdBaseType) >= 4)
+                {
+                    intrinsic = NI_AVX512F_TernaryLogic;
+                }
             }
-            else if (simdSize == 32)
+            else
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                if (simdSize == 32)
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                }
+
+                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    intrinsic = NI_AVX512F_VL_TernaryLogic;
+                }
             }
 
-            op2 = gtNewAllBitsSetConNode(type);
-            return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize);
+            if (intrinsic != NI_Illegal)
+            {
+                // AVX512 allows performing `not` without requiring a memory access
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
+                op2 = gtNewZeroConNode(type);
+                op3 = gtNewZeroConNode(type);
+
+                GenTree* cns = gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+                return gtNewSimdTernaryLogicNode(type, op3, op2, op1, cns, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                op2 = gtNewAllBitsSetConNode(type);
+                return gtNewSimdBinOpNode(GT_XOR, type, op1, op2, simdBaseJitType, simdSize);
+            }
         }
 #elif defined(TARGET_ARM64)
         case GT_NEG:
