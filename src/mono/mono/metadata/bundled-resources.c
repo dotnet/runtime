@@ -33,6 +33,42 @@ mono_bundled_resources_free (void)
 
 //---------------------------------------------------------------------------------------
 //
+// mono_bundled_resources_free_bundled_resource_func frees all memory allocated for a
+// particular bundled resource. A MonoBundled*Resource should set the underlying
+// MonoBundledResource's free_bundled_resource_func to this if it is being dynamically
+// allocated (i.e. through old bundling api's).
+//
+// Through the old bundling api's, allocations occur for the MonoBundled*Resource.
+// In addition, MonoBundledSatelliteAssemblyResource's allocate for the id.
+//
+
+void
+mono_bundled_resources_free_bundled_resource_func (void *resource)
+{
+	MonoBundledResource *bundled_resource = (MonoBundledResource *)resource;
+
+	if (bundled_resource->type == MONO_BUNDLED_SATELLITE_ASSEMBLY)
+		free ((void *)bundled_resource->id);
+
+	free (resource);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// mono_bundled_resources_value_destroy_func frees the memory allocated by the hashtable's
+// MonoBundled*Resource by invoking its underlying free_bundled_resource_func when possible.
+//
+
+static void
+mono_bundled_resources_value_destroy_func (void *resource)
+{
+	MonoBundledResource *value = (MonoBundledResource *)resource;
+	if (value->free_bundled_resource_func)
+		value->free_bundled_resource_func (resource);
+}
+
+//---------------------------------------------------------------------------------------
+//
 // mono_bundled_resources_add handles bundling of many types of resources to circumvent
 // needing to find or have those resources on disk. The MonoBundledResource struct models
 // the union of information carried by all supported types of resources which are
@@ -54,7 +90,7 @@ void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len)
 {
 	if (!bundled_resources)
-		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
+		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
 
 	bool assemblyAdded, satelliteAssemblyAdded;
 

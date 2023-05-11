@@ -70,6 +70,9 @@ void
 mono_bundled_resources_free (void);
 
 void
+mono_bundled_resources_free_bundled_resource_func (void *resource);
+
+void
 mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t len);
 
 MonoBundledResource *

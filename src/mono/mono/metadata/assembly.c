@@ -3150,6 +3150,7 @@ mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 			assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
 			assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
 			assembly_resource->resource.id = id;
+			assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
 		} else {
 			g_assert (assembly_resource->resource.type == MONO_BUNDLED_ASSEMBLY);
 			g_assert (!strcmp(assembly_resource->resource.id, id));
@@ -3191,6 +3192,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		g_assert (!satellite_assembly_resource);
 		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
 		satellite_assembly_resource->resource.id = id;
+		satellite_assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
 		satellite_assembly_resource->satellite_assembly = *(MonoBundledSatelliteAssemblyData *)satellite_assembly;
 		mono_bundled_resources_add ((MonoBundledResource **)&satellite_assembly_resource, 1);
 	}

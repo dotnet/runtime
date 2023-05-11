@@ -1078,6 +1078,7 @@ mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *
 		assembly_resource = g_new0 (MonoBundledAssemblyResource, 1);
 		assembly_resource->resource.type = MONO_BUNDLED_ASSEMBLY;
 		assembly_resource->resource.id = assembly_name;
+		assembly_resource->resource.free_bundled_resource_func = &mono_bundled_resources_free_bundled_resource_func;
 	} else {
 		g_assert (assembly_resource->resource.type == MONO_BUNDLED_ASSEMBLY);
 		g_assert (!strcmp(assembly_resource->resource.id, assembly_name));
