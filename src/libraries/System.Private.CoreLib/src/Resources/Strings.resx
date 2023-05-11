@@ -3869,6 +3869,9 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Argument_EmptyOrWhiteSpaceString" xml:space="preserve">
+    <value>The value cannot be an empty string or composed entirely of whitespace.</value>
+  </data>
   <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
     <value>FrameworkName is invalid.</value>
   </data>

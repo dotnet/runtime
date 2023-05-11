@@ -921,6 +921,27 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction in
 
         assert(!node->isRMWHWIntrinsic(compiler));
         op1Reg = targetReg;
+
+        if (op2->isContained())
+        {
+// op2 is never selected by the table so
+// we can contain and ignore any register
+// allocated to it resulting in better
+// non-RMW based codegen.
+
+#if defined(DEBUG)
+            NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic));
+
+            uint8_t                 control  = static_cast<uint8_t>(ival);
+            const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+            TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+            assert(useFlags == TernaryLogicUseFlags::C);
+#endif // DEBUG
+
+            op2Reg = targetReg;
+        }
     }
 
     assert(targetReg != REG_NA);

@@ -10,7 +10,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override void Write(Utf8JsonWriter writer, JsonArray value, JsonSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             value.WriteTo(writer, options);
         }
 
@@ -20,6 +25,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartArray:
                     return ReadList(ref reader, options.GetNodeOptions());
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedArray(reader.TokenType);
