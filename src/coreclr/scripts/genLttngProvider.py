@@ -315,7 +315,7 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
             result.append("    INT " + paramname + "_path_size = -1;\n")
             result.append("    PathCharString " + paramname + "_PS;\n")
             result.append("    INT " + paramname + "_full_name_path_size")
-            result.append(" = (dn_wcslen(" + paramname + ") + 1)*sizeof(WCHAR);\n")
+            result.append(" = (lttng_strlen16(" + paramname + ") + 1)*sizeof(WCHAR);\n")
             result.append("    CHAR* " + paramname + "_full_name = ")
             result.append(paramname + "_PS.OpenStringBuffer(" + paramname + "_full_name_path_size );\n")
             result.append("    if (" + paramname + "_full_name == NULL )")
@@ -429,6 +429,19 @@ def generateMethodBody(template, providerName, eventName, runtimeFlavor):
 
 def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavor):
     lTTngImpl = []
+
+    lTTngImpl.append("""// Local implementation of WCHAR (UTF-16) string length
+static size_t lttng_strlen16(const WCHAR* string)
+{
+    if (string == NULL)
+        return 0;
+    size_t nChar = 0;
+    while (*string++)
+        nChar++;
+    return nChar;
+}
+""")
+
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')

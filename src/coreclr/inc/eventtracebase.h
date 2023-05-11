@@ -534,7 +534,7 @@ public:
         while (configToParse != nullptr)
         {
             const WCHAR comma = W(',');
-            auto end = dn_wcschr(configToParse, comma);
+            auto end = (LPWSTR)dn_wcschr(configToParse, comma);
             configuration.Parse(configToParse);
             XplatEventLoggerController::UpdateProviderContext(configuration);
             if (end == nullptr)
