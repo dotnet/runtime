@@ -182,7 +182,7 @@ namespace System.Runtime
             return obj;
 
         fail:
-            throw pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
+            return ThrowInvalidCastException(pTargetType);
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
@@ -243,7 +243,7 @@ namespace System.Runtime
                 // Throw the invalid cast exception defined by the classlib, using the input MethodTable*
                 // to find the correct classlib.
 
-                throw pTargetEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                return ThrowInvalidCastException(pTargetEEType);
             }
 
             return result;
@@ -806,7 +806,7 @@ namespace System.Runtime
 
             // Throw the invalid cast exception defined by the classlib, using the input MethodTable* to find the
             // correct classlib.
-            throw pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
+            return ThrowInvalidCastException(pTargetType);
         }
 
         [RuntimeExport("RhTypeCast_CheckArrayStore")]
@@ -1070,7 +1070,7 @@ namespace System.Runtime
                 && (!obj.GetMethodTable()->IsIDynamicInterfaceCastable
                 || !IsInstanceOfInterfaceViaIDynamicInterfaceCastable(pTargetType, obj, throwing: true)))
             {
-                throw pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
+                return ThrowInvalidCastException(pTargetType);
             }
 
             return obj;
@@ -1085,7 +1085,7 @@ namespace System.Runtime
             }
 
             // Parameterized types are not boxable, so nothing can be an instance of these.
-            throw pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
+            return ThrowInvalidCastException(pTargetType);
         }
 
         private static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
@@ -1102,6 +1102,11 @@ namespace System.Runtime
             }
 
             return elementType;
+        }
+
+        private static unsafe object ThrowInvalidCastException(MethodTable* pMT)
+        {
+            throw pMT->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
         internal unsafe struct EETypePairList
