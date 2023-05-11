@@ -41,7 +41,7 @@ namespace System.Buffers
         /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
         private static int GetPartitionCount()
         {
-            string? value = Environment.GetEnvironmentVariable("System.Buffers.SharedArrayPool.MaxPartitionCount");
+            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT");
             int partitionCount = value is not null && int.TryParse(value, CultureInfo.InvariantCulture, out int result) && result > 0 ?
                 result :
                 int.MaxValue; // no limit other than processor count
@@ -52,7 +52,7 @@ namespace System.Buffers
         /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
         private static int GetMaxArraysPerPartition()
         {
-            string? value = Environment.GetEnvironmentVariable("System.Buffers.SharedArrayPool.MaxArraysPerPartition");
+            string? value = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION");
             return value is not null && int.TryParse(value, CultureInfo.InvariantCulture, out int result) && result > 0 ?
                 result :
                 8; // arbitrary limit
