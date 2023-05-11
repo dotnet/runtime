@@ -3,5 +3,5 @@ const MonoBundledDataResource %ResourceName% = {
                   .id = "%ResourceID%" },
     .data = { .name = "%RegisteredFilename%",
               .data = %ResourceName%_data,
-              .size = %Len% },
+              .size = %Len% }
 };

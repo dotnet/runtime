@@ -4,12 +4,11 @@
 #include <stdint.h>
 
 %ResourceSymbols%
-
 typedef enum {
 	MONO_BUNDLED_DATA,
 	MONO_BUNDLED_ASSEMBLY,
 	MONO_BUNDLED_SATELLITE_ASSEMBLY,
-	MONO_BUNDLED_RESOURCE_COUNT,
+	MONO_BUNDLED_RESOURCE_COUNT
 } MonoBundledResourceType;
 
 typedef struct _MonoBundledResource {
@@ -64,8 +63,6 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 %PreallocatedStructs%
 
 %PreallocatedResources%
-
 void
 %BundleRegistrationFunctionName% (void) {
-%AddPreallocatedResources%
-}
+%AddPreallocatedResources%}

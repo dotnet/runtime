@@ -3,5 +3,5 @@ const MonoBundledAssemblyResource %ResourceName% = {
                   .id = "%ResourceID%" },
     .assembly = { .name = "%RegisteredFilename%",
                   .data = %ResourceName%_data,
-                  .size = %Len% },
-%MonoBundledSymbolData%};
+                  .size = %Len% }%MonoBundledSymbolData%
+};

@@ -216,16 +216,16 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static void GenerateBundledResourcePreallocationAndRegistration(string resourceSymbols, string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
     {
-        StringBuilder preallocatedSource = new();
+        List<string> preallocatedSource = new ();
 
         string assemblyTemplate = Utils.GetEmbeddedResource("mono-bundled-assembly.template");
         string satelliteAssemblyTemplate = Utils.GetEmbeddedResource("mono-bundled-satellite-assembly.template");
         string symbolDataTemplate = Utils.GetEmbeddedResource("mono-bundled-data.template");
 
         var preallocatedResources = new StringBuilder();
-        var preallocatedAssemblies = new StringBuilder("MonoBundledResource *bundledAssemblyResources[] = { ");
-        var preallocatedSatelliteAssemblies = new StringBuilder("MonoBundledResource *bundledSatelliteAssemblyResources[] = { ");
-        var preallocatedData = new StringBuilder("MonoBundledResource *bundledDataResources[] = { ");
+        List<string> preallocatedAssemblies = new ();
+        List<string> preallocatedSatelliteAssemblies = new ();
+        List<string> preallocatedData = new ();
         int assembliesCount = 0;
         int satelliteAssembliesCount = 0;
         int dataCount = 0;
@@ -240,7 +240,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 preloadedStruct = satelliteAssemblyTemplate;
                 preloadedStruct.Replace("%Culture%", tuple.culture);
                 resourceId = $"{tuple.culture}/{tuple.registeredFilename}";
-                preallocatedSatelliteAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
+                preallocatedSatelliteAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
                 satelliteAssembliesCount += 1;
             }
             else if (tuple.registeredFilename.EndsWith(".dll"))
@@ -250,22 +250,22 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 string preloadedSymbolData = "";
                 if (!string.IsNullOrEmpty(tuple.resourceSymbolName))
                 {
-                    preloadedSymbolData = Utils.GetEmbeddedResource("mono-bundled-symbol.template")
+                    preloadedSymbolData = $",\n{Utils.GetEmbeddedResource("mono-bundled-symbol.template")
                                                 .Replace("%ResourceSymbolName%", tuple.resourceSymbolName)
-                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString());
+                                                .Replace("%SymbolLen%", symbolDataLen[tuple.resourceSymbolName].ToString())}";
                 }
                 preloadedStruct = preloadedStruct.Replace("%MonoBundledSymbolData%", preloadedSymbolData);
-                preallocatedAssemblies.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
+                preallocatedAssemblies.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
                 assembliesCount += 1;
             }
             else
             {
                 preloadedStruct = symbolDataTemplate;
-                preallocatedData.Append($"(MonoBundledResource *)&{tuple.resourceName}, ");
+                preallocatedData.Add($"    (MonoBundledResource *)&{tuple.resourceName}");
                 dataCount += 1;
             }
 
-            preallocatedSource.AppendLine(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
+            preallocatedSource.Add(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
                                          .Replace("%ResourceID%", resourceId)
                                          .Replace("%RegisteredFilename%", tuple.registeredFilename)
                                          .Replace("%Len%", $"{tuple.resourceName}_len_val"));
@@ -273,24 +273,21 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         var addPreallocatedResources = new StringBuilder();
         if (assembliesCount != 0) {
-            preallocatedAssemblies.AppendLine("};");
-            preallocatedResources.AppendLine(preallocatedAssemblies.ToString());
+            preallocatedResources.AppendLine($"MonoBundledResource *bundledAssemblyResources[] = {{\n{string.Join(",\n", preallocatedAssemblies)}\n}};");
             addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledAssemblyResources, {assembliesCount});");
         }
         if (satelliteAssembliesCount != 0) {
-            preallocatedSatelliteAssemblies.AppendLine("};");
-            preallocatedResources.AppendLine(preallocatedSatelliteAssemblies.ToString());
+            preallocatedResources.AppendLine($"MonoBundledResource *bundledSatelliteAssemblyResources[] = {{\n{string.Join(",\n", preallocatedSatelliteAssemblies)}\n}};");
             addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledSatelliteAssemblyResources, {satelliteAssembliesCount});");
         }
         if (dataCount != 0) {
-            preallocatedData.AppendLine("};");
-            preallocatedResources.AppendLine(preallocatedData.ToString());
+            preallocatedResources.AppendLine($"MonoBundledResource *bundledDataResources[] = {{\n{string.Join(",\n", preallocatedData)}\n}};");
             addPreallocatedResources.AppendLine($"    mono_bundled_resources_add (bundledDataResources, {dataCount});");
         }
 
         outputUtf8Writer.Write(Utils.GetEmbeddedResource("mono-bundled-resource-preallocation-and-registration.template")
                                 .Replace("%ResourceSymbols%", resourceSymbols)
-                                .Replace("%PreallocatedStructs%", preallocatedSource.ToString())
+                                .Replace("%PreallocatedStructs%", string.Join("\n", preallocatedSource))
                                 .Replace("%PreallocatedResources%", preallocatedResources.ToString())
                                 .Replace("%BundleRegistrationFunctionName%", bundleRegistrationFunctionName)
                                 .Replace("%AddPreallocatedResources%", addPreallocatedResources.ToString()));
