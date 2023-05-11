@@ -3082,6 +3082,7 @@ public:
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
+    void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
