@@ -166,6 +166,9 @@ static class NativeGeneration
                 continue;
             }
 
+            if (unwritten.m.NativeFunctionOptions() == NativeFunctionOptions.DoNotGenerate)
+                continue;
+
             AppendNativeWrapperMethod(sb, unwritten.m,
                 // Better safe than sorry?  Control may need to be exposed
                 includeGcxPreEmp: true);
