@@ -276,7 +276,7 @@ jobs:
         inputs:
           buildType: current
           downloadType: single
-          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nativeaot'
+          downloadPath: '$(Build.SourcesDirectory)/iosHelloWorldZip/nativeaotzip'
           artifactName: 'iOSSampleApp'
           checkDownloadedFiles: true
 
