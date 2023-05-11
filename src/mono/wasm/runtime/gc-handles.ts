@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { runtimeHelpers } from "./imports";
+import { runtimeHelpers } from "./globals";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, mono_assert } from "./types";
 import { create_weak_ref } from "./weak-ref";
 

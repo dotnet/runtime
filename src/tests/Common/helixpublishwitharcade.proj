@@ -22,15 +22,15 @@
     ============================================
 
   <PropertyGroup>
-    <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
-    <CorrelationPayloadDirectory>c:\bugs\spmicollect3\payload\correlation</CorrelationPayloadDirectory>
-    <WorkItemDirectory>c:\bugs\spmicollect3\payload\workitem</WorkItemDirectory>
+    <BUILD_SOURCESDIRECTORY>/home/brucefo/gh/runtime</BUILD_SOURCESDIRECTORY>
+    <CorrelationPayloadDirectory>/home/brucefo/test/correlation</CorrelationPayloadDirectory>
+    <WorkItemDirectory>/home/brucefo/test/workitem</WorkItemDirectory>
     <_Scenarios>normal</_Scenarios>
     <_Creator></_Creator>
     <_HelixAccessToken></_HelixAccessToken>
     <_HelixBuild></_HelixBuild>
     <_HelixSource></_HelixSource>
-    <_HelixTargetQueues>Windows.10.Amd64.Open</_HelixTargetQueues>
+    <_HelixTargetQueues>Ubuntu.1804.Amd64.Open</_HelixTargetQueues>
     <_HelixType>test/stuff</_HelixType>
     <_PublishTestResults>false</_PublishTestResults>
     <_RunCrossGen>false</_RunCrossGen>
@@ -47,7 +47,7 @@
     <BundledNETCoreAppPackageVersion>BundledNETCoreAppPackageVersion</BundledNETCoreAppPackageVersion>
     <HelixRuntimeRid></HelixRuntimeRid>
     <_PALTestsDir></_PALTestsDir>
-    <_SuperPmiCollect>true</_SuperPmiCollect>
+    <_SuperPmiCollect>false</_SuperPmiCollect>
   </PropertyGroup>
   <Target Name="printItems">
     <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
@@ -84,7 +84,7 @@
 
       <_PropertiesToPass>
         TargetArchitecture=$(TargetArchitecture);
-        TargetOS=$(TargetOS);
+        TargetOS=$(TargetOS.ToLowerInvariant());
         Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);
@@ -358,7 +358,17 @@
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+
+      <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
+        <TestExecutionScriptPath>$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+      </_MergedWrapperMarker>
+
+      <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
+      <_MergedWrapperMarker Remove="@(_MergedWrapperMarker)" Condition="!Exists('%(TestExecutionScriptPath)')" />
     </ItemGroup>
+
+    <Message Text="_MergedWrapperMarkers:"/>
+    <Message Text="%(_MergedWrapperMarker.Identity)"/>
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForDesktop"
@@ -418,10 +428,42 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
       <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
+
+      <!--
+        Bug Fix: GH Issue #85056 - Helix takes the exit code of the last ran executable. Since that spot has now been
+        taken by the log fixer, its exit code gets reported to Helix, and thus eclipsing the test's one. This might
+        lead to test failures being identified as passed if the log checker finishes successfully. To fix this, we
+        store the test's exit code, and if it's not successful, then we return it after the log checker finishes.
+      -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set test_exit_code=%25ERRORLEVEL%25" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="test_exit_code=%24%3F" />
+
+      <!-- Add the XUnitLogChecker's running command and store its exit code. -->
       <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set xunitlogchecker_exit_code=%25ERRORLEVEL%25" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="xunitlogchecker_exit_code=%24%3F" />
+
+      <!--
+        Check both exit codes, the test's and XUnitLogChecker's. If any of them failed, then we return that one, with the
+        test's taking priority (i.e. if the test failed, we return that one regardless of how things went with the log checker).
+        Full description in the reasoning of this is in the comment above about GH issue #85056.
+        Note that you can not use "exit" or the shell will exit and the HelixPostCommands will not run.
+      -->
+
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set result_exit_code=0" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="if %25xunitlogchecker_exit_code%25 NEQ 0 set result_exit_code=%25xunitlogchecker_exit_code%25" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="if %25test_exit_code%25 NEQ 0 set result_exit_code=%25test_exit_code%25" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="%25ComSpec%25 /C exit %25result_exit_code%25" />
+
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="result_exit_code=0" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="if [ %24xunitlogchecker_exit_code -ne 0 ]%3B then result_exit_code=%24xunitlogchecker_exit_code%3B fi" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="if [ %24test_exit_code -ne 0 ]%3B then result_exit_code=%24test_exit_code%3B fi" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="set_return() { return $1; }" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="set_return %24result_exit_code" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />

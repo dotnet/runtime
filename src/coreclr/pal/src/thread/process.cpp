@@ -236,6 +236,9 @@ static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
 
+// Function to call instead of exec'ing the createdump binary.  Used by single-file and native AOT hosts.
+Volatile<PCREATEDUMP_CALLBACK> g_createdumpCallback = nullptr;
+
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 std::vector<const char*> g_argvCreateDump;
 
@@ -1372,6 +1375,25 @@ PAL_SetShutdownCallback(
     g_shutdownCallback = callback;
 }
 
+/*++
+Function:
+  PAL_SetCreateDumpCallback
+
+Abstract:
+  Sets a callback that is executed when create dump is launched to create a crash dump.
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback) 
+{
+    _ASSERTE(g_createdumpCallback == nullptr);
+    g_createdumpCallback = callback;
+}
+
 // Build the semaphore names using the PID and a value that can be used for distinguishing
 // between processes with the same PID (which ran at different times). This is to avoid
 // cases where a prior process with the same PID exited abnormally without having a chance
@@ -2202,11 +2224,22 @@ PROCCreateCrashDump(
         {
             dup2(child_pipe, STDERR_FILENO);
         }
-        // Execute the createdump program
-        if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+        if (g_createdumpCallback != nullptr)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
-            exit(-1);
+            // Remove the signal handlers inherited from the runtime process
+            SEHCleanupSignals();
+
+            // Call the statically linked createdump code
+            g_createdumpCallback(argv.size(), argv.data());
+        }
+        else
+        {
+            // Execute the createdump program
+            if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
+            {
+                fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+                exit(-1);
+            }
         }
     }
     else
@@ -2252,7 +2285,7 @@ PROCCreateCrashDump(
         else
         {
 #ifdef _DEBUG
-            fprintf(stderr, "[createdump] waitpid() returned successfully (wstatus %08x)\n", wstatus);
+            fprintf(stderr, "waitpid() returned successfully (wstatus %08x) WEXITSTATUS %x WTERMSIG %x\n", wstatus, WEXITSTATUS(wstatus), WTERMSIG(wstatus));
 #endif
             return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
         }

@@ -91,83 +91,6 @@ struct Access
     }
 };
 
-//------------------------------------------------------------------------
-// BinarySearch:
-//   Find first entry with an equal offset, or bitwise complement of first
-//   entry with a higher offset.
-//
-// Parameters:
-//   vec    - The vector to binary search in
-//   offset - The offset to search for
-//
-// Returns:
-//    Index of the first entry with an equal offset, or bitwise complement of
-//    first entry with a higher offset.
-//
-template <typename T, unsigned(T::*field)>
-static size_t BinarySearch(const jitstd::vector<T>& vec, unsigned offset)
-{
-    size_t min = 0;
-    size_t max = vec.size();
-    while (min < max)
-    {
-        size_t mid = min + (max - min) / 2;
-        if (vec[mid].*field == offset)
-        {
-            while (mid > 0 && vec[mid - 1].*field == offset)
-            {
-                mid--;
-            }
-
-            return mid;
-        }
-        if (vec[mid].*field < offset)
-        {
-            min = mid + 1;
-        }
-        else
-        {
-            max = mid;
-        }
-    }
-
-    return ~min;
-}
-
-// Represents a single replacement of a (field) access into a struct local.
-struct Replacement
-{
-    unsigned  Offset;
-    var_types AccessType;
-    unsigned  LclNum;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
-    // Is the value in the struct local fresher than the replacement local?
-    bool NeedsReadBack = false;
-
-    Replacement(unsigned offset, var_types accessType, unsigned lclNum)
-        : Offset(offset), AccessType(accessType), LclNum(lclNum)
-    {
-    }
-
-    bool Overlaps(unsigned otherStart, unsigned otherSize) const
-    {
-        unsigned end = Offset + genTypeSize(AccessType);
-        if (end <= otherStart)
-        {
-            return false;
-        }
-
-        unsigned otherEnd = otherStart + otherSize;
-        if (otherEnd <= Offset)
-        {
-            return false;
-        }
-
-        return true;
-    }
-};
-
 enum class AccessKindFlags : uint32_t
 {
     None                    = 0,
@@ -232,7 +155,7 @@ public:
         size_t index = 0;
         if (m_accesses.size() > 0)
         {
-            index = BinarySearch<Access, &Access::Offset>(m_accesses, offs);
+            index = Promotion::BinarySearch<Access, &Access::Offset>(m_accesses, offs);
             if ((ssize_t)index >= 0)
             {
                 do
@@ -309,6 +232,8 @@ public:
             return;
         }
 
+        JITDUMP("Picking promotions for V%02u\n", lclNum);
+
         assert(*replacements == nullptr);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
@@ -342,8 +267,10 @@ public:
                     new (comp, CMK_Promotion) jitstd::vector<Replacement>(comp->getAllocator(CMK_Promotion));
             }
 
-            (*replacements)->push_back(Replacement(access.Offset, access.AccessType, newLcl));
+            (*replacements)->push_back(Replacement(access.Offset, access.AccessType, newLcl DEBUGARG(bufp)));
         }
+
+        JITDUMP("\n");
     }
 
     //------------------------------------------------------------------------
@@ -428,28 +355,28 @@ public:
             countOverlappedCallsWtd + countOverlappedReturnsWtd + countOverlappedAssignmentSourceWtd;
         costWith += countWriteBacksWtd * writeBackCost;
 
-        JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("  Single write-back cost: " FMT_WT "\n", writeBackCost);
-        JITDUMP("  Write backs: " FMT_WT "\n", countWriteBacksWtd);
-        JITDUMP("  Read backs: " FMT_WT "\n", countReadBacksWtd);
-        JITDUMP("  Cost with: " FMT_WT "\n", costWith);
-        JITDUMP("  Cost without: " FMT_WT "\n", costWithout);
+        JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
+        JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
+        JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
+        JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
+        JITDUMP("    Cost with: " FMT_WT "\n", costWith);
+        JITDUMP("    Cost without: " FMT_WT "\n", costWithout);
 
         if (costWith < costWithout)
         {
-            JITDUMP("  Promoting replacement\n");
+            JITDUMP("  Promoting replacement\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n");
+            JITDUMP("  Promoting replacement due to stress\n\n");
             return true;
         }
 #endif
 
-        JITDUMP("  Disqualifying replacement\n");
+        JITDUMP("  Disqualifying replacement\n\n");
         return false;
     }
 
@@ -466,7 +393,8 @@ public:
         {
             if (access.AccessType == TYP_STRUCT)
             {
-                printf("  [%03u..%03u)\n", access.Offset, access.Offset + access.Layout->GetSize());
+                printf("  [%03u..%03u) as %s\n", access.Offset, access.Offset + access.Layout->GetSize(),
+                       access.Layout->GetClassName());
             }
             else
             {
@@ -594,6 +522,7 @@ private:
 
         return m_uses[lclNum];
     }
+
     //------------------------------------------------------------------------
     // ClassifyLocalAccess:
     //   Given a local use and its user, classify information about it.
@@ -661,392 +590,397 @@ private:
     }
 };
 
-class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
+//------------------------------------------------------------------------
+// Replacement::Overlaps:
+//   Check if this replacement overlaps the specified range.
+//
+// Parameters:
+//   otherStart - Start of the other range.
+//   otherSize  - Size of the other range.
+//
+// Returns:
+//    True if they overlap.
+//
+bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
 {
-    Promotion*                    m_prom;
-    jitstd::vector<Replacement>** m_replacements;
-    bool                          m_madeChanges = false;
-
-public:
-    enum
+    unsigned end = Offset + genTypeSize(AccessType);
+    if (end <= otherStart)
     {
-        DoPostOrder       = true,
-        UseExecutionOrder = true,
-    };
-
-    ReplaceVisitor(Promotion* prom, jitstd::vector<Replacement>** replacements)
-        : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_replacements(replacements)
-    {
+        return false;
     }
 
-    bool MadeChanges()
+    unsigned otherEnd = otherStart + otherSize;
+    if (otherEnd <= Offset)
     {
-        return m_madeChanges;
+        return false;
     }
 
-    void Reset()
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CreateWriteBack:
+//   Create IR that writes a replacement local's value back to its struct local:
+//
+//     ASG
+//       LCL_FLD int V00 [+4]
+//       LCL_VAR int V01
+//
+// Parameters:
+//   compiler - Compiler instance
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR node.
+//
+GenTree* Promotion::CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
+
+//------------------------------------------------------------------------
+// CreateReadBack:
+//   Create IR that reads a replacement local's value back from its struct local:
+//
+//     ASG
+//       LCL_VAR int V01
+//       LCL_FLD int V00 [+4]
+//
+// Parameters:
+//   compiler - Compiler instance
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR node.
+//
+GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
+
+Compiler::fgWalkResult ReplaceVisitor::PostOrderVisit(GenTree** use, GenTree* user)
+{
+    GenTree* tree = *use;
+
+    if (tree->OperIs(GT_ASG))
     {
-        m_madeChanges = false;
-    }
-
-    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-    {
-        GenTree* tree = *use;
-
-        if (tree->OperIs(GT_ASG))
+        // If LHS of the ASG was a local then we skipped it as we don't
+        // want to see it until after the RHS.
+        if (tree->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            // If LHS of the ASG was a local then we skipped it as we don't
-            // want to see it until after the RHS.
-            if (tree->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                ReplaceLocal(&tree->AsOp()->gtOp1, tree);
-            }
-
-            // Assignments can be decomposed directly into accesses of the replacements.
-            DecomposeAssignment((*use)->AsOp(), user);
-            return fgWalkResult::WALK_CONTINUE;
+            ReplaceLocal(&tree->AsOp()->gtOp1, tree);
         }
 
-        if (tree->OperIs(GT_CALL))
-        {
-            // Calls need to store replacements back into the struct local for args
-            // and need to restore replacements from the result (for
-            // retbufs/returns).
-            LoadStoreAroundCall((*use)->AsCall(), user);
-            return fgWalkResult::WALK_CONTINUE;
-        }
-
-        if (tree->OperIs(GT_RETURN))
-        {
-            // Returns need to store replacements back into the struct local.
-            StoreBeforeReturn((*use)->AsUnOp());
-            return fgWalkResult::WALK_CONTINUE;
-        }
-
-        // Skip the local on the LHS of ASGs when we see it in the normal tree
-        // visit; we handle it as part of the parent ASG instead.
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
-            ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
-        {
-            ReplaceLocal(use, user);
-            return fgWalkResult::WALK_CONTINUE;
-        }
-
+        // Assignments can be decomposed directly into accesses of the replacements.
+        HandleAssignment(use, user);
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    //------------------------------------------------------------------------
-    // DecomposeAssignment:
-    //   Handle an assignment that may be between struct locals with replacements.
-    //
-    // Parameters:
-    //   asg - The assignment
-    //   user - The user of the assignment.
-    //
-    void DecomposeAssignment(GenTreeOp* asg, GenTree* user)
+    if (tree->OperIs(GT_CALL))
     {
-        // TODO-CQ: field-by-field copies and inits.
+        // Calls need to store replacements back into the struct local for args
+        // and need to restore replacements from the result (for
+        // retbufs/returns).
+        LoadStoreAroundCall((*use)->AsCall(), user);
+        return fgWalkResult::WALK_CONTINUE;
+    }
 
-        if (asg->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    if (tree->OperIs(GT_RETURN))
+    {
+        // Returns need to store replacements back into the struct local.
+        StoreBeforeReturn((*use)->AsUnOp());
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    // Skip the local on the LHS of ASGs when we see it in the normal tree
+    // visit; we handle it as part of the parent ASG instead.
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+        ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
+    {
+        ReplaceLocal(use, user);
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    return fgWalkResult::WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// LoadStoreAroundCall:
+//   Handle a call that may involve struct local arguments and that may
+//   pass a struct local with replacements as the retbuf.
+//
+// Parameters:
+//   call - The call
+//   user - The user of the call.
+//
+void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
+{
+    CallArg* retBufArg = nullptr;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == WellKnownArg::RetBuffer)
         {
-            GenTreeLclVarCommon* rhsLcl = asg->gtGetOp2()->AsLclVarCommon();
-            if (rhsLcl->TypeIs(TYP_STRUCT))
-            {
-                unsigned size = rhsLcl->GetLayout(m_compiler)->GetSize();
-                WriteBackBefore(&asg->gtOp2, rhsLcl->GetLclNum(), rhsLcl->GetLclOffs(), size);
-            }
+            retBufArg = &arg;
+            continue;
         }
 
-        if (asg->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (!arg.GetNode()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            GenTreeLclVarCommon* lhsLcl = asg->gtGetOp1()->AsLclVarCommon();
-            if (lhsLcl->TypeIs(TYP_STRUCT))
-            {
-                unsigned size = lhsLcl->GetLayout(m_compiler)->GetSize();
-                MarkForReadBack(lhsLcl->GetLclNum(), lhsLcl->GetLclOffs(), size, true);
-            }
+            continue;
+        }
+
+        GenTreeLclVarCommon* argNodeLcl = arg.GetNode()->AsLclVarCommon();
+
+        if (argNodeLcl->TypeIs(TYP_STRUCT))
+        {
+            unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
+            WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
         }
     }
 
-    //------------------------------------------------------------------------
-    // LoadStoreAroundCall:
-    //   Handle a call that may involve struct local arguments and that may
-    //   pass a struct local with replacements as the retbuf.
-    //
-    // Parameters:
-    //   call - The call
-    //   user - The user of the call.
-    //
-    void LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
+    if (call->IsOptimizingRetBufAsLocal())
     {
-        CallArg* retBufArg = nullptr;
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            if (arg.GetWellKnownArg() == WellKnownArg::RetBuffer)
-            {
-                retBufArg = &arg;
-                continue;
-            }
+        assert(retBufArg != nullptr);
+        assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
+        GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
+        unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-            if (!arg.GetNode()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                continue;
-            }
+        MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
+    }
+}
 
-            GenTreeLclVarCommon* argNodeLcl = arg.GetNode()->AsLclVarCommon();
-
-            if (argNodeLcl->TypeIs(TYP_STRUCT))
-            {
-                unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
-                WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
-            }
-        }
-
-        if (call->IsOptimizingRetBufAsLocal())
-        {
-            assert(retBufArg != nullptr);
-            assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
-            GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
-            unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
-
-            MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
-        }
+//------------------------------------------------------------------------
+// ReplaceLocal:
+//   Handle a local that may need to be replaced.
+//
+// Parameters:
+//   use - The use of the local
+//   user - The user of the local.
+//
+// Notes:
+//   This usually amounts to making a replacement like
+//
+//       LCL_FLD int V00 [+8] -> LCL_VAR int V10.
+//
+//  In some cases we may have a pending read back, meaning that the
+//  replacement local is out-of-date compared to the struct local.
+//  In that case we also need to insert IR to read it back.
+//  This happens for example if the struct local was just assigned from a
+//  call or via a block copy.
+//
+void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
+{
+    GenTreeLclVarCommon* lcl    = (*use)->AsLclVarCommon();
+    unsigned             lclNum = lcl->GetLclNum();
+    if (m_replacements[lclNum] == nullptr)
+    {
+        return;
     }
 
-    //------------------------------------------------------------------------
-    // ReplaceLocal:
-    //   Handle a local that may need to be replaced.
-    //
-    // Parameters:
-    //   use - The use of the local
-    //   user - The user of the local.
-    //
-    // Notes:
-    //   This usually amounts to making a replacement like
-    //
-    //       LCL_FLD int V00 [+8] -> LCL_VAR int V10.
-    //
-    //  In some cases we may have a pending read back, meaning that the
-    //  replacement local is out-of-date compared to the struct local.
-    //  In that case we also need to insert IR to read it back.
-    //  This happens for example if the struct local was just assigned from a
-    //  call or via a block copy.
-    //
-    void ReplaceLocal(GenTree** use, GenTree* user)
-    {
-        GenTreeLclVarCommon* lcl    = (*use)->AsLclVarCommon();
-        unsigned             lclNum = lcl->GetLclNum();
-        if (m_replacements[lclNum] == nullptr)
-        {
-            return;
-        }
+    jitstd::vector<Replacement>& replacements = *m_replacements[lclNum];
 
-        jitstd::vector<Replacement>& replacements = *m_replacements[lclNum];
-
-        unsigned  offs       = lcl->GetLclOffs();
-        var_types accessType = lcl->TypeGet();
+    unsigned  offs       = lcl->GetLclOffs();
+    var_types accessType = lcl->TypeGet();
 
 #ifdef DEBUG
-        if (accessType == TYP_STRUCT)
+    if (accessType == TYP_STRUCT)
+    {
+        assert((user == nullptr) || user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
+    }
+    else
+    {
+        ClassLayout* accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
+        unsigned     accessSize   = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
+        for (const Replacement& rep : replacements)
         {
-            assert((user == nullptr) || user->OperIs(GT_ASG, GT_CALL, GT_RETURN));
+            assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
         }
-        else
-        {
-            ClassLayout* accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-            unsigned     accessSize   = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
-            for (const Replacement& rep : replacements)
-            {
-                assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
-            }
 
-            assert((accessType != TYP_STRUCT) || (accessLayout != nullptr));
-            JITDUMP("Processing use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
-                    offs + accessSize);
-        }
+        assert((accessType != TYP_STRUCT) || (accessLayout != nullptr));
+        JITDUMP("Processing use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
+                offs + accessSize);
+    }
 #endif
 
-        if (accessType == TYP_STRUCT)
-        {
-            // Will be handled once we get to the parent.
-            return;
-        }
+    if (accessType == TYP_STRUCT)
+    {
+        // Will be handled once we get to the parent.
+        return;
+    }
 
-        size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-        if ((ssize_t)index < 0)
-        {
-            // Access that we don't have a replacement for.
-            return;
-        }
+    size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+    if ((ssize_t)index < 0)
+    {
+        // Access that we don't have a replacement for.
+        return;
+    }
 
+    Replacement& rep = replacements[index];
+    assert(accessType == rep.AccessType);
+    JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
+    *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+
+    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+    {
+        (*use)->gtFlags |= GTF_VAR_DEF; // TODO-ASG: delete.
+        rep.NeedsWriteBack = true;
+        rep.NeedsReadBack  = false;
+    }
+    else if (rep.NeedsReadBack)
+    {
+        *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
+                                         Promotion::CreateReadBack(m_compiler, lclNum, rep), *use);
+        rep.NeedsReadBack = false;
+
+        // TODO-CQ: Local copy prop does not take into account that the
+        // uses of LCL_VAR occur at the user, which means it may introduce
+        // illegally overlapping lifetimes, such as:
+        //
+        // └──▌  ADD       int
+        //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
+        //    └──▌  COMMA     int
+        //       ├──▌  ASG       int
+        //       │  ├──▌  LCL_VAR   int    V35 tmp31
+        //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+        // This really ought to be handled by local copy prop, but the way it works during
+        // morph makes it hard to fix there.
+        //
+        // This is the short term fix. Long term fixes may be:
+        // 1. Fix local copy prop
+        // 2. Teach LSRA to allow the above cases, simplifying IR concepts (e.g.
+        //    introduce something like GT_COPY on top of LCL_VAR when they
+        //    need to be "defs")
+        // 3. Change the pass here to avoid creating any embedded assignments by making use
+        //    of gtSplitTree. We will only need to split in very edge cases since the point
+        //    at which the replacement was marked as needing read back is practically always
+        //    going to be in a previous statement, so this shouldn't be too bad for CQ.
+
+        m_compiler->lvaGetDesc(rep.LclNum)->lvRedefinedInEmbeddedStatement = true;
+    }
+
+    m_madeChanges = true;
+}
+
+//------------------------------------------------------------------------
+// StoreBeforeReturn:
+//   Handle a return of a potential struct local.
+//
+// Parameters:
+//   ret - The GT_RETURN node
+//
+void ReplaceVisitor::StoreBeforeReturn(GenTreeUnOp* ret)
+{
+    if (ret->TypeIs(TYP_VOID) || !ret->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* retLcl = ret->gtGetOp1()->AsLclVarCommon();
+    if (retLcl->TypeIs(TYP_STRUCT))
+    {
+        unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
+        WriteBackBefore(&ret->gtOp1, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
+    }
+}
+
+//------------------------------------------------------------------------
+// WriteBackBefore:
+//   Update the use with IR that writes back all necessary overlapping
+//   replacements into a struct local.
+//
+// Parameters:
+//   use  - The use, which will be updated with a cascading comma trees of assignments
+//   lcl  - The struct local
+//   offs - The starting offset into the struct local of the overlapping range to write back to
+//   size - The size of the overlapping range
+//
+void ReplaceVisitor::WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
+{
+    if (m_replacements[lcl] == nullptr)
+    {
+        return;
+    }
+
+    jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
+    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        {
+            index--;
+        }
+    }
+
+    unsigned end = offs + size;
+    while ((index < replacements.size()) && (replacements[index].Offset < end))
+    {
         Replacement& rep = replacements[index];
-        assert(accessType == rep.AccessType);
-        JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
-        *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
-
-        if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+        if (rep.NeedsWriteBack)
         {
-            rep.NeedsWriteBack = true;
-            rep.NeedsReadBack  = false;
-        }
-        else if (rep.NeedsReadBack)
-        {
-            GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-            GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-            *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
-            rep.NeedsReadBack = false;
+            GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
+                                                         Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
+            *use = comma;
+            use  = &comma->gtOp2;
 
-            // TODO-CQ: Local copy prop does not take into account that the
-            // uses of LCL_VAR occur at the user, which means it may introduce
-            // illegally overlapping lifetimes, such as:
-            //
-            // └──▌  ADD       int
-            //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
-            //    └──▌  COMMA     int
-            //       ├──▌  ASG       int
-            //       │  ├──▌  LCL_VAR   int    V35 tmp31
-            //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
-            // This really ought to be handled by local copy prop, but the way it works during
-            // morph makes it hard to fix there.
-            //
-            // This is the short term fix. Long term fixes may be:
-            // 1. Fix local copy prop
-            // 2. Teach LSRA to allow the above cases, simplifying IR concepts (e.g.
-            //    introduce something like GT_COPY on top of LCL_VAR when they
-            //    need to be "defs")
-            // 3. Change the pass here to avoid creating any embedded assignments by making use
-            //    of gtSplitTree. We will only need to split in very edge cases since the point
-            //    at which the replacement was marked as needing read back is practically always
-            //    going to be in a previous statement, so this shouldn't be too bad for CQ.
-
-            m_compiler->lvaGetDesc(rep.LclNum)->lvRedefinedInEmbeddedStatement = true;
-        }
-
-        m_madeChanges = true;
-    }
-
-    //------------------------------------------------------------------------
-    // StoreBeforeReturn:
-    //   Handle a return of a potential struct local.
-    //
-    // Parameters:
-    //   ret - The GT_RETURN node
-    //
-    void StoreBeforeReturn(GenTreeUnOp* ret)
-    {
-        if (ret->TypeIs(TYP_VOID) || !ret->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-        {
-            return;
-        }
-
-        GenTreeLclVarCommon* retLcl = ret->gtGetOp1()->AsLclVarCommon();
-        if (retLcl->TypeIs(TYP_STRUCT))
-        {
-            unsigned size = retLcl->GetLayout(m_compiler)->GetSize();
-            WriteBackBefore(&ret->gtOp1, retLcl->GetLclNum(), retLcl->GetLclOffs(), size);
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // WriteBackBefore:
-    //   Update the use with IR that writes back all necessary overlapping
-    //   replacements into a struct local.
-    //
-    // Parameters:
-    //   use  - The use, which will be updated with a cascading comma trees of assignments
-    //   lcl  - The struct local
-    //   offs - The starting offset into the struct local of the overlapping range to write back to
-    //   size - The size of the overlapping range
-    //
-    void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
-    {
-        if (m_replacements[lcl] == nullptr)
-        {
-            return;
-        }
-
-        jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
-        size_t                       index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-
-        if ((ssize_t)index < 0)
-        {
-            index = ~index;
-            if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
-            {
-                index--;
-            }
-        }
-
-        unsigned end = offs + size;
-        while ((index < replacements.size()) && (replacements[index].Offset < end))
-        {
-            Replacement& rep = replacements[index];
-            if (rep.NeedsWriteBack)
-            {
-                GenTree*   dst = m_compiler->gtNewLclFldNode(lcl, rep.AccessType, rep.Offset);
-                GenTree*   src = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-                GenTreeOp* comma =
-                    m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
-                *use = comma;
-                use  = &comma->gtOp2;
-
-                rep.NeedsWriteBack = false;
-                m_madeChanges      = true;
-            }
-
-            index++;
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // MarkForReadBack:
-    //   Mark that replacements in the specified struct local need to be read
-    //   back before their next use.
-    //
-    // Parameters:
-    //   lcl          - The struct local
-    //   offs         - The starting offset of the range in the struct local that needs to be read back from.
-    //   size         - The size of the range
-    //   conservative - Whether this is a potentially conservative read back
-    //                  that we can handle more efficiently in the future (only used for
-    //                  logging purposes)
-    //
-    void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
-    {
-        if (m_replacements[lcl] == nullptr)
-        {
-            return;
-        }
-
-        jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
-        size_t                       index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-
-        if ((ssize_t)index < 0)
-        {
-            index = ~index;
-            if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
-            {
-                index--;
-            }
-        }
-
-        unsigned end = offs + size;
-        while ((index < replacements.size()) && (replacements[index].Offset < end))
-        {
-            Replacement& rep = replacements[index];
-            assert(rep.Overlaps(offs, size));
-            rep.NeedsReadBack  = true;
             rep.NeedsWriteBack = false;
-            index++;
+            m_madeChanges      = true;
+        }
 
-            if (conservative)
-            {
-                JITDUMP("*** NYI: Conservatively marked as read-back\n");
-                conservative = false;
-            }
+        index++;
+    }
+}
+
+//------------------------------------------------------------------------
+// MarkForReadBack:
+//   Mark that replacements in the specified struct local need to be read
+//   back before their next use.
+//
+// Parameters:
+//   lcl          - The struct local
+//   offs         - The starting offset of the range in the struct local that needs to be read back from.
+//   size         - The size of the range
+//
+void ReplaceVisitor::MarkForReadBack(unsigned lcl, unsigned offs, unsigned size)
+{
+    if (m_replacements[lcl] == nullptr)
+    {
+        return;
+    }
+
+    jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
+    size_t                       index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+        if ((index > 0) && replacements[index - 1].Overlaps(offs, size))
+        {
+            index--;
         }
     }
-};
+
+    bool     result = false;
+    unsigned end    = offs + size;
+    while ((index < replacements.size()) && (replacements[index].Offset < end))
+    {
+        result           = true;
+        Replacement& rep = replacements[index];
+        assert(rep.Overlaps(offs, size));
+        rep.NeedsReadBack  = true;
+        rep.NeedsWriteBack = false;
+        index++;
+    }
+}
 
 //------------------------------------------------------------------------
 // Promotion::Run:
@@ -1090,7 +1024,7 @@ PhaseStatus Promotion::Run()
     }
 #endif
 
-    // Pick promotion based on the use information we just collected.
+    // Pick promotions based on the use information we just collected.
     bool                          anyReplacements = false;
     jitstd::vector<Replacement>** replacements =
         new (m_compiler, CMK_Promotion) jitstd::vector<Replacement>*[m_compiler->lvaCount]{};
@@ -1155,13 +1089,13 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n", i,
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                             rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                    GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-                    GenTree* src = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
-                    GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-                    m_compiler->fgInsertStmtNearEnd(bb, m_compiler->fgNewStmtFromTree(asg));
+                    GenTree*   readBack = CreateReadBack(m_compiler, i, rep);
+                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                    DISPSTMT(stmt);
+                    m_compiler->fgInsertStmtNearEnd(bb, stmt);
                     rep.NeedsReadBack = false;
                 }
 
@@ -1214,12 +1148,9 @@ void Promotion::InsertInitialReadBack(unsigned                           lclNum,
 {
     for (unsigned i = 0; i < replacements.size(); i++)
     {
-        const Replacement& rep = replacements[i];
-
-        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        InsertInitStatement(prevStmt, asg);
+        const Replacement& rep      = replacements[i];
+        GenTree*           readBack = CreateReadBack(m_compiler, lclNum, rep);
+        InsertInitStatement(prevStmt, readBack);
     }
 }
 

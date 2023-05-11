@@ -39,6 +39,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+
             if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
@@ -253,6 +255,12 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.Handling;
         }
 
+        private static JsonObjectCreationHandling? GetObjectCreationHandlingForType(Type type)
+        {
+            JsonObjectCreationHandlingAttribute? creationHandlingAttribute = type.GetUniqueCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            return creationHandlingAttribute?.Handling;
+        }
+
         private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
         {
             JsonUnmappedMemberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
@@ -351,6 +359,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             propertyInfo.NumberHandling = numberHandlingAttr?.Handling;
+
+            JsonObjectCreationHandlingAttribute? objectCreationHandlingAttr = memberInfo.GetCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
         }
 
         private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)

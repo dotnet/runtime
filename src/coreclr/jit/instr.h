@@ -15,7 +15,7 @@
 /*****************************************************************************/
 
 // clang-format off
-enum instruction : unsigned
+enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
     #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
@@ -366,24 +366,24 @@ enum insBarrier : unsigned
 // Represents tupletype attribute of instruction.
 // This is used in determining factor N while calculating compressed displacement in EVEX encoding
 // Reference: Section 2.6.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
-enum insTupleType : uint32_t
+enum insTupleType : uint16_t
 {
-    INS_TT_NONE             = 0x00000,
-    INS_TT_FULL             = 0x00001,
-    INS_TT_HALF             = 0x00002,
-    INS_TT_IS_BROADCAST     = 0x00003,
-    INS_TT_FULL_MEM         = 0x00010,
-    INS_TT_TUPLE1_SCALAR    = 0x00020,
-    INS_TT_TUPLE1_FIXED     = 0x00040,
-    INS_TT_TUPLE2           = 0x00080,
-    INS_TT_TUPLE4           = 0x00100,
-    INS_TT_TUPLE8           = 0x00200,
-    INS_TT_HALF_MEM         = 0x00400,
-    INS_TT_QUARTER_MEM      = 0x00800,
-    INS_TT_EIGHTH_MEM       = 0x01000,
-    INS_TT_MEM128           = 0x02000,
-    INS_TT_MOVDDUP          = 0x04000,
-    INS_TT_IS_NON_BROADCAST = 0x7FFFC
+    INS_TT_NONE             = 0x0000,
+    INS_TT_FULL             = 0x0001,
+    INS_TT_HALF             = 0x0002,
+    INS_TT_IS_BROADCAST     = static_cast<uint16_t>(INS_TT_FULL | INS_TT_HALF),
+    INS_TT_FULL_MEM         = 0x0010,
+    INS_TT_TUPLE1_SCALAR    = 0x0020,
+    INS_TT_TUPLE1_FIXED     = 0x0040,
+    INS_TT_TUPLE2           = 0x0080,
+    INS_TT_TUPLE4           = 0x0100,
+    INS_TT_TUPLE8           = 0x0200,
+    INS_TT_HALF_MEM         = 0x0400,
+    INS_TT_QUARTER_MEM      = 0x0800,
+    INS_TT_EIGHTH_MEM       = 0x1000,
+    INS_TT_MEM128           = 0x2000,
+    INS_TT_MOVDDUP          = 0x4000,
+    INS_TT_IS_NON_BROADCAST = static_cast<uint16_t>(~INS_TT_IS_BROADCAST),
 };
 #endif
 

@@ -42,8 +42,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
         // If the parent type is NULL this had better look like Object.
         if (!IsInterface() && (m_RelatedType.m_pBaseType == NULL))
         {
-            if (IsRelatedTypeViaIAT() ||
-                get_IsValueType() ||
+            if (get_IsValueType() ||
                 HasFinalizer() ||
                 HasReferenceFields() ||
                 HasGenericVariance())
@@ -104,8 +103,5 @@ MethodTable * MethodTable::get_RelatedParameterType()
 {
 	ASSERT(IsParameterizedType());
 
-	if (IsRelatedTypeViaIAT())
-		return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppRelatedParameterTypeViaIAT));
-	else
-		return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pRelatedParameterType));
+	return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pRelatedParameterType));
 }

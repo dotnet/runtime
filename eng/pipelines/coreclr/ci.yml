@@ -51,7 +51,6 @@ extends:
           - linux_x64
           - osx_arm64
           - osx_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             testGroup: outerloop
@@ -148,7 +147,6 @@ extends:
           - osx_x64
           - windows_x64
           - windows_x86
-          - windows_arm
           - windows_arm64
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

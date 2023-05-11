@@ -8,7 +8,6 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public sealed class Condition
     {
         internal class Waiter

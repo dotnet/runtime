@@ -1041,7 +1041,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsByte(simdBaseType) && (simdSize == 16))
             {
-                op1 = impCloneExpr(op1, &op2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
 
                 op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
@@ -1066,7 +1066,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
                     {
-                        op1 = impCloneExpr(op1, &op2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                        op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
                         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
                                                        simdSize);
@@ -1519,6 +1519,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftLeft:
         case NI_Vector128_ShiftLeft:
+        case NI_Vector64_op_LeftShift:
+        case NI_Vector128_op_LeftShift:
         {
             assert(sig->numArgs == 2);
 
@@ -1531,6 +1533,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftRightArithmetic:
         case NI_Vector128_ShiftRightArithmetic:
+        case NI_Vector64_op_RightShift:
+        case NI_Vector128_op_RightShift:
         {
             assert(sig->numArgs == 2);
             genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
@@ -1544,6 +1548,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_ShiftRightLogical:
         case NI_Vector128_ShiftRightLogical:
+        case NI_Vector64_op_UnsignedRightShift:
+        case NI_Vector128_op_UnsignedRightShift:
         {
             assert(sig->numArgs == 2);
 

@@ -148,7 +148,6 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.win-x64",
         "Microsoft.NETCore.App.Runtime.win-x86",
-        "Microsoft.NETCore.App.Runtime.win-arm",
         "Microsoft.NETCore.App.Runtime.win-arm64"
       ]
     },
@@ -390,10 +389,6 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.win-x86" : {
-      "kind": "framework",
-      "version": "${PackageVersion}"
-    },
-    "Microsoft.NETCore.App.Runtime.win-arm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },

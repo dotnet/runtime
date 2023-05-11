@@ -128,66 +128,39 @@ bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src
 bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 RegisterOrder IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
-bool ReplaceLdrStrWithPairInstr(
-    instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool ReplaceLdrStrWithPairInstr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx     = -1,
+                                int         offs     = -1);
 bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+FORCEINLINE bool OptimizeLdrStr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx     = -1,
+                                int offs = -1 DEBUG_ARG(bool useRsvdReg = false));
 
-// Try to optimize a Ldr or Str with an alternative instruction.
-inline bool OptimizeLdrStr(instruction ins,
-                           emitAttr    reg1Attr,
-                           regNumber   reg1,
-                           regNumber   reg2,
-                           ssize_t     imm,
-                           emitAttr    size,
-                           insFormat   fmt,
-                           bool        localVar = false,
-                           int         varx     = 0,
-                           int         offs     = 0)
+emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
-    assert(ins == INS_ldr || ins == INS_str);
-
-    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
+    assert(id->idIsLclVarPair());
+    if (id->idIsLargeCns())
     {
-        return false;
+        return &(((instrDescLclVarPairCns*)id)->iiaLclVar2);
     }
-
-    // Is the ldr/str even necessary?
-    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    else
     {
-        return true;
+        return &(((instrDescLclVarPair*)id)->iiaLclVar2);
     }
-
-    // Register 2 needs conversion to unencoded value for following optimisation checks.
-    reg2 = encodingZRtoSP(reg2);
-
-    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
-    //
-    bool canReplaceWithPair = true;
-    if (ins == INS_str)
-    {
-        // For INS_str, don't do this if either instruction had a local GC variable.
-        // For INS_ldr, it is fine to perform this optimization because the output code already handles the code of
-        // updating the gc refs. We do not need offset tracking for load cases.
-        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) ||
-            (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
-        {
-            canReplaceWithPair = false;
-        }
-    }
-
-    if (canReplaceWithPair && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
-    {
-        return true;
-    }
-
-    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
-    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
-    {
-        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
-        return true;
-    }
-
-    return false;
 }
 
 /************************************************************************
@@ -889,6 +862,19 @@ void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int o
 
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
+
+void emitIns_R_R_R_I_LdStPair(instruction ins,
+                              emitAttr    attr,
+                              emitAttr    attr2,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              regNumber   reg3,
+                              ssize_t     imm,
+                              int         varx1 = -1,
+                              int         varx2 = -1,
+                              int         offs1 = -1,
+                              int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
+                                              DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
