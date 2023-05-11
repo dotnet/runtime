@@ -2132,10 +2132,11 @@ private:
     // synchronized
     PER_HEAP_METHOD void gc1();
 
-#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
     PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
-#endif //MULTIPLE_HEAPS && USE_REGIONS
+#endif //DYNAMIC_HEAP_COUNT
 
     PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();
 

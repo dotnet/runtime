@@ -2288,7 +2288,9 @@ sorted_table* gc_heap::seg_table;
 
 #ifdef MULTIPLE_HEAPS
 GCEvent     gc_heap::ee_suspend_event;
+#ifdef DYNAMIC_HEAP_COUNT
 GCEvent     gc_heap::gc_idle_thread_event;
+#endif //DYNAMIC_HEAP_COUNT
 size_t      gc_heap::min_gen0_balance_delta = 0;
 size_t      gc_heap::min_balance_threshold = 0;
 #endif //MULTIPLE_HEAPS
@@ -6892,10 +6894,12 @@ BOOL gc_heap::create_thread_support (int number_of_heaps)
     {
         goto cleanup;
     }
+#ifdef DYNAMIC_HEAP_COUNT
     if (!gc_idle_thread_event.CreateOSManualEventNoThrow (FALSE))
     {
         goto cleanup;
     }
+#endif //DYNAMIC_HEAP_COUNT
     if (!ee_suspend_event.CreateOSAutoEventNoThrow (FALSE))
     {
         goto cleanup;
@@ -6996,6 +7000,7 @@ void gc_heap::gc_thread_function ()
         else
         {
             gc_start_event.Wait(INFINITE, FALSE);
+#ifdef DYNAMIC_HEAP_COUNT
             if (n_heaps <= heap_number)
             {
                 dprintf (2, ("GC thread %d idle", heap_number));
@@ -7008,6 +7013,7 @@ void gc_heap::gc_thread_function ()
                 dprintf (2, ("GC thread %d waking from idle", heap_number));
                 continue;
             }
+#endif //DYNAMIC_HEAP_COUNT
             dprintf (3, (ThreadStressLog::gcServerThreadNStartMsg(), heap_number));
         }
 
@@ -22418,20 +22424,28 @@ void gc_heap::gc1()
 #endif //USE_REGIONS
 }
 
-#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-void gc_heap::rethread_fl_items(int gen_idx)
+#ifdef DYNAMIC_HEAP_COUNT
+bool gc_heap::prepare_rethread_fl_items()
 {
     if (!min_fl_list)
     {    
         min_fl_list = new (nothrow) min_fl_list_info [MAX_BUCKET_COUNT * n_max_heaps];
+        if (min_fl_list == nullptr)
+            return false;
     }
-    uint32_t min_fl_list_size = sizeof (min_fl_list_info) * (MAX_BUCKET_COUNT * n_max_heaps);
-    memset (min_fl_list, 0, min_fl_list_size);
-
     if (!free_list_space_per_heap)
     {
         free_list_space_per_heap = new (nothrow) size_t[n_max_heaps];
+        if (free_list_space_per_heap == nullptr)
+            return false;
     }
+    return true;
+}
+
+void gc_heap::rethread_fl_items(int gen_idx)
+{
+    uint32_t min_fl_list_size = sizeof (min_fl_list_info) * (MAX_BUCKET_COUNT * n_max_heaps);
+    memset (min_fl_list, 0, min_fl_list_size);
     memset (free_list_space_per_heap, 0, sizeof(free_list_space_per_heap[0])*n_max_heaps);
 
     size_t num_fl_items = 0;
@@ -22544,7 +22558,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         GCToOSInterface::DebugBreak ();
     }
 }
-#endif //MULTIPLE_HEAPS && USE_REGIONS
+#endif //DYNAMIC_HEAP_COUNT
 
 void gc_heap::save_data_for_no_gc()
 {
@@ -23440,7 +23454,9 @@ void gc_heap::garbage_collect (int n)
 
 #ifdef MULTIPLE_HEAPS
             gc_start_event.Reset();
+#ifdef DYNAMIC_HEAP_COUNT
             gc_idle_thread_event.Reset();
+#endif //DYNAMIC_HEAP_COUNT
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
@@ -23588,7 +23604,9 @@ void gc_heap::garbage_collect (int n)
 
 #ifdef MULTIPLE_HEAPS
         gc_start_event.Reset();
+#ifdef DYNAMIC_HEAP_COUNT
         gc_idle_thread_event.Reset();
+#endif //DYNAMIC_HEAP_COUNT
         dprintf(3, ("Starting all gc threads for gc"));
         gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
@@ -24945,6 +24963,18 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     int old_n_heaps = n_heaps;
 
     // first do some steps that may fail and cause us to give up
+
+    // we'll need temporary memory for the rethreading of the free lists -
+    // if we can't allocate what we need, we must give up
+    for (int i = 0; i < old_n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+
+        if (!hp->prepare_rethread_fl_items())
+        {
+            return false;
+        }
+    }
 
     // move finalizer list items from heaps going out of service to remaining heaps
     // if this step fails, we have to give up
@@ -38146,7 +38176,7 @@ void gc_heap::bgc_thread_function()
             generation_free_obj_space (generation_of (max_generation)),
             dd_fragmentation (dynamic_data_of (max_generation))));
 
-#ifdef MULTIPLE_HEAPS
+#ifdef DYNAMIC_HEAP_COUNT
         if (n_heaps <= heap_number)
         {
             // this is the case where we have more background GC threads than heaps
@@ -38156,7 +38186,7 @@ void gc_heap::bgc_thread_function()
             dprintf (3, ("BGC thread %d waking from idle", heap_number));
             continue;
         }
-#endif //MULTIPLE_HEAPS
+#endif //DYNAMIC_HEAP_COUNT
 
         gc1();
 
