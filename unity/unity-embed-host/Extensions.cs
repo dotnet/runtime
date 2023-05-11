@@ -12,11 +12,17 @@ static class Extensions
     public static Type TypeFromHandleIntPtr(this nint intPtrToTypeHandle)
         => Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(intPtrToTypeHandle));
 
+    public static RuntimeMethodHandle MethodHandleFromHandleIntPtr(this nint intPtrToTypeHandle)
+        => RuntimeMethodHandle.FromIntPtr(intPtrToTypeHandle);
+
     public static nint TypeHandleIntPtr(this object obj)
         => obj.GetType().TypeHandleIntPtr();
 
     public static nint TypeHandleIntPtr(this Type type)
         => RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
+
+    public static nint MethodHandleIntPtr(this RuntimeMethodHandle handle)
+        => RuntimeMethodHandle.ToIntPtr(handle);
 
     public static GCHandle ToGCHandle(this nint intPtr)
         => GCHandle.FromIntPtr(intPtr);
