@@ -219,6 +219,7 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
 {
     configuration* config = static_cast<configuration *>(contract_context);
 
+    pal::string_utf8_t value_utf8;
     if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
     {
         // Compute the entry assembly name based on the entry assembly full path
@@ -227,17 +228,33 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
         pal::split_path_to_dir_filename(config->entry_assembly_fullpath, dir, file);
         file = file.substr(0, file.rfind(W('.')));
 
-        pal::string_utf8_t file_utf8 = pal::convert_to_utf8(file.c_str());
-        size_t len = file_utf8.size() + 1;
-        if (value_buffer_size < len)
-            return len;
+        value_utf8 = pal::convert_to_utf8(file.c_str());
+    }
+    else if (::strcmp(key, HOST_PROPERTY_COMMAND_LINE) == 0)
+    {
+        pal::string_t cmd_line = pal::get_exe_path();
+        cmd_line.append(W(" "));
+        cmd_line.append(config->entry_assembly_fullpath);
+        for (int i = 0; i < config->entry_assembly_argc; ++i)
+        {
+            cmd_line.append(W(" "));
+            cmd_line.append(config->entry_assembly_argv[i]);
+        }
 
-        ::strncpy(value_buffer, file_utf8.c_str(), len - 1);
-        value_buffer[len - 1] = '\0';
-        return len;
+        value_utf8 = pal::convert_to_utf8(cmd_line.c_str());
+    }
+    else
+    {
+        return -1;
     }
 
-    return -1;
+    size_t len = value_utf8.size() + 1;
+    if (value_buffer_size < len)
+        return len;
+
+    ::strncpy(value_buffer, value_utf8.c_str(), len - 1);
+    value_buffer[len - 1] = '\0';
+    return len;
 }
 
 static int run(const configuration& config)

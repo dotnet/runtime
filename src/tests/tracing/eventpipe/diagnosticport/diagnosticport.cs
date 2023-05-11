@@ -419,6 +419,12 @@ namespace Tracing.Tests.DiagnosticPortValidation
                         string expectedName = Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
                         Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
                             $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
+
+                        // Utils.RunSubprocess runs: <current_process_path> <assembly_path> 0
+                        string expectedCommandLine = $"{Process.GetCurrentProcess().MainModule.FileName} {new Uri(Assembly.GetExecutingAssembly().Location).LocalPath} 0";
+                        string receivedCommandLine = IpcTraceTest.NormalizeCommandLine(processInfo2.Commandline);
+                        Utils.Assert(expectedCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase),
+                            $"CommandLine must match. Expected: {expectedCommandLine}, Received: {receivedCommandLine} (original: {processInfo2.Commandline})");
                     }
 
                     // send resume command on this connection

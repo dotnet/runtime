@@ -19,75 +19,6 @@ namespace Tracing.Tests.ProcessInfoValidation
 {
     public class ProcessInfoValidation
     {
-        public static string NormalizeCommandLine(string cmdline)
-        {
-            // ASSUMPTION: double quotes (") and single quotes (') are used for paths with spaces
-            // ASSUMPTION: This test will only have two parts to the commandline
-
-            // check for quotes in first part
-            var parts = new List<string>();
-            bool isQuoted = false;
-            int start = 0;
-
-            for (int i = 0; i < cmdline.Length; i++)
-            {
-                if (isQuoted)
-                {
-                    if (cmdline[i] == '"' || cmdline[i] == '\'')
-                    {
-                        parts.Add(cmdline.Substring(start, i - start));
-                        isQuoted = false;
-                        start = i + 1;
-                    }
-                }
-                else if (cmdline[i] == '"' || cmdline[i] == '\'')
-                {
-                    isQuoted = true;
-                    start = i + 1;
-                }
-                else if (cmdline[i] == ' ')
-                {
-                    parts.Add(cmdline.Substring(start, i - start));
-                    start = i + 1;
-                }
-                else if (i == cmdline.Length - 1)
-                {
-                    parts.Add(cmdline.Substring(start));
-                }
-            }
-
-            StringBuilder sb = new();
-            bool isArgument = false;
-            for (int i = 0; i < parts.Count; i++)
-            {
-                if (string.IsNullOrEmpty(parts[i]))
-                    continue;
-                else if (parts[i].StartsWith('-'))
-                {
-                    // if we see '-', then assume it's a '-option argument' pair and remove
-                    isArgument = true;
-                }
-                else if (isArgument)
-                {
-                    isArgument = false;
-                }
-                else
-                {
-                    // assume anything else is a file/executable so get the full path
-                    sb.Append((new FileInfo(parts[i])).FullName + " ");
-                }
-            }
-
-            string normalizedCommandLine = sb.ToString().Trim();
-
-            // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
-            // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
-            if (OperatingSystem.IsMacOS() && normalizedCommandLine.StartsWith("/tmp/"))
-                normalizedCommandLine = "/private" + normalizedCommandLine;
-
-            return normalizedCommandLine;
-        }
-
         public static int Main()
         {
 
@@ -150,7 +81,7 @@ namespace Tracing.Tests.ProcessInfoValidation
                 // or
                 // "C:\path\to\CoreRun.exe" C:\path\to\processinfo.dll
                 string currentProcessCommandLine = $"{currentProcess.MainModule.FileName} {System.Reflection.Assembly.GetExecutingAssembly().Location}";
-                string receivedCommandLine = NormalizeCommandLine(commandLine);
+                string receivedCommandLine = IpcTraceTest.NormalizeCommandLine(commandLine);
                 Utils.Assert(currentProcessCommandLine.Equals(receivedCommandLine, StringComparison.OrdinalIgnoreCase), $"CommandLine must match current process. Expected: {currentProcessCommandLine}, Received: {receivedCommandLine} (original: {commandLine})");
             }
 

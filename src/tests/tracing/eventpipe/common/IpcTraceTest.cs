@@ -413,5 +413,75 @@ namespace Tracing.Tests.Common
                 return -1;
             }
         }
+
+        public static string NormalizeCommandLine(string cmdline)
+        {
+            // ASSUMPTION: double quotes (") and single quotes (') are used for paths with spaces
+            // ASSUMPTION: This first two parts of the commandline are paths
+
+            // check for quotes in first part
+            var parts = new List<string>();
+            bool isQuoted = false;
+            int start = 0;
+
+            for (int i = 0; i < cmdline.Length; i++)
+            {
+                if (isQuoted)
+                {
+                    if (cmdline[i] == '"' || cmdline[i] == '\'')
+                    {
+                        parts.Add(cmdline.Substring(start, i - start));
+                        isQuoted = false;
+                        start = i + 1;
+                    }
+                }
+                else if (cmdline[i] == '"' || cmdline[i] == '\'')
+                {
+                    isQuoted = true;
+                    start = i + 1;
+                }
+                else if (cmdline[i] == ' ')
+                {
+                    parts.Add(cmdline.Substring(start, i - start));
+                    start = i + 1;
+                }
+                else if (i == cmdline.Length - 1)
+                {
+                    parts.Add(cmdline.Substring(start));
+                }
+            }
+
+            bool isArgument = false;
+            var commandLine = new List<string>();
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (string.IsNullOrEmpty(parts[i]))
+                    continue;
+
+                if (parts[i].StartsWith('-'))
+                {
+                    // if we see '-', then assume it's a '-option argument' pair and remove
+                    isArgument = true;
+                }
+                else if (isArgument)
+                {
+                    isArgument = false;
+                }
+                else
+                {
+                    // assume the first two parts are a file/executable so get the full path
+                    commandLine.Add(commandLine.Count < 2 ? (new FileInfo(parts[i])).FullName : parts[i]);
+                }
+            }
+
+            string normalizedCommandLine = string.Join(' ', commandLine);
+
+            // Tests are run out of /tmp on Mac and linux, but on Mac /tmp is actually a symlink that points to /private/tmp.
+            // This isn't represented in the output from FileInfo.FullName unfortunately, so we'll fake that completion in that case.
+            if (OperatingSystem.IsMacOS() && normalizedCommandLine.StartsWith("/tmp/"))
+                normalizedCommandLine = "/private" + normalizedCommandLine;
+
+            return normalizedCommandLine;
+        }
     }
 }
