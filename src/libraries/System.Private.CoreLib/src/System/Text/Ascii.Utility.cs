@@ -1471,9 +1471,9 @@ namespace System.Text
             else
             {
                 return
-                    Sse41.IsSupported ? Sse41.TestZ(vector.AsInt16(), Vector128.Create((short)-128)) :
+                    Sse41.IsSupported ? Sse41.TestZ(vector.AsUInt16(), Vector128.Create((ushort)0xFF80)) :
                     AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
-                    (vector.AsUInt16() & Vector128.Create((ushort)(ushort.MaxValue - 127))) == Vector128<ushort>.Zero;
+                    (vector.AsUInt16() & Vector128.Create((ushort)0xFF80)) == Vector128<ushort>.Zero;
             }
         }
 
@@ -1481,12 +1481,20 @@ namespace System.Text
         private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
             where T : unmanaged
         {
-            Debug.Assert(Avx.IsSupported);
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
 
-            return typeof(T) == typeof(byte)
-                ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80))
-                : Avx.TestZ(vector.AsInt16(), Vector256.Create((short)-128));
+            if (typeof(T) == typeof(byte))
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80)) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
+            }
+            else
+            {
+                return
+                    Avx.IsSupported ? Avx.TestZ(vector.AsUInt16(), Vector256.Create((ushort)0xFF80)) :
+                    (vector.AsUInt16() & Vector256.Create((ushort)0xFF80)) == Vector256<ushort>.Zero;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
