@@ -2,6 +2,10 @@
 #include "interp-internals.h"
 #include "interp-simd.h"
 
+#if HOST_BROWSER
+#include <wasm_simd128.h>
+#endif
+
 #ifdef INTERP_ENABLE_SIMD
 
 typedef gint64 v128_i8 __attribute__ ((vector_size (SIZEOF_V128)));
@@ -12,6 +16,7 @@ typedef gint16 v128_i2 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint16 v128_u2 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint8 v128_i1 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint8 v128_u1 __attribute__ ((vector_size (SIZEOF_V128)));
+typedef float v128_r4 __attribute__ ((vector_size (SIZEOF_V128)));
 
 // get_AllBitsSet
 static void
@@ -39,6 +44,12 @@ interp_v128_i4_op_addition (gpointer res, gpointer v1, gpointer v2)
 	*(v128_i4*)res = *(v128_i4*)v1 + *(v128_i4*)v2;
 }
 
+static void
+interp_v128_r4_op_addition (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 + *(v128_r4*)v2;
+}
+
 // op_Subtraction
 static void
 interp_v128_i1_op_subtraction (gpointer res, gpointer v1, gpointer v2)
@@ -56,6 +67,12 @@ static void
 interp_v128_i4_op_subtraction (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i4*)res = *(v128_i4*)v1 - *(v128_i4*)v2;
+}
+
+static void
+interp_v128_r4_op_subtraction (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 - *(v128_r4*)v2;
 }
 
 // op_BitwiseAnd
@@ -122,6 +139,18 @@ static void
 interp_v128_i4_op_multiply (gpointer res, gpointer v1, gpointer v2)
 {
 	*(v128_i4*)res = *(v128_i4*)v1 * *(v128_i4*)v2;
+}
+
+static void
+interp_v128_r4_op_multiply (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 * *(v128_r4*)v2;
+}
+
+static void
+interp_v128_r4_op_division (gpointer res, gpointer v1, gpointer v2)
+{
+	*(v128_r4*)res = *(v128_r4*)v1 / *(v128_r4*)v2;
 }
 
 // op_UnaryNegation
@@ -535,32 +564,122 @@ interp_v128_i8_shuffle (gpointer res, gpointer v1, gpointer v2)
 	V128_SHUFFLE (gint64, guint64);
 }
 
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
+
+// For the wasm packed simd intrinsics we want to automatically generate the C implementations from
+//  their corresponding clang intrinsics. See also:
+// https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/wasm_simd128.h
+// In this context V means Vector128 and P means void* pointer.
+#ifdef HOST_BROWSER
+
+static v128_t
+_interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
+	g_assert_not_reached ();
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_P(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+	*((v128_t *)res) = c_intrinsic (v1); \
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_V(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1)); \
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_I_V(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1) { \
+	*((int32_t *)res) = c_intrinsic (*((v128_t *)v1)); \
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_VV(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2)); \
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_VI(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2) { \
+	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((int *)v2)); \
+}
+
+#define INTERP_WASM_SIMD_INTRINSIC_V_VVV(id, c_intrinsic, wasm_opcode) \
+static void \
+_mono_interp_simd_ ## id (gpointer res, gpointer v1, gpointer v2, gpointer v3) { \
+	*((v128_t *)res) = c_intrinsic (*((v128_t *)v1), *((v128_t *)v2), *((v128_t *)v3)); \
+}
+
+#include "interp-simd-intrins.def"
+
+#undef INTERP_WASM_SIMD_INTRINSIC_V_P
+#undef INTERP_WASM_SIMD_INTRINSIC_V_V
+#undef INTERP_WASM_SIMD_INTRINSIC_I_V
+#undef INTERP_WASM_SIMD_INTRINSIC_V_VV
+#undef INTERP_WASM_SIMD_INTRINSIC_V_VI
+#undef INTERP_WASM_SIMD_INTRINSIC_V_VVV
+
+// Now generate the wasm opcode tables for the intrinsics
 
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b) b,
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c) c,
+
+int interp_simd_p_p_wasm_opcode_table [] = {
+#include "interp-simd-intrins.def"
+};
+
+#undef INTERP_SIMD_INTRINSIC_P_P
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
+
+#undef INTERP_SIMD_INTRINSIC_P_PP
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c) c,
+
+int interp_simd_p_pp_wasm_opcode_table [] = {
+#include "interp-simd-intrins.def"
+};
+
+#undef INTERP_SIMD_INTRINSIC_P_PP
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
+
+#undef INTERP_SIMD_INTRINSIC_P_PPP
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c) c,
+
+int interp_simd_p_ppp_wasm_opcode_table [] = {
+#include "interp-simd-intrins.def"
+};
+
+#undef INTERP_SIMD_INTRINSIC_P_PPP
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
+
+#endif // HOST_BROWSER
+
+#undef INTERP_SIMD_INTRINSIC_P_P
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c) b,
 PP_SIMD_Method interp_simd_p_p_table [] = {
 #include "interp-simd-intrins.def"
 };
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b) b,
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c) b,
 PPP_SIMD_Method interp_simd_p_pp_table [] = {
 #include "interp-simd-intrins.def"
 };
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b) b,
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c) b,
 PPPP_SIMD_Method interp_simd_p_ppp_table [] = {
 #include "interp-simd-intrins.def"
 };
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
 #endif // INTERP_ENABLE_SIMD

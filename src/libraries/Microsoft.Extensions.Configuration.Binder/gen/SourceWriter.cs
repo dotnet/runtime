@@ -82,13 +82,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public void WriteBlankLine() => _sb.AppendLine();
 
-        public void RemoveBlankLine()
-        {
-            int newLineLength = s_newLine.Length;
-            int lastNewLineStartIndex = Length - newLineLength;
-            _sb.Remove(lastNewLineStartIndex, newLineLength);
-        }
-
         public SourceText ToSourceText()
         {
             Debug.Assert(_indentationLevel == 0 && _sb.Length > 0);

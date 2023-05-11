@@ -23,7 +23,6 @@ namespace Internal.Metadata.NativeFormat
 {
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ArraySignature
     {
@@ -82,7 +81,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ArraySignatureHandle
     {
@@ -168,7 +166,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByReferenceSignature
     {
@@ -197,7 +194,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByReferenceSignatureHandle
     {
@@ -283,7 +279,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanArray
     {
@@ -311,7 +306,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanArrayHandle
     {
@@ -397,7 +391,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanValue
     {
@@ -425,7 +418,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBooleanValueHandle
     {
@@ -511,7 +503,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBoxedEnumValue
     {
@@ -551,7 +542,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantBoxedEnumValueHandle
     {
@@ -637,7 +627,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteArray
     {
@@ -665,7 +654,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteArrayHandle
     {
@@ -751,7 +739,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteValue
     {
@@ -779,7 +766,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantByteValueHandle
     {
@@ -865,7 +851,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharArray
     {
@@ -893,7 +878,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharArrayHandle
     {
@@ -979,7 +963,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharValue
     {
@@ -1007,7 +990,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantCharValueHandle
     {
@@ -1093,7 +1075,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleArray
     {
@@ -1121,7 +1102,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleArrayHandle
     {
@@ -1207,7 +1187,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleValue
     {
@@ -1235,7 +1214,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantDoubleValueHandle
     {
@@ -1321,7 +1299,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantEnumArray
     {
@@ -1359,7 +1336,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantEnumArrayHandle
     {
@@ -1445,7 +1421,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantHandleArray
     {
@@ -1473,7 +1448,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantHandleArrayHandle
     {
@@ -1559,7 +1533,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16Array
     {
@@ -1587,7 +1560,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16ArrayHandle
     {
@@ -1673,7 +1645,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16Value
     {
@@ -1701,7 +1672,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt16ValueHandle
     {
@@ -1787,7 +1757,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32Array
     {
@@ -1815,7 +1784,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32ArrayHandle
     {
@@ -1901,7 +1869,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32Value
     {
@@ -1929,7 +1896,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt32ValueHandle
     {
@@ -2015,7 +1981,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64Array
     {
@@ -2043,7 +2008,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64ArrayHandle
     {
@@ -2129,7 +2093,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64Value
     {
@@ -2157,7 +2120,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantInt64ValueHandle
     {
@@ -2243,7 +2205,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantReferenceValue
     {
@@ -2261,7 +2222,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantReferenceValueHandle
     {
@@ -2347,7 +2307,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteArray
     {
@@ -2375,7 +2334,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteArrayHandle
     {
@@ -2461,7 +2419,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteValue
     {
@@ -2489,7 +2446,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSByteValueHandle
     {
@@ -2575,7 +2531,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleArray
     {
@@ -2603,7 +2558,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleArrayHandle
     {
@@ -2689,7 +2643,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleValue
     {
@@ -2717,7 +2670,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantSingleValueHandle
     {
@@ -2803,7 +2755,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringArray
     {
@@ -2832,7 +2783,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringArrayHandle
     {
@@ -2918,7 +2868,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringValue
     {
@@ -2946,7 +2895,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantStringValueHandle
     {
@@ -3032,7 +2980,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16Array
     {
@@ -3060,7 +3007,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16ArrayHandle
     {
@@ -3146,7 +3092,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16Value
     {
@@ -3174,7 +3119,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt16ValueHandle
     {
@@ -3260,7 +3204,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32Array
     {
@@ -3288,7 +3231,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32ArrayHandle
     {
@@ -3374,7 +3316,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32Value
     {
@@ -3402,7 +3343,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt32ValueHandle
     {
@@ -3488,7 +3428,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64Array
     {
@@ -3516,7 +3455,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64ArrayHandle
     {
@@ -3602,7 +3540,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64Value
     {
@@ -3630,7 +3567,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ConstantUInt64ValueHandle
     {
@@ -3716,7 +3652,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttribute
     {
@@ -3766,7 +3701,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttributeHandle
     {
@@ -3852,7 +3786,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Event
     {
@@ -3921,7 +3854,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct EventHandle
     {
@@ -4007,7 +3939,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Field
     {
@@ -4086,7 +4017,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldHandle
     {
@@ -4172,7 +4102,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldSignature
     {
@@ -4201,7 +4130,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldSignatureHandle
     {
@@ -4287,7 +4215,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FunctionPointerSignature
     {
@@ -4315,7 +4242,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FunctionPointerSignatureHandle
     {
@@ -4401,7 +4327,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameter
     {
@@ -4480,7 +4405,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameterHandle
     {
@@ -4566,7 +4490,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MemberReference
     {
@@ -4616,7 +4539,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MemberReferenceHandle
     {
@@ -4702,7 +4624,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Method
     {
@@ -4790,7 +4711,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodHandle
     {
@@ -4876,7 +4796,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodInstantiation
     {
@@ -4916,7 +4835,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodInstantiationHandle
     {
@@ -5002,7 +4920,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemantics
     {
@@ -5040,7 +4957,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemanticsHandle
     {
@@ -5126,7 +5042,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSignature
     {
@@ -5197,7 +5112,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSignatureHandle
     {
@@ -5283,7 +5197,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodTypeVariableSignature
     {
@@ -5311,7 +5224,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodTypeVariableSignatureHandle
     {
@@ -5397,7 +5309,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ModifiedType
     {
@@ -5447,7 +5358,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ModifiedTypeHandle
     {
@@ -5533,7 +5443,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgument
     {
@@ -5593,7 +5502,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgumentHandle
     {
@@ -5679,7 +5587,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinition
     {
@@ -5748,7 +5655,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinitionHandle
     {
@@ -5834,7 +5740,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceReference
     {
@@ -5873,7 +5778,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceReferenceHandle
     {
@@ -5959,7 +5863,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Parameter
     {
@@ -6028,7 +5931,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ParameterHandle
     {
@@ -6114,7 +6016,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PointerSignature
     {
@@ -6143,7 +6044,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PointerSignatureHandle
     {
@@ -6229,7 +6129,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Property
     {
@@ -6308,7 +6207,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertyHandle
     {
@@ -6394,7 +6292,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertySignature
     {
@@ -6444,7 +6341,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertySignatureHandle
     {
@@ -6530,7 +6426,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedField
     {
@@ -6568,7 +6463,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedFieldHandle
     {
@@ -6654,7 +6548,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedMethod
     {
@@ -6692,7 +6585,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct QualifiedMethodHandle
     {
@@ -6778,7 +6670,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SZArraySignature
     {
@@ -6807,7 +6698,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SZArraySignatureHandle
     {
@@ -6893,7 +6783,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinition
     {
@@ -7071,7 +6960,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinitionHandle
     {
@@ -7157,7 +7045,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeReference
     {
@@ -7255,7 +7142,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeReferenceHandle
     {
@@ -7341,7 +7227,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinition
     {
@@ -7511,7 +7396,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinitionHandle
     {
@@ -7597,7 +7481,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarder
     {
@@ -7645,7 +7528,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarderHandle
     {
@@ -7731,7 +7613,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeInstantiationSignature
     {
@@ -7771,7 +7652,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeInstantiationSignatureHandle
     {
@@ -7857,7 +7737,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeReference
     {
@@ -7896,7 +7775,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeReferenceHandle
     {
@@ -7982,7 +7860,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeSpecification
     {
@@ -8011,7 +7888,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeSpecificationHandle
     {
@@ -8097,7 +7973,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeVariableSignature
     {
@@ -8125,7 +8000,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeVariableSignatureHandle
     {
@@ -8211,7 +8085,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamedArgumentHandleCollection
     {
@@ -8241,7 +8114,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8282,7 +8154,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodSemanticsHandleCollection
     {
@@ -8312,7 +8183,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8353,7 +8223,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CustomAttributeHandleCollection
     {
@@ -8383,7 +8252,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8424,7 +8292,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ParameterHandleCollection
     {
@@ -8454,7 +8321,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8495,7 +8361,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct GenericParameterHandleCollection
     {
@@ -8525,7 +8390,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8566,7 +8430,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeDefinitionHandleCollection
     {
@@ -8596,7 +8459,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8637,7 +8499,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct TypeForwarderHandleCollection
     {
@@ -8667,7 +8528,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8708,7 +8568,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct NamespaceDefinitionHandleCollection
     {
@@ -8738,7 +8597,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8779,7 +8637,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct MethodHandleCollection
     {
@@ -8809,7 +8666,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8850,7 +8706,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct FieldHandleCollection
     {
@@ -8880,7 +8735,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8921,7 +8775,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct PropertyHandleCollection
     {
@@ -8951,7 +8804,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -8992,7 +8844,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct EventHandleCollection
     {
@@ -9022,7 +8873,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9063,7 +8913,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ScopeDefinitionHandleCollection
     {
@@ -9093,7 +8942,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9134,7 +8982,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct BooleanCollection
     {
@@ -9164,7 +9011,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9205,7 +9051,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct CharCollection
     {
@@ -9235,7 +9080,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9276,7 +9120,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct ByteCollection
     {
@@ -9306,7 +9149,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9347,7 +9189,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SByteCollection
     {
@@ -9377,7 +9218,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9418,7 +9258,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int16Collection
     {
@@ -9448,7 +9287,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9489,7 +9327,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt16Collection
     {
@@ -9519,7 +9356,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9560,7 +9396,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int32Collection
     {
@@ -9590,7 +9425,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9631,7 +9465,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt32Collection
     {
@@ -9661,7 +9494,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9702,7 +9534,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Int64Collection
     {
@@ -9732,7 +9563,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9773,7 +9603,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct UInt64Collection
     {
@@ -9803,7 +9632,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9844,7 +9672,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct SingleCollection
     {
@@ -9874,7 +9701,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9915,7 +9741,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct DoubleCollection
     {
@@ -9945,7 +9770,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -9986,7 +9810,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct Handle
     {
@@ -10308,7 +10131,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial struct HandleCollection
     {
@@ -10338,7 +10160,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
-        [ReflectionBlocked]
 #endif
         public struct Enumerator
         {
@@ -10379,7 +10200,6 @@ namespace Internal.Metadata.NativeFormat
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
-    [ReflectionBlocked]
 #endif
     public partial class MetadataReader
     {
