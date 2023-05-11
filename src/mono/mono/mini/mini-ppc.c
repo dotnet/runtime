@@ -2690,7 +2690,6 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 {
 	long offset = cfg->arch.fp_conv_var_offset;
 	long sub_offset;
-
 	/* sreg is a float, dreg is an integer reg. ppc_f0 is used a scratch */
 #ifdef TARGET_POWERPC64
 	if (size == 8) {
@@ -4531,7 +4530,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_RCONV_TO_R4:
 		case OP_RCONV_TO_R8:
-			ppc_mr (code, ins->dreg, ins->sreg1);
+			ppc_fmr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_ICONV_TO_R4:
 		case OP_ICONV_TO_R8:

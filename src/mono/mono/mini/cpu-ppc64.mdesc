@@ -260,7 +260,6 @@ rcall_membase: dest:g src1:b len:16 clob:c
 rcall_reg: dest:g src1:i len:16 clob:c
 rcall: dest:g len:40 clob:c
 
-
 # Linear IR opcodes
 dummy_use: src1:i len:0
 dummy_iconst: dest:i len:0
