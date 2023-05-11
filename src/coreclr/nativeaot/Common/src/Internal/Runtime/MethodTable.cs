@@ -294,6 +294,7 @@ namespace Internal.Runtime
 
         internal ushort ExtendedFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
@@ -845,6 +846,7 @@ namespace Internal.Runtime
 
         internal MethodTable** InterfaceMap
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 // interface info table starts after the vtable and has _usNumInterfaces entries

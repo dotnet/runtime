@@ -319,6 +319,13 @@ namespace System.Runtime
             return obj;
 
         slowPath:
+
+            return IsInstanceOfInterface_Helper(pTargetType, obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe object? IsInstanceOfInterface_Helper(MethodTable* pTargetType, object? obj)
+        {
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
             // the interface.
             if (!IsInstanceOfInterfaceViaIDynamicInterfaceCastable(pTargetType, obj, throwing: false))
@@ -796,6 +803,13 @@ namespace System.Runtime
             return obj;
 
         slowPath:
+
+            return CheckCastInterface_Helper(pTargetType, obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe object CheckCastInterface_Helper(MethodTable* pTargetType, object obj)
+        {
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
             // the interface.
             if (obj.GetMethodTable()->IsIDynamicInterfaceCastable
@@ -1104,6 +1118,8 @@ namespace System.Runtime
             return elementType;
         }
 
+        // Would not be inlined, but still need to mark NoInlining so that it doesn't throw off tail calls
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe object ThrowInvalidCastException(MethodTable* pMT)
         {
             throw pMT->GetClasslibException(ExceptionIDs.InvalidCast);
