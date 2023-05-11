@@ -21,9 +21,6 @@
     <Compile Include="System\Number.Polyfill.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
-    <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
-    <Compile Include="System\Globalization\FormatProvider.Number.cs" />
-    <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
 
