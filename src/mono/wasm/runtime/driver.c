@@ -53,7 +53,7 @@ int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
-extern void mono_register_timezones_bundle();
+extern void mono_register_timezones_bundle (void);
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 static void mono_wasm_init_finalizer_thread (void);
 
@@ -512,7 +512,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
-	mono_register_timezones_bundle();
+	mono_register_timezones_bundle ();
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 

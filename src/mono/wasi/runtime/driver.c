@@ -63,11 +63,11 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-extern void mono_register_timezones_bundle();
+extern void mono_register_timezones_bundle (void);
 #ifdef WASM_SINGLE_FILE
-extern void mono_register_assemblies_bundle();
+extern void mono_register_assemblies_bundle (void);
 #ifndef INVARIANT_GLOBALIZATION
-extern void mono_register_icu_bundle();
+extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 
@@ -344,14 +344,14 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 void load_icu_data (void)
 {
 #ifdef WASM_SINGLE_FILE
-	mono_register_icu_bundle();
+	mono_register_icu_bundle ();
 
-    MonoBundledDataResource *icu_data = mono_bundled_resources_get_data_resource ("icudt.dat");
-    if (!icu_data) {
+	MonoBundledDataResource *icu_data = mono_bundled_resources_get_data_resource ("icudt.dat");
+	if (!icu_data) {
 		printf("Could not load icudt.dat from the bundle");
 		assert(buffer);
 	}
-    const unsigned char *buffer = icu_data->data.data;
+	const unsigned char *buffer = icu_data->data.data;
 #else /* WASM_SINGLE_FILE */
 	FILE *fileptr;
 	unsigned char *buffer;
@@ -443,9 +443,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
-	mono_register_timezones_bundle();
+	mono_register_timezones_bundle ();
 #ifdef WASM_SINGLE_FILE
-	mono_register_assemblies_bundle();
+	mono_register_assemblies_bundle ();
 #endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);

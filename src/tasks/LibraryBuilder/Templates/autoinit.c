@@ -19,7 +19,7 @@
 #include "library-builder.h"
 
 #if defined(BUNDLED_RESOURCES)
-void mono_register_resources_bundle (void);
+extern void mono_register_resources_bundle (void);
 extern uint8_t %RUNTIME_CONFIG_DATA%[];
 extern const uint32_t %RUNTIME_CONFIG_DATA_LEN%;
 #endif

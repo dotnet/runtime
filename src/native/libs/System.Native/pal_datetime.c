@@ -21,7 +21,7 @@ static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 #endif
 
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-extern MonoBundledResource * mono_get_bundled_resource_data (const char *name);
+extern MonoBundledResource * mono_get_bundled_resource_data (const char *id);
 #endif
 
 //
