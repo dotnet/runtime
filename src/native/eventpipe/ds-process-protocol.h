@@ -175,7 +175,7 @@ struct _DiagnosticsEnablePerfmapPayload_Internal {
 #endif
 	uint8_t * incoming_buffer;
 
-	uint32_t value;
+	uint32_t perfMapType;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
