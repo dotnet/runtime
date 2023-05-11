@@ -5,13 +5,8 @@
 #ifndef __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 #define __MONO_METADATA_BUNDLED_RESOURCES_INTERNALS_H__
 
-#include <assert.h>
 #include <stdbool.h>
-
-#include "loader-internals.h"
-
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/mono-private-unstable.h>
+#include <stdint.h>
 
 typedef enum {
 	MONO_BUNDLED_DATA,

@@ -5,11 +5,8 @@
 #include <glib.h>
 #include <stdbool.h>
 
-#include "bundled-resources-internals.h"
-#include "assembly-internals.h"
-
-#include <mono/metadata/assembly.h>
-#include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/bundled-resources-internals.h>
+#include <mono/metadata/assembly-internals.h>
 
 static GHashTable *bundled_resources = NULL;
 static bool bundle_contains_assemblies, bundle_contains_satellite_assemblies = false;
