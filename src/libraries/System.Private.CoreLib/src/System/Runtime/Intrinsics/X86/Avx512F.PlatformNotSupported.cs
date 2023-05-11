@@ -847,6 +847,37 @@ namespace System.Runtime.Intrinsics.X86
             public static Vector256<long> ShiftRightArithmeticVariable(Vector256<long> value, Vector256<ulong> count) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// __m256d _mm256_shuffle_f64x2 (__m256d a, __m256d b, const int imm8)
+            ///   VSHUFF64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<double> Shuffle2x128(Vector256<double> left, Vector256<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<int> Shuffle2x128(Vector256<int> left, Vector256<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<long> Shuffle2x128(Vector256<long> left, Vector256<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256 _mm256_shuffle_f32x4 (__m256 a, __m256 b, const int imm8)
+            ///   VSHUFF32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<float> Shuffle2x128(Vector256<float> left, Vector256<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i32x4 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI32x4 ymm1 {k1}{z}, ymm2, ymm3/m256/m32bcst, imm8
+            /// </summary>
+            public static Vector256<uint> Shuffle2x128(Vector256<uint> left, Vector256<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m256i _mm256_shuffle_i64x2 (__m256i a, __m256i b, const int imm8)
+            ///   VSHUFI64x2 ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst, imm8
+            /// </summary>
+            public static Vector256<ulong> Shuffle2x128(Vector256<ulong> left, Vector256<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// __m128i _mm_ternarylogic_si128 (__m128i a, __m128i b, __m128i c, byte imm)
             ///   VPTERNLOGD xmm1 {k1}{z}, xmm2, xmm3/m128, imm8
             /// The above native signature does not exist. We provide this additional overload for consistency with the other bitwise APIs.
@@ -2703,6 +2734,37 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSHUFPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
         /// </summary>
         public static Vector512<double> Shuffle(Vector512<double> value, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m512d _mm512_shuffle_f64x2 (__m512d a, __m512d b, const int imm8)
+        ///   VSHUFF64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<double> Shuffle4x128(Vector512<double> left, Vector512<double> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<int> Shuffle4x128(Vector512<int> left, Vector512<int> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<long> Shuffle4x128(Vector512<long> left, Vector512<long> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512 _mm512_shuffle_f32x4 (__m512 a, __m512 b, const int imm8)
+        ///   VSHUFF32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<float> Shuffle4x128(Vector512<float> left, Vector512<float> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i32x4 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI32x4 zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst, imm8
+        /// </summary>
+        public static Vector512<uint> Shuffle4x128(Vector512<uint> left, Vector512<uint> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m512i _mm512_shuffle_i64x2 (__m512i a, __m512i b, const int imm8)
+        ///   VSHUFI64x2 zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst, imm8
+        /// </summary>
+        public static Vector512<ulong> Shuffle4x128(Vector512<ulong> left, Vector512<ulong> right, [ConstantExpected] byte control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m512 _mm512_sqrt_ps (__m512 a)

@@ -6987,6 +6987,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_ShiftRightArithmetic:
                 case NI_AVX512F_ShiftRightLogical:
                 case NI_AVX512F_Shuffle:
+                case NI_AVX512F_Shuffle4x128:
                 case NI_AVX512F_TernaryLogic:
                 case NI_AVX512F_VL_AlignRight32:
                 case NI_AVX512F_VL_AlignRight64:
@@ -6996,6 +6997,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_VL_RotateRight:
                 case NI_AVX512F_VL_RoundScale:
                 case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX512F_VL_Shuffle2x128:
                 case NI_AVX512F_VL_TernaryLogic:
                 case NI_AVX512BW_AlignRight:
                 case NI_AVX512BW_ShiftLeftLogical:
@@ -8229,8 +8231,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_InsertVector256:
                         case NI_AVX512F_RoundScaleScalar:
                         case NI_AVX512F_Shuffle:
+                        case NI_AVX512F_Shuffle4x128:
                         case NI_AVX512F_VL_AlignRight32:
                         case NI_AVX512F_VL_AlignRight64:
+                        case NI_AVX512F_VL_Shuffle2x128:
                         case NI_AVX512BW_AlignRight:
                         case NI_AVX512BW_SumAbsoluteDifferencesInBlock32:
                         case NI_AVX512BW_VL_SumAbsoluteDifferencesInBlock32:

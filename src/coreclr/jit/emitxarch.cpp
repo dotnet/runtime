@@ -18644,6 +18644,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
+        case INS_vshuff32x4:
+        case INS_vshuff64x2:
+        case INS_vshufi32x4:
+        case INS_vshufi64x2:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;
