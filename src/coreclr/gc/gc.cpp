@@ -10821,7 +10821,7 @@ void gc_heap::grow_mark_list ()
 #endif //USE_VXSORT
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
-    size_t new_mark_list_total_size = mark_list_size*n_heaps;
+    size_t new_mark_list_total_size = new_mark_list_size*n_heaps;
     if (new_mark_list_total_size == g_mark_list_total_size)
         return;
 
@@ -24155,7 +24155,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                 assert (start_region);
                 dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
                 heap_segment_next (start_region) = nullptr;
-                heap_segment_heap (start_region) = hp;
+                set_heap_for_contained_basic_regions (start_region, hp);
                 max_survived = max (max_survived, heap_segment_survived (start_region));
                 hp->thread_start_region (gen, start_region);
                 surv_per_heap[i] += heap_segment_survived (start_region);
@@ -50327,7 +50327,7 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
         }
         delete[] other_fq->m_Array;
         other_fq->m_Array = newArray;
-        other_fq->m_EndArray = &m_Array[otherNeededArraySize];
+        other_fq->m_EndArray = &other_fq->m_Array[otherNeededArraySize];
     }
 
     // move half of the items in each section over to the other queue
