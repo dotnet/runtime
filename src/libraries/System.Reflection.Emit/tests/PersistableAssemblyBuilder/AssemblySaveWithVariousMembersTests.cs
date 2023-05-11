@@ -183,7 +183,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.True(testType.ContainsGenericParameters);
                 Assert.False(testMethod.IsGenericMethod);
                 Assert.False(testMethod.IsGenericMethodDefinition);
-                //Assert.False(testMethod.ContainsGenericParameters); // Not sure why it is true by default
+                Assert.True(testMethod.ContainsGenericParameters);
                 AssertGenericParameters(typeParams, genericTypeParams);
             }
         }
@@ -417,6 +417,57 @@ namespace System.Reflection.Emit.Tests
                 Assert.False(testMethod.ReturnType.IsGenericTypeParameter);
                 Assert.True(testMethod.ReturnType.IsGenericMethodParameter);
                 Assert.Equal("M", testMethod.ReturnType.Name);
+            }
+        }
+
+        [Fact]
+        public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                    s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestInterface1", TypeAttributes.Interface | TypeAttributes.Abstract);
+                GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(new string[] { "U", "T" });
+                MethodBuilder m11 = tb.DefineMethod("TwoParameters", MethodAttributes.Public);
+                MethodBuilder m12 = tb.DefineMethod("FiveTypeParameters", MethodAttributes.Public);
+                MethodBuilder m13 = tb.DefineMethod("OneParameter", MethodAttributes.Public);
+                GenericTypeParameterBuilder[] methodParams = m11.DefineGenericParameters(new string[] { "M", "N" });
+                m12.DefineGenericParameters(new string[] { "A", "B", "C", "D", "F" });
+                m13.DefineGenericParameters(new string[] { "T" });
+                TypeBuilder tb2 = mb.DefineType("TestInterface2", TypeAttributes.Interface | TypeAttributes.Abstract);
+                tb2.DefineGenericParameters(new string[] { "TFirst", "TSecond", "TThird" });
+                MethodBuilder m21 = tb2.DefineMethod("TestMethod", MethodAttributes.Public);
+                m21.DefineGenericParameters(new string[] { "X", "Y", "Z" });
+                TypeBuilder tb3 = mb.DefineType("TestType");
+                tb3.DefineGenericParameters(new string[] { "TOne" });
+                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+
+                Module m = AssemblyTools.LoadAssemblyFromPath(file.Path).Modules.First();
+                Type[] type1Params = m.GetTypes()[0].GetGenericArguments();
+                Type[] type2Params = m.GetTypes()[1].GetGenericArguments();
+                Type[] type3Params = m.GetTypes()[2].GetGenericArguments();
+
+                Assert.Equal("U", type1Params[0].Name);
+                Assert.Equal("T", type1Params[1].Name);
+                Assert.Equal("TFirst", type2Params[0].Name);
+                Assert.Equal("TSecond", type2Params[1].Name);
+                Assert.Equal("TThird", type2Params[2].Name);
+                Assert.Equal("TOne", type3Params[0].Name);
+
+                Type[] method11Params = m.GetTypes()[0].GetMethod("TwoParameters").GetGenericArguments();
+                Type[] method12Params = m.GetTypes()[0].GetMethod("FiveTypeParameters").GetGenericArguments();
+                Type[] method13Params = m.GetTypes()[0].GetMethod("OneParameter").GetGenericArguments();
+                Type[] method21Params = m.GetTypes()[1].GetMethod("TestMethod").GetGenericArguments();
+                
+                Assert.Equal("M", method11Params[0].Name);
+                Assert.Equal("N", method11Params[1].Name);
+                Assert.Equal("A", method12Params[0].Name);
+                Assert.Equal("F", method12Params[4].Name);
+                Assert.Equal("T", method13Params[0].Name);
+                Assert.Equal("X", method21Params[0].Name);
+                Assert.Equal("Z", method21Params[2].Name);
             }
         }
     }

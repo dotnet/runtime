@@ -13,7 +13,7 @@ namespace System.Reflection.Emit
         internal static BlobBuilder FieldSignatureEncoder(Type fieldType, ModuleBuilderImpl module)
         {
             BlobBuilder fieldSignature = new();
-            WriteSignatureForType(new BlobEncoder(fieldSignature).Field().Type(fieldType.IsByRef), fieldType, module);
+            WriteSignatureForType(new BlobEncoder(fieldSignature).Field().Type(), fieldType, module);
 
             return fieldSignature;
         }
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
 
                 foreach (Type parameter in typeParameters)
                 {
-                    WriteSignatureForType(parameterEncoder.AddParameter().Type(parameter.IsByRef), parameter, module);
+                    WriteSignatureForType(parameterEncoder.AddParameter().Type(), parameter, module);
                 }
             }
 
@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
-                WriteSignatureForType(retEncoder.Type(returnType.IsByRef), returnType, module);
+                WriteSignatureForType(retEncoder.Type(), returnType, module);
             }
             else // If null mark ReturnTypeEncoder as void
             {
@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
             {
                 foreach (Type parameter in parameters)
                 {
-                    WriteSignatureForType(parEncoder.AddParameter().Type(parameter.IsByRef), parameter, module);
+                    WriteSignatureForType(parEncoder.AddParameter().Type(), parameter, module);
                 }
             }
 
@@ -94,6 +94,7 @@ namespace System.Reflection.Emit
             }
             else if (type.IsByRef)
             {
+                signature.Builder.WriteByte((byte)SignatureTypeCode.ByReference);
                 WriteSimpleSignature(signature, type.GetElementType()!, module);
             }
             else if (type.IsGenericType)

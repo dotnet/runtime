@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
             // All generic parameters for all types and methods should be written in specific order
-            ImmutableSortedDictionary<int, Type[]>.Builder paramsBuilder = ImmutableSortedDictionary.CreateBuilder<int, Type[]>();
+            List<GenericTypeParameterBuilderImpl> genericParams = new();
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -136,8 +136,10 @@ namespace System.Reflection.Emit
 
                 if (typeBuilder.IsGenericType)
                 {
-                    int parentIndex = CodedIndex.TypeOrMethodDef(typeHandle);
-                    paramsBuilder.Add(parentIndex, typeBuilder.GenericTypeParameters);
+                    foreach (GenericTypeParameterBuilderImpl param in typeBuilder.GenericTypeParameters)
+                    {
+                        genericParams.Add(param);
+                    }
                 }
 
                 if ((typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
@@ -160,21 +162,35 @@ namespace System.Reflection.Emit
                 }
 
                 WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
-                WriteMethods(typeBuilder, paramsBuilder);
+                WriteMethods(typeBuilder, genericParams);
                 WriteFields(typeBuilder);
             }
 
             // Now write all generic parameters in order
-            foreach (var pair in paramsBuilder.ToImmutableSortedDictionary())
+            foreach (var param in SortListInPlace(genericParams))
             {
-                foreach (GenericTypeParameterBuilderImpl param in pair.Value)
-                {
-                    AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
-                }
+                AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
             }
         }
 
-        private void WriteMethods(TypeBuilderImpl typeBuilder, ImmutableSortedDictionary<int, Type[]>.Builder parametersBuilder)
+        private static List<GenericTypeParameterBuilderImpl> SortListInPlace(List<GenericTypeParameterBuilderImpl> genericParams)
+        {
+            for (int i = 1; i < genericParams.Count; i++)
+            {
+                GenericTypeParameterBuilderImpl temp = genericParams[i];
+                int j = i - 1;
+                while (j >= 0 && CodedIndex.TypeOrMethodDef(temp._parentHandle) < CodedIndex.TypeOrMethodDef(genericParams[j]._parentHandle))
+                {
+                    genericParams[j + 1] = genericParams[j];
+                    j--;
+                }
+                genericParams[j + 1] = temp;
+            }
+
+            return genericParams;
+        }
+
+        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams)
         {
             foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
             {
@@ -184,13 +200,13 @@ namespace System.Reflection.Emit
 
                 if (method.IsGenericMethodDefinition)
                 {
-                    int parentIndex = CodedIndex.TypeOrMethodDef(methodHandle);
                     Type[] gParams = method.GetGenericArguments();
                     for (int i = 0; i < gParams.Length; i++)
                     {
-                        ((GenericTypeParameterBuilderImpl)gParams[i])._parentHandle = methodHandle;
+                        GenericTypeParameterBuilderImpl param = (GenericTypeParameterBuilderImpl)gParams[i];
+                        param._parentHandle = methodHandle;
+                        genericParams.Add(param);
                     }
-                    parametersBuilder.Add(parentIndex, gParams);
                 }
 
                 if (method._parameters != null)

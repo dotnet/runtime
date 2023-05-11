@@ -55,6 +55,7 @@ namespace System.Reflection.Emit
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
         {
+            // TODO: find out and handle other SignatureCallingConvention scenarios
             SignatureCallingConvention convention = SignatureCallingConvention.Default;
             if ((callingConventions & CallingConventions.HasThis) != 0 ||
                 (callingConventions & CallingConventions.ExplicitThis) != 0)
