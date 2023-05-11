@@ -248,7 +248,7 @@ exit:
             size_t itemsWritten = 0;
 
             if (result != 0)
-                return FatalError(false);
+                return FatalError();
 
             if (!enabled)
                 goto exit;
@@ -268,7 +268,7 @@ exit:
                     if (errno == EINTR)
                         continue;
 
-                    return FatalError(true);
+                    return FatalError();
                 }
 
                 // Detect unexpected failure cases.
