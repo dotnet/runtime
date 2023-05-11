@@ -155,15 +155,14 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                 resourceSymbols.AppendLine($"#define {symbolName}_len_val {symbolDataLen[symbolName]}");
 
                 contentSourceFile.SetMetadata("DataSymbol", $"{symbolName}_data");
-                contentSourceFile.SetMetadata("LenSymbol", $"{symbolName}_len");
-                contentSourceFile.SetMetadata("LenSymbolValue", symbolDataLen[symbolName].ToString());
+                contentSourceFile.SetMetadata("DataLenSymbol", $"{symbolName}_len");
+                contentSourceFile.SetMetadata("DataLenSymbolValue", symbolDataLen[symbolName].ToString());
                 bundledResources.Add(contentSourceFile);
             });
         }
         BundledResources = bundledResources.ToArray();
 
         if (!string.IsNullOrEmpty(BundleFile)) {
-
             // Generate source file to preallocate resources and register bundled resources
             Emit(Path.Combine(OutputDirectory, BundleFile), (inputStream) =>
             {

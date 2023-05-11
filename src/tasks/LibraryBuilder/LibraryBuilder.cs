@@ -297,9 +297,9 @@ public class LibraryBuilderTask : AppBuilderTask
             string dataSymbol = bundledRuntimeConfigInfo.GetMetadata("DataSymbol");
             if (string.IsNullOrEmpty(dataSymbol))
                 throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataSymbol' metadata.");
-            string lenSymbol = bundledRuntimeConfigInfo.GetMetadata("LenSymbol");
+            string lenSymbol = bundledRuntimeConfigInfo.GetMetadata("DataLenSymbol");
             if (string.IsNullOrEmpty(lenSymbol))
-                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'LenSymbol' metadata.");
+                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
 
             autoInitialization = autoInitialization
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
