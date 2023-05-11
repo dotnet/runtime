@@ -349,8 +349,8 @@
     <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
-      <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
-      <_WasmIcuBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
+      <_WasmAssembliesBundleObjectFile>wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
+      <_WasmIcuBundleObjectFile>wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
     </PropertyGroup>
     <GetFileHash Files="@(_WasmAssembliesInternal)">
       <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
@@ -371,20 +371,19 @@
       FilesToBundle="@(WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
       BundleName="mono_register_assemblies_bundle"
-      BundleFile="wasi_bundled_assemblies.o"
+      BundleFile="$(_WasmAssembliesBundleObjectFile)"
       OutputDirectory="$(_WasmIntermediateOutputPath)"
       />
 
     <ItemGroup>
-      <_WasiObjectFilesForBundle Include="$(_WasmAssembliesBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
       <_WasiObjectFilesForBundle Include="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <WasmBundleFileToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)mono-bundled-source.h" />
-      <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmAssembliesBundleObjectFile)" />
       <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
 
@@ -393,17 +392,17 @@
       FilesToBundle="@(WasmBundleIcuWithHashes)"
       ClangExecutable="$(WasiClang)"
       BundleName="mono_register_icu_bundle"
-      BundleFile="wasi_bundled_icu.o"
+      BundleFile="$(_WasmIcuBundleObjectFile)"
       OutputDirectory="$(_WasmIntermediateOutputPath)"
       />
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <_WasiObjectFilesForBundle Include="$(_WasmIcuBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
       <_WasiObjectFilesForBundle Include="%(WasmBundleIcuWithHashes.DestinationFile)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <WasmBundleFileToDelete Remove="$(_WasmIcuBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="$(_WasmIntermediateOutputPath)$(_WasmIcuBundleObjectFile)" />
       <WasmBundleFileToDelete Remove="%(WasmBundleIcuWithHashes.DestinationFile)" />
     </ItemGroup>
     
