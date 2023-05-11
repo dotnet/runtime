@@ -9,6 +9,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Threading.Tasks
@@ -67,6 +68,8 @@ namespace System.Threading.Tasks
         /// the serialized object data about the exception being thrown.</param>
         /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext"/> that
         /// contains contextual information about the source or destination. </param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TaskSchedulerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

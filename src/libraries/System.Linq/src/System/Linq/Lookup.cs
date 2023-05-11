@@ -196,7 +196,7 @@ namespace System.Linq
         internal Grouping<TKey, TElement>? GetGrouping(TKey key, bool create)
         {
             int hashCode = InternalGetHashCode(key);
-            for (Grouping<TKey, TElement>? g = _groupings[hashCode % _groupings.Length]; g != null; g = g._hashNext)
+            for (Grouping<TKey, TElement>? g = _groupings[(uint)hashCode % _groupings.Length]; g != null; g = g._hashNext)
             {
                 if (g._hashCode == hashCode && _comparer.Equals(g._key, key))
                 {

@@ -15,8 +15,13 @@ namespace System.Text.Json.Serialization.Converters
         private const int MaximumEscapedVersionLength = JsonConstants.MaxExpansionFactorWhileEscaping * MaximumVersionLength;
 #endif
 
-        public override Version Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Version? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (reader.TokenType is JsonTokenType.Null)
+            {
+                return null;
+            }
+
             if (reader.TokenType != JsonTokenType.String)
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(reader.TokenType);
@@ -73,6 +78,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
         {
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
 #if NETCOREAPP
             Span<char> span = stackalloc char[MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);

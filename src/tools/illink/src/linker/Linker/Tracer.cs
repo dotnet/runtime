@@ -66,7 +66,7 @@ namespace Mono.Linker
 			recorders.Add (recorder);
 		}
 
-		[MemberNotNullWhen (true, "recorders")]
+		[MemberNotNullWhen (true, nameof(recorders))]
 		bool IsRecordingEnabled ()
 		{
 			return recorders != null;

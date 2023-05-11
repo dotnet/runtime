@@ -155,12 +155,12 @@ namespace Microsoft.Interop
         {
             return unmanagedReturnType switch
             {
-                SpecialTypeInfo(_, _, SpecialType.System_Void) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.SwallowExceptionMarshaller}", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Int32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionHResultMarshaller}<int>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_UInt32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionHResultMarshaller}<uint>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Single) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionNaNMarshaller}<float>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Double) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionNaNMarshaller}<double>", unmanagedReturnType),
-                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Void) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsVoidMarshaller}", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Int32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<int>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_UInt32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Single) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
+                SpecialTypeInfo(_, _, SpecialType.System_Double) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
+                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
             };
 
             static NativeMarshallingAttributeInfo CreateWellKnownComExceptionMarshallingData(string marshallerName, ManagedTypeInfo unmanagedType)

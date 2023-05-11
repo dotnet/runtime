@@ -246,7 +246,9 @@ namespace Microsoft.Interop.JavaScript
             FieldDeclarationSyntax field = FieldDeclaration(VariableDeclaration(PredefinedType(Token(SyntaxKind.BoolKeyword)))
                             .WithVariables(SingletonSeparatedList(
                                 VariableDeclarator(Identifier("initialized")))))
-                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)));
+                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
+                            .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                                Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
 
             MemberDeclarationSyntax method = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(initializerName))
                             .WithAttributeLists(List(attributes))

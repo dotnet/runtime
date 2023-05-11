@@ -470,7 +470,9 @@ namespace System.Runtime.Serialization
             return null;
         }
 
+#pragma warning disable SYSLIB0050 // IFormatterConverter is obsolete
         private static IFormatterConverter? s_formatterConverter;
         internal static IFormatterConverter FormatterConverter => s_formatterConverter ??= new FormatterConverter();
+#pragma warning restore SYSLIB0050
     }
 }

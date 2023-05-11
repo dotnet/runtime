@@ -17,6 +17,7 @@ namespace ILCompiler
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
+        protected InlinedThreadStatics _inlinedThreadStatics = new InlinedThreadStatics();
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
         protected IInliningPolicy _inliningPolicy;
         protected bool _methodBodyFolding;
@@ -106,6 +107,12 @@ namespace ILCompiler
         public CompilationBuilder UseMethodImportationErrorProvider(MethodImportationErrorProvider errorProvider)
         {
             _methodImportationErrorProvider = errorProvider;
+            return this;
+        }
+
+        public CompilationBuilder UseInlinedThreadStatics(InlinedThreadStatics inlinedThreadStatics)
+        {
+            _inlinedThreadStatics = inlinedThreadStatics;
             return this;
         }
 

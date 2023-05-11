@@ -61,6 +61,8 @@ namespace System.Text.Json.Serialization.Converters
                     return ObjectConverter.Read(ref reader, typeToConvert, options);
                 case JsonTokenType.StartArray:
                     return ArrayConverter.Read(ref reader, typeToConvert, options);
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw new JsonException();

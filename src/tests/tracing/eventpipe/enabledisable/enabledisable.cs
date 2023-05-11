@@ -72,6 +72,10 @@ namespace Tracing.Tests.EnableDisableValidation
             };
 
             DiagnosticsClient client = new DiagnosticsClient(Process.GetCurrentProcess().Id);
+#if DIAGNOSTICS_RUNTIME
+            if (OperatingSystem.IsAndroid())
+                client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
+#endif
             using (EventPipeSession session1 = client.StartEventPipeSession(providers))
             {
                 EventPipeEventSource source1 = new EventPipeEventSource(session1.EventStream);

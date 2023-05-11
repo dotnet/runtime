@@ -29,11 +29,11 @@ try {
                 fetch: (url, fetchArgs) => {
                     console.log("fetching " + url);
                     // we are testing that we can retry loading of the assembly
-                    if (testAbort && url.indexOf('System.Private.Uri.dll') != -1) {
+                    if (testAbort && url.indexOf('System.Private.CoreLib') != -1) {
                         testAbort = false;
                         return fetch(url + "?testAbort=true", fetchArgs);
                     }
-                    if (testError && url.indexOf('System.Console.dll') != -1) {
+                    if (testError && url.indexOf('System.Console') != -1) {
                         testError = false;
                         return fetch(url + "?testError=true", fetchArgs);
                     }

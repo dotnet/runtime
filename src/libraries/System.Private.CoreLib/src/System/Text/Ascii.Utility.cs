@@ -42,6 +42,17 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AllCharsInUInt64AreAscii<T>(ulong value)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? AllBytesInUInt64AreAscii(value)
+                : AllCharsInUInt64AreAscii(value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
         {
             if (!AdvSimd.Arm64.IsSupported || !BitConverter.IsLittleEndian)
@@ -69,6 +80,7 @@ namespace System.Text
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool FirstCharInUInt32IsAscii(uint value)
         {
             return (BitConverter.IsLittleEndian && (value & 0xFF80u) == 0)
@@ -1429,6 +1441,52 @@ namespace System.Text
                 // If a non-ASCII bit is set in any WORD of the vector, we have seen non-ASCII data.
                 return zeroIsAscii != Vector128<ushort>.Zero;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector128<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AllCharsInVectorAreAscii<T>(Vector128<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            // This is a copy of VectorContainsNonAsciiChar with an inverted condition.
+            if (typeof(T) == typeof(byte))
+            {
+                return
+                    Sse41.IsSupported ? Sse41.TestZ(vector.AsByte(), Vector128.Create((byte)0x80)) :
+                    AdvSimd.Arm64.IsSupported ? AllBytesInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsByte(), vector.AsByte()).AsUInt64().ToScalar()) :
+                    vector.AsByte().ExtractMostSignificantBits() == 0;
+            }
+            else
+            {
+                return
+                    Sse41.IsSupported ? Sse41.TestZ(vector.AsInt16(), Vector128.Create((short)-128)) :
+                    AdvSimd.Arm64.IsSupported ? AllCharsInUInt64AreAscii(AdvSimd.Arm64.MaxPairwise(vector.AsUInt16(), vector.AsUInt16()).AsUInt64().ToScalar()) :
+                    (vector.AsUInt16() & Vector128.Create((ushort)(ushort.MaxValue - 127))) == Vector128<ushort>.Zero;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(Avx.IsSupported);
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? Avx.TestZ(vector.AsByte(), Vector256.Create((byte)0x80))
+                : Avx.TestZ(vector.AsInt16(), Vector256.Create((short)-128));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -31,18 +31,13 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
-        {
-            return _executionEnvironment.IsReflectionBlocked(typeHandle);
-        }
-
         //=======================================================================================
         // This group of methods jointly service the Type.GetTypeFromHandle() path. The caller
         // is responsible for analyzing the RuntimeTypeHandle to figure out which flavor to call.
         //=======================================================================================
-        public sealed override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
+        public sealed override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            return _executionDomain.GetNamedTypeForHandle(typeHandle, isGenericTypeDefinition);
+            return _executionDomain.GetNamedTypeForHandle(typeHandle);
         }
 
         public sealed override Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -58,6 +53,11 @@ namespace Internal.Reflection.Execution
         public sealed override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             return _executionDomain.GetPointerTypeForHandle(typeHandle);
+        }
+
+        public sealed override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return _executionDomain.GetFunctionPointerTypeForHandle(typeHandle);
         }
 
         public sealed override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
@@ -112,11 +112,6 @@ namespace Internal.Reflection.Execution
         public sealed override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
         {
             return _executionDomain.GetTypeHandleIfAvailable(type);
-        }
-
-        public sealed override bool SupportsReflection(Type type)
-        {
-            return _executionDomain.SupportsReflection(type);
         }
 
         public sealed override MethodInfo GetDelegateMethod(Delegate del)

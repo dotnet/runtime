@@ -238,7 +238,7 @@ namespace System.Text
                 // Unaligned read and check for non-ASCII data.
 
                 Vector128<TFrom> srcVector = Vector128.LoadUnsafe(ref *pSrc);
-                if (VectorContainsAnyNonAsciiData(srcVector))
+                if (VectorContainsNonAsciiChar(srcVector))
                 {
                     goto Drain64;
                 }
@@ -291,7 +291,7 @@ namespace System.Text
                     // Unaligned read & check for non-ASCII data.
 
                     srcVector = Vector128.LoadUnsafe(ref *pSrc, i);
-                    if (VectorContainsAnyNonAsciiData(srcVector))
+                    if (VectorContainsNonAsciiChar(srcVector))
                     {
                         goto Drain64;
                     }
@@ -464,27 +464,38 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool VectorContainsAnyNonAsciiData<T>(Vector128<T> vector)
-            where T : unmanaged
+        private static unsafe void Widen8To16AndAndWriteTo(Vector128<byte> narrowVector, char* pDest, nuint destOffset)
         {
-            if (sizeof(T) == 1)
+            if (Vector256.IsHardwareAccelerated)
             {
-                if (vector.ExtractMostSignificantBits() != 0) { return true; }
-            }
-            else if (sizeof(T) == 2)
-            {
-                if (VectorContainsNonAsciiChar(vector.AsUInt16()))
-                {
-                    return true;
-                }
+                Vector256<ushort> wide = Vector256.WidenLower(narrowVector.ToVector256Unsafe());
+                wide.StoreUnsafe(ref *(ushort*)pDest, destOffset);
             }
             else
             {
-                Debug.Fail("Unknown types provided.");
-                throw new NotSupportedException();
+                Vector128.WidenLower(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset);
+                Vector128.WidenUpper(narrowVector).StoreUnsafe(ref *(ushort*)pDest, destOffset + 8);
             }
+        }
 
-            return false;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void Narrow16To8AndAndWriteTo(Vector128<ushort> wideVector, byte* pDest, nuint destOffset)
+        {
+            Vector128<byte> narrow = Vector128.Narrow(wideVector, wideVector);
+
+            if (Sse2.IsSupported)
+            {
+                // MOVQ is supported even on x86, unaligned accesses allowed
+                Sse2.StoreScalar((ulong*)(pDest + destOffset), narrow.AsUInt64());
+            }
+            else if (Vector64.IsHardwareAccelerated)
+            {
+                narrow.GetLower().StoreUnsafe(ref *pDest, destOffset);
+            }
+            else
+            {
+                Unsafe.WriteUnaligned<ulong>(pDest + destOffset, narrow.AsUInt64().ToScalar());
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

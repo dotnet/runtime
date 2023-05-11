@@ -302,6 +302,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83012", TestPlatforms.OSX)]
         public async Task ListenOnAlreadyUsedPort_Throws_AddressInUse()
         {
             // bind a UDP socket to block a port

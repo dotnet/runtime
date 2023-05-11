@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -24,6 +25,7 @@ namespace System.Net
         }
 
         [Obsolete("Serialization has been deprecated for WebResponse.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();

@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal sealed unsafe partial class LowLevelLifoSemaphore : IDisposable
+    internal sealed unsafe partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
     {
         private IntPtr lifo_semaphore;
 
@@ -14,10 +14,10 @@ namespace System.Threading
 
 #pragma warning disable IDE0060
         private void Create(int maximumSignalCount)
+#pragma warning restore IDE0060
         {
             lifo_semaphore = InitInternal();
         }
-#pragma warning restore IDE0060
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void DeleteInternal(IntPtr semaphore);
@@ -39,7 +39,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void ReleaseInternal(IntPtr semaphore, int count);
 
-        private void ReleaseCore(int count)
+        protected override void ReleaseCore(int count)
         {
             ReleaseInternal(lifo_semaphore, count);
         }

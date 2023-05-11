@@ -347,6 +347,14 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
+#elif defined(TARGET_RISCV64)
+                if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
+                    (REG_T2 <= regNum && REG_T6 >= regNum))
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -1046,6 +1054,19 @@ void FixedBitVect::bitVectSet(UINT bitNum)
     bitVect[index] |= bitNumToBit(bitNum);
 }
 
+// bitVectClear() - Clears the given bit
+void FixedBitVect::bitVectClear(UINT bitNum)
+{
+    UINT index;
+
+    assert(bitNum <= bitVectSize);
+
+    index = bitNum / bitChunkSize();
+    bitNum -= index * bitChunkSize();
+
+    bitVect[index] &= ~bitNumToBit(bitNum);
+}
+
 // bitVectTest() - Tests the given bit
 bool FixedBitVect::bitVectTest(UINT bitNum)
 {
@@ -1310,6 +1331,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
             case CORINFO_HELP_NEWFAST:
+            case CORINFO_HELP_NEWFAST_MAYBEFROZEN:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
@@ -1325,7 +1347,9 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
             case CORINFO_HELP_NEW_MDARR:
+            case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
+            case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
@@ -1377,7 +1401,6 @@ void HelperCallProperties::init()
                 noThrow = true; // These return null for a failing cast
                 break;
 
-            case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;
@@ -1454,6 +1477,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
 
                 // These do not invoke static class constructors
                 //

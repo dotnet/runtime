@@ -150,7 +150,7 @@ typedef struct _PROFILER_STACK_WALK_DATA PROFILER_STACK_WALK_DATA;
 // from the profiler implementation.  The profiler will call back on the v-table
 // to get at EE internals as required.
 
-class ProfToEEInterfaceImpl : public ICorProfilerInfo13
+class ProfToEEInterfaceImpl : public ICorProfilerInfo14
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
@@ -721,6 +721,17 @@ public:
         ObjectID* pObject);
 
     // end ICorProfilerInfo13
+
+    // begin ICorProfilerInfo14
+
+    COM_METHOD EnumerateNonGCObjects(
+        ICorProfilerObjectEnum** ppEnum);
+
+    COM_METHOD GetNonGCHeapBounds(ULONG cObjectRanges,
+                                  ULONG * pcObjectRanges,
+                                  COR_PRF_NONGC_HEAP_RANGE ranges[]);
+
+    // end ICorProfilerInfo14
 
 protected:
 

@@ -15,6 +15,7 @@
     <Compile Include="System\Runtime\Serialization\ISerializationSurrogateProvider.cs" />
     <Compile Include="System\Runtime\Serialization\KnownTypeAttribute.cs" />
     <Compile Include="System.Runtime.Serialization.Primitives.TypeForwards.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

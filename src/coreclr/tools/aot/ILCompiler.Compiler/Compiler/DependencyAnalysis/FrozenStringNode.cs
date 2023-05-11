@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public sealed class FrozenStringNode : EmbeddedObjectNode, ISymbolDefinitionNode
@@ -41,20 +43,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             DefType systemStringType = factory.TypeSystemContext.GetWellKnownType(WellKnownType.String);
 
-            //
-            // The GC requires a direct reference to frozen objects' EETypes. If System.String will be compiled into a separate
-            // binary, it must be cloned into this one.
-            //
             IEETypeNode stringSymbol = factory.ConstructedTypeSymbol(systemStringType);
 
-            if (stringSymbol.RepresentsIndirectionCell)
-            {
-                return factory.ConstructedClonedTypeSymbol(systemStringType);
-            }
-            else
-            {
-                return stringSymbol;
-            }
+            //
+            // The GC requires a direct reference to frozen objects' EETypes. System.String needs
+            // to be compiled into this binary.
+            //
+            Debug.Assert(!stringSymbol.RepresentsIndirectionCell);
+            return stringSymbol;
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)

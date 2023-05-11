@@ -2639,6 +2639,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	table_size = amodule->class_name_table [0];
 	table = amodule->class_name_table + 1;
 
+	if (table_size == 0)
+		return FALSE;
+
 	if (name_space [0] == '\0')
 		full_name = g_strdup_printf ("%s", name);
 	else {
@@ -3778,7 +3781,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		MethodRef ref;

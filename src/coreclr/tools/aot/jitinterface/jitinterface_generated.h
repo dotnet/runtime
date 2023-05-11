@@ -62,6 +62,8 @@ struct JitInterfaceCallbacks
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     size_t (* getClassModuleIdForStatics)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection);
+    bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+    bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canAllocateOnStack)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -89,7 +91,6 @@ struct JitInterfaceCallbacks
     CorInfoType (* getTypeForPrimitiveValueClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoType (* getTypeForPrimitiveNumericClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE child, CORINFO_CLASS_HANDLE parent);
-    bool (* areTypesEquivalent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     TypeCompareState (* compareTypesForCast)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
     TypeCompareState (* compareTypesForEquality)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
     CORINFO_CLASS_HANDLE (* mergeClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
@@ -108,6 +109,8 @@ struct JitInterfaceCallbacks
     CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
+    uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
+    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -122,11 +125,6 @@ struct JitInterfaceCallbacks
     int (* getExactClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
-    JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    uint32_t (* GetErrorMessage)(void * thisHandle, CorInfoExceptionClass** ppException, char16_t* buffer, uint32_t bufferLength);
-    int (* FilterException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void (* ThrowExceptionForJitResult)(void * thisHandle, CorInfoExceptionClass** ppException, JITINTERFACE_HRESULT result);
-    void (* ThrowExceptionForHelper)(void * thisHandle, CorInfoExceptionClass** ppException, const CORINFO_HELPER_DESC* throwHelper);
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
@@ -138,6 +136,7 @@ struct JitInterfaceCallbacks
     size_t (* findNameOfToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleHandle, unsigned int token, char* szFQName, size_t FQNameCapacity);
     bool (* getSystemVAmd64PassStructInRegisterDescriptor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
     uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
+    uint32_t (* getRISCV64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     const void* (* getInlinedCallFrameVptr)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
@@ -161,7 +160,8 @@ struct JitInterfaceCallbacks
     bool (* canAccessFamily)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType);
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
-    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool (* getStaticFieldContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -704,6 +704,28 @@ public:
     return temp;
 }
 
+    virtual bool getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getIsClassInitedFlagAddress(_thisHandle, &pException, cls, addr, offset);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getStaticBaseAddress(_thisHandle, &pException, cls, isGc, addr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
     virtual unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -964,16 +986,6 @@ public:
     return temp;
 }
 
-    virtual bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->areTypesEquivalent(_thisHandle, &pException, cls1, cls2);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)
@@ -1152,6 +1164,23 @@ public:
     if (pException != nullptr) throw pException;
 }
 
+    virtual uint32_t getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getThreadLocalFieldInfo(_thisHandle, &pException, field);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual void getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo);
+    if (pException != nullptr) throw pException;
+}
+
     virtual bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1290,44 +1319,6 @@ public:
     return temp;
 }
 
-    virtual JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    JITINTERFACE_HRESULT temp = _callbacks->GetErrorHRESULT(_thisHandle, &pException, pExceptionPointers);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->GetErrorMessage(_thisHandle, &pException, buffer, bufferLength);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers);
-
-    virtual void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForJitResult(_thisHandle, &pException, result);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForHelper(_thisHandle, &pException, throwHelper);
-    if (pException != nullptr) throw pException;
-}
-
     virtual bool runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter);
@@ -1421,6 +1412,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getLoongArch64PassStructInRegisterFlags(_thisHandle, &pException, structHnd);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual uint32_t getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    uint32_t temp = _callbacks->getRISCV64PassStructInRegisterFlags(_thisHandle, &pException, structHnd);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1649,7 +1649,7 @@ public:
     return temp;
 }
 
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
@@ -1657,7 +1657,19 @@ public:
           bool ignoreMovableObjects)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    bool temp = _callbacks->getStaticFieldContent(_thisHandle, &pException, field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getObjectContent(_thisHandle, &pException, obj, buffer, bufferSize, valueOffset);
     if (pException != nullptr) throw pException;
     return temp;
 }

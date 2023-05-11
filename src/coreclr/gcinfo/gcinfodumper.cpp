@@ -224,6 +224,45 @@ BOOL GcInfoDumper::ReportPointerRecord (
         REG(ra, Ra),
         { offsetof(T_CONTEXT, Sp) },
 #undef REG
+#elif defined(TARGET_RISCV64)
+#undef REG
+#define REG(reg, field) { offsetof(Riscv64VolatileContextPointer, field) }
+        REG(zero, R0),
+        REG(a0, A0),
+        REG(a1, A1),
+        REG(a2, A2),
+        REG(a3, A3),
+        REG(a4, A4),
+        REG(a5, A5),
+        REG(a6, A6),
+        REG(a7, A7),
+        REG(t0, T0),
+        REG(t1, T1),
+        REG(t2, T2),
+        REG(t3, T3),
+        REG(t4, T4),
+        REG(t5, T5),
+        REG(t6, T6),
+#undef REG
+#define REG(reg, field) { offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, field) }
+        REG(s1, S1),
+        REG(s2, S2),
+        REG(s3, S3),
+        REG(s4, S4),
+        REG(s5, S5),
+        REG(s6, S6),
+        REG(s7, S7),
+        REG(s8, S8),
+        REG(s9, S9),
+        REG(s10, S10),
+        REG(s11, S11),
+        REG(ra, Ra),
+        REG(gp, Gp),
+        REG(tp, Tp),
+        REG(fp, Fp),
+        { offsetof(T_CONTEXT, Sp) },
+#undef REG
+
 #else
 PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this platform.")
 #endif
@@ -247,6 +286,9 @@ PORTABILITY_ASSERT("GcInfoDumper::ReportPointerRecord is not implemented on this
     UINT iBFRegister = m_StackBaseRegister;
 #elif defined(TARGET_LOONGARCH64)
     assert(!"unimplemented on LOONGARCH yet");
+    iSPRegister = 0;
+#elif defined(TARGET_RISCV64)
+    assert(!"unimplemented on RISCV64 yet");
     iSPRegister = 0;
 #endif
 
@@ -660,8 +702,11 @@ GcInfoDumper::EnumerateStateChangesResults GcInfoDumper::EnumerateStateChanges (
 #elif defined(TARGET_LOONGARCH64)
 #pragma message("Unimplemented for LOONGARCH64 yet.")
     assert(!"unimplemented on LOONGARCH yet");
+#elif defined(TARGET_RISCV64)
+#pragma message("Unimplemented for RISCV64 yet.")
+    assert(!"unimplemented on RISCV64 yet");
 #else
-PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.")
+PORTABILITY_ASSERT("GcInfoDumper::EnumerateStateChanges is not implemented on this platform.");
 #endif
 
 #undef FILL_REGS

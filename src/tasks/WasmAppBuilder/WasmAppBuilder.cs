@@ -49,6 +49,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remoteSources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("globalizationMode")]
+        public string? GlobalizationMode { get; set; }
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
         [JsonPropertyName("assetsHash")]
@@ -154,6 +156,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var config = new WasmAppConfig ()
         {
             MainAssemblyName = MainAssemblyName,
+            GlobalizationMode = InvariantGlobalization ? "invariant" : HybridGlobalization ? "hybrid" : "icu"
         };
 
         // Create app

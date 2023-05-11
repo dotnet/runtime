@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -51,6 +52,7 @@ namespace System
         /// </summary>
         /// <param name="value">A <see cref="RuntimeTypeHandle"/> object to retrieve an internal pointer representation from.</param>
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
+        [Intrinsic]
         public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
         public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
@@ -74,10 +76,6 @@ namespace System
             => ReferenceEquals(handle.m_type, m_type);
 
         public IntPtr Value => m_type?.m_handle ?? 0;
-
-        [Intrinsic]
-        internal static IntPtr GetValueInternal(RuntimeTypeHandle handle)
-            => handle.m_type?.GetUnderlyingNativeHandle() ?? 0;
 
         internal RuntimeTypeHandle(RuntimeType type)
         {
@@ -667,6 +665,8 @@ namespace System
             RegisterCollectibleTypeDependency(new QCallTypeHandle(ref type), new QCallAssembly(ref assembly!));
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -770,13 +770,9 @@ namespace System
             return m_value;
         }
 
-        // Used by EE
-        private static IntPtr GetValueInternal(RuntimeMethodHandle rmh)
-        {
-            return rmh.Value;
-        }
-
         // ISerializable interface
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -1222,6 +1218,8 @@ namespace System
         internal static extern LoaderAllocator GetLoaderAllocator(RuntimeFieldHandleInternal method);
 
         // ISerializable interface
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

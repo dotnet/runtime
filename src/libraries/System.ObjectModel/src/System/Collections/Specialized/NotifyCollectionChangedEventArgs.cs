@@ -328,11 +328,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (index != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(index, 0);
                 return _item;
             }
             set => throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);

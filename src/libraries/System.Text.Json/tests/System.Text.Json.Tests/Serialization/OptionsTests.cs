@@ -481,6 +481,124 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, options));
         }
 
+        [Fact]
+        public static void JsonSerializer_IsReflectionEnabledByDefault_DefaultsToTrue()
+        {
+            Assert.True(JsonSerializer.IsReflectionEnabledByDefault);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_DefaultOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = JsonSerializerOptions.Default;
+                Assert.True(options.IsReadOnly);
+
+                Assert.NotNull(options.TypeInfoResolver);
+                Assert.True(options.TypeInfoResolver is not DefaultJsonTypeInfoResolver);
+                IList<IJsonTypeInfoResolver> resolverList = Assert.IsAssignableFrom<IList<IJsonTypeInfoResolver>>(options.TypeInfoResolver);
+
+                Assert.Empty(resolverList);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+                Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
+                Assert.Null(typeInfo);
+
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string"));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string", options));
+
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\""));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_NewOptionsDoesNotSupportReflection()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = new JsonSerializerOptions();
+                Assert.False(options.IsReadOnly);
+
+                Assert.Null(options.TypeInfoResolver);
+                Assert.Empty(options.TypeInfoResolverChain);
+
+                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
+
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<string>("\"string\"", options));
+                Assert.False(options.TryGetTypeInfo(typeof(string), out JsonTypeInfo? typeInfo));
+                Assert.Null(typeInfo);
+
+                Assert.False(options.IsReadOnly); // failed operations should not lock the instance
+
+                // Can still use reflection via explicit configuration
+                options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
+                Assert.Equal(new[] { options.TypeInfoResolver }, options.TypeInfoResolverChain);
+
+                Assert.NotNull(options.GetTypeInfo(typeof(string)));
+                Assert.NotNull(options.GetConverter(typeof(string)));
+
+                string json = JsonSerializer.Serialize("string", options);
+                string value = JsonSerializer.Deserialize<string>(json, options);
+                Assert.Equal("string", value);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_CanUseSourceGen()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                var options = new JsonSerializerOptions();
+                options.TypeInfoResolverChain.Add(JsonContext.Default);
+
+                string json = JsonSerializer.Serialize(new WeatherForecastWithPOCOs(), options);
+                WeatherForecastWithPOCOs result = JsonSerializer.Deserialize<WeatherForecastWithPOCOs>(json, options);
+                Assert.NotNull(result);
+
+            }, options).Dispose();
+        }
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
@@ -546,6 +664,37 @@ namespace System.Text.Json.Serialization.Tests
                 // A converter can be resolved when looking up JsonSerializerOptions
                 JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
                 Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
+
+                // Serialization using JsonSerializerContext now uses the reflection fallback.
+                json = JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default);
+                JsonTestHelper.AssertJsonEqual("""{"Value":"value", "Thing":null}""", json);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisablingIsReflectionEnabledByDefault()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false,
+                    ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
+                JsonContext context = JsonContext.Default;
+                var unsupportedValue = new MyClass();
+
+                Assert.Null(context.GetTypeInfo(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
             }, options).Dispose();
         }
@@ -1232,9 +1381,12 @@ namespace System.Text.Json.Serialization.Tests
 
             // An unset resolver results in NotSupportedException.
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(type));
+            // And returns false in the Try-method
+            Assert.False(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo));
+            Assert.Null(typeInfo);
 
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
-            JsonTypeInfo typeInfo = options.GetTypeInfo(type);
+            typeInfo = options.GetTypeInfo(type);
             Assert.Equal(type, typeInfo.Type);
             Assert.False(typeInfo.IsReadOnly);
 
@@ -1243,6 +1395,12 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(typeInfo2.IsReadOnly);
 
             Assert.NotSame(typeInfo, typeInfo2);
+
+            Assert.True(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo3));
+            Assert.Equal(type, typeInfo3.Type);
+            Assert.False(typeInfo3.IsReadOnly);
+
+            Assert.NotSame(typeInfo, typeInfo3);
 
             options.WriteIndented = true; // can mutate without issue
         }
@@ -1263,6 +1421,9 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonTypeInfo typeInfo2 = options.GetTypeInfo(type);
             Assert.Same(typeInfo, typeInfo2);
+
+            Assert.True(options.TryGetTypeInfo(type, out JsonTypeInfo? typeInfo3));
+            Assert.Same(typeInfo, typeInfo3);
         }
 
         [Fact]
@@ -1310,6 +1471,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentNullException>(() => options.GetTypeInfo(null));
+            Assert.Throws<ArgumentNullException>(() => options.TryGetTypeInfo(null, out JsonTypeInfo? _));
         }
 
         [Fact]
@@ -1362,6 +1524,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
             Assert.Throws<ArgumentException>(() => options.GetTypeInfo(type));
+            Assert.Throws<ArgumentException>(() => options.TryGetTypeInfo(type, out JsonTypeInfo? _));
         }
 
         [Fact]
@@ -1371,6 +1534,9 @@ namespace System.Text.Json.Serialization.Tests
             options.AddContext<JsonContext>();
 
             Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(BasicCompany)));
+
+            Assert.False(options.TryGetTypeInfo(typeof(BasicCompany), out JsonTypeInfo? typeInfo));
+            Assert.Null(typeInfo);
         }
 
         [Theory]

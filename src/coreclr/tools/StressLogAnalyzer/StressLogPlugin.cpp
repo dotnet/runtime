@@ -45,6 +45,7 @@ size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
 
 bool s_showAllMessages = false;
+bool s_showDefaultMessages = true;
 BOOL g_bDacBroken;
 char g_mdName[1];
 SYMBOLS* g_ExtSymbols;
@@ -171,11 +172,13 @@ const char* s_interestingStringTable[MAX_INTERESTING_STRINGS] =
 #undef d
 };
 
+bool s_interestingStringMatchMode[MAX_INTERESTING_STRINGS];
+
 bool s_interestingStringFilter[MAX_INTERESTING_STRINGS];
 
-static void AddInterestingString(const char* s)
+static void AddInterestingString(const char* s, bool matchMode)
 {
-    for (int i = 0; i < s_interestingStringCount; i++)
+    for (int i = 1; i < s_interestingStringCount; i++)
     {
         if (strcmp(s_interestingStringTable[i], s) == 0)
         {
@@ -185,6 +188,7 @@ static void AddInterestingString(const char* s)
     }
     int i = s_interestingStringCount++;
     s_interestingStringTable[i] = s;
+    s_interestingStringMatchMode[i] = matchMode;
     s_interestingStringFilter[IS_INTERESTING] = true;
 }
 
@@ -200,13 +204,25 @@ InterestingStringId FindStringId(StressLog::StressLogHeader* hdr, char* format)
         return id;
     for (int i = 1; s_interestingStringTable[i] != nullptr; i++)
     {
-        if (strcmp(format, s_interestingStringTable[i]) == 0)
+        if (i != IS_UNINTERESTING)
         {
-            id = (InterestingStringId)i;
-            if (id > IS_INTERESTING)
-                id = IS_INTERESTING;
-            mapImageToStringId[offset] = id;
-            return id;
+            bool match = false;
+            if (s_interestingStringMatchMode[i])
+            {
+                match = (strstr(format, s_interestingStringTable[i]) == format);
+            }
+            else
+            {
+                match = (strcmp(format, s_interestingStringTable[i]) == 0);
+            }
+            if (match)
+            {
+                id = (InterestingStringId)i;
+                if (id > IS_INTERESTING)
+                    id = IS_INTERESTING;
+                mapImageToStringId[offset] = id;
+                return id;
+            }
         }
     }
     mapImageToStringId[offset] = IS_UNINTERESTING;
@@ -388,7 +404,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     }
 
     case    IS_LOGGING_OFF:
-        return true;
+        return s_showDefaultMessages;
 
     case    IS_GCSTART:
     {
@@ -397,7 +413,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         {
             s_gcStartEnd[gcIndex].startTime = deltaTime;
         }
-        return true;
+        return s_showDefaultMessages;
     }
 
     case    IS_GCEND:
@@ -407,7 +423,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
         {
             s_gcStartEnd[gcIndex].endTime = deltaTime;
         }
-        return true;
+        return s_showDefaultMessages;
     }
 
     case    IS_MARK_START:
@@ -417,7 +433,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     case    IS_COMPACT_START:
     case    IS_COMPACT_END:
         RememberThreadForHeap(tsl->threadId, (int64_t)args[0], GC_THREAD_FG);
-        return true;
+        return s_showDefaultMessages;
 
     case    IS_PLAN_PLUG:
     case    IS_PLAN_PINNED_PLUG:
@@ -596,6 +612,8 @@ void Usage()
     printf("     (useful to search for the format string in the source code)\n");
     printf(" -f:<format string>: search for a specific format string\n");
     printf("    e.g. '-f:\"<%%zx>:%%zx\"'\n");
+    printf(" -p:<format string>: search for all format strings with a specific prefix\n");
+    printf("    e.g. '-p:\"commit-accounting\"'\n");
     printf("\n");
     printf(" -i:<hex facility code>: ignore messages from log facilities\n");
     printf("   e.g. '-i:7ffe' means ignore messages from anything but LF_GC\n");
@@ -615,6 +633,8 @@ void Usage()
     printf("     the gc thread associated with heap 3, and the background GC thread for heap 14\n");
     printf("\n");
     printf(" -a: print all messages from all threads\n");
+    printf("\n");
+    printf(" -d: suppress default messages\n");
     printf("\n");
 }
 
@@ -850,6 +870,10 @@ bool ParseOptions(int argc, char* argv[])
             case 'A':
                 s_showAllMessages = true;
                 break;
+            case 'd':
+            case 'D':
+                s_showDefaultMessages = false;
+                break;
             case 'f':
             case 'F':
                 if (arg[2] == '\0')
@@ -879,10 +903,37 @@ bool ParseOptions(int argc, char* argv[])
                         buf++;
                     }
                     InterpretEscapeSequences(buf);
-                    AddInterestingString(buf);
+                    AddInterestingString(buf, false);
                 }
                 break;
+            case 'p':
+            case 'P':
+                if (arg[2] == ':')
+                {
+                    if (s_interestingStringCount >= MAX_INTERESTING_STRINGS)
+                    {
+                        printf("too format string filters - max is %d\n", MAX_INTERESTING_STRINGS - IS_INTERESTING);
+                        return false;
+                    }
+                    arg = &arg[3];
+                    char* buf = arg;
+                    size_t actualSize = strlen(buf);
+                    if (actualSize <= 1)
+                    {
+                        printf("-f:<format string> expected\n");
+                        return false;
+                    }
 
+                    // remove double quotes around the string, if given
+                    if (actualSize >= 2 && buf[0] == '"' && buf[actualSize - 1] == '"')
+                    {
+                        buf[actualSize - 1] = '\0';
+                        buf++;
+                    }
+                    InterpretEscapeSequences(buf);
+                    AddInterestingString(buf, true);
+                }
+                break;
             case 'g':
             case 'G':
                 if (arg[2] == ':')
@@ -1221,6 +1272,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     s_outputFileName = nullptr;
     s_fPrintFormatStrings = false;
     s_showAllMessages = false;
+    s_showDefaultMessages = true;
     s_maxHeapNumberSeen = -1;
     for (int i = IS_INTERESTING; i < s_interestingStringCount; i++)
     {
@@ -1240,6 +1292,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     memset(s_gcThreadFilter, 0, sizeof(s_gcThreadFilter));
     memset(&mapImageToStringId, 0, sizeof(mapImageToStringId));
     memset(s_interestingStringFilter, 0, sizeof(s_interestingStringFilter));
+    memset(s_interestingStringMatchMode, 0, sizeof(s_interestingStringMatchMode));
     memset(s_printEarliestMessageFromGcThread, 0, sizeof(s_printEarliestMessageFromGcThread));
 
     if (!ParseOptions(argc, argv))

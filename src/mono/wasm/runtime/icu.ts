@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
 import { VoidPtr } from "./types/emscripten";
 
 // @offset must be the address of an ICU data archive in the native heap.
@@ -30,8 +30,12 @@ export function init_globalization() {
     }
 
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
+    const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = runtimeHelpers.config.environmentVariables!;
-    if (env_variables[invariantEnv] === undefined && runtimeHelpers.invariantMode) {
+    if (env_variables[hybridEnv] === undefined && runtimeHelpers.config.globalizationMode === "hybrid") {
+        env_variables[hybridEnv] = "1";
+    }
+    else if (env_variables[invariantEnv] === undefined && runtimeHelpers.invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {

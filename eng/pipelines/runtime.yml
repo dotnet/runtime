@@ -74,6 +74,7 @@ extends:
           - linux_x64
           - linux_arm
           - linux_arm64
+          - linux_riscv64
           - linux_musl_arm
           - linux_musl_arm64
           - linux_musl_x64
@@ -81,7 +82,6 @@ extends:
           - tizen_armel
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             testGroup: innerloop
@@ -100,11 +100,9 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64
+          - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -152,7 +150,6 @@ extends:
           - linux_musl_arm64
           - windows_x64
           - windows_x86
-          - windows_arm
           - windows_arm64
           - freebsd_x64
           jobParameters:
@@ -246,7 +243,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
               liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -272,6 +269,9 @@ extends:
           - linux_x64
           - windows_x64
           - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
@@ -314,7 +314,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
@@ -394,6 +394,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - linux_musl_x64
+          - linux_riscv64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -707,7 +708,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -730,7 +730,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           # - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             runtimeVariant: crossaot
@@ -807,7 +806,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -870,7 +868,6 @@ extends:
           - linux_arm
           - linux_musl_arm
           - linux_musl_arm64
-          - windows_arm
           - windows_arm64
           - windows_x86
           jobParameters:
@@ -983,7 +980,6 @@ extends:
             - linux_musl_arm
             - linux_musl_arm64
             - windows_x86
-            - windows_arm
             - windows_arm64
             - linux_arm
           jobParameters:
@@ -1235,6 +1231,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
+              llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

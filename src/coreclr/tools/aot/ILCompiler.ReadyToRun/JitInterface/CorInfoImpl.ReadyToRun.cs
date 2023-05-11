@@ -898,6 +898,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenArray;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenObject;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
                     id = ReadyToRunHelper.VirtualFuncPtr;
                     break;
@@ -1088,6 +1094,7 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
                 // For Vector256.Create and similar cases
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
                 // For x86 tailcall where helper is required we need runtime JIT.
@@ -1501,11 +1508,9 @@ namespace Internal.JitInterface
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
 
                     // TODO: Handle the case when the RVA is in the TLS range
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
-
-                    ISymbolNode node = _compilation.GetFieldRvaData(field);
-                    pResult->fieldLookup.addr = (void*)ObjectToHandle(node);
-                    pResult->fieldLookup.accessType = node.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
+                    fieldOffset = 0;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
                     if (!IsClassPreInited(field.OwningType))
@@ -3014,7 +3019,7 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+        private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             FieldDesc field = HandleToObject(fieldHandle);
@@ -3025,6 +3030,11 @@ namespace Internal.JitInterface
                 return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
             }
             return false;
+        }
+
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        {
+            throw new NotSupportedException();
         }
 
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)
@@ -3050,6 +3060,18 @@ namespace Internal.JitInterface
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             return -1;
+        }
+
+        private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+            return false;
+        }
+
+        private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+            return false;
         }
     }
 }

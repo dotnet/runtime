@@ -105,7 +105,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
-### How to building native components only
+### How to build native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
