@@ -2970,7 +2970,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
     return Precode::GetPrecodeFromEntryPoint(*pSlot);
 }
 
-bool MethodDescChunk::DetermineIsEligibleForTieredCompilation()
+bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()
 {
 #ifdef FEATURE_TIERED_COMPILATION
 #ifndef FEATURE_CODE_VERSIONING
@@ -2991,7 +2991,7 @@ bool MethodDescChunk::DetermineIsEligibleForTieredCompilation()
         !CORProfilerDisableTieredCompilation() &&
 
         // Policy - Generating optimized code is not disabled
-        !GetFirstMethodDesc()->IsJitOptimizationDisabledForAllMethodsInChunk();
+        !IsJitOptimizationDisabledForAllMethodsInChunk();
 #else
     return false;
 #endif
@@ -3008,7 +3008,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
 
     // This function should only be called if the chunk has already been checked. This is done
     // to reduce the amount of flags checked for each MethodDesc
-    _ASSERTE(GetMethodDescChunk()->DetermineIsEligibleForTieredCompilation());
+    _ASSERTE(DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
 
     // Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     // to ensure native slots are available where needed.

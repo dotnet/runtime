@@ -1109,7 +1109,7 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(this->GetMethodDescChunk());
+            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
 #else // FEATURE_REJIT
         return false;
 #endif
@@ -1128,8 +1128,12 @@ public:
 #endif
     }
 
+    // This method must return the same value for all methods in one MethodDescChunk
+    bool DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
     // Is this method allowed to be recompiled and the entrypoint redirected so that we
     // can optimize its performance? Eligibility is invariant for the lifetime of a method.
+
     bool DetermineAndSetIsEligibleForTieredCompilation();
 
     bool IsJitOptimizationDisabled();
@@ -1665,7 +1669,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE((m_wFlags & mdcClassification) == 0);
-        _ASSERTE(classification != mcDynamic || (GetMethodDescChunkIndex() == 0)); // Dynamic methods can only exist in MethodDescChunks which have a single MethodDesc
         m_wFlags |= classification;
     }
 
@@ -2143,8 +2146,6 @@ public:
                                         BOOL fNativeCodeSlot,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
-
-    bool DetermineIsEligibleForTieredCompilation();
 
     TADDR GetTemporaryEntryPoints()
     {
