@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -473,19 +474,34 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass();
         }
 
-        [Fact]
-        public void HostRuntimeContract_get_runtime_property()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HostRuntimeContract_get_runtime_property(bool useAppHost)
         {
             var fixture = sharedTestState.HostApiInvokerAppFixture;
 
-            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+            string[] args = new[]
+            {
+                "host_runtime_contract.get_runtime_property",
+                "APP_CONTEXT_BASE_DIRECTORY",
+                "DOES_NOT_EXIST",
+                "ENTRY_ASSEMBLY_NAME",
+                "COMMAND_LINE"
+            };
+            Command command = useAppHost
+                ? Command.Create(fixture.TestProject.AppExe, args).DotNetRoot(RepoDirectoriesProvider.Default.BuiltDotnet)
+                : fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, args);
+ 
+            var result = command
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
+                .Execute();
+            result.Should().Pass()
                 .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
                 .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
-                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
+                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}")
+                .And.HaveStdOutContaining($"COMMAND_LINE = {result.StartInfo.FileName} {result.StartInfo.Arguments}");
         }
 
         public class SharedTestState : IDisposable

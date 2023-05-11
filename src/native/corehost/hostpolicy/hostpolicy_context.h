@@ -21,6 +21,10 @@ public:
     host_mode_t host_mode;
     pal::string_t host_path;
 
+    // Application command line arguments - assumed to be valid for the lifetime of the context
+    int app_argc;
+    const pal::char_t** app_argv;
+
     bool breadcrumbs_enabled;
     mutable std::unordered_set<pal::string_t> breadcrumbs;
 

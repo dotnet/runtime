@@ -119,6 +119,23 @@ namespace
         {
             return pal::pal_utf8string(get_filename_without_ext(context->application), value_buffer, value_buffer_size);
         }
+        else if (::strcmp(key, HOST_PROPERTY_COMMAND_LINE) == 0)
+        {
+            pal::string_t command_line = context->host_path;
+            if (context->host_mode == host_mode_t::muxer)
+            {
+                command_line.append(_X(" "));
+                command_line.append(context->application);
+            }
+
+            for (int i = 0; i < context->app_argc; ++i)
+            {
+                command_line.append(_X(" "));
+                command_line.append(context->app_argv[i]);
+            }
+
+            return pal::pal_utf8string(command_line, value_buffer, value_buffer_size);
+        }
 
         // Properties from runtime initialization
         pal::string_t key_str;
@@ -138,6 +155,8 @@ namespace
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
+    app_argc = args.app_argc;
+    app_argv = args.app_argv;
     host_mode = hostpolicy_init.host_mode;
     host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
