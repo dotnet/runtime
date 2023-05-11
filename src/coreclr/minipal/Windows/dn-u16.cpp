@@ -8,8 +8,6 @@
 
 size_t strlen_u16(const WCHAR* str)
 {
-    if (str == NULL)
-        return 0;
     return ::wcslen(str);
 }
 

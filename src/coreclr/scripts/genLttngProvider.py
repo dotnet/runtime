@@ -433,8 +433,6 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavo
     lTTngImpl.append("""// Local implementation of WCHAR (UTF-16) string length
 static size_t lttng_strlen16(const WCHAR* string)
 {
-    if (string == NULL)
-        return 0;
     size_t nChar = 0;
     while (*string++)
         nChar++;

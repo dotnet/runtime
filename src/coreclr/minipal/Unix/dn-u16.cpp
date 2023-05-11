@@ -8,13 +8,9 @@ typedef char16_t WCHAR;
 
 size_t strlen_u16(const WCHAR* str)
 {
-    if (str == nullptr)
-        return 0;
-
     size_t nChar = 0;
     while (*str++)
         nChar++;
-
     return nChar;
 }
 
