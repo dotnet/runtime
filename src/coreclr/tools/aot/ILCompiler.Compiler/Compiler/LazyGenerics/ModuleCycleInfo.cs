@@ -166,7 +166,7 @@ namespace ILCompiler
                 return IsDeepPossiblyCyclicInstantiation(method.Instantiation) || IsDeepPossiblyCyclicInstantiation(method.OwningType);
             }
 
-            HashSet<EcmaModule> _modulesReported = new HashSet<EcmaModule>();
+            private HashSet<EcmaModule> _modulesReported = new HashSet<EcmaModule>();
 
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {

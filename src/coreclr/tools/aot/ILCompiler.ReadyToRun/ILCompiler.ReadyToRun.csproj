@@ -138,6 +138,10 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DiagnosticId.cs" Link="ILLink.Shared\DiagnosticId.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\MessageSubCategory.cs" Link="ILLink.Shared\MessageSubCategory.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DiagnosticCategory.cs" Link="ILLink.Shared\DiagnosticCategory.cs" />
+    <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DiagnosticString.cs" Link="ILLink.Shared\DiagnosticString.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs" />
@@ -154,6 +158,8 @@
     <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\GraphBuilder.ForEach.cs" Link="Compiler\GenericCycleDetection\GraphBuilder.ForEach.cs" />
     <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\GraphBuilder.MethodCall.cs" Link="Compiler\GenericCycleDetection\GraphBuilder.MethodCall.cs" />
     <Compile Include="..\ILCompiler.Compiler\Compiler\LazyGenerics\ModuleCycleInfo.cs" Link="Compiler\GenericCycleDetection\ModuleCycleInfo.cs" />
+    <Compile Include="..\ILCompiler.Compiler\Compiler\Logging\MessageOrigin.cs" Link="Compiler\Logging\MessageOrigin.cs" />
+    <Compile Include="..\ILCompiler.Compiler\Compiler\Logging\MessageContainer.cs" Link="Compiler\Logging\MessageContainer.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
@@ -335,6 +341,14 @@
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\SharedStrings.resx">
+      <GenerateSource>true</GenerateSource>
+      <Namespace>ILLink.Shared</Namespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
