@@ -95,7 +95,7 @@ namespace System.Reflection.Emit
             else if (type.IsByRef)
             {
                 signature.Builder.WriteByte((byte)SignatureTypeCode.ByReference);
-                WriteSimpleSignature(signature, type.GetElementType()!, module);
+                WriteSignatureForType(signature, type.GetElementType()!, module);
             }
             else if (type.IsGenericType)
             {
