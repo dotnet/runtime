@@ -707,12 +707,16 @@ namespace Wasm.Build.Tests
                 bool expectCJK = false;
                 bool expectNOCJK = false;
                 bool expectFULL = false;
+                bool expectHYBRID = false;
                 switch (globalizationMode)
                 {
                     case GlobalizationMode.Invariant:
                         break;
                     case GlobalizationMode.FullIcu:
                         expectFULL = true;
+                        break;
+                    case GlobalizationMode.Hybrid:
+                        expectHYBRID = true;
                         break;
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(predefinedIcudt))
@@ -746,6 +750,7 @@ namespace Wasm.Build.Tests
                 AssertFilesExist(bundleDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
                 AssertFilesExist(bundleDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
                 AssertFilesExist(bundleDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                AssertFilesExist(bundleDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
@@ -1250,7 +1255,8 @@ namespace Wasm.Build.Tests
     {
         Invariant,       // no icu
         FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
+        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
     };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
