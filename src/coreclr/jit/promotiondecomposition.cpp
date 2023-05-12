@@ -54,6 +54,7 @@ class DecompositionPlan
     bool                            m_dstInvolvesReplacements;
     bool                            m_srcInvolvesReplacements;
     ArrayStack<Entry>               m_entries;
+    bool                            m_hasNonRemainderUseOfStructLocal = false;
 
 public:
     DecompositionPlan(Compiler*                       comp,
@@ -166,6 +167,17 @@ public:
     void InitReplacement(Replacement* dstRep, unsigned offset)
     {
         m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // MarkNonRemainderUseOfStructLocal:
+    //   Mark that some of the destination replacements are being handled via a
+    //   readback. This invalidates liveness information for the remainder
+    //   because the struct local will now also be used for the readback.
+    //
+    void MarkNonRemainderUseOfStructLocal()
+    {
+        m_hasNonRemainderUseOfStructLocal = true;
     }
 
     //------------------------------------------------------------------------
@@ -320,7 +332,7 @@ private:
     //
     RemainderStrategy DetermineRemainderStrategy(const StructUseDeaths& dstDeaths)
     {
-        if (m_dstInvolvesReplacements && dstDeaths.IsRemainderDying())
+        if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && dstDeaths.IsRemainderDying())
         {
             JITDUMP("  => Remainder strategy: do nothing (remainder dying)\n");
             return RemainderStrategy(RemainderStrategy::NoRemainder);
@@ -372,7 +384,7 @@ private:
             {
                 if (!IsInit() || CanInitPrimitive(primitiveType))
                 {
-                    JITDUMP("  => Remainder strategy: %s at %03u\n", varTypeName(primitiveType), segment.Start);
+                    JITDUMP("  => Remainder strategy: %s at +%03u\n", varTypeName(primitiveType), segment.Start);
                     return RemainderStrategy(RemainderStrategy::Primitive, segment.Start, primitiveType);
                 }
                 else
@@ -986,6 +998,9 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
         DecompositionStatementList result;
         EliminateCommasInBlockOp(asg, &result);
 
+        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements,
+                               srcInvolvesReplacements);
+
         if (dstInvolvesReplacements)
         {
             unsigned dstLclOffs = dstLcl->GetLclOffs();
@@ -1005,6 +1020,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                     dstFirstRep->NeedsWriteBack = false;
                 }
 
+                plan.MarkNonRemainderUseOfStructLocal();
                 dstFirstRep->NeedsReadBack = true;
                 dstFirstRep++;
             }
@@ -1023,6 +1039,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                         dstLastRep->NeedsWriteBack = false;
                     }
 
+                    plan.MarkNonRemainderUseOfStructLocal();
                     dstLastRep->NeedsReadBack = true;
                     dstEndRep--;
                 }
@@ -1066,9 +1083,6 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                 }
             }
         }
-
-        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements,
-                               srcInvolvesReplacements);
 
         if (src->IsConstInitVal())
         {
@@ -1219,6 +1233,7 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
             // We will need to read this one back after initing the struct.
             rep->NeedsWriteBack = false;
             rep->NeedsReadBack  = true;
+            plan->MarkNonRemainderUseOfStructLocal();
             continue;
         }
 

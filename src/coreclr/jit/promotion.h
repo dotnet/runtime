@@ -280,6 +280,11 @@ private:
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
     void EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result);
+    void HandlePartiallyOverlappingReplacements(Replacement**      dstFirstRep,
+                                                Replacement**      dstEndRep,
+                                                Replacement**      srcFirstRep,
+                                                Replacement**      srcEndRep,
+                                                DecompositionPlan* plan);
     void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
     void CopyBetweenFields(GenTree*                    dst,
                            Replacement*                dstFirstRep,
