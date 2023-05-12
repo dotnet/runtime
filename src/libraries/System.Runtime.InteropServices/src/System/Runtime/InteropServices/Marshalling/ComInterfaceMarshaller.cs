@@ -61,6 +61,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             if (Marshal.QueryInterface(unknown, ref TargetInterfaceIID, out nint interfacePointer) != 0)
             {
+                Marshal.Release(unknown);
                 throw new InvalidCastException($"Unable to cast the provided managed object to a COM interface with ID '{iid:B}'");
             }
             Marshal.Release(unknown);
