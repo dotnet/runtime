@@ -90,7 +90,7 @@ namespace System.Reflection.Emit
 
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
         {
-              if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
             _parameters ??= new ParameterBuilderImpl[1];
