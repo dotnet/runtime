@@ -15,67 +15,88 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	class RequiresViaDataflow
 	{
-		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
-		[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--")]
-		[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
-		[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 		public static void Main ()
 		{
-			TestDynamicallyAccessedMembersWithRequires (typeof (DynamicallyAccessedTypeWithRequires));
-			TestDynamicallyAccessedMembersWithRequires (typeof (TypeWhichOverridesMethod));
-			TestRequiresInDynamicDependency ();
+			AnnotatedParameter.Test ();
+			DynamicDependency.Test ();
 		}
 
-		class BaseType
+		class AnnotatedParameter
 		{
-			[RequiresUnreferencedCode ("Message for --BaseType.VirtualMethodRequires--")]
-			[RequiresAssemblyFiles ("Message for --BaseType.VirtualMethodRequires--")]
-			[RequiresDynamicCode ("Message for --BaseType.VirtualMethodRequires--")]
-			public virtual void VirtualMethodRequires ()
+			static void MethodWithAnnotatedParameter (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 			{
+			}
+
+			public class DynamicallyAccessedTypeWithRequires
+			{
+				[RequiresUnreferencedCode ("Message for --DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
+				public void MethodWithRequires ()
+				{
+				}
+			}
+
+			[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
+			static void TestNonVirtualMethod ()
+			{
+				MethodWithAnnotatedParameter (typeof (DynamicallyAccessedTypeWithRequires));
+			}
+
+			class BaseType
+			{
+				[RequiresUnreferencedCode ("Message for --BaseType.VirtualMethodRequires--")]
+				[RequiresAssemblyFiles ("Message for --BaseType.VirtualMethodRequires--")]
+				[RequiresDynamicCode ("Message for --BaseType.VirtualMethodRequires--")]
+				public virtual void VirtualMethodRequires ()
+				{
+				}
+			}
+
+			class TypeWhichOverridesMethod : BaseType
+			{
+				[RequiresUnreferencedCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
+				[RequiresAssemblyFiles ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
+				[RequiresDynamicCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
+				public override void VirtualMethodRequires ()
+				{
+				}
+			}
+
+			[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--")]
+			[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
+			[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			static void TestOverriddenVirtualMethod ()
+			{
+				MethodWithAnnotatedParameter (typeof (TypeWhichOverridesMethod));
+			}
+
+			public static void Test ()
+			{
+				TestNonVirtualMethod ();
+				TestOverriddenVirtualMethod ();
 			}
 		}
 
-		class TypeWhichOverridesMethod : BaseType
+		class DynamicDependency
 		{
-			[RequiresUnreferencedCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
-			[RequiresAssemblyFiles ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
-			[RequiresDynamicCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
-			public override void VirtualMethodRequires ()
+			[RequiresUnreferencedCode ("Message for --RequiresInDynamicDependency--")]
+			[RequiresAssemblyFiles ("Message for --RequiresInDynamicDependency--")]
+			[RequiresDynamicCode ("Message for --RequiresInDynamicDependency--")]
+			static void RequiresInDynamicDependency ()
 			{
 			}
-		}
 
-		public class DynamicallyAccessedTypeWithRequires
-		{
-			[RequiresUnreferencedCode ("Message for --DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
-			public void MethodWithRequires ()
+			// https://github.com/dotnet/runtime/issues/83080 - Analyzer doesn't recognize DynamicDependency in any way
+			[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
+			[DynamicDependency ("RequiresInDynamicDependency")]
+			public static void Test ()
 			{
 			}
-		}
-
-		static void TestDynamicallyAccessedMembersWithRequires (
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
-		{
-		}
-
-		[RequiresUnreferencedCode ("Message for --RequiresInDynamicDependency--")]
-		[RequiresAssemblyFiles ("Message for --RequiresInDynamicDependency--")]
-		[RequiresDynamicCode ("Message for --RequiresInDynamicDependency--")]
-		static void RequiresInDynamicDependency ()
-		{
-		}
-
-		// https://github.com/dotnet/runtime/issues/83080 - Analyzer doesn't recognize DynamicDependency in any way
-		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
-		[DynamicDependency ("RequiresInDynamicDependency")]
-		static void TestRequiresInDynamicDependency ()
-		{
 		}
 	}
 }
