@@ -6217,7 +6217,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
 
-    unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
+    unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
     ClassLayout* GetLayout(Compiler* compiler) const;
 

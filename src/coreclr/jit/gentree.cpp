@@ -19314,34 +19314,13 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         return HWIntrinsicInfo::HasRMWSemantics(intrinsicId);
     }
 
+    if (HWIntrinsicInfo::IsRmwIntrinsic(intrinsicId))
+    {
+        return true;
+    }
+
     switch (intrinsicId)
     {
-        // TODO-XArch-Cleanup: Move this switch block to be table driven.
-
-        case NI_AVX512F_FusedMultiplyAdd:
-        case NI_AVX512F_FusedMultiplyAddNegated:
-        case NI_AVX512F_FusedMultiplyAddSubtract:
-        case NI_AVX512F_FusedMultiplySubtract:
-        case NI_AVX512F_FusedMultiplySubtractAdd:
-        case NI_AVX512F_FusedMultiplySubtractNegated:
-        case NI_SSE42_Crc32:
-        case NI_SSE42_X64_Crc32:
-        case NI_FMA_MultiplyAdd:
-        case NI_FMA_MultiplyAddNegated:
-        case NI_FMA_MultiplyAddNegatedScalar:
-        case NI_FMA_MultiplyAddScalar:
-        case NI_FMA_MultiplyAddSubtract:
-        case NI_FMA_MultiplySubtract:
-        case NI_FMA_MultiplySubtractAdd:
-        case NI_FMA_MultiplySubtractNegated:
-        case NI_FMA_MultiplySubtractNegatedScalar:
-        case NI_FMA_MultiplySubtractScalar:
-        case NI_X86Base_DivRem:
-        case NI_X86Base_X64_DivRem:
-        {
-            return true;
-        }
-
         case NI_AVX512F_Fixup:
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
@@ -26118,24 +26097,16 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// GetResultOpNumForFMA: check if the result is written into one of the operands.
+// GetResultOpNumForRmwIntrinsic: check if the result is written into one of the operands.
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
 //
 // Return Value:
 //     The operand number overwritten or lastUse. 0 is the default value, where the result is written into
 //      a destination that is not one of the source operands and there is no last use op.
 //
-unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
+unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
-#if defined(DEBUG)
-    // only FMA intrinsic node should call into this function
-    if (HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) != InstructionSet_FMA)
-    {
-        assert((gtHWIntrinsicId >= NI_AVX512F_FusedMultiplyAdd) &&
-               (gtHWIntrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated));
-        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) + 1 == 6);
-    }
-#endif // DEBUG
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
 
     if (use != nullptr && use->OperIs(GT_STORE_LCL_VAR))
     {
@@ -26143,15 +26114,16 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
 
         GenTreeLclVarCommon* overwritten       = use->AsLclVarCommon();
         unsigned             overwrittenLclNum = overwritten->GetLclNum();
-        if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+
+        if (op1->IsLocal() && (op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum))
         {
             return 1;
         }
-        else if (op2->IsLocal() && op2->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+        else if (op2->IsLocal() && (op2->AsLclVarCommon()->GetLclNum() == overwrittenLclNum))
         {
             return 2;
         }
-        else if (op3->IsLocal() && op3->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
+        else if (op3->IsLocal() && (op3->AsLclVarCommon()->GetLclNum() == overwrittenLclNum))
         {
             return 3;
         }
@@ -26161,11 +26133,17 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
     // https://github.com/dotnet/runtime/issues/62215
 
     if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
+    {
         return 1;
+    }
     else if (op2->OperIs(GT_LCL_VAR) && op2->IsLastUse(0))
+    {
         return 2;
+    }
     else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
+    {
         return 3;
+    }
 
     return 0;
 }

@@ -2404,10 +2404,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 3);
                 assert(isRMW);
+                assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                unsigned resultOpNum = 0;
                 LIR::Use use;
                 GenTree* user = nullptr;
 
@@ -2415,7 +2415,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     user = use.User();
                 }
-                resultOpNum = intrinsicTree->GetResultOpNumForFMA(user, op1, op2, op3);
+                unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
 
                 unsigned containedOpNum = 0;
 
@@ -2504,6 +2504,54 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_AVX512F_PermuteVar8x64x2:
+            case NI_AVX512F_PermuteVar16x32x2:
+            case NI_AVX512F_VL_PermuteVar2x64x2:
+            case NI_AVX512F_VL_PermuteVar4x32x2:
+            case NI_AVX512F_VL_PermuteVar4x64x2:
+            case NI_AVX512F_VL_PermuteVar8x32x2:
+            case NI_AVX512BW_PermuteVar32x16x2:
+            case NI_AVX512BW_VL_PermuteVar8x16x2:
+            case NI_AVX512BW_VL_PermuteVar16x16x2:
+            case NI_AVX512VBMI_PermuteVar64x8x2:
+            case NI_AVX512VBMI_VL_PermuteVar16x8x2:
+            case NI_AVX512VBMI_VL_PermuteVar32x8x2:
+            {
+                assert(numArgs == 3);
+                assert(isRMW);
+                assert(HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
+
+                LIR::Use use;
+                GenTree* user = nullptr;
+
+                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
+                {
+                    user = use.User();
+                }
+                unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
+
+                assert(!op1->isContained());
+                assert(!op2->isContained());
+
+                GenTree* emitOp1 = op1;
+                GenTree* emitOp2 = op2;
+                GenTree* emitOp3 = op3;
+
+                if (resultOpNum == 2)
+                {
+                    std::swap(emitOp1, emitOp2);
+                }
+
+                tgtPrefUse = BuildUse(emitOp1);
+
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+                srcCount += op3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
             {
@@ -2574,6 +2622,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             default:
             {
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
+                assert(!HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
+                assert(!HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
                 break;
             }
         }
