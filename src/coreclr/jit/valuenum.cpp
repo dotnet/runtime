@@ -11178,23 +11178,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
             }
 
-            // ARR_ELEM is a bounds-checked address. TODO-CQ: model it precisely.
             case GT_ARR_ELEM:
-            {
-                GenTreeArrElem* arrElem = tree->AsArrElem();
-
-                ValueNumPair vnpExcSet = vnStore->VNPExceptionSet(arrElem->gtArrObj->gtVNPair);
-                for (size_t i = 0; i < arrElem->gtArrRank; i++)
-                {
-                    vnpExcSet = vnStore->VNPUnionExcSet(arrElem->gtArrInds[i]->gtVNPair, vnpExcSet);
-                }
-
-                arrElem->gtVNPair = vnStore->VNPUniqueWithExc(arrElem->TypeGet(), vnpExcSet);
-
-                // TODO: model the IndexOutOfRangeException for this node.
-                fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
-            }
-            break;
+                unreached(); // we expect these to be gone by the time value numbering runs
+                break;
 
             // FIELD_LIST is an R-value that we currently don't model.
             case GT_FIELD_LIST:
@@ -12955,19 +12941,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_MDARR_LENGTH:
             case GT_MDARR_LOWER_BOUND:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrCommon()->ArrRef());
-                break;
-
-            case GT_ARR_ELEM:
-                assert(!opts.compJitEarlyExpandMDArrays);
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
-                break;
-
-            case GT_ARR_INDEX:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrIndex()->ArrObj());
-                break;
-
-            case GT_ARR_OFFSET:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrOffs()->gtArrObj);
                 break;
 
             case GT_CKFINITE:

@@ -99,7 +99,7 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
