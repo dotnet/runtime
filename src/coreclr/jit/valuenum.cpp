@@ -10445,7 +10445,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10464,7 +10464,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10484,6 +10484,12 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
 
     // Throughput check, the logic below is only for USHORT (char)
     if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_USHORT))
+    {
+        return false;
+    }
+
+    // Throughput check, the logic below is only for JIT and NativeAOT
+    if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         return false;
     }
