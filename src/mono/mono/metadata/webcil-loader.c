@@ -8,6 +8,7 @@
 
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/webcil-loader.h"
+#include "mono/utils/mono-logger-internals.h"
 #include "mono/utils/wasm-module-reader.h"
 
 /* keep in sync with webcil-writer */
@@ -134,7 +135,16 @@ webcil_image_load_pe_data (MonoImage *image)
 	offset = do_load_header (image->raw_data, image->raw_data_len, offset, header, &webcil_section_adjustment);
 	if (offset == -1)
 		goto invalid_image;
-
+	/* HACK! RVAs and debug table entry pointers are from the beginning of the webcil payload. adjust MonoImage:raw_data to point to it */
+	g_assert (image->ref_count == 1);
+	g_assert (image->storage->ref.ref == 1);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Adjusting offset image %s [%p].", image->name, image);
+	image->storage->raw_data += webcil_section_adjustment;
+	image->storage->raw_data_len -= webcil_section_adjustment;
+	image->raw_data = image->storage->raw_data;
+	image->raw_data_len = image->storage->raw_data_len;
+	offset -= webcil_section_adjustment;
+	
 	top = iinfo->cli_header.coff.coff_sections;
 
 	iinfo->cli_section_count = top;
@@ -143,7 +153,7 @@ webcil_image_load_pe_data (MonoImage *image)
 
 	for (int i = 0; i < top; i++) {
 		MonoSectionTable *t = &iinfo->cli_section_tables [i];
-		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, webcil_section_adjustment, t);
+		offset = mono_webcil_load_section_table (image->raw_data, image->raw_data_len, offset, /*webcil_section_adjustment*/ 0, t);
 		if (offset == -1)
 			goto invalid_image;
 	}
