@@ -22,8 +22,8 @@ const terserConfig = {
     compress: {
         defaults: true,
         passes: 2,
-        drop_debugger: false,// we invoke debugger
-        drop_console: false,// we log to console
+        drop_debugger: false, // we invoke debugger
+        drop_console: false, // we log to console
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
@@ -73,9 +73,9 @@ try {
 }
 
 function consts(dict) {
-    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
-    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
-    /// and the virtual module always exports a single default binding (the const value).
+    // implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    // It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    // and the virtual module always exports a single default binding (the const value).
 
     let newDict = {};
     for (const k in dict) {

@@ -40,7 +40,6 @@ export function _get_class_name(classPtr: MonoClass): string {
     return cwraps.mono_wasm_get_type_name(cwraps.mono_wasm_class_get_type(classPtr));
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
     let result = null;
     let closureArgumentList: any[] | null = null;

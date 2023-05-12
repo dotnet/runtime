@@ -4,7 +4,6 @@
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
 import { consoleWebSocket } from "./logging";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
     if (loaderHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
@@ -30,7 +29,6 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_exit(exit_code: number, reason?: any): void {
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
@@ -73,7 +71,6 @@ async function flush_node_streams() {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
