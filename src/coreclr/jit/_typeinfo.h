@@ -179,13 +179,6 @@ private:
             ti_types type : TI_FLAG_DATA_BITS;
             unsigned : 1;       // unused
             unsigned byref : 1; // used
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
-            unsigned : 1;       // unused
         } m_bits;
 
         DWORD m_flags;
@@ -217,7 +210,7 @@ public:
 
     typeInfo(ti_types tiType)
     {
-        assert((tiType >= TI_BYTE) && (tiType <= TI_NULL));
+        assert((tiType >= TI_ERROR) && (tiType <= TI_NULL));
 
         m_flags = (DWORD)tiType;
         m_cls   = NO_CLASS_HANDLE;
@@ -231,8 +224,7 @@ public:
 
     typeInfo(ti_types tiType, CORINFO_CLASS_HANDLE cls)
     {
-        assert(tiType == TI_STRUCT || tiType == TI_REF);
-        assert(cls != nullptr && !isInvalidHandle(cls));
+        assert((tiType == TI_REF) && !isInvalidHandle(cls));
         m_flags = tiType;
         m_cls   = cls;
     }
@@ -284,15 +276,9 @@ public:
     // Getters
     /////////////////////////////////////////////////////////////////////////
 
-    CORINFO_CLASS_HANDLE GetClassHandle() const
-    {
-        return m_cls;
-    }
-
     CORINFO_CLASS_HANDLE GetClassHandleForObjRef() const
     {
-        assert(IsType(TI_REF));
-        assert(m_cls != NO_CLASS_HANDLE);
+        // assert(IsType(TI_REF) || IsType(TI_ERROR));
         return m_cls;
     }
 
@@ -341,29 +327,6 @@ public:
     bool IsMethod() const
     {
         return GetType() == TI_METHOD;
-    }
-
-    bool IsStruct() const
-    {
-        return IsType(TI_STRUCT);
-    }
-
-    // A byref value class is NOT a value class
-    bool IsValueClass() const
-    {
-        return (IsStruct() || IsPrimitiveType());
-    }
-
-    // Returns whether this is a primitive type (not a byref, objref,
-    // array, null, value class, invalid value)
-    // May Need to normalise first (m/r/I4 --> I4)
-    bool IsPrimitiveType() const
-    {
-        DWORD Type = GetType();
-
-        // boolean, char, u1,u2 never appear on the operand stack
-        return (Type == TI_BYTE || Type == TI_SHORT || Type == TI_INT || Type == TI_LONG || Type == TI_FLOAT ||
-                Type == TI_DOUBLE);
     }
 
 private:

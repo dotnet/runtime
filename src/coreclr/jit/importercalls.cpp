@@ -8842,32 +8842,29 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if ((intrinsicName != NI_Array_Get) && !readonlyCall && varTypeIsGC(elemType))
     {
         // Get the call site signature
-        CORINFO_SIG_INFO LocalSig;
-        eeGetCallSiteSig(memberRef, info.compScopeHnd, impTokenLookupContextHandle, &LocalSig);
-        assert(LocalSig.hasThis());
+        CORINFO_SIG_INFO localSig;
+        eeGetCallSiteSig(memberRef, info.compScopeHnd, impTokenLookupContextHandle, &localSig);
+        assert(localSig.hasThis());
 
         CORINFO_CLASS_HANDLE actualElemClsHnd;
 
         if (intrinsicName == NI_Array_Set)
         {
             // Fetch the last argument, the one that indicates the type we are setting.
-            CORINFO_ARG_LIST_HANDLE argType = LocalSig.args;
+            CORINFO_ARG_LIST_HANDLE argList = localSig.args;
             for (unsigned r = 0; r < rank; r++)
             {
-                argType = info.compCompHnd->getArgNext(argType);
+                argList = info.compCompHnd->getArgNext(argList);
             }
 
-            typeInfo argInfo = verParseArgSigToTypeInfo(&LocalSig, argType);
-            actualElemClsHnd = argInfo.GetClassHandle();
+            actualElemClsHnd = eeGetArgClass(&localSig, argList);
         }
         else
         {
             assert(intrinsicName == NI_Array_Address);
+            assert((localSig.retType == CORINFO_TYPE_BYREF) && (localSig.retTypeClass != NO_CLASS_HANDLE));
 
-            // Fetch the return type
-            typeInfo retInfo = verMakeTypeInfo(LocalSig.retType, LocalSig.retTypeClass);
-            assert(retInfo.IsByRef());
-            actualElemClsHnd = retInfo.GetClassHandle();
+            info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
         }
 
         // if it's not final, we can't do the optimization

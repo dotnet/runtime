@@ -44,16 +44,6 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
         BADCODE("stack overflow");
     }
 
-#ifdef DEBUG
-    // If we are pushing a struct, make certain we know the precise type!
-    if (tree->TypeGet() == TYP_STRUCT)
-    {
-        assert(ti.IsType(TI_STRUCT));
-        CORINFO_CLASS_HANDLE clsHnd = ti.GetClassHandle();
-        assert(clsHnd != NO_CLASS_HANDLE);
-    }
-#endif // DEBUG
-
     verCurrentState.esStack[verCurrentState.esStackDepth].seTypeInfo = ti;
     verCurrentState.esStack[verCurrentState.esStackDepth++].val      = tree;
 
@@ -1707,7 +1697,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
         // If temp is newly introduced and a ref type, grab what type info we can.
         if (lvaTable[tnum].lvType == TYP_REF)
         {
-            CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
+            CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandleForObjRef();
             lvaSetClass(tnum, tree, stkHnd);
         }
 
@@ -2501,10 +2491,6 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
         // Pretend all byrefs are pointing to bytes.
         return typeInfo(TI_BYTE).MakeByRef();
     }
-    if (varTypeIsStruct(varDsc))
-    {
-        return typeInfo(TI_STRUCT, varDsc->GetLayout()->GetClassHandle());
-    }
 
     return typeInfo(varDsc->TypeGet());
 }
@@ -2513,54 +2499,20 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
 {
     assert(ciType < CORINFO_TYPE_COUNT);
 
-    typeInfo tiResult;
     switch (ciType)
     {
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
-            tiResult = verMakeTypeInfo(clsHnd);
-            if (!tiResult.IsType(TI_REF))
-            { // type must be consistent with element type
-                return typeInfo();
-            }
-            break;
-
-        case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
-            tiResult = verMakeTypeInfo(clsHnd);
-            // type must be constant with element type;
-            if (!tiResult.IsValueClass())
-            {
-                return typeInfo();
-            }
-            break;
-        case CORINFO_TYPE_VAR:
-            return verMakeTypeInfo(clsHnd);
-
-        case CORINFO_TYPE_PTR: // for now, pointers are treated as an error
-        case CORINFO_TYPE_VOID:
-            return typeInfo();
-            break;
+            return typeInfo(TI_REF, clsHnd);
 
         case CORINFO_TYPE_BYREF:
-        {
-            CORINFO_CLASS_HANDLE childClassHandle;
-            CorInfoType          childType = info.compCompHnd->getChildType(clsHnd, &childClassHandle);
-            return ByRef(verMakeTypeInfo(childType, childClassHandle));
-        }
-        break;
+            return typeInfo(TI_BYTE).MakeByRef();
+
+        case CORINFO_TYPE_VOID:
+            return typeInfo();
 
         default:
-            if (clsHnd)
-            { // If we have more precise information, use it
-                return typeInfo(TI_STRUCT, clsHnd);
-            }
-            else
-            {
-                return typeInfo(JITtype2tiType(ciType));
-            }
+            return typeInfo(JITtype2tiType(ciType));
     }
-    return tiResult;
 }
 
 /******************************************************************************/
@@ -2572,42 +2524,7 @@ typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
         return typeInfo();
     }
 
-    // Byrefs should only occur in method and local signatures, which are accessed
-    // using ICorClassInfo and ICorClassInfo.getChildType.
-    // So findClass() and getClassAttribs() should not be called for byrefs
-
-    if (JITtype2varType(info.compCompHnd->asCorInfoType(clsHnd)) == TYP_BYREF)
-    {
-        assert(!"Did findClass() return a Byref?");
-        return typeInfo();
-    }
-
-    unsigned attribs = info.compCompHnd->getClassAttribs(clsHnd);
-
-    if (attribs & CORINFO_FLG_VALUECLASS)
-    {
-        CorInfoType t = info.compCompHnd->getTypeForPrimitiveValueClass(clsHnd);
-
-        // Meta-data validation should ensure that CORINF_TYPE_BYREF should
-        // not occur here, so we may want to change this to an assert instead.
-        if (t == CORINFO_TYPE_VOID || t == CORINFO_TYPE_BYREF || t == CORINFO_TYPE_PTR)
-        {
-            return typeInfo();
-        }
-
-        if (t != CORINFO_TYPE_UNDEF)
-        {
-            return (typeInfo(JITtype2tiType(t)));
-        }
-        else
-        {
-            return (typeInfo(TI_STRUCT, clsHnd));
-        }
-    }
-    else
-    {
-        return (typeInfo(TI_REF, clsHnd));
-    }
+    return verMakeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
 }
 
 /*****************************************************************************
@@ -3187,7 +3104,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     GenTree*             op1       = nullptr;
     GenTree*             op2       = nullptr;
     StackEntry           se        = impPopStack();
-    CORINFO_CLASS_HANDLE operCls   = se.seTypeInfo.GetClassHandle();
     GenTree*             exprToBox = se.val;
 
     // Look at what helper we should use.
@@ -3207,7 +3123,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // structs is cheap.
     JITDUMP("\nCompiler::impImportAndPushBox -- handling BOX(value class) via");
     bool canExpandInline = (boxHelper == CORINFO_HELP_BOX);
-    bool optForSize      = !exprToBox->IsCall() && (operCls != nullptr) && opts.OptimizationDisabled();
+    bool optForSize      = !exprToBox->IsCall() && !varTypeIsStruct(exprToBox) && opts.OptimizationDisabled();
     bool expandInline    = canExpandInline && !optForSize;
 
     if (expandInline)
@@ -3358,7 +3274,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         //
         if (varTypeIsStruct(exprToBox))
         {
-            assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
             op1 = impAssignStructPtr(op1, exprToBox, CHECK_SPILL_ALL);
         }
         else
@@ -3421,7 +3336,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     {
         // Don't optimize, just call the helper and be done with it.
         JITDUMP(" helper call because: %s\n", canExpandInline ? "optimizing for size" : "nullable");
-        assert(operCls != nullptr);
 
         // Ensure that the value class is restored
         op2 = impTokenToHandle(pResolvedToken, nullptr, true /* mustRestoreHandle */);
@@ -6592,7 +6506,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 {
                     StackEntry se = impPopStack();
-                    clsHnd        = se.seTypeInfo.GetClassHandle();
                     op1           = se.val;
                     tiRetVal      = se.seTypeInfo;
                 }
@@ -6634,7 +6547,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (isSingleDefLocal && hasSingleReachingDef)
                     {
-                        lvaUpdateClass(lclNum, op1, clsHnd);
+                        lvaUpdateClass(lclNum, op1, tiRetVal.GetClassHandleForObjRef());
                     }
                 }
 
@@ -8056,10 +7969,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_POP:
             {
                 /* Pull the top value from the stack */
-
-                StackEntry se = impPopStack();
-                clsHnd        = se.seTypeInfo.GetClassHandle();
-                op1           = se.val;
+                op1 = impPopStack().val;
 
                 /* Get hold of the type of the value being duplicated */
 
@@ -8081,9 +7991,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Calls with large struct return value have to go through this.
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
-                        if (op1->gtOper != GT_CALL ||
-                            !IsMultiRegReturnedType(clsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
-                            op1->AsCall()->gtCallType == CT_HELPER)
+                        if (!op1->IsCall() ||
+                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
+                            op1->IsHelperCall())
 #endif // UNIX_AMD64_ABI
                         {
                             // If the value being produced comes from loading
@@ -8180,7 +8090,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Propagate type info to the temp from the stack and the original tree
                         if (type == TYP_REF)
                         {
-                            lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
+                            lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandleForObjRef());
                         }
 
                         op1 = gtNewLclvNode(tmpNum, type);
@@ -8921,16 +8831,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 JITDUMP(" %08X", resolvedToken.token);
 
-                int aflags = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
-
-                GenTree*             obj     = nullptr;
-                CORINFO_CLASS_HANDLE objType = nullptr; // used for fields
+                int      aflags = isLoadAddress ? CORINFO_ACCESS_ADDRESS : CORINFO_ACCESS_GET;
+                GenTree* obj    = nullptr;
 
                 if ((opcode == CEE_LDFLD) || (opcode == CEE_LDFLDA))
                 {
-                    StackEntry se = impPopStack();
-                    objType       = se.seTypeInfo.GetClassHandle();
-                    obj           = se.val;
+                    obj = impPopStack().val;
 
                     if (impIsThis(obj))
                     {
@@ -9040,10 +8946,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 BADCODE3("Unexpected opcode (has to be LDFLD)", ": %02X", (int)opcode);
                             }
-                            if (objType == nullptr)
-                            {
-                                BADCODE("top of stack must be a value type");
-                            }
+
                             obj = impGetStructAddr(obj, CHECK_SPILL_ALL, true);
                         }
 
@@ -9311,9 +9214,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 // Pull the value from the stack.
-                StackEntry se = impPopStack();
-                op2           = se.val;
-                clsHnd        = se.seTypeInfo.GetClassHandle();
+                op2 = impPopStack().val;
 
                 if (opcode == CEE_STFLD)
                 {
@@ -10163,7 +10064,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // If non register passable struct we have it materialized in the RetBuf.
                         assert(op1->gtType == TYP_STRUCT);
                         tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
-                        assert(tiRetVal.IsValueClass());
                     }
                 }
 
@@ -10685,8 +10585,23 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
             return;
         }
 
+        var_types type = impInlineInfo->lclVarInfo[ilArgNum].lclTypeInfo;
+        typeInfo  tiRetVal;
+        if (type == TYP_BYREF)
+        {
+            tiRetVal = typeInfo(TI_BYTE).MakeByRef();
+        }
+        else if (type == TYP_REF)
+        {
+            tiRetVal = typeInfo(TI_REF, impInlineInfo->lclVarInfo[ilArgNum].lclTypeHandle);
+        }
+        else
+        {
+            tiRetVal = typeInfo(type);
+        }
+
         impPushVar(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo),
-                   impInlineInfo->lclVarInfo[ilArgNum].lclVerTypeInfo);
+                   tiRetVal);
     }
     else
     {
@@ -10712,6 +10627,7 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
 // It will be mapped to the correct lvaTable index
 void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
 {
+    unsigned lclNum;
     if (compIsForInlining())
     {
         if (ilLclNum >= info.compMethodInfo->locals.numArgs)
@@ -10720,21 +10636,8 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
             return;
         }
 
-        // Get the local type
-        var_types lclTyp = impInlineInfo->lclVarInfo[ilLclNum + impInlineInfo->argCnt].lclTypeInfo;
-
-        typeInfo tiRetVal = impInlineInfo->lclVarInfo[ilLclNum + impInlineInfo->argCnt].lclVerTypeInfo;
-
-        /* Have we allocated a temp for this local? */
-
-        unsigned lclNum = impInlineFetchLocal(ilLclNum DEBUGARG("Inline ldloc first use temp"));
-
-        // All vars of inlined methods should be !lvNormalizeOnLoad()
-
-        assert(!lvaTable[lclNum].lvNormalizeOnLoad());
-        lclTyp = genActualType(lclTyp);
-
-        impPushVar(gtNewLclvNode(lclNum, lclTyp), tiRetVal);
+        // Have we allocated a temp for this local?
+        lclNum = impInlineFetchLocal(ilLclNum DEBUGARG("Inline ldloc first use temp"));
     }
     else
     {
@@ -10743,10 +10646,10 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
             BADCODE("Bad IL");
         }
 
-        unsigned lclNum = info.compArgsCount + ilLclNum;
-
-        impLoadVar(lclNum, offset);
+        lclNum = info.compArgsCount + ilLclNum;
     }
+
+    impLoadVar(lclNum, offset);
 }
 
 //------------------------------------------------------------------------
@@ -10813,15 +10716,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     }
 #endif // DEBUG
 
-    GenTree*             op2       = nullptr;
-    GenTree*             op1       = nullptr;
-    CORINFO_CLASS_HANDLE retClsHnd = nullptr;
+    GenTree* op2 = nullptr;
+    GenTree* op1 = nullptr;
 
     if (info.compRetType != TYP_VOID)
     {
-        StackEntry se = impPopStack();
-        retClsHnd     = se.seTypeInfo.GetClassHandle();
-        op2           = se.val;
+        op2 = impPopStack().val;
 
         if (!compIsForInlining())
         {
@@ -13089,11 +12989,12 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     CallArg* thisArg = call->gtArgs.GetThisArg();
     if (thisArg != nullptr)
     {
-        bool      isValueClassThis = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0);
-        var_types sigType          = isValueClassThis ? TYP_BYREF : TYP_REF;
+        bool                 isValueClassThis = ((clsAttr & CORINFO_FLG_VALUECLASS) != 0);
+        var_types            sigType          = isValueClassThis ? TYP_BYREF : TYP_REF;
+        CORINFO_CLASS_HANDLE sigThisClass     = pInlineInfo->inlineCandidateInfo->clsHandle;
 
         lclVarInfo[0].lclTypeInfo    = sigType;
-        lclVarInfo[0].lclVerTypeInfo = verMakeTypeInfo(pInlineInfo->inlineCandidateInfo->clsHandle);
+        lclVarInfo[0].lclTypeHandle  = isValueClassThis ? NO_CLASS_HANDLE : sigThisClass;
         lclVarInfo[0].lclHasLdlocaOp = false;
 
 #ifdef FEATURE_SIMD
@@ -13101,7 +13002,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // the inlining multiplier) for anything in that assembly.
         // But we only need to normalize it if it is a TYP_STRUCT
         // (which we need to do even if we have already set foundSIMDType).
-        if (!foundSIMDType && isValueClassThis && isSIMDorHWSIMDClass(pInlineInfo->inlineCandidateInfo->clsHandle))
+        if (!foundSIMDType && isValueClassThis && isSIMDorHWSIMDClass(sigThisClass))
         {
             foundSIMDType = true;
         }
@@ -13111,7 +13012,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         assert(varTypeIsGC(thisArgNode->TypeGet()) ||     // "this" is managed
                ((thisArgNode->TypeGet() == TYP_I_IMPL) && // "this" is unmgd but the method's class doesnt care
-                (clsAttr & CORINFO_FLG_VALUECLASS)));
+                isValueClassThis));
 
         if (genActualType(thisArgNode) != genActualType(sigType))
         {
@@ -13125,9 +13026,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             /* This can only happen with byrefs <-> ints/shorts */
 
             assert(sigType == TYP_BYREF);
-            assert((genActualType(thisArgNode->TypeGet()) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
-
-            lclVarInfo[0].lclVerTypeInfo = typeInfo(TYP_I_IMPL);
+            assert((genActualType(thisArgNode) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
         }
     }
 
@@ -13156,9 +13055,16 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 #endif // FEATURE_SIMD
 
-        lclVarInfo[i].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->args, argLst);
-        lclVarInfo[i].lclTypeInfo    = sigType;
         lclVarInfo[i].lclHasLdlocaOp = false;
+        lclVarInfo[i].lclTypeInfo    = sigType;
+        if (sigType == TYP_REF)
+        {
+            lclVarInfo[i].lclTypeHandle = eeGetArgClass(&methInfo->args, argLst);
+        }
+        else if (varTypeIsStruct(sigType))
+        {
+            lclVarInfo[i].lclTypeHandle = argSigClass;
+        }
 
         // Does the tree type match the signature type?
 
@@ -13193,21 +13099,16 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // Is it a narrowing or widening cast?
         // Widening casts are ok since the value computed is already
         // normalized to an int (on the IL stack)
-        if (genTypeSize(inlArgNode->gtType) >= genTypeSize(sigType))
+        if (genTypeSize(inlArgNode) >= genTypeSize(sigType))
         {
-            if (sigType == TYP_BYREF)
-            {
-                lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
-            }
-            else if (inlArgNode->gtType == TYP_BYREF)
+            if ((sigType != TYP_BYREF) && (inlArgNode->TypeGet() == TYP_BYREF))
             {
                 assert(varTypeIsIntOrI(sigType));
 
                 /* If possible bash the BYREF to an int */
                 if (inlArgNode->OperIs(GT_LCL_ADDR))
                 {
-                    inlArgNode->gtType           = TYP_I_IMPL;
-                    lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
+                    inlArgNode->gtType = TYP_I_IMPL;
                 }
                 else
                 {
@@ -13274,6 +13175,14 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         lclVarInfo[i + ilArgCnt].lclHasLdlocaOp = false;
         lclVarInfo[i + ilArgCnt].lclTypeInfo    = type;
+        if (type == TYP_REF)
+        {
+            lclVarInfo[i + ilArgCnt].lclTypeHandle = eeGetArgClass(&methInfo->locals, localsSig);
+        }
+        else if (varTypeIsStruct(type))
+        {
+            lclVarInfo[i + ilArgCnt].lclTypeHandle = sigClass;
+        }
 
         if (varTypeIsGC(type))
         {
@@ -13296,8 +13205,6 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         {
             JITDUMP("Ignoring pin on inlinee local #%02u -- not a GC type\n", i);
         }
-
-        lclVarInfo[i + ilArgCnt].lclVerTypeInfo = verParseArgSigToTypeInfo(&methInfo->locals, localsSig);
 
         // If this local is a struct type with GC fields, inform the inliner. It may choose to bail
         // out on the inline.
@@ -13393,15 +13300,12 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
         // signature and pass in a more precise type.
         if (lclTyp == TYP_REF)
         {
-            lvaSetClass(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandleForObjRef());
+            lvaSetClass(tmpNum, inlineeLocal.lclTypeHandle);
         }
 
-        if (inlineeLocal.lclVerTypeInfo.IsStruct())
+        if (varTypeIsStruct(lclTyp))
         {
-            if (varTypeIsStruct(lclTyp))
-            {
-                lvaSetStruct(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
-            }
+            lvaSetStruct(tmpNum, inlineeLocal.lclTypeHandle, true /* unsafe value cls check */);
         }
 
 #ifdef DEBUG
@@ -13586,16 +13490,15 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
                 if (lclTyp == TYP_REF)
                 {
-                    lvaSetClass(tmpNum, argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
+                    lvaSetClass(tmpNum, argNode, lclInfo.lclTypeHandle);
                 }
             }
             else
             {
                 if (lclTyp == TYP_REF)
                 {
-                    // Arg might be modified, use the declared type of
-                    // the argument.
-                    lvaSetClass(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
+                    // Arg might be modified, use the declared type of the argument.
+                    lvaSetClass(tmpNum, lclInfo.lclTypeHandle);
                 }
             }
 
@@ -13605,15 +13508,12 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                 lvaTable[tmpNum].lvHasLdAddrOp = 1;
             }
 
-            if (lclInfo.lclVerTypeInfo.IsStruct())
+            if (varTypeIsStruct(lclTyp))
             {
-                if (varTypeIsStruct(lclTyp))
+                lvaSetStruct(tmpNum, lclInfo.lclTypeHandle, true /* unsafe value cls check */);
+                if (info.compIsVarArgs)
                 {
-                    lvaSetStruct(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandle(), true /* unsafe value cls check */);
-                    if (info.compIsVarArgs)
-                    {
-                        lvaSetStructUsedAsVarArg(tmpNum);
-                    }
+                    lvaSetStructUsedAsVarArg(tmpNum);
                 }
             }
 
