@@ -34,7 +34,7 @@ namespace System.Text.Json.SourceGeneration
             int hash = 0;
             foreach (T value in _values)
             {
-                HashHelpers.Combine(hash, value is null ? 0 : value.GetHashCode());
+                hash = HashHelpers.Combine(hash, value is null ? 0 : value.GetHashCode());
             }
 
             return hash;
