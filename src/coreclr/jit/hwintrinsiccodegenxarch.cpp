@@ -2459,6 +2459,11 @@ void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node)
                 ins = INS_vpermi2w;
                 break;
             }
+
+            default:
+            {
+                unreached();
+            }
         }
     }
 
