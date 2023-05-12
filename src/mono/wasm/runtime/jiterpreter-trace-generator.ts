@@ -29,7 +29,7 @@ import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
     disabledOpcodes, countCallTargets,
-    callTargetCounts, trapTraceErrors,
+    callTargetCounts,
     trace, traceOnError, traceOnRuntimeError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
@@ -1262,7 +1262,7 @@ export function generateWasmBody(
                         (opcode <= MintOpcode.MINT_RET_I8_IMM)
                     )
                 ) {
-                    if (isConditionallyExecuted || trapTraceErrors || builder.options.countBailouts) {
+                    if (isConditionallyExecuted || builder.options.countBailouts) {
                         // Not an exit, because returns are normal and we don't want to make them more expensive.
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.

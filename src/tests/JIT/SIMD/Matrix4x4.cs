@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Numerics;
+using Xunit;
 
-class Matrix4x4Test
+public class Matrix4x4Test
 {
     private const int Pass = 100;
     private const int Fail = -1;
@@ -30,7 +31,8 @@ class Matrix4x4Test
         return returnVal;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Matrix4x4CreateScaleCenterTest3();
     }
