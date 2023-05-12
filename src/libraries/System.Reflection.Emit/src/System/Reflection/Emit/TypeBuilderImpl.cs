@@ -91,16 +91,15 @@ namespace System.Reflection.Emit
             if (_typeParameters != null)
                 throw new InvalidOperationException();
 
-            _typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
-
+            var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(name, nameof(names));
-                _typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
             }
 
-            return _typeParameters;
+            return _typeParameters = typeParameters;
         }
 
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();

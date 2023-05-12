@@ -19,9 +19,7 @@ namespace System.Reflection.Emit
         private readonly TypeBuilderImpl _declaringType;
         private MethodAttributes _attributes;
         private MethodImplAttributes _methodImplFlags;
-
         private GenericTypeParameterBuilderImpl[]? _typeParameters;
-        private bool _isGenericMethod;
 
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
@@ -76,16 +74,15 @@ namespace System.Reflection.Emit
             if (_typeParameters != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
-            _typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
+             var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(names, nameof(names));
-                _typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
             }
 
-            _isGenericMethod = true;
-            return _typeParameters;
+            return _typeParameters = typeParameters;
         }
 
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
@@ -170,7 +167,7 @@ namespace System.Reflection.Emit
         public override Module Module => _module;
         public override bool ContainsGenericParameters => throw new NotSupportedException();
         public override bool IsGenericMethod => _typeParameters != null;
-        public override bool IsGenericMethodDefinition => _isGenericMethod;
+        public override bool IsGenericMethodDefinition => _typeParameters != null;
         public override bool IsSecurityCritical => true;
         public override bool IsSecuritySafeCritical => false;
         public override bool IsSecurityTransparent => false;
