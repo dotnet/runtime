@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../../types";
+import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
 import { INTERNAL, loaderHelpers } from "../globals";
@@ -18,7 +18,11 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
+    await initializeBootConfig(bootConfigResult, module, candidateOptions);
+}
+
+export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions || {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
     setupModuleForBlazor(module);
 }

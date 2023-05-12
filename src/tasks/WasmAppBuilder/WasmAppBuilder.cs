@@ -19,12 +19,12 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
     public ITaskItem[]? RemoteSources { get; set; }
-    public bool IncludeThreadsWorker {get; set; }
-    public int PThreadPoolSize {get; set; }
+    public bool IncludeThreadsWorker { get; set; }
+    public int PThreadPoolSize { get; set; }
     public bool UseWebcil { get; set; }
 
     // <summary>
-    // Extra json elements to add to mono-config.json
+    // Extra json elements to add to _framework/blazor.boot.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -59,7 +59,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     private class AssetEntry
     {
-        protected AssetEntry (string name, string hash, string behavior)
+        protected AssetEntry(string name, string hash, string behavior)
         {
             Name = name;
             Behavior = behavior;
@@ -100,12 +100,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     private sealed class AssemblyEntry : AssetEntry
     {
-        public AssemblyEntry(string name, string hash) : base(name, hash, "assembly") {}
+        public AssemblyEntry(string name, string hash) : base(name, hash, "assembly") { }
     }
 
     private sealed class PdbEntry : AssetEntry
     {
-        public PdbEntry(string name, string hash) : base(name, hash, "pdb") {}
+        public PdbEntry(string name, string hash) : base(name, hash, "pdb") { }
     }
 
     private sealed class SatelliteAssemblyEntry : AssetEntry
@@ -121,21 +121,21 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     private sealed class VfsEntry : AssetEntry
     {
-        public VfsEntry(string name, string hash) : base(name, hash, "vfs") {}
+        public VfsEntry(string name, string hash) : base(name, hash, "vfs") { }
         [JsonPropertyName("virtualPath")]
         public string? VirtualPath { get; set; }
     }
 
     private sealed class IcuData : AssetEntry
     {
-        public IcuData(string name, string hash) : base(name, hash, "icu") {}
+        public IcuData(string name, string hash) : base(name, hash, "icu") { }
         [JsonPropertyName("loadRemote")]
         public bool LoadRemote { get; set; }
     }
 
     private sealed class SymbolsData : AssetEntry
     {
-        public SymbolsData(string name, string hash) : base(name, hash, "symbols") {}
+        public SymbolsData(string name, string hash) : base(name, hash, "symbols") { }
     }
 
     protected override bool ValidateArguments()
@@ -168,7 +168,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ()
+        var config = new WasmAppConfig()
         {
             MainAssemblyName = MainAssemblyName,
             GlobalizationMode = InvariantGlobalization ? "invariant" : HybridGlobalization ? "hybrid" : "icu"
@@ -179,7 +179,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         if (UseWebcil)
-            Log.LogMessage (MessageImportance.Normal, "Converting assemblies to Webcil");
+            Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
         foreach (var assembly in _assemblies)
         {
             if (UseWebcil)
@@ -219,7 +219,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
             else if (name == "dotnet.native.wasm")
             {
-                config.Assets.Add(new WasmEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+                config.Assets.Add(new WasmEntry(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
             else if (name == "dotnet.native.js")
             {
@@ -231,9 +231,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
             else if (IncludeThreadsWorker && name == "dotnet.native.worker.js")
             {
-                config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
+                config.Assets.Add(new ThreadsWorkerEntry(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
-            else if(name == "dotnet.native.js.symbols")
+            else if (name == "dotnet.native.js.symbols")
             {
                 config.Assets.Add(new SymbolsData(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
@@ -340,7 +340,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                var asset = new VfsEntry ($"supportFiles/{generatedFileName}", Utils.ComputeIntegrity(vfsPath)) {
+                var asset = new VfsEntry($"supportFiles/{generatedFileName}", Utils.ComputeIntegrity(vfsPath))
+                {
                     VirtualPath = targetPath
                 };
                 config.Assets.Add(asset);
@@ -391,16 +392,21 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
             var sb = new StringBuilder();
-            foreach(AssetEntry asset in config.Assets)
+            foreach (AssetEntry asset in config.Assets)
             {
                 sb.Append(asset.Hash);
             }
             config.AssetsHash = Utils.ComputeTextIntegrity(sb.ToString());
 
-            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
         }
-        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
+
+        string monoConfigDir = Path.Combine(AppDir, "_framework");
+        if (!Directory.Exists(monoConfigDir))
+            Directory.CreateDirectory(monoConfigDir);
+
+        string monoConfigPath = Path.Combine(monoConfigDir, "blazor.boot.json"); // TODO: Unify with Wasm SDK
         Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
