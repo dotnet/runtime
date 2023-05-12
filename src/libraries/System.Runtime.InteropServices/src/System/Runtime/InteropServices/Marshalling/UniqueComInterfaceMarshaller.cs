@@ -27,8 +27,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 return null;
             }
-            nint unknown;
-            if (!ComWrappers.TryGetComInstance(managed, out unknown))
+            if (!ComWrappers.TryGetComInstance(managed, out nint unknown))
             {
                 unknown = StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
             }

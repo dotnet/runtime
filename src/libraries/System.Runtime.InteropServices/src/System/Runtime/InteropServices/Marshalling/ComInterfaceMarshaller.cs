@@ -26,8 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 return null;
             }
-            nint unknown;
-            if (!ComWrappers.TryGetComInstance(managed, out unknown))
+            if (!ComWrappers.TryGetComInstance(managed, out nint unknown))
             {
                 unknown = StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateComInterfaceForObject(managed, CreateComInterfaceFlags.None);
             }
@@ -57,9 +56,10 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (TargetInterfaceIID is null)
             {
-                return unknown;
+                return (void*)unknown;
             }
-            if (Marshal.QueryInterface(unknown, ref TargetInterfaceIID, out nint interfacePointer) != 0)
+            Guid iid = TargetInterfaceIID.Value;
+            if (Marshal.QueryInterface(unknown, ref iid, out nint interfacePointer) != 0)
             {
                 Marshal.Release(unknown);
                 throw new InvalidCastException($"Unable to cast the provided managed object to a COM interface with ID '{iid:B}'");
