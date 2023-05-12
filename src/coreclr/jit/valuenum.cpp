@@ -10760,7 +10760,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    if (fgValueNumberConstLoad(tree->AsIndir()))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
                         // VN is assigned inside fgValueNumberConstLoad
                     }
