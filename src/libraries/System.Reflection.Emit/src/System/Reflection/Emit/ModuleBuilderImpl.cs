@@ -167,20 +167,18 @@ namespace System.Reflection.Emit
             }
 
             // Now write all generic parameters in order
-            genericParams.Sort(GenericParameterComparer);
-            foreach (var param in genericParams)
+            genericParams.Sort((x, y) => {
+                int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
+                if (primary != 0)
+                    return primary;
+
+                return x.GenericParameterPosition.CompareTo(y.GenericParameterPosition);
+            });
+
+            foreach (GenericTypeParameterBuilderImpl param in genericParams)
             {
                 AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
             }
-        }
-
-        private int GenericParameterComparer(GenericTypeParameterBuilderImpl x, GenericTypeParameterBuilderImpl y)
-        {
-            int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
-            if (primary != 0)
-                return primary;
-
-            return x.GenericParameterPosition.CompareTo(y.GenericParameterPosition);
         }
 
         private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams)
