@@ -1098,7 +1098,7 @@ void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
 uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
-    mc->cr->AddCall("getGCThreadLocalFieldInfo");
+    mc->cr->AddCall("getThreadLocalFieldInfo");
     uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCType);
     mc->recGetThreadLocalFieldInfo(field, isGCType, result);
     return result;

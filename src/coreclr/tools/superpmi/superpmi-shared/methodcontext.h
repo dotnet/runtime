@@ -1180,10 +1180,10 @@ enum mcPackets
     Packet_GetStringChar = 204,
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
-    Packet_GetThreadLocalFieldInfo = 208,
-    Packet_GetThreadLocalStaticBlocksInfo = 209,
-    Packet_GetRISCV64PassStructInRegisterFlags = 210,
-    Packet_GetObjectContent = 211,
+    Packet_GetThreadLocalFieldInfo = 207,
+    Packet_GetThreadLocalStaticBlocksInfo = 208,
+    Packet_GetRISCV64PassStructInRegisterFlags = 209,
+    Packet_GetObjectContent = 210,
 };
 
 void SetDebugDumpVariables();

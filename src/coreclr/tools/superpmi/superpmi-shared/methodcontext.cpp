@@ -3649,8 +3649,9 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfGCDataPointer             = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
-    GetThreadLocalStaticBlocksInfo->Add(isGCType ? 0 : 1, value);
-    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(isGCType ? 0 : 1, value));
+    DWORD key = isGCType ? 0 : 1;
+    GetThreadLocalStaticBlocksInfo->Add(key, value);
+    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(key, value));
 }
 
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
