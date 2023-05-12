@@ -25,6 +25,9 @@ namespace System.Text.Json.SourceGeneration
         public required TypeRef ParameterType { get; init; }
         public required string Name { get; init; }
         public required bool HasDefaultValue { get; init; }
+
+        // The default value of a constructor parameter can only be a constant
+        // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }
         public required int ParameterIndex { get; init; }
     }
