@@ -2735,11 +2735,11 @@ public:
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
 
-    // Returns the index against which the field's thread static block in stored in TLS
-    // The field is gc type.
+    // Returns the index against which the field's thread static block in stored in TLS.
     virtual uint32_t getThreadLocalFieldInfo (
                         CORINFO_FIELD_HANDLE  field, bool isGCType) = 0;
 
+    // Returns the thread static block information like offsets, etc. from current TLS.
     virtual void getThreadLocalStaticBlocksInfo (
                         CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) = 0;
 
