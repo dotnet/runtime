@@ -658,8 +658,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         // Need to add extra indirection to access the data pointer.
 
-        threadStaticBlockBaseLclValueUse =
-            gtNewIndir(TYP_I_IMPL, threadStaticBlockBaseLclValueUse, GTF_IND_NONFAULTING);
+        threadStaticBlockBaseLclValueUse = gtNewIndir(callType, threadStaticBlockBaseLclValueUse, GTF_IND_NONFAULTING);
         threadStaticBlockBaseLclValueUse =
             gtNewOperNode(GT_ADD, callType, threadStaticBlockBaseLclValueUse,
                           gtNewIconNode(threadStaticBlocksInfo.offsetOfGCDataPointer, TYP_I_IMPL));
