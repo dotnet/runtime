@@ -9919,6 +9919,14 @@ public:
 
     } info;
 
+#if defined(DEBUG)
+    // Are we running a replay under SuperPMI?
+    bool RunningSuperPmiReplay() const
+    {
+        return info.compMethodSuperPMIIndex != -1;
+    }
+#endif // DEBUG
+
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
     //------------------------------------------------------------------------
