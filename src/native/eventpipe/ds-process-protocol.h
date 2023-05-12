@@ -185,10 +185,10 @@ struct _DiagnosticsEnablePerfmapPayload {
 #endif
 
 DiagnosticsEnablePerfmapPayload *
-ds_set_generate_perfmap_payload_alloc (void);
+ds_enable_perfmap_payload_alloc (void);
 
 void
-ds_set_generate_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload);
+ds_enable_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload);
 
 /*
  * DiagnosticsProcessProtocolHelper.
