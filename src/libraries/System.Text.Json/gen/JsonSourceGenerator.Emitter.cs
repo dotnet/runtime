@@ -140,7 +140,7 @@ namespace System.Text.Json.SourceGeneration
                     // Add GetJsonTypeInfo override implementation.
                     AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec), interfaceImplementation: JsonTypeInfoResolverTypeRef);
 
-                    // Add property name initialization. TODO don't generate if empty set.
+                    // Add property name initialization.
                     AddSource($"{contextName}.PropertyNames.g.cs", GetPropertyNameInitialization());
 
                     _typeIndex.Clear();
