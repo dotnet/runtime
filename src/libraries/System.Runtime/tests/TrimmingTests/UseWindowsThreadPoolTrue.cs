@@ -12,7 +12,18 @@ class Program
 {
     static int Main(string[] args)
     {
-        
+        // SetMinThreads is not supported in WindowsThreadPool class, this call should return false
+        if (ThreadPool.SetMinThreads(1, 1))
+        {
+            return -1;
+        }
+
+        // SetMaxThreads is not supported in WindowsThreadPool class, this call should return false
+        if (ThreadPool.SetMaxThreads(10, 10))
+        {
+            return -1;
+        }
+
         return 100;
     }
 }
