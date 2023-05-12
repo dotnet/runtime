@@ -4419,7 +4419,7 @@ void Append_Next_Item(LPWSTR* ppCursor, SIZE_T* pRemainingLen, LPCWSTR pItem, bo
     SIZE_T remainingLen = *pRemainingLen;
 
     // Calculate the length of pItem
-    SIZE_T itemLen = wcslen(pItem);
+    SIZE_T itemLen = u16_strlen(pItem);
 
     // Append pItem at pCursor
     wcscpy_s(pCursor, remainingLen, pItem);
@@ -4459,14 +4459,14 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
     // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (wcslen(osCommandLine) + 1);
+    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
 
     // We will append pwzAssemblyPath to the 'corerun' osCommandLine
-    commandLineLen += (wcslen(pwzAssemblyPath) + 1);
+    commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
     {
-        commandLineLen += (wcslen(argv[i]) + 1);
+        commandLineLen += (u16_strlen(argv[i]) + 1);
     }
     commandLineLen++;  // Add 1 for the null-termination
 

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
-import { AOTProfilerOptions, BrowserProfilerOptions } from "./types";
+import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
 import cwraps from "./cwraps";
-import { MonoMethod } from "./types";
 
 // Initialize the AOT profiler with OPTIONS.
 // Requires the AOT profiler to be linked into the app.

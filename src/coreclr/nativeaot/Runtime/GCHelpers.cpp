@@ -107,6 +107,17 @@ COOP_PINVOKE_HELPER(int32_t, RhGetGeneration, (OBJECTREF obj))
     return GCHeapUtilities::GetGCHeap()->WhichGeneration(obj);
 }
 
+COOP_PINVOKE_HELPER(int64_t, RhGetGenerationSize, (int32_t gen))
+{
+    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetLastGCGenerationSize(gen));
+}
+
+COOP_PINVOKE_HELPER(int64_t, RhGetLastGCPercentTimeInGC, ())
+{
+    return GCHeapUtilities::GetGCHeap()->GetLastGCPercentTimeInGC();
+}
+
+
 COOP_PINVOKE_HELPER(int32_t, RhGetGcLatencyMode, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();

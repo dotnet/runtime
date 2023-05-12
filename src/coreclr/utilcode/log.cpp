@@ -66,7 +66,7 @@ VOID InitLogging()
     LPWSTR fileName = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_LogFile);
     if (fileName != 0)
     {
-        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(wcslen(fileName) + 32)))
+        if (SUCCEEDED(szLogFileName.ReSizeNoThrow(u16_strlen(fileName) + 32)))
         {
             wcscpy_s(szLogFileName.Ptr(), szLogFileName.Size(), fileName);
         }
@@ -98,9 +98,9 @@ VOID InitLogging()
             NULL);
 
             // Some other logging may be going on, try again with another file name
-        if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
+        if (LogFileHandle == INVALID_HANDLE_VALUE && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
         {
-            WCHAR* ptr = szLogFileName.Ptr() + wcslen(szLogFileName.Ptr()) + 1;
+            WCHAR* ptr = szLogFileName.Ptr() + u16_strlen(szLogFileName.Ptr()) + 1;
             ptr[-1] = W('.');
             ptr[0] = W('0');
             ptr[1] = 0;

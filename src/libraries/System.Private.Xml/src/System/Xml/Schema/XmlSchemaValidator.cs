@@ -1025,7 +1025,7 @@ namespace System.Xml.Schema
                         if (attributeNS.Length > 0)
                         {
                             defaultPrefix = GetDefaultAttributePrefix(attributeNS);
-                            if (defaultPrefix == null || defaultPrefix.Length == 0)
+                            if (string.IsNullOrEmpty(defaultPrefix))
                             {
                                 SendValidationEvent(SR.Sch_DefaultAttributeNotApplied, new string[2] { attdef.Name.ToString(), QNameString(_context.LocalName!, _context.Namespace!) });
                                 continue;

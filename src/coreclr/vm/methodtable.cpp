@@ -693,7 +693,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
 #ifdef FEATURE_ICASTABLE
     // In case of ICastable, instead of trying to find method implementation in the real object type
-    // we call pObj.GetValueInternal() and call GetMethodDescForInterfaceMethod() again with whatever type it returns.
+    // we call GetMethodDescForInterfaceMethod() again with whatever type it returns.
     // It allows objects that implement ICastable to mimic behavior of other types.
     if (pServerMT->IsICastable() &&
         !pItfMD->HasMethodInstantiation() &&
@@ -7103,7 +7103,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             szName = GetFullyQualifiedNameForClassNestedAwareW(this);
             if (szName == NULL)
                 return;
-            cchName = wcslen(szName);
+            cchName = u16_strlen(szName);
 
             // Enlarge buffer for class name.
             cbCur = cchName * sizeof(WCHAR);

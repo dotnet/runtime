@@ -149,14 +149,6 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             {
                 return type.Name;
             }
-            else if (hasRuntimeTypeHandle)
-            {
-                string s;
-                if (!DiagnosticMappingTables.TryGetDiagnosticStringForNamedType(runtimeTypeHandle, out s))
-                    return null;
-
-                return s;
-            }
             else
             {
                 return type.FullName;

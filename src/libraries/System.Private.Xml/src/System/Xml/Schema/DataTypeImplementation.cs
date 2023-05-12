@@ -1879,7 +1879,7 @@ namespace System.Xml.Schema
             Exception? exception;
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
@@ -1910,7 +1910,7 @@ namespace System.Xml.Schema
             Exception? exception;
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
@@ -1949,7 +1949,7 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
@@ -2704,7 +2704,7 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
@@ -3037,7 +3037,7 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
@@ -3735,7 +3735,7 @@ namespace System.Xml.Schema
 
         public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 throw new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }

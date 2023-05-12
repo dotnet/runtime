@@ -101,6 +101,8 @@ GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
 GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
+GTNODE(LZCNT            , GenTreeOp          ,0,GTK_UNOP)               // Leading Zero Count - Only used for SIMD VN evaluation today
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------

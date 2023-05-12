@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
-import { mono_assert } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 
 export function http_wasm_supports_streaming_response(): boolean {
@@ -56,7 +55,7 @@ export function http_wasm_fetch(url: string, header_names: string[], header_valu
     }
 
     return wrap_as_cancelable_promise(async () => {
-        const res = await runtimeHelpers.fetch_like(url, options) as ResponseExtension;
+        const res = await loaderHelpers.fetch_like(url, options) as ResponseExtension;
         res.__abort_controller = abort_controller;
         return res;
     });
@@ -66,11 +65,13 @@ function get_response_headers(res: ResponseExtension): void {
     if (!res.__headerNames) {
         res.__headerNames = [];
         res.__headerValues = [];
-        const entries: Iterable<string[]> = (<any>res.headers).entries();
+        if (res.headers && (<any>res.headers).entries) {
+            const entries: Iterable<string[]> = (<any>res.headers).entries();
 
-        for (const pair of entries) {
-            res.__headerNames.push(pair[0]);
-            res.__headerValues.push(pair[1]);
+            for (const pair of entries) {
+                res.__headerNames.push(pair[0]);
+                res.__headerValues.push(pair[1]);
+            }
         }
     }
 }

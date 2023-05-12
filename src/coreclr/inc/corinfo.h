@@ -1495,8 +1495,8 @@ enum CORINFO_CALLINFO_FLAGS
     CORINFO_CALLINFO_NONE           = 0x0000,
     CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
     CORINFO_CALLINFO_CALLVIRT       = 0x0002,   // Is it a virtual call?
-    CORINFO_CALLINFO_KINDONLY       = 0x0004,   // This is set to only query the kind of call to perform, without getting any other information
-    CORINFO_CALLINFO_VERIFICATION   = 0x0008,   // Gets extra verification information.
+    // UNUSED                       = 0x0004,
+    // UNUSED                       = 0x0008,
     CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
     CORINFO_CALLINFO_LDFTN          = 0x0020,   // Resolving target of LDFTN
     // UNUSED                       = 0x0040,
@@ -1582,12 +1582,6 @@ struct CORINFO_CALL_INFO
     unsigned                classFlags;         //flags for CORINFO_RESOLVED_TOKEN::hClass
 
     CORINFO_SIG_INFO        sig;
-
-    //Verification information
-    unsigned                verMethodFlags;     // flags for CORINFO_RESOLVED_TOKEN::hMethod
-    CORINFO_SIG_INFO        verSig;
-    //All of the regular method data is the same... hMethod might not be the same as CORINFO_RESOLVED_TOKEN::hMethod
-
 
     //If set to:
     //  - CORINFO_ACCESS_ALLOWED - The access is allowed.
@@ -1761,13 +1755,6 @@ enum CORINFO_OS
     CORINFO_WINNT,
     CORINFO_UNIX,
     CORINFO_MACOS,
-};
-
-struct CORINFO_CPU
-{
-    uint32_t           dwCPUType;
-    uint32_t           dwFeatures;
-    uint32_t           dwExtendedFeatures;
 };
 
 enum CORINFO_RUNTIME_ABI
@@ -2055,8 +2042,6 @@ public:
     // INLINE_PASS.
     //
     // The callerHnd must be the immediate caller (i.e. when we have a chain of inlined calls)
-    //
-    // The inlined method need not be verified
 
     virtual CorInfoInline canInline (
             CORINFO_METHOD_HANDLE       callerHnd,                  /* IN  */
@@ -2477,10 +2462,7 @@ public:
             CORINFO_CLASS_HANDLE clsHnd
             ) = 0;
 
-    // This is not pretty.  Boxing nullable<T> actually returns
-    // a boxed<T> not a boxed Nullable<T>.  This call allows the verifier
-    // to call back to the EE on the 'box' instruction and get the transformed
-    // type to use for verification.
+    // Boxing nullable<T> actually returns a boxed<T> not a boxed Nullable<T>.
     virtual CORINFO_CLASS_HANDLE  getTypeForBox(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
@@ -2900,43 +2882,6 @@ public:
     virtual CorInfoHFAElemType getHFAType (
             CORINFO_CLASS_HANDLE hClass
             ) = 0;
-
- /*****************************************************************************
- * ICorErrorInfo contains methods to deal with SEH exceptions being thrown
- * from the corinfo interface.  These methods may be called when an exception
- * with code EXCEPTION_COMPLUS is caught.
- *****************************************************************************/
-
-    // Returns the HRESULT of the current exception
-    virtual JITINTERFACE_HRESULT GetErrorHRESULT(
-            struct _EXCEPTION_POINTERS *pExceptionPointers
-            ) = 0;
-
-    // Fetches the message of the current exception
-    // Returns the size of the message (including terminating null). This can be
-    // greater than bufferLength if the buffer is insufficient.
-    virtual uint32_t GetErrorMessage(
-            _Inout_updates_(bufferLength) char16_t *buffer,
-            uint32_t bufferLength
-            ) = 0;
-
-    // returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-    //                        exception, abort some work (like the inlining) and continue compilation
-    // returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-    //                    things like ThreadStoppedException ...
-    // returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-    // Only used as a contract between the Zapper and the VM.
-    virtual int FilterException(
-            struct _EXCEPTION_POINTERS *pExceptionPointers
-            ) = 0;
-
-
-    virtual void ThrowExceptionForJitResult(
-            JITINTERFACE_HRESULT result) = 0;
-
-    //Throws an exception defined by the given throw helper.
-    virtual void ThrowExceptionForHelper(
-            const CORINFO_HELPER_DESC * throwHelper) = 0;
 
     // Runs the given function under an error trap. This allows the JIT to make calls
     // to interface functions that may throw exceptions without needing to be aware of

@@ -7471,6 +7471,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
 #endif
+
+					if (cfg->compile_aot)
+						cfg->pinvoke_calli_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->pinvoke_calli_signatures, fsig);
+
 					/* Call the wrapper that will do the GC transition instead */
 					MonoMethod *wrapper = mono_marshal_get_native_func_wrapper_indirect (method->klass, fsig, cfg->compile_aot);
 

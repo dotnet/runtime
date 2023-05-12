@@ -585,10 +585,10 @@ namespace System.Buffers.Text
             }
         }
 
-        private const uint EncodingPad = '='; // '=', for padding
+        internal const uint EncodingPad = '='; // '=', for padding
 
         private const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
 
-        private static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+        internal static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
     }
 }

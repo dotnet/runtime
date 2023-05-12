@@ -60,9 +60,6 @@
   <data name="AllowedValuesAttribute_Invalid" xml:space="preserve">
     <value>The {0} field does not equal any of the values specified in AllowedValuesAttribute.</value>
   </data>
-  <data name="ArgumentIsNullOrWhitespace" xml:space="preserve">
-    <value>The argument '{0}' cannot be null, empty or contain only whitespace.</value>
-  </data>
   <data name="AssociatedMetadataTypeTypeDescriptor_MetadataTypeContainsUnknownProperties" xml:space="preserve">
     <value>The associated metadata type for type '{0}' contains the following unknown properties or fields: {1}. Please make sure that the names of these members match the names of the properties on the main type.</value>
   </data>

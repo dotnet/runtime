@@ -10,6 +10,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public ObjectSpec(INamedTypeSymbol type) : base(type) { }
         public override TypeSpecKind SpecKind => TypeSpecKind.Object;
-        public List<PropertySpec> Properties { get; } = new();
+        public Dictionary<string, PropertySpec> Properties { get; } = new();
     }
 }

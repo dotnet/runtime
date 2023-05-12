@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 const int errSecUnknownFormat = -25257;
 
-                if (rawData == null || rawData.Length == 0)
+                if (rawData.IsEmpty)
                 {
                     // Throw to match Windows and Unix behavior.
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);

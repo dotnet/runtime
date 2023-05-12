@@ -125,11 +125,6 @@ struct JitInterfaceCallbacks
     int (* getExactClasses)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet);
     CORINFO_CLASS_HANDLE (* getArgClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     CorInfoHFAElemType (* getHFAType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE hClass);
-    JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    uint32_t (* GetErrorMessage)(void * thisHandle, CorInfoExceptionClass** ppException, char16_t* buffer, uint32_t bufferLength);
-    int (* FilterException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void (* ThrowExceptionForJitResult)(void * thisHandle, CorInfoExceptionClass** ppException, JITINTERFACE_HRESULT result);
-    void (* ThrowExceptionForHelper)(void * thisHandle, CorInfoExceptionClass** ppException, const CORINFO_HELPER_DESC* throwHelper);
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
@@ -1322,44 +1317,6 @@ public:
     CorInfoHFAElemType temp = _callbacks->getHFAType(_thisHandle, &pException, hClass);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    JITINTERFACE_HRESULT temp = _callbacks->GetErrorHRESULT(_thisHandle, &pException, pExceptionPointers);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->GetErrorMessage(_thisHandle, &pException, buffer, bufferLength);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers);
-
-    virtual void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForJitResult(_thisHandle, &pException, result);
-    if (pException != nullptr) throw pException;
-}
-
-    virtual void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->ThrowExceptionForHelper(_thisHandle, &pException, throwHelper);
-    if (pException != nullptr) throw pException;
 }
 
     virtual bool runWithErrorTrap(

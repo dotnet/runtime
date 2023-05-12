@@ -941,8 +941,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
 
         private string EnsureTrailingSlash(string path)
         {
-            if (string.IsNullOrEmpty(path))
-                throw new ArgumentException();
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             return path[path.Length - 1] == Path.DirectorySeparatorChar ?
                 path :

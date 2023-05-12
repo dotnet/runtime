@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { runtimeHelpers } from "./globals";
-import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull, mono_assert } from "./types";
+import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
 import { create_weak_ref } from "./weak-ref";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
