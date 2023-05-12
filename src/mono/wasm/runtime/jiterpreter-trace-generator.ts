@@ -3509,6 +3509,13 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
+const createScalarTable : { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
+    [SimdIntrinsic2.V128_I1_CREATE_SCALAR]: [WasmOpcode.i32_load8_s, WasmSimdOpcode.i8x16_replace_lane],
+    [SimdIntrinsic2.V128_I2_CREATE_SCALAR]: [WasmOpcode.i32_load16_s, WasmSimdOpcode.i16x8_replace_lane],
+    [SimdIntrinsic2.V128_I4_CREATE_SCALAR]: [WasmOpcode.i32_load, WasmSimdOpcode.i32x4_replace_lane],
+    [SimdIntrinsic2.V128_I8_CREATE_SCALAR]: [WasmOpcode.i64_load, WasmSimdOpcode.i64x2_replace_lane],
+};
+
 function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
     if (simple) {
@@ -3519,38 +3526,24 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
     }
 
     switch (index) {
-        // FIXME: These cause the first 1-7 characters of base64 strings to be lost sometimes, which
-        //  breaks xharness test results on CI
-        /*
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
-            // Zero then write scalar component
-            builder.local("pLocals");
-            append_stloc_simd_zero(builder, getArgU16(ip, 1));
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load8_s);
-            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store8);
-            return true;
         case SimdIntrinsic2.V128_I2_CREATE_SCALAR:
-            // Zero then write scalar component
-            builder.local("pLocals");
-            append_stloc_simd_zero(builder, getArgU16(ip, 1));
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load16_s);
-            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store16);
-            return true;
         case SimdIntrinsic2.V128_I4_CREATE_SCALAR:
-            // Zero then write scalar component
+        case SimdIntrinsic2.V128_I8_CREATE_SCALAR: {
+            const tableEntry = createScalarTable[index];
             builder.local("pLocals");
-            append_stloc_simd_zero(builder, getArgU16(ip, 1));
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+            // Make a zero vector
+            builder.i52_const(0);
+            builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+            // Load the scalar value
+            append_ldloc(builder, getArgU16(ip, 2), tableEntry[0]);
+            // Replace the first lane
+            builder.appendSimd(tableEntry[1]);
+            builder.appendU8(0);
+            // Store result
+            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
             return true;
-        case SimdIntrinsic2.V128_I8_CREATE_SCALAR:
-            // Zero then write scalar component
-            builder.local("pLocals");
-            append_stloc_simd_zero(builder, getArgU16(ip, 1));
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i64_load);
-            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i64_store);
-            return true;
-        */
+        }
 
         case SimdIntrinsic2.V128_I1_CREATE:
             append_simd_2_load(builder, ip, WasmSimdOpcode.v128_load8_splat);
