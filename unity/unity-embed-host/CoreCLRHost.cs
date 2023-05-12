@@ -64,7 +64,7 @@ static unsafe partial class CoreCLRHost
     [return: NativeWrapperType("MonoString*")]
     [return: NativeCallbackType("ManagedStringPtr_t")]
     public static StringPtr string_new_len(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] void* domain /* unused */,
         [NativeCallbackType("const char*")] sbyte* text, uint length)
     {
@@ -76,7 +76,7 @@ static unsafe partial class CoreCLRHost
     [return: NativeWrapperType("MonoString*")]
     [return: NativeCallbackType("ManagedStringPtr_t")]
     public static StringPtr string_new_utf16(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] void* domain /* unused */,
         ushort* text, [NativeCallbackType("gint32")] int length)
     {
@@ -113,14 +113,14 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("MonoArray*")]
     public static IntPtr array_new(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass, [NativeCallbackType("guint32")] int n)
         => Array.CreateInstance(klass.TypeFromHandleIntPtr(), n).ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoArray*")]
     public static IntPtr unity_array_new_2d(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1)
@@ -128,7 +128,7 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("MonoArray*")]
     public static IntPtr unity_array_new_3d(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1, [NativeCallbackType("size_t")] int size2)
@@ -141,7 +141,7 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr value_box(
-        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]
         IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("gpointer")] IntPtr val) =>
@@ -149,21 +149,21 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr object_new(
-        [NoManagedWrapper]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
         [NativeCallbackType("MonoDomain*")] IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass)
         => FormatterServices.GetUninitializedObject(klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoObject*")]
     public static IntPtr type_get_object(
-        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]
         IntPtr domain,
         [NativeCallbackType("MonoType*")] IntPtr type)
         => type.TypeFromHandleIntPtr().ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoReflectionMethod*")]
     public static IntPtr method_get_object(
-        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]
         IntPtr domain,
         [NativeCallbackType("MonoMethod*")] IntPtr method,
         [NativeCallbackType("MonoClass*")] IntPtr refclass) =>
@@ -171,7 +171,7 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeCallbackType("MonoReflectionField*")]
     public static IntPtr field_get_object(
-        [NoManagedWrapper] [NativeCallbackType("MonoDomain*")]
+        [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)] [NativeCallbackType("MonoDomain*")]
         IntPtr domain,
         [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("MonoClassField*")]
