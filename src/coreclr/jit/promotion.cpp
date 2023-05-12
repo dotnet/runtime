@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"
@@ -671,7 +674,17 @@ bool Replacement::Overlaps(unsigned otherStart, unsigned otherSize) const
     return true;
 }
 
-bool StructSegments::Segment::IntersectsInclusive(const Segment& other) const
+//------------------------------------------------------------------------
+// IntersectsOrAdjacent:
+//   Check if this segment intersects or is adjacent to another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
+// Returns:
+//    True if so.
+//
+bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
 {
     if (End < other.Start)
     {
@@ -686,11 +699,28 @@ bool StructSegments::Segment::IntersectsInclusive(const Segment& other) const
     return true;
 }
 
+//------------------------------------------------------------------------
+// Contains:
+//   Check if this segment contains another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
+// Returns:
+//    True if so.
+//
 bool StructSegments::Segment::Contains(const Segment& other) const
 {
     return (other.Start >= Start) && (other.End <= End);
 }
 
+//------------------------------------------------------------------------
+// Merge:
+//   Update this segment to also contain another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
 void StructSegments::Segment::Merge(const Segment& other)
 {
     Start = min(Start, other.Start);
@@ -717,7 +747,7 @@ void StructSegments::Add(const Segment& segment)
     size_t endIndex;
     for (endIndex = index + 1; endIndex < m_segments.size(); endIndex++)
     {
-        if (!m_segments[index].IntersectsInclusive(m_segments[endIndex]))
+        if (!m_segments[index].IntersectsOrAdjacent(m_segments[endIndex]))
         {
             break;
         }
@@ -760,7 +790,7 @@ void StructSegments::Subtract(const Segment& segment)
         return;
     }
 
-    assert(m_segments[index].IntersectsInclusive(segment));
+    assert(m_segments[index].IntersectsOrAdjacent(segment));
 
     if (m_segments[index].Contains(segment))
     {
@@ -853,6 +883,16 @@ bool StructSegments::IsSingleSegment(Segment* result)
     return false;
 }
 
+//------------------------------------------------------------------------
+// CoveringSegment:
+//   Compute a segment that covers all contained segments in this segment tree.
+//
+// Parameters:
+//   result - [out] The single segment. Only valid if the method returns true.
+//
+// Returns:
+//   True if this segment tree was non-empty; otherwise false.
+//
 bool StructSegments::CoveringSegment(Segment* result)
 {
     if (m_segments.size() == 0)
@@ -924,6 +964,20 @@ void StructSegments::Dump()
 }
 #endif
 
+//------------------------------------------------------------------------
+// SignificantSegments:
+//   Compute a segment tree containing all significant (non-padding) segments
+//   for the specified class layout.
+//
+// Parameters:
+//   compiler    - Compiler instance
+//   layout      - The layout
+//   bitVectRept - In debug, a bit vector that represents the same segments as the returned segment tree.
+//                 Used for verification purposes.
+//
+// Returns:
+//   Segment tree containing all significant parts of the layout.
+//
 StructSegments Promotion::SignificantSegments(Compiler*    compiler,
                                               ClassLayout* layout DEBUGARG(FixedBitVect** bitVectRepr))
 {

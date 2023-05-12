@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "jitpch.h"
 #include "promotion.h"
 
@@ -13,37 +16,56 @@ struct BasicBlockLiveness
     BitVec LiveOut;
 };
 
-bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
-{
-    BitVec   liveOut   = m_bbInfo[bb->bbNum].LiveOut;
-    unsigned baseIndex = m_structLclToTrackedIndex[structLcl];
-    return BitVecOps::IsMember(m_bvTraits, liveOut, baseIndex + 1 + replacementIndex);
-}
-
-StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
-{
-    assert(lcl->OperIsLocal());
-    BitVec aggDeaths;
-    bool   found = m_aggDeaths.Lookup(lcl, &aggDeaths);
-    assert(found);
-
-    unsigned       lclNum  = lcl->GetLclNum();
-    AggregateInfo* aggInfo = m_aggregates[lclNum];
-    return StructUseDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
-}
-
-bool StructUseDeaths::IsRemainderDying() const
-{
-    BitVecTraits traits(1 + m_numFields, nullptr);
-    return BitVecOps::IsMember(&traits, m_deaths, 0);
-}
-
-bool StructUseDeaths::IsReplacementDying(unsigned index) const
-{
-    BitVecTraits traits(1 + m_numFields, nullptr);
-    return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
-}
-
+//------------------------------------------------------------------------
+// Run:
+//   Compute liveness information pertaining the promoted structs.
+//
+// Remarks:
+//   For each promoted aggregate we compute the liveness for its remainder and
+//   all of its fields. Unlike regular liveness we currently do not do any DCE
+//   here and so only do the dataflow computation once.
+//
+//   The liveness information is written into the IR using the normal
+//   GTF_VAR_DEATH flag. Note that the semantics of GTF_VAR_DEATH differs from
+//   the rest of the JIT for a short while between the liveness is computed and
+//   the replacement phase has run: in particular, after this liveness pass you
+//   may see a node like:
+//
+//       LCL_FLD   int    V16 tmp9         [+8] (last use)
+//
+//   that indicates that this particular field (or the remainder if it wasn't
+//   promoted) is dying, not that V16 itself is dying. After replacement has
+//   run the semantics align with the rest of the JIT: in the promoted case V16
+//   [+8] would be replaced by its promoted field local, and in the remainder
+//   case all non-remainder uses of V16 would also be.
+//
+//   There is one catch which is struct uses of the local. These can indicate
+//   deaths of multiple fields and also the remainder, so this information is
+//   stored on the side. PromotionLiveness::GetDeathsForStructLocal is used to
+//   query this information.
+//
+//   The liveness information is used by decomposition to avoid creating dead
+//   stores, and also to mark the replacement field uses/defs with proper
+//   up-to-date liveness information to be used by future phases (forward sub
+//   and morph, as of writing this). It is also used to avoid creating
+//   unnecessary read-backs; this is mostly just a TP optimization as future
+//   liveness passes would be expected to DCE these anyway.
+//
+//   Avoiding the creation of dead stores to the remainder is especially
+//   important as these otherwise would often end up looking like partial
+//   definitions, and the other liveness passes handle partial definitions very
+//   conservatively and are not able to DCE them.
+//
+//   Unlike the other liveness passes we keep the per-block liveness
+//   information on the side and we do not update BasicBlock::bbLiveIn et al.
+//   This relies on downstream phases not requiring/wanting to use per-basic
+//   block live-in/live-out/var-use/var-def sets. To be able to update these we
+//   would need to give the new locals "regular" tracked indices (i.e. allocate
+//   a lvVarIndex); currently the indices allocated are "dense" in the sense
+//   that the bit vectors only have indices for remainders and the replacement
+//   fields introduced by this pass uin other words, we allocate 1 + num_fields
+//   indices for each promoted struct local).
+//
 void PromotionLiveness::Run()
 {
     m_structLclToTrackedIndex = new (m_compiler, CMK_Promotion) unsigned[m_aggregates.size()]{};
@@ -77,6 +99,10 @@ void PromotionLiveness::Run()
     FillInLiveness();
 }
 
+//------------------------------------------------------------------------
+// ComputeUseDefSets:
+//   Compute the use and def sets for all blocks.
+//
 void PromotionLiveness::ComputeUseDefSets()
 {
     for (BasicBlock* block : m_compiler->Blocks())
@@ -97,6 +123,15 @@ void PromotionLiveness::ComputeUseDefSets()
     }
 }
 
+//------------------------------------------------------------------------
+// MarkUseDef:
+//   Mark use/def information for a single appearence of a local.
+//
+// Parameters:
+//   lcl    - The local node
+//   useSet - The use set to mark in.
+//   defSet - The def set to mark in.
+//
 void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep& useSet, BitSetShortLongRep& defSet)
 {
     AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
@@ -106,8 +141,8 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
     }
 
     jitstd::vector<Replacement>& reps  = agg->Replacements;
-    bool                         isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
-    bool                         isDef = !isUse;
+    bool                         isDef = (lcl->gtFlags & GTF_VAR_DEF) != 0;
+    bool                         isUse = !isDef;
 
     unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
@@ -177,6 +212,17 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
     }
 }
 
+//------------------------------------------------------------------------
+// MarkIndex:
+//   Mark specific bits in use/def bit vectors depending on whether this is a use def.
+//
+// Parameters:
+//   index  - The index of the bit to set.
+//   isUse  - Whether this is a use
+//   isDef  - Whether this is a def
+//   useSet - The set of uses
+//   defSet - The set of defs
+//
 void PromotionLiveness::MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet)
 {
     if (isUse && !BitVecOps::IsMember(m_bvTraits, defSet, index))
@@ -190,6 +236,10 @@ void PromotionLiveness::MarkIndex(unsigned index, bool isUse, bool isDef, BitVec
     }
 }
 
+//------------------------------------------------------------------------
+// InterBlockLiveness:
+//   Compute the fixpoint.
+//
 void PromotionLiveness::InterBlockLiveness()
 {
     bool changed;
@@ -210,6 +260,14 @@ void PromotionLiveness::InterBlockLiveness()
     } while (changed);
 }
 
+//------------------------------------------------------------------------
+// PerBlockLiveness:
+//   Compute liveness for a single block during a single iteration of the
+//   fixpoint computation.
+//
+// Parameters:
+//   block - The block
+//
 bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 {
     // We disable promotion for GT_JMP methods.
@@ -244,6 +302,18 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
     return liveInChanged;
 }
 
+//------------------------------------------------------------------------
+// AddHandlerLiveVars:
+//   Find variables that are live-in to handlers reachable by implicit control
+//   flow and add them to a specified bit vector.
+//
+// Parameters:
+//   block      - The block
+//   ehLiveVars - The bit vector to mark in
+//
+// Remarks:
+//   Similar to Compiler::fgGetHandlerLiveVars used by regular liveness.
+//
 void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars)
 {
     assert(m_compiler->ehBlockHasExnFlowDsc(block));
@@ -251,7 +321,7 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
 
     do
     {
-        /* Either we enter the filter first or the catch/finally */
+        // Either we enter the filter first or the catch/finally
         if (HBtab->HasFilter())
         {
             BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
@@ -270,7 +340,7 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
             BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
         }
 
-        /* If we have nested try's edbEnclosing will provide them */
+        // If we have nested try's edbEnclosing will provide them
         assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
                (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
 
@@ -350,6 +420,11 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
     }
 }
 
+//------------------------------------------------------------------------
+// FillInLiveness:
+//   Starting with the live-out set for each basic block do a backwards traversal
+//   marking liveness into the IR.
+//
 void PromotionLiveness::FillInLiveness()
 {
     BitVec life(BitVecOps::MakeEmpty(m_bvTraits));
@@ -357,6 +432,11 @@ void PromotionLiveness::FillInLiveness()
 
     for (BasicBlock* block : m_compiler->Blocks())
     {
+        if (block->firstStmt() == nullptr)
+        {
+            continue;
+        }
+
         BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
 
         BitVecOps::ClearD(m_bvTraits, volatileVars);
@@ -368,34 +448,34 @@ void PromotionLiveness::FillInLiveness()
 
         BitVecOps::Assign(m_bvTraits, life, bbInfo.LiveOut);
 
-        Statement* firstStmt = block->firstStmt();
-
-        if (firstStmt == nullptr)
-        {
-            continue;
-        }
-
         Statement* stmt = block->lastStmt();
 
         while (true)
         {
-            Statement* prevStmt = stmt->GetPrevStmt();
-
             for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
             {
                 FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
             }
 
-            if (stmt == firstStmt)
+            if (stmt == block->firstStmt())
             {
                 break;
             }
 
-            stmt = prevStmt;
+            stmt = stmt->GetPrevStmt();
         }
     }
 }
 
+//------------------------------------------------------------------------
+// FillInLiveness:
+//   Fill liveness information into the specified IR node.
+//
+// Parameters:
+//   life         - The current life set. Will be read and updated depending on 'lcl'.
+//   volatileVars - Bit vector of variables that are live always.
+//   lcl          - The IR node to process liveness for and to mark with liveness information.
+//
 void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl)
 {
     AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
@@ -404,8 +484,8 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         return;
     }
 
-    bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
-    bool isDef = !isUse;
+    bool isDef = (lcl->gtFlags & GTF_VAR_DEF) != 0;
+    bool isUse = !isDef;
 
     unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
@@ -462,6 +542,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
                 }
             }
 
+            // Handle fields.
             while ((index < agg->Replacements.size()) && (agg->Replacements[index].Offset < offs + size))
             {
                 unsigned     varIndex = baseIndex + 1 + (unsigned)index;
@@ -488,6 +569,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
                 index++;
             }
 
+            // Handle remainder.
             if (BitVecOps::IsMember(m_bvTraits, life, baseIndex))
             {
                 bool isFullDefOfRemainder =
@@ -518,6 +600,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
         if ((ssize_t)index < 0)
         {
+            // No replacement found, this is a use of the remainder.
             unsigned size = genTypeSize(accessType);
             if (BitVecOps::IsMember(m_bvTraits, life, baseIndex))
             {
@@ -542,6 +625,7 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
         }
         else
         {
+            // Use of a field.
             unsigned varIndex = baseIndex + 1 + (unsigned)index;
 
             if (BitVecOps::IsMember(m_bvTraits, life, varIndex))
@@ -564,4 +648,71 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
             }
         }
     }
+}
+
+//------------------------------------------------------------------------
+// IsReplacementLiveOut:
+//   Check if a replacement field is live at the end of a basic block.
+//
+// Parameters:
+//   structLcl        - The struct (base) local
+//   replacementIndex - Index of the replacement
+//
+// Returns:
+//   True if the field is in the live-out set.
+//
+bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+{
+    BitVec   liveOut   = m_bbInfo[bb->bbNum].LiveOut;
+    unsigned baseIndex = m_structLclToTrackedIndex[structLcl];
+    return BitVecOps::IsMember(m_bvTraits, liveOut, baseIndex + 1 + replacementIndex);
+}
+
+//------------------------------------------------------------------------
+// GetDeathsForStructLocal:
+//   Get a data structure that can be used to query liveness information
+//   for a specified local node at its position.
+//
+// Parameters:
+//   lcl - The node
+//
+// Returns:
+//   Liveness information.
+//
+StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
+{
+    assert(lcl->OperIsLocal() && lcl->TypeIs(TYP_STRUCT) && (m_aggregates[lcl->GetLclNum()] != nullptr));
+    BitVec aggDeaths;
+    bool   found = m_aggDeaths.Lookup(lcl, &aggDeaths);
+    assert(found);
+
+    unsigned       lclNum  = lcl->GetLclNum();
+    AggregateInfo* aggInfo = m_aggregates[lclNum];
+    return StructUseDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
+}
+
+//------------------------------------------------------------------------
+// IsRemainderDying:
+//   Check if the remainder is dying.
+//
+// Returns:
+//   True if so.
+//
+bool StructUseDeaths::IsRemainderDying() const
+{
+    BitVecTraits traits(1 + m_numFields, nullptr);
+    return BitVecOps::IsMember(&traits, m_deaths, 0);
+}
+
+//------------------------------------------------------------------------
+// IsReplacementDying:
+//   Check if a specific replacement is dying.
+//
+// Returns:
+//   True if so.
+//
+bool StructUseDeaths::IsReplacementDying(unsigned index) const
+{
+    BitVecTraits traits(1 + m_numFields, nullptr);
+    return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }

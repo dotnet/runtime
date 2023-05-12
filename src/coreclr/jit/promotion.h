@@ -58,7 +58,7 @@ public:
         {
         }
 
-        bool IntersectsInclusive(const Segment& other) const;
+        bool IntersectsOrAdjacent(const Segment& other) const;
         bool Contains(const Segment& other) const;
         void Merge(const Segment& other);
     };
@@ -199,6 +199,7 @@ public:
     bool IsReplacementDying(unsigned index) const;
 };
 
+// Class to compute and track liveness information pertaining promoted structs.
 class PromotionLiveness
 {
     Compiler*                       m_compiler;
@@ -280,11 +281,6 @@ private:
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);
     void EliminateCommasInBlockOp(GenTreeOp* asg, DecompositionStatementList* result);
-    void HandlePartiallyOverlappingReplacements(Replacement**      dstFirstRep,
-                                                Replacement**      dstEndRep,
-                                                Replacement**      srcFirstRep,
-                                                Replacement**      srcEndRep,
-                                                DecompositionPlan* plan);
     void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan);
     void CopyBetweenFields(GenTree*                    dst,
                            Replacement*                dstFirstRep,
