@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { BootJsonData, ICUDataMode } from "./blazor/BootConfig";
-import type { IMemoryView } from "./marshal";
-import type { CreateDotnetRuntimeType, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI, AssetEntry, ResourceRequest } from "./types-api";
-import type { EmscriptenModule } from "./types/emscripten";
-import type { dotnet, exit } from "./exports";
+import type { IMemoryView } from "../marshal";
+import type { CreateDotnetRuntimeType, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI, AssetEntry, ResourceRequest } from ".";
+import type { EmscriptenModule } from "./emscripten";
+import type { dotnet, exit } from "../loader/index";
+import type { BootJsonData, ICUDataMode } from "./blazor";
 
 // -----------------------------------------------------------
 // this files has all public exports from the dotnet.js module

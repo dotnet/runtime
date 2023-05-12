@@ -5,13 +5,11 @@ internal static class GeneratedConfigurationBinder
 {
     public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions: null) ?? default(T));
 
-    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => (T?)((T)global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions) ?? default(T));
+    public static T? Get<T>(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => (T?)(global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, typeof(T), configureActions) ?? default(T));
 
     public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureActions: null);
 
     public static object? Get(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Type type, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureActions) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.GetCore(configuration, type, configureActions);
-
-    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::System.Collections.Generic.List<int> obj) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj, binderOptions: null);
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -23,7 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
     internal static class Helpers
     {
-        public static object GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureActions)
+        public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureActions)
         {
             if (configuration is null)
             {
@@ -34,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (!HasValueOrChildren(configuration))
             {
-                return default!;
+                return null;
             }
 
             if (type == typeof(Program.MyClass))
