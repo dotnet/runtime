@@ -239,30 +239,24 @@ namespace ILCompiler.Dataflow
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
             // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
             // to call a method on a "null" instance via reflection.
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
-            {
-                if (!ShouldSkipWarningsForOverride(entity, accessKind))
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
-            }
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
-            {
-                if (!ShouldSkipWarningsForOverride(entity, accessKind))
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
-            }
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
-            {
-                if (!ShouldSkipWarningsForOverride(entity, accessKind))
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
+                ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
-            }
 
             // Below is about accessing DAM annotated members, so only RUC is applicable as a suppression scope
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 return;
 
             bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
-            if (isReflectionAccessCoveredByDAM && !ShouldSkipWarningsForOverride(entity, accessKind))
+            if (isReflectionAccessCoveredByDAM)
             {
                 if (entity is MethodDesc)
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
@@ -277,12 +271,16 @@ namespace ILCompiler.Dataflow
             // (else we will produce warning IL2046 or IL2092 or some other warning).
             // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
             // PERF: Avoid precomputing this as this method is relatively expensive. Only call it once we're about to produce a warning.
-            static bool ShouldSkipWarningsForOverride(TypeSystemEntity entity, AccessKind accessKind)
+            static bool ShouldProduceRequiresWarningForReflectionAccess(TypeSystemEntity entity, AccessKind accessKind)
             {
-                if (accessKind != AccessKind.DynamicallyAccessedMembersMark || entity is not MethodDesc method || !method.IsVirtual)
-                    return false;
+                bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(entity);
 
-                return MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method;
+                // Compiler generated code accessed via a token is considered a "hard" reference
+                // even though we also have to treat it as reflection access.
+                // So we need to enforce RUC check/warn in this case.
+                bool forceRequiresWarning = accessKind == AccessKind.TokenAccess;
+
+                return !isCompilerGenerated || forceRequiresWarning;
             }
         }
 
