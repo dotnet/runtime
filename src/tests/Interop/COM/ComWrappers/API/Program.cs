@@ -84,12 +84,23 @@ namespace ComWrappersTests
 
             protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flag)
             {
-                var iid = typeof(ITrackerObject).GUID;
+                var iTrackerObjectIid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
-                int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTrackerComObject);
-                Assert.Equal(0, hr);
+                int hr = Marshal.QueryInterface(externalComObject, ref iTrackerObjectIid, out iTrackerComObject);
+                if (hr == 0)
+                {
+                    return new ITrackerObjectWrapper(iTrackerComObject);
+                }
+                var iTestIid = typeof(ITest).GUID;
+                IntPtr iTest;
+                hr = Marshal.QueryInterface(externalComObject, ref iTestIid, out iTest);
+                if (hr == 0)
+                {
+                    return new ITestObjectWrapper(iTest);
+                }
 
-                return new ITrackerObjectWrapper(iTrackerComObject);
+                Assert.Fail("The COM object should support ITrackerObject or ITest for all tests in this test suite.");
+                return null;
             }
 
             public const int ReleaseObjectsCallAck = unchecked((int)-1);
@@ -198,17 +209,45 @@ namespace ComWrappersTests
             Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             // Make sure that unwrapping the wrapper in the same ComWrappers context gets back the same object
-            var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
-            Assert.Same(testObj, testObjUnwrapped);
+            var testObjUnwrapped = GetObjectHandleForComInstance(wrappers, comWrapper);
+            AssertSameInstanceAndFreeHandle(testObj, testObjUnwrapped);
 
             // Make sure that unwrapping the wrapper in a different ComWrappers context gets back a different object
             var wrappers2 = new TestComWrappers();
-            var testObjUnwrapped2 = wrappers2.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
-            Assert.NotSame(testObj, testObjUnwrapped2);
+            var testObjNewWrapper = GetObjectHandleForComInstance(wrappers2, comWrapper);
+            AssertNotSameInstanceAndFreeHandle(testObj, testObjNewWrapper);
+
+            // Force a GC to release the new managed object wrapper we made in the other context
+            ForceGC();
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.Equal(0, count);
+            Assert.Equal(0, count); // The remaining count is testObjUnwrapped2
+
+            // Make sure that all possible references to the CCW over the RCW are never on the same frame
+            // as the rest of the test (to ensure that the GC does collect it).
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static GCHandle GetObjectHandleForComInstance(ComWrappers wrapper, nint comWrapper)
+            {
+                var obj = wrapper.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+                return GCHandle.Alloc(obj);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertSameInstanceAndFreeHandle(object obj, GCHandle handle)
+            {
+                Assert.True(handle.IsAllocated);
+                Assert.Same(obj, handle.Target);
+                handle.Free();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertNotSameInstanceAndFreeHandle(object obj, GCHandle handle)
+            {
+                Assert.True(handle.IsAllocated);
+                Assert.NotSame(obj, handle.Target);
+                handle.Free();
+            }
         }
 
         [Fact]
