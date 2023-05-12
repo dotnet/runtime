@@ -9,7 +9,7 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
-import { MonoObject, is_nullish, MonoClass, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types";
+import { MonoObject, is_nullish, MonoClass, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";

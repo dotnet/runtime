@@ -1,18 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod } from "./types";
+import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
     getU16, getU32_unaligned
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
-import { MintOpcode, OpcodeInfo } from "./mintops";
+import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
-    _now, elapsedTimes, counters, getRawCwrap, importDef,
+    _now, elapsedTimes,
+    counters, getRawCwrap, importDef,
     JiterpreterOptions, getOptions, recordFailure,
     JiterpMember, getMemberOffset,
     BailoutReasonNames, BailoutReason
@@ -43,9 +44,6 @@ export const
     traceTooSmall = false,
     // For instrumented methods, trace their exact IP during execution
     traceEip = false,
-    // Wraps traces in a JS function that will trap errors and log the trace responsible.
-    // Very expensive!!!!
-    trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null or if
     //  the value does not match the value on the native interpreter stack in memory
@@ -138,6 +136,8 @@ export const traceInfo: { [key: string]: TraceInfo } = {};
 export const
     sizeOfDataItem = 4,
     sizeOfObjectHeader = 8,
+    sizeOfV128 = 16,
+    sizeOfStackval = 8,
     // While stats are enabled, dump concise stats every N traces so that it's clear a long-running
     //  task isn't frozen if it's jitting lots of traces
     autoDumpInterval = 500;
@@ -179,8 +179,6 @@ struct InterpMethod {
 
 export let traceBuilder: WasmBuilder;
 export let traceImports: Array<[string, string, Function]> | undefined;
-
-export let _wrap_trace_function: Function;
 
 const mathOps1d =
     [
@@ -261,7 +259,7 @@ function getTraceImports() {
 
     traceImports = [
         importDef("bailout", recordBailout),
-        importDef("copy_pointer", getRawCwrap("mono_wasm_copy_managed_pointer")),
+        importDef("copy_ptr", getRawCwrap("mono_wasm_copy_managed_pointer")),
         importDef("entry", getRawCwrap("mono_jiterp_increase_entry_count")),
         importDef("value_copy", getRawCwrap("mono_jiterp_value_copy")),
         importDef("gettype", getRawCwrap("mono_jiterp_gettype_ref")),
@@ -316,45 +314,6 @@ function getTraceImports() {
     return traceImports;
 }
 
-function wrap_trace_function(
-    f: Function, name: string, traceBuf: any,
-    base: MintOpcodePtr, instrumentedTraceId: number
-) {
-    const tup = instrumentedTraces[instrumentedTraceId];
-    if (instrumentedTraceId)
-        console.log(`instrumented ${tup.name}`);
-
-    if (!_wrap_trace_function) {
-        // If we used a regular closure, the js console would print the entirety of
-        //  dotnet.js when printing an error stack trace, which is... not helpful
-        const js = `return function trace_enter (locals) {
-            let threw = true;
-            try {
-                let result = trace(locals);
-                threw = false;
-                return result;
-            } finally {
-                if (threw) {
-                    let msg = "Unhandled error in trace '" + name + "'";
-                    if (tup) {
-                        msg += " at offset " + (tup.eip + base).toString(16);
-                        msg += " with most recent operands " + tup.operand1.toString(16) + ", " + tup.operand2.toString(16);
-                    }
-                    console.error(msg);
-                    if (traceBuf) {
-                        for (let i = 0, l = traceBuf.length; i < l; i++)
-                            console.log(traceBuf[i]);
-                    }
-                }
-            }
-        };`;
-        _wrap_trace_function = new Function("trace", "name", "traceBuf", "tup", "base", js);
-    }
-    return _wrap_trace_function(
-        f, name, traceBuf, instrumentedTraces[instrumentedTraceId], base
-    );
-}
-
 function initialize_builder(builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
@@ -376,7 +335,7 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "copy_pointer",
+        "copy_ptr",
         {
             "dest": WasmValtype.i32,
             "src": WasmValtype.i32
@@ -693,13 +652,40 @@ function initialize_builder(builder: WasmBuilder) {
         },
         WasmValtype.i32, true
     );
+    builder.defineType(
+        "simd_p_p",
+        {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "simd_p_pp",
+        {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+            "arg2": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
+    builder.defineType(
+        "simd_p_ppp",
+        {
+            "arg0": WasmValtype.i32,
+            "arg1": WasmValtype.i32,
+            "arg2": WasmValtype.i32,
+            "arg3": WasmValtype.i32,
+        },
+        WasmValtype.void, true
+    );
 
     const traceImports = getTraceImports();
 
     // Pre-define function imports as persistent
     for (let i = 0; i < traceImports.length; i++) {
         mono_assert(traceImports[i], () => `trace #${i} missing`);
-        builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], false, true, traceImports[i][2]);
+        builder.defineImportedFunction("i", traceImports[i][0], traceImports[i][1], true, traceImports[i][2]);
     }
 }
 
@@ -836,17 +822,15 @@ function generate_wasm(
         if (trace > 0)
             console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
+
         if (buffer.length >= maxModuleSize) {
             console.warn(`MONO_WASM: Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
-        const traceModule = new WebAssembly.Module(buffer);
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-        });
+        const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         // Get the exported trace function
         const fn = traceInstance.exports[traceName];
@@ -866,15 +850,7 @@ function generate_wasm(
         rejected = false;
         mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        const idx =
-            trapTraceErrors
-                ? Module.addFunction(
-                    wrap_trace_function(
-                        <any>fn, methodFullName || methodName, traceOnRuntimeError ? builder.traceBuf : undefined,
-                        builder.base, instrumentedTraceId
-                    ), "iii"
-                )
-                : addWasmFunctionPointer(<any>fn);
+        const idx = addWasmFunctionPointer(<any>fn);
         if (!idx)
             throw new Error("add_function_pointer returned a 0 index");
         else if (trace >= 2)
@@ -907,7 +883,7 @@ function generate_wasm(
                     console.log(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${methodFullName || methodName}:${traceOffset.toString(16)} generated, blob follows //`);
+            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
@@ -959,7 +935,7 @@ export function trace_operands(a: number, b: number) {
 export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
-        reason = OpcodeInfo[<any>reason][0];
+        reason = getOpcodeName(reason);
     } else {
         let abortCount = abortCounts[reason];
         if (typeof (abortCount) !== "number")
@@ -1000,7 +976,7 @@ export function mono_interp_tier_prepare_jiterpreter(
 
     counters.traceCandidates++;
     let methodFullName: string | undefined;
-    if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
+    if (mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = Module.UTF8ToString(pMethodName);
         Module._free(<any>pMethodName);
@@ -1180,7 +1156,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
-            const opname = OpcodeInfo[<any>i][0];
+            const opname = getOpcodeName(i);
             const count = cwraps.mono_jiterp_adjust_abort_count(i, 0);
             if (count > 0)
                 abortCounts[opname] = count;
@@ -1193,6 +1169,9 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
         for (let i = 0; i < keys.length; i++)
             console.log(`// ${keys[i]}: ${abortCounts[keys[i]]} abort(s)`);
     }
+
+    for (const k in counters.simdFallback)
+        console.log(`// simd ${k}: ${counters.simdFallback[k]} fallback insn(s)`);
 
     if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
         setTimeout(

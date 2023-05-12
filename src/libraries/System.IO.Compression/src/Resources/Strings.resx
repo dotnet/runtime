@@ -170,9 +170,6 @@
   <data name="ZLibErrorUnexpected" xml:space="preserve">
     <value>The underlying compression routine returned an unexpected error code.</value>
   </data>
-  <data name="CannotBeEmpty" xml:space="preserve">
-    <value>String cannot be empty.</value>
-  </data>
   <data name="CDCorrupt" xml:space="preserve">
     <value>Central Directory corrupt.</value>
   </data>

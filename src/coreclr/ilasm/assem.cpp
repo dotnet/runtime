@@ -665,8 +665,8 @@ BOOL Assembler::EmitMethod(Method *pMethod)
 
     if(IsMdPrivateScope(pMethod->m_Attr))
     {
-        WCHAR* p = wcsstr(wzMemberName,W("$PST06"));
-        if(p) *p = 0;
+        WCHAR* p = (WCHAR*)u16_strstr(wzMemberName,W("$PST06"));
+        if(p) *p = W('\0');
     }
 
     if (FAILED(m_pEmitter->DefineMethod(ClassToken,       // parent class
@@ -1106,7 +1106,7 @@ BOOL Assembler::EmitClass(Class *pClass)
 
     WszMultiByteToWideChar(g_uCodePage,0,szFullName,-1,wzFullName,dwUniBuf);
 
-    L = wcslen(wzFullName);
+    L = u16_strlen(wzFullName);
     if((L==0)||(wzFullName[L-1]==L'.')) // Missing class name!
     {
         wcscat_s(wzFullName,dwUniBuf,W("$UNNAMED_TYPE$"));

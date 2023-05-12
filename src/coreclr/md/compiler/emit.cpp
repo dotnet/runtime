@@ -112,9 +112,9 @@ STDMETHODIMP RegMeta::DefineMethod(           // S_OK or error.
     // #define COR_CTOR_METHOD_NAME_W      L".ctor"
     // #define COR_CCTOR_METHOD_NAME_W     L".cctor"
 
-    if (!wcscmp(szName, W(".ctor")) || // COR_CTOR_METHOD_NAME_W
-        !wcscmp(szName, W(".cctor")) || // COR_CCTOR_METHOD_NAME_W
-        !wcsncmp(szName, W("_VtblGap"), 8) )
+    if (!u16_strcmp(szName, W(".ctor")) || // COR_CTOR_METHOD_NAME_W
+        !u16_strcmp(szName, W(".cctor")) || // COR_CCTOR_METHOD_NAME_W
+        !u16_strcmp(szName, W("_VtblGap")) )
     {
         dwMethodFlags |= mdRTSpecialName | mdSpecialName;
     }
@@ -2608,7 +2608,7 @@ HRESULT RegMeta::DefineField(           // S_OK or error.
     // macro in the code below to work around this issue.
     // #define COR_ENUM_FIELD_NAME_W       L"value__"
 
-    if (!wcscmp(szName, W("value__")))
+    if (!u16_strcmp(szName, W("value__")))
     {
         dwFieldFlags |= fdRTSpecialName | fdSpecialName;
     }

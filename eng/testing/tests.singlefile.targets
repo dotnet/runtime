@@ -72,9 +72,6 @@
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />
 
-    <!-- Tests are doing private reflection. -->
-    <IlcArg Include="--nometadatablocking" />
-
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
     <IlcArg Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
   </ItemGroup>

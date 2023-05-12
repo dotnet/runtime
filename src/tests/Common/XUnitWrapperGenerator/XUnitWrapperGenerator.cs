@@ -806,7 +806,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             // Emit diagnostic
                             continue;
                         }
-                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString()));
+                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString() + (a.Type!.SpecialType == SpecialType.System_Single ? "F" : "")));
                         testCasesBuilder.Add(new BasicTestMethod(method, alias, arguments: argsAsCode));
                         break;
                     }

@@ -1,23 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <Import Project="..\..\Directory.Merged.props" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <CLRTestBatchPreCommands>
-      <![CDATA[
-$(CLRTestBatchPreCommands)
-if EXIST SIMD.log (del SIMD.log)
-]]>
-    </CLRTestBatchPreCommands>
-    <CLRTestBashPreCommands>
-      <![CDATA[
-$(CLRTestBashPreCommands)
-rm -f SIMD.log
-]]>
-    </CLRTestBashPreCommands>
+    <RunAnalyzers>true</RunAnalyzers>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
   </PropertyGroup>
-
-  <ItemGroup>
-    <CLRTestBashEnvironmentVariable Include="DOTNET_JitFuncInfoLogFile" Value="SIMD.log" />
-  </ItemGroup>
-
 </Project>

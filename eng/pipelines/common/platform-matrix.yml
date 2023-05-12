@@ -249,9 +249,9 @@ jobs:
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Centos 7 x64 Source Build
+# Runtime-dev-innerloop build
 
-- ${{ if containsValue(parameters.platforms, 'SourceBuild_centos7_x64') }}:
+- ${{ if containsValue(parameters.platforms, 'linux_x64_dev_innerloop') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
@@ -259,12 +259,30 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: linux
       archType: x64
-      targetRid: centos.7-x64
-      platform: centos7_linux_x64
+      targetRid: linux-x64
+      platform: linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container:
-        image: centos-7-source-build
-        registry: mcr
+      container: linux_x64_dev_innerloop
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Centos 8 Stream x64 Source Build
+
+- ${{ if containsValue(parameters.platforms, 'SourceBuild_centos8_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: centos.8-x64
+      platform: centos8_linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: SourceBuild_centos_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -286,9 +304,7 @@ jobs:
       targetRid: banana.24-x64
       platform: banana24_linux_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container:
-        image: centos-7-source-build-20210714125450-5d87b80
-        registry: mcr
+      container: SourceBuild_centos_x64 # Run the unknown-rid build on a platform with a known RID so our RID graph tooling can automatically add it to the RID graph.
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -868,24 +884,6 @@ jobs:
       archType: x86
       targetRid: win-x86
       platform: windows_x86
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        buildConfig: ${{ parameters.buildConfig }}
-        helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
-
-# Windows arm
-- ${{ if or(containsValue(parameters.platforms, 'windows_arm'), eq(parameters.platformGroup, 'all')) }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      osGroup: windows
-      archType: arm
-      targetRid: win-arm
-      platform: windows_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

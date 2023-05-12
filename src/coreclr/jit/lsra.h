@@ -642,7 +642,8 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb);
 
     // This does the dataflow analysis and builds the intervals
-    void buildIntervals();
+    template <bool localVarsEnregistered>
+    void           buildIntervals();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -651,7 +652,8 @@ public:
     void allocateRegisters();
 
     // This is the resolution phase, where cross-block mismatches are fixed up
-    void resolveRegisters();
+    template <bool localVarsEnregistered>
+    void           resolveRegisters();
 
     void writeRegisters(RefPosition* currentRefPosition, GenTree* tree);
 
@@ -733,6 +735,7 @@ public:
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
+    bool         needNonIntegerRegisters;
 
 #ifdef DEBUG
 private:
@@ -985,7 +988,8 @@ public:
 
 private:
     // Determine which locals are candidates for allocation
-    void identifyCandidates();
+    template <bool localVarsEnregistered>
+    void           identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
     void identifyCandidatesExceptionDataflow();
@@ -1007,6 +1011,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
+    void resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1016,8 +1021,9 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
-    void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType));
+    void updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
+    void updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
@@ -1551,8 +1557,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler* compiler;
-
+    Compiler*     compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -2041,13 +2046,14 @@ private:
     }
 #endif // TARGET_AMD64
 
+#endif // TARGET_XARCH
+
     unsigned availableRegCount;
 
     unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
-#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType

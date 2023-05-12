@@ -42,6 +42,22 @@ namespace JIT.HardwareIntrinsics.X86
             return !(float.IsNaN(actual) && float.IsNaN(expected));
         }
 
+        public static TInteger DetectConflicts<TInteger>(TInteger[] firstOp, int i)
+            where TInteger : IBinaryInteger<TInteger>
+        {
+            TInteger result = TInteger.Zero;
+
+            for (int n = 0; n < i - 1; n++)
+            {
+                if (firstOp[n] == firstOp[i])
+                {
+                    result |= (TInteger.One << n);
+                }
+            }
+
+            return result;
+        }
+
         public static float GetExponent(float x)
         {
             int biasedExponent = GetBiasedExponent(x);
@@ -70,6 +86,57 @@ namespace JIT.HardwareIntrinsics.X86
             where TFloat : IFloatingPointIeee754<TFloat>
         {
             return x - TFloat.Round(TFloat.ScaleB(TFloat.One, m) * x) * TFloat.ScaleB(TFloat.One, -m);
+        }
+
+        public static T Shuffle2x128<T>(T[] left, T[] right, byte control, int i)
+            where T : struct
+        {
+            int partsPerV128 = left.Length / 2;
+            int offset = i % partsPerV128;
+            int selected = (control >> (i / partsPerV128)) & 0b1;
+
+            if (i < (left.Length / 2))
+            {
+                return left[(selected * partsPerV128) + offset];
+            }
+            else
+            {
+                return right[(selected * partsPerV128) + offset];
+            }
+        }
+
+        public static T Shuffle4x128<T>(T[] left, T[] right, byte control, int i)
+            where T : struct
+        {
+            int partsPerV128 = left.Length / 4;
+            int offset = i % partsPerV128;
+            int selected = (control >> (i / partsPerV128 * 2)) & 0b11;
+
+            if (i < (left.Length / 2))
+            {
+                return left[(selected * partsPerV128) + offset];
+            }
+            else
+            {
+                return right[(selected * partsPerV128) + offset];
+            }
+        }
+
+        public static ushort SumAbsoluteDifferencesInBlock32(byte[] left, byte[] right, byte control, int i)
+        {
+            int a = i % 4;
+            int b = (a < 2) ? 0 : 4;
+            int c = (i / 4) * 8;
+
+            ushort result = 0;
+
+            for (int n = 0; n < 4; n++)
+            {
+                int tmp = int.Abs(left[c + n + b] - right[c + ((control >> (n * 2)) & 3) + a]);
+                result += (ushort)(tmp);
+            }
+
+            return result;
         }
 
         public static bool ValidateReciprocal14<TFloat>(TFloat actual, TFloat value)

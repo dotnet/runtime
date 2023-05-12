@@ -18,7 +18,7 @@ namespace System
         }
 
         [Intrinsic]
-        internal static unsafe IntPtr GetValueInternal(RuntimeTypeHandle handle)
+        internal static unsafe IntPtr ToIntPtr(RuntimeTypeHandle handle)
         {
             return (IntPtr)handle._pEEType.ToPointer();
         }
