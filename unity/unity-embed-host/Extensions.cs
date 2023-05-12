@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Unity.CoreCLRHelpers;
@@ -12,8 +11,8 @@ static class Extensions
     public static Type TypeFromHandleIntPtr(this nint intPtrToTypeHandle)
         => Type.GetTypeFromHandle(RuntimeTypeHandle.FromIntPtr(intPtrToTypeHandle));
 
-    public static RuntimeMethodHandle MethodHandleFromHandleIntPtr(this nint intPtrToTypeHandle)
-        => RuntimeMethodHandle.FromIntPtr(intPtrToTypeHandle);
+    public static RuntimeMethodHandle MethodHandleFromHandleIntPtr(this nint intPtrToMethodHandle)
+        => RuntimeMethodHandle.FromIntPtr(intPtrToMethodHandle);
 
     public static nint TypeHandleIntPtr(this object obj)
         => obj.GetType().TypeHandleIntPtr();
