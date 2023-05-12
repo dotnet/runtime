@@ -2734,6 +2734,16 @@ public:
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+#if defined(TARGET_XARCH)
+    GenTree* gtNewSimdTernaryLogicNode(var_types   type,
+                                       GenTree*    op1,
+                                       GenTree*    op2,
+                                       GenTree*    op3,
+                                       GenTree*    op4,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+#endif // TARGET_XARCH
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,
@@ -3072,6 +3082,7 @@ public:
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
+    void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
@@ -3924,6 +3935,7 @@ protected:
                           CORINFO_RESOLVED_TOKEN* pResolvedToken,
                           bool                    readonlyCall,
                           bool                    tailCall,
+                          bool                    callvirt,
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
                           CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                           NamedIntrinsic*         pIntrinsicName,
@@ -9906,6 +9918,14 @@ public:
 #endif
 
     } info;
+
+#if defined(DEBUG)
+    // Are we running a replay under SuperPMI?
+    bool RunningSuperPmiReplay() const
+    {
+        return info.compMethodSuperPMIIndex != -1;
+    }
+#endif // DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 

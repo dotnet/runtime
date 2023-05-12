@@ -655,7 +655,7 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
-        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
         {
             // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
             JsonConverter<T>? fallbackConverter = GetFallbackConverterForPropertyNameSerialization(options);
@@ -667,8 +667,13 @@ namespace System.Text.Json.Serialization
             fallbackConverter.WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }
 
-        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             if (isWritingExtensionDataProperty)
             {
                 // Extension data is meant as mechanism to gather unused JSON properties;

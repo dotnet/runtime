@@ -5,7 +5,7 @@ import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles"
 import { Module, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
-import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types";
+import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
 import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();

@@ -32,10 +32,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-#ifndef TARGET_UNIX
-#define USE_REDIRECT_FOR_GCSTRESS
-#endif // TARGET_UNIX
-
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
@@ -48,10 +44,6 @@ EXTERN_C void checkStack(void);
 //**********************************************************************
 
 #define COMMETHOD_PREPAD                        12   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             12
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   8   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        4
 
@@ -228,10 +220,6 @@ inline void ClearITState(T_CONTEXT *context) {
     LIMITED_METHOD_DAC_CONTRACT;
     context->Cpsr = context->Cpsr & 0xf9ff03ff;
 }
-
-#ifdef FEATURE_COMINTEROP
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target);
-#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
 inline void emitUnconditionalBranchThumb(LPBYTE pBuffer, int16_t offset)

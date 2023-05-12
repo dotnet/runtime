@@ -46,7 +46,7 @@ steps:
                 -arch ${{ parameters.archType }}
                 /p:BuildMonoAotCrossCompiler=true
                 /p:BuildMonoAotCrossCompilerOnly=true
-                /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                 /p:MonoAOTEnableLLVM=true
                 /p:MonoAOTLLVMUseCxx11Abi=true
                 /p:CrossBuild=true
