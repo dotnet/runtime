@@ -69,6 +69,6 @@ namespace System.Text.Json.SourceGeneration
             => new(values);
 
         public static ImmutableEquatableArray<T> Create<T>(params T[] values) where T : IEquatable<T>
-            => values is null or { Length: 0 } ? ImmutableEquatableArray<T>.Empty : new(values);
+            => values is { Length: > 0 } ? new(values) : ImmutableEquatableArray<T>.Empty;
     }
 }
