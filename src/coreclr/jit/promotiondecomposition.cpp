@@ -350,7 +350,7 @@ private:
 
         StructSegments::Segment segment;
         // See if we can "plug the hole" with a single primitive.
-        if (remainder.IsSingleSegment(&segment) && !m_dst->OperIs(GT_LCL_VAR))
+        if (remainder.IsSingleSegment(&segment))
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
