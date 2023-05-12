@@ -57,11 +57,6 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     }
 }
 
-void Compiler::impPushNullObjRefOnStack()
-{
-    impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TI_NULL));
-}
-
 // helper function that will tell us if the IL instruction at the addr passed
 // by param consumes an address at the top of the stack. We use it to save
 // us lvAddrTaken
@@ -1921,7 +1916,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
             {
                 tree = gtNewLclvNode(tree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum(), TYP_REF);
 
-                impPushOnStack(tree, typeInfo(TI_REF, clsHnd));
+                impPushOnStack(tree, typeInfo(clsHnd));
 
                 return hndBlk->bbNext;
             }
@@ -1988,7 +1983,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         fgInsertStmtAtEnd(newBlk, argStmt);
     }
 
-    impPushOnStack(arg, typeInfo(TI_REF, clsHnd));
+    impPushOnStack(arg, typeInfo(clsHnd));
 
     return hndBlk;
 }
@@ -2486,10 +2481,9 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-    if (varDsc->TypeGet() == TYP_BYREF)
+    if (varDsc->TypeGet() == TYP_REF)
     {
-        // Pretend all byrefs are pointing to bytes.
-        return typeInfo(TI_BYTE).MakeByRef();
+        return typeInfo(varDsc->lvClassHnd);
     }
 
     return typeInfo(varDsc->TypeGet());
@@ -2497,38 +2491,20 @@ typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
 
 typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsHnd)
 {
-    assert(ciType < CORINFO_TYPE_COUNT);
-
-    switch (ciType)
+    if (ciType == CORINFO_TYPE_CLASS)
     {
-        case CORINFO_TYPE_CLASS:
-            return typeInfo(TI_REF, clsHnd);
-
-        case CORINFO_TYPE_BYREF:
-            return typeInfo(TI_BYTE).MakeByRef();
-
-        case CORINFO_TYPE_VOID:
-            return typeInfo();
-
-        default:
-            return typeInfo(JITtype2tiType(ciType));
+        return typeInfo(clsHnd);
     }
-}
 
-/******************************************************************************/
+    return typeInfo(JITtype2varType(ciType));
+}
 
 typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd)
 {
-    if (clsHnd == NO_CLASS_HANDLE)
-    {
-        return typeInfo();
-    }
-
+    assert(clsHnd != NO_CLASS_HANDLE);
     return verMakeTypeInfo(info.compCompHnd->asCorInfoType(clsHnd), clsHnd);
 }
 
-/*****************************************************************************
- */
 typeInfo Compiler::verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args)
 {
     CORINFO_CLASS_HANDLE classHandle;
@@ -2914,7 +2890,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                             result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
                         }
 
-                        impPushOnStack(result, typeInfo(TI_INT));
+                        impPushOnStack(result, typeInfo(TYP_INT));
                         return 0;
                     }
                 }
@@ -2970,7 +2946,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         impPopStack();
 
                                         impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
-                                                       typeInfo(TI_INT));
+                                                       typeInfo(TYP_INT));
 
                                         // Skip the next isinst instruction
                                         return 1 + sizeof(mdToken);
@@ -2999,7 +2975,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         objToBox = impGetStructAddr(objToBox, CHECK_SPILL_ALL, true);
 
                                         static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                                        impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TI_INT));
+                                        impPushOnStack(gtNewIndir(TYP_BOOL, objToBox), typeInfo(TYP_INT));
 
                                         JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as nullableVT.hasValue\n");
                                         return 1 + sizeof(mdToken);
@@ -3007,7 +2983,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     else if (castResult == TypeCompareState::MustNot)
                                     {
                                         impPopStack();
-                                        impPushOnStack(gtNewIconNode(0), typeInfo(TI_INT));
+                                        impPushOnStack(gtNewIconNode(0), typeInfo(TYP_INT));
                                         JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant (false)\n");
                                         return 1 + sizeof(mdToken);
                                     }
@@ -3101,10 +3077,10 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     impSpillSpecialSideEff();
 
     // Get get the expression to box from the stack.
-    GenTree*             op1       = nullptr;
-    GenTree*             op2       = nullptr;
-    StackEntry           se        = impPopStack();
-    GenTree*             exprToBox = se.val;
+    GenTree*   op1       = nullptr;
+    GenTree*   op2       = nullptr;
+    StackEntry se        = impPopStack();
+    GenTree*   exprToBox = se.val;
 
     // Look at what helper we should use.
     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
@@ -3123,7 +3099,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // structs is cheap.
     JITDUMP("\nCompiler::impImportAndPushBox -- handling BOX(value class) via");
     bool canExpandInline = (boxHelper == CORINFO_HELP_BOX);
-    bool optForSize      = !exprToBox->IsCall() && !varTypeIsStruct(exprToBox) && opts.OptimizationDisabled();
+    bool optForSize      = !exprToBox->IsCall() && varTypeIsStruct(exprToBox) && opts.OptimizationDisabled();
     bool expandInline    = canExpandInline && !optForSize;
 
     if (expandInline)
@@ -3350,8 +3326,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     }
 
     /* Push the result back on the stack, */
-    /* even if clsHnd is a value class we want the TI_REF */
-    typeInfo tiRetVal = typeInfo(TI_REF, info.compCompHnd->getTypeForBox(pResolvedToken->hClass));
+    /* even if clsHnd is a value class we want the TYP_REF */
+    typeInfo tiRetVal = typeInfo(info.compCompHnd->getTypeForBox(pResolvedToken->hClass));
     impPushOnStack(op1, tiRetVal);
 }
 
@@ -3434,7 +3410,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     // Remember that this function contains 'new' of a MD array.
     optMethodFlags |= OMF_HAS_MDNEWARRAY;
 
-    impPushOnStack(node, typeInfo(TI_REF, pResolvedToken->hClass));
+    impPushOnStack(node, typeInfo(pResolvedToken->hClass));
 }
 
 //------------------------------------------------------------------------
@@ -6321,7 +6297,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_LDNULL:
-                impPushNullObjRefOnStack();
+                impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TYP_REF));
                 break;
 
             case CEE_LDC_I4_M1:
@@ -6346,25 +6322,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto PUSH_I4CON;
             PUSH_I4CON:
                 JITDUMP(" %d", cval.intVal);
-                impPushOnStack(gtNewIconNode(cval.intVal), typeInfo(TI_INT));
+                impPushOnStack(gtNewIconNode(cval.intVal), typeInfo(TYP_INT));
                 break;
 
             case CEE_LDC_I8:
                 cval.lngVal = getI8LittleEndian(codeAddr);
                 JITDUMP(" 0x%016llx", cval.lngVal);
-                impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TI_LONG));
+                impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                 break;
 
             case CEE_LDC_R8:
                 cval.dblVal = getR8LittleEndian(codeAddr);
                 JITDUMP(" %#.17g", cval.dblVal);
-                impPushOnStack(gtNewDconNode(cval.dblVal), typeInfo(TI_DOUBLE));
+                impPushOnStack(gtNewDconNode(cval.dblVal), typeInfo(TYP_DOUBLE));
                 break;
 
             case CEE_LDC_R4:
                 cval.dblVal = getR4LittleEndian(codeAddr);
                 JITDUMP(" %#.17g", cval.dblVal);
-                impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TI_DOUBLE));
+                impPushOnStack(gtNewDconNode(cval.dblVal, TYP_FLOAT), typeInfo(TYP_DOUBLE));
                 break;
 
             case CEE_LDSTR:
@@ -6667,9 +6643,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             _PUSH_ADRVAR:
                 assert(op1->IsLclVarAddr());
-
-                tiRetVal = typeInfo(TI_BYTE).MakeByRef();
-                impPushOnStack(op1, tiRetVal);
+                impPushOnStack(op1, typeInfo(TYP_BYREF));
                 break;
 
             case CEE_ARGLIST:
@@ -6869,7 +6843,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 ldelemClsHnd = resolvedToken.hClass;
                 lclTyp       = TypeHandleToVarType(ldelemClsHnd);
                 tiRetVal     = verMakeTypeInfo(ldelemClsHnd);
-                tiRetVal.NormaliseForStack();
                 goto ARR_LD;
 
             case CEE_LDELEM_I1:
@@ -7992,7 +7965,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Helper calls with small struct return value also have to go
                         // through this since they do not follow Unix calling convention.
                         if (!op1->IsCall() ||
-                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd, op1->AsCall()->GetUnmanagedCallConv()) ||
+                            !IsMultiRegReturnedType(op1->AsCall()->gtRetClsHnd,
+                                                    op1->AsCall()->GetUnmanagedCallConv()) ||
                             op1->IsHelperCall())
 #endif // UNIX_AMD64_ABI
                         {
@@ -8898,14 +8872,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                tiRetVal = verMakeTypeInfo(fieldInfo.fieldType, clsHnd);
                 if (isLoadAddress)
                 {
-                    tiRetVal.MakeByRef();
+                    tiRetVal = typeInfo(TYP_BYREF);
                 }
                 else
                 {
-                    tiRetVal.NormaliseForStack();
+                    tiRetVal = verMakeTypeInfo(fieldInfo.fieldType, clsHnd);
                 }
 
                 // Perform this check always to ensure that we get field access exceptions even with
@@ -9760,7 +9733,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
 #endif
 
-                tiRetVal = typeInfo(TI_STRUCT, classHandle);
+                tiRetVal = typeInfo(TYP_STRUCT);
                 impPushOnStack(op1, tiRetVal);
             }
             break;
@@ -10531,13 +10504,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #pragma warning(pop)
 #endif
 
-// Push a local/argument treeon the operand stack
-void Compiler::impPushVar(GenTree* op, typeInfo tiRetVal)
-{
-    tiRetVal.NormaliseForStack();
-    impPushOnStack(op, tiRetVal);
-}
-
 //------------------------------------------------------------------------
 // impCreateLocal: create a GT_LCL_VAR node to access a local that might need to be normalized on load
 //
@@ -10568,7 +10534,7 @@ GenTreeLclVar* Compiler::impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET o
 // lclNum is an index into lvaTable *NOT* the arg/lcl index in the IL
 void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 {
-    impPushVar(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
+    impPushOnStack(impCreateLocalNode(lclNum DEBUGARG(offset)), verMakeTypeInfoForLocal(lclNum));
 }
 
 // Load an argument on the operand stack
@@ -10587,21 +10553,16 @@ void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
 
         var_types type = impInlineInfo->lclVarInfo[ilArgNum].lclTypeInfo;
         typeInfo  tiRetVal;
-        if (type == TYP_BYREF)
+        if (type == TYP_REF)
         {
-            tiRetVal = typeInfo(TI_BYTE).MakeByRef();
-        }
-        else if (type == TYP_REF)
-        {
-            tiRetVal = typeInfo(TI_REF, impInlineInfo->lclVarInfo[ilArgNum].lclTypeHandle);
+            tiRetVal = typeInfo(impInlineInfo->lclVarInfo[ilArgNum].lclTypeHandle);
         }
         else
         {
             tiRetVal = typeInfo(type);
         }
 
-        impPushVar(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo),
-                   tiRetVal);
+        impPushOnStack(impInlineFetchArg(ilArgNum, impInlineInfo->inlArgInfo, impInlineInfo->lclVarInfo), tiRetVal);
     }
     else
     {
