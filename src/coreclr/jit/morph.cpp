@@ -4308,7 +4308,7 @@ void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
     }
     else
     {
-        noway_assert(tree->OperIs(GT_ARR_ELEM, GT_ARR_INDEX));
+        noway_assert(tree->OperIs(GT_ARR_ELEM));
         fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay);
     }
 }
@@ -12660,21 +12660,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 
-        case GT_ARR_OFFSET:
-            tree->AsArrOffs()->gtOffset = fgMorphTree(tree->AsArrOffs()->gtOffset);
-            tree->AsArrOffs()->gtIndex  = fgMorphTree(tree->AsArrOffs()->gtIndex);
-            tree->AsArrOffs()->gtArrObj = fgMorphTree(tree->AsArrOffs()->gtArrObj);
-
-            tree->gtFlags &= ~GTF_CALL;
-            tree->gtFlags |= tree->AsArrOffs()->gtOffset->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT;
-            if (fgGlobalMorph)
-            {
-                fgSetRngChkTarget(tree, false);
-            }
-            break;
-
         case GT_PHI:
             tree->gtFlags &= ~GTF_ALL_EFFECT;
             for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
@@ -15702,12 +15687,6 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 //
 PhaseStatus Compiler::fgMorphArrayOps()
 {
-    if (!opts.compJitEarlyExpandMDArrays)
-    {
-        JITDUMP("Early expansion of MD arrays disabled\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     if ((optMethodFlags & OMF_HAS_MDARRAYREF) == 0)
     {
         JITDUMP("No multi-dimensional array references in the function\n");

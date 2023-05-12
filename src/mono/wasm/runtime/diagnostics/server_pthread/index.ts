@@ -4,9 +4,9 @@
 /// <reference lib="webworker" />
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { assertNever } from "../../types";
+import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { Module } from "../../globals";
+import { Module, createPromiseController } from "../../globals";
 import cwraps from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
@@ -17,7 +17,6 @@ import {
 
 import { importAndInstantiateMock } from "./mock-remote";
 import type { Mock, MockRemoteSocket } from "../mock";
-import { PromiseAndController, createPromiseController } from "../../promise-controller";
 import {
     isEventPipeCommand,
     isProcessCommand,

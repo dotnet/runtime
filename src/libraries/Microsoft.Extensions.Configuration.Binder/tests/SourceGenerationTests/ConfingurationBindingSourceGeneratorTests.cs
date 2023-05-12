@@ -9,7 +9,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+#if NETCOREAPP
 using Microsoft.Extensions.DependencyInjection;
+#endif
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -100,6 +102,41 @@ public class Program
 }";
 
             await VerifyAgainstBaselineUsingFile("TestGetCallGen.generated.txt", testSourceCode);
+        }
+
+        [Fact]
+        public async Task TestBaseline_TestGetValueCallGen()
+        {
+            string testSourceCode = @"
+using System.Collections.Generic;
+using System.Globalization;
+using Microsoft.Extensions.Configuration;
+
+public class Program
+{
+	public static void Main()
+	{
+		ConfigurationBuilder configurationBuilder = new();
+		IConfigurationRoot config = configurationBuilder.Build();
+
+		config.GetValue<int>(""key"");
+        config.GetValue(typeof(bool?), ""key"");
+        config.GetValue<MyClass>(""key"", new MyClass());
+        config.GetValue<byte[]>(""key"", new byte[] { });
+        config.GetValue(typeof(CultureInfo), ""key"", CultureInfo.InvariantCulture);
+	}
+	
+	public class MyClass
+	{
+		public string MyString { get; set; }
+		public int MyInt { get; set; }
+		public List<int> MyList { get; set; }
+        public int[] MyArray { get; set; }
+		public Dictionary<string, string> MyDictionary { get; set; }
+	}
+}";
+
+            await VerifyAgainstBaselineUsingFile("TestGetValueCallGen.generated.txt", testSourceCode);
         }
 
         [Fact]

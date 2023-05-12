@@ -39,6 +39,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string binderOptions = nameof(binderOptions);
                 public const string configureActions = nameof(configureActions);
                 public const string configuration = nameof(configuration);
+                public const string defaultValue = nameof(defaultValue);
                 public const string element = nameof(element);
                 public const string enumValue = nameof(enumValue);
                 public const string exception = nameof(exception);
@@ -126,7 +127,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public void Emit()
             {
-                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.GetMethods | MethodSpecifier.BindMethods | MethodSpecifier.Configure))
+                if (!_generationSpec.HasRootMethods())
                 {
                     return;
                 }
@@ -160,6 +161,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlockStart($"internal static class {Identifier.Helpers}");
                 EmitGetCoreMethod();
+                EmitGetValueCoreMethod();
                 EmitBindCoreMethods();
                 EmitHelperMethods();
 
@@ -217,7 +219,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static T? {Identifier.Get}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"(T?)((T){expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}) ?? default(T));");
+                        $"(T?)({expressionForGetCore}({Identifier.configuration}, typeof(T), {Identifier.configureActions}) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.Get_TypeOf))
@@ -231,38 +233,40 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static object? {Identifier.Get}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"{expressionForGetCore}({Identifier.configuration}, type, {Identifier.configureActions});");
+                        $"{expressionForGetCore}({Identifier.configuration}, {Identifier.type}, {Identifier.configureActions});");
                 }
             }
 
             private void EmitGetValueMethods()
             {
+                const string expressionForGetValueCore = $"{FullyQualifiedDisplayName.Helpers}.{Identifier.GetValueCore}";
+
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_T_key))
                 {
                     EmitBlankLineIfRequired();
                     _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, string {Identifier.key}) => " +
-                        $"throw new {FullyQualifiedDisplayName.NotSupportedException}();");
+                        $"(T?)({expressionForGetValueCore}({Identifier.configuration}, typeof(T), {Identifier.key}) ?? default(T));");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_T_key_defaultValue))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) => " +
-                        $"throw new NotSupportedException();");
+                    _writer.WriteLine($"public static T? {Identifier.GetValue}<T>(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, string {Identifier.key}, T {Identifier.defaultValue}) => " +
+                        $"(T?)({expressionForGetValueCore}({Identifier.configuration}, typeof(T), {Identifier.key}) ?? {Identifier.defaultValue});");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_TypeOf_key))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}) => " +
-                        $"throw new NotSupportedException();");
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, string {Identifier.key}) => " +
+                        $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key});");
                 }
 
                 if (_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValue_TypeOf_key_defaultValue))
                 {
                     EmitBlankLineIfRequired();
-                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, {FullyQualifiedDisplayName.ActionOfBinderOptions}? {Identifier.configureActions}) =>" +
-                        $"throw new NotSupportedException();");
+                    _writer.WriteLine($"public static object? {Identifier.GetValue}(this {FullyQualifiedDisplayName.IConfiguration} {Identifier.configuration}, {FullyQualifiedDisplayName.Type} {Identifier.type}, string {Identifier.key}, object? {Identifier.defaultValue}) =>" +
+                        $"{expressionForGetValueCore}({Identifier.configuration}, {Identifier.type}, {Identifier.key}) ?? {Identifier.defaultValue};");
                 }
             }
 
@@ -325,7 +329,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                _writer.WriteBlockStart($"public static object {Identifier.GetCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureActions})");
+                _writer.WriteBlockStart($"public static object? {Identifier.GetCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, Action<{Identifier.BinderOptions}>? {Identifier.configureActions})");
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
 
@@ -351,8 +355,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _precedingBlockExists = true;
             }
 
+            private void EmitGetValueCoreMethod()
+            {
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.GetValueMethods))
+                {
+                    return;
+                }
+
+                EmitBlankLineIfRequired();
+
+                _writer.WriteBlockStart($"public static object? {Identifier.GetValueCore}(this {Identifier.IConfiguration} {Identifier.configuration}, Type {Identifier.type}, string {Identifier.key})");
+
+                EmitCheckForNullArgument_WithBlankLine(Identifier.configuration);
+
+                _writer.WriteLine($"{Identifier.IConfigurationSection} {Identifier.section} = {Identifier.configuration}.{Identifier.GetSection}({Identifier.key});");
+                _writer.WriteLine($"object? {Identifier.obj};");
+
+                _writer.WriteBlankLine();
+
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.GetValueMethods])
+                {
+                    TypeSpec effectiveType = (type as NullableSpec)?.UnderlyingType ?? type;
+                    _writer.WriteBlockStart($"if (type == typeof({type.MinimalDisplayString}))");
+                    EmitBindLogicFromString(
+                        (ParsableFromStringTypeSpec)effectiveType,
+                        Identifier.obj,
+                        Expression.sectionValue,
+                        Expression.sectionPath,
+                        writeOnSuccess: () => _writer.WriteLine($"return {Identifier.obj};"));
+                    _writer.WriteBlockEnd();
+                    _writer.WriteBlankLine();
+                }
+
+                _writer.WriteLine("return null;");
+                _writer.WriteBlockEnd();
+                _precedingBlockExists = true;
+            }
+
             private void EmitBindCoreMethods()
             {
+                if (!_generationSpec.ShouldEmitMethods(MethodSpecifier.BindCore))
+                {
+                    return;
+                }
+
                 foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.BindCore])
                 {
                     if (type.SpecKind is TypeSpecKind.ParsableFromString)
@@ -1047,7 +1093,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitIConfigurationHasValueOrChildrenCheck(bool voidReturn)
             {
-                string returnPostfix = voidReturn ? "" : " default!";
+                string returnPostfix = voidReturn ? string.Empty : " null";
 
                 _writer.WriteBlock($$"""
                     if (!{{GetHelperMethodDisplayString(Identifier.HasValueOrChildren)}}({{Identifier.configuration}}))
@@ -1077,6 +1123,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void Emit_NotSupportedException_TypeNotDetectedAsInput() =>
                 _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotDetectedAsInput, "{type}")}"");");
+
+            private void Emit_NotSupportedExceptionTypeNotSupportedAsInput() =>
+                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotSupportedAsInput, "{type}")}"");");
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {

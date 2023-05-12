@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, mono_assert } from "./types";
+import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, ENVIRONMENT_IS_PTHREAD, Module } from "./globals";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";

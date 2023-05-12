@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ldfld_mulovf_d.il" />
     <Compile Include="ldfld_mulovf.il" />
   </ItemGroup>
 </Project>

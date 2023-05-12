@@ -1352,7 +1352,16 @@ PhaseStatus LinearScan::doLinearScan()
 #ifdef TARGET_ARM64
     nextConsecutiveRefPositionMap = nullptr;
 #endif
-    buildIntervals();
+
+    if (enregisterLocalVars)
+    {
+        buildIntervals<true>();
+    }
+    else
+    {
+        buildIntervals<false>();
+    }
+
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_REFPOS));
     compiler->EndPhase(PHASE_LINEAR_SCAN_BUILD);
 
@@ -1373,7 +1382,14 @@ PhaseStatus LinearScan::doLinearScan()
 
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
-    resolveRegisters();
+    if (enregisterLocalVars)
+    {
+        resolveRegisters<true>();
+    }
+    else
+    {
+        resolveRegisters<false>();
+    }
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
     assert(blockSequencingDone); // Should do at least one traversal.
@@ -1695,13 +1711,16 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     return true;
 }
 
+template void LinearScan::identifyCandidates<true>();
+template void LinearScan::identifyCandidates<false>();
+
 // Identify locals & compiler temps that are register candidates
 // TODO-Cleanup: This was cloned from Compiler::lvaSortByRefCount() in lclvars.cpp in order
 // to avoid perturbation, but should be merged.
-
-void LinearScan::identifyCandidates()
+template <bool localVarsEnregistered>
+void           LinearScan::identifyCandidates()
 {
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         // Initialize the set of lclVars that are candidates for register allocation.
         VarSetOps::AssignNoCopy(compiler, registerCandidateVars, VarSetOps::MakeEmpty(compiler));
@@ -1760,7 +1779,7 @@ void LinearScan::identifyCandidates()
     unsigned int largeVectorVarCount           = 0;
     weight_t     thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         VarSetOps::AssignNoCopy(compiler, fpCalleeSaveCandidateVars, VarSetOps::MakeEmpty(compiler));
         VarSetOps::AssignNoCopy(compiler, fpMaybeCandidateVars, VarSetOps::MakeEmpty(compiler));
@@ -1802,7 +1821,7 @@ void LinearScan::identifyCandidates()
 #endif // DOUBLE_ALIGN
 
     // Check whether register variables are permitted.
-    if (!enregisterLocalVars)
+    if (!localVarsEnregistered)
     {
         localVarIntervals = nullptr;
     }
@@ -1821,7 +1840,7 @@ void LinearScan::identifyCandidates()
         varDsc->SetOtherReg(REG_STK);
 #endif // TARGET_64BIT
 
-        if (!enregisterLocalVars)
+        if (!localVarsEnregistered)
         {
             varDsc->lvLRACandidate = false;
             continue;
@@ -1860,7 +1879,7 @@ void LinearScan::identifyCandidates()
         // the same register assignment throughout
         varDsc->lvRegister = false;
 
-        if (!isRegCandidate(varDsc))
+        if (!localVarsEnregistered || !isRegCandidate(varDsc))
         {
             varDsc->lvLRACandidate = 0;
             if (varDsc->lvTracked)
@@ -1970,13 +1989,15 @@ void LinearScan::identifyCandidates()
         }
         else
         {
+            // Added code just to check if we ever reach here. If not delete this if-else.
+            assert(false);
             localVarIntervals[varDsc->lvVarIndex] = nullptr;
         }
     }
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     // Create Intervals to use for the save & restore of the upper halves of large vector lclVars.
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         VarSetOps::Iter largeVectorVarsIter(compiler, largeVectorVars);
         unsigned        largeVectorVarIndex = 0;
@@ -2015,7 +2036,7 @@ void LinearScan::identifyCandidates()
     if (VERBOSE)
     {
         printf("\nFP callee save candidate vars: ");
-        if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, fpCalleeSaveCandidateVars))
+        if (localVarsEnregistered && !VarSetOps::IsEmpty(compiler, fpCalleeSaveCandidateVars))
         {
             dumpConvertedVarSet(compiler, fpCalleeSaveCandidateVars);
             printf("\n");
@@ -2034,7 +2055,7 @@ void LinearScan::identifyCandidates()
     if (floatVarCount > 6 && compiler->fgHasLoops &&
         (compiler->fgReturnBlocks == nullptr || compiler->fgReturnBlocks->next == nullptr))
     {
-        assert(enregisterLocalVars);
+        assert(localVarsEnregistered);
 #ifdef DEBUG
         if (VERBOSE)
         {
@@ -2054,7 +2075,7 @@ void LinearScan::identifyCandidates()
     }
 
     // From here on, we're only interested in the exceptVars that are candidates.
-    if (enregisterLocalVars && (compiler->compHndBBtabCount > 0))
+    if (localVarsEnregistered && (compiler->compHndBBtabCount > 0))
     {
         VarSetOps::IntersectionD(compiler, exceptVars, registerCandidateVars);
     }
@@ -3861,20 +3882,25 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
 void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 {
     assert(currentBlock != nullptr);
+    markBlockVisited(currentBlock);
+
     if (enregisterLocalVars)
     {
         processBlockEndLocations(currentBlock);
-    }
-    markBlockVisited(currentBlock);
 
-    // Get the next block to allocate.
-    // When the last block in the method has successors, there will be a final "RefTypeBB" to
-    // ensure that we get the varToRegMap set appropriately, but in that case we don't need
-    // to worry about "nextBlock".
-    BasicBlock* nextBlock = getNextBlock();
-    if (nextBlock != nullptr)
+        // Get the next block to allocate.
+        // When the last block in the method has successors, there will be a final "RefTypeBB" to
+        // ensure that we get the varToRegMap set appropriately, but in that case we don't need
+        // to worry about "nextBlock".
+        BasicBlock* nextBlock = getNextBlock();
+        if (nextBlock != nullptr)
+        {
+            processBlockStartLocations(nextBlock);
+        }
+    }
+    else
     {
-        processBlockStartLocations(nextBlock);
+        resetAllRegistersState();
     }
 }
 
@@ -4121,6 +4147,29 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 }
 
 //------------------------------------------------------------------------
+// resetAllRegistersState: Resets the next interval ref, spill cost and clears
+//                         the constant registers.
+//
+void LinearScan::resetAllRegistersState()
+{
+    assert(!enregisterLocalVars);
+    // Just clear any constant registers and return.
+    resetAvailableRegs();
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
+    {
+        RegRecord* physRegRecord    = getRegisterRecord(reg);
+        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        clearNextIntervalRef(reg, physRegRecord->registerType);
+        clearSpillCost(reg, physRegRecord->registerType);
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isConstant);
+            physRegRecord->assignedInterval = nullptr;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
 //
@@ -4141,25 +4190,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
     // If we have no register candidates we should only call this method during allocation.
 
     assert(enregisterLocalVars || !allocationPassComplete);
-
-    if (!enregisterLocalVars)
-    {
-        // Just clear any constant registers and return.
-        resetAvailableRegs();
-        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-        {
-            RegRecord* physRegRecord    = getRegisterRecord(reg);
-            Interval*  assignedInterval = physRegRecord->assignedInterval;
-            clearNextIntervalRef(reg, physRegRecord->registerType);
-            clearSpillCost(reg, physRegRecord->registerType);
-            if (assignedInterval != nullptr)
-            {
-                assert(assignedInterval->isConstant);
-                physRegRecord->assignedInterval = nullptr;
-            }
-        }
-        return;
-    }
 
     unsigned    predBBNum       = blockInfo[currentBlock->bbNum].predBBNum;
     VarToRegMap predVarToRegMap = getOutVarToRegMap(predBBNum);
@@ -6989,7 +7019,8 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
 // This is the final phase of register allocation.  It writes the register assignments to
 // the tree, and performs resolution across joins and backedges.
 //
-void LinearScan::resolveRegisters()
+template <bool localVarsEnregistered>
+void           LinearScan::resolveRegisters()
 {
     // Iterate over the tree and the RefPositions in lockstep
     //  - annotate the tree with register assignments by setting GetRegNum() or gtRegPair (for longs)
@@ -7016,7 +7047,7 @@ void LinearScan::resolveRegisters()
 
     // Clear register assignments - these will be reestablished as lclVar defs (including RefTypeParamDefs)
     // are encountered.
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
@@ -7049,7 +7080,7 @@ void LinearScan::resolveRegisters()
     // handle incoming arguments and special temps
     RefPositionIterator currentRefPosition = refPositions.begin();
 
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
         for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
@@ -7088,7 +7119,7 @@ void LinearScan::resolveRegisters()
     {
         assert(curBBNum == block->bbNum);
 
-        if (enregisterLocalVars)
+        if (localVarsEnregistered)
         {
             // Record the var locations at the start of this block.
             // (If it's fgFirstBB, we've already done that above, see entryVarToRegMap)
@@ -7373,13 +7404,13 @@ void LinearScan::resolveRegisters()
             }
         }
 
-        if (enregisterLocalVars)
+        if (localVarsEnregistered)
         {
             processBlockEndLocations(block);
         }
     }
 
-    if (enregisterLocalVars)
+    if (localVarsEnregistered)
     {
 #ifdef DEBUG
         if (VERBOSE)

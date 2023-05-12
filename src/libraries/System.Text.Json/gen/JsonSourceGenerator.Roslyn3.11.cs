@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -23,6 +22,10 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="context"></param>
         public void Initialize(GeneratorInitializationContext context)
         {
+#if LAUNCH_DEBUGGER
+            Diagnostics.Debugger.Launch();
+#endif
+
             // Unfortunately, there is no cancellation token that can be passed here
             // (the one in GeneratorInitializationContext is not safe to capture).
             // In practice this should still be ok as the generator driver itself will
@@ -36,12 +39,6 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
-#if LAUNCH_DEBUGGER
-            if (!Diagnostics.Debugger.IsAttached)
-            {
-                Diagnostics.Debugger.Launch();
-            }
-#endif
             if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ClassDeclarationSyntaxList == null)
             {
                 // nothing to do yet
@@ -49,12 +46,13 @@ namespace System.Text.Json.SourceGeneration
             }
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(executionContext);
-            Parser parser = new(executionContext.Compilation, context);
+            Parser parser = new(executionContext.Compilation);
             SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList, executionContext.CancellationToken);
+
+            OnSourceEmitting?.Invoke(spec);
+
             if (spec != null)
             {
-                _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
-
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
             }
@@ -117,10 +115,9 @@ namespace System.Text.Json.SourceGeneration
         }
 
         /// <summary>
-        /// Helper for unit tests.
+        /// Instrumentation helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName!, p => p.Type);
-        private List<TypeGenerationSpec>? _rootTypes;
+        public Action<SourceGenerationSpec?>? OnSourceEmitting { get; init; }
     }
 
     internal readonly struct JsonSourceGenerationContext
