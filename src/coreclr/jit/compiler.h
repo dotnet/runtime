@@ -9389,7 +9389,8 @@ public:
 
         bool DoEarlyBlockMerging() const
         {
-            return IsInstrumented() || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) || jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) ||
+                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
