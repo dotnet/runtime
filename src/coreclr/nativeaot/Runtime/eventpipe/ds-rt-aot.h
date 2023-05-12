@@ -267,7 +267,7 @@ ds_rt_enable_perfmap (uint32_t type)
 
 static
 uint32_t
-ds_rt_disable_perfmap ()
+ds_rt_disable_perfmap (void)
 {
     return DS_IPC_E_NOTSUPPORTED;
 }

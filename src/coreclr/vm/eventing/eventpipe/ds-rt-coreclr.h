@@ -318,7 +318,7 @@ ds_rt_enable_perfmap (uint32_t type)
 
 static
 uint32_t
-ds_rt_disable_perfmap ()
+ds_rt_disable_perfmap (void)
 {
 	LIMITED_METHOD_CONTRACT;
 #ifdef FEATURE_PERFMAP
