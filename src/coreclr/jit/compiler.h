@@ -9387,11 +9387,9 @@ public:
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
-        bool CanBeInstrumentedOrIsOptimized() const
+        bool DoEarlyBlockMerging() const
         {
-            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
-                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            return IsInstrumented() || jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) || jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
