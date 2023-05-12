@@ -145,7 +145,6 @@ static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 	int id = lookup_intrins (sri_vector128_methods, sizeof (sri_vector128_methods), cmethod);
-	int vector_size = -1;
 	if (id == -1)
 		return FALSE;
 
@@ -168,9 +167,8 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 	MonoTypeEnum atype = arg_type->type;
 	if (atype == MONO_TYPE_BOOLEAN)
 		return FALSE;
-	vector_size = mono_class_value_size (vector_klass, NULL);
+	int vector_size = mono_class_value_size (vector_klass, NULL);
 	int arg_size = mono_class_value_size (mono_class_from_mono_type_internal (arg_type), NULL);
-	g_assert (arg_size > -1);
 	g_assert (vector_size == SIZEOF_V128);
 
 	int scalar_arg = -1;
@@ -178,8 +176,6 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
 			scalar_arg = i;
 	}
-
-	g_assert (scalar_arg != -3274);
 
 	switch (id) {
 		case SN_AndNot:
