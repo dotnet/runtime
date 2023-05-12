@@ -20,6 +20,13 @@ namespace ComInterfaceGenerator.Tests
         [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_get_and_set_int")]
         public static partial void* NewNativeObject();
 
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_get_and_set_int")]
+        internal static partial IGetAndSetInt NewNativeObjectWithMarshaller();
+
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_get_and_set_int")]
+        [return:MarshalUsing(typeof(UniqueComInterfaceMarshaller<IGetAndSetInt>))]
+        internal static partial IGetAndSetInt NewNativeObjectWithUniqueMarshaller();
+
         [Fact]
         public unsafe void CallRcwFromGeneratedComInterface()
         {
@@ -28,6 +35,30 @@ namespace ComInterfaceGenerator.Tests
             var obj = cw.GetOrCreateObjectForComInstance((nint)ptr, CreateObjectFlags.None);
 
             var intObj = (IGetAndSetInt)obj;
+            Assert.Equal(0, intObj.GetInt());
+            intObj.SetInt(2);
+            Assert.Equal(2, intObj.GetInt());
+        }
+
+        [Fact]
+        [ActiveIssue("When the unmanaged side uses ComWrappers, even when not using the marshaller or StrategyBasedComWrappers, the Unwrap flag causes the underlying object to be returned instead of an RCW.")]
+        public unsafe void CallRcwFromGeneratedComInterfaceConstructedByMarshaller()
+        {
+            var intObj = NewNativeObjectWithMarshaller(); // new_native_object
+
+            Assert.Equal(0, intObj.GetInt());
+            intObj.SetInt(2);
+            Assert.Equal(2, intObj.GetInt());
+        }
+
+        [Fact]
+        [ActiveIssue("When the unmanaged side uses ComWrappers, even when not using the marshaller or StrategyBasedComWrappers, the Unwrap flag causes the underlying object to be returned instead of an RCW.")]
+        public unsafe void CallRcwFromGeneratedComInterfaceConstructedByUniqueMarshaller()
+        {
+            var intObj = NewNativeObjectWithUniqueMarshaller(); // new_native_object
+            var intObj2 = NewNativeObjectWithUniqueMarshaller(); // new_native_object
+            Assert.NotSame(intObj, intObj2);
+
             Assert.Equal(0, intObj.GetInt());
             intObj.SetInt(2);
             Assert.Equal(2, intObj.GetInt());
