@@ -10488,12 +10488,6 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
         return false;
     }
 
-    // Throughput check, the logic below is only for JIT and NativeAOT
-    if (opts.IsReadyToRun() && !IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        return false;
-    }
-
     ValueNum  addrVN = tree->gtGetOp1()->gtVNPair.GetLiberal();
     VNFuncApp funcApp;
     if (!vnStore->GetVNFunc(addrVN, &funcApp))
