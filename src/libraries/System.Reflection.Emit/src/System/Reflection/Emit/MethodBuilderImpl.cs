@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
             if (_typeParameters != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
-             var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
+            var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 string name = names[i];
@@ -140,11 +140,6 @@ namespace System.Reflection.Emit
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            if (IsGenericMethod && !IsGenericMethodDefinition)
-            {
-                throw new InvalidOperationException();
-            }
-
             if (returnType != null)
             {
                 _returnType = returnType;
