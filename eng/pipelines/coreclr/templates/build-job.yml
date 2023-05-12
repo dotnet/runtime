@@ -287,7 +287,7 @@ jobs:
             ${{ else }}:
               hostArchType: x64
 
-    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: arm
