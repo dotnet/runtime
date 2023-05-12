@@ -39,6 +39,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         private static readonly CSharpParseOptions s_parseOptions =
             new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
 
+#if ROSLYN4_0_OR_GREATER
+        private static readonly GeneratorDriverOptions s_generatorDriverOptions = new GeneratorDriverOptions(disabledOutputs: IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true);
+#endif
+
 #if NETCOREAPP
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
 #endif
@@ -80,14 +84,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
             }
 
-            configureParseOptions ??= (options) => options;
-            var parseOptions = configureParseOptions(s_parseOptions);
+            var parseOptions = configureParseOptions?.Invoke(s_parseOptions) ?? s_parseOptions;
             return CSharpCompilation.Create(
                 assemblyName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(source, parseOptions) },
                 references: references.ToArray(),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             );
+        }
+
+        public static SyntaxTree ParseSource(string source)
+            => CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
+
+        public static CSharpGeneratorDriver CreateJsonSourceGeneratorDriver(JsonSourceGenerator? generator = null)
+        {
+            generator ??= new();
+            return
+#if ROSLYN4_0_OR_GREATER
+                CSharpGeneratorDriver.Create(
+                    generators: new ISourceGenerator[] { generator.AsSourceGenerator() },
+                    parseOptions: s_parseOptions,
+                    driverOptions: new GeneratorDriverOptions(
+                        disabledOutputs: IncrementalGeneratorOutputKind.None,
+                        trackIncrementalGeneratorSteps: true));
+#else
+                CSharpGeneratorDriver.Create(
+                    generators: new ISourceGenerator[] { generator },
+                    parseOptions: s_parseOptions);
+#endif
         }
 
         public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation)
@@ -98,17 +122,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 OnSourceEmitting = spec => generatedSpec = spec
             };
 
-            CSharpGeneratorDriver driver =
-#if ROSLYN4_0_OR_GREATER
-                CSharpGeneratorDriver.Create(
-                    generators: new ISourceGenerator[] { generator.AsSourceGenerator() },
-                    parseOptions: s_parseOptions);
-#else
-                CSharpGeneratorDriver.Create(
-                    generators: new ISourceGenerator[] { generator },
-                    parseOptions: s_parseOptions);
-#endif
-
+            CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(generator);
             driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
             return new()
             {

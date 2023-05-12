@@ -17,6 +17,10 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
+#if ROSLYN4_4_OR_GREATER
+        public const string SourceGenerationSpecTrackingName = "SourceGenerationSpec";
+#endif
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
 #if LAUNCH_DEBUGGER
@@ -37,7 +41,12 @@ namespace System.Text.Json.SourceGeneration
                 {
                     Parser parser = new(tuple.Left);
                     return parser.GetGenerationSpec(tuple.Right, cancellationToken);
-                });
+                })
+#if ROSLYN4_4_OR_GREATER
+                .WithTrackingName(SourceGenerationSpecTrackingName);
+#else
+                ;
+#endif
 
             context.RegisterSourceOutput(sourceGenSpec, EmitSource);
         }
