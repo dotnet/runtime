@@ -1404,7 +1404,6 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
             private static bool IsGenerationModeSpecified(TypeGenerationSpec typeSpec, JsonSourceGenerationMode mode)
                 => typeSpec.GenerationMode == JsonSourceGenerationMode.Default || (mode & typeSpec.GenerationMode) != 0;
 
-
             public static bool TryFilterSerializableProps(
                     TypeGenerationSpec typeSpec,
                     ContextGenerationSpec contextSpec,
