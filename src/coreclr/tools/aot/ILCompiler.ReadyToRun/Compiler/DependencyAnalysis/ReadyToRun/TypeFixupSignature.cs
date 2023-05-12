@@ -36,14 +36,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
+                ReadyToRunFixupKind fixupKind = _fixupKind;
                 dataBuilder.AddSymbol(this);
 
+                if ((fixupKind == ReadyToRunFixupKind.Verify_TypeLayout) && ((MetadataType)_typeDesc).IsVectorTOrHasVectorTFields)
+                {
+                    fixupKind = ReadyToRunFixupKind.Check_TypeLayout;
+                }
+
                 IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
 
-                if ((_fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
-                    (_fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
+                if ((fixupKind == ReadyToRunFixupKind.Check_TypeLayout) ||
+                    (fixupKind == ReadyToRunFixupKind.Verify_TypeLayout))
                 {
                     EncodeTypeLayout(dataBuilder, _typeDesc);
                 }
@@ -74,11 +80,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (defType.IsHomogeneousAggregate)
             {
                 flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_HFA;
-            }
-
-            if (defType.IsVectorTOrHasVectorTFields)
-            {
-                flags |= ReadyToRunTypeLayoutFlags.READYTORUN_LAYOUT_IsOrContainsVectorT;
             }
 
             dataBuilder.EmitUInt((uint)flags);

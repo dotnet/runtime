@@ -70,7 +70,6 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_LAYOUT_Alignment_Native = 0x04,
         READYTORUN_LAYOUT_GCLayout = 0x08,
         READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
-        READYTORUN_LAYOUT_IsOrContainsVectorT = 0x20,
     }
 
     [Flags]
