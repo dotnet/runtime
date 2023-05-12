@@ -561,6 +561,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 		goto opcode_added;
 	}
 
+	return FALSE;
+
 #if HOST_BROWSER
 	if (!mono_opt_interp_simd_packedsimd || (id < 0)) {
 		g_print ("MONO interpreter: Disabled or unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
@@ -664,6 +666,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			simd_intrins = map_packedsimd_intrins_based_on_atype (atype, INTERP_SIMD_INTRINSIC_WASM_I8X16_COMPARENOTEQUAL, TRUE);
 			break;
 		}
+		/*
 		case SN_ConvertNarrowingSignedSaturate: {
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_I1)
@@ -680,6 +683,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				simd_intrins = INTERP_SIMD_INTRINSIC_WASM_I16X8_NARROW_I32X4_U;
 			break;
 		}
+		*/
 		default:
 			return FALSE;
 	}

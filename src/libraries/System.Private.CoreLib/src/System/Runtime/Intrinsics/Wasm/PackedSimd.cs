@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Numerics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -1872,28 +1874,45 @@ namespace System.Runtime.Intrinsics.Wasm
 
         // Conversions
 
+        private static Vector128<TResult> ConvertNarrowingSaturate<TResult, TIn>(Vector128<TIn> lower, Vector128<TIn> upper)
+            where TResult : struct, INumber<TResult>
+            where TIn : struct, INumber<TIn>
+        {
+            var result = Vector128<TResult>.Zero;
+            int c = Vector128<TIn>.Count;
+            for (int i = 0; i < c; i++)
+                result = result.WithElement(i, TResult.CreateSaturating(lower[i]));
+            for (int i = 0; i < c; i++)
+                result = result.WithElement(i + c, TResult.CreateSaturating(upper[i]));
+            return result;
+        }
+
         /// <summary>
         ///   i8x16.narrow_i16x8_s
         /// </summary>
         [Intrinsic]
-        internal static Vector128<sbyte> ConvertNarrowingSignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingSignedSaturate(lower, upper);
+        internal static Vector128<sbyte> ConvertNarrowingSignedSaturate(Vector128<short> lower, Vector128<short> upper) =>
+            ConvertNarrowingSaturate<sbyte, short>(lower, upper);
 
         /// <summary>
         ///   i16x8.narrow_i32x4_s
         /// </summary>
         [Intrinsic]
-        internal static Vector128<short> ConvertNarrowingSignedSaturate(Vector128<int>   lower, Vector128<int>   upper) => ConvertNarrowingSignedSaturate(lower, upper);
+        internal static Vector128<short> ConvertNarrowingSignedSaturate(Vector128<int>   lower, Vector128<int>   upper) =>
+            ConvertNarrowingSaturate<short, int>(lower, upper);
 
         /// <summary>
         ///   i8x16.narrow_i16x8_u
         /// </summary>
         [Intrinsic]
-        internal static Vector128<byte>  ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+        internal static Vector128<byte>  ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) =>
+            ConvertNarrowingSaturate<byte, short>(lower, upper);
 
         /// <summary>
         ///   i16x8.narrow_i32x4_u
         /// </summary>
         [Intrinsic]
-        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) =>
+            ConvertNarrowingSaturate<ushort, int>(lower, upper);
     }
 }

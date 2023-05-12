@@ -2456,11 +2456,6 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Arm64.VectorTableLookup(vector, indices);
             }
 
-            if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.Swizzle(vector, indices);
-            }
-
             return Shuffle(vector, indices);
         }
 
