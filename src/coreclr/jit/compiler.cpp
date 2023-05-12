@@ -3149,7 +3149,25 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // TBD: Exclude PInvoke stubs
     if (opts.compJitELTHookEnabled)
     {
-        compProfilerMethHnd           = (void*)DummyProfilerELTStub;
+#if defined(DEBUG) // We currently only know if we're running under SuperPMI in DEBUG
+        // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use
+        // the address of `DummyProfilerELTStub` in the JIT binary, without relocation. So just use
+        // a fixed address in this case. It's SuperPMI replay, so the generated code won't be run.
+        if (RunningSuperPmiReplay())
+        {
+#ifdef HOST_64BIT
+            static_assert_no_msg(sizeof(void*) == 8);
+            compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
+#else
+            static_assert_no_msg(sizeof(void*) == 4);
+            compProfilerMethHnd = (void*)0x0BADF00D;
+#endif
+        }
+        else
+#endif // DEBUG
+        {
+            compProfilerMethHnd = (void*)DummyProfilerELTStub;
+        }
         compProfilerMethHndIndirected = false;
     }
 
