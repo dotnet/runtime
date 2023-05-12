@@ -4,6 +4,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem.Ecma;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -12,13 +13,13 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class EnclosingTypeMapNode : HeaderTableNode
+    public class EnclosingTypeMapNode : ModuleSpecificHeaderTableNode
     {
         private MetadataReader _metadata;
 
-        public EnclosingTypeMapNode(MetadataReader metadata)
+        public EnclosingTypeMapNode(EcmaModule module) : base(module)
         {
-            _metadata = metadata;
+            _metadata = module.MetadataReader;
             // This map is only valid for assemblies with <= 0xFFFE types defined within
             if (!IsSupported(_metadata))
                 throw new InternalCompilerErrorException("EnclosingTypeMap made for assembly with more than 0xFFFE types");

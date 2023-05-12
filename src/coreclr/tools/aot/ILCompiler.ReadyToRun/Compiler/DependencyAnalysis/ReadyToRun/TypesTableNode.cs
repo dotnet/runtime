@@ -15,13 +15,10 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class TypesTableNode : HeaderTableNode
+    public class TypesTableNode : ModuleSpecificHeaderTableNode
     {
-        private readonly EcmaModule _module;
-
-        public TypesTableNode(EcmaModule module)
+        public TypesTableNode(EcmaModule module) : base(module)
         {
-            _module = module;
         }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -91,12 +88,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
-        }
-
-        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            TypesTableNode otherTypesTable = (TypesTableNode)other;
-            return _module.Assembly.GetName().Name.CompareTo(otherTypesTable._module.Assembly.GetName().Name);
         }
 
         public override int ClassCode => -944318825;

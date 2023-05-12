@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Stores information about what methods got inlined into other methods.
     /// </summary>
-    public class InliningInfoNode : HeaderTableNode
+    public class InliningInfoNode : ModuleSpecificHeaderTableNode
     {
         public enum InfoType
         {
@@ -27,11 +27,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             CrossModuleAllMethods
         }
 
-        private readonly EcmaModule _module;
         private readonly InfoType _inlineInfoType;
         private ReadyToRunSymbolNodeFactory _symbolNodeFactory;
 
-        public InliningInfoNode(EcmaModule module, InfoType inlineInfoType)
+        public InliningInfoNode(EcmaModule module, InfoType inlineInfoType) : base(module)
         {
             _inlineInfoType = inlineInfoType;
             if (AllowCrossModuleInlines)
@@ -42,7 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(module != null); // InliningInfo2 is restricted to a single module at a time
             }
-            _module = module;
         }
 
         public void Initialize(ReadyToRunSymbolNodeFactory symbolNodeFactory)
@@ -377,22 +375,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
-        }
-
-        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            InliningInfoNode otherInliningInfo = (InliningInfoNode)other;
-
-            if (_module == null)
-            {
-                Debug.Assert(otherInliningInfo._module != null);
-                return -1;
-            }
-            else if (otherInliningInfo._module == null)
-            {
-                return 1;
-            }
-            return _module.Assembly.GetName().Name.CompareTo(otherInliningInfo._module.Assembly.GetName().Name);
         }
 
         public override int ClassCode => -87382891;

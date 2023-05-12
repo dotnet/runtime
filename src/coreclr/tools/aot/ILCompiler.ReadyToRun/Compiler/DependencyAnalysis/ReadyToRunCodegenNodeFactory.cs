@@ -735,19 +735,19 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (EnclosingTypeMapNode.IsSupported(inputModule.MetadataReader))
                 {
-                    var node = new EnclosingTypeMapNode(inputModule.MetadataReader);
+                    var node = new EnclosingTypeMapNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.EnclosingTypeMap, node, node);
                 }
 
                 if (TypeGenericInfoMapNode.IsSupported(inputModule.MetadataReader))
                 {
-                    var node = new TypeGenericInfoMapNode(inputModule.MetadataReader);
+                    var node = new TypeGenericInfoMapNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.TypeGenericInfoMap, node, node);
                 }
 
                 if (MethodIsGenericMapNode.IsSupported(inputModule.MetadataReader))
                 {
-                    var node = new MethodIsGenericMapNode(inputModule.MetadataReader);
+                    var node = new MethodIsGenericMapNode(inputModule);
                     tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodIsGenericMap, node, node);
                 }
             }

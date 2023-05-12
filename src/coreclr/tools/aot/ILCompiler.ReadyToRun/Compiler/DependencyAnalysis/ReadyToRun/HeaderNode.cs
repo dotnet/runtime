@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -30,6 +31,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return ObjectNodeSection.ReadOnlyDataSection;
             else
                 return ObjectNodeSection.DataSection;
+        }
+    }
+
+    public abstract class ModuleSpecificHeaderTableNode : HeaderTableNode
+    {
+        protected readonly EcmaModule _module;
+
+        public ModuleSpecificHeaderTableNode(EcmaModule module)
+        {
+            _module = module;
+        }
+
+        public sealed override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            ModuleSpecificHeaderTableNode otherModuleSpecificHeaderTableNode = (ModuleSpecificHeaderTableNode)other;
+
+            if (_module == null)
+            {
+                Debug.Assert(otherModuleSpecificHeaderTableNode._module != null);
+                return -1;
+            }
+            else if (otherModuleSpecificHeaderTableNode._module == null)
+            {
+                return 1;
+            }
+
+            return _module.Assembly.GetName().Name.CompareTo(otherModuleSpecificHeaderTableNode._module.Assembly.GetName().Name);
         }
     }
 

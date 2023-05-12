@@ -6,16 +6,17 @@ using System;
 using Internal.Text;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodIsGenericMapNode : HeaderTableNode
+    public class MethodIsGenericMapNode : ModuleSpecificHeaderTableNode
     {
         private MetadataReader _metadata;
 
-        public MethodIsGenericMapNode(MetadataReader metadata)
+        public MethodIsGenericMapNode(EcmaModule module) : base(module)
         {
-            _metadata = metadata;
+            _metadata = module.MetadataReader;
         }
 
         public static bool IsSupported(MetadataReader metadata)
