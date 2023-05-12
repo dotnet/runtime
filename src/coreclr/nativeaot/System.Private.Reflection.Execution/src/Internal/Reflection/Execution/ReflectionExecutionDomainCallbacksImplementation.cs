@@ -78,13 +78,6 @@ namespace Internal.Reflection.Execution
             return _executionDomain.CreateMissingMetadataException(pertainant);
         }
 
-        // This is called from the ToString() helper of a RuntimeType that does not have full metadata.
-        // This helper makes a "best effort" to give the caller something better than "EETypePtr nnnnnnnnn".
-        public sealed override string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return Type.GetTypeFromHandle(runtimeTypeHandle).ToDisplayStringIfAvailable();
-        }
-
         public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
