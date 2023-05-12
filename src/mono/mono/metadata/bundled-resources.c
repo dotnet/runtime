@@ -93,23 +93,13 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 
 	for (uint32_t i = 0; i < len; ++i) {
 		MonoBundledResource *resource_to_bundle = (MonoBundledResource *)resources_to_bundle[i];
-		switch (resource_to_bundle->type) {
-		case MONO_BUNDLED_ASSEMBLY: {
-			g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
+		if (resource_to_bundle->type == MONO_BUNDLED_ASSEMBLY)
 			assemblyAdded = true;
-			break;
-		}
-		case MONO_BUNDLED_SATELLITE_ASSEMBLY: {
-			g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
+
+		if (resource_to_bundle->type == MONO_BUNDLED_SATELLITE_ASSEMBLY)
 			satelliteAssemblyAdded = true;
-			break;
-		}
-		case MONO_BUNDLED_DATA:
-		default: {
-			g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
-			break;
-		}
-		}
+
+		g_hash_table_insert (bundled_resources, (gpointer) resource_to_bundle->id, resource_to_bundle);
 	}
 
 	if (assemblyAdded)
