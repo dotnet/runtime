@@ -49,7 +49,7 @@ namespace Microsoft.Interop
                     new CharMarshallingInfoProvider(defaultInfo),
                     new StringMarshallingInfoProvider(env.Compilation, diagnostics, unparsedAttributeData, defaultInfo),
                     new BooleanMarshallingInfoProvider(),
-                    new BlittableTypeMarshallingInfoProvider(env.Compilation));
+                    new BlittableTypeMarshallingInfoProvider(env.Compilation)));
         }
     }
 }
