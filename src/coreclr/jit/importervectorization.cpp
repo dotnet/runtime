@@ -786,10 +786,12 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     unsigned spanLclNum;
     if (spanObj->IsLocal())
     {
+        // Argument is already a local
         spanLclNum = spanObj->AsLclVarCommon()->GetLclNum();
     }
     else
     {
+        // Access a local that will be set if we successfully unroll it
         spanLclNum                  = lvaGrabTemp(true DEBUGARG("spilling spanObj"));
         lvaTable[spanLclNum].lvType = TYP_STRUCT;
         CORINFO_CLASS_HANDLE spanCls;
@@ -797,8 +799,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         lvaSetStruct(spanLclNum, spanCls, false);
     }
 
-    GenTreeLclFld* spanReferenceFld = gtNewLclFldNode(spanLclNum, TYP_BYREF, 0);
-    GenTreeLclFld* spanLengthFld    = gtNewLclFldNode(spanLclNum, TYP_INT, TARGET_POINTER_SIZE);
+    GenTreeLclFld* spanReferenceFld = gtNewLclFldNode(spanLclNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference);
+    GenTreeLclFld* spanLengthFld    = gtNewLclFldNode(spanLclNum, TYP_INT, OFFSETOF__CORINFO_Span__length);
     GenTree*       unrolled = impExpandHalfConstEquals(spanReferenceFld, spanLengthFld, false, startsWith, (WCHAR*)str,
                                                  cnsLength, 0, cmpMode);
 
