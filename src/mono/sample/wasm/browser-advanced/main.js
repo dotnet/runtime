@@ -11,11 +11,25 @@ let testAbort = true;
 let testError = true;
 
 try {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (url, fetchArgs) => {
+        console.log("fetching " + url);
+        // we are testing that we can retry loading of the assembly
+        if (testAbort && url.indexOf('System.Private.CoreLib') != -1) {
+            testAbort = false;
+            return originalFetch(url + "?testAbort=true", fetchArgs);
+        }
+        if (testError && url.indexOf('System.Console') != -1) {
+            testError = false;
+            return originalFetch(url + "?testError=true", fetchArgs);
+        }
+        return originalFetch(url, fetchArgs);
+    };
     const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured
-        // It is prefered to use specific 'with***' methods instead in all other cases.
+        // It is preferred to use specific 'with***' methods instead in all other cases.
         .withModuleConfig({
             configSrc: "./_framework/blazor.boot.json",
             onConfigLoaded: (config) => {
@@ -24,21 +38,6 @@ try {
                 // config is loaded and could be tweaked before the rest of the runtime startup sequence
                 config.environmentVariables["MONO_LOG_LEVEL"] = "debug";
                 config.browserProfilerOptions = {};
-            },
-            imports: {
-                fetch: (url, fetchArgs) => {
-                    console.log("fetching " + url);
-                    // we are testing that we can retry loading of the assembly
-                    if (testAbort && url.indexOf('System.Private.CoreLib') != -1) {
-                        testAbort = false;
-                        return fetch(url + "?testAbort=true", fetchArgs);
-                    }
-                    if (testError && url.indexOf('System.Console') != -1) {
-                        testError = false;
-                        return fetch(url + "?testError=true", fetchArgs);
-                    }
-                    return fetch(url, fetchArgs);
-                }
             },
             preInit: () => { console.log('user code Module.preInit'); },
             preRun: () => { console.log('user code Module.preRun'); },
