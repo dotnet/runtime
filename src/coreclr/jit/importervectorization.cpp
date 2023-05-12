@@ -806,7 +806,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 
     if (unrolled != nullptr)
     {
-        if (!spanObj->IsLocal())
+        if (!spanObj->OperIs(GT_LCL_VAR))
         {
             impAssignTempGen(spanLclNum, spanObj, CHECK_SPILL_NONE);
         }
