@@ -520,17 +520,19 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
 
 #ifdef TARGET_64BIT
 //------------------------------------------------------------------------
-// AreUpper32BitsZero: check if some previously emitted
-//     instruction set the upper 32 bits of reg to zero.
+// AreUpperBitsZero: check if some previously emitted
+//     instruction set the upper bits of reg to zero.
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for zero
 //
 // Return Value:
-//    true if previous instruction zeroed reg's upper 32 bits.
+//    true if previous instruction zeroed reg's upper bits.
 //    false if it did not, or if we can't safely determine.
 //
-bool emitter::AreUpper32BitsZero(regNumber reg)
+bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -562,9 +564,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 case INS_movsxd:
                     return PEEPHOLE_ABORT;
 
-                // movzx always zeroes the upper 32 bits.
                 case INS_movzx:
-                    result = true;
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movzx always zeroes the upper 32 bits.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
                     return PEEPHOLE_ABORT;
 
                 default:
@@ -572,7 +581,10 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             }
 
             // otherwise rely on operation size.
-            result = (id->idOpSize() == EA_4BYTE);
+            if (size == EA_4BYTE)
+            {
+                result = (id->idOpSize() == EA_4BYTE);
+            }
             return PEEPHOLE_ABORT;
         }
         else
@@ -586,15 +598,18 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
 //------------------------------------------------------------------------
 // AreUpper32BitsSignExtended: check if some previously emitted
-//     instruction sign-extended the upper 32 bits.
+//     instruction sign-extended the upper bits.
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for
+//           sign-extended
 //
 // Return Value:
-//    true if previous instruction upper 32 bits are sign-extended.
+//    true if previous instruction upper bits are sign-extended.
 //    false if it did not, or if we can't safely determine.
-bool emitter::AreUpper32BitsSignExtended(regNumber reg)
+bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -610,24 +625,43 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 
     instrDesc* id = emitLastIns;
 
-    if (id->idReg1() != reg)
-    {
-        return false;
-    }
+    bool result = false;
 
-    // movsx always sign extends to 8 bytes. W-bit is set.
-    if (id->idIns() == INS_movsx)
-    {
-        return true;
-    }
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
+        {
+            switch (id->idIns())
+            {
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-    // movsxd is always an 8 byte operation. W-bit is set.
-    if (id->idIns() == INS_movsxd)
-    {
-        return true;
-    }
+                case INS_movsx:
+                case INS_movsxd:
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
+                    break;
 
-    return false;
+                default:
+                    break;
+            }
+
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
+
+    return result;
 }
 #endif // TARGET_64BIT
 
@@ -6113,11 +6147,48 @@ bool emitter::IsRedundantMov(
 
     bool hasSideEffect = HasSideEffect(ins, size);
 
-    // Check if we are already in the correct register and don't have a side effect
-    if ((dst == src) && !hasSideEffect)
+    // Peephole optimization to eliminate redundant 'mov' instructions.
+    if (dst == src)
     {
-        JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
-        return true;
+        // Check if we are already in the correct register and don't have a side effect
+        if (!hasSideEffect)
+        {
+            JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
+            return true;
+        }
+
+#ifdef TARGET_64BIT
+        switch (ins)
+        {
+            case INS_movzx:
+                if (AreUpperBitsZero(src, size))
+                {
+                    JITDUMP("\n -- suppressing movzx because upper bits are zero.\n");
+                    return true;
+                }
+                break;
+
+            case INS_movsx:
+            case INS_movsxd:
+                if (AreUpperBitsSignExtended(src, size))
+                {
+                    JITDUMP("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
+                    return true;
+                }
+                break;
+
+            case INS_mov:
+                if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
+                {
+                    JITDUMP("\n -- suppressing mov because upper bits are zero.\n");
+                    return true;
+                }
+                break;
+
+            default:
+                break;
+        }
+#endif // TARGET_64BIT
     }
 
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in

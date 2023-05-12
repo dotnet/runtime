@@ -1,7 +1,7 @@
 # Cross-Building for Different Architectures and Operating Systems
 
 * [Windows Cross-Building](#windows-cross-building)
-  * [Cross-Compiling for ARM32 and ARM64 on Windows](#cross-compiling-for-arm32-and-arm64-on-windows)
+  * [Cross-Compiling for ARM64 on Windows](#cross-compiling-for-arm64-on-windows)
   * [Cross-Compiling for x86 on Windows](#cross-compiling-for-x86-on-windows)
 * [macOS Cross-Building](#macos-cross-building)
 * [Linux Cross-Building](#linux-cross-building)
@@ -21,9 +21,9 @@ This guide will go more in-depth on how to do cross-building across multiple ope
 
 This section will go over cross-compiling on Windows. Currently, Windows allows you to cross-compile from x64 to basically any other architecture.
 
-### Cross-Compiling for ARM32 and ARM64 on Windows
+### Cross-Compiling for ARM64 on Windows
 
-To do cross-compilation for ARM32/ARM64 on Windows, first make sure you have the appropriate tools and Windows SDK installed. This is described in detail in the [Windows requirements doc](/docs/workflow/requirements/windows-requirements.md#visual-studio).
+To do cross-compilation for ARM64 on Windows, first make sure you have the appropriate tools and Windows SDK installed. This is described in detail in the [Windows requirements doc](/docs/workflow/requirements/windows-requirements.md#visual-studio).
 
 Once you have all the required dependencies, it is a straightforward process. Windows knows how to cross-build behind curtains, so all you have to do is specify which architecture you want to build for:
 

@@ -11916,104 +11916,16 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         return;
     }
 
-    bool isLclFld = false;
     char buffer[256];
 
     switch (tree->gtOper)
     {
-
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_STORE_LCL_FLD:
-            isLclFld = true;
-            FALLTHROUGH;
-
         case GT_PHI_ARG:
         case GT_LCL_VAR:
-        case GT_STORE_LCL_VAR:
-        {
-            printf(" ");
-            const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
-            const LclVarDsc* varDsc = lvaGetDesc(varNum);
-            const bool       isDef  = (tree->gtFlags & GTF_VAR_DEF) != 0;
-
-            gtDispLclVar(varNum);
-            gtDispSsaName(varNum, tree->AsLclVarCommon()->GetSsaNum(), isDef);
-
-            if (isLclFld)
-            {
-                printf("[+%u]", tree->AsLclFld()->GetLclOffs());
-            }
-
-            if (varDsc->lvRegister)
-            {
-                printf(" ");
-                varDsc->PrintVarReg();
-            }
-            else if (tree->InReg())
-            {
-                printf(" %s", compRegVarName(tree->GetRegNum()));
-            }
-
-            if (varDsc->lvPromoted)
-            {
-                if (!varTypeIsPromotable(varDsc) && !varDsc->lvUnusedStruct)
-                {
-                    // Promoted implicit byrefs can get in this state while they are being rewritten
-                    // in global morph.
-                }
-                else
-                {
-                    for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
-                    {
-                        unsigned    fieldLclNum = varDsc->lvFieldLclStart + index;
-                        LclVarDsc*  fieldVarDsc = lvaGetDesc(fieldLclNum);
-                        const char* fieldName;
-#if !defined(TARGET_64BIT)
-                        if (varTypeIsLong(varDsc))
-                        {
-                            fieldName = (index == 0) ? "lo" : "hi";
-                        }
-                        else
-#endif // !defined(TARGET_64BIT)
-                        {
-                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
-                            CORINFO_FIELD_HANDLE fldHnd =
-                                info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
-                            fieldName = eeGetFieldName(fldHnd, true, buffer, sizeof(buffer));
-                        }
-
-                        printf("\n");
-                        printf("                                                            ");
-                        printIndent(indentStack);
-                        printf("    %-6s V%02u.%s (offs=0x%02x) -> ", varTypeName(fieldVarDsc->TypeGet()),
-                               tree->AsLclVarCommon()->GetLclNum(), fieldName, fieldVarDsc->lvFldOffset);
-                        gtDispLclVar(fieldLclNum);
-                        gtDispSsaName(fieldLclNum, tree->AsLclVarCommon()->GetSsaNum(this, index), isDef);
-
-                        if (fieldVarDsc->lvRegister)
-                        {
-                            printf(" ");
-                            fieldVarDsc->PrintVarReg();
-                        }
-
-                        if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone &&
-                            tree->AsLclVarCommon()->IsLastUse(index))
-                        {
-                            printf(" (last use)");
-                        }
-                    }
-                }
-            }
-            else // a normal not-promoted lclvar
-            {
-                if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
-                {
-                    printf(" (last use)");
-                }
-            }
-        }
-        break;
+        case GT_LCL_FLD:
+        case GT_LCL_ADDR:
+            gtDispLocal(tree->AsLclVarCommon(), indentStack);
+            break;
 
         case GT_JMP:
         {
@@ -12093,7 +12005,101 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 }
 
 //------------------------------------------------------------------------
-// gtDispLeaf: Print a child node to jitstdout.
+// gtDispLocal: Print description of a local node to jitstdout.
+//
+// Prints the information common to all local nodes. Does not print children.
+//
+// Arguments:
+//    tree        - the local tree
+//    indentStack - the specification for the current level of indentation & arcs
+//
+void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
+{
+    printf(" ");
+    const unsigned   varNum   = tree->GetLclNum();
+    const LclVarDsc* varDsc   = lvaGetDesc(varNum);
+    const bool       isDef    = (tree->gtFlags & GTF_VAR_DEF) != 0;
+    const bool       isLclFld = tree->OperIsLocalField();
+
+    gtDispLclVar(varNum);
+    gtDispSsaName(varNum, tree->GetSsaNum(), isDef);
+
+    if (isLclFld)
+    {
+        printf("[+%u]", tree->AsLclFld()->GetLclOffs());
+    }
+
+    if (varDsc->lvRegister)
+    {
+        printf(" ");
+        varDsc->PrintVarReg();
+    }
+    else if (tree->InReg())
+    {
+        printf(" %s", compRegVarName(tree->GetRegNum()));
+    }
+
+    if (varDsc->lvPromoted)
+    {
+        if (!varTypeIsPromotable(varDsc) && !varDsc->lvUnusedStruct)
+        {
+            // Promoted implicit byrefs can get in this state while they are being rewritten
+            // in global morph.
+        }
+        else
+        {
+            char buffer[256];
+
+            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            {
+                unsigned    fieldLclNum = varDsc->lvFieldLclStart + index;
+                LclVarDsc*  fieldVarDsc = lvaGetDesc(fieldLclNum);
+                const char* fieldName;
+#if !defined(TARGET_64BIT)
+                if (varTypeIsLong(varDsc))
+                {
+                    fieldName = (index == 0) ? "lo" : "hi";
+                }
+                else
+#endif // !defined(TARGET_64BIT)
+                {
+                    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
+                    CORINFO_FIELD_HANDLE fldHnd = info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
+                    fieldName                   = eeGetFieldName(fldHnd, true, buffer, sizeof(buffer));
+                }
+
+                printf("\n");
+                printf("                                                            ");
+                printIndent(indentStack);
+                printf("    %-6s V%02u.%s (offs=0x%02x) -> ", varTypeName(fieldVarDsc->TypeGet()), tree->GetLclNum(),
+                       fieldName, fieldVarDsc->lvFldOffset);
+                gtDispLclVar(fieldLclNum);
+                gtDispSsaName(fieldLclNum, tree->GetSsaNum(this, index), isDef);
+
+                if (fieldVarDsc->lvRegister)
+                {
+                    printf(" ");
+                    fieldVarDsc->PrintVarReg();
+                }
+
+                if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsLastUse(index))
+                {
+                    printf(" (last use)");
+                }
+            }
+        }
+    }
+    else // a normal not-promoted lclvar
+    {
+        if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+        {
+            printf(" (last use)");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// gtDispChild: Print a child node to jitstdout.
 //
 // Arguments:
 //    tree - the tree to be printed
@@ -12152,21 +12158,6 @@ void Compiler::gtDispTree(GenTree*     tree,
     {
         gtDispNode(tree, indentStack, msg, isLIR);
         printf("Bogus operator!\n");
-        return;
-    }
-
-    /* Is tree a leaf node? */
-
-    if (tree->OperIsLeaf() || tree->OperIsLocalStore()) // local stores used to be leaves
-    {
-        gtDispNode(tree, indentStack, msg, isLIR);
-        gtDispLeaf(tree, indentStack);
-        gtDispCommonEndLine(tree);
-
-        if (tree->OperIsLocalStore() && !topOnly)
-        {
-            gtDispChild(tree->AsOp()->gtOp1, indentStack, IINone);
-        }
         return;
     }
 
@@ -12244,7 +12235,11 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" %s <- %s", varTypeName(toType), varTypeName(fromType));
         }
 
-        if (tree->OperIsBlkOp())
+        if (tree->OperIsLocalStore()) // Local stores used to be leaf nodes.
+        {
+            gtDispLocal(tree->AsLclVarCommon(), indentStack);
+        }
+        else if (tree->OperIsBlkOp())
         {
             if (tree->OperIsCopyBlkOp())
             {
@@ -12701,8 +12696,16 @@ void Compiler::gtDispTree(GenTree*     tree,
             break;
 
         default:
-            printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
-            printf(""); // null string means flush
+            if (tree->OperIsLeaf())
+            {
+                gtDispLeaf(tree, indentStack);
+                gtDispCommonEndLine(tree);
+            }
+            else
+            {
+                printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
+                printf(""); // null string means flush
+            }
             break;
     }
 }

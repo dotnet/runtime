@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class VersionConverter : JsonPrimitiveConverter<Version>
+    internal sealed class VersionConverter : JsonPrimitiveConverter<Version?>
     {
 #if NETCOREAPP
         private const int MinimumVersionLength = 3; // 0.0
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Converters
             return null;
         }
 
-        public override void Write(Utf8JsonWriter writer, Version value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, Version? value, JsonSerializerOptions options)
         {
             if (value is null)
             {
@@ -101,6 +101,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, Version value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
 #if NETCOREAPP
             Span<char> span = stackalloc char[MaximumVersionLength];
             bool formattedSuccessfully = value.TryFormat(span, out int charsWritten);
