@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
+#endif
 using Xunit;
 
 namespace Microsoft.Extensions

@@ -1,4 +1,7 @@
-import { BootJsonData } from "./BootConfig";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import type { BootJsonData } from "../../types/blazor";
 
 let testAnchor: HTMLAnchorElement;
 export function toAbsoluteUri(relativeUri: string): string {

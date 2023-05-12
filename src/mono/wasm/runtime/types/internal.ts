@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, RuntimeAPI, WebAssemblyStartOptions } from "./types-api";
-import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./types/emscripten";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI, WebAssemblyStartOptions } from ".";
+import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -92,18 +92,50 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
 }
 
-export type AssetBehaviours =
-    "resource" // load asset as a managed resource assembly
-    | "assembly" // load asset as a managed assembly
-    | "pdb" // load asset as a managed debugging information
-    | "heap" // store asset into the native heap
-    | "icu" // load asset as an ICU data archive
-    | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
-    | "dotnetwasm" // the binary of the dotnet runtime
-    | "js-module-threads" // the javascript module for threads
-    | "symbols" // the symbols for the wasm native code
+export type LoaderHelpers = {
+    config: MonoConfigInternal;
+    diagnosticTracing: boolean;
 
+    maxParallelDownloads: number;
+    enableDownloadRetry: boolean;
+
+    loadedFiles: string[],
+    _loaded_files: { url: string, file: string }[];
+    scriptDirectory: string
+    scriptUrl: string
+    assetUniqueQuery?: string
+    preferredIcuAsset: string | null,
+    invariantMode: boolean,
+
+    actual_downloaded_assets_count: number,
+    actual_instantiated_assets_count: number,
+    expected_downloaded_assets_count: number,
+    expected_instantiated_assets_count: number,
+
+    afterConfigLoaded: PromiseAndController<MonoConfig>,
+    allDownloadsQueued: PromiseAndController<void>,
+    wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
+    runtimeModuleLoaded: PromiseAndController<void>,
+
+    abort_startup: (reason: any, should_exit: boolean) => void,
+    mono_exit: (exit_code: number, reason?: any) => void,
+    createPromiseController: <T>(afterResolve?: () => void, afterReject?: () => void) => PromiseAndController<T>,
+    getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
+    assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
+    mono_download_assets: () => Promise<void>,
+    resolve_asset_path: (behavior: AssetBehaviours) => AssetEntryInternal,
+    setup_proxy_console: (id: string, console: Console, origin: string) => void
+    fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
+    locateFile: (path: string, prefix?: string) => string,
+    downloadResource?: (request: ResourceRequest) => LoadingResource | undefined
+    out(message: string): void;
+    err(message: string): void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
+}
 export type RuntimeHelpers = {
+    config: MonoConfigInternal;
+    diagnosticTracing: boolean;
+
     runtime_interop_module: MonoAssembly;
     runtime_interop_namespace: string;
     runtime_interop_exports_classname: string;
@@ -113,29 +145,36 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    loaded_files: string[];
-    maxParallelDownloads: number;
-    enableDownloadRetry: boolean;
-    config: MonoConfigInternal;
-    diagnosticTracing: boolean;
+    loadedMemorySnapshot: boolean,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
-    fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
-    scriptDirectory: string
-    requirePromise: Promise<Function>
     ExitStatus: ExitStatusError;
     quit: Function,
-    locateFile: (path: string, prefix?: string) => string,
     javaScriptExports: JavaScriptExports,
-    loadedFiles: string[],
-    loadedMemorySnapshot: boolean,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
-    preferredIcuAsset: string | null,
-    invariantMode: boolean,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+
+    runtimeModuleUrl: string
+    nativeModuleUrl: string
+    allAssetsInMemory: PromiseAndController<void>,
+    dotnetReady: PromiseAndController<any>,
+    memorySnapshotSkippedOrDone: PromiseAndController<void>,
+    afterInstantiateWasm: PromiseAndController<void>,
+    beforePreInit: PromiseAndController<void>,
+    afterPreInit: PromiseAndController<void>,
+    afterPreRun: PromiseAndController<void>,
+    beforeOnRuntimeInitialized: PromiseAndController<void>,
+    afterOnRuntimeInitialized: PromiseAndController<void>,
+    afterPostRun: PromiseAndController<void>,
+
+    //core
+    stringify_as_error_with_stack?: (error: any) => string,
+    instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
+    instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
+    jiterpreter_dump_stats?: (x: boolean) => string,
 }
 
 export type AOTProfilerOptions = {
@@ -149,38 +188,6 @@ export type BrowserProfilerOptions = {
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
-
-
-export type DotnetModuleConfigImports = {
-    require?: (name: string) => any;
-    fetch?: (url: string, options: any | undefined) => Promise<Response>;
-    fs?: {
-        promises?: {
-            readFile?: (path: string) => Promise<string | Buffer>,
-        }
-        readFileSync?: (path: string, options: any | undefined) => string,
-    };
-    crypto?: {
-        randomBytes?: (size: number) => Buffer
-    };
-    ws?: WebSocket & { Server: any };
-    path?: {
-        normalize?: (path: string) => string,
-        dirname?: (path: string) => string,
-    };
-    url?: any;
-}
-
-// see src\mono\wasm\runtime\rollup.config.js
-// inline this, because the lambda could allocate closure on hot path otherwise
-export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
-    if (!condition) {
-        const message = typeof messageFactory === "string"
-            ? messageFactory
-            : messageFactory();
-        throw new Error(`Assert failed: ${message}`);
-    }
-}
 
 // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
 export const enum MarshalType {
@@ -233,30 +240,26 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
 }
 
 export type EmscriptenInternals = {
-    isWorker: boolean,
-    isShell: boolean,
     isPThread: boolean,
     disableLegacyJsInterop: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
-    requirePromise: Promise<Function>
 };
 export type GlobalObjects = {
     mono: any,
     binding: any,
     internal: any,
     module: DotnetModuleInternal,
-    helpers: RuntimeHelpers,
+    loaderHelpers: LoaderHelpers,
+    runtimeHelpers: RuntimeHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
     fetch: any,
     require: any,
-    requirePromise: Promise<Function>,
     updateMemoryViews: Function,
     pthreadReplacements: PThreadReplacements | undefined | null
     scriptDirectory: string;
-    scriptUrl: string
     noExitRuntime?: boolean;
 }
 export interface ExitStatusError {
@@ -401,6 +404,7 @@ export declare interface EmscriptenModuleInternal {
     __locateFile?: (path: string, prefix?: string) => string;
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;
+    ENVIRONMENT_IS_PTHREAD?: boolean;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
     asm: { memory?: WebAssembly.Memory };
@@ -409,4 +413,46 @@ export declare interface EmscriptenModuleInternal {
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+}
+
+/// A PromiseController encapsulates a Promise together with easy access to its resolve and reject functions.
+/// It's a bit like a TaskCompletionSource in .NET
+export interface PromiseController<T = any> {
+    isDone: boolean;
+    readonly promise: Promise<T>;
+    resolve: (value: T | PromiseLike<T>) => void;
+    reject: (reason?: any) => void;
+}
+
+
+/// A Promise<T> with a controller attached
+export interface ControllablePromise<T = any> extends Promise<T> {
+    __brand: "ControllablePromise"
+}
+
+/// Just a pair of a promise and its controller
+export interface PromiseAndController<T> {
+    promise: ControllablePromise<T>;
+    promise_control: PromiseController<T>;
+}
+
+export type passEmscriptenInternalsType = (internals: EmscriptenInternals) => void;
+export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
+export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
+export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
+export type configureEmscriptenStartupType = (module: DotnetModuleInternal) => void;
+export type configureWorkerStartupType = (module: DotnetModuleInternal) => Promise<void>
+
+
+export type RuntimeModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
+    initializeExports: initializeExportsType,
+    initializeReplacements: initializeReplacementsType,
+    configureEmscriptenStartup: configureEmscriptenStartupType,
+    configureWorkerStartup: configureWorkerStartupType,
+    passEmscriptenInternals: passEmscriptenInternalsType,
+}
+
+export type NativeModuleExportsInternal = {
+    default: (unificator: Function) => EmscriptenModuleInternal
 }

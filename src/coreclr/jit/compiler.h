@@ -3082,6 +3082,7 @@ public:
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
+    void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
@@ -9917,6 +9918,14 @@ public:
 #endif
 
     } info;
+
+#if defined(DEBUG)
+    // Are we running a replay under SuperPMI?
+    bool RunningSuperPmiReplay() const
+    {
+        return info.compMethodSuperPMIIndex != -1;
+    }
+#endif // DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
