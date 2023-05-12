@@ -1836,18 +1836,8 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
-uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
 
-    return 0;
-}
-
-uint32_t CEEInfo::getGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;

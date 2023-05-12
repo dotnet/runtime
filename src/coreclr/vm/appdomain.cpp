@@ -666,7 +666,7 @@ void BaseDomain::InitVSD()
 }
 
 #ifdef HOST_WINDOWS
-void BaseDomain::InitNonGCThreadStaticBlockTypeMap()
+void BaseDomain::InitThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
 
@@ -1773,7 +1773,7 @@ void AppDomain::Create()
 
 #ifdef HOST_WINDOWS
     // allocate a thread static block to index map
-    pDomain->InitNonGCThreadStaticBlockTypeMap();
+    pDomain->InitThreadStaticBlockTypeMap();
 #endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);

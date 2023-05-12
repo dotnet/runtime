@@ -1233,7 +1233,7 @@ private:
 public:
 
 #ifdef HOST_WINDOWS
-    void InitNonGCThreadStaticBlockTypeMap();
+    void InitThreadStaticBlockTypeMap();
 
     UINT32 GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT);
     UINT32 GetGCThreadStaticTypeIndex(PTR_MethodTable pMT);
