@@ -7,13 +7,14 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslyn.Utilities;
 
 namespace Microsoft.Interop
 {
     public sealed partial class ComInterfaceGenerator
     {
         /// <summary>
-        /// Information about a Com interface, but not it's methods.
+        /// Information about a Com interface, but not its methods.
         /// </summary>
         private sealed record ComInterfaceInfo(
             ManagedTypeInfo Type,
@@ -112,19 +113,12 @@ namespace Microsoft.Interop
                         interfaceTypeAttr = attr;
                 }
 
-                if (guidAttr is not null)
+                if (guidAttr is not null
+                    && guidAttr.ConstructorArguments.Length == 1
+                    && guidAttr.ConstructorArguments[0].Value is string guidStr
+                    && Guid.TryParse(guidStr, out var result))
                 {
-                    string? guidstr = guidAttr.ConstructorArguments.SingleOrDefault().Value as string;
-                    if (guidstr is not null)
-                    {
-                        try
-                        {
-                            guid = new Guid(guidstr);
-                        }
-                        // Catch any issues with the Guid string -- Diagnostic will be raised if guid is null
-                        catch (FormatException) { }
-                        catch (OverflowException) { }
-                    }
+                    guid = result;
                 }
 
                 // Assume interfaceType is IUnknown for now

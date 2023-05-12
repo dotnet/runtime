@@ -15,4 +15,21 @@ namespace ComInterfaceGenerator.Tests
         int GetData();
         void SetData(int n);
     }
+
+    [GeneratedComInterface]
+    partial interface I
+    {
+        void Method();
+        void Method2();
+    }
+    [GeneratedComInterface]
+    partial interface Empty
+    {
+    }
+    [GeneratedComInterface]
+    partial interface J
+    {
+        void Method();
+        void Method2();
+    }
 }

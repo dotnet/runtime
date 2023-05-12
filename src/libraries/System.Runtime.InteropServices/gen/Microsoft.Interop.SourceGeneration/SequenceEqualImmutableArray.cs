@@ -26,7 +26,7 @@ namespace Microsoft.Interop
 
         public int Length => Array.Length;
 
-        public override int GetHashCode() => throw new NotSupportedException();
+        public override int GetHashCode() => HashCode.SequentialValuesHash(Array);
 
         public bool Equals(SequenceEqualImmutableArray<T> other)
         {

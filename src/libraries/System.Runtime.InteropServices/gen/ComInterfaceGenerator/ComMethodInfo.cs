@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -19,23 +20,24 @@ namespace Microsoft.Interop
         /// Represents a method that has been determined to be a COM interface method. Only contains info immediately available from an IMethodSymbol and MethodDeclarationSyntax.
         /// </summary>
         private sealed record ComMethodInfo(
-            // Symbols cannot be compared across incremental runs or they'll keep alive the compilation. We should remove a reference to the symbol
-            [property: Obsolete] IMethodSymbol Symbol,
             MethodDeclarationSyntax Syntax,
             string MethodName,
             SequenceEqualImmutableArray<ParameterInfo> Parameters)
         {
-            public static SequenceEqualImmutableArray<(ComMethodInfo? ComMethod, Diagnostic? Diagnostic)> GetMethodsFromInterface((ComInterfaceInfo ifaceContext, INamedTypeSymbol ifaceSymbol) data, CancellationToken _)
+            /// <summary>
+            /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
+            /// </summary>
+            public static SequenceEqualImmutableArray<(ComMethodInfo? ComMethod, IMethodSymbol Symbol, Diagnostic? Diagnostic)> GetMethodsFromInterface((ComInterfaceInfo ifaceContext, INamedTypeSymbol ifaceSymbol) data, CancellationToken ct)
             {
-                List<(ComMethodInfo, Diagnostic?)> methods = new();
+                var methods = ImmutableArray.CreateBuilder<(ComMethodInfo, IMethodSymbol, Diagnostic?)>();
                 foreach (var member in data.ifaceSymbol.GetMembers())
                 {
                     if (IsComMethodCandidate(member))
                     {
-                        methods.Add(From(data.ifaceContext, (IMethodSymbol)member));
+                        methods.Add(CalculateMethodInfo(data.ifaceContext, (IMethodSymbol)member, ct));
                     }
                 }
-                return methods.ToSequenceEqualImmutableArray();
+                return methods.ToImmutable().ToSequenceEqual();
             }
 
             private static Diagnostic? GetDiagnosticIfInvalidMethodForGeneration(MethodDeclarationSyntax comMethodDeclaringSyntax, IMethodSymbol method)
@@ -63,9 +65,10 @@ namespace Microsoft.Interop
                 return member.Kind == SymbolKind.Method && !member.IsStatic;
             }
 
-            private static (ComMethodInfo?, Diagnostic?) From(ComInterfaceInfo ifaceContext, IMethodSymbol member)
+            private static (ComMethodInfo?, IMethodSymbol, Diagnostic?) CalculateMethodInfo(ComInterfaceInfo ifaceContext, IMethodSymbol method, CancellationToken ct)
             {
-                Debug.Assert(IsComMethodCandidate(member));
+                ct.ThrowIfCancellationRequested();
+                Debug.Assert(IsComMethodCandidate(method));
 
                 // We only support methods that are defined in the same partial interface definition as the
                 // [GeneratedComInterface] attribute.
@@ -73,7 +76,7 @@ namespace Microsoft.Interop
                 // but it also enables us to ensure that we can determine vtable method order easily.
                 Location interfaceLocation = ifaceContext.Declaration.GetLocation();
                 Location? methodLocationInAttributedInterfaceDeclaration = null;
-                foreach (var methodLocation in member.Locations)
+                foreach (var methodLocation in method.Locations)
                 {
                     if (methodLocation.SourceTree == interfaceLocation.SourceTree
                         && interfaceLocation.SourceSpan.Contains(methodLocation.SourceSpan))
@@ -85,15 +88,15 @@ namespace Microsoft.Interop
                 // TODO: this should cause a diagnostic
                 if (methodLocationInAttributedInterfaceDeclaration is null)
                 {
-                    throw new NotImplementedException($"Could not find location for method {member.ToDisplayString()} within the attributed declaration");
+                    throw new NotImplementedException($"Could not find location for method {method.ToDisplayString()} within the attributed declaration");
                 }
 
 
                 // Find the matching declaration syntax
                 MethodDeclarationSyntax? comMethodDeclaringSyntax = null;
-                foreach (var declaringSyntaxReference in member.DeclaringSyntaxReferences)
+                foreach (var declaringSyntaxReference in method.DeclaringSyntaxReferences)
                 {
-                    var declaringSyntax = declaringSyntaxReference.GetSyntax();
+                    var declaringSyntax = declaringSyntaxReference.GetSyntax(ct);
                     Debug.Assert(declaringSyntax.IsKind(SyntaxKind.MethodDeclaration));
                     if (declaringSyntax.GetLocation().SourceSpan.Contains(methodLocationInAttributedInterfaceDeclaration.SourceSpan))
                     {
@@ -106,21 +109,20 @@ namespace Microsoft.Interop
                     throw new NotImplementedException("Found a method that was declared in the attributed interface declaration, but couldn't find the syntax for it.");
                 }
 
-                var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, member);
+                var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, method);
                 if (diag is not null)
                 {
-                    return (null, diag);
+                    return (null, method, diag);
                 }
 
                 List<ParameterInfo> parameters = new();
-                foreach (var parameter in member.Parameters)
+                foreach (var parameter in method.Parameters)
                 {
                     parameters.Add(ParameterInfo.From(parameter));
                 }
 
-
-                var comMethodInfo = new ComMethodInfo(member, comMethodDeclaringSyntax, member.Name, parameters.ToSequenceEqualImmutableArray());
-                return (comMethodInfo, null);
+                var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, parameters.ToSequenceEqualImmutableArray());
+                return (comMethodInfo, method, null);
             }
         }
     }

@@ -5,7 +5,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
+using System.Linq;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslyn.Utilities;
 
 namespace Microsoft.Interop
 {
@@ -30,7 +32,13 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Map.Values);
+            int hash = 17;
+            foreach(var value in Map)
+            {
+                hash = Hash.Combine(hash, value.Key.GetHashCode());
+                hash = Hash.Combine(hash, value.Value.GetHashCode());
+            }
+            return hash;
         }
 
         public U this[T key] { get => ((IDictionary<T, U>)Map)[key]; set => ((IDictionary<T, U>)Map)[key] = value; }
