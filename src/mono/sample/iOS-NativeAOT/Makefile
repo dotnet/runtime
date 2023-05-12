@@ -6,7 +6,7 @@ BUILD_CONFIG?=Debug
 TARGET_ARCH?=$(shell . $(TOP)eng/native/init-os-and-arch.sh && echo $${arch})
 TARGET_OS?=iossimulator
 DEPLOY_AND_RUN?=false
-STRIP_DEBUG_SYMBOLS?=false
+STRIP_DEBUG_SYMBOLS?=true
 
 REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
