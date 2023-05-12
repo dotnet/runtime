@@ -196,6 +196,13 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(ClrHost.object_get_class(Activator.CreateInstance(type)!), Is.EqualTo(type));
     }
 
+    [TestCase(typeof(Animal))]
+    [TestCase(typeof(ValueAnimal))]
+    public void ClassFromSystemTypeInstance(Type type)
+    {
+        Assert.That(ClrHost.class_from_systemtypeinstance(Activator.CreateInstance(type)!.GetType()), Is.EqualTo(type));
+    }
+
     [TestCase(typeof(int), 0)]
     [TestCase(typeof(int), 3)]
     [TestCase(typeof(string), 10)]

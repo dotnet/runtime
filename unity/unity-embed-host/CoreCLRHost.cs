@@ -111,6 +111,14 @@ static unsafe partial class CoreCLRHost
     public static IntPtr object_get_class([NativeCallbackType("MonoObject*")] IntPtr obj)
         => obj.ToManagedRepresentation().TypeHandleIntPtr();
 
+    [NativeFunction("coreclr_class_from_systemtypeinstance")]
+    [return: NativeCallbackType("MonoClass*")]
+    public static IntPtr class_from_systemtypeinstance(
+        [ManagedWrapperOptions(ManagedWrapperOptions.Custom, nameof(Type))]
+        [NativeCallbackType("MonoObject*")]
+        IntPtr systemTypeInstance)
+        => ((Type)systemTypeInstance.ToManagedRepresentation()).TypeHandle.Value;
+
     [return: NativeCallbackType("MonoArray*")]
     public static IntPtr array_new(
         [ManagedWrapperOptions(ManagedWrapperOptions.Exclude)]
