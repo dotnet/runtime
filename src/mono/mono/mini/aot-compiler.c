@@ -3790,8 +3790,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 	MonoJumpInfoToken *ji;
 	guint8 *p = buf;
 
-	printf("NAME = %s\n", method->name);
-
 	/*
 	 * The encoding for most methods is as follows:
 	 * - image index encoded as a leb128
@@ -5012,7 +5010,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			g_assert (is_ok (error)); /* FIXME don't swallow the error */
 
 			sig = mono_method_signature_internal (method);
-			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0]))) {
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0]))
 				m = mono_marshal_get_delegate_invoke_internal (inst, TRUE, FALSE, NULL);
 
 				gshared = mini_get_shared_method_full (m, SHARE_MODE_NONE, error);
@@ -5029,7 +5027,7 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, m);
 
 			sig = mono_method_signature_internal (method);
-			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0]))) {
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0])) && !m_type_is_byref (sig->params [0]))
 				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
 				add_method (acfg, m);
 			}
