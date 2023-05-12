@@ -139,6 +139,10 @@ type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string;
+    /**
+     * query string to be used for asset loading
+     */
+    assetUniqueQuery?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -179,7 +183,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
@@ -252,6 +256,35 @@ type ModuleAPI = {
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
 
+interface IDisposable {
+    dispose(): void;
+    get isDisposed(): boolean;
+}
+interface IMemoryView extends IDisposable {
+    /**
+     * copies elements from provided source to the wasm memory.
+     * target has to have the elements of the same type as the underlying C# array.
+     * same as TypedArray.set()
+     */
+    set(source: TypedArray, targetOffset?: number): void;
+    /**
+     * copies elements from wasm memory to provided target.
+     * target has to have the elements of the same type as the underlying C# array.
+     */
+    copyTo(target: TypedArray, sourceOffset?: number): void;
+    /**
+     * same as TypedArray.slice()
+     */
+    slice(start?: number, end?: number): TypedArray;
+    get length(): number;
+    get byteLength(): number;
+}
+
+declare function mono_exit(exit_code: number, reason?: any): void;
+
+declare const dotnet: DotnetHostBuilder;
+declare const exit: typeof mono_exit;
+
 interface BootJsonData {
     readonly entryAssembly: string;
     readonly resources: ResourceGroups;
@@ -296,35 +329,6 @@ declare enum ICUDataMode {
     Invariant = 2,
     Custom = 3
 }
-
-interface IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-}
-interface IMemoryView extends IDisposable {
-    /**
-     * copies elements from provided source to the wasm memory.
-     * target has to have the elements of the same type as the underlying C# array.
-     * same as TypedArray.set()
-     */
-    set(source: TypedArray, targetOffset?: number): void;
-    /**
-     * copies elements from wasm memory to provided target.
-     * target has to have the elements of the same type as the underlying C# array.
-     */
-    copyTo(target: TypedArray, sourceOffset?: number): void;
-    /**
-     * same as TypedArray.slice()
-     */
-    slice(start?: number, end?: number): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-
-declare function mono_exit(exit_code: number, reason?: any): void;
-
-declare const dotnet: DotnetHostBuilder;
-declare const exit: typeof mono_exit;
 
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;

@@ -5,7 +5,7 @@ parameters:
 resources:
   containers:
     - container: linux_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
@@ -15,22 +15,22 @@ resources:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
       env:
         ROOTFS_DIR: /crossrootfs/arm64
 
     - container: linux_musl_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-alpine-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-alpine
       env:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: linux_musl_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
     - container: linux_musl_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine
       env:
         ROOTFS_DIR: /crossrootfs/arm64
     # This container contains all required toolsets to build for Android and for Linux with bionic libc.
@@ -39,19 +39,25 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android
 
     - container: linux_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64
       env:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: linux_x86
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-x86-20230414190614-8100bf7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-x86
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
-    # CentOS 8 Stream is the closest image to RHEL8, which has the oldest toolsets we support building against
-    # for our source-build partners.
-    - container: SourceBuild_linux_x64
+    - container: linux_x64_dev_innerloop
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
+
+    # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 8.
+    - container: SourceBuild_centos_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
+
+    # AlmaLinux 8 is a RHEL 8 rebuild, so we use it to test building from source on RHEL 8.
+    - container: SourceBuild_linux_x64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
 
     - container: linux_s390x
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x

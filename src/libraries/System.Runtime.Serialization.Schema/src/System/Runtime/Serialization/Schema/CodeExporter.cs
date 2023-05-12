@@ -1510,7 +1510,7 @@ namespace System.Runtime.Serialization
 
         private static string GetClrNamespace(string? dataContractNamespace)
         {
-            if (dataContractNamespace == null || dataContractNamespace.Length == 0)
+            if (string.IsNullOrEmpty(dataContractNamespace))
                 return string.Empty;
 
             StringBuilder builder = new StringBuilder();

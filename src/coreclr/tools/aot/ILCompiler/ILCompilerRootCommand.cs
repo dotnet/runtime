@@ -68,8 +68,6 @@ namespace ILCompiler
             new(new[] { "--mstat" }, "Generate an mstat file");
         public Option<string> MetadataLogFileName { get; } =
             new(new[] { "--metadatalog" }, "Generate a metadata log file");
-        public Option<bool> NoMetadataBlocking { get; } =
-            new(new[] { "--nometadatablocking" }, "Ignore metadata blocking for internal implementation details");
         public Option<bool> CompleteTypesMetadata { get; } =
             new(new[] { "--completetypemetadata" }, "Generate complete metadata for types");
         public Option<string> ReflectionData { get; } =
@@ -195,7 +193,6 @@ namespace ILCompiler
             AddOption(MapFileName);
             AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
-            AddOption(NoMetadataBlocking);
             AddOption(CompleteTypesMetadata);
             AddOption(ReflectionData);
             AddOption(ScanReflection);

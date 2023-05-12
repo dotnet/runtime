@@ -163,7 +163,7 @@ namespace System.Net
         internal void FinishInitialization()
         {
             string host = UserHostName;
-            if (_version > HttpVersion.Version10 && (host == null || host.Length == 0))
+            if (_version > HttpVersion.Version10 && string.IsNullOrEmpty(host))
             {
                 _context.ErrorMessage = "Invalid host name";
                 return;
@@ -177,7 +177,7 @@ namespace System.Net
             else
                 path = _rawUrl;
 
-            if ((host == null || host.Length == 0))
+            if (string.IsNullOrEmpty(host))
                 host = UserHostAddress;
 
             if (raw_uri != null)

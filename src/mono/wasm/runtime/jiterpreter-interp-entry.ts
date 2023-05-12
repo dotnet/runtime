@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod, MonoType } from "./types";
+import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module } from "./globals";
 import {
-    getU32_unaligned, _zero_region
+    setI32, getU32_unaligned, _zero_region
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import cwraps from "./cwraps";
@@ -36,6 +36,7 @@ typedef struct {
     ThreadContext *context; // 4
     gpointer orig_domain; // 8
     gpointer attach_cookie; // 12
+    int params_count; // 16
 } JiterpEntryDataHeader;
 */
 
@@ -231,7 +232,6 @@ function flush_wasm_entry_trampoline_jit_queue() {
             "interp_entry",
             {
                 "pData": WasmValtype.i32,
-                "sp_args": WasmValtype.i32,
                 "res": WasmValtype.i32,
             },
             WasmValtype.void, true
@@ -243,7 +243,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
                 "result": WasmValtype.i32,
                 "value": WasmValtype.i32
             },
-            WasmValtype.i32, true
+            WasmValtype.void, true
         );
     } else
         builder.clear(constantSlots);
@@ -289,8 +289,12 @@ function flush_wasm_entry_trampoline_jit_queue() {
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, trampImports[i][2]);
         }
+
+        // Assign import indices so they get emitted in the import section
+        for (let i = 0; i < trampImports.length; i++)
+            builder.markImportAsUsed(trampImports[i][0]);
 
         builder._generateImportSection();
 
@@ -343,12 +347,9 @@ function flush_wasm_entry_trampoline_jit_queue() {
             console.log(`jit queue generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory },
-        });
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         // Now that we've jitted the trampolines, go through and fix up the function pointers
         //  to point to the new jitted trampolines instead of the default implementations
@@ -414,10 +415,10 @@ function flush_wasm_entry_trampoline_jit_queue() {
 }
 
 function append_stackval_from_data(
-    builder: WasmBuilder, type: MonoType, valueName: string
+    builder: WasmBuilder, imethod: number, type: MonoType, valueName: string, argIndex: number
 ) {
-    const stackvalSize = cwraps.mono_jiterp_get_size_of_stackval();
     const rawSize = cwraps.mono_jiterp_type_get_raw_value_size(type);
+    const offset = cwraps.mono_jiterp_get_arg_offset(imethod, 0, argIndex);
 
     switch (rawSize) {
         case 256: {
@@ -426,10 +427,7 @@ function append_stackval_from_data(
             builder.local(valueName);
 
             builder.appendU8(WasmOpcode.i32_store);
-            builder.appendMemarg(0, 2);
-
-            // Fixed stackval size
-            builder.i32_const(stackvalSize);
+            builder.appendMemarg(offset, 2);
             break;
         }
 
@@ -468,18 +466,18 @@ function append_stackval_from_data(
             }
 
             builder.appendU8(WasmOpcode.i32_store);
-            builder.appendMemarg(0, 2);
-
-            // Fixed stackval size
-            builder.i32_const(stackvalSize);
+            builder.appendMemarg(offset, 2);
             break;
         }
 
         default: {
-            // Call stackval_from_data to copy the value and get its size
+            // Call stackval_from_data to copy the value
             builder.ptr_const(type);
             // result
             builder.local("sp_args");
+            // apply offset
+            builder.i32_const(offset);
+            builder.appendU8(WasmOpcode.i32_add);
             // value
             builder.local(valueName);
 
@@ -487,11 +485,6 @@ function append_stackval_from_data(
             break;
         }
     }
-
-    // Value size is on the stack, add it to sp_args and update it
-    builder.local("sp_args");
-    builder.appendU8(WasmOpcode.i32_add);
-    builder.local("sp_args", WasmOpcode.set_local);
 }
 
 function generate_wasm_body(
@@ -507,6 +500,13 @@ function generate_wasm_body(
     //  will always have put the buffers in a constant slot. This will be necessary for thread safety
     const scratchBuffer = <any>Module._malloc(sizeOfJiterpEntryData);
     _zero_region(scratchBuffer, sizeOfJiterpEntryData);
+
+    // Initialize the parameter count in the data blob. This is used to calculate the new value of sp
+    //  before entering the interpreter
+    setI32(
+        scratchBuffer + getMemberOffset(JiterpMember.ParamsCount),
+        info.paramTypes.length + (info.hasThisReference ? 1 : 0)
+    );
 
     // the this-reference may be a boxed struct that needs to be unboxed, for example calling
     //  methods like object.ToString on structs will end up with the unbox flag set
@@ -562,7 +562,7 @@ function generate_wasm_body(
 
     if (info.hasThisReference) {
         // null type for raw ptr copy
-        append_stackval_from_data(builder, <any>0, "this_arg");
+        append_stackval_from_data(builder, info.imethod, <any>0, "this_arg", 0);
     }
 
     /*
@@ -579,11 +579,10 @@ function generate_wasm_body(
 
     for (let i = 0; i < info.paramTypes.length; i++) {
         const type = <any>info.paramTypes[i];
-        append_stackval_from_data(builder, type, `arg${i}`);
+        append_stackval_from_data(builder, info.imethod, type, `arg${i}`, i + (info.hasThisReference ? 1 : 0));
     }
 
     builder.local("scratchBuffer");
-    builder.local("sp_args");
     if (info.hasReturnValue)
         builder.local("res");
     else

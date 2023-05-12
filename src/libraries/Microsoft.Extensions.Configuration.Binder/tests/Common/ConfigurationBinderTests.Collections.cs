@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+#if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
+#endif
 using Xunit;
 
 namespace Microsoft.Extensions
@@ -79,7 +81,7 @@ namespace Microsoft.Extensions
             Assert.True(list[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure exception messages are in sync
         public void GetDictionaryInvalidValues()
         {
             var input = new Dictionary<string, string>
@@ -214,49 +216,49 @@ namespace Microsoft.Extensions
             Assert.Equal("val_3", options[KeyUintEnum.ghi]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetSByteDictionary()
         {
             GetIntDictionaryT<sbyte>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetByteDictionary()
         {
             GetIntDictionaryT<byte>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetShortDictionary()
         {
             GetIntDictionaryT<short>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetUShortDictionary()
         {
             GetIntDictionaryT<ushort>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetIntDictionary()
         {
             GetIntDictionaryT<int>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetUIntDictionary()
         {
             GetIntDictionaryT<uint>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetLongDictionary()
         {
             GetIntDictionaryT<long>(0, 1, 2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Reflection fallback: generic type info not supported with source gen.
         public void GetULongDictionary()
         {
             GetIntDictionaryT<ulong>(0, 1, 2);

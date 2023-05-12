@@ -124,44 +124,6 @@ namespace System
             }
         }
 
-        // Last resort string for Type.ToString() when no metadata around.
-        internal string LastResortToString
-        {
-            get
-            {
-                string s;
-                EETypePtr eeType = this.ToEETypePtr();
-                IntPtr rawEEType = eeType.RawValue;
-                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromEEType(rawEEType);
-                if (moduleBase != IntPtr.Zero)
-                {
-                    uint rva = (uint)(rawEEType.ToInt64() - moduleBase.ToInt64());
-                    s = "EETypeRva:0x" + rva.LowLevelToString();
-                }
-                else
-                {
-                    s = "EETypePointer:0x" + rawEEType.LowLevelToString();
-                }
-
-                ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.CallbacksIfAvailable;
-                if (callbacks != null)
-                {
-                    string penultimateLastResortString = callbacks.GetBetterDiagnosticInfoIfAvailable(this);
-                    if (penultimateLastResortString != null)
-                        s += "(" + penultimateLastResortString + ")";
-                }
-                return s;
-            }
-        }
-
-        internal IntPtr RawValue
-        {
-            get
-            {
-                return _value;
-            }
-        }
-
         private IntPtr _value;
     }
 }

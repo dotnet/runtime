@@ -2278,7 +2278,7 @@ private:
         using key_t = LPCWSTR;
         static const key_t GetKey(_In_ const element_t& e) { return e.Name; }
         static count_t Hash(_In_ key_t key) { return HashString(key); }
-        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return wcscmp(lhs, rhs) == 0; }
+        static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { return u16_strcmp(lhs, rhs) == 0; }
         static bool IsNull(_In_ const element_t& e) { return e.Handle == NULL; }
         static const element_t Null() { return UnmanagedImageCacheEntry(); }
     };

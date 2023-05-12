@@ -237,11 +237,13 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
@@ -250,7 +252,6 @@
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="pal_random.lib.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="runtime.es6.iffe.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
@@ -271,6 +272,7 @@
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
     <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
     <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />

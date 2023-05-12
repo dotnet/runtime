@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -117,6 +118,8 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
+                    OverrideWebAssemblySdkPack(req.TargetPath, LocalNuGetsPath);
+
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
 
@@ -131,6 +134,26 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 if (!string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
                     Directory.Delete(_tempDir, recursive: true);
+            }
+        }
+
+        private static void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
+        {
+            string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
+            string? nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").FirstOrDefault();
+            if (nupkg == null)
+                return;
+
+            string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
+
+            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
+            var document = XDocument.Load(bundledVersions);
+            if (document != null)
+            {
+                foreach (var element in document.Descendants("KnownWebAssemblySdkPack"))
+                    element.SetAttributeValue("WebAssemblySdkPackVersion", nupkgVersion);
+
+                document.Save(bundledVersions);
             }
         }
 

@@ -730,7 +730,7 @@ namespace System.Text
         {
             if (value is not null)
             {
-                Append(valueCount: value.Length, value: ref value.GetRawStringData());
+                Append(ref value.GetRawStringData(), value.Length);
             }
 
             return this;
@@ -2107,7 +2107,7 @@ namespace System.Text
         /// <summary>Appends a specified number of chars starting from the specified reference.</summary>
         private void Append(ref char value, int valueCount)
         {
-            Debug.Assert(valueCount >= 0, $"Invalid length; should have been validated by caller.");
+            Debug.Assert(valueCount >= 0, "Invalid length; should have been validated by caller.");
             if (valueCount != 0)
             {
                 char[] chunkChars = m_ChunkChars;

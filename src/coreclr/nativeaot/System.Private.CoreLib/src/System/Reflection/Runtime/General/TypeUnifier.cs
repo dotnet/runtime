@@ -70,7 +70,7 @@ namespace System.Reflection.Runtime.General
                 && !(elementType is RuntimeCLSIDTypeInfo)
 #endif
                 )
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, isMultiDim: false, 1);
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(arrayType);
 
             return arrayType;
         }
@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.General
                         atLeastOneOpenType = true;
                 }
                 if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(genericType.GetGenericTypeDefinition(), genericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericType);
             }
 
             return genericType;
@@ -156,44 +156,6 @@ namespace System.Reflection.Runtime.General
 
 namespace System.Reflection.Runtime.TypeInfos
 {
-    //-----------------------------------------------------------------------------------------------------------
-    // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
-    // that can never be reflection-enabled due to the framework Reflection block.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeBlockedTypeInfo
-    {
-        internal static RuntimeBlockedTypeInfo GetRuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
-        {
-            RuntimeBlockedTypeInfo type;
-            if (isGenericTypeDefinition)
-                type = GenericBlockedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            else
-                type = BlockedTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
-            type.EstablishDebugName();
-            return type;
-        }
-
-        private sealed class BlockedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeBlockedTypeInfo>
-        {
-            protected sealed override RuntimeBlockedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeBlockedTypeInfo(key.TypeHandle, isGenericTypeDefinition: false);
-            }
-
-            public static readonly BlockedTypeTable Table = new BlockedTypeTable();
-        }
-
-        private sealed class GenericBlockedTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeBlockedTypeInfo>
-        {
-            protected sealed override RuntimeBlockedTypeInfo Factory(RuntimeTypeHandleKey key)
-            {
-                return new RuntimeBlockedTypeInfo(key.TypeHandle, isGenericTypeDefinition: true);
-            }
-
-            public static readonly GenericBlockedTypeTable Table = new GenericBlockedTypeTable();
-        }
-    }
-
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for Sz and multi-dim Array types.
     //-----------------------------------------------------------------------------------------------------------
@@ -476,9 +438,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             RuntimeTypeHandle genericTypeDefinitionHandle = genericTypeDefinition.InternalTypeHandleIfAvailable;
             if (genericTypeDefinitionHandle.IsNull())
-                return default(RuntimeTypeHandle);
-
-            if (ReflectionCoreExecution.ExecutionEnvironment.IsReflectionBlocked(genericTypeDefinitionHandle))
                 return default(RuntimeTypeHandle);
 
             int count = genericTypeArguments.Length;

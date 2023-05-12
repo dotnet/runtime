@@ -71,7 +71,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -95,7 +94,6 @@ extends:
             - linux_musl_arm
             - linux_musl_arm64
             - windows_x64
-            - windows_arm
             - windows_arm64
 
       #
@@ -157,7 +155,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
@@ -348,7 +345,6 @@ extends:
           # - linux_musl_arm64
           # - windows_x64
           # - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobTemplates:
           # LLVMJIT
@@ -396,7 +392,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -459,7 +454,6 @@ extends:
           - linux_musl_arm64
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
 
       #
@@ -530,7 +524,6 @@ extends:
             - Build_windows_x64_release_CrossAOT_Mono
             - installer__coreclr__windows_x64_Release_
             - installer__coreclr__windows_x86_Release_
-            - installer__coreclr__windows_arm_Release_
             - installer__coreclr__windows_arm64_Release_
 
     - ${{ if eq(variables.isOfficialBuild, true) }}:

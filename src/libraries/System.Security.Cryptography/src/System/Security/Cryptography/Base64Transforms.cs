@@ -108,9 +108,21 @@ namespace System.Security.Cryptography
 
     public class FromBase64Transform : ICryptoTransform
     {
+        /// <summary>Characters considered whitespace.</summary>
+        /// <remarks>
+        /// We assume ASCII encoded data. If there is any non-ASCII char, it is invalid
+        /// Base64 and will be caught during decoding.
+        /// SPACE        32
+        /// TAB           9
+        /// LF           10
+        /// VTAB         11
+        /// FORM FEED    12
+        /// CR           13
+        /// </remarks>
+        private static readonly SearchValues<byte> s_whiteSpace = SearchValues.Create(" \t\n\v\f\r"u8);
+        private readonly FromBase64TransformMode _whitespaces;
         private byte[] _inputBuffer = new byte[4];
         private int _inputIndex;
-        private readonly FromBase64TransformMode _whitespaces;
 
         public FromBase64Transform() : this(FromBase64TransformMode.IgnoreWhiteSpaces) { }
         public FromBase64Transform(FromBase64TransformMode whitespaces)
@@ -223,41 +235,35 @@ namespace System.Security.Cryptography
 
         private Span<byte> AppendInputBuffers(ReadOnlySpan<byte> inputBuffer, Span<byte> transformBuffer)
         {
-            _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
+            int index = _inputIndex;
+            _inputBuffer.AsSpan(0, index).CopyTo(transformBuffer);
 
             if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
             {
-                inputBuffer.CopyTo(transformBuffer.Slice(_inputIndex));
-                return transformBuffer.Slice(0, _inputIndex + inputBuffer.Length);
+                if (inputBuffer.IndexOfAny(s_whiteSpace) >= 0)
+                {
+                    ThrowHelper.ThrowBase64FormatException();
+                }
             }
             else
             {
-                int count = _inputIndex;
-                for (int i = 0; i < inputBuffer.Length; i++)
+                int whitespaceIndex;
+                while ((whitespaceIndex = inputBuffer.IndexOfAny(s_whiteSpace)) >= 0)
                 {
-                    if (!IsWhitespace(inputBuffer[i]))
+                    inputBuffer.Slice(0, whitespaceIndex).CopyTo(transformBuffer.Slice(index));
+                    index += whitespaceIndex;
+                    inputBuffer = inputBuffer.Slice(whitespaceIndex);
+
+                    do
                     {
-                        transformBuffer[count++] = inputBuffer[i];
+                        inputBuffer = inputBuffer.Slice(1);
                     }
+                    while (!inputBuffer.IsEmpty && s_whiteSpace.Contains(inputBuffer[0]));
                 }
-
-                return transformBuffer.Slice(0, count);
             }
-        }
 
-        private static bool IsWhitespace(byte value)
-        {
-            // We assume ASCII encoded data. If there is any non-ASCII char, it is invalid
-            // Base64 and will be caught during decoding.
-
-            // SPACE        32
-            // TAB           9
-            // LF           10
-            // VTAB         11
-            // FORM FEED    12
-            // CR           13
-
-            return value == 32 || ((uint)value - 9 <= (13 - 9));
+            inputBuffer.CopyTo(transformBuffer.Slice(index));
+            return transformBuffer.Slice(0, index + inputBuffer.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
