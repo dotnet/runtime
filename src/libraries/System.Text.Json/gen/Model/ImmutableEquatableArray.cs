@@ -42,7 +42,7 @@ namespace System.Text.Json.SourceGeneration
 
         public Enumerator GetEnumerator() => new Enumerator(_values);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
 
         public struct Enumerator
         {
