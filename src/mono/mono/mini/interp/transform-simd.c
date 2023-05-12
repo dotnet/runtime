@@ -547,15 +547,13 @@ static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod);
-	if (id == -1)
-		return FALSE;
+	// We don't early-out for an unrecognized method, we will generate an NIY later
 
 	MonoClass *vector_klass = mono_class_from_mono_type_internal (csignature->ret);
 	int vector_size = -1;
 
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 #if HOST_BROWSER
-		g_print ("MONO interpreter: Returning constant %d: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", mono_opt_interp_simd_packedsimd, cmethod->name);
 		interp_add_ins (td, mono_opt_interp_simd_packedsimd ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
 #else
 		interp_add_ins (td, MINT_LDC_I4_0);
@@ -564,8 +562,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	}
 
 #if HOST_BROWSER
-	if (!mono_opt_interp_simd_packedsimd) {
-		g_print ("MONO interpreter: Disabled method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+	if (!mono_opt_interp_simd_packedsimd || (id < 0)) {
+		g_print ("MONO interpreter: Disabled or unimplemented method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
 		// The packedsimd method implementations recurse infinitely and cause a stack overflow,
 		//  so replace them with a NIY opcode instead that will assert
 		interp_add_ins (td, MINT_NIY);
@@ -733,15 +731,8 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
-		if (!strcmp (class_name, "PackedSimd")) {
-			gboolean res = emit_sri_packedsimd (td, cmethod, csignature);
-#if HOST_BROWSER
-			if (!res)
-				g_print ("MONO interpreter: Unsupported method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
-			g_assert (res);
-#endif
-			return res;
-		}
+		if (!strcmp (class_name, "PackedSimd"))
+			return emit_sri_packedsimd (td, cmethod, csignature);
 	}
 	return FALSE;
 }
