@@ -45,6 +45,8 @@
     <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
       <EnabledFeatureSwitches>System.Reflection.NullabilityInfoContext.IsSupported</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
       <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
