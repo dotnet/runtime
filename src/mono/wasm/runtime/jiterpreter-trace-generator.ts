@@ -3509,15 +3509,6 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
-/*
-function append_stloc_simd_zero (builder: WasmBuilder, offset: number) {
-    builder.local("pLocals");
-    builder.appendSimd(WasmSimdOpcode.v128_const);
-    builder.appendBytes(new Uint8Array(sizeOfV128));
-    append_stloc_tail(builder, offset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_store);
-}
-*/
-
 function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrinsic2): boolean {
     const simple = <WasmSimdOpcode>cwraps.mono_jiterp_get_simd_opcode(1, index);
     if (simple) {
@@ -3528,6 +3519,8 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
     }
 
     switch (index) {
+        // FIXME: These cause the first 1-7 characters of base64 strings to be lost sometimes, which
+        //  breaks xharness test results on CI
         /*
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
             // Zero then write scalar component
