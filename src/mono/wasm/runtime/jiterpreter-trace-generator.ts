@@ -3509,6 +3509,13 @@ const simdShiftTable = new Set<SimdIntrinsic3>([
     SimdIntrinsic3.V128_I8_URIGHT_SHIFT,
 ]);
 
+const bitmaskTable : { [intrinsic: number]: WasmSimdOpcode } = {
+    [SimdIntrinsic2.V128_I1_EXTRACT_MSB]: WasmSimdOpcode.i8x16_bitmask,
+    [SimdIntrinsic2.V128_I2_EXTRACT_MSB]: WasmSimdOpcode.i16x8_bitmask,
+    [SimdIntrinsic2.V128_I4_EXTRACT_MSB]: WasmSimdOpcode.i32x4_bitmask,
+    [SimdIntrinsic2.V128_I8_EXTRACT_MSB]: WasmSimdOpcode.i64x2_bitmask,
+};
+
 const createScalarTable : { [intrinsic: number]: [WasmOpcode, WasmSimdOpcode] } = {
     [SimdIntrinsic2.V128_I1_CREATE_SCALAR]: [WasmOpcode.i32_load8_s, WasmSimdOpcode.i8x16_replace_lane],
     [SimdIntrinsic2.V128_I2_CREATE_SCALAR]: [WasmOpcode.i32_load16_s, WasmSimdOpcode.i16x8_replace_lane],
@@ -3522,6 +3529,14 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
         append_simd_2_load(builder, ip);
         builder.appendSimd(simple);
         append_simd_store(builder, ip);
+        return true;
+    }
+
+    const bitmask = bitmaskTable[index];
+    if (bitmask) {
+        append_simd_2_load(builder, ip);
+        builder.appendSimd(bitmask);
+        append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
         return true;
     }
 

@@ -67,10 +67,6 @@ static guint16 sri_vector128_methods [] = {
 };
 
 static guint16 sri_vector128_t_methods [] = {
-	SN_get_AllBitsSet,
-	SN_get_Count,
-	SN_get_One,
-	SN_get_Zero,
 	SN_op_Addition,
 	SN_op_BitwiseAnd,
 	SN_op_BitwiseOr,
@@ -84,12 +80,29 @@ static guint16 sri_vector128_t_methods [] = {
 	SN_op_RightShift,
 	SN_op_Subtraction,
 	SN_op_UnaryNegation,
-	SN_op_UnsignedRightShift
+	SN_op_UnsignedRightShift,
+	SN_get_AllBitsSet,
+	SN_get_Count,
+	SN_get_One,
+	SN_get_Zero,
 };
 
 static guint16 sri_packedsimd_methods [] = {
+	SN_Add,
+	SN_And,
+	SN_Bitmask,
+	SN_CompareEqual,
+	SN_CompareNotEqual,
 	SN_ConvertNarrowingSignedSaturate,
 	SN_ConvertNarrowingUnsignedSaturate,
+	SN_Dot,
+	SN_Multiply,
+	SN_Negate,
+	SN_ShiftLeft,
+	SN_ShiftRightArithmetic,
+	SN_ShiftRightLogical,
+	SN_Splat,
+	SN_Subtract,
 	SN_Swizzle,
 	SN_get_IsHardwareAccelerated,
 	SN_get_IsSupported,
@@ -542,7 +555,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 
 	if ((id == SN_get_IsSupported) || (id == SN_get_IsHardwareAccelerated)) {
 #if HOST_BROWSER
-		interp_add_ins (td, MINT_LDC_I4_1);
+		g_print ("MONO interpreter: Returning constant %d: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", mono_opt_interp_simd_packedsimd, cmethod->name);
+		interp_add_ins (td, mono_opt_interp_simd_packedsimd ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
 #else
 		interp_add_ins (td, MINT_LDC_I4_0);
 #endif
@@ -550,6 +564,14 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	}
 
 #if HOST_BROWSER
+	if (!mono_opt_interp_simd_packedsimd) {
+		g_print ("MONO interpreter: Disabled method: System.Runtime.Intrinsics.Wasm.PackedSimd.%s\n", cmethod->name);
+		// The packedsimd method implementations recurse infinitely and cause a stack overflow,
+		//  so replace them with a NIY opcode instead that will assert
+		interp_add_ins (td, MINT_NIY);
+		goto opcode_added;
+	}
+
 	gint16 simd_opcode = -1;
 	gint16 simd_intrins = -1;
 	if (!m_class_is_simd_type (vector_klass))
@@ -710,7 +732,7 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 			return emit_sri_vector128 (td, cmethod, csignature);
 		else if (!strcmp (class_name, "Vector128`1"))
 			return emit_sri_vector128_t (td, cmethod, csignature);
-	} else if (mono_opt_interp_simd_packedsimd && !strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
+	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd")) {
 			gboolean res = emit_sri_packedsimd (td, cmethod, csignature);
 #if HOST_BROWSER
