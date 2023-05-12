@@ -52,8 +52,9 @@ steps:
         $buildLinuxDacStagingPath = "$(crossDacArtifactPath)/Linux.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
         
         
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildMuslDacRootFolderPath) -TargetDir '$buildMuslStagingPath'
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildLinuxDacRootFolderPath) -TargetDir '$buildLinuxDacStagingPath'
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildMuslDacRootFolderPath -TargetDir '$buildMuslStagingPath'
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildLinuxDacRootFolderPath 
+ -TargetDir '$buildLinuxDacStagingPath'
 
         Write-Host "Final directory contents:"
         ls -R $(crossDacArtifactPath)
