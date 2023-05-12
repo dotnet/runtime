@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Buffers
@@ -18,14 +19,10 @@ namespace System.Buffers
     /// checking its processor number, because multiple threads could interleave on the same core, and because
     /// a thread is allowed to check other core's buckets if its core's bucket is empty/full.
     /// </remarks>
-    internal sealed partial class TlsOverPerCoreLockedStacksArrayPool<T> : ArrayPool<T>
+    internal sealed partial class SharedArrayPool<T> : ArrayPool<T>
     {
         /// <summary>The number of buckets (array sizes) in the pool, one for each array length, starting from length 16.</summary>
         private const int NumBuckets = 27; // Utilities.SelectBucketIndex(1024 * 1024 * 1024 + 1)
-        /// <summary>Maximum number of per-core stacks to use per array size.</summary>
-        private const int MaxPerCorePerArraySizeStacks = 64; // selected to avoid needing to worry about processor groups
-        /// <summary>The maximum number of buffers to store in a bucket's global queue.</summary>
-        private const int MaxBuffersPerArraySizePerCore = 8;
 
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
@@ -33,17 +30,17 @@ namespace System.Buffers
         /// <summary>Used to keep track of all thread local buckets for trimming if needed.</summary>
         private readonly ConditionalWeakTable<ThreadLocalArray[], object?> _allTlsBuckets = new ConditionalWeakTable<ThreadLocalArray[], object?>();
         /// <summary>
-        /// An array of per-core array stacks. The slots are lazily initialized to avoid creating
+        /// An array of per-core partitions. The slots are lazily initialized to avoid creating
         /// lots of overhead for unused array sizes.
         /// </summary>
-        private readonly PerCoreLockedStacks?[] _buckets = new PerCoreLockedStacks[NumBuckets];
+        private readonly Partitions?[] _buckets = new Partitions[NumBuckets];
         /// <summary>Whether the callback to trim arrays in response to memory pressure has been created.</summary>
         private int _trimCallbackCreated;
 
-        /// <summary>Allocate a new PerCoreLockedStacks and try to store it into the <see cref="_buckets"/> array.</summary>
-        private PerCoreLockedStacks CreatePerCoreLockedStacks(int bucketIndex)
+        /// <summary>Allocate a new <see cref="Partitions"/> and try to store it into the <see cref="_buckets"/> array.</summary>
+        private Partitions CreatePerCorePartitions(int bucketIndex)
         {
-            var inst = new PerCoreLockedStacks();
+            var inst = new Partitions();
             return Interlocked.CompareExchange(ref _buckets[bucketIndex], inst, null) ?? inst;
         }
 
@@ -75,11 +72,11 @@ namespace System.Buffers
                 }
             }
 
-            // Next, try to get an array from one of the per-core stacks.
-            PerCoreLockedStacks?[] perCoreBuckets = _buckets;
+            // Next, try to get an array from one of the partitions.
+            Partitions?[] perCoreBuckets = _buckets;
             if ((uint)bucketIndex < (uint)perCoreBuckets.Length)
             {
-                PerCoreLockedStacks? b = perCoreBuckets[bucketIndex];
+                Partitions? b = perCoreBuckets[bucketIndex];
                 if (b is not null)
                 {
                     buffer = b.TryPop();
@@ -157,15 +154,15 @@ namespace System.Buffers
                 }
 
                 // Store the array into the TLS bucket.  If there's already an array in it,
-                // push that array down into the per-core stacks, preferring to keep the latest
+                // push that array down into the partitions, preferring to keep the latest
                 // one in TLS for better locality.
                 ref ThreadLocalArray tla = ref tlsBuckets[bucketIndex];
                 T[]? prev = tla.Array;
                 tla = new ThreadLocalArray(array);
                 if (prev is not null)
                 {
-                    PerCoreLockedStacks stackBucket = _buckets[bucketIndex] ?? CreatePerCoreLockedStacks(bucketIndex);
-                    returned = stackBucket.TryPush(prev);
+                    Partitions partitionsForArraySize = _buckets[bucketIndex] ?? CreatePerCorePartitions(bucketIndex);
+                    returned = partitionsForArraySize.TryPush(prev);
                 }
             }
 
@@ -196,7 +193,7 @@ namespace System.Buffers
             }
 
             // Trim each of the per-core buckets.
-            PerCoreLockedStacks?[] perCoreBuckets = _buckets;
+            Partitions?[] perCoreBuckets = _buckets;
             for (int i = 0; i < perCoreBuckets.Length; i++)
             {
                 perCoreBuckets[i]?.Trim(currentMilliseconds, Id, pressure, Utilities.GetMaxSizeForBucket(i));
@@ -288,80 +285,84 @@ namespace System.Buffers
             _allTlsBuckets.Add(tlsBuckets, null);
             if (Interlocked.Exchange(ref _trimCallbackCreated, 1) == 0)
             {
-                Gen2GcCallback.Register(s => ((TlsOverPerCoreLockedStacksArrayPool<T>)s).Trim(), this);
+                Gen2GcCallback.Register(s => ((SharedArrayPool<T>)s).Trim(), this);
             }
 
             return tlsBuckets;
         }
 
-        /// <summary>Stores a set of stacks of arrays, with one stack per core.</summary>
-        private sealed class PerCoreLockedStacks
+        /// <summary>Provides a collection of partitions, each of which is a pool of arrays.</summary>
+        private sealed class Partitions
         {
-            /// <summary>Number of locked stacks to employ.</summary>
-            private static readonly int s_lockedStackCount = Math.Min(Environment.ProcessorCount, MaxPerCorePerArraySizeStacks);
-            /// <summary>The stacks.</summary>
-            private readonly LockedStack[] _perCoreStacks;
+            /// <summary>The partitions.</summary>
+            private readonly Partition[] _partitions;
 
-            /// <summary>Initializes the stacks.</summary>
-            public PerCoreLockedStacks()
+            /// <summary>Initializes the partitions.</summary>
+            public Partitions()
             {
-                // Create the stacks.  We create as many as there are processors, limited by our max.
-                var stacks = new LockedStack[s_lockedStackCount];
-                for (int i = 0; i < stacks.Length; i++)
+                // Create the partitions.  We create as many as there are processors, limited by our max.
+                var partitions = new Partition[SharedArrayPoolStatics.s_partitionCount];
+                for (int i = 0; i < partitions.Length; i++)
                 {
-                    stacks[i] = new LockedStack();
+                    partitions[i] = new Partition();
                 }
-                _perCoreStacks = stacks;
+                _partitions = partitions;
             }
 
-            /// <summary>Try to push the array into the stacks. If each is full when it's tested, the array will be dropped.</summary>
+            /// <summary>
+            /// Try to push the array into any partition with available space, starting with partition associated with the current core.
+            /// If all partitions are full, the array will be dropped.
+            /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool TryPush(T[] array)
             {
-                // Try to push on to the associated stack first.  If that fails,
-                // round-robin through the other stacks.
-                LockedStack[] stacks = _perCoreStacks;
-                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_lockedStackCount); // mod by constant in tier 1
-                for (int i = 0; i < stacks.Length; i++)
+                // Try to push on to the associated partition first.  If that fails,
+                // round-robin through the other partitions.
+                Partition[] partitions = _partitions;
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)SharedArrayPoolStatics.s_partitionCount); // mod by constant in tier 1
+                for (int i = 0; i < partitions.Length; i++)
                 {
-                    if (stacks[index].TryPush(array)) return true;
-                    if (++index == stacks.Length) index = 0;
+                    if (partitions[index].TryPush(array)) return true;
+                    if (++index == partitions.Length) index = 0;
                 }
 
                 return false;
             }
 
-            /// <summary>Try to get an array from the stacks.  If each is empty when it's tested, null will be returned.</summary>
+            /// <summary>
+            /// Try to pop an array from any partition with available arrays, starting with partition associated with the current core.
+            /// If all partitions are empty, null is returned.
+            /// </summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T[]? TryPop()
             {
-                // Try to pop from the associated stack first.  If that fails, round-robin through the other stacks.
+                // Try to pop from the associated partition first.  If that fails, round-robin through the other partitions.
                 T[]? arr;
-                LockedStack[] stacks = _perCoreStacks;
-                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)s_lockedStackCount); // mod by constant in tier 1
-                for (int i = 0; i < stacks.Length; i++)
+                Partition[] partitions = _partitions;
+                int index = (int)((uint)Thread.GetCurrentProcessorId() % (uint)SharedArrayPoolStatics.s_partitionCount); // mod by constant in tier 1
+                for (int i = 0; i < partitions.Length; i++)
                 {
-                    if ((arr = stacks[index].TryPop()) is not null) return arr;
-                    if (++index == stacks.Length) index = 0;
+                    if ((arr = partitions[index].TryPop()) is not null) return arr;
+                    if (++index == partitions.Length) index = 0;
                 }
                 return null;
             }
 
             public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure, int bucketSize)
             {
-                LockedStack[] stacks = _perCoreStacks;
-                for (int i = 0; i < stacks.Length; i++)
+                Partition[] partitions = _partitions;
+                for (int i = 0; i < partitions.Length; i++)
                 {
-                    stacks[i].Trim(currentMilliseconds, id, pressure, bucketSize);
+                    partitions[i].Trim(currentMilliseconds, id, pressure, bucketSize);
                 }
             }
         }
 
         /// <summary>Provides a simple, bounded stack of arrays, protected by a lock.</summary>
-        private sealed class LockedStack
+        private sealed class Partition
         {
-            /// <summary>The arrays in the stack.</summary>
-            private readonly T[]?[] _arrays = new T[MaxBuffersPerArraySizePerCore][];
+            /// <summary>The arrays in the partition.</summary>
+            private readonly T[]?[] _arrays = new T[SharedArrayPoolStatics.s_maxArraysPerPartition][];
             /// <summary>Number of arrays stored in <see cref="_arrays"/>.</summary>
             private int _count;
             /// <summary>Timestamp set by Trim when it sees this as 0.</summary>
@@ -410,21 +411,24 @@ namespace System.Buffers
 
             public void Trim(int currentMilliseconds, int id, Utilities.MemoryPressure pressure, int bucketSize)
             {
-                const int StackTrimAfterMS = 60 * 1000;                        // Trim after 60 seconds for low/moderate pressure
-                const int StackHighTrimAfterMS = 10 * 1000;                    // Trim after 10 seconds for high pressure
-                const int StackLowTrimCount = 1;                                // Trim one item when pressure is low
-                const int StackMediumTrimCount = 2;                             // Trim two items when pressure is moderate
-                const int StackHighTrimCount = MaxBuffersPerArraySizePerCore;   // Trim all items when pressure is high
-                const int StackLargeBucket = 16384;                             // If the bucket is larger than this we'll trim an extra when under high pressure
-                const int StackModerateTypeSize = 16;                           // If T is larger than this we'll trim an extra when under high pressure
-                const int StackLargeTypeSize = 32;                              // If T is larger than this we'll trim an extra (additional) when under high pressure
+                const int TrimAfterMS = 60 * 1000;                                  // Trim after 60 seconds for low/moderate pressure
+                const int HighTrimAfterMS = 10 * 1000;                              // Trim after 10 seconds for high pressure
+
+                const int LargeBucket = 16384;                                      // If the bucket is larger than this we'll trim an extra when under high pressure
+
+                const int ModerateTypeSize = 16;                                    // If T is larger than this we'll trim an extra when under high pressure
+                const int LargeTypeSize = 32;                                       // If T is larger than this we'll trim an extra (additional) when under high pressure
+
+                const int LowTrimCount = 1;                                         // Trim one item when pressure is low
+                const int MediumTrimCount = 2;                                      // Trim two items when pressure is moderate
+                int HighTrimCount = SharedArrayPoolStatics.s_maxArraysPerPartition; // Trim all items when pressure is high
 
                 if (_count == 0)
                 {
                     return;
                 }
 
-                int trimMilliseconds = pressure == Utilities.MemoryPressure.High ? StackHighTrimAfterMS : StackTrimAfterMS;
+                int trimMilliseconds = pressure == Utilities.MemoryPressure.High ? HighTrimAfterMS : TrimAfterMS;
 
                 lock (this)
                 {
@@ -444,29 +448,29 @@ namespace System.Buffers
                         return;
                     }
 
-                    // We've elapsed enough time since the first item went into the stack.
-                    // Drop the top item so it can be collected and make the stack look a little newer.
+                    // We've elapsed enough time since the first item went into the partition.
+                    // Drop the top item so it can be collected and make the partition look a little newer.
 
                     ArrayPoolEventSource log = ArrayPoolEventSource.Log;
-                    int trimCount = StackLowTrimCount;
+                    int trimCount = LowTrimCount;
                     switch (pressure)
                     {
                         case Utilities.MemoryPressure.High:
-                            trimCount = StackHighTrimCount;
+                            trimCount = HighTrimCount;
 
                             // When pressure is high, aggressively trim larger arrays.
-                            if (bucketSize > StackLargeBucket)
+                            if (bucketSize > LargeBucket)
                             {
                                 trimCount++;
                             }
                             unsafe
                             {
 #pragma warning disable 8500 // sizeof of managed types
-                                if (sizeof(T) > StackModerateTypeSize)
+                                if (sizeof(T) > ModerateTypeSize)
                                 {
                                     trimCount++;
                                 }
-                                if (sizeof(T) > StackLargeTypeSize)
+                                if (sizeof(T) > LargeTypeSize)
                                 {
                                     trimCount++;
                                 }
@@ -475,7 +479,7 @@ namespace System.Buffers
                             break;
 
                         case Utilities.MemoryPressure.Medium:
-                            trimCount = StackMediumTrimCount;
+                            trimCount = MediumTrimCount;
                             break;
                     }
 
@@ -511,6 +515,70 @@ namespace System.Buffers
                 Array = array;
                 MillisecondsTimeStamp = 0;
             }
+        }
+    }
+
+    internal static class SharedArrayPoolStatics
+    {
+        /// <summary>Number of partitions to employ.</summary>
+        internal static readonly int s_partitionCount = GetPartitionCount();
+        /// <summary>The maximum number of arrays per array size to store per partition.</summary>
+        internal static readonly int s_maxArraysPerPartition = GetMaxArraysPerPartition();
+
+        /// <summary>Gets the maximum number of partitions to shard arrays into.</summary>
+        /// <remarks>Defaults to int.MaxValue.  Whatever value is returned will end up being clamped to <see cref="Environment.ProcessorCount"/>.</remarks>
+        private static int GetPartitionCount()
+        {
+            int partitionCount = TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXPARTITIONCOUNT", out int result) && result > 0 ?
+                result :
+                int.MaxValue; // no limit other than processor count
+            return Math.Min(partitionCount, Environment.ProcessorCount);
+        }
+
+        /// <summary>Gets the maximum number of arrays of a given size allowed to be cached per partition.</summary>
+        /// <returns>Defaults to 8. This does not factor in or impact the number of arrays cached per thread in TLS (currently only 1).</returns>
+        private static int GetMaxArraysPerPartition()
+        {
+            return TryGetInt32EnvironmentVariable("DOTNET_SYSTEM_BUFFERS_SHAREDARRAYPOOL_MAXARRAYSPERPARTITION", out int result) && result > 0 ?
+                result :
+                8; // arbitrary limit
+        }
+
+        /// <summary>Look up an environment variable and try to parse it as an Int32.</summary>
+        /// <remarks>This avoids using anything that might in turn recursively use the ArrayPool.</remarks>
+        private static bool TryGetInt32EnvironmentVariable(string variable, out int result)
+        {
+            // Avoid globalization stack, as it might in turn be using ArrayPool.
+
+            if (Environment.GetEnvironmentVariableCore_NoArrayPool(variable) is string envVar &&
+                envVar.Length is > 0 and <= 32) // arbitrary limit that allows for some spaces around the maximum length of a non-negative Int32 (10 digits)
+            {
+                ReadOnlySpan<char> value = envVar.AsSpan().Trim(' ');
+                if (!value.IsEmpty && value.Length <= 10)
+                {
+                    long tempResult = 0;
+                    foreach (char c in value)
+                    {
+                        uint digit = (uint)(c - '0');
+                        if (digit > 9)
+                        {
+                            goto Fail;
+                        }
+
+                        tempResult = tempResult * 10 + digit;
+                    }
+
+                    if (tempResult is >= 0 and <= int.MaxValue)
+                    {
+                        result = (int)tempResult;
+                        return true;
+                    }
+                }
+            }
+
+        Fail:
+            result = 0;
+            return false;
         }
     }
 }

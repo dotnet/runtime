@@ -294,6 +294,7 @@ namespace Internal.Runtime
 
         internal ushort ExtendedFlags
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
@@ -845,6 +846,7 @@ namespace Internal.Runtime
 
         internal MethodTable** InterfaceMap
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 // interface info table starts after the vtable and has _usNumInterfaces entries
@@ -939,16 +941,6 @@ namespace Internal.Runtime
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
                 Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
                 Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* RawBaseType
-        {
-            get
-            {
-                Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
                 return _relatedType._pBaseType;
             }
         }

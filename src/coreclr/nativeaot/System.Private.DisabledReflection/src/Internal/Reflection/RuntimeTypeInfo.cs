@@ -33,7 +33,7 @@ namespace Internal.Reflection
 
         public override bool IsGenericType => RuntimeAugments.IsGenericTypeDefinition(_typeHandle) || RuntimeAugments.IsGenericType(_typeHandle);
 
-        public override string Name => DoNotThrowForNames ? RuntimeAugments.GetLastResortString(_typeHandle) : throw new NotSupportedException(SR.Reflection_Disabled);
+        public override string Name => DoNotThrowForNames ? ToString() : throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override string Namespace => DoNotThrowForNames ? "" : throw new NotSupportedException(SR.Reflection_Disabled);
 
@@ -76,7 +76,7 @@ namespace Internal.Reflection
 
         public override string ToString()
         {
-            return RuntimeAugments.GetLastResortString(_typeHandle);
+            return "MT" + _typeHandle.Value.ToString();
         }
 
         public override int GetHashCode()

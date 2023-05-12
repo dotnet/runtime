@@ -78,6 +78,21 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public WasmEntry(string name, string hash) : base(name, hash, "dotnetwasm") { }
     }
 
+    private sealed class LoaderJsEntry : AssetEntry
+    {
+        public LoaderJsEntry(string name, string hash) : base(name, hash, "js-module-dotnet") { }
+    }
+
+    private sealed class NativeJsEntry : AssetEntry
+    {
+        public NativeJsEntry(string name, string hash) : base(name, hash, "js-module-native") { }
+    }
+
+    private sealed class RuntimeJsEntry : AssetEntry
+    {
+        public RuntimeJsEntry(string name, string hash) : base(name, hash, "js-module-runtime") { }
+    }
+
     private sealed class ThreadsWorkerEntry : AssetEntry
     {
         public ThreadsWorkerEntry(string name, string hash) : base(name, hash, "js-module-threads") { }
@@ -198,15 +213,27 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var dest = Path.Combine(AppDir!, name);
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
-            if (name == "dotnet.wasm")
+            if (name == "dotnet.js")
+            {
+                config.Assets.Add(new LoaderJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+            }
+            else if (name == "dotnet.native.wasm")
             {
                 config.Assets.Add(new WasmEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
             }
-            else if (IncludeThreadsWorker && name == "dotnet.worker.js")
+            else if (name == "dotnet.native.js")
+            {
+                config.Assets.Add(new NativeJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+            }
+            else if (name == "dotnet.runtime.js")
+            {
+                config.Assets.Add(new RuntimeJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+            }
+            else if (IncludeThreadsWorker && name == "dotnet.native.worker.js")
             {
                 config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
-            else if(name == "dotnet.js.symbols")
+            else if(name == "dotnet.native.js.symbols")
             {
                 config.Assets.Add(new SymbolsData(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
