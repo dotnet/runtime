@@ -25,7 +25,7 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(MonoWasmThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(MonoWasmThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
-    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
@@ -279,7 +279,7 @@
     <ItemGroup>
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
-      <_EmccCommonFlags Condition="'$(WasmEnableSIMD)' == 'true'" Include="-msimd128" />
+      <_EmccCommonFlags Include="-msimd128" />
       <_EmccCommonFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-Wno-pthreads-mem-growth" />
       <_EmccLinkFlags Condition="'$(MonoWasmThreads)' == 'true'" Include="-s PTHREAD_POOL_SIZE=0" />
@@ -459,19 +459,21 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet.runtime.js;
+                       $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.wasm"
+                       $(NativeBinDir)dotnet.native.wasm"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="$(NativeBinDir)dotnet.worker.js"
+    <Copy SourceFiles="$(NativeBinDir)dotnet.native.worker.js"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
-	  Condition="Exists('$(NativeBinDir)dotnet.worker.js')"
+	  Condition="Exists('$(NativeBinDir)dotnet.native.worker.js')"
           SkipUnchangedFiles="true" />
 
-    <Copy SourceFiles="$(NativeBinDir)dotnet.js.symbols"
+    <Copy SourceFiles="$(NativeBinDir)dotnet.native.js.symbols"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
@@ -539,9 +541,9 @@
   </Target>
 
   <Target Name="GenerateMintopsTS"
-          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def"
+          Inputs="$(MonoProjectRoot)wasm\runtime\genmintops.py;$(MonoProjectRoot)mono\mini\interp\mintops.def;$(MonoProjectRoot)mono\mini\interp\interp-simd-intrins.def"
           Outputs="$(NativeGeneratedFilesDir)mintops.ts">
-      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(NativeGeneratedFilesDir)mintops.ts" />
+      <Exec Command="$(PythonCmd) $(MonoProjectRoot)wasm/runtime/genmintops.py $(MonoProjectRoot)mono/mini/interp/mintops.def $(MonoProjectRoot)mono/mini/interp/interp-simd-intrins.def $(NativeGeneratedFilesDir)mintops.ts" />
   </Target>
 
   <Target Name="BuildWithRollup"

@@ -132,7 +132,11 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 else()
-    set(NATIVE_LIBS
+    if(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
+        LIST(APPEND NATIVE_LIBS createdump_static)
+    endif()
+
+    LIST(APPEND NATIVE_LIBS
         coreclr_static
 
         System.Globalization.Native-Static
@@ -142,7 +146,9 @@ else()
         System.Security.Cryptography.Native.OpenSsl-Static
 
         palrt
-        coreclrpal
+        coreclrpal_dac
+        corguids
+        dbgutil
         eventprovider
         nativeresourcestring
     )

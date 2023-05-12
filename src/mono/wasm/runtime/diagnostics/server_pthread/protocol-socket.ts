@@ -9,7 +9,7 @@ import {
 } from "./ipc-protocol/types";
 import Magic from "./ipc-protocol/magic";
 import Parser from "./ipc-protocol/base-parser";
-import { assertNever } from "../../types";
+import { assertNever } from "../../types/internal";
 
 export const dotnetDiagnosticsServerProtocolCommandEvent = "dotnet:diagnostics:protocolCommand" as const;
 
