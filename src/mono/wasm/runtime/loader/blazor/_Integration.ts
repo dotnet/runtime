@@ -1,29 +1,79 @@
-import { INTERNAL, Module } from "../globals";
-import { MonoConfigInternal } from "../types";
-import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
-import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
+import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../../types";
+import type { BootJsonData } from "../../types/blazor";
+
+import { INTERNAL, loaderHelpers } from "../globals";
+import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
+import { ICUDataMode } from "../../types/blazor";
 
-export async function loadBootConfig(config: MonoConfigInternal,) {
+let resourceLoader: WebAssemblyResourceLoader;
+
+export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
     const candidateOptions = config.startupOptions ?? {};
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
-
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-
-    const resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
-
-    INTERNAL.resourceLoader = resourceLoader;
-
-    const newConfig = mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
-    Module.config = newConfig;
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
+    mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
+    setupModuleForBlazor(module);
 }
 
 let resourcesLoaded = 0;
 let totalResources = 0;
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, resourceLoader: WebAssemblyResourceLoader, applicationEnvironment: string): MonoConfigInternal {
+const behaviorByName = (name: string): AssetBehaviours | "other" => {
+    return name === "dotnet.timezones.blat" ? "vfs"
+        : name === "dotnet.native.wasm" ? "dotnetwasm"
+            : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
+                : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
+                    : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
+                        : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
+                            : name.startsWith("icudt") ? "icu"
+                                : "other";
+};
+
+const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
+    "assembly": "assembly",
+    "pdb": "pdb",
+    "icu": "globalization",
+    "vfs": "globalization",
+    "dotnetwasm": "dotnetwasm",
+};
+
+export function setupModuleForBlazor(module: DotnetModuleInternal) {
+    // it would not `loadResource` on types for which there is no typesMap mapping
+    const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
+        // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
+        // A) we may need to add such asset types to the mapping and to WebAssemblyBootResourceType
+        // B) or we could add generic "runtime" type to WebAssemblyBootResourceType as fallback
+        // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
+        const type = monoToBlazorAssetTypeMap[asset.behavior];
+        if (type !== undefined) {
+            const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
+            asset.pendingDownload = res;
+
+            totalResources++;
+            res.response.then(() => {
+                resourcesLoaded++;
+                if (module.onDownloadResourceProgress)
+                    module.onDownloadResourceProgress(resourcesLoaded, totalResources);
+            });
+
+            return res;
+        }
+        return undefined;
+    };
+
+    module.downloadResource = downloadResource;
+    module.disableDotnet6Compatibility = false;
+}
+
+export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
@@ -39,10 +89,10 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     moduleConfig.enableDownloadRetry = false; // disable retry downloads
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
-    moduleConfig = {
+    // FIXME this mix of both formats is ugly temporary hack
+    Object.assign(moduleConfig, {
         ...resourceLoader.bootConfig,
-        ...moduleConfig
-    };
+    });
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
         moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
@@ -52,58 +102,12 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
         moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...resourceLoader.bootConfig.runtimeOptions];
     }
 
-    const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
-        "assembly": "assembly",
-        "pdb": "pdb",
-        "icu": "globalization",
-        "vfs": "globalization",
-        "dotnetwasm": "dotnetwasm",
-    };
-
-    const behaviorByName = (name: string) => {
-        return name === "dotnet.timezones.blat" ? "vfs"
-            : name === "dotnet.wasm" ? "dotnetwasm"
-                : (name.startsWith("dotnet.worker") && name.endsWith(".js")) ? "js-module-threads"
-                    : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                        : name.startsWith("icudt") ? "icu"
-                            : "other";
-    };
-
-    // it would not `loadResource` on types for which there is no typesMap mapping
-    const downloadResource = (asset: AssetEntry): LoadingResource | undefined => {
-        // GOTCHA: the mapping to blazor asset type may not cover all mono owned asset types in the future in which case:
-        // A) we may need to add such asset types to the mapping and to WebAssemblyBootResourceType
-        // B) or we could add generic "runtime" type to WebAssemblyBootResourceType as fallback
-        // C) or we could return `undefined` and let the runtime to load the asset. In which case the progress will not be reported on it and blazor will not be able to cache it.
-        const type = monoToBlazorAssetTypeMap[asset.behavior];
-        if (type !== undefined) {
-            const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-            asset.pendingDownload = res;
-
-            totalResources++;
-            res.response.then(() => {
-                resourcesLoaded++;
-                if (Module.onDownloadResourceProgress)
-                    Module.onDownloadResourceProgress(resourcesLoaded, totalResources);
-            });
-
-            return res;
-        }
-        return undefined;
-    };
-
-    Module.downloadResource = downloadResource;
-    Module.disableDotnet6Compatibility = false;
-
     // any runtime owned assets, with proper behavior already set
     for (const name in resources.runtimeAssets) {
         const asset = resources.runtimeAssets[name] as AssetEntry;
         asset.name = name;
         asset.resolvedUrl = `_framework/${name}`;
         assets.push(asset);
-        if (asset.behavior === "dotnetwasm") {
-            downloadResource(asset);
-        }
     }
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
@@ -113,7 +117,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
             behavior: "assembly",
         };
         assets.push(asset);
-        downloadResource(asset);
     }
     if (hasDebuggingEnabled(resourceLoader.bootConfig) && resources.pdb) {
         for (const name in resources.pdb) {
@@ -124,7 +127,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
                 behavior: "pdb",
             };
             assets.push(asset);
-            downloadResource(asset);
         }
     }
     const applicationCulture = resourceLoader.startOptions.applicationCulture || (navigator.languages && navigator.languages[0]);
@@ -145,9 +147,11 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
         } else if (behavior === "dotnetwasm") {
             continue;
         }
+
+        const resolvedUrl = name.endsWith(".js") ? `./${name}` : `_framework/${name}`;
         const asset: AssetEntry = {
             name,
-            resolvedUrl: `_framework/${name}`,
+            resolvedUrl,
             hash: resources.runtime[name],
             behavior,
         };
@@ -175,8 +179,6 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
     if (resourceLoader.bootConfig.runtimeOptions) {
         moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
     }
-
-    return moduleConfig;
 }
 
 function getICUResourceName(bootConfig: BootJsonData, culture: string | undefined): string {
@@ -218,3 +220,4 @@ function getICUResourceName(bootConfig: BootJsonData, culture: string | undefine
     }
     return "icudt_no_CJK.dat";
 }
+

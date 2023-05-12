@@ -117,28 +117,19 @@ namespace Internal.Reflection.Core.Execution
 
         public Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle elementTypeHandle;
-            if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
-                throw CreateMissingMetadataException((Type?)null);
-
+            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
             return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetArrayType(typeHandle);
         }
 
         public Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank)
         {
-            RuntimeTypeHandle elementTypeHandle;
-            if (!ExecutionEnvironment.TryGetArrayTypeElementType(typeHandle, out elementTypeHandle))
-                throw CreateMissingMetadataException((Type?)null);
-
+            RuntimeTypeHandle elementTypeHandle = ExecutionEnvironment.GetArrayTypeElementType(typeHandle);
             return elementTypeHandle.GetTypeForRuntimeTypeHandle().GetMultiDimArrayType(rank, typeHandle);
         }
 
         public Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle;
-            if (!ExecutionEnvironment.TryGetPointerTypeTargetType(typeHandle, out targetTypeHandle))
-                throw CreateMissingMetadataException((Type?)null);
-
+            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetPointerTypeTargetType(typeHandle);
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
@@ -161,10 +152,7 @@ namespace Internal.Reflection.Core.Execution
 
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
-            RuntimeTypeHandle targetTypeHandle;
-            if (!ExecutionEnvironment.TryGetByRefTypeTargetType(typeHandle, out targetTypeHandle))
-                throw CreateMissingMetadataException((Type?)null);
-
+            RuntimeTypeHandle targetTypeHandle = ExecutionEnvironment.GetByRefTypeTargetType(typeHandle);
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetByRefType(typeHandle);
         }
 
@@ -187,7 +175,7 @@ namespace Internal.Reflection.Core.Execution
         //=======================================================================================
         // Missing metadata exceptions.
         //=======================================================================================
-        public Exception CreateMissingMetadataException(Type? pertainant)
+        public Exception CreateMissingMetadataException(Type pertainant)
         {
             return this.ReflectionDomainSetup.CreateMissingMetadataException(pertainant);
         }
@@ -195,16 +183,6 @@ namespace Internal.Reflection.Core.Execution
         public Exception CreateNonInvokabilityException(MemberInfo pertainant)
         {
             return this.ReflectionDomainSetup.CreateNonInvokabilityException(pertainant);
-        }
-
-        public Exception CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
-        {
-            return ReflectionDomainSetup.CreateMissingArrayTypeException(elementType, isMultiDim, rank);
-        }
-
-        public Exception CreateMissingConstructedGenericTypeException(Type genericTypeDefinition, Type[] genericTypeArguments)
-        {
-            return ReflectionDomainSetup.CreateMissingConstructedGenericTypeException(genericTypeDefinition, genericTypeArguments);
         }
 
         //=======================================================================================
