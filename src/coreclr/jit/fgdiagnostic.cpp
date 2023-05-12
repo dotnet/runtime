@@ -3072,6 +3072,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
     switch (tree->OperGet())
     {
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            assert((tree->gtFlags & GTF_VAR_DEF) != 0);
+            assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));
+            break;
+
         case GT_CATCH_ARG:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
@@ -4175,7 +4181,7 @@ public:
         {
             ProcessDefs(tree);
         }
-        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG))
         {
             ProcessUses(tree->AsLclVarCommon());
         }
@@ -4226,10 +4232,9 @@ public:
                         stmt->GetID(), nonPhiStmt->GetID());
             }
 
-            GenTree* const phiDefNode = stmt->GetRootNode();
+            GenTreeLclVar* const phiDefNode = stmt->GetRootNode()->AsLclVar();
+            GenTreePhi* const    phi        = phiDefNode->Data()->AsPhi();
             assert(phiDefNode->IsPhiDefn());
-            GenTreeLclVarCommon* const phiDefLclNode = phiDefNode->gtGetOp1()->AsLclVarCommon();
-            GenTreePhi* const          phi           = phiDefNode->gtGetOp2()->AsPhi();
 
             // Verify each GT_PHI_ARG is the right local.
             //
@@ -4242,11 +4247,11 @@ public:
             for (GenTreePhi::Use& use : phi->Uses())
             {
                 GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
-                if (phiArgNode->GetLclNum() != phiDefLclNode->GetLclNum())
+                if (phiArgNode->GetLclNum() != phiDefNode->GetLclNum())
                 {
                     SetHasErrors();
                     JITDUMP("[error] Wrong local V%02u in PhiArg [%06u] -- expected V%02u\n", phiArgNode->GetLclNum(),
-                            m_compiler->dspTreeID(phiArgNode), phiDefLclNode->GetLclNum());
+                            m_compiler->dspTreeID(phiArgNode), phiDefNode->GetLclNum());
                 }
 
                 // Handlers can have multiple PhiArgs from the same block and implicit preds.

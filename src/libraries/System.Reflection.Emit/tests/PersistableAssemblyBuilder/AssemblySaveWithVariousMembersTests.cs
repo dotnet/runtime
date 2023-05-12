@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -101,7 +100,6 @@ namespace System.Reflection.Emit.Tests
             {
                 AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
                     s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
-
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
                 tb.DefineMethod("TestMethod", MethodAttributes.Public);
@@ -131,7 +129,6 @@ namespace System.Reflection.Emit.Tests
             {
                 AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
                     s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
-
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract, null, new Type[] { typeof(IOneMethod)});
                 tb.AddInterfaceImplementation(typeof(INoMethod));
@@ -151,6 +148,52 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(1, iOneMethod.GetMethods().Length);
                 Assert.Empty(iNoMethod.GetMethods());
                 Assert.NotNull(testType.GetNestedType("NestedType", BindingFlags.NonPublic));
+            }
+        }
+
+        [Fact]
+        public void SaveGenericTypeParametersForAType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                    s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
+                string[] typeParamNames = new string[] { "TFirst", "TSecond", "TThird" };
+                GenericTypeParameterBuilder[] typeParams = tb.DefineGenericParameters(typeParamNames);
+                typeParams[0].SetInterfaceConstraints(new Type[] { typeof(IAccess), typeof(INoMethod)});
+                typeParams[1].SetCustomAttribute(new CustomAttributeBuilder(typeof(DynamicallyAccessedMembersAttribute).GetConstructor(
+                    new Type[] { typeof(DynamicallyAccessedMemberTypes) }), new object[] { DynamicallyAccessedMemberTypes.PublicProperties }));
+                typeParams[2].SetBaseTypeConstraint(typeof(EmptyTestClass));
+                typeParams[2].SetGenericParameterAttributes(GenericParameterAttributes.VarianceMask);
+                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
+                Type[] genericTypeParams = testType.GetGenericArguments();
+                
+                Assert.Equal(3, genericTypeParams.Length);
+                Assert.Equal("TFirst", genericTypeParams[0].Name);
+                Assert.Equal("TSecond", genericTypeParams[1].Name);
+                Assert.Equal("TThird", genericTypeParams[2].Name);
+
+                Type[] constraints = genericTypeParams[0].GetTypeInfo().GetGenericParameterConstraints();
+                Assert.Equal(2, constraints.Length);
+                Assert.Equal(typeof(IAccess).FullName, constraints[0].FullName);
+                Assert.Equal(typeof(INoMethod).FullName, constraints[1].FullName);
+                Assert.Empty(genericTypeParams[1].GetTypeInfo().GetGenericParameterConstraints());
+                Type[] constraints2 = genericTypeParams[2].GetTypeInfo().GetGenericParameterConstraints();
+                Assert.Equal(1, constraints2.Length);
+                Assert.Equal(typeof(EmptyTestClass).FullName, constraints2[0].FullName);
+                Assert.Equal(GenericParameterAttributes.None, genericTypeParams[0].GenericParameterAttributes);
+                Assert.Equal(GenericParameterAttributes.VarianceMask, genericTypeParams[2].GenericParameterAttributes);
+
+                IList<CustomAttributeData> attributes = genericTypeParams[1].GetCustomAttributesData();
+                Assert.Equal(1, attributes.Count);
+                Assert.Equal("DynamicallyAccessedMembersAttribute", attributes[0].AttributeType.Name);
+                Assert.Equal(DynamicallyAccessedMemberTypes.PublicProperties, (DynamicallyAccessedMemberTypes)attributes[0].ConstructorArguments[0].Value);
+                Assert.Empty(genericTypeParams[0].GetCustomAttributesData());
             }
         }
     }

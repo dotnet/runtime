@@ -332,7 +332,6 @@
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
-    <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
@@ -398,7 +397,6 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedTrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DataflowAnalyzedTypeDefinitionNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
@@ -453,6 +451,7 @@
     <Compile Include="Compiler\Logging\NativeAotFatalErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
+    <Compile Include="Compiler\InlinedThreadStatics.cs" />
     <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
@@ -474,7 +473,6 @@
     <Compile Include="Compiler\DescriptorMarker.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\BlockReflectionTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />

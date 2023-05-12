@@ -104,8 +104,8 @@ jobs:
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
       value: ''
-    # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm')))), ne(parameters.pgoType, 'pgo')) }}:
+    # The EnforcePGO script is only supported on Windows and is not supported on arm64.
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), ne(parameters.archType, 'arm64')), ne(parameters.pgoType, 'pgo')) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -201,10 +201,6 @@ jobs:
     - ${{ if or(eq(parameters.crossBuild, 'true'), ne(parameters.archType, 'x64')) }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x64 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
         displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x64 targeting x86)
-
-    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm')) }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -hostarch x86 $(osArg) -ci $(compilerArg) -component crosscomponents -cmakeargs "-DCLR_CROSS_COMPONENTS_BUILD=1" $(officialBuildIdArg) $(clrRuntimePortableBuildArg)
-        displayName: Build CoreCLR Cross-Arch Tools (Tools that run on x86 targeting arm)
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
       - script: |

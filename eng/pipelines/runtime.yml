@@ -82,7 +82,6 @@ extends:
           - tizen_armel
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             testGroup: innerloop
@@ -151,7 +150,6 @@ extends:
           - linux_musl_arm64
           - windows_x64
           - windows_x86
-          - windows_arm
           - windows_arm64
           - freebsd_x64
           jobParameters:
@@ -271,6 +269,9 @@ extends:
           - linux_x64
           - windows_x64
           - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
@@ -313,7 +314,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
@@ -566,7 +567,7 @@ extends:
       # Build the whole product using Mono and run libraries tests
       #
       #
-      # Disabled pending queue backup investigation 
+      # Disabled pending queue backup investigation
       #
       #- template: /eng/pipelines/common/platform-matrix.yml
       #  parameters:
@@ -707,7 +708,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -730,7 +730,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           # - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             runtimeVariant: crossaot
@@ -807,7 +806,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -870,7 +868,6 @@ extends:
           - linux_arm
           - linux_musl_arm
           - linux_musl_arm64
-          - windows_arm
           - windows_arm64
           - windows_x86
           jobParameters:
@@ -983,7 +980,6 @@ extends:
             - linux_musl_arm
             - linux_musl_arm64
             - windows_x86
-            - windows_arm
             - windows_arm64
             - linux_arm
           jobParameters:
@@ -1415,11 +1411,11 @@ extends:
       #
       # Sourcebuild legs
       # We have 3 important legs for source-build:
-      # - Centos.7 (ensures that RH keeps working)
+      # - Centos.8 (ensures that known non-portable RID is working)
       # - Linux-x64 portable (used for dependency flow and downstream PR verification)
       # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
       #
-      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.7 in rolling CI,
+      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
       # Run Linux-x64 in PR.
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1428,9 +1424,9 @@ extends:
           buildConfig: Release
           helixQueueGroup: pr
           platforms:
-          - SourceBuild_centos7_x64
+          - SourceBuild_centos8_x64
           jobParameters:
-            nameSuffix: centos7SourceBuild
+            nameSuffix: centos8SourceBuild
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95

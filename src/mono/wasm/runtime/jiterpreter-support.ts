@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert } from "./types";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
-import { WasmOpcode } from "./jiterpreter-opcodes";
+import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 
@@ -118,7 +117,6 @@ type ImportedFunctionInfo = {
     typeIndex: number;
     module: string;
     name: string;
-    assumeUsed: boolean;
     func: Function;
 }
 
@@ -166,6 +164,7 @@ export class WasmBuilder {
     nextConstantSlot = 0;
 
     compressImportNames = false;
+    lockImports = false;
 
     constructor(constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
@@ -178,6 +177,7 @@ export class WasmBuilder {
         this.stackSize = 1;
         this.inSection = false;
         this.inFunction = false;
+        this.lockImports = false;
         this.locals.clear();
 
         this.functionTypeCount = this.permanentFunctionTypeCount;
@@ -186,13 +186,12 @@ export class WasmBuilder {
         this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
 
         this.nextImportIndex = 0;
-        this.importedFunctionCount = this.permanentImportedFunctionCount;
+        this.importedFunctionCount = 0;
         this.importedFunctions = Object.create(this.permanentImportedFunctions);
 
         for (const k in this.importedFunctions) {
             const f = this.importedFunctions[k];
-            if (!f.assumeUsed)
-                f.index = undefined;
+            f.index = undefined;
         }
 
         this.functions.length = 0;
@@ -235,15 +234,45 @@ export class WasmBuilder {
             return current.getArrayView(false).slice(0, current.size);
     }
 
+    getWasmImports () : WebAssembly.Imports {
+        const result : any = {
+            c: <any>this.getConstants(),
+            m: { h: (<any>Module).asm.memory },
+            f: { f: getWasmFunctionTable() },
+        };
+
+        const importsToEmit = this.getImportsToEmit();
+
+        for (let i = 0; i < importsToEmit.length; i++) {
+            const ifi = importsToEmit[i];
+            if (typeof (ifi.func) !== "function")
+                throw new Error(`Import '${ifi.name}' not found or not a function`);
+
+            const mangledName = this.getCompressedName(ifi);
+            let subTable = result[ifi.module];
+            if (!subTable) {
+                subTable = result[ifi.module] = {};
+            }
+            subTable[mangledName] = ifi.func;
+        }
+
+        return result;
+    }
+
     // HACK: Approximate amount of space we need to generate the full module at present
     // FIXME: This does not take into account any other functions already generated if they weren't
     //  emitted into the module immediately
-    get bytesGeneratedSoFar() {
+    get bytesGeneratedSoFar () {
+        const importSize = this.compressImportNames
+            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
+            ? 8
+            // we keep the uncompressed import names somewhat short, generally, so +12 bytes is about right
+            : 20;
+
         return this.stack[0].size +
             // HACK: A random constant for section headers and padding
             32 +
-            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
-            (this.importedFunctionCount * 8) +
+            (this.importedFunctionCount * importSize) +
             // type index for each function
             (this.functions.length * 2) +
             // export entry for each export
@@ -264,7 +293,13 @@ export class WasmBuilder {
         return this.current.appendU8(value);
     }
 
-    appendU32(value: number) {
+    appendSimd (value: WasmSimdOpcode) {
+        this.current.appendU8(WasmOpcode.PREFIX_simd);
+        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
+        return this.current.appendULeb(value);
+    }
+
+    appendU32 (value: number) {
         return this.current.appendU32(value);
     }
 
@@ -424,8 +459,8 @@ export class WasmBuilder {
         return imports;
     }
 
-    getCompressedName(ifi: ImportedFunctionInfo) {
-        if (!this.compressImportNames || typeof (ifi.index) !== "number")
+    getCompressedName (ifi: ImportedFunctionInfo) {
+        if (!this.compressImportNames || typeof(ifi.index) !== "number")
             return ifi.name;
 
         let result = compressedNameCache[ifi.index!];
@@ -434,23 +469,31 @@ export class WasmBuilder {
         return result;
     }
 
-    _generateImportSection() {
-        const importsToEmit = [];
+    getImportsToEmit () {
+        const result = [];
         for (const k in this.importedFunctions) {
-            const f = this.importedFunctions[k];
-            if (f.index !== undefined)
-                importsToEmit.push(f);
+            const v = this.importedFunctions[k];
+            if (typeof (v.index) !== "number")
+                continue;
+            result.push(v);
         }
-        importsToEmit.sort((lhs, rhs) => lhs.index! - rhs.index!);
+        result.sort((lhs, rhs) => lhs.index! - rhs.index!);
+        // console.log("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
+        return result;
+    }
+
+    _generateImportSection () {
+        const importsToEmit = this.getImportsToEmit();
+        this.lockImports = true;
 
         // Import section
         this.beginSection(2);
-        this.appendULeb(1 + importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(2 + importsToEmit.length + this.constantSlots.length);
 
-        // console.log(`referenced ${importsToEmit.length}/${allImports.length} import(s)`);
+        // console.log(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
             const ifi = importsToEmit[i];
-            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.friendlyName}`);
+            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
             this.appendName(ifi.module);
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
@@ -472,14 +515,26 @@ export class WasmBuilder {
         this.appendU8(0x00);
         // Minimum size is in 64k pages, not bytes
         this.appendULeb(0x01);
+
+        this.appendName("f");
+        this.appendName("f");
+        // tabletype
+        this.appendU8(0x01);
+        // funcref
+        this.appendU8(0x70);
+        // limits = { min=0x01, max=infinity }
+        this.appendU8(0x00);
+        this.appendULeb(0x01);
     }
 
     defineImportedFunction(
         module: string, name: string, functionTypeName: string,
-        assumeUsed: boolean, permanent: boolean, func: Function | number
-    ): ImportedFunctionInfo {
-        if (permanent && (this.importedFunctionCount > this.permanentImportedFunctionCount))
-            throw new Error("New permanent imports cannot be defined after non-permanent ones");
+        permanent: boolean, func: Function | number
+    ) : ImportedFunctionInfo {
+        if (this.lockImports)
+            throw new Error("Import section already generated");
+        if (permanent && (this.importedFunctionCount > 0))
+            throw new Error("New permanent imports cannot be defined after any indexes have been assigned");
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -487,26 +542,26 @@ export class WasmBuilder {
             throw new Error("A permanent import must have a permanent function type");
         const typeIndex = type[0];
         const table = permanent ? this.permanentImportedFunctions : this.importedFunctions;
-        const index = assumeUsed
-            ? (
-                permanent
-                    ? this.permanentImportedFunctionCount++
-                    : this.importedFunctionCount++
-            )
-            : undefined;
         if (typeof (func) === "number")
             func = getWasmFunctionTable().get(func);
         if (typeof (func) !== "function")
             throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer`);
         const result = table[name] = {
-            index,
+            index: undefined,
             typeIndex,
             module,
             name,
-            assumeUsed,
             func
         };
         return result;
+    }
+
+    markImportAsUsed(name: string) {
+        const func = this.importedFunctions[name];
+        if (!func)
+            throw new Error("No imported function named " + name);
+        if (typeof (func.index) !== "number")
+            func.index = this.importedFunctionCount++;
     }
 
     defineFunction(
@@ -581,12 +636,25 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    callImport(name: string) {
+    call_indirect (functionTypeName: string, tableIndex: number) {
+        const type = this.functionTypes[functionTypeName];
+        if (!type)
+            throw new Error("No function type named " + functionTypeName);
+        const typeIndex = type[0];
+        this.appendU8(WasmOpcode.call_indirect);
+        this.appendULeb(typeIndex);
+        this.appendULeb(tableIndex);
+    }
+
+    callImport (name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
-        if (func.index === undefined)
+        if (typeof (func.index) !== "number") {
+            if (this.lockImports)
+                throw new Error("Import section was emitted before assigning an index to import named " + name);
             func.index = this.importedFunctionCount++;
+        }
         this.appendU8(WasmOpcode.call);
         this.appendULeb(func.index);
     }
@@ -1325,6 +1393,9 @@ export const elapsedTimes = {
     compilation: 0
 };
 
+export const simdFallbackCounters : { [name: string] : number } = {
+};
+
 export const counters = {
     traceCandidates: 0,
     tracesCompiled: 0,
@@ -1336,6 +1407,7 @@ export const counters = {
     nullChecksEliminated: 0,
     backBranchesEmitted: 0,
     backBranchesNotEmitted: 0,
+    simdFallback: simdFallbackCounters,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
@@ -1604,6 +1676,7 @@ export const enum JiterpMember {
     BackwardBranchOffsets = 10,
     BackwardBranchOffsetsCount = 11,
     ClauseDataOffsets = 12,
+    ParamsCount = 13,
 }
 
 const memberOffsets: { [index: number]: number } = {};
@@ -1636,6 +1709,13 @@ export function importDef(name: string, fn: Function): [string, string, Function
     return [name, name, fn];
 }
 
+export function bytesFromHex (hex: string) : Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2)
+        bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    return bytes;
+}
+
 export type JiterpreterOptions = {
     enableAll?: boolean;
     enableTraces: boolean;
@@ -1644,6 +1724,7 @@ export type JiterpreterOptions = {
     enableBackwardBranches: boolean;
     enableCallResume: boolean;
     enableWasmEh: boolean;
+    enableSimd: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
@@ -1685,6 +1766,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableBackwardBranches": "jiterpreter-backward-branch-entries-enabled",
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
+    "enableSimd": "jiterpreter-simd-enabled",
     "enableStats": "jiterpreter-stats-enabled",
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",

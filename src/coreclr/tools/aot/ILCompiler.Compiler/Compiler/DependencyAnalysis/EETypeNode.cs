@@ -622,16 +622,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!ConstructedEETypeNode.CreationAllowed(_type))
-            {
-                // If necessary MethodTable is the highest load level for this type, ask the metadata manager
-                // if we have any dependencies due to presence of the EEType.
-                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+            // Ask the metadata manager
+            // if we have any dependencies due to presence of the EEType.
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
 
-                // If necessary MethodTable is the highest load level, consider this a module use
-                if(_type is MetadataType mdType)
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
-            }
+            if (_type is MetadataType mdType)
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
 
             if (_type.IsFunctionPointer)
                 FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
@@ -689,6 +685,7 @@ namespace ILCompiler.DependencyAnalysis
 
             OutputTypeManagerIndirection(factory, ref objData);
             OutputWritableData(factory, ref objData);
+            OutputDispatchMap(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -738,6 +735,11 @@ namespace ILCompiler.DependencyAnalysis
                 SealedVTableNode sealedVTable = factory.SealedVTable(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
                 if (sealedVTable.BuildSealedVTableSlots(factory, relocsOnly) && sealedVTable.NumSealedVTableEntries > 0)
                     flags |= (uint)EETypeFlags.HasSealedVTableEntriesFlag;
+            }
+
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                flags |= (uint)EETypeFlags.HasDispatchMap;
             }
 
             if (HasOptionalFields)
@@ -1200,17 +1202,23 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private void OutputDispatchMap(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (MightHaveInterfaceDispatchMap(factory))
+            {
+                ISymbolNode dispatchMap = factory.InterfaceDispatchMap(_type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(dispatchMap, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(dispatchMap);
+            }
+        }
+
         /// <summary>
         /// Populate the OptionalFieldsRuntimeBuilder if any optional fields are required.
         /// </summary>
         protected internal virtual void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
         {
-            if (!relocsOnly && MightHaveInterfaceDispatchMap(factory))
-            {
-                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.DispatchMap, checked((uint)factory.InterfaceDispatchMapIndirection(canonType).IndexFromBeginningOfArray));
-            }
-
             ComputeRareFlags(factory);
             ComputeNullableValueOffset();
             ComputeValueTypeFieldPadding();

@@ -344,12 +344,6 @@ PAL_Initialize(
     char * const argv[]);
 
 PALIMPORT
-void
-PALAPI
-PAL_InitializeWithFlags(
-    DWORD flags);
-
-PALIMPORT
 int
 PALAPI
 PAL_InitializeDLL();
@@ -401,6 +395,17 @@ VOID
 PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
+
+/// <summary>
+/// Used by the single-file and native AOT hosts to connect the linked in version of createdump
+/// </summary>
+typedef int (*PCREATEDUMP_CALLBACK)(const int argc, const char* argv[]);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback); 
 
 // Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
 enum
@@ -4040,18 +4045,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define wcstod        PAL_wcstod
-#define wcstoul       PAL_wcstoul
-#define wcscat        PAL_wcscat
-#define wcscpy        PAL_wcscpy
-#define wcslen        PAL_wcslen
-#define wcsncmp       PAL_wcsncmp
-#define wcschr        PAL_wcschr
-#define wcsrchr       PAL_wcsrchr
-#define wcsstr        PAL_wcsstr
-#define wcspbrk       PAL_wcspbrk
-#define wcscmp        PAL_wcscmp
-#define wcsncpy       PAL_wcsncpy
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4100,10 +4093,8 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
-#define _wcstoui64    PAL__wcstoui64
 #define _flushall     PAL__flushall
 #define strnlen       PAL_strnlen
-#define wcsnlen       PAL_wcsnlen
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4212,10 +4203,10 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
+PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
+PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 

@@ -243,7 +243,7 @@ public:
     }
 };
 
-// GT_FIELD nodes will be lowered into more "code-gen-able" representations, like GT_IND's of addresses.
+// GT_FIELD_ADDR nodes will be lowered into more "code-gen-able" representations, like ADD's of addresses.
 // For value numbering, we would like to preserve the aliasing information for class and static fields,
 // and so will annotate such lowered addresses with "field sequences", representing the "base" static or
 // class field and any additional struct fields. We only need to preserve the handle for the first field,
@@ -426,14 +426,13 @@ enum GenTreeFlags : unsigned int
 //  well to make sure it's the right operator for the particular flag.
 //---------------------------------------------------------------------
 
-// These flags are also used by GT_LCL_FLD, and the last-use (DEATH) flags are also used by GenTreeCopyOrReload.
+    GTF_VAR_DEF             = 0x80000000, // GT_STORE_LCL_VAR/GT_STORE_LCL_FLD/GT_LCL_ADDR -- this is a definition
+    GTF_VAR_USEASG          = 0x40000000, // GT_STORE_LCL_FLD/GT_STORE_LCL_FLD/GT_LCL_ADDR -- this is a partial definition, a use of
+                                          // the previous definition is implied. A partial definition usually occurs when a struct
+                                          // field is assigned to (s.f = ...) or when a scalar typed variable is assigned to via a
+                                          // narrow store (*((byte*)&i) = ...).
 
-    GTF_VAR_DEF             = 0x80000000, // GT_LCL_VAR -- this is a definition
-    GTF_VAR_USEASG          = 0x40000000, // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
-                                          // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
-                                          // when a scalar typed variable is assigned to via a narrow store (*((byte*)&i) = ...).
-
-// Last-use bits.
+// Last-use bits. Also used by GenTreeCopyOrReload.
 // Note that a node marked GTF_VAR_MULTIREG can only be a pure definition of all the fields, or a pure use of all the fields,
 // so we don't need the equivalent of GTF_VAR_USEASG.
 
@@ -476,8 +475,7 @@ enum GenTreeFlags : unsigned int
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
-    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
+    GTF_FLD_DEREFERENCED        = 0x40000000, // GT_FIELD_ADDR -- used to preserve previous behavior
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
@@ -489,8 +487,6 @@ enum GenTreeFlags : unsigned int
     GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
-                                              //           assignment; don't evaluate it independently.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
@@ -1638,7 +1634,7 @@ public:
 
     bool OperIsSsaDef() const
     {
-        return OperIs(GT_ASG, GT_CALL);
+        return OperIsLocalStore() || OperIs(GT_CALL);
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
@@ -1692,7 +1688,7 @@ public:
         return OperIs(GT_JCC, GT_SETCC, GT_SELECTCC);
     }
 
-    bool OperIsStoreLclVar(unsigned* pLclNum);
+    bool OperIsStoreLclVar(unsigned* pLclNum = nullptr);
     bool OperIsStoreLcl(unsigned* pLclNum);
 
 #ifdef DEBUG
@@ -1718,7 +1714,6 @@ public:
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
-            case GT_FIELD:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
@@ -1788,8 +1783,6 @@ public:
 
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
-
-    inline GenTree* GetStoreDestination();
 
     inline GenTree*& Data();
 
@@ -1914,12 +1907,8 @@ public:
         PRESERVE_VN // Preserve value number
     };
 
-    void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN); // set gtOper
-    void SetOperResetFlags(genTreeOps oper);                              // set gtOper and reset flags
-
-    // set gtOper and only keep GTF_COMMON_MASK flags
+    void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
     void ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN);
-    void ChangeOperUnchecked(genTreeOps oper);
     void SetOperRaw(genTreeOps oper);
 
     void ChangeType(var_types newType)
@@ -1958,6 +1947,11 @@ public:
     bool IsLocal() const
     {
         return OperIsLocal(OperGet());
+    }
+
+    bool IsAnyLocal() const
+    {
+        return OperIsAnyLocal(OperGet());
     }
 
     bool IsLclVarAddr() const;
@@ -3685,6 +3679,13 @@ public:
         this->gtSpillFlags = from->gtSpillFlags;
     }
 
+#ifdef DEBUG
+    void ResetLclILoffs()
+    {
+        gtLclILoffs = BAD_IL_OFFSET;
+    }
+#endif
+
     GenTreeLclVar(genTreeOps oper,
                   var_types  type,
                   unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
@@ -3874,8 +3875,8 @@ struct GenTreeBox : public GenTreeUnOp
     }
 };
 
-// GenTreeField -- data member ref (GT_FIELD)
-struct GenTreeField : public GenTreeUnOp
+// GenTreeFieldAddr -- data member address (GT_FIELD_ADDR)
+struct GenTreeFieldAddr : public GenTreeUnOp
 {
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
@@ -3889,8 +3890,8 @@ public:
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(genTreeOps oper, var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTreeUnOp(oper, type, obj)
+    GenTreeFieldAddr(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTreeUnOp(GT_FIELD_ADDR, type, obj)
         , gtFldHnd(fldHnd)
         , gtFldOffset(offs)
         , gtFldMayOverlap(false)
@@ -3902,7 +3903,7 @@ public:
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeField() : GenTreeUnOp()
+    GenTreeFieldAddr() : GenTreeUnOp()
     {
     }
 #endif
@@ -3914,13 +3915,6 @@ public:
         return gtOp1;
     }
 
-    // True if this field is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        assert(((gtFlags & GTF_FLD_VOLATILE) == 0) || OperIs(GT_FIELD));
-        return (gtFlags & GTF_FLD_VOLATILE) != 0;
-    }
-
     bool IsSpanLength() const
     {
         // This is limited to span length today rather than a more general "IsNeverNegative"
@@ -3929,8 +3923,6 @@ public:
         // Extending this support more in the future will require additional work and
         // considerations to help ensure it is correctly used since people may want
         // or intend to use this as more of a "point in time" feature like GTF_IND_NONNULL
-
-        assert(OperIs(GT_FIELD));
         return gtFldIsSpanLength;
     }
 
@@ -8850,12 +8842,18 @@ inline bool GenTree::OperIsStoreLclVar(unsigned* pLclNum) // TODO-ASG: delete.
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
-        *pLclNum = AsLclVar()->GetLclNum();
+        if (pLclNum != nullptr)
+        {
+            *pLclNum = AsLclVar()->GetLclNum();
+        }
         return true;
     }
     if (OperIs(GT_ASG) && gtGetOp1()->OperIs(GT_LCL_VAR))
     {
-        *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        if (pLclNum != nullptr)
+        {
+            *pLclNum = gtGetOp1()->AsLclVar()->GetLclNum();
+        }
         return true;
     }
 
@@ -9261,12 +9259,6 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     return op2;
 }
 
-inline GenTree* GenTree::GetStoreDestination() // TODO-ASG: delete.
-{
-    assert(OperIs(GT_ASG) || OperIsStore());
-    return OperIs(GT_ASG) ? gtGetOp1() : this;
-}
-
 inline GenTree*& GenTree::Data()
 {
     assert(OperIsStore() || OperIs(GT_STORE_DYN_BLK, GT_ASG));
@@ -9294,10 +9286,10 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped assignment
+// gtCommaAssignVal - find value being assigned to a comma wrapped store
 //
 // Returns:
-//    tree representing value being assigned if this tree represents a
+//    tree representing value being stored if this tree represents a
 //    comma-wrapped local definition and use.
 //
 //    original tree, if not.
@@ -9311,15 +9303,10 @@ inline GenTree* GenTree::gtCommaAssignVal()
         GenTree* commaOp1 = AsOp()->gtOp1;
         GenTree* commaOp2 = AsOp()->gtOp2;
 
-        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_ASG))
+        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_STORE_LCL_VAR) &&
+            (commaOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
         {
-            GenTree* asgOp1 = commaOp1->AsOp()->gtOp1;
-            GenTree* asgOp2 = commaOp1->AsOp()->gtOp2;
-
-            if (asgOp1->OperIs(GT_LCL_VAR) && (asgOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
-            {
-                result = asgOp2;
-            }
+            result = commaOp1->AsLclVar()->Data();
         }
     }
 
