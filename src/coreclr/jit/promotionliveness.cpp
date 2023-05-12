@@ -113,11 +113,40 @@ void PromotionLiveness::ComputeUseDefSets()
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveIn, BitVecOps::MakeEmpty(m_bvTraits));
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveOut, BitVecOps::MakeEmpty(m_bvTraits));
 
-        for (Statement* stmt : block->Statements())
+        if (m_compiler->compQmarkUsed)
         {
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            for (Statement* stmt : block->Statements())
             {
-                MarkUseDef(lcl, bb.VarUse, bb.VarDef);
+                GenTree* dst;
+                GenTree* qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
+                if (qmark == nullptr)
+                {
+                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                    {
+                        MarkUseDef(lcl, bb.VarUse, bb.VarDef);
+                    }
+                }
+                else
+                {
+                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                    {
+                        // Skip liveness updates/marking for defs; they may be conditionally executed.
+                        if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
+                        {
+                            MarkUseDef(lcl, bb.VarUse, bb.VarDef);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (Statement* stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                {
+                    MarkUseDef(lcl, bb.VarUse, bb.VarDef);
+                }
             }
         }
     }
@@ -162,7 +191,9 @@ void PromotionLiveness::MarkUseDef(GenTreeLclVarCommon* lcl, BitSetShortLongRep&
         {
             // Mark remainder and all fields.
             for (size_t i = 0; i <= reps.size(); i++)
+            {
                 MarkIndex(baseIndex + (unsigned)i, isUse, isDef, useSet, defSet);
+            }
         }
         else
         {
@@ -452,9 +483,30 @@ void PromotionLiveness::FillInLiveness()
 
         while (true)
         {
-            for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
+            GenTree* qmark = nullptr;
+            if (m_compiler->compQmarkUsed)
             {
-                FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
+                GenTree* dst;
+                qmark = m_compiler->fgGetTopLevelQmark(stmt->GetRootNode(), &dst);
+            }
+
+            if (qmark == nullptr)
+            {
+                for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
+                {
+                    FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
+                }
+            }
+            else
+            {
+                for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr; cur = cur->gtPrev)
+                {
+                    // Skip liveness updates/marking for defs; they may be conditionally executed.
+                    if ((cur->gtFlags & GTF_VAR_DEF) == 0)
+                    {
+                        FillInLiveness(life, volatileVars, cur->AsLclVarCommon());
+                    }
+                }
             }
 
             if (stmt == block->firstStmt())
