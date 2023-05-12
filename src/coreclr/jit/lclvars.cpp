@@ -914,7 +914,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
             canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            // On LoongArch64 and TARGET_RISCV64 , if there aren't any remaining floating-point registers to pass the
+            // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
             // argument,
             // integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
@@ -960,6 +960,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            unsigned secondAllocatedRegArgNum = 0;
             if (argRegTypeInStruct1 != TYP_UNKNOWN)
             {
                 firstAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct1, 1);
@@ -1022,7 +1023,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
-                        unsigned secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
+                        secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2));
                         varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
@@ -1114,7 +1115,30 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     }
                 }
                 else
-#endif // defined(UNIX_AMD64_ABI)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                if (varTypeIsStruct(argType))
+                {
+                    if (argRegTypeInStruct1 == TYP_UNKNOWN)
+                    {
+                        printf("first: <not used>");
+                    }
+                    else
+                    {
+                        printf("first: %s",
+                               getRegName(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1)));
+                    }
+                    if (argRegTypeInStruct2 == TYP_UNKNOWN)
+                    {
+                        printf(", second: <not used>");
+                    }
+                    else
+                    {
+                        printf(", second: %s",
+                               getRegName(genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2)));
+                    }
+                }
+                else
+#endif // UNIX_AMD64_ABI, TARGET_LOONGARCH64, TARGET_RISCV64
                 {
                     assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
 
@@ -2911,19 +2935,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
             }
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if FEATURE_SIMD
-            if (varTypeIsSIMD(layout->GetType()))
-            {
-                CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-                impNormStructType(layout->GetClassHandle(), &simdBaseJitType);
-
-                if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-                {
-                    assert(varTypeIsSIMD(varDsc));
-                    varDsc->SetSimdBaseJitType(simdBaseJitType);
-                }
-            }
-#endif // FEATURE_SIMD
             // For structs that are small enough, we check and set HFA element type
             if (GlobalJitOptions::compFeatureHfa && (layout->GetSize() <= MAX_PASS_MULTIREG_BYTES))
             {
@@ -2945,9 +2956,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     }
     else
     {
-#if FEATURE_SIMD
-        assert(!varTypeIsSIMD(varDsc) || (varDsc->GetSimdBaseType() != TYP_UNKNOWN));
-#endif // FEATURE_SIMD
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
@@ -3103,13 +3111,6 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
 {
     noway_assert(varNum < lvaCount);
 
-    // If we are just importing, we cannot reliably track local ref types,
-    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
-    if (compIsForImportOnly())
-    {
-        return;
-    }
-
     if (clsHnd != NO_CLASS_HANDLE && !isExact && JitConfig.JitEnableExactDevirtualization())
     {
         CORINFO_CLASS_HANDLE exactClass;
@@ -3197,13 +3198,6 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
     assert(varNum < lvaCount);
-
-    // If we are just importing, we cannot reliably track local ref types,
-    // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
-    if (compIsForImportOnly())
-    {
-        return;
-    }
 
     // Else we should have a class handle to consider
     assert(clsHnd != nullptr);
@@ -3767,19 +3761,6 @@ void Compiler::lvaSortByRefCount()
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeFull(this));
 #endif
 }
-
-#ifdef FEATURE_SIMD
-var_types LclVarDsc::GetSimdBaseType() const
-{
-    CorInfoType simdBaseJitType = GetSimdBaseJitType();
-
-    if (simdBaseJitType == CORINFO_TYPE_UNDEF)
-    {
-        return TYP_UNKNOWN;
-    }
-    return JitType2PreciseVarType(simdBaseJitType);
-}
-#endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
 // lvExactSize: Get the exact size of the type of this local.
@@ -8066,12 +8047,7 @@ unsigned Compiler::lvaStressLclFldPadding(unsigned lclNum)
 Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* data)
 {
     GenTree* const       tree = *pTree;
-    GenTreeLclVarCommon* lcl  = nullptr;
-
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
-    {
-        lcl = tree->AsLclVarCommon();
-    }
+    GenTreeLclVarCommon* lcl  = tree->OperIsAnyLocal() ? tree->AsLclVarCommon() : nullptr;
 
     if (lcl == nullptr)
     {
@@ -8088,23 +8064,24 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     if (varDsc->lvNoLclFldStress)
     {
         // Already determined we can't do anything for this var
-        return WALK_SKIP_SUBTREES;
+        return WALK_CONTINUE;
     }
 
     if (bFirstPass)
     {
         // Ignore locals that already have field appearances
-        if (lcl->OperIs(GT_LCL_FLD) || (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
+        if (lcl->OperIs(GT_LCL_FLD, GT_STORE_LCL_FLD) ||
+            (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Ignore arguments and temps
         if (varDsc->lvIsParam || lclNum >= pComp->info.compLocalsCount)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Ignore OSR locals; if in memory, they will live on the
@@ -8113,7 +8090,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->lvaIsOSRLocal(lclNum))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Likewise for Tier0 methods with patchpoints --
@@ -8122,7 +8099,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Converting tail calls to loops may require insertion of explicit
@@ -8133,21 +8110,21 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (pComp->compMayConvertTailCallToLoop)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Fix for lcl_fld stress mode
         if (varDsc->lvKeepType)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Can't have GC ptrs in block layouts.
         if (!varTypeIsArithmetic(lclType))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // The noway_assert in the second pass below, requires that these types match
@@ -8155,7 +8132,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (varType != lclType)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Weed out "small" types like TYP_BYTE as we don't mark the GT_LCL_VAR
@@ -8165,7 +8142,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (genTypeSize(varType) != genTypeSize(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
 
         // Offset some of the local variable by a "random" non-zero amount
@@ -8174,7 +8151,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (padding == 0)
         {
             varDsc->lvNoLclFldStress = true;
-            return WALK_SKIP_SUBTREES;
+            return WALK_CONTINUE;
         }
     }
     else
@@ -8209,13 +8186,22 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // Update the trees
         if (tree->OperIs(GT_LCL_VAR))
         {
-            tree->ChangeOper(GT_LCL_FLD);
+            tree->SetOper(GT_LCL_FLD);
+        }
+        else if (tree->OperIs(GT_STORE_LCL_VAR))
+        {
+            tree->SetOper(GT_STORE_LCL_FLD);
         }
 
         tree->AsLclFld()->SetLclOffs(padding);
+
+        if (tree->OperIs(GT_STORE_LCL_FLD) && tree->IsPartialLclFld(pComp))
+        {
+            tree->gtFlags |= GTF_VAR_USEASG;
+        }
     }
 
-    return WALK_SKIP_SUBTREES;
+    return WALK_CONTINUE;
 }
 
 /*****************************************************************************/

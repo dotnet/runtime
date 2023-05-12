@@ -30,7 +30,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
         {
-            Debug.Assert(value?.GetType() == typeof(object));
+            if (value is null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
             writer.WriteStartObject();
             writer.WriteEndObject();
         }
@@ -86,20 +91,17 @@ namespace System.Text.Json.Serialization.Converters
             return null!;
         }
 
-        public override void WriteAsPropertyName(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+        {
+            WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
+        }
+
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(nameof(value));
             }
-
-            WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
-        }
-
-        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
-        {
-            // This converter does not handle nulls.
-            Debug.Assert(value != null);
 
             Type runtimeType = value.GetType();
             JsonConverter runtimeConverter = options.GetConverterInternal(runtimeType);

@@ -186,6 +186,10 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SpecialSideEffect_Other = 0x400000,
 
     HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
+
+    // MaybeNoJmpTable IMM
+    // the imm intrinsic may not need jumptable fallback when it gets non-const argument
+    HW_Flag_MaybeNoJmpTableIMM = 0x800000,
 };
 
 #if defined(TARGET_XARCH)
@@ -311,6 +315,106 @@ enum class FloatRoundingMode : uint8_t
 
     // _MM_FROUND_NO_EXC
     NoException = 0x08,
+};
+
+enum class TernaryLogicUseFlags : uint8_t
+{
+    // Indicates no flags are present
+    None = 0,
+
+    // Indicates the ternary logic uses A
+    A = 1 << 0,
+
+    // Indicates the ternary logic uses B
+    B = 1 << 1,
+
+    // Indicates the ternary logic uses C
+    C = 1 << 2,
+
+    // Indicates the ternary logic uses A and B
+    AB = (A | B),
+
+    // Indicates the ternary logic uses A and C
+    AC = (A | C),
+
+    // Indicates the ternary logic uses B and C
+    BC = (B | C),
+
+    // Indicates the ternary logic uses A, B, and C
+    ABC = (A | B | C),
+};
+
+enum class TernaryLogicOperKind : uint8_t
+{
+    // Indicates no operation is done
+    None = 0,
+
+    // value
+    Select = 1,
+
+    // constant true (1)
+    True = 2,
+
+    // constant false (0)
+    False = 3,
+
+    // ~value
+    Not = 4,
+
+    // left & right
+    And = 5,
+
+    // ~(left & right)
+    Nand = 6,
+
+    // left | right
+    Or = 7,
+
+    // ~(left | right)
+    Nor = 8,
+
+    // left ^ right
+    Xor = 9,
+
+    // ~(left ^ right)
+    Xnor = 10,
+
+    // cond ? left : right
+    Cond = 11,
+
+    // returns 0 if two+ of the three input bits are 0; else 1
+    Major = 12,
+
+    // returns 0 if two+ of the three input bits are 1; else 0
+    Minor = 13,
+};
+
+struct TernaryLogicInfo
+{
+    // We have 256 entries, so we compress as much as possible
+    // This gives us 3-bytes per entry (21-bits)
+
+    TernaryLogicOperKind oper1 : 4;
+    TernaryLogicUseFlags oper1Use : 3;
+
+    TernaryLogicOperKind oper2 : 4;
+    TernaryLogicUseFlags oper2Use : 3;
+
+    TernaryLogicOperKind oper3 : 4;
+    TernaryLogicUseFlags oper3Use : 3;
+
+    static const TernaryLogicInfo& lookup(uint8_t control);
+
+    TernaryLogicUseFlags GetAllUseFlags() const
+    {
+        uint8_t useFlagsBits = 0;
+
+        useFlagsBits |= static_cast<uint8_t>(oper1Use);
+        useFlagsBits |= static_cast<uint8_t>(oper2Use);
+        useFlagsBits |= static_cast<uint8_t>(oper3Use);
+
+        return static_cast<TernaryLogicUseFlags>(useFlagsBits);
+    }
 };
 #endif // TARGET_XARCH
 
@@ -872,6 +976,12 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
+
+    static bool MaybeNoJmpTableImm(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeNoJmpTableIMM) != 0;
     }
 };
 

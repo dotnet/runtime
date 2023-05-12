@@ -316,7 +316,7 @@ opcode_added:
 		td->last_ins->sregs [i] = td->sp [i].local;
 
 	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mint_type (csignature->ret);
+	int ret_mt = mono_mint_type (csignature->ret);
 	if (ret_mt == MINT_TYPE_VT) {
 		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);
@@ -504,7 +504,7 @@ opcode_added:
 		td->last_ins->sregs [i] = td->sp [i].local;
 
 	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mint_type (csignature->ret);
+	int ret_mt = mono_mint_type (csignature->ret);
 	if (ret_mt == MINT_TYPE_VT) {
 		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);
@@ -680,7 +680,7 @@ opcode_added:
 		td->last_ins->sregs [i] = td->sp [i].local;
 
 	g_assert (csignature->ret->type != MONO_TYPE_VOID);
-	int ret_mt = mint_type (csignature->ret);
+	int ret_mt = mono_mint_type (csignature->ret);
 	if (ret_mt == MINT_TYPE_VT) {
 		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);

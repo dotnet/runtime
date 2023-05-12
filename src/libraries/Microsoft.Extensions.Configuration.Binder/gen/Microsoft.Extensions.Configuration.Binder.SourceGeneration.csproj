@@ -26,6 +26,7 @@
     <Compile Include="ConfigurationBindingSourceGenerator.Helpers.cs" />
     <Compile Include="ConfigurationBindingSourceGenerator.Parser.cs" />
     <Compile Include="ExceptionMessages.cs" />
+    <Compile Include="KnownTypeSymbols.cs" />
     <Compile Include="MethodSpecifier.cs" />
     <Compile Include="SourceGenerationSpec.cs" />
     <Compile Include="SourceWriter.cs" />

@@ -1045,7 +1045,10 @@ namespace Internal.IL
                     // magic fields the compiler synthetized, the data blob might bring more dependencies
                     // and we need to scan those.
                     _dependencies.Add(_compilation.GetFieldRvaData(field), reason);
-                    // TODO: lazy cctor dependency
+                    // RVA static fields in generic types not implemented
+                    Debug.Assert(!field.OwningType.HasInstantiation);
+                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType), "Cctor context");
                     return;
                 }
 

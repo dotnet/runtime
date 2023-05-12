@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod } from "./types";
+import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
     getU16, getU32_unaligned
 } from "./memory";
-import { WasmOpcode } from "./jiterpreter-opcodes";
-import { MintOpcode, OpcodeInfo } from "./mintops";
+import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
+import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder, addWasmFunctionPointer,
@@ -329,7 +329,7 @@ function wrap_trace_function(
 
     if (!_wrap_trace_function) {
         // If we used a regular closure, the js console would print the entirety of
-        //  dotnet.js when printing an error stack trace, which is... not helpful
+        //  dotnet.native.js when printing an error stack trace, which is... not helpful
         const js = `return function trace_enter (locals) {
             let threw = true;
             try {
@@ -980,7 +980,7 @@ export function trace_operands(a: number, b: number) {
 export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceName: string, reason: string | MintOpcode) {
     if (typeof (reason) === "number") {
         cwraps.mono_jiterp_adjust_abort_count(reason, 1);
-        reason = OpcodeInfo[<any>reason][0];
+        reason = getOpcodeName(reason);
     } else {
         let abortCount = abortCounts[reason];
         if (typeof (abortCount) !== "number")
@@ -1201,7 +1201,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
-            const opname = OpcodeInfo[<any>i][0];
+            const opname = getOpcodeName(i);
             const count = cwraps.mono_jiterp_adjust_abort_count(i, 0);
             if (count > 0)
                 abortCounts[opname] = count;
