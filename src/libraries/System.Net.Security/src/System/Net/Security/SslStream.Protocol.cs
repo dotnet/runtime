@@ -1115,7 +1115,7 @@ namespace System.Net.Security
             return success;
         }
 
-        private bool CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain, ref ProtocolToken alertToken)
+        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain, ref ProtocolToken alertToken)
         {
             TlsAlertMessage alertMessage;
 
@@ -1148,11 +1148,9 @@ namespace System.Net.Security
                 {
                     ExceptionDispatchInfo.Throw(status.Exception);
                 }
-
-                return false;
             }
 
-            return GenerateAlertToken(ref alertToken);
+            GenerateAlertToken(ref alertToken);
         }
 
         private byte[]? CreateShutdownToken()
@@ -1179,7 +1177,7 @@ namespace System.Net.Security
             return nextmsg;
         }
 
-        private bool GenerateAlertToken(ref ProtocolToken alertToken)
+        private void GenerateAlertToken(ref ProtocolToken alertToken)
         {
             byte[]? nextmsg = null;
 
@@ -1189,8 +1187,6 @@ namespace System.Net.Security
             alertToken.Payload = nextmsg;
             alertToken.Size = nextmsg?.Length ?? 0;
             alertToken.Status = status;
-            return true;
-            //return new ProtocolToken(nextmsg, status);
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
