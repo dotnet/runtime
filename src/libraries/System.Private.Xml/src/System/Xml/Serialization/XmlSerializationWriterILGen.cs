@@ -353,6 +353,9 @@ namespace System.Xml.Serialization
             WriteTag("WriteEmptyTag", name, ns);
         }
 
+        private static readonly string[] s_argNamesP = new string[] { "p" };
+        private static readonly string[] s_argNamesO = new string[] { "o" };
+
         [RequiresUnreferencedCode("calls WriteMember")]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
@@ -366,7 +369,7 @@ namespace System.Xml.Serialization
                 typeof(void),
                 methodName,
                 new Type[] { typeof(object[]) },
-                new string[] { "p" },
+                s_argNamesP,
                 CodeGenerator.PublicMethodAttributes
                 );
 
@@ -558,7 +561,7 @@ namespace System.Xml.Serialization
                 typeof(void),
                 methodName,
                 new Type[] { typeof(object) },
-                new string[] { "o" },
+                s_argNamesO,
                 CodeGenerator.PublicMethodAttributes
                 );
 

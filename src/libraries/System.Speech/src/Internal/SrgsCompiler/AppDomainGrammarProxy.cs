@@ -277,7 +277,7 @@ namespace System.Speech.Internal.SrgsCompiler
         /// </summary>
         private static NameValuePair[] ParseInitParams(string initParameters)
         {
-            string[] parameters = initParameters.Split(new char[] { ';' }, StringSplitOptions.None);
+            string[] parameters = initParameters.Split(s_semicolon, StringSplitOptions.None);
             NameValuePair[] pairs = new NameValuePair[parameters.Length];
 
             for (int i = 0; i < parameters.Length; i++)
@@ -306,6 +306,7 @@ namespace System.Speech.Internal.SrgsCompiler
         private Assembly _assembly;
         private string _rule;
         private Type _grammarType;
+        private static readonly char[] s_semicolon = new char[] { ';' };
 
         private struct NameValuePair
         {

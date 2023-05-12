@@ -287,13 +287,7 @@ namespace System.Text.RegularExpressions.Generator
                 "Regex.InfiniteMatchTimeout" :
                 $"TimeSpan.FromMilliseconds({matchTimeout.ToString(CultureInfo.InvariantCulture)})";
 
-        /// <summary>Adds the IsWordChar helper to the required helpers collection.</summary>
-        private static void AddIsWordCharHelper(Dictionary<string, string[]> requiredHelpers)
-        {
-            const string IsWordChar = nameof(IsWordChar);
-            if (!requiredHelpers.ContainsKey(IsWordChar))
-            {
-                requiredHelpers.Add(IsWordChar, new string[]
+        private static readonly string[] s_isWordChar = new string[]
                 {
                     "/// <summary>Determines whether the character is part of the [\\w] set.</summary>",
                     "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
@@ -323,7 +317,15 @@ namespace System.Text.RegularExpressions.Generator
                     "        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
                     "        (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
                     "}",
-                });
+                };
+
+        /// <summary>Adds the IsWordChar helper to the required helpers collection.</summary>
+        private static void AddIsWordCharHelper(Dictionary<string, string[]> requiredHelpers)
+        {
+            const string IsWordChar = nameof(IsWordChar);
+            if (!requiredHelpers.ContainsKey(IsWordChar))
+            {
+                requiredHelpers.Add(IsWordChar, s_isWordChar);
             }
         }
 
@@ -1282,6 +1284,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
         }
+
+        private static readonly string[] s_arrayWithCapture = new[] { "pos", "base.Crawlpos()" };
+        private static readonly string[] s_arrayPos = new[] { "pos" };
+        private static readonly char[] s_comma = new[] { ',' };
 
         /// <summary>Emits the body of the TryMatchAtCurrentPosition.</summary>
         private static void EmitTryMatchAtCurrentPosition(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
@@ -3531,8 +3537,7 @@ namespace System.Text.RegularExpressions.Generator
                     EmitStackPush(
                         expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty!, "base.Crawlpos()" } :
                         iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty! } :
-                        expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } :
-                        new[] { "pos" });
+                        expressionHasCaptures ? s_arrayWithCapture : s_arrayPos);
 
                     if (iterationMayBeEmpty)
                     {
@@ -3610,7 +3615,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
                         EmitStackPop(iterationMayBeEmpty ?
                             new[] { sawEmpty!, startingPos!, "pos" } :
-                            new[] { "pos" });
+                            s_arrayPos);
                         SliceInputSpan();
 
                         // If the loop's child doesn't backtrack, then this loop has failed.
@@ -3666,7 +3671,7 @@ namespace System.Text.RegularExpressions.Generator
                     // and thus it needs to be pushed on to the backtracking stack.
                     bool isInLoop = rm.Analysis.IsInLoop(node);
                     EmitStackPush(
-                        !isInLoop ? (expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } : new[] { "pos" }) :
+                        !isInLoop ? (expressionHasCaptures ? s_arrayWithCapture : s_arrayPos) :
                         iterationMayBeEmpty ? (expressionHasCaptures ? new[] { "pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()" } : new[] { "pos", iterationCount, startingPos!, sawEmpty! }) :
                         expressionHasCaptures ? new[] { "pos", iterationCount, "base.Crawlpos()"} :
                         new[] { "pos", iterationCount });
@@ -3688,7 +3693,7 @@ namespace System.Text.RegularExpressions.Generator
                         EmitUncaptureUntil(StackPop());
                     }
                     EmitStackPop(
-                        !isInLoop ? new[] { "pos" } :
+                        !isInLoop ? s_arrayPos:
                         iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :
                         new[] { iterationCount, "pos" });
                     SliceInputSpan();
@@ -4148,9 +4153,9 @@ namespace System.Text.RegularExpressions.Generator
                 // minimum iteration count.
                 EmitStackPush(
                     expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos!, "pos" } :
-                    expressionHasCaptures ? new[] { "base.Crawlpos()", "pos" } :
+                    expressionHasCaptures ? s_arrayWithCapture :
                     iterationMayBeEmpty ? new[] { startingPos!, "pos" } :
-                    new[] { "pos" });
+                    s_arrayPos);
                 writer.WriteLine();
 
                 // Save off some state.  We need to store the current pos so we can compare it against
@@ -4258,7 +4263,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 EmitStackPop(iterationMayBeEmpty ?
                     new[] { "pos", startingPos! } :
-                    new[] { "pos" });
+                    s_arrayPos);
                 if (expressionHasCaptures)
                 {
                     EmitUncaptureUntil(StackPop());
@@ -5098,7 +5103,7 @@ namespace System.Text.RegularExpressions.Generator
 
             // Parse the runtime-generated "Option1, Option2" into each piece and then concat
             // them back together.
-            string[] parts = s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = s.Split(s_comma, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < parts.Length; i++)
             {
                 parts[i] = "RegexOptions." + parts[i].Trim();

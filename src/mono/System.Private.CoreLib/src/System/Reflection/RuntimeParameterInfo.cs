@@ -12,6 +12,7 @@ namespace System.Reflection
     internal sealed class RuntimeParameterInfo : ParameterInfo
     {
         internal MarshalAsAttribute? marshalAs;
+        private static readonly char[] s_separator = new char[] { '&' };
 
         // Called by the runtime
         internal RuntimeParameterInfo(string name, Type type, int position, int attrs, object defaultValue, MemberInfo member, MarshalAsAttribute marshalAs)
@@ -41,7 +42,7 @@ namespace System.Reflection
                 // Why don't we just use "&"?
                 if (t.IsByRef)
                 {
-                    sb.Append(typeName.TrimEnd(new char[] { '&' }));
+                    sb.Append(typeName.TrimEnd(s_separator));
                     sb.Append(" ByRef");
                 }
                 else

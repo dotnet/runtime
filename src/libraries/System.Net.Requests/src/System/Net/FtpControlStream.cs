@@ -868,6 +868,10 @@ namespace System.Net
             }
         }
 
+        private static readonly char[] s_spaceDot = new char[] { ' ', '.' };
+        private static readonly char[] s_whitespaceDot = new char[] { ' ', '.', '\r', '\n' };
+        private static readonly char[] s_spaceCommaBrackets = new char[] { ' ', '(', ',', ')' };
+
         /// <summary>
         ///    <para>Parses a response string for content length</para>
         /// </summary>
@@ -885,7 +889,7 @@ namespace System.Net
         private DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
-            string[] parsedList = str.Split(new char[] { ' ', '.' });
+            string[] parsedList = str.Split(s_spaceDot);
             if (parsedList.Length < 2)
             {
                 return dateTime;
@@ -942,7 +946,7 @@ namespace System.Net
                 return;
 
             string filename = str.Substring(start, end - start);
-            filename = filename.TrimEnd(new char[] { ' ', '.', '\r', '\n' });
+            filename = filename.TrimEnd(s_whitespaceDot);
             // Do minimal escaping that we need to get a valid Uri
             // when combined with the baseUri
             string escapedFilename;
@@ -1022,7 +1026,7 @@ namespace System.Net
         /// </summary>
         private static int GetPortV4(string responseString)
         {
-            string[] parsedList = responseString.Split(new char[] { ' ', '(', ',', ')' });
+            string[] parsedList = responseString.Split(s_spaceCommaBrackets);
 
             // We need at least the status code and the port
             if (parsedList.Length <= 7)

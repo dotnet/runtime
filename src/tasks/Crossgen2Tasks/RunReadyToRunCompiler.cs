@@ -72,6 +72,8 @@ namespace Microsoft.NET.Build.Tasks
 
         private string DiaSymReader => CrossgenTool.GetMetadata(MetadataKeys.DiaSymReader);
 
+        private static readonly char[] s_separator = new char[]{';'};
+
         public RunReadyToRunCompiler()
         {
             LogStandardErrorAsError = true;
@@ -346,7 +348,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (!string.IsNullOrEmpty(Crossgen2ExtraCommandLineArgs))
             {
-                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(new char[]{';'}, StringSplitOptions.RemoveEmptyEntries))
+                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(s_separator, StringSplitOptions.RemoveEmptyEntries))
                 {
                     result.AppendLine(extraArg);
                 }

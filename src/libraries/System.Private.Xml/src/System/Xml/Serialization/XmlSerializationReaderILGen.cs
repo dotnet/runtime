@@ -26,6 +26,8 @@ namespace System.Xml.Serialization
 
         internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
 
+        private static readonly string[] s_checkType = new string[] { "checkType" };
+
         private sealed class Member
         {
             private readonly string _source;
@@ -1290,7 +1292,7 @@ namespace System.Xml.Serialization
                 nullableMapping.TypeDesc!.Type!,
                 GetMethodBuilder(methodName!),
                 new Type[] { typeof(bool) },
-                new string[] { "checkType" },
+                s_checkType,
                 CodeGenerator.PrivateMethodAttributes);
 
             LocalBuilder oLoc = ilg.DeclareLocal(nullableMapping.TypeDesc.Type!, "o");
