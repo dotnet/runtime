@@ -975,6 +975,7 @@ protected:
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+    void genPermuteVar2x(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);

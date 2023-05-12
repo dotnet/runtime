@@ -75,23 +75,6 @@ extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
-// Returns information about the CPU processor.
-// Note that this information may be the least-common-denominator in the
-// case of a multi-proc machine.
-
-#ifdef TARGET_X86
-void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo);
-#else
-inline void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-    cpuInfo->dwCPUType = 0;
-    cpuInfo->dwFeatures = 0;
-    cpuInfo->dwExtendedFeatures = 0;
-}
-
-#endif // !TARGET_X86
-
 #if (defined(TARGET_X86) || defined(TARGET_AMD64))
 extern "C" DWORD xmmYmmStateSupport();
 extern "C" DWORD avx512StateSupport();

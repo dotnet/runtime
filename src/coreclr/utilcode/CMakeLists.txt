@@ -91,6 +91,8 @@ add_library(utilcode INTERFACE)
 target_sources(utilcode INTERFACE $<TARGET_OBJECTS:utilcode_obj>)
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 
+target_link_libraries(utilcodestaticnohost PUBLIC coreclrminipal)
+
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost PUBLIC nativeresourcestring)
   target_link_libraries(utilcode_dac PUBLIC nativeresourcestring)

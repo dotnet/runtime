@@ -348,8 +348,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = default;
             if (supportsReflection)
             {
-                mdBlockingPolicy = Get(_command.NoMetadataBlocking) ?
-                    new NoMetadataBlockingPolicy() : new BlockedInternalsBlockingPolicy(typeSystemContext);
+                mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
 

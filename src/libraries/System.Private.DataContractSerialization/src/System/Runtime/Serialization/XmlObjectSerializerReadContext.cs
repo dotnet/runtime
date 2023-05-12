@@ -1070,7 +1070,7 @@ namespace System.Runtime.Serialization
 
         private XmlAttribute AddNamespaceDeclaration(string? prefix, string? ns)
         {
-            XmlAttribute attribute = (prefix == null || prefix.Length == 0) ?
+            XmlAttribute attribute = string.IsNullOrEmpty(prefix) ?
                 Document.CreateAttribute(null, Globals.XmlnsPrefix, Globals.XmlnsNamespace) :
                 Document.CreateAttribute(Globals.XmlnsPrefix, prefix, Globals.XmlnsNamespace);
             attribute.Value = ns;

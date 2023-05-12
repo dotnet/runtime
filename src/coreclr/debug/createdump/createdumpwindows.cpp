@@ -55,7 +55,7 @@ CreateDump(const CreateDumpOptions& options)
     {
         goto exit;
     }
-    printf_status("Writing %s for process %d to file %s\n", options.DumpType, pid, dumpPath.c_str());
+    printf_status("Writing %s for process %d to file %s\n", GetDumpTypeString(options.DumpType), pid, dumpPath.c_str());
 
     hFile = CreateFileA(dumpPath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
@@ -67,7 +67,7 @@ CreateDump(const CreateDumpOptions& options)
     // Retry the write dump on ERROR_PARTIAL_COPY
     for (int i = 0; i < 5; i++)
     {
-        if (MiniDumpWriteDump(hProcess, pid, hFile, options.MinidumpType, NULL, NULL, NULL))
+        if (MiniDumpWriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), NULL, NULL, NULL))
         {
             result = true;
             break;
@@ -96,3 +96,37 @@ exit:
 
     return result;
 }
+
+std::string
+GetLastErrorString()
+{
+    DWORD error = GetLastError();
+    std::string result;
+    LPSTR messageBuffer;
+    DWORD length = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&messageBuffer,
+        0,
+        NULL);
+    if (length > 0)
+    {
+        result.append(messageBuffer, length);
+        LocalFree(messageBuffer);
+
+        // Remove the \r\n at the end of the system message. Assumes that the \r is first.
+        size_t found = result.find_last_of('\r');
+        if (found != std::string::npos)
+        {
+            result.erase(found);
+        }
+        result.append(" ");
+    }
+    char buffer[64];
+    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "(%d)", error);
+    result.append(buffer);
+    return result;
+}
+

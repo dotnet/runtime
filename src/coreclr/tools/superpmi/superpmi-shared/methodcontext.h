@@ -663,10 +663,6 @@ public:
     void dmpGetArrayInitializationData(DLD key, DWORDLONG value);
     void* repGetArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size);
 
-    void recFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers, int result);
-    void dmpFilterException(DWORD key, DWORD value);
-    int repFilterException(struct _EXCEPTION_POINTERS* pExceptionPointers);
-
     void recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void dmpGetAddressOfPInvokeTarget(DWORDLONG key, DLD value);
     void repGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -1111,7 +1107,7 @@ enum mcPackets
     //Packet_AllocMethodBlockCounts = 131,
     PacketCR_AllocUnwindInfo = 132,
     PacketCR_ReserveUnwindInfo = 133,
-    Packet_FilterException = 134,
+    //Packet_FilterException = 134,
     //Packet_HandleException = 135,
     //Retired9 = 136,
     Packet_IsFieldStatic = 137,

@@ -9,7 +9,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+#if NETCOREAPP
 using Microsoft.Extensions.DependencyInjection;
+#endif
 using SourceGenerators.Tests;
 using Xunit;
 
@@ -30,8 +32,10 @@ public class Program
 		ConfigurationBuilder configurationBuilder = new();
 		IConfigurationRoot config = configurationBuilder.Build();
 
-		MyClass options = new();
-		config.Bind(options);
+		MyClass configObj = new();
+		config.Bind(configObj);
+        config.Bind(configObj, options => { })
+        config.Bind(""key"", configObj);
 	}
 	
 	public class MyClass
@@ -66,7 +70,10 @@ public class Program
 		ConfigurationBuilder configurationBuilder = new();
 		IConfigurationRoot config = configurationBuilder.Build();
 
-		MyClass options = config.Get<MyClass>();
+		MyClass configObj = config.Get<MyClass>();
+        configObj = config.Get(typeof(MyClass2));
+        configObj = config.Get<MyClass>(binderOptions => { });
+        configObj = config.Get(typeof(MyClass2), binderOptions => { });
 	}
 	
 	public class MyClass
@@ -74,11 +81,62 @@ public class Program
 		public string MyString { get; set; }
 		public int MyInt { get; set; }
 		public List<int> MyList { get; set; }
+        public int[] MyArray { get; set; }
+		public Dictionary<string, string> MyDictionary { get; set; }
+	}
+
+    public class MyClass2
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass3
+    {
+        public int MyInt { get; set; }
+    }
+
+    public class MyClass4
+    {
+        public int MyInt { get; set; }
+    }
+}";
+
+            await VerifyAgainstBaselineUsingFile("TestGetCallGen.generated.txt", testSourceCode);
+        }
+
+        [Fact]
+        public async Task TestBaseline_TestGetValueCallGen()
+        {
+            string testSourceCode = @"
+using System.Collections.Generic;
+using System.Globalization;
+using Microsoft.Extensions.Configuration;
+
+public class Program
+{
+	public static void Main()
+	{
+		ConfigurationBuilder configurationBuilder = new();
+		IConfigurationRoot config = configurationBuilder.Build();
+
+		config.GetValue<int>(""key"");
+        config.GetValue(typeof(bool?), ""key"");
+        config.GetValue<MyClass>(""key"", new MyClass());
+        config.GetValue<byte[]>(""key"", new byte[] { });
+        config.GetValue(typeof(CultureInfo), ""key"", CultureInfo.InvariantCulture);
+	}
+	
+	public class MyClass
+	{
+		public string MyString { get; set; }
+		public int MyInt { get; set; }
+		public List<int> MyList { get; set; }
+        public int[] MyArray { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
 	}
 }";
 
-            await VerifyAgainstBaselineUsingFile("TestGetCallGen.generated.txt", testSourceCode);
+            await VerifyAgainstBaselineUsingFile("TestGetValueCallGen.generated.txt", testSourceCode);
         }
 
         [Fact]
@@ -107,8 +165,14 @@ public class Program
 		public string MyString { get; set; }
 		public int MyInt { get; set; }
 		public List<int> MyList { get; set; }
+        public List<MyClass2> MyList2 { get; set; }
 		public Dictionary<string, string> MyDictionary { get; set; }
 	}
+
+    public class MyClass2
+    {
+        public int MyInt { get; set; }
+    }
 }";
 
             await VerifyAgainstBaselineUsingFile("TestConfigureCallGen.generated.txt", testSourceCode);

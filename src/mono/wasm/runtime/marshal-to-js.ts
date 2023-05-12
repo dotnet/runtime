@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { createPromiseController, assertIsControllablePromise, getPromiseController } from "./promise-controller";
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, createPromiseController, loaderHelpers, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -14,7 +13,7 @@ import {
     ArraySegment, Span, MemoryViewType, get_signature_arg3_type, get_arg_i64_big, get_arg_intptr, get_arg_element_type, JavaScriptMarshalerArgSize
 } from "./marshal";
 import { conv_string_root } from "./strings";
-import { mono_assert, JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types";
+import { JSHandleNull, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type } from "./marshal-to-cs";
 
@@ -225,8 +224,8 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
     }
     const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
     mono_assert(!!promise, () => `ERR28: promise not found for js_handle: ${js_handle} `);
-    assertIsControllablePromise<any>(promise);
-    const promise_control = getPromiseController(promise);
+    loaderHelpers.assertIsControllablePromise<any>(promise);
+    const promise_control = loaderHelpers.getPromiseController(promise);
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
@@ -281,8 +280,8 @@ export function mono_wasm_marshal_promise(args: JSMarshalerArguments): void {
         // resolve existing promise
         const promise = mono_wasm_get_jsobj_from_js_handle(js_handle);
         mono_assert(!!promise, () => `ERR25: promise not found for js_handle: ${js_handle} `);
-        assertIsControllablePromise(promise);
-        const promise_control = getPromiseController(promise);
+        loaderHelpers.assertIsControllablePromise(promise);
+        const promise_control = loaderHelpers.getPromiseController(promise);
 
         if (exc_type !== MarshalerType.None) {
             const reason = marshal_exception_to_js(exc);

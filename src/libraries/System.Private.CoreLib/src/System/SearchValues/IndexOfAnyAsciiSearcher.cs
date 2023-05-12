@@ -813,32 +813,9 @@ namespace System.Buffers
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
-            // Pack two vectors of characters into bytes. While the type is Vector128<short>, these are really UInt16 characters.
-            // X86 and WASM: Downcast every character using saturation.
-            // - Values <= 32767 result in min(value, 255).
-            // - Values  > 32767 result in 0. Because of this we must do more work to handle needles that contain 0.
-            // ARM64: Do narrowing saturation over unsigned values.
-            // - All values result in min(value, 255)
-            Vector128<byte> source =
-                Sse2.IsSupported ? Sse2.PackUnsignedSaturate(source0, source1) :
-                AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0.AsUInt16()), source1.AsUInt16()) :
-                PackedSimd.ConvertNarrowingUnsignedSaturate(source0, source1);
+            Vector128<byte> source = TOptimizations.PackSources(source0.AsUInt16(), source1.AsUInt16());
 
             Vector128<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
-
-            // On X86 and WASM, the packing/narrowing above resulted in values becoming 0 for inputs above 32767.
-            // Any value above 32767 would therefore match against 0. If 0 is present in the needle, we must clear the false positives.
-            // We can correct the result by clearing any bits that matched with a non-ascii source character.
-            if (TOptimizations.NeedleContainsZero)
-            {
-                Debug.Assert(Sse2.IsSupported || PackedSimd.IsSupported);
-                Vector128<short> ascii0 = Vector128.LessThan(source0.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
-                Vector128<short> ascii1 = Vector128.LessThan(source1.AsUInt16(), Vector128.Create((ushort)128)).AsInt16();
-                Vector128<byte> ascii = Sse2.IsSupported
-                    ? Sse2.PackSignedSaturate(ascii0, ascii1).AsByte()
-                    : PackedSimd.ConvertNarrowingSignedSaturate(ascii0, ascii1).AsByte();
-                result &= ascii;
-            }
 
             return TNegator.NegateIfNeeded(result);
         }
@@ -870,23 +847,14 @@ namespace System.Buffers
             return result;
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<short> source0, Vector256<short> source1, Vector256<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
         {
-            // See comments in IndexOfAnyLookup(Vector128<byte>) above for more details.
-            Vector256<byte> source = Avx2.PackUnsignedSaturate(source0, source1);
-            Vector256<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
+            Vector256<byte> source = TOptimizations.PackSources(source0.AsUInt16(), source1.AsUInt16());
 
-            if (TOptimizations.NeedleContainsZero)
-            {
-                Vector256<short> ascii0 = Vector256.LessThan(source0.AsUInt16(), Vector256.Create((ushort)128)).AsInt16();
-                Vector256<short> ascii1 = Vector256.LessThan(source1.AsUInt16(), Vector256.Create((ushort)128)).AsInt16();
-                Vector256<byte> ascii = Avx2.PackSignedSaturate(ascii0, ascii1).AsByte();
-                result &= ascii;
-            }
+            Vector256<byte> result = IndexOfAnyLookupCore(source, bitmapLookup);
 
             return TNegator.NegateIfNeeded(result);
         }
@@ -1115,17 +1083,58 @@ namespace System.Buffers
 
         internal interface IOptimizations
         {
-            static abstract bool NeedleContainsZero { get; }
+            // Pack two vectors of characters into bytes.
+            // X86 and WASM when the needle does not contain 0:  Downcast every character using saturation.
+            // - Values <= 32767 result in min(value, 255).
+            // - Values  > 32767 result in 0. Because of this we must do more work to handle needles that contain 0.
+            // Otherwise: Do narrowing saturation over unsigned values.
+            // - All values result in min(value, 255)
+            static abstract Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper);
+            static abstract Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper);
         }
 
         internal readonly struct Ssse3AndWasmHandleZeroInNeedle : IOptimizations
         {
-            public static bool NeedleContainsZero => true;
+            // Replace with Vector128.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
+            {
+                Vector128<short> lowerMin = Vector128.Min(lower, Vector128.Create((ushort)255)).AsInt16();
+                Vector128<short> upperMin = Vector128.Min(upper, Vector128.Create((ushort)255)).AsInt16();
+
+                return Sse2.IsSupported
+                    ? Sse2.PackUnsignedSaturate(lowerMin, upperMin)
+                    : PackedSimd.ConvertNarrowingUnsignedSaturate(lowerMin, upperMin);
+            }
+
+            // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
+            [BypassReadyToRun]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
+            {
+                return Avx2.PackUnsignedSaturate(
+                    Vector256.Min(lower, Vector256.Create((ushort)255)).AsInt16(),
+                    Vector256.Min(upper, Vector256.Create((ushort)255)).AsInt16());
+            }
         }
 
         internal readonly struct Default : IOptimizations
         {
-            public static bool NeedleContainsZero => false;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<byte> PackSources(Vector128<ushort> lower, Vector128<ushort> upper)
+            {
+                return
+                    Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
+                    AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
+                    PackedSimd.ConvertNarrowingUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+            }
+
+            [BypassReadyToRun]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<byte> PackSources(Vector256<ushort> lower, Vector256<ushort> upper)
+            {
+                return Avx2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+            }
         }
     }
 }

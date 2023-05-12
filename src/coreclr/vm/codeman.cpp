@@ -1338,27 +1338,6 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
-#if defined(TARGET_X86)
-    CORINFO_CPU cpuInfo;
-    GetSpecificCpuInfo(&cpuInfo);
-
-    switch (CPU_X86_FAMILY(cpuInfo.dwCPUType))
-    {
-        case CPU_X86_PENTIUM_4:
-            CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4);
-            break;
-
-        default:
-            break;
-    }
-
-    if (CPU_X86_USE_CMOV(cpuInfo.dwFeatures))
-    {
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV);
-        CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI);
-    }
-#endif // TARGET_X86
-
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
@@ -1459,7 +1438,9 @@ void EEJitManager::SetCpuInfo()
     const int CPUID_EDX = 3;
 
     __cpuid(cpuidInfo, 0x00000000);
+
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
+    _ASSERTE(maxCpuId >= 1);
 
     if (cpuidInfo[CPUID_EBX] == 0x756E6547)                     // Genu
     {
@@ -1472,153 +1453,155 @@ void EEJitManager::SetCpuInfo()
                                    && (cpuidInfo[CPUID_ECX] == 0x444D4163);  // cAMD
     }
 
-    if (maxCpuId >= 1)
+    __cpuid(cpuidInfo, 0x00000001);
+
+    _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 15)) != 0);                                                    // CMOV
+
+#if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
+    // Linux may still support no SSE/SSE2 for 32-bit
+    if ((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0)
     {
-        __cpuid(cpuidInfo, 0x00000001);
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE is not supported on the processor."));
+    }
+    if ((cpuidInfo[CPUID_EDX] & (1 << 26)) != 0)
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE2 is not supported on the processor."));
+    }
+#else
+    _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0);                                                    // SSE
+    _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 26)) != 0);                                                    // SSE2
+#endif
 
-        // Mask off bits 14/15 since they are "reserved" on the CPUID side
-        // this allows us to reuse those bits to track if the CPU is AMD or
-        // Intel and keep everything in 1x uint32_t
+    CPUCompileFlags.Set(InstructionSet_SSE);
+    CPUCompileFlags.Set(InstructionSet_SSE2);
+    CPUCompileFlags.Set(InstructionSet_VectorT128);
 
-        xarchCpuInfo.Value |= (cpuidInfo[CPUID_EAX] & ~(0x3 << 14));
+    if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                          // AESNI
+    {
+        CPUCompileFlags.Set(InstructionSet_AES);
+    }
 
-        const int requiredBaselineEdxFlags = (1 << 25)                                                                  // SSE
-                                           | (1 << 26);                                                                 // SSE2
+    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
+    {
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
+    }
 
-        if ((cpuidInfo[CPUID_EDX] & requiredBaselineEdxFlags) == requiredBaselineEdxFlags)
+    if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                           // SSE3
+    {
+        CPUCompileFlags.Set(InstructionSet_SSE3);
+
+        if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                       // SSSE3
         {
-            CPUCompileFlags.Set(InstructionSet_SSE);
-            CPUCompileFlags.Set(InstructionSet_SSE2);
-            CPUCompileFlags.Set(InstructionSet_VectorT128);
+            CPUCompileFlags.Set(InstructionSet_SSSE3);
 
-            if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                                // AESNI
+            if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                  // SSE4.1
             {
-                CPUCompileFlags.Set(InstructionSet_AES);
-            }
+                CPUCompileFlags.Set(InstructionSet_SSE41);
 
-            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                                 // PCLMULQDQ
-            {
-                CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
-            }
-
-            if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                                 // SSE3
-            {
-                CPUCompileFlags.Set(InstructionSet_SSE3);
-
-                if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                             // SSSE3
+                if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                              // SSE4.2
                 {
-                    CPUCompileFlags.Set(InstructionSet_SSSE3);
+                    CPUCompileFlags.Set(InstructionSet_SSE42);
 
-                    if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                        // SSE4.1
+                    if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                          // MOVBE
                     {
-                        CPUCompileFlags.Set(InstructionSet_SSE41);
+                        CPUCompileFlags.Set(InstructionSet_MOVBE);
+                    }
 
-                        if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                                    // SSE4.2
+                    if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                          // POPCNT
+                    {
+                        CPUCompileFlags.Set(InstructionSet_POPCNT);
+                    }
+
+                    const int requiredAvxEcxFlags = (1 << 27)                                             // OSXSAVE
+                                                  | (1 << 28);                                            // AVX
+
+                    if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
+                    {
+                        if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                             // XGETBV == 11
                         {
-                            CPUCompileFlags.Set(InstructionSet_SSE42);
+                            CPUCompileFlags.Set(InstructionSet_AVX);
 
-                            if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                                // MOVBE
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                  // FMA
                             {
-                                CPUCompileFlags.Set(InstructionSet_MOVBE);
+                                CPUCompileFlags.Set(InstructionSet_FMA);
                             }
 
-                            if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                                // POPCNT
+                            if (maxCpuId >= 0x07)
                             {
-                                CPUCompileFlags.Set(InstructionSet_POPCNT);
-                            }
+                                __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                            const int requiredAvxEcxFlags = (1 << 27)                                                   // OSXSAVE
-                                                          | (1 << 28);                                                  // AVX
-
-                            if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
-                            {
-                                if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
+                                if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                               // AVX2
                                 {
-                                    CPUCompileFlags.Set(InstructionSet_AVX);
+                                    CPUCompileFlags.Set(InstructionSet_AVX2);
 
-                                    if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                        // FMA
+                                    if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
                                     {
-                                        CPUCompileFlags.Set(InstructionSet_FMA);
+                                        // We allow 256-bit Vector<T> by default
+                                        CPUCompileFlags.Set(InstructionSet_VectorT256);
                                     }
 
-                                    if (maxCpuId >= 0x07)
+                                    if (DoesOSSupportAVX512() && (avx512StateSupport() == 1))             // XGETBV XRC0[7:5] == 111
                                     {
-                                        __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
-
-                                        if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
+                                        if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                      // AVX512F
                                         {
-                                            CPUCompileFlags.Set(InstructionSet_AVX2);
+                                            CPUCompileFlags.Set(InstructionSet_AVX512F);
 
-                                            if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
+                                            if (maxVectorTBitWidth >= 512)
                                             {
-                                                // We allow 256-bit Vector<T> by default
-                                                CPUCompileFlags.Set(InstructionSet_VectorT256);
+                                                // We require opt-in for 512-bit Vector<T>
+                                                CPUCompileFlags.Set(InstructionSet_VectorT512);
                                             }
 
-                                            if (DoesOSSupportAVX512() && (avx512StateSupport() == 1))                   // XGETBV XRC0[7:5] == 111
+                                            bool isAVX512_VLSupported = false;
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                  // AVX512VL
                                             {
-                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
+                                                CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
+                                                isAVX512_VLSupported = true;
+                                            }
+
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                  // AVX512BW
+                                            {
+                                                CPUCompileFlags.Set(InstructionSet_AVX512BW);
+                                                if (isAVX512_VLSupported)                                 // AVX512BW_VL
                                                 {
-                                                    CPUCompileFlags.Set(InstructionSet_AVX512F);
-
-                                                    if (maxVectorTBitWidth >= 512)
-                                                    {
-                                                        // We require opt-in for 512-bit Vector<T>
-                                                        CPUCompileFlags.Set(InstructionSet_VectorT512);
-                                                    }
-
-                                                    bool isAVX512_VLSupported = false;
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
-                                                    {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
-                                                        isAVX512_VLSupported = true;
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
-                                                    {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512BW);
-                                                        if (isAVX512_VLSupported)                                       // AVX512BW_VL
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
-                                                    {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512CD);
-                                                        if (isAVX512_VLSupported)                                       // AVX512CD_VL
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
-                                                    {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512DQ);
-                                                        if (isAVX512_VLSupported)                                       // AVX512DQ_VL
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
-                                                        }
-                                                    }
-
-                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
-                                                    {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-                                                        if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
-                                                        }
-                                                    }
+                                                    CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
                                                 }
                                             }
 
-                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-
-                                            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                  // AVX512CD
                                             {
-                                                CPUCompileFlags.Set(InstructionSet_AVXVNNI);
+                                                CPUCompileFlags.Set(InstructionSet_AVX512CD);
+                                                if (isAVX512_VLSupported)                                 // AVX512CD_VL
+                                                {
+                                                    CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
+                                                }
+                                            }
+
+                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                  // AVX512DQ
+                                            {
+                                                CPUCompileFlags.Set(InstructionSet_AVX512DQ);
+                                                if (isAVX512_VLSupported)                                 // AVX512DQ_VL
+                                                {
+                                                    CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
+                                                }
+                                            }
+
+                                            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                   // AVX512VBMI
+                                            {
+                                                CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+                                                if (isAVX512_VLSupported)                                 // AVX512VBMI_VL
+                                                {
+                                                    CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
+                                                }
                                             }
                                         }
+                                    }
+
+                                    __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+
+                                    if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                           // AVX-VNNI
+                                    {
+                                        CPUCompileFlags.Set(InstructionSet_AVXVNNI);
                                     }
                                 }
                             }
@@ -1627,25 +1610,25 @@ void EEJitManager::SetCpuInfo()
                 }
             }
         }
+    }
 
-        if (maxCpuId >= 0x07)
+    if (maxCpuId >= 0x07)
+    {
+        __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
+
+        if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                       // BMI1
         {
-            __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
+            CPUCompileFlags.Set(InstructionSet_BMI1);
+        }
 
-            if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                                 // BMI1
-            {
-                CPUCompileFlags.Set(InstructionSet_BMI1);
-            }
+        if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                       // BMI2
+        {
+            CPUCompileFlags.Set(InstructionSet_BMI2);
+        }
 
-            if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                                 // BMI2
-            {
-                CPUCompileFlags.Set(InstructionSet_BMI2);
-            }
-
-            if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_X86Serialize);                                                       // SERIALIZE
-            }
+        if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
+        {
+            CPUCompileFlags.Set(InstructionSet_X86Serialize);                                             // SERIALIZE
         }
     }
 
@@ -1656,19 +1639,10 @@ void EEJitManager::SetCpuInfo()
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                                     // LZCNT
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                       // LZCNT
         {
             CPUCompileFlags.Set(InstructionSet_LZCNT);
         }
-    }
-
-    if (!CPUCompileFlags.IsSet(InstructionSet_SSE))
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE is not supported on the processor."));
-    }
-    if (!CPUCompileFlags.IsSet(InstructionSet_SSE2))
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE2 is not supported on the processor."));
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 

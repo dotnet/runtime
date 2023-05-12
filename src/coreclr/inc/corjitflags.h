@@ -36,21 +36,15 @@ public:
         CORJIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
-
         CORJIT_FLAG_PINVOKE_RESTORE_ESP     = 8, // Restore ESP after returning from inlined PInvoke
-        CORJIT_FLAG_TARGET_P4               = 9,
-        CORJIT_FLAG_USE_FCOMI               = 10, // Generated code may use fcomi(p) instruction
-        CORJIT_FLAG_USE_CMOV                = 11, // Generated code may use cmov instruction
-
     #else // !defined(TARGET_X86)
-
         CORJIT_FLAG_UNUSED2                 = 8,
+    #endif // !defined(TARGET_X86)
+
         CORJIT_FLAG_UNUSED3                 = 9,
         CORJIT_FLAG_UNUSED4                 = 10,
         CORJIT_FLAG_UNUSED5                 = 11,
         CORJIT_FLAG_UNUSED6                 = 12,
-
-    #endif // !defined(TARGET_X86)
 
         CORJIT_FLAG_OSR                     = 13, // Generate alternate method for On Stack Replacement
 
@@ -64,10 +58,10 @@ public:
         CORJIT_FLAG_PROF_ENTERLEAVE         = 20, // Instrument prologues/epilogues
         CORJIT_FLAG_UNUSED11                = 21,
         CORJIT_FLAG_PROF_NO_PINVOKE_INLINE  = 22, // Disables PInvoke inlining
-        CORJIT_FLAG_SKIP_VERIFICATION       = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
+        CORJIT_FLAG_UNUSED12                = 23,
         CORJIT_FLAG_PREJIT                  = 24, // jit or prejit is the execution engine.
         CORJIT_FLAG_RELOC                   = 25, // Generate relocatable code
-        CORJIT_FLAG_IMPORT_ONLY             = 26, // Only import the function
+        CORJIT_FLAG_UNUSED13                = 26,
         CORJIT_FLAG_IL_STUB                 = 27, // method is an IL stub
         CORJIT_FLAG_PROCSPLIT               = 28, // JIT should separate code into hot and cold sections
         CORJIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
@@ -75,7 +69,7 @@ public:
         CORJIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
         CORJIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
-        CORJIT_FLAG_UNUSED13                = 34,
+        CORJIT_FLAG_UNUSED14                = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
