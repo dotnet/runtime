@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // The jit should be able to inline M() if it gets the
 // exact context G<string>
@@ -13,7 +14,8 @@ class G<T>
     public virtual bool M() => typeof(T) == typeof(string);
 }
 
-class Program
+public class Program
 {
-    static int Main() => new G<string>().M() ? 100 : -1;
+    [Fact]
+    public static int TestEntryPoint() => new G<string>().M() ? 100 : -1;
 }
