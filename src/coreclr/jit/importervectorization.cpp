@@ -784,7 +784,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     }
 
     unsigned spanLclNum;
-    if (spanObj->IsLocal())
+    if (spanObj->OperIs(GT_LCL_VAR))
     {
         // Argument is already a local
         spanLclNum = spanObj->AsLclVarCommon()->GetLclNum();
