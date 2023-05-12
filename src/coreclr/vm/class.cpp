@@ -1211,7 +1211,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 
     LoadExactParentAndInterfacesTransitively(pMT);
 
-    if (pMT->GetClass()->HasCovariantOverride())
+    if (pMT->GetClass()->HasVTableMethodImpl())
     {
         MethodTableBuilder::CopyExactParentSlots(pMT);
         PropagateCovariantReturnMethodImplSlots(pMT);
