@@ -1754,7 +1754,7 @@ namespace System.Runtime.InteropServices
                 return true;
 #else
                 nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
-                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                                     (value <= ulong.MinValue || IsNaN(value)) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
 #endif

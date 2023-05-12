@@ -1883,7 +1883,7 @@ namespace System
             else if (typeof(TOther) == typeof(nuint))
             {
                 nuint actualResult = (value == PositiveInfinity) ? nuint.MaxValue :
-                                     (value <= Zero) ? nuint.MinValue : (nuint)value;
+                                     (value <= Zero || IsNaN(value)) ? nuint.MinValue : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
