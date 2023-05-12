@@ -491,22 +491,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
-    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
+    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
     uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
     uint32_t offsetOfThreadStaticBlocksVal    = 0;
-    if (isGCThreadStatic)
-    {
-        JITDUMP("getThreadLocalStaticBlocksInfo (GC)\n:");
-        offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfGCMaxThreadStaticBlocks;
-        offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfGCThreadStaticBlocks;
-    }
-    else
-    {
-        JITDUMP("getThreadLocalStaticBlocksInfo (NonGC)\n:");
-        offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfNonGCMaxThreadStaticBlocks;
-        offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfNonGCThreadStaticBlocks;
-    }
+
+    JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
+    offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
+    offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
 
     JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
     JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);

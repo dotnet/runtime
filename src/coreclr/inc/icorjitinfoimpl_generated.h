@@ -410,14 +410,13 @@ void getFieldInfo(
           CORINFO_ACCESS_FLAGS flags,
           CORINFO_FIELD_INFO* pResult) override;
 
-uint32_t getNonGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field) override;
-
-uint32_t getGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field) override;
+uint32_t getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype) override;
 
 void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType) override;
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;

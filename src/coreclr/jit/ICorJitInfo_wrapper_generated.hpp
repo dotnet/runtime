@@ -971,29 +971,22 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
-uint32_t WrapICorJitInfo::getNonGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
-    API_ENTER(getNonGCThreadLocalFieldInfo);
-    uint32_t temp = wrapHnd->getNonGCThreadLocalFieldInfo(field);
-    API_LEAVE(getNonGCThreadLocalFieldInfo);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::getGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
-{
-    API_ENTER(getGCThreadLocalFieldInfo);
-    uint32_t temp = wrapHnd->getGCThreadLocalFieldInfo(field);
-    API_LEAVE(getGCThreadLocalFieldInfo);
+    API_ENTER(getThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field, isGCtype);
+    API_LEAVE(getThreadLocalFieldInfo);
     return temp;
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     API_ENTER(getThreadLocalStaticBlocksInfo);
-    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 

@@ -3601,56 +3601,29 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
-void MethodContext::recGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
 {
-    if (GetNonGCThreadLocalFieldInfo == nullptr)
-        GetNonGCThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetThreadLocalFieldInfo == nullptr)
+        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = 0;
 
     key = CastHandle(field);
-    GetNonGCThreadLocalFieldInfo->Add(key, result);
-    DEBUG_REC(dmpGetNonGCThreadLocalFieldInfo(key, result));
-}
-
-void MethodContext::dmpGetNonGCThreadLocalFieldInfo(DWORDLONG key, DWORD value)
-{
-    printf("GetNonGCThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
-}
-
-uint32_t MethodContext::repGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
-{
-    DWORDLONG key   = CastHandle(field);
-    DWORD     value = LookupByKeyOrMiss(GetNonGCThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
-
-    DEBUG_REP(dmpGetNonGCThreadLocalFieldInfo(key, value));
-
-    return value;
-}
-
-void MethodContext::recGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
-{
-    if (GetGCThreadLocalFieldInfo == nullptr)
-        GetGCThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = 0;
-
-    key = CastHandle(field);
-    GetGCThreadLocalFieldInfo->Add(key, result);
+    GetThreadLocalFieldInfo->Add(key, result);
     DEBUG_REC(dmpGetGCThreadLocalFieldInfo(key, result));
 }
 
-void MethodContext::dmpGetGCThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
 {
-    printf("GetGCThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
 }
 
-uint32_t MethodContext::repGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
     DWORDLONG key   = CastHandle(field);
-    DWORD     value = LookupByKeyOrMiss(GetGCThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
 
-    DEBUG_REP(dmpGetGCThreadLocalFieldInfo(key, value));
+    DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
 
     return value;
 }
@@ -3665,11 +3638,9 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
-    value.offsetOfNonGCMaxThreadStaticBlocks     = pInfo->offsetOfNonGCMaxThreadStaticBlocks;
-    value.offsetOfGCMaxThreadStaticBlocks        = pInfo->offsetOfGCMaxThreadStaticBlocks;
+    value.offsetOfMaxThreadStaticBlocks        = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadLocalStoragePointer      = pInfo->offsetOfThreadLocalStoragePointer;
-    value.offsetOfNonGCThreadStaticBlocks        = pInfo->offsetOfNonGCThreadStaticBlocks;
-    value.offsetOfGCThreadStaticBlocks           = pInfo->offsetOfGCThreadStaticBlocks;
+    value.offsetOfThreadStaticBlocks           = pInfo->offsetOfThreadStaticBlocks;
     value.offsetOfGCDataPointer                  = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
@@ -3680,11 +3651,10 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
-           ", offsetOfNonGCMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfNonGCThreadStaticBlocks-%u,"
-           ", offsetOfGCMaxThreadStaticBlocks-%u, offsetOfGCThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
-           value.tlsIndex.handle, value.offsetOfNonGCMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfNonGCThreadStaticBlocks, value.offsetOfGCMaxThreadStaticBlocks,
-           value.offsetOfGCThreadStaticBlocks, value.offsetOfGCDataPointer);
+           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
+           value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
@@ -3695,11 +3665,9 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
     pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
-    pInfo->offsetOfNonGCMaxThreadStaticBlocks = value.offsetOfNonGCMaxThreadStaticBlocks;
-    pInfo->offsetOfGCMaxThreadStaticBlocks    = value.offsetOfGCMaxThreadStaticBlocks;
+    pInfo->offsetOfMaxThreadStaticBlocks    = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer  = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfNonGCThreadStaticBlocks    = value.offsetOfNonGCThreadStaticBlocks;
-    pInfo->offsetOfGCThreadStaticBlocks       = value.offsetOfGCThreadStaticBlocks;
+    pInfo->offsetOfThreadStaticBlocks       = value.offsetOfThreadStaticBlocks;
     pInfo->offsetOfGCDataPointer              = value.offsetOfGCDataPointer;
 }
 

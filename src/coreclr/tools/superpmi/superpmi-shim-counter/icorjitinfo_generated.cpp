@@ -793,25 +793,20 @@ void interceptor_ICJI::getFieldInfo(
     original_ICorJitInfo->getFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t interceptor_ICJI::getNonGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
-    mcs->AddCall("getNonGCThreadLocalFieldInfo");
-    return original_ICorJitInfo->getNonGCThreadLocalFieldInfo(field);
-}
-
-uint32_t interceptor_ICJI::getGCThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
-{
-    mcs->AddCall("getGCThreadLocalFieldInfo");
-    return original_ICorJitInfo->getGCThreadLocalFieldInfo(field);
+    mcs->AddCall("getThreadLocalFieldInfo");
+    return original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCtype);
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     mcs->AddCall("getThreadLocalStaticBlocksInfo");
-    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 bool interceptor_ICJI::isFieldStatic(

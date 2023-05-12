@@ -917,19 +917,13 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t MyICJI::getNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
-    jitInstance->mc->cr->AddCall("getNonGCThreadLocalFieldInfo");
-    return jitInstance->mc->repGetNonGCThreadLocalFieldInfo(field);
+    jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
 }
 
-uint32_t MyICJI::getGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
-{
-    jitInstance->mc->cr->AddCall("getGCThreadLocalFieldInfo");
-    return jitInstance->mc->repGetGCThreadLocalFieldInfo(field);
-}
-
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);

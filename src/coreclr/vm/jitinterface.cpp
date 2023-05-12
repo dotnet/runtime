@@ -1775,7 +1775,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef HOST_WINDOWS
 
 /*********************************************************************/
-uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
 {
     CONTRACTL {
         THROWS;
@@ -1790,7 +1790,14 @@ uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
 
-    typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    if (isGCType)
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+    else
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
 
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
     
@@ -1799,31 +1806,7 @@ uint32_t CEEInfo::getNonGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 }
 
 /*********************************************************************/
-uint32_t CEEInfo::getGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    UINT32 typeIndex = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* fieldDesc = (FieldDesc*)field;
-    _ASSERTE(fieldDesc->IsThreadStatic());
-
-    typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
-
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-    
-    EE_TO_JIT_TRANSITION();
-    return typeIndex;
-}
-
-/*********************************************************************/
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1837,10 +1820,17 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.accessType = IAT_VALUE;
 
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    pInfo->offsetOfNonGCThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
-    pInfo->offsetOfGCThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
-    pInfo->offsetOfNonGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
-    pInfo->offsetOfGCMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+    if (isGCType)
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
+    }
+    else
+    {
+        pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
+        pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
+    }
+    
     pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
     
     JIT_TO_EE_TRANSITION_LEAF();
@@ -1868,7 +1858,7 @@ uint32_t CEEInfo::getGCThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     return 0;
 }
 
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     CONTRACTL {
         NOTHROW;
@@ -1881,10 +1871,8 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsIndex.addr = (UINT8*)0;
 
     pInfo->offsetOfThreadLocalStoragePointer = 0;
-    pInfo->offsetOfNonGCThreadStaticBlocks = 0;
-    pInfo->offsetOfGCThreadStaticBlocks = 0;
-    pInfo->offsetOfNonGCMaxThreadStaticBlocks = 0;
-    pInfo->offsetOfGCMaxThreadStaticBlocks = 0;
+    pInfo->offsetOfThreadStaticBlocks = 0;
+    pInfo->offsetOfMaxThreadStaticBlocks = 0;
     pInfo->offsetOfGCDataPointer = 0;
     
     JIT_TO_EE_TRANSITION_LEAF();

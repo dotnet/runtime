@@ -3965,12 +3965,12 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
             if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
             {
-                typeIndex = info.compCompHnd->getNonGCThreadLocalFieldInfo(pResolvedToken->hField);
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
             }
             else
             {
                 assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
-                typeIndex = info.compCompHnd->getGCThreadLocalFieldInfo(pResolvedToken->hField);
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
             }
 
             FALLTHROUGH;

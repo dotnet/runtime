@@ -485,13 +485,9 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
-    void     recGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
-    void     dmpGetNonGCThreadLocalFieldInfo(DWORDLONG key, DWORD value);
-    uint32_t repGetNonGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
-
-    void     recGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
-    void     dmpGetGCThreadLocalFieldInfo(DWORDLONG key, DWORD value);
-    uint32_t repGetGCThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    void     recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
+    void     dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
@@ -1184,8 +1180,7 @@ enum mcPackets
     Packet_GetStringChar = 204,
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
-    Packet_GetNonGCThreadLocalFieldInfo = 207,
-    Packet_GetGCThreadLocalFieldInfo = 208,
+    Packet_GetThreadLocalFieldInfo = 208,
     Packet_GetThreadLocalStaticBlocksInfo = 209,
     Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
