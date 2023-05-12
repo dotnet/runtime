@@ -9,7 +9,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern helper {}
-.assembly callconv3 {}
+.assembly ASSEMBLY_NAME {}
 .namespace PrimitiveVT
 {
   .class public auto ansi beforefieldinit CallConv3

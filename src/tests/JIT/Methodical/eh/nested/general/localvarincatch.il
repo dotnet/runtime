@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'localvarincatch' {}
+.assembly ASSEMBLY_NAME {}
 
 
 .class public auto ansi Test_localvarincatch extends [mscorlib] System.Object {
