@@ -6,7 +6,7 @@ namespace System.Text.Json.SourceGeneration
     /// <summary>
     /// Indicates which kind of constructor an object is to be created with.
     /// </summary>
-    internal enum ObjectConstructionStrategy
+    public enum ObjectConstructionStrategy
     {
         /// <summary>
         /// Object is abstract or an interface.
