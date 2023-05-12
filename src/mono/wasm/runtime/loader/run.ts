@@ -402,6 +402,8 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
+    await init_polyfills(module);
+
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
         if (loaderHelpers.scriptDirectory.indexOf("/_framework") == -1) {
@@ -412,8 +414,6 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
             module.configSrc = "./blazor.boot.json";
         }
     }
-
-    await init_polyfills(module);
 
     // download config
     await mono_wasm_load_config(module);
