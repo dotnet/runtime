@@ -154,6 +154,7 @@ namespace System.Reflection.Emit
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
                 }
             }
+            // TODO: Add support for other parameters: returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypeRequiredCustomModifiers and parameterTypeOptionalCustomModifiers
         }
         public override string Name => _name;
         public override MethodAttributes Attributes => _attributes;
