@@ -285,6 +285,17 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(result, Is.EqualTo(methodInfo));
     }
 
+    [TestCase(typeof(Mammal), nameof(Mammal.EyeCount))]
+    [TestCase(typeof(Cat), nameof(Cat.EarCount))]
+    [TestCase(typeof(Cat), nameof(Cat.StaticField))]
+    public void FieldGetObject(Type type, string fieldName)
+    {
+        var fieldInfo = type.GetField(fieldName);
+        Assert.That(fieldName, Is.Not.Null);
+        var result = ClrHost.field_get_object(type, fieldInfo!.FieldHandle);
+        Assert.That(result, Is.EqualTo(fieldInfo));
+    }
+
     /// <summary>
     /// NUnit's `Is.EquivalentTo` cannot handle multi-dimensional arrays.  It crashes on GetValue calls.
     /// </summary>
