@@ -1380,7 +1380,7 @@ namespace System
             {
 #if TARGET_64BIT
                 nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
-                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
+                                     (value <= ulong.MinValue || IsNaN(value)) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
                 result = (TOther)(object)actualResult;
                 return true;
 #else

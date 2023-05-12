@@ -21,6 +21,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+import time
 
 class ChangeDir:
     def __init__(self, dir):
@@ -81,7 +82,7 @@ def main(argv):
     args, unknown = parser.parse_known_args(argv)
 
     if unknown:
-        logging.warning('Ignoring argument(s): {}'.format(','.join(unknown)))
+        logging.warn('Ignoring argument(s): {}'.format(','.join(unknown)))
 
     if args.coreclr is None:
         logging.error('Specify --coreclr')
@@ -140,10 +141,11 @@ def main(argv):
         bootstrapPath = os.path.join(temp_location, bootstrapFilename)
 
         assert len(os.listdir(os.path.dirname(bootstrapPath))) == 0
-
-        if not jitutil.download_one_url(bootstrapUrl, bootstrapPath):
-            logging.error("Did not download bootstrap!")
-            return -1
+        print(bootstrapPath)
+        time.sleep(60)
+        # if not jitutil.download_one_url(bootstrapUrl, bootstrapPath):
+        #     logging.error("Did not download bootstrap!")
+        #     return -1
 
         if platform == 'windows':
             # Need to ensure we have Windows line endings on the downloaded script file,

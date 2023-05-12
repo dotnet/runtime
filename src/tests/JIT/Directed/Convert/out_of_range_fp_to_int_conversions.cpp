@@ -124,7 +124,6 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
     if (t == CONVERT_NATIVECOMPILERBEHAVIOR)
         return (uint64_t)x;
 
-    double input_val = x;
     x = trunc(x); // truncate (round toward zero)
 
     // (double)UINT64_MAX cannot be represented exactly as double
@@ -138,6 +137,7 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
         return ((x != x) || (x < INT64_MIN) || (x >= uint64_max_plus_1)) ? (uint64_t)INT64_MIN : (x < 0) ? (uint64_t)(int64_t)x : (uint64_t)x;
 
     case CONVERT_SENTINEL:
+    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
         return ((x != x) || (x < 0) || (x >= uint64_max_plus_1)) ? UINT64_MAX : (uint64_t)x;
 
     case CONVERT_SATURATING:
@@ -155,9 +155,7 @@ extern "C" DLLEXPORT  uint64_t ConvertDoubleToUInt64(double x, FPtoIntegerConver
             }
         }
     
-    case CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64:
-        return ((input_val != input_val) || (input_val < 0) || (input_val >= uint64_max_plus_1)) ? UINT64_MAX : (uint64_t)input_val;
-
+    
     case CONVERT_NATIVECOMPILERBEHAVIOR: // handled above, but add case to silence warning
         return 0;
     }
