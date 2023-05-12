@@ -920,13 +920,13 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
-    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
 }
 
 void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.

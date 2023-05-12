@@ -1100,7 +1100,7 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, b
 {
     mc->cr->AddCall("getGCThreadLocalFieldInfo");
     uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field, isGCType);
-    mc->recGetThreadLocalFieldInfo(field, result);
+    mc->recGetThreadLocalFieldInfo(field, isGCType, result);
     return result;
 }
 
@@ -1108,7 +1108,7 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
-    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.
