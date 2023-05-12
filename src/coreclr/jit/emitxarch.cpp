@@ -100,6 +100,42 @@ bool emitter::IsBMIInstruction(instruction ins)
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
+//------------------------------------------------------------------------
+// IsPermuteVar2xInstruction: Is this an Avx512 permutex2var instruction?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a permutex2var instruction.
+//
+bool emitter::IsPermuteVar2xInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_vpermi2d:
+        case INS_vpermi2pd:
+        case INS_vpermi2ps:
+        case INS_vpermi2q:
+        case INS_vpermt2d:
+        case INS_vpermt2pd:
+        case INS_vpermt2ps:
+        case INS_vpermt2q:
+        case INS_vpermi2w:
+        case INS_vpermt2w:
+        case INS_vpermi2b:
+        case INS_vpermt2b:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -520,17 +556,19 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
 
 #ifdef TARGET_64BIT
 //------------------------------------------------------------------------
-// AreUpper32BitsZero: check if some previously emitted
-//     instruction set the upper 32 bits of reg to zero.
+// AreUpperBitsZero: check if some previously emitted
+//     instruction set the upper bits of reg to zero.
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for zero
 //
 // Return Value:
-//    true if previous instruction zeroed reg's upper 32 bits.
+//    true if previous instruction zeroed reg's upper bits.
 //    false if it did not, or if we can't safely determine.
 //
-bool emitter::AreUpper32BitsZero(regNumber reg)
+bool emitter::AreUpperBitsZero(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -562,9 +600,16 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
                 case INS_movsxd:
                     return PEEPHOLE_ABORT;
 
-                // movzx always zeroes the upper 32 bits.
                 case INS_movzx:
-                    result = true;
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movzx always zeroes the upper 32 bits.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
                     return PEEPHOLE_ABORT;
 
                 default:
@@ -572,7 +617,10 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
             }
 
             // otherwise rely on operation size.
-            result = (id->idOpSize() == EA_4BYTE);
+            if (size == EA_4BYTE)
+            {
+                result = (id->idOpSize() == EA_4BYTE);
+            }
             return PEEPHOLE_ABORT;
         }
         else
@@ -586,15 +634,18 @@ bool emitter::AreUpper32BitsZero(regNumber reg)
 
 //------------------------------------------------------------------------
 // AreUpper32BitsSignExtended: check if some previously emitted
-//     instruction sign-extended the upper 32 bits.
+//     instruction sign-extended the upper bits.
 //
 // Arguments:
 //    reg - register of interest
+//    size - the size of data that the given register of interest is working with;
+//           remaining upper bits of the register that represent a larger size are the bits that are checked for
+//           sign-extended
 //
 // Return Value:
-//    true if previous instruction upper 32 bits are sign-extended.
+//    true if previous instruction upper bits are sign-extended.
 //    false if it did not, or if we can't safely determine.
-bool emitter::AreUpper32BitsSignExtended(regNumber reg)
+bool emitter::AreUpperBitsSignExtended(regNumber reg, emitAttr size)
 {
     // Only allow GPRs.
     // If not a valid register, then return false.
@@ -610,24 +661,43 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 
     instrDesc* id = emitLastIns;
 
-    if (id->idReg1() != reg)
-    {
-        return false;
-    }
+    bool result = false;
 
-    // movsx always sign extends to 8 bytes. W-bit is set.
-    if (id->idIns() == INS_movsx)
-    {
-        return true;
-    }
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        if (emitIsInstrWritingToReg(id, reg))
+        {
+            switch (id->idIns())
+            {
+                // Conservative.
+                case INS_call:
+                    return PEEPHOLE_ABORT;
 
-    // movsxd is always an 8 byte operation. W-bit is set.
-    if (id->idIns() == INS_movsxd)
-    {
-        return true;
-    }
+                case INS_movsx:
+                case INS_movsxd:
+                    if ((size == EA_1BYTE) || (size == EA_2BYTE))
+                    {
+                        result = (id->idOpSize() <= size);
+                    }
+                    // movsx/movsxd always sign extends to 8 bytes. W-bit is set.
+                    else if (size == EA_4BYTE)
+                    {
+                        result = true;
+                    }
+                    break;
 
-    return false;
+                default:
+                    break;
+            }
+
+            return PEEPHOLE_ABORT;
+        }
+        else
+        {
+            return PEEPHOLE_CONTINUE;
+        }
+    });
+
+    return result;
 }
 #endif // TARGET_64BIT
 
@@ -6113,11 +6183,48 @@ bool emitter::IsRedundantMov(
 
     bool hasSideEffect = HasSideEffect(ins, size);
 
-    // Check if we are already in the correct register and don't have a side effect
-    if ((dst == src) && !hasSideEffect)
+    // Peephole optimization to eliminate redundant 'mov' instructions.
+    if (dst == src)
     {
-        JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
-        return true;
+        // Check if we are already in the correct register and don't have a side effect
+        if (!hasSideEffect)
+        {
+            JITDUMP("\n -- suppressing mov because src and dst is same register and the mov has no side-effects.\n");
+            return true;
+        }
+
+#ifdef TARGET_64BIT
+        switch (ins)
+        {
+            case INS_movzx:
+                if (AreUpperBitsZero(src, size))
+                {
+                    JITDUMP("\n -- suppressing movzx because upper bits are zero.\n");
+                    return true;
+                }
+                break;
+
+            case INS_movsx:
+            case INS_movsxd:
+                if (AreUpperBitsSignExtended(src, size))
+                {
+                    JITDUMP("\n -- suppressing movsx or movsxd because upper bits are sign-extended.\n");
+                    return true;
+                }
+                break;
+
+            case INS_mov:
+                if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
+                {
+                    JITDUMP("\n -- suppressing mov because upper bits are zero.\n");
+                    return true;
+                }
+                break;
+
+            default:
+                break;
+        }
+#endif // TARGET_64BIT
     }
 
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
@@ -8250,7 +8357,7 @@ void emitter::emitIns_SIMD_R_R_S_I(
 void emitter::emitIns_SIMD_R_R_R_A(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTreeIndir* indir)
 {
-    assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -8258,31 +8365,6 @@ void emitter::emitIns_SIMD_R_R_R_A(
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir);
-}
-
-//------------------------------------------------------------------------
-// emitIns_SIMD_R_R_R_AR: emits the code for a SIMD instruction that takes two register operands, a base memory
-//                        register, and that returns a value in register
-//
-// Arguments:
-//    ins       -- The instruction being emitted
-//    attr      -- The emit attribute
-//    targetReg -- The target register
-//    op1Reg    -- The register of the first operands
-//    op2Reg    -- The register of the second operand
-//    base      -- The base register used for the memory address
-//
-void emitter::emitIns_SIMD_R_R_R_AR(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber base)
-{
-    assert(IsFMAInstruction(ins));
-    assert(UseSimdEncoding());
-
-    // Ensure we aren't overwriting op2
-    assert((op2Reg != targetReg) || (op1Reg == targetReg));
-
-    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_AR(ins, attr, targetReg, op2Reg, base, 0);
 }
 
 //------------------------------------------------------------------------
@@ -8306,7 +8388,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    CORINFO_FIELD_HANDLE fldHnd,
                                    int                  offs)
 {
-    assert(IsFMAInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -8331,7 +8413,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 void emitter::emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
 {
-    if (IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins))
+    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
 
@@ -8399,7 +8481,7 @@ void emitter::emitIns_SIMD_R_R_R_R(
 void emitter::emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs)
 {
-    assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -18207,6 +18289,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_vpermi2b:
+        case INS_vpermt2b:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
+            break;
+        }
+
+        case INS_vpermi2w:
+        case INS_vpermt2w:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+        }
+
         case INS_vpmovdb:
         case INS_vpmovdw:
         case INS_vpmovqb:
@@ -18644,6 +18742,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
+        case INS_vpermi2d:
+        case INS_vpermi2pd:
+        case INS_vpermi2ps:
+        case INS_vpermi2q:
+        case INS_vpermt2d:
+        case INS_vpermt2pd:
+        case INS_vpermt2ps:
+        case INS_vpermt2q:
+        case INS_vshuff32x4:
+        case INS_vshuff64x2:
+        case INS_vshufi32x4:
+        case INS_vshufi64x2:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;

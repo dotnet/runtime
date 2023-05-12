@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoMethod } from "./types";
+import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
@@ -329,7 +329,7 @@ function wrap_trace_function(
 
     if (!_wrap_trace_function) {
         // If we used a regular closure, the js console would print the entirety of
-        //  dotnet.js when printing an error stack trace, which is... not helpful
+        //  dotnet.native.js when printing an error stack trace, which is... not helpful
         const js = `return function trace_enter (locals) {
             let threw = true;
             try {

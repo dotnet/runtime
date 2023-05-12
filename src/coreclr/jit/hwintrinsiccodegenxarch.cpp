@@ -1749,10 +1749,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
-    if ((intrinsicId >= NI_AVX512F_FusedMultiplyAdd) && (intrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated))
+    if (HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId))
     {
-        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) + 1 == 6);
         genFMAIntrinsic(node);
+        return;
+    }
+
+    if (HWIntrinsicInfo::IsPermuteVar2x(intrinsicId))
+    {
+        genPermuteVar2x(node);
         return;
     }
 
@@ -2266,14 +2271,16 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
 void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    var_types      baseType    = node->GetSimdBaseType();
-    emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction    _213form    = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
-    instruction    _132form    = (instruction)(_213form - 1);
-    instruction    _231form    = (instruction)(_213form + 1);
-    GenTree*       op1         = node->Op(1);
-    GenTree*       op2         = node->Op(2);
-    GenTree*       op3         = node->Op(3);
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
+
+    var_types   baseType = node->GetSimdBaseType();
+    emitAttr    attr     = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+    instruction _213form = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
+    instruction _132form = (instruction)(_213form - 1);
+    instruction _231form = (instruction)(_213form + 1);
+    GenTree*    op1      = node->Op(1);
+    GenTree*    op2      = node->Op(2);
+    GenTree*    op3      = node->Op(3);
 
     regNumber targetReg = node->GetRegNum();
 
@@ -2364,6 +2371,99 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         else
         {
             ins = _213form;
+        }
+    }
+
+    assert(ins != INS_invalid);
+    genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3);
+    genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genPermuteVar2x: Generates the code for a PermuteVar2x hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
+void CodeGen::genPermuteVar2x(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    assert(HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
+
+    var_types baseType = node->GetSimdBaseType();
+    emitAttr  attr     = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+    GenTree*  op1      = node->Op(1);
+    GenTree*  op2      = node->Op(2);
+    GenTree*  op3      = node->Op(3);
+
+    regNumber targetReg = node->GetRegNum();
+
+    genConsumeMultiOpOperands(node);
+
+    regNumber op1NodeReg = op1->GetRegNum();
+    regNumber op2NodeReg = op2->GetRegNum();
+    regNumber op3NodeReg = op3->GetRegNum();
+
+    GenTree* emitOp1 = op1;
+    GenTree* emitOp2 = op2;
+    GenTree* emitOp3 = op3;
+
+    // We need to keep this in sync with lsraxarch.cpp
+    // Ideally we'd actually swap the operands in lsra and simplify codegen
+    // but its a bit more complicated to do so for many operands as well
+    // as being complicated to tell codegen how to pick the right instruction
+
+    assert(!op1->isContained());
+    assert(!op2->isContained());
+
+    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // vpermt2
+
+    if (targetReg == op2NodeReg)
+    {
+        std::swap(emitOp1, emitOp2);
+
+        switch (ins)
+        {
+            case INS_vpermt2b:
+            {
+                ins = INS_vpermi2b;
+                break;
+            }
+
+            case INS_vpermt2d:
+            {
+                ins = INS_vpermi2d;
+                break;
+            }
+
+            case INS_vpermt2pd:
+            {
+                ins = INS_vpermi2pd;
+                break;
+            }
+
+            case INS_vpermt2ps:
+            {
+                ins = INS_vpermi2ps;
+                break;
+            }
+
+            case INS_vpermt2q:
+            {
+                ins = INS_vpermi2q;
+                break;
+            }
+
+            case INS_vpermt2w:
+            {
+                ins = INS_vpermi2w;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
         }
     }
 

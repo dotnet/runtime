@@ -11851,11 +11851,25 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     _ASSERTE(objRef != NULL);
 
     // TODO: support types containing GC pointers
-    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
+    if (bufferSize + valueOffset <= (int)objRef->GetSize())
     {
         Object* obj = OBJECTREFToObject(objRef);
-        memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
-        result = true;
+        PTR_MethodTable type = obj->GetMethodTable();
+        if (type->ContainsPointers())
+        {
+            // RuntimeType has a gc field (object m_keepAlive), but if the object is in a frozen segment
+            // it means that field is always nullptr so we can read any part of the object:
+            if (type == g_pRuntimeTypeClass && GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+            {
+                memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+                result = true;
+            }
+        }
+        else
+        {
+            memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+            result = true;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
