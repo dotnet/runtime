@@ -8922,14 +8922,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
         GenTree* argVal = impPopStack().val;
-        if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
-        {
-            // This is only enabled when early MD expansion is set because it causes small
-            // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
-            // this cast, but the new code requires it to be explicit.
-            argVal = impImplicitIorI4Cast(argVal, TYP_INT);
-        }
-        inds[k - 1] = argVal;
+        argVal          = impImplicitIorI4Cast(argVal, TYP_INT);
+        inds[k - 1]     = argVal;
     }
 
     GenTree* arr = impPopStack().val;
