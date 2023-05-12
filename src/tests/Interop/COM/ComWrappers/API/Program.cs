@@ -175,7 +175,36 @@ namespace ComWrappersTests
             Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
-            Assert.Equal(testObj, testObjUnwrapped);
+            Assert.Same(testObj, testObjUnwrapped);
+
+            // Release the wrapper
+            int count = Marshal.Release(comWrapper);
+            Assert.Equal(0, count);
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [Fact]
+        public void ValidateComInterfaceUnwrapWrapperSpecific()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComInterfaceUnwrapWrapperSpecific)}...");
+
+            var testObj = new Test();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            // Make sure that unwrapping the wrapper in the same ComWrappers context gets back the same object
+            var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+            Assert.Same(testObj, testObjUnwrapped);
+
+            // Make sure that unwrapping the wrapper in a different ComWrappers context gets back a different object
+            var wrappers2 = new TestComWrappers();
+            var testObjUnwrapped2 = wrappers2.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
+            Assert.NotSame(testObj, testObjUnwrapped2);
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
