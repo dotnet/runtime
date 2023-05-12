@@ -39,7 +39,6 @@ namespace System.Text.Json.SourceGeneration
 
         // The spec is derived from cached `System.Type` instances, which are generally annotation-agnostic.
         // Hence we can only record the potential for nullable annotations being possible for the runtime type.
-        // TODO: consider deriving the generation spec from the Roslyn symbols directly.
         public bool CanContainNullableReferenceAnnotations { get; }
 
         public bool CanBeNull => !IsValueType || SpecialType is SpecialType.System_Nullable_T;
