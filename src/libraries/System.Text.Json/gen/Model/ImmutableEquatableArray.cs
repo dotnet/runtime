@@ -55,7 +55,19 @@ namespace System.Text.Json.SourceGeneration
                 _index = -1;
             }
 
-            public bool MoveNext() => ++_index < _values.Length;
+            public bool MoveNext()
+            {
+                int newIndex = _index + 1;
+
+                if ((uint)newIndex < (uint)_values.Length)
+                {
+                    _index = newIndex;
+                    return true;
+                }
+
+                return false;
+            }
+
             public readonly T Current => _values[_index];
         }
     }
