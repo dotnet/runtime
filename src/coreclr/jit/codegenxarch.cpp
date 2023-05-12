@@ -1010,7 +1010,35 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
-        noway_assert(GenTree::OperIsCommutative(oper));
+#ifdef DEBUG
+        unsigned lclNum1 = 0;
+        unsigned lclNum2 = 0;
+        if (op1->OperIsLocalRead())
+        {
+            lclNum1 = op1->AsLclVarCommon()->GetLclNum();
+        }
+        else if (op1->IsCopyOrReload())
+        {
+            GenTree* copySrc = op1->AsCopyOrReload()->gtGetOp1();
+            if (copySrc->OperIsLocalRead())
+            {
+                lclNum1 = copySrc->AsLclVarCommon()->GetLclNum();
+            }
+        }
+        if (op2->OperIsLocalRead())
+        {
+            lclNum2 = op2->AsLclVarCommon()->GetLclNum();
+        }
+        else if (op2->IsCopyOrReload())
+        {
+            GenTree* copySrc = op2->AsCopyOrReload()->gtGetOp1();
+            if (copySrc->OperIsLocalRead())
+            {
+                lclNum2 = copySrc->AsLclVarCommon()->GetLclNum();
+            }
+        }
+#endif
+        noway_assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
         dst = op2;
         src = op1;
     }
