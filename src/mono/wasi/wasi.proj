@@ -110,7 +110,7 @@
     <!-- Clean up the bundle-objects dir - remove anything we no longer need -->
     <ItemGroup>
       <_WasmBundleTimezonesToDelete Include="$(_WasmIntermediateOutputPath)*.o" />
-      <_WasmBundleTimezonesToDelete Remove="$(_WasmTimezonesBundlePreallocatedObjectFile)" />
+      <_WasmBundleTimezonesToDelete Remove="$(WasiObjDir)\$(_WasmTimezonesBundleObjectFile)" />
       <_WasmBundleTimezonesToDelete Remove="%(_WasmBundleTimezonesWithHashes.DestinationFile)" />
     </ItemGroup>
     <Delete Files="@(_WasmBundleTimezonesToDelete)" />
