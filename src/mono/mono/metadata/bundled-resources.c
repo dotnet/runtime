@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 #include <mono/metadata/bundled-resources-internals.h>
-#include <mono/metadata/assembly-internals.h>
 
 static GHashTable *bundled_resources = NULL;
 static bool bundle_contains_assemblies = false;

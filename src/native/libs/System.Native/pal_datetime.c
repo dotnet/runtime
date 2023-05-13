@@ -68,7 +68,12 @@ const char* SystemNative_GetTimeZoneData(const char* name, int* length)
     assert(length != NULL);
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
     MonoBundledDataResource *timezoneData = (MonoBundledDataResource *)mono_get_bundled_resource_data (name);
-    assert (timezoneData);
+    if (!timezoneData)
+    {
+        *length = 0;
+        return NULL;
+    }
+
     length = timezoneData->data.size;
     return timezoneData->data.data;
 #else

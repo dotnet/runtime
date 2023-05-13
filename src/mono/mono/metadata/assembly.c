@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <mono/metadata/assembly.h>
 #include "assembly-internals.h"
-#include "bundled-resources-internals.h"
+#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/image.h>
 #include "image-internals.h"
 #include "object-internals.h"
@@ -1508,14 +1508,11 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 	 */
 	MonoImage *image = NULL;
 	MONO_ENTER_GC_UNSAFE;
-	if (culture && culture [0] != 0) {
+	if (culture && culture [0] != 0)
 		image = open_from_satellite_bundle (alc, filename, status, culture);
-	}
-	else {
-		char *name = g_path_get_basename (filename);
-		image = open_from_bundle_internal (alc, name, status);
-		g_free (name);
-	}
+	else
+		image = open_from_bundle_internal (alc, filename, status);
+
 	if (image) {
 		mono_image_addref (image);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
@@ -3188,6 +3185,7 @@ mono_register_bundled_satellite_assemblies (const MonoBundledSatelliteAssembly *
 		char *id = g_strconcat (satellite_assembly->culture, "/", satellite_assembly->name, (const char*)NULL);
 		MonoBundledSatelliteAssemblyResource *satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
 		g_assert (!satellite_assembly_resource);
+		satellite_assembly_resource = g_new0 (MonoBundledSatelliteAssemblyResource, 1);
 		satellite_assembly_resource->resource.type = MONO_BUNDLED_SATELLITE_ASSEMBLY;
 		satellite_assembly_resource->resource.id = id;
 		satellite_assembly_resource->resource.free_bundled_resource_func = mono_bundled_resources_free_bundled_resource_func;

@@ -24,8 +24,6 @@
       <_BundledRuntimeConfig Include="@(_BundledResources)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('runtimeconfig.bin'))" />
     </ItemGroup>
 
-    <Message Text="Identity is %(_BundledResources.Identity)" />
-
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
@@ -75,8 +73,6 @@
         <DestinationFile>$(BundleOutputDirectory)%(_ResourcesToBundleWithHashes.Filename)%(_ResourcesToBundleWithHashes.Extension).$([System.String]::Copy(%(_ResourcesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
       </_ResourcesToBundleWithHashes>
     </ItemGroup>
-
-    <Delete Files="$(BundleResourceFile)"/>
 
     <EmitBundleSourceFiles
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
