@@ -1010,9 +1010,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
-#ifdef DEBUG
         unsigned lclNum1 = 0;
         unsigned lclNum2 = 0;
+
+#ifdef DEBUG
         if (op1->OperIsLocalRead())
         {
             lclNum1 = op1->AsLclVarCommon()->GetLclNum();
