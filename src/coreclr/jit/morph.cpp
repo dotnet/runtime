@@ -10858,7 +10858,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 ssize_t        index  = op2->AsIntCon()->IconValue();
                 float          value  = forceCastToFloat(op3->AsDblCon()->DconValue());
 
-                assert(index >= 0 && index < elementCount);
+                assert(index >= 0 && index < ssize_t(elementCount));
 
                 DEBUG_DESTROY_NODE(node);
                 DEBUG_DESTROY_NODE(op2);
