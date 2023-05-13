@@ -7402,6 +7402,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
                 return EvaluateBinarySimd(this, GT_SUB, /* scalar */ true, type, baseType, arg0VN, arg1VN);
             }
 
+            case NI_Vector128_ToScalar:
+#ifdef TARGET_ARM64
+            case NI_Vector64_ToScalar:
+#else
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif
+            {
+                return EvaluateSimdGetElement(this, type, baseType, arg0VN, 0);
+            }
+
 #ifdef TARGET_ARM64
             case NI_AdvSimd_Xor:
 #else

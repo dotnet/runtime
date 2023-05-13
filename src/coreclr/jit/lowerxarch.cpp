@@ -3275,6 +3275,29 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
+    if (op2->IsIntegralConst(0))
+    {
+        // Specially handle as ToScalar
+
+        if (simdSize == 64)
+        {
+            intrinsicId = NI_Vector512_ToScalar;
+        }
+        else if (simdSize == 32)
+        {
+            intrinsicId = NI_Vector256_ToScalar;
+        }
+        else
+        {
+            intrinsicId = NI_Vector128_ToScalar;
+        }
+
+        node->ResetHWIntrinsicId(intrinsicId, op1);
+        LowerNode(node);
+
+        return;
+    }
+
     if (op1->OperIs(GT_IND))
     {
         // If the vector is already in memory, we force its
@@ -3318,29 +3341,33 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     switch (simdBaseType)
     {
-        // Using software fallback if simdBaseType is not supported by hardware
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_INT:
         case TYP_UINT:
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
-            break;
-
+#if defined(TARGET_AMD64)
         case TYP_LONG:
         case TYP_ULONG:
-            // We either support TYP_LONG or we have been decomposed into two TYP_INT inserts
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
+#endif // TARGET_AMD64
+        {
+            // Using software fallback if simdBaseType is not supported by hardware
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
             break;
+        }
 
         case TYP_DOUBLE:
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
+        {
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
+        }
 
         default:
+        {
             unreached();
+        }
     }
 
     // Remove the index node up front to simplify downstream logic
@@ -3451,37 +3478,15 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic resIntrinsic = NI_Illegal;
 
-    if ((imm8 == 0) && (genTypeSize(simdBaseType) >= 4))
+    if (imm8 == 0)
     {
-        switch (simdBaseType)
-        {
-            case TYP_LONG:
-                resIntrinsic = NI_SSE2_X64_ConvertToInt64;
-                break;
-
-            case TYP_ULONG:
-                resIntrinsic = NI_SSE2_X64_ConvertToUInt64;
-                break;
-
-            case TYP_INT:
-                resIntrinsic = NI_SSE2_ConvertToInt32;
-                break;
-
-            case TYP_UINT:
-                resIntrinsic = NI_SSE2_ConvertToUInt32;
-                break;
-
-            case TYP_FLOAT:
-            case TYP_DOUBLE:
-                resIntrinsic = NI_Vector128_ToScalar;
-                break;
-
-            default:
-                unreached();
-        }
+        // Specially handle as ToScalar
 
         node->SetSimdSize(16);
-        node->ResetHWIntrinsicId(resIntrinsic, op1);
+        node->ResetHWIntrinsicId(NI_Vector128_ToScalar, op1);
+
+        LowerNode(node);
+        return;
     }
     else
     {
@@ -7386,6 +7391,9 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         }
 
         case NI_Vector128_GetElement:
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         case NI_AVX512F_ExtractVector128:
