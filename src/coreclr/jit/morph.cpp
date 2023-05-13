@@ -9398,6 +9398,15 @@ DONE_MORPHING_CHILDREN:
 
         case GT_SUB:
 
+            if (op1->OperIsLocalRead() && op2->OperIsLocalRead())
+            {
+                if (op1->AsLclVarCommon()->GetLclNum() == op2->AsLclVarCommon()->GetLclNum())
+                {
+                    tree->BashToZeroConst(tree->TypeGet());
+                    return tree;
+                }
+            }
+
             if (tree->gtOverflow())
             {
                 goto CM_OVF_OP;
