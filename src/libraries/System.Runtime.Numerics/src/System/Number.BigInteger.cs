@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -929,31 +930,17 @@ namespace System
             }
             catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
 
-            bool decimalFmt = (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R');
-            if (decimalFmt)
+            ReadOnlySpan<uint> base1E9Value = rguDst.AsSpan(0, cuDst);
+            int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
+
+            if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
             {
-                if (digits > 0 && digits > cchMax)
-                    cchMax = digits;
-                if (value._sign < 0)
-                {
-                    try
-                    {
-                        // Leave an extra slot for a minus sign.
-                        cchMax = checked(cchMax + info.NegativeSign.Length);
-                    }
-                    catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
-                }
+                return value.Sign < 0
+                    ? NegativeBigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), info.NegativeSign, destination, out charsWritten, out spanSuccess)
+                    : BigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), destination, out charsWritten, out spanSuccess);
             }
 
-            int rgchBufSize;
-
-            try
-            {
-                // We'll pass the rgch buffer to native code, which is going to treat it like a string of digits, so it needs
-                // to be null terminated.  Let's ensure that we can allocate a buffer of that size.
-                rgchBufSize = checked(cchMax + 1);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
+            int rgchBufSize = cchMax + 1;
 
             char[] rgch = new char[rgchBufSize];
 
@@ -975,11 +962,11 @@ namespace System
                 uDig /= 10;
             }
 
-            if (!decimalFmt)
-            {
-                // sign = true for negative and false for 0 and positive values
-                bool sign = (value._sign < 0);
-                int scale = cchMax - ichDst;
+            // sign = true for negative and false for 0 and positive values
+            bool sign = (value._sign < 0);
+            // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
+            // int precision = 29;
+            int scale = cchMax - ichDst;
 
                 byte[]? buffer = ArrayPool<byte>.Shared.Rent(rgchBufSize + 1);
                 fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
@@ -993,73 +980,135 @@ namespace System
                     number.Scale = scale;
                     number.IsNegative = sign;
 
-                    scoped var vlb = new ValueListBuilder<Utf16Char>(stackalloc Utf16Char[128]); // arbitrary stack cut-off
+                scoped var vlb = new ValueListBuilder<char>(stackalloc char[128]); // arbitrary stack cut-off
 
-                    if (fmt != 0)
-                    {
-                        NumberToString(ref vlb, ref number, fmt, digits, info);
-                    }
-                    else
-                    {
-                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
-                    }
+                if (fmt != 0)
+                {
+                    NumberToString(ref vlb, ref number, fmt, digits, info);
+                }
+                else
+                {
+                    NumberToStringFormat(ref vlb, ref number, formatSpan, info);
+                }
 
-                    if (targetSpan)
-                    {
-                        spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
-                        vlb.Dispose();
-                        return null;
-                    }
-                    else
-                    {
-                        charsWritten = 0;
-                        spanSuccess = false;
-                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
-                        vlb.Dispose();
-                        return result;
-                    }
+                if (targetSpan)
+                {
+                    spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+                    vlb.Dispose();
+                    return null;
+                }
+                else
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
+        }
 
-            // Format Round-trip decimal
-            // This format is supported for integral types only. The number is converted to a string of
-            // decimal digits (0-9), prefixed by a minus sign if the number is negative. The precision
-            // specifier indicates the minimum number of digits desired in the resulting string. If required,
-            // the number is padded with zeros to its left to produce the number of digits given by the
-            // precision specifier.
-            int numDigitsPrinted = cchMax - ichDst;
-            while (digits > 0 && digits > numDigitsPrinted)
-            {
-                // pad leading zeros
-                rgch[--ichDst] = '0';
-                digits--;
-            }
-            if (value._sign < 0)
-            {
-                string negativeSign = info.NegativeSign;
-                for (int i = negativeSign.Length - 1; i > -1; i--)
-                    rgch[--ichDst] = negativeSign[i];
-            }
+        private static unsafe string? BigIntegerToDecStr(bool targetSpan, ReadOnlySpan<uint> base1E9Value, int digits,
+            Span<char> destination, out int charsWritten, out bool spanSuccess)
+        {
+            Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
 
-            int resultLength = cchMax - ichDst;
-            if (!targetSpan)
+            if (targetSpan)
             {
-                charsWritten = 0;
-                spanSuccess = false;
-                return new string(rgch, ichDst, cchMax - ichDst);
-            }
-            else if (new ReadOnlySpan<char>(rgch, ichDst, cchMax - ichDst).TryCopyTo(destination))
-            {
-                charsWritten = resultLength;
-                spanSuccess = true;
-                return null;
+                if (destination.Length < digits)
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    return null;
+                }
+                else
+                {
+                    fixed (char* ptr = &MemoryMarshal.GetReference(destination))
+                    {
+                        BigIntegerToDecChars(ptr + digits, base1E9Value, digits);
+                        charsWritten = digits;
+                        spanSuccess = true;
+                        return null;
+                    }
+                }
             }
             else
             {
                 charsWritten = 0;
                 spanSuccess = false;
-                return null;
+                fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+                {
+                    return string.Create(digits, (digits, ptr: (nint)valuePtr, base1E9Value.Length), static (span, state) =>
+                    {
+                        fixed (char* ptr = &MemoryMarshal.GetReference(span))
+                        {
+                            BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
+                        }
+                    });
+                }
             }
+        }
+
+        private static unsafe string? NegativeBigIntegerToDecStr(bool targetSpan, ReadOnlySpan<uint> base1E9Value, int digits,
+            string sNegative, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        {
+            Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
+
+            int bufferLength = digits + sNegative.Length;
+
+            if (targetSpan)
+            {
+                if (bufferLength > destination.Length)
+                {
+                    charsWritten = 0;
+                    spanSuccess = false;
+                    return null;
+                }
+                else
+                {
+                    sNegative.CopyTo(destination);
+                    fixed (char* ptr = &MemoryMarshal.GetReference(destination))
+                    {
+                        BigIntegerToDecChars(ptr + bufferLength, base1E9Value, digits);
+                        charsWritten = bufferLength;
+                        spanSuccess = true;
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                charsWritten = 0;
+                spanSuccess = false;
+                fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+                {
+                    return string.Create(bufferLength, (digits, ptr: (nint)valuePtr, base1E9Value.Length, sNegative), static (span, state) =>
+                    {
+                        state.sNegative.CopyTo(span);
+                        fixed (char* ptr = &MemoryMarshal.GetReference(span))
+                        {
+                            BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
+                        }
+                    });
+                }
+            }
+        }
+
+        private static unsafe TChar* BigIntegerToDecChars<TChar>(TChar* bufferEnd, ReadOnlySpan<uint> base1E9Value, int digits)
+            where TChar : unmanaged, INumberBase<TChar> // CoreLib uses IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            Debug.Assert(base1E9Value[^1] != 0, "Leading zeros should be trimmed by caller.");
+
+            // The base 10^9 value is in reverse order
+            for (int i = 0; i < base1E9Value.Length - 1; i++)
+            {
+                bufferEnd = UInt32ToDecChars(bufferEnd, base1E9Value[i], 9);
+                digits -= 9;
+            }
+
+            Debug.Assert(digits >= FormattingHelpers.CountDigits(base1E9Value[^1]));
+            return UInt32ToDecChars(bufferEnd, base1E9Value[^1], digits);
         }
     }
 
