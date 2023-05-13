@@ -91,9 +91,12 @@ public class LibraryBuilderTask : AppBuilderTask
     public bool BundlesResources { get; set; }
 
     /// <summary>
-    /// An Item containing the bundled runtimeconfig.bin metadata populated by EmitBundle task
+    /// An Item containing the bundled runtimeconfig.bin metadata detailing
+    /// DataSymbol - Symbol corresponding to the runtimeconfig.bin byte array data
+    /// DataLenSymbol - Symbol corresponding to the runtimeconfig.bin byte array size
+    /// DataLenSymbolValue - Literal size of the runtimeconfig.bin byte array data
     /// </summary>
-    public ITaskItem[] BundledRuntimeConfig { get; set; } = default!;
+    public ITaskItem? BundledRuntimeConfig { get; set; }
 
     public bool StripDebugSymbols { get; set; }
 
@@ -155,10 +158,6 @@ public class LibraryBuilderTask : AppBuilderTask
 
         if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
-            if (BundlesResources && BundledRuntimeConfig.Length == 0)
-            {
-                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' is required when bundling and using the default runtime callback.");
-            }
             WriteAutoInitializationFromTemplate();
             extraSources.AppendLine("    autoinit.c");
         }
@@ -293,17 +292,29 @@ public class LibraryBuilderTask : AppBuilderTask
 
         if (BundlesResources)
         {
-            var bundledRuntimeConfigInfo = BundledRuntimeConfig.First();
-            string dataSymbol = bundledRuntimeConfigInfo.GetMetadata("DataSymbol");
-            if (string.IsNullOrEmpty(dataSymbol))
-                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataSymbol' metadata.");
-            string lenSymbol = bundledRuntimeConfigInfo.GetMetadata("DataLenSymbol");
-            if (string.IsNullOrEmpty(lenSymbol))
-                throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
+            string dataSymbol = "NULL";
+            string dataLenSymbol = "0";
+            StringBuilder externRuntimeConfigSymbols = new ();
+            if (BundledRuntimeConfig?.ItemSpec != null)
+            {
+                dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
+                if (string.IsNullOrEmpty(dataSymbol))
+                {
+                    throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataSymbol' metadata.");
+                }
+                dataLenSymbol = BundledRuntimeConfig.GetMetadata("DataLenSymbol");
+                if (string.IsNullOrEmpty(dataLenSymbol))
+                {
+                    throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
+                }
+                externRuntimeConfigSymbols.AppendLine($"extern uint8_t {dataSymbol}[];");
+                externRuntimeConfigSymbols.AppendLine($"extern const uint32_t {dataLenSymbol}[];");
+            }
 
             autoInitialization = autoInitialization
+                .Replace("%EXTERN_RUNTIMECONFIG_SYMBOLS%", externRuntimeConfigSymbols.ToString())
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
-                .Replace("%RUNTIME_CONFIG_DATA_LEN%", lenSymbol);
+                .Replace("%RUNTIME_CONFIG_DATA_LEN%", dataLenSymbol);
         }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"), autoInitialization);

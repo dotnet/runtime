@@ -20,9 +20,7 @@
 
 #if defined(BUNDLED_RESOURCES)
 extern void mono_register_resources_bundle (void);
-extern uint8_t %RUNTIME_CONFIG_DATA%[];
-extern const uint32_t %RUNTIME_CONFIG_DATA_LEN%;
-#endif
+%EXTERN_RUNTIMECONFIG_SYMBOLS%#endif
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -45,6 +43,9 @@ initialize_runtimeconfig (const char *bundle_path)
     arg->kind = 1;
     arg->runtimeconfig.data.data = %RUNTIME_CONFIG_DATA%;
     arg->runtimeconfig.data.data_len = %RUNTIME_CONFIG_DATA_LEN%;
+
+    if (!arg->runtimeconfig.data.data)
+        return;
 #else
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
     char *file_path = (char *)malloc (str_len);
