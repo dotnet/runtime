@@ -845,13 +845,11 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private readonly bool isElfPlatform;
         private IntPtr _nativeObjectWriter = IntPtr.Zero;
 
         public ObjectWriter(string objectFilePath, NodeFactory factory, ObjectWritingOptions options)
         {
             var triple = GetLLVMTripleFromTarget(factory.Target);
-            isElfPlatform = triple.Contains("elf");
 
             _nativeObjectWriter = InitObjWriter(objectFilePath, triple);
             if (_nativeObjectWriter == IntPtr.Zero)
@@ -953,14 +951,10 @@ namespace ILCompiler.DependencyAnalysis
                 .Append('\0').UnderlyingArray;
 
             objectWriter.SetSection(ObjectNodeSection.CommentSection);
-            if (objectWriter.isElfPlatform) objectWriter.EmitIntValue((byte)0, 1);
-
             fixed (byte* version = &runtimeVersionBytes[0])
             {
                 objectWriter.EmitBytes((IntPtr)version, runtimeVersionBytes.Length);
             }
-
-            if (objectWriter.isElfPlatform) objectWriter.EmitIntValue((byte)0, 1);
         }
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
