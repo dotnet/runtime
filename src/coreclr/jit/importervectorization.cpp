@@ -589,7 +589,8 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     // This optimization spawns several temps so make sure we have a room
     if (lvaHaveManyLocals(0.75))
     {
-        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.")
+        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
+        return;
     }
 
     StringComparison cmpMode = Ordinal;
@@ -734,7 +735,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     // This optimization spawns several temps so make sure we have a room
     if (lvaHaveManyLocals(0.75))
     {
-        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.")
+        JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
+        return;
     }
 
     StringComparison cmpMode = Ordinal;
@@ -827,7 +829,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     else
     {
         // Access a local that will be set if we successfully unroll it
-        spanLclNum                  = lvaGrabTemp(true DEBUGARG("spilling spanObj"));
+        spanLclNum = lvaGrabTemp(true DEBUGARG("spilling spanObj"));
         CORINFO_CLASS_HANDLE spanCls;
         info.compCompHnd->getArgType(sig, sig->args, &spanCls);
         lvaSetStruct(spanLclNum, spanCls, false);
