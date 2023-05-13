@@ -462,7 +462,9 @@ if(CLR_CMAKE_TARGET_UNIX)
         clr_unknown_arch()
     endif()
 else()
-    set(CLR_CMAKE_TARGET_WIN32 1)
+    if(NOT (CLR_CMAKE_TARGET_WASI))
+        set(CLR_CMAKE_TARGET_WIN32 1)
+    endif()
 endif(CLR_CMAKE_TARGET_UNIX)
 
 # check if host & target os/arch combination are valid
