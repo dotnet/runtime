@@ -890,7 +890,7 @@ namespace System
             }
 
             // First convert to base 10^9.
-            const uint kuBase = 1000000000; // 10^9
+            const uint kuBase = 1_000_000_000; // 10^9
             const int kcchBase = 9;
 
             // Each uint contributes at most 9 digits to the decimal representation.
@@ -899,74 +899,84 @@ namespace System
             Debug.Assert(cuSrc < int.MaxValue / kcchBase / 2);
 
             int cuMax = cuSrc * 10 / 9 + 2;
-            uint[] rguDst = new uint[cuMax];
-            int cuDst = 0;
+            uint[] base1E9Buffer = ArrayPool<uint>.Shared.Rent(cuMax);
 
-            for (int iuSrc = cuSrc; --iuSrc >= 0;)
+            try
             {
-                uint uCarry = value._bits[iuSrc];
-                for (int iuDst = 0; iuDst < cuDst; iuDst++)
+                int cuDst = 0;
+
+                for (int iuSrc = cuSrc; --iuSrc >= 0;)
                 {
-                    Debug.Assert(rguDst[iuDst] < kuBase);
-                    ulong uuRes = NumericsHelpers.MakeUInt64(rguDst[iuDst], uCarry);
-                    rguDst[iuDst] = (uint)(uuRes % kuBase);
-                    uCarry = (uint)(uuRes / kuBase);
-                }
-                if (uCarry != 0)
-                {
-                    rguDst[cuDst++] = uCarry % kuBase;
-                    uCarry /= kuBase;
+                    uint uCarry = value._bits[iuSrc];
+                    for (int iuDst = 0; iuDst < cuDst; iuDst++)
+                    {
+                        Debug.Assert(base1E9Buffer[iuDst] < kuBase);
+
+                        // Use X86Base.DivRem when stable
+                        ulong uuRes = NumericsHelpers.MakeUInt64(base1E9Buffer[iuDst], uCarry);
+                        (ulong quo, ulong rem) = Math.DivRem(uuRes, kuBase);
+                        uCarry = (uint)quo;
+                        base1E9Buffer[iuDst] = (uint)rem;
+                    }
                     if (uCarry != 0)
-                        rguDst[cuDst++] = uCarry;
+                    {
+                        (uCarry, base1E9Buffer[cuDst++]) = Math.DivRem(uCarry, kuBase);
+                        if (uCarry != 0)
+                            base1E9Buffer[cuDst++] = uCarry;
+                    }
+                }
+
+                ReadOnlySpan<uint> base1E9Value = base1E9Buffer.AsSpan(0, cuDst);
+
+                int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
+
+                if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
+                {
+                    return value.Sign < 0
+                        ? NegativeBigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), info.NegativeSign, destination, out charsWritten, out spanSuccess)
+                        : BigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), destination, out charsWritten, out spanSuccess);
+                }
+
+                byte[]? buffer = ArrayPool<byte>.Shared.Rent(valueDigits + 1);
+                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
+                {
+                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
+                    BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
+                    number.Digits[^1] = 0;
+                    number.DigitsCount = valueDigits;
+                    number.Scale = valueDigits;
+                    number.IsNegative = value.Sign < 0;
+
+                    scoped var vlb = new ValueListBuilder<char>(stackalloc char[128]); // arbitrary stack cut-off
+
+                    if (fmt != 0)
+                    {
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
+                    }
+                    else
+                    {
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
+                    }
+
+                    if (targetSpan)
+                    {
+                        spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+                        vlb.Dispose();
+                        return null;
+                    }
+                    else
+                    {
+                        charsWritten = 0;
+                        spanSuccess = false;
+                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
+                        vlb.Dispose();
+                        return result;
+                    }
                 }
             }
-
-            ReadOnlySpan<uint> base1E9Value = rguDst.AsSpan(0, cuDst);
-
-            int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
-
-            if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
+            finally
             {
-                return value.Sign < 0
-                    ? NegativeBigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), info.NegativeSign, destination, out charsWritten, out spanSuccess)
-                    : BigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), destination, out charsWritten, out spanSuccess);
-            }
-
-            byte[]? buffer = ArrayPool<byte>.Shared.Rent(valueDigits + 1);
-            fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
-            {
-                scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
-                BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
-                number.Digits[^1] = 0;
-                number.DigitsCount = valueDigits;
-                number.Scale = valueDigits;
-                number.IsNegative = value.Sign < 0;
-
-                scoped var vlb = new ValueListBuilder<char>(stackalloc char[128]); // arbitrary stack cut-off
-
-                if (fmt != 0)
-                {
-                    NumberToString(ref vlb, ref number, fmt, digits, info);
-                }
-                else
-                {
-                    NumberToStringFormat(ref vlb, ref number, formatSpan, info);
-                }
-
-                if (targetSpan)
-                {
-                    spanSuccess = vlb.TryCopyTo(MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
-                    vlb.Dispose();
-                    return null;
-                }
-                else
-                {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
-                    vlb.Dispose();
-                    return result;
-                }
+                ArrayPool<uint>.Shared.Return(base1E9Buffer);
             }
         }
 
