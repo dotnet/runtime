@@ -104,7 +104,7 @@ void PromotionLiveness::Run()
     BitVecOps::AssignNoCopy(m_bvTraits, m_liveIn, BitVecOps::MakeEmpty(m_bvTraits));
     BitVecOps::AssignNoCopy(m_bvTraits, m_ehLiveVars, BitVecOps::MakeEmpty(m_bvTraits));
 
-    JITDUMP("Computing liveness for %u vars\n", m_numVars);
+    JITDUMP("Computing liveness for %u remainders/fields\n\n", m_numVars);
 
     ComputeUseDefSets();
 
@@ -325,7 +325,7 @@ void PromotionLiveness::InterBlockLiveness()
             BitVec              allVars(BitVecOps::Union(m_bvTraits, bbInfo.LiveIn, bbInfo.LiveOut));
             printf(FMT_BB " IN (%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bbInfo.LiveIn));
             DumpVarSet(bbInfo.LiveIn, allVars);
-            printf("\n" FMT_BB "OUT(%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bbInfo.LiveOut));
+            printf("\n" FMT_BB " OUT(%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bbInfo.LiveOut));
             DumpVarSet(bbInfo.LiveOut, allVars);
             printf("\n\n");
         }
@@ -842,23 +842,24 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
 
             if (BitVecOps::IsMember(m_bvTraits, set, index))
             {
-                printf("%s", sep);
                 if (j == 0)
                 {
-                    printf("%sV%02u (remainder)", sep, (unsigned)i);
+                    // 14 chars
+                    printf("%sV%02u(remainder)", sep, (unsigned)i);
                 }
                 else
                 {
                     const Replacement& rep = agg->Replacements[j - 1];
-                    printf("%sV%02u[%03u..%03u)", sep, (unsigned)i, rep.Offset,
+                    // 14 chars
+                    printf("%sV%02u.[%03u..%03u)", sep, (unsigned)i, rep.Offset,
                            rep.Offset + genTypeSize(rep.AccessType));
                 }
+                sep = " ";
             }
             else if (BitVecOps::IsMember(m_bvTraits, allVars, index))
             {
-                {
-                    printf("%s                 ", sep);
-                }
+                printf("%s              ", sep);
+                sep = " ";
             }
         }
     }

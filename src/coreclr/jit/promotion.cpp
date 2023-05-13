@@ -1583,6 +1583,7 @@ PhaseStatus Promotion::Run()
     PromotionLiveness liveness(m_compiler, aggregates);
     liveness.Run();
 
+    JITDUMP("Making replacements\n\n");
     // Make all replacements we decided on.
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
