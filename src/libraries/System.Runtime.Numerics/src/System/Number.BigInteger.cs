@@ -932,9 +932,22 @@ namespace System
 
                 if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
                 {
-                    return value.Sign < 0
-                        ? NegativeBigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), info.NegativeSign, destination, out charsWritten, out spanSuccess)
-                        : BigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), destination, out charsWritten, out spanSuccess);
+                    int strDigits = Math.Max(digits, valueDigits);
+                    if (targetSpan)
+                    {
+                        spanSuccess = value.Sign < 0
+                            ? TryNegativeBigIntegerToDecStr(base1E9Value, strDigits, info.NegativeSign, destination, out charsWritten)
+                            : TryBigIntegerToDecStr(base1E9Value, strDigits, destination, out charsWritten);
+                        return null;
+                    }
+                    else
+                    {
+                        spanSuccess = false;
+                        charsWritten = 0;
+                        return value.Sign < 0
+                            ? NegativeBigIntegerToDecStr(base1E9Value, strDigits, info.NegativeSign)
+                            : BigIntegerToDecStr(base1E9Value, strDigits);
+                    }
                 }
 
                 byte[]? buffer = ArrayPool<byte>.Shared.Rent(valueDigits + 1);
@@ -980,89 +993,82 @@ namespace System
             }
         }
 
-        private static unsafe string? BigIntegerToDecStr(bool targetSpan, ReadOnlySpan<uint> base1E9Value, int digits,
-            Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static unsafe bool TryBigIntegerToDecStr(ReadOnlySpan<uint> base1E9Value, int digits, Span<char> destination, out int charsWritten)
         {
             Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
 
-            if (targetSpan)
+            if (destination.Length < digits)
             {
-                if (destination.Length < digits)
-                {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    return null;
-                }
-                else
-                {
-                    fixed (char* ptr = &MemoryMarshal.GetReference(destination))
-                    {
-                        BigIntegerToDecChars(ptr + digits, base1E9Value, digits);
-                        charsWritten = digits;
-                        spanSuccess = true;
-                        return null;
-                    }
-                }
+                charsWritten = 0;
+                return false;
             }
             else
             {
-                charsWritten = 0;
-                spanSuccess = false;
-                fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+                fixed (char* ptr = &MemoryMarshal.GetReference(destination))
                 {
-                    return string.Create(digits, (digits, ptr: (nint)valuePtr, base1E9Value.Length), static (span, state) =>
-                    {
-                        fixed (char* ptr = &MemoryMarshal.GetReference(span))
-                        {
-                            BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
-                        }
-                    });
+                    BigIntegerToDecChars(ptr + digits, base1E9Value, digits);
+                    charsWritten = digits;
+                    return true;
                 }
             }
         }
 
-        private static unsafe string? NegativeBigIntegerToDecStr(bool targetSpan, ReadOnlySpan<uint> base1E9Value, int digits,
-            string sNegative, Span<char> destination, out int charsWritten, out bool spanSuccess)
+        private static unsafe string BigIntegerToDecStr(ReadOnlySpan<uint> base1E9Value, int digits)
+        {
+            Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
+
+            fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+            {
+                return string.Create(digits, (digits, ptr: (nint)valuePtr, base1E9Value.Length), static (span, state) =>
+                {
+                    fixed (char* ptr = &MemoryMarshal.GetReference(span))
+                    {
+                        BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
+                    }
+                });
+            }
+        }
+
+        private static unsafe bool TryNegativeBigIntegerToDecStr(ReadOnlySpan<uint> base1E9Value, int digits,
+            string sNegative, Span<char> destination, out int charsWritten)
         {
             Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
 
             int bufferLength = digits + sNegative.Length;
 
-            if (targetSpan)
+            if (bufferLength > destination.Length)
             {
-                if (bufferLength > destination.Length)
-                {
-                    charsWritten = 0;
-                    spanSuccess = false;
-                    return null;
-                }
-                else
-                {
-                    sNegative.CopyTo(destination);
-                    fixed (char* ptr = &MemoryMarshal.GetReference(destination))
-                    {
-                        BigIntegerToDecChars(ptr + bufferLength, base1E9Value, digits);
-                        charsWritten = bufferLength;
-                        spanSuccess = true;
-                        return null;
-                    }
-                }
+                charsWritten = 0;
+                return false;
             }
             else
             {
-                charsWritten = 0;
-                spanSuccess = false;
-                fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+                sNegative.CopyTo(destination);
+                fixed (char* ptr = &MemoryMarshal.GetReference(destination))
                 {
-                    return string.Create(bufferLength, (digits, ptr: (nint)valuePtr, base1E9Value.Length, sNegative), static (span, state) =>
-                    {
-                        state.sNegative.CopyTo(span);
-                        fixed (char* ptr = &MemoryMarshal.GetReference(span))
-                        {
-                            BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
-                        }
-                    });
+                    BigIntegerToDecChars(ptr + bufferLength, base1E9Value, digits);
+                    charsWritten = bufferLength;
+                    return true;
                 }
+            }
+        }
+
+        private static unsafe string NegativeBigIntegerToDecStr(ReadOnlySpan<uint> base1E9Value, int digits, string sNegative)
+        {
+            Debug.Assert(digits > (base1E9Value.Length - 1) * 9);
+
+            int bufferLength = digits + sNegative.Length;
+
+            fixed (uint* valuePtr = &MemoryMarshal.GetReference(base1E9Value))
+            {
+                return string.Create(bufferLength, (digits, ptr: (nint)valuePtr, base1E9Value.Length, sNegative), static (span, state) =>
+                {
+                    state.sNegative.CopyTo(span);
+                    fixed (char* ptr = &MemoryMarshal.GetReference(span))
+                    {
+                        BigIntegerToDecChars(ptr + span.Length, new ReadOnlySpan<uint>((uint*)state.ptr, state.Length), state.digits);
+                    }
+                });
             }
         }
 
