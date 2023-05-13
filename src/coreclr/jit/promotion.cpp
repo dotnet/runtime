@@ -319,7 +319,7 @@ public:
 
             if (*aggregateInfo == nullptr)
             {
-                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion));
+                *aggregateInfo = new (comp, CMK_Promotion) AggregateInfo(comp->getAllocator(CMK_Promotion), lclNum);
             }
 
             (*aggregateInfo)
@@ -1194,6 +1194,11 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
         {
             unsigned size = argNodeLcl->GetLayout(m_compiler)->GetSize();
             WriteBackBefore(&arg.EarlyNodeRef(), argNodeLcl->GetLclNum(), argNodeLcl->GetLclOffs(), size);
+
+            if ((m_aggregates[argNodeLcl->GetLclNum()] != nullptr) && IsPromotedStructLocalDying(argNodeLcl))
+            {
+                argNodeLcl->gtFlags |= GTF_VAR_DEATH;
+            }
         }
     }
 
@@ -1206,6 +1211,46 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
 
         MarkForReadBack(retBufLcl->GetLclNum(), retBufLcl->GetLclOffs(), size);
     }
+}
+
+//------------------------------------------------------------------------
+// IsPromotedStructLocalDying:
+//   Check if a promoted struct local is dying at its current position.
+//
+// Parameters:
+//   lcl - The local
+//
+// Returns:
+//   True if so.
+//
+// Remarks:
+//   This effectively translates our precise liveness information for struct
+//   uses into the liveness information that the rest of the JIT expects.
+//
+//   If the remainder of the struct local is dying, then we expect that this
+//   entire struct local is now dying, since all field accesses are going to be
+//   replaced with other locals. The exception is if there is a queued read
+//   back for any of the fields.
+//
+bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
+{
+    StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    if (!deaths.IsRemainderDying())
+    {
+        return false;
+    }
+
+    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+
+    for (size_t i = 0; i < agg->Replacements.size(); i++)
+    {
+        if (agg->Replacements[i].NeedsReadBack)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------

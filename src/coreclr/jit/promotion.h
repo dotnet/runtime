@@ -87,12 +87,13 @@ public:
 struct AggregateInfo
 {
     jitstd::vector<Replacement> Replacements;
+    unsigned                    LclNum;
     // Min offset in the struct local of the unpromoted part.
     unsigned UnpromotedMin = 0;
     // Max offset in the struct local of the unpromoted part.
     unsigned UnpromotedMax = 0;
 
-    AggregateInfo(CompAllocator alloc) : Replacements(alloc)
+    AggregateInfo(CompAllocator alloc, unsigned lclNum) : Replacements(alloc), LclNum(lclNum)
     {
     }
 
@@ -181,7 +182,7 @@ struct BasicBlockLiveness;
 class StructUseDeaths
 {
     BitVec   m_deaths;
-    unsigned m_numFields;
+    unsigned m_numFields = 0;
 
     friend class PromotionLiveness;
 
@@ -191,12 +192,16 @@ private:
     }
 
 public:
-    StructUseDeaths() : m_deaths(BitVecOps::UninitVal()), m_numFields(0)
+    StructUseDeaths() : m_deaths(BitVecOps::UninitVal())
     {
     }
 
     bool IsRemainderDying() const;
     bool IsReplacementDying(unsigned index) const;
+
+#ifdef DEBUG
+    void Dump();
+#endif
 };
 
 // Class to compute and track liveness information pertaining promoted structs.
@@ -206,6 +211,7 @@ class PromotionLiveness
     jitstd::vector<AggregateInfo*>& m_aggregates;
     BitVecTraits*                   m_bvTraits                = nullptr;
     unsigned*                       m_structLclToTrackedIndex = nullptr;
+    unsigned                        m_numVars                 = 0;
     BasicBlockLiveness*             m_bbInfo                  = nullptr;
     bool                            m_hasPossibleBackEdge     = false;
     BitVec                          m_liveIn;
@@ -233,6 +239,9 @@ private:
     void AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars);
     void FillInLiveness();
     void FillInLiveness(BitVec& life, BitVec volatileVars, GenTreeLclVarCommon* lcl);
+#ifdef DEBUG
+    void DumpVarSet(BitVec set, BitVec allVars);
+#endif
 };
 
 class DecompositionStatementList;
@@ -271,6 +280,7 @@ public:
 
 private:
     void LoadStoreAroundCall(GenTreeCall* call, GenTree* user);
+    bool IsPromotedStructLocalDying(GenTreeLclVarCommon* structLcl);
     void ReplaceLocal(GenTree** use, GenTree* user);
     void StoreBeforeReturn(GenTreeUnOp* ret);
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size);
@@ -290,6 +300,9 @@ private:
                            Replacement*                srcEndRep,
                            DecompositionStatementList* statements,
                            DecompositionPlan*          plan);
+#ifdef DEBUG
+    const char* LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep);
+#endif
 };
 
 #endif

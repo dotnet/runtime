@@ -688,6 +688,12 @@ private:
             statements->AddStatement(indir);
         }
 
+        StructUseDeaths srcDeaths;
+        if (m_srcInvolvesReplacements)
+        {
+            srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
+        }
+
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
@@ -741,6 +747,19 @@ private:
             if (entry.FromLclNum != BAD_VAR_NUM)
             {
                 src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
+
+                if (entry.FromReplacement != nullptr)
+                {
+                    AggregateInfo* srcAgg   = m_aggregates[m_src->AsLclVarCommon()->GetLclNum()];
+                    Replacement*   firstRep = srcAgg->Replacements.data();
+                    assert((entry.FromReplacement >= firstRep) &&
+                           (entry.FromReplacement < (firstRep + srcAgg->Replacements.size())));
+                    size_t replacementIndex = entry.FromReplacement - firstRep;
+                    if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
+                    {
+                        src->gtFlags |= GTF_VAR_DEATH;
+                    }
+                }
             }
             else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -1244,6 +1263,25 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
     }
 }
 
+#ifdef DEBUG
+const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
+{
+    StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    AggregateInfo*  agg    = m_aggregates[lcl->GetLclNum()];
+    assert(agg != nullptr);
+    Replacement* firstRep = agg->Replacements.data();
+    assert((rep >= firstRep) && (rep < firstRep + agg->Replacements.size()));
+
+    size_t replacementIndex = rep - firstRep;
+    if (deaths.IsReplacementDying((unsigned)replacementIndex))
+    {
+        return " (last use)";
+    }
+
+    return "";
+}
+#endif
+
 //------------------------------------------------------------------------
 // CopyBetweenFields:
 //   Copy between two struct locals that may involve replacements.
@@ -1301,7 +1339,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 // Write it directly to the destination struct local.
                 unsigned offs = srcRep->Offset - srcBaseOffs;
                 plan->CopyFromReplacement(srcRep, offs);
-                JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+                JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
                 srcRep++;
                 continue;
             }
@@ -1312,7 +1351,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 // Read it directly from the source struct local.
                 unsigned offs = dstRep->Offset - dstBaseOffs;
                 plan->CopyToReplacement(dstRep, offs);
-                JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
+                JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), offs);
                 dstRep++;
                 continue;
             }
@@ -1323,8 +1363,9 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 (dstRep->AccessType == srcRep->AccessType))
             {
                 plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
-                JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, srcRep->LclNum,
-                        srcRep->Description);
+                JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
 
                 dstRep++;
                 srcRep++;
@@ -1335,8 +1376,9 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             // will handle the destination replacement in a future
             // iteration of the loop.
             statements->AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
-            JITDUMP("  Partial overlap of V%02u (%s) <- V%02u (%s). Will read source back before copy\n",
-                    dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
+            JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Will read source back before copy\n",
+                    dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
+                    srcRep->Description, LastUseString(srcLcl, srcRep));
             srcRep++;
             continue;
         }
@@ -1356,7 +1398,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                     if (dsc->lvType == dstRep->AccessType)
                     {
                         plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
-                        JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, dsc->lvReason);
+                        JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
+                                LastUseString(dstLcl, dstRep), dsc->lvReason);
                         dstRep++;
                         continue;
                     }
@@ -1368,7 +1411,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             // directly to the destination's struct local and mark the
             // overlapping fields as needing read back to avoid this DNER.
             plan->CopyToReplacement(dstRep, offs);
-            JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
+            JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep),
+                    offs);
             dstRep++;
         }
         else
@@ -1386,8 +1430,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                     if (dsc->lvType == srcRep->AccessType)
                     {
                         plan->CopyBetweenReplacements(fieldLcl, srcRep, offs);
-                        JITDUMP("  V%02u (%s) <- V%02u (%s)\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
-                                srcRep->Description);
+                        JITDUMP("  V%02u (%s) <- V%02u (%s)%s\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
+                                srcRep->Description, LastUseString(srcLcl, srcRep));
                         srcRep++;
                         continue;
                     }
@@ -1395,7 +1439,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             }
 
             plan->CopyFromReplacement(srcRep, offs);
-            JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+            JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                    LastUseString(srcLcl, srcRep));
             srcRep++;
         }
     }

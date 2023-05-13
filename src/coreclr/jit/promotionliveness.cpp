@@ -79,18 +79,32 @@ void PromotionLiveness::Run()
         }
 
         m_structLclToTrackedIndex[lclNum] = trackedIndex;
+        // TODO: We need a scalability limit on these, we cannot always track
+        // the remainder and all fields.
         // Remainder.
-        // TODO-TP: We can avoid allocating an index for this when agg->UnpromotedMin == agg->UnpromotedMax,
-        // but it makes liveness use/def marking less uniform.
         trackedIndex++;
-        // Fields
+        // Fields.
         trackedIndex += (unsigned)agg->Replacements.size();
+
+#ifdef DEBUG
+        // Mark the struct local (remainder) and fields as tracked for DISPTREE to properly
+        // show last use information.
+        m_compiler->lvaGetDesc((unsigned)lclNum)->lvTrackedWithoutIndex = true;
+        for (size_t i = 0; i < agg->Replacements.size(); i++)
+        {
+            m_compiler->lvaGetDesc(agg->Replacements[i].LclNum)->lvTrackedWithoutIndex = true;
+        }
+#endif
     }
 
-    m_bvTraits = new (m_compiler, CMK_Promotion) BitVecTraits(trackedIndex, m_compiler);
+    m_numVars = trackedIndex;
+
+    m_bvTraits = new (m_compiler, CMK_Promotion) BitVecTraits(m_numVars, m_compiler);
     m_bbInfo   = m_compiler->fgAllocateTypeForEachBlk<BasicBlockLiveness>(CMK_Promotion);
     BitVecOps::AssignNoCopy(m_bvTraits, m_liveIn, BitVecOps::MakeEmpty(m_bvTraits));
     BitVecOps::AssignNoCopy(m_bvTraits, m_ehLiveVars, BitVecOps::MakeEmpty(m_bvTraits));
+
+    JITDUMP("Computing liveness for %u vars\n", m_numVars);
 
     ComputeUseDefSets();
 
@@ -149,6 +163,18 @@ void PromotionLiveness::ComputeUseDefSets()
                 }
             }
         }
+
+#ifdef DEBUG
+        if (m_compiler->verbose)
+        {
+            BitVec allVars(BitVecOps::Union(m_bvTraits, bb.VarUse, bb.VarDef));
+            printf(FMT_BB " USE(%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bb.VarUse));
+            DumpVarSet(bb.VarUse, allVars);
+            printf("\n" FMT_BB " DEF(%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bb.VarDef));
+            DumpVarSet(bb.VarDef, allVars);
+            printf("\n\n");
+        }
+#endif
     }
 }
 
@@ -289,6 +315,22 @@ void PromotionLiveness::InterBlockLiveness()
             break;
         }
     } while (changed);
+
+#ifdef DEBUG
+    if (m_compiler->verbose)
+    {
+        for (BasicBlock* block : m_compiler->Blocks())
+        {
+            BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
+            BitVec              allVars(BitVecOps::Union(m_bvTraits, bbInfo.LiveIn, bbInfo.LiveOut));
+            printf(FMT_BB " IN (%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bbInfo.LiveIn));
+            DumpVarSet(bbInfo.LiveIn, allVars);
+            printf("\n" FMT_BB "OUT(%u)=", block->bbNum, BitVecOps::Count(m_bvTraits, bbInfo.LiveOut));
+            DumpVarSet(bbInfo.LiveOut, allVars);
+            printf("\n\n");
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -768,3 +810,59 @@ bool StructUseDeaths::IsReplacementDying(unsigned index) const
     BitVecTraits traits(1 + m_numFields, nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }
+
+//------------------------------------------------------------------------
+// IsReplacementDying:
+//   Check if a specific replacement is dying.
+//
+// Returns:
+//   True if so.
+//
+void StructUseDeaths::Dump()
+{
+}
+
+#ifdef DEBUG
+void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
+{
+    printf("{");
+
+    const char* sep = "";
+    for (size_t i = 0; i < m_aggregates.size(); i++)
+    {
+        AggregateInfo* agg = m_aggregates[i];
+        if (agg == nullptr)
+        {
+            continue;
+        }
+
+        for (size_t j = 0; j <= agg->Replacements.size(); j++)
+        {
+            unsigned index = (unsigned)(m_structLclToTrackedIndex[i] + j);
+
+            if (BitVecOps::IsMember(m_bvTraits, set, index))
+            {
+                printf("%s", sep);
+                if (j == 0)
+                {
+                    printf("%sV%02u (remainder)", sep, (unsigned)i);
+                }
+                else
+                {
+                    const Replacement& rep = agg->Replacements[j - 1];
+                    printf("%sV%02u[%03u..%03u)", sep, (unsigned)i, rep.Offset,
+                           rep.Offset + genTypeSize(rep.AccessType));
+                }
+            }
+            else if (BitVecOps::IsMember(m_bvTraits, allVars, index))
+            {
+                {
+                    printf("%s                 ", sep);
+                }
+            }
+        }
+    }
+
+    printf("}");
+}
+#endif

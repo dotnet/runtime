@@ -12007,9 +12007,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             }
             else // a normal not-promoted lclvar
             {
-                if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+                if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
                 {
-                    printf(" (last use)");
+                    if ((varDsc->lvTracked || varDsc->lvTrackedWithoutIndex) && fgLocalVarLivenessDone &&
+                        ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+                    {
+                        printf(" (last use)");
+                    }
                 }
             }
         }
