@@ -10827,32 +10827,31 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             // For WithElement intrinsic where all operands are const,
             // we can just replace the node with a single const vector, e.g. turn
-            // 
+            //
             // HWINTRINSIC simd12 float WithElement
             // +--* CNS_VEC simd12<0x00000000, 0x00000000, 0x00000000>
             // +--* CNS_INT int   1
             // \--* CNS_DBL float 1.0000000000000000
-            // 
+            //
             // into
-            // 
+            //
             // CNS_VEC simd12<0x00000000, 0x3f800000, 0x00000000>
 
-            var_types baseType     = node->GetSimdBaseType();
+            var_types baseType = node->GetSimdBaseType();
 
-            if(baseType != TYP_FLOAT){
+            if (baseType != TYP_FLOAT)
+            {
                 break;
             }
 
-            unsigned  simdSize     = node->GetSimdSize();
-            unsigned  elementCount = simdSize / genTypeSize(baseType);
+            unsigned simdSize     = node->GetSimdSize();
+            unsigned elementCount = simdSize / genTypeSize(baseType);
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
             GenTree* op3 = node->Op(3);
 
-            if (op1->OperGet() == GT_CNS_VEC &&
-                op2->OperGet() == GT_CNS_INT &&
-                op3->OperGet() == GT_CNS_DBL &&
+            if (op1->OperGet() == GT_CNS_VEC && op2->OperGet() == GT_CNS_INT && op3->OperGet() == GT_CNS_DBL &&
                 op3->TypeGet() == TYP_FLOAT)
             {
                 GenTreeVecCon* vecCon = op1->AsVecCon();
