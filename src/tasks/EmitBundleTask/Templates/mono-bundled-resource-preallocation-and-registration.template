@@ -64,5 +64,6 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 
 %PreallocatedResources%
 void
-%BundleRegistrationFunctionName% (void) {
+%BundleRegistrationFunctionName% (void)
+{
 %AddPreallocatedResources%}
