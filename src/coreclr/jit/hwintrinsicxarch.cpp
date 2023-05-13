@@ -2563,7 +2563,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (varTypeIsLong(simdBaseType))
             {
                 // Create a GetElement node which handles decomposition
-                op2 = gtNewIconNode(0);
+                op2     = gtNewIconNode(0);
                 retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
                 break;
             }

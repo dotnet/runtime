@@ -3278,6 +3278,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
     if (op2->IsIntegralConst(0))
     {
         // Specially handle as ToScalar
+        BlockRange().Remove(op2);
 
         if (simdSize == 64)
         {
