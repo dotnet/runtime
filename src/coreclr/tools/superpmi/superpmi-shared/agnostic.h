@@ -522,6 +522,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     UINT                          offsetOfThreadLocalStoragePointer;
     UINT                          offsetOfMaxThreadStaticBlocks;
     UINT                          offsetOfThreadStaticBlocks;
+    UINT                          offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo
