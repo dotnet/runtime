@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Tests
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 
-            using (var aesGcm = new AesGcm(key))
+            using (var aesGcm = new AesGcm(key, tag.Length))
             {
                 aesGcm.Encrypt(nonce, plaintext, ciphertext, tag, additionalData);
 
@@ -51,7 +51,12 @@ namespace System.Security.Cryptography.Tests
         public static void InvalidKeyLength(int keyLength)
         {
             byte[] key = new byte[keyLength];
+#pragma warning disable SYSLIB0053
             Assert.Throws<CryptographicException>(() => new AesGcm(key));
+            Assert.Throws<CryptographicException>(() => new AesGcm(key.AsSpan()));
+#pragma warning restore SYSLIB0053
+            Assert.Throws<CryptographicException>(() => new AesGcm(key, AesGcm.TagByteSizes.MinSize));
+            Assert.Throws<CryptographicException>(() => new AesGcm(key.AsSpan(), AesGcm.TagByteSizes.MinSize));
         }
 
         [Theory]
@@ -112,7 +117,9 @@ namespace System.Security.Cryptography.Tests
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 
+#pragma warning disable SYSLIB0053
             using (var aesGcm = new AesGcm(key))
+#pragma warning restore SYSLIB0053
             {
                 Assert.Throws<ArgumentException>("tag", () => aesGcm.Encrypt(nonce, plaintext, ciphertext, tag));
                 Assert.Throws<ArgumentException>("tag", () => aesGcm.Decrypt(nonce, ciphertext, tag, plaintext));
@@ -255,7 +262,10 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void NullKey()
         {
+#pragma warning disable SYSLIB0053
             Assert.Throws<ArgumentNullException>(() => new AesGcm((byte[])null));
+#pragma warning restore SYSLIB0053
+            Assert.Throws<ArgumentNullException>(() => new AesGcm((byte[])null, AesGcm.TagByteSizes.MinSize));
         }
 
         [Fact]
@@ -372,7 +382,9 @@ namespace System.Security.Cryptography.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsUnspecifiedTagSize(AEADTest testCase)
         {
+#pragma warning disable SYSLIB0053
             using (var aesGcm = new AesGcm(testCase.Key))
+#pragma warning restore SYSLIB0053
             {
                 byte[] ciphertext = new byte[testCase.Plaintext.Length];
                 byte[] tag = new byte[testCase.Tag.Length];
@@ -979,8 +991,13 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
 
+#pragma warning disable SYSLIB0053
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key));
             Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan()));
+#pragma warning restore SYSLIB0053
+
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key, AesGcm.TagByteSizes.MinSize));
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan(), AesGcm.TagByteSizes.MinSize));
         }
 
         [Fact]
