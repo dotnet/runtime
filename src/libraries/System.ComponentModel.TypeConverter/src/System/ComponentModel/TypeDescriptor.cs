@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel.Design;
 using System.Diagnostics;
@@ -28,7 +29,7 @@ namespace System.ComponentModel
         // class load anyway.
         private static readonly WeakHashtable s_providerTable = new WeakHashtable();     // mapping of type or object hash to a provider list
         private static readonly Hashtable s_providerTypeTable = new Hashtable();         // A direct mapping from type to provider.
-        private static readonly Hashtable s_defaultProviders = new Hashtable(); // A table of type -> default provider to track DefaultTypeDescriptionProviderAttributes.
+        private static readonly HashSet<Type> s_processedTypes = new HashSet<Type>();
         private static WeakHashtable? s_associationTable;
         private static int s_metadataVersion;                          // a version stamp for our metadata. Used by property descriptors to know when to rebuild attributes.
 
@@ -75,7 +76,7 @@ namespace System.ComponentModel
             Guid.NewGuid()  // events
         };
 
-        private static readonly ReaderWriterLockSlim s_defaultProvidersLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly ReaderWriterLockSlim s_processedTypesLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private static readonly ReaderWriterLockSlim s_providerTableLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         private TypeDescriptor()
@@ -279,18 +280,15 @@ namespace System.ComponentModel
         /// </summary>
         private static void CheckDefaultProvider(Type type)
         {
-            s_defaultProvidersLock.EnterUpgradeableReadLock();
+            s_processedTypesLock.EnterUpgradeableReadLock();
             try
             {
-                if (!s_defaultProviders.ContainsKey(type))
+                if (!s_processedTypes.Contains(type))
                 {
-                    s_defaultProvidersLock.EnterWriteLock();
+                    s_processedTypesLock.EnterWriteLock();
                     try
                     {
-                        // Immediately clear this. If we find a default provider
-                        // and it starts messing around with type information,
-                        // this could infinitely recurse.
-                        s_defaultProviders[type] = null;
+                        s_processedTypes.Add(type);
 
                         // Always use core reflection when checking for
                         // the default provider attribute. If there is a
@@ -298,12 +296,11 @@ namespace System.ComponentModel
                         // own cache state against the type. There shouldn't be
                         // more than one of these, but walk anyway. Walk in
                         // reverse order so that the most derived takes precidence.
-                        object[] attrs = type.GetCustomAttributes(typeof(TypeDescriptionProviderAttribute), false);
+                        var attrs = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false);
                         bool providerAdded = false;
-                        for (int idx = attrs.Length - 1; idx >= 0; idx--)
+                        foreach(var currentAttr in attrs)
                         {
-                            TypeDescriptionProviderAttribute pa = (TypeDescriptionProviderAttribute)attrs[idx];
-                            Type? providerType = Type.GetType(pa.TypeName);
+                            Type? providerType = Type.GetType(currentAttr.TypeName);
                             if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
                             {
                                 TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
@@ -324,13 +321,13 @@ namespace System.ComponentModel
                     }
                     finally
                     {
-                        s_defaultProvidersLock.ExitWriteLock();
+                        s_processedTypesLock.ExitWriteLock();
                     }
                 }
             }
             finally
             {
-                s_defaultProvidersLock.ExitUpgradeableReadLock();
+                s_processedTypesLock.ExitUpgradeableReadLock();
             }
         }
 
