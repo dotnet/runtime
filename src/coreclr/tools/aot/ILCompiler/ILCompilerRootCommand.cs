@@ -164,7 +164,7 @@ namespace ILCompiler
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
 
-        public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
+        public ILCompilerRootCommand(string[] args) : base(".NET AOT Compiler")
         {
             AddArgument(InputFilePaths);
             AddOption(ReferenceFiles);
