@@ -198,10 +198,6 @@ public:
 
     bool IsRemainderDying() const;
     bool IsReplacementDying(unsigned index) const;
-
-#ifdef DEBUG
-    void Dump();
-#endif
 };
 
 // Class to compute and track liveness information pertaining promoted structs.

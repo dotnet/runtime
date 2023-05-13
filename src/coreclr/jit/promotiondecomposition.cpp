@@ -1264,6 +1264,18 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// LastUseString:
+//   Return a string indicating whether a replacement is a last use, for
+//   JITDUMP purposes.
+//
+// Parameters:
+//   lcl - A struct local
+//   rep - A replacement of that struct local
+//
+// Returns:
+//   " (last use)" if it is, and otherwise "".
+//
 const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
 {
     StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);

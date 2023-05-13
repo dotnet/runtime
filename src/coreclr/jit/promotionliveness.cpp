@@ -811,18 +811,16 @@ bool StructUseDeaths::IsReplacementDying(unsigned index) const
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }
 
-//------------------------------------------------------------------------
-// IsReplacementDying:
-//   Check if a specific replacement is dying.
-//
-// Returns:
-//   True if so.
-//
-void StructUseDeaths::Dump()
-{
-}
-
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// DumpVarSet:
+//   Dump a var set to jitstdout.
+//
+// Parameters:
+//   set     - The set to dump
+//   allVars - Set of all variables to print whitespace for if not in 'set'.
+//             Used for alignment.
+//
 void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
 {
     printf("{");
