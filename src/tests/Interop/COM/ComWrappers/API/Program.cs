@@ -209,25 +209,38 @@ namespace ComWrappersTests
             Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             // Make sure that unwrapping the wrapper in the same ComWrappers context gets back the same object
-            var testObjUnwrapped = GetObjectHandleForComInstance(wrappers, comWrapper);
+            var testObjUnwrapped = GetUnwrappedObjectHandleForComInstance(wrappers, comWrapper);
             AssertSameInstanceAndFreeHandle(testObj, testObjUnwrapped);
 
             // Make sure that unwrapping the wrapper in a different ComWrappers context gets back a different object
             var wrappers2 = new TestComWrappers();
-            var testObjNewWrapper = GetObjectHandleForComInstance(wrappers2, comWrapper);
-            AssertNotSameInstanceAndFreeHandle(testObj, testObjNewWrapper);
+            var testObjWrapper2 = GetUnwrappedObjectHandleForComInstance(wrappers2, comWrapper);
+            AssertNotSameInstanceAndFreeHandle(testObj, testObjWrapper2);
 
-            // Force a GC to release the new managed object wrapper we made in the other context
+            // Make sure that unwrapping a wrapper from a different ComWrappers context in a context that has created a CCW
+            // for the object only unwraps the wrapper from that context, not from any context.
+            var wrappers3 = new TestComWrappers();
+            IntPtr comWrapper3 = wrappers3.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+
+            Assert.NotEqual(IntPtr.Zero, comWrapper3);
+            Assert.NotEqual(comWrapper, comWrapper3);
+
+            var testObjWrapper3 = GetUnwrappedObjectHandleForComInstance(wrappers3, comWrapper);
+            AssertNotSameInstanceAndFreeHandle(testObj, testObjWrapper3);
+            AssertSameInstanceAndFreeHandle(testObj, GetUnwrappedObjectHandleForComInstance(wrappers3, comWrapper3));
+
+            // Force a GC to release the new managed object wrappers we made
             ForceGC();
 
-            // Release the wrapper
+            // Release the COM wrappers
             int count = Marshal.Release(comWrapper);
-            Assert.Equal(0, count); // The remaining count is testObjUnwrapped2
+            count = Marshal.Release(comWrapper3);
+            Assert.Equal(0, count);
 
             // Make sure that all possible references to the CCW over the RCW are never on the same frame
             // as the rest of the test (to ensure that the GC does collect it).
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static GCHandle GetObjectHandleForComInstance(ComWrappers wrapper, nint comWrapper)
+            static GCHandle GetUnwrappedObjectHandleForComInstance(ComWrappers wrapper, nint comWrapper)
             {
                 var obj = wrapper.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
                 return GCHandle.Alloc(obj);
