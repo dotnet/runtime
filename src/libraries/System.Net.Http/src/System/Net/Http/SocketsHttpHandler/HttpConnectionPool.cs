@@ -722,6 +722,9 @@ namespace System.Net.Http
                 }
             }
 
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using AsyncFlowControl _ = ExecutionContext.SuppressFlow();
+
             if (connection is not null)
             {
                 // Register for shutdown notification.
