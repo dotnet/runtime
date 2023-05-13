@@ -880,18 +880,19 @@ namespace
             InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
             _ASSERTE(syncBlock->IsPrecious());
 
+            // If we found a managed object wrapper in this ComWrappers instance
+            // and it's has the same identity pointer as the one we're creating an EOC for,
+            // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+            //
+            // A managed object can have multiple managed object wrappers, with a max of one per context.
+            // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+            // managed object wrappers for A created with C1 and C2 respectively.
+            // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+            // we will create a new wrapper. In this scenario, we'll only unwrap B2.
             void* wrapperRawMaybe = NULL;
-            if (interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe))
+            if (interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe)
+                && wrapperRawMaybe == identity)
             {
-                // If we found a managed object wrapper in this ComWrappers instance,
-                // unwrap it. We don't AddRef the wrapper as we aren't using it.
-                // We're only checking if it exists.
-
-                // TODO: A managed object can have multiple managed object wrappers, with a max of one per context.
-                // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                // managed object wrappers for A created with C1 and C2 respectively.
-                // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                // should we unwrap B1 to get A, or should we only unwrap if B2 is passed in?
                 gc.objRefMaybe = objRef;
             }
             GCPROTECT_END();
