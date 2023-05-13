@@ -1105,7 +1105,7 @@ open_symfile_from_bundle (MonoImage *image)
 		assembly = mono_bundled_resources_get_assembly_resource (module_name_dll_suffix);
 	}
 	g_free (module_name_dll_suffix);
-	if (assembly && assembly->symbol_data)
+	if (assembly && assembly->symbol_data.data)
 		return mono_debug_open_image (image, assembly->symbol_data.data, assembly->symbol_data.size);
 #endif
 
