@@ -28,7 +28,7 @@
 # | Arch  | windows                 | Linux                                                                                                                                | macOS          |
 # |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
 # | x86   | Windows.10.Amd64.X86.Rt | -                                                                                                                                    | -              |
-# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
+# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.2204.Amd64                                                                                                                    | OSX.1014.Amd64 |
 # | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7                        | -              |
 # | arm64 | Windows.11.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8                        | OSX.1100.ARM64 |
 #
@@ -463,7 +463,7 @@ def main(main_args):
         elif arch == "arm64":
             helix_queue = "(Ubuntu.1804.Arm64)Ubuntu.2004.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8"
         else:
-            helix_queue = "Ubuntu.1804.Amd64"
+            helix_queue = "Ubuntu.2204.Amd64"
     elif platform_name == "osx":
         helix_queue = "OSX.1100.ARM64" if arch == "arm64" else "OSX.1014.Amd64"
 

@@ -30,7 +30,7 @@
     <_HelixAccessToken></_HelixAccessToken>
     <_HelixBuild></_HelixBuild>
     <_HelixSource></_HelixSource>
-    <_HelixTargetQueues>Ubuntu.1804.Amd64.Open</_HelixTargetQueues>
+    <_HelixTargetQueues>Ubuntu.2204.Amd64.Open</_HelixTargetQueues>
     <_HelixType>test/stuff</_HelixType>
     <_PublishTestResults>false</_PublishTestResults>
     <_RunCrossGen>false</_RunCrossGen>

@@ -15,7 +15,7 @@ CONFIG?=Release
 BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=wasi /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
-HELIX_TARGET_QUEUE?=Ubuntu.1804.Amd64.Open
+HELIX_TARGET_QUEUE?=Ubuntu.2204.Amd64.Open
 
 all: build-all
 
