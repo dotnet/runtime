@@ -177,9 +177,8 @@ public:
     PhaseStatus Run();
 };
 
-struct BasicBlockLiveness;
-
-class StructUseDeaths
+// Class to represent liveness information for a struct local's fields and remainder.
+class StructDeaths
 {
     BitVec   m_deaths;
     unsigned m_numFields = 0;
@@ -187,18 +186,20 @@ class StructUseDeaths
     friend class PromotionLiveness;
 
 private:
-    StructUseDeaths(BitVec deaths, unsigned numFields) : m_deaths(deaths), m_numFields(numFields)
+    StructDeaths(BitVec deaths, unsigned numFields) : m_deaths(deaths), m_numFields(numFields)
     {
     }
 
 public:
-    StructUseDeaths() : m_deaths(BitVecOps::UninitVal())
+    StructDeaths() : m_deaths(BitVecOps::UninitVal())
     {
     }
 
     bool IsRemainderDying() const;
     bool IsReplacementDying(unsigned index) const;
 };
+
+struct BasicBlockLiveness;
 
 // Class to compute and track liveness information pertaining promoted structs.
 class PromotionLiveness
@@ -214,8 +215,6 @@ class PromotionLiveness
     BitVec                          m_ehLiveVars;
     JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BitVec> m_aggDeaths;
 
-    friend class PromotionLivenessBitSetTraits;
-
 public:
     PromotionLiveness(Compiler* compiler, jitstd::vector<AggregateInfo*>& aggregates)
         : m_compiler(compiler), m_aggregates(aggregates), m_aggDeaths(compiler->getAllocator(CMK_Promotion))
@@ -224,7 +223,7 @@ public:
 
     void Run();
     bool IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
-    StructUseDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
+    StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
     void MarkUseDef(GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);

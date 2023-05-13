@@ -12,7 +12,9 @@ struct BasicBlockLiveness
     // Note that this differs from our normal liveness: partial definitions are
     // NOT marked but they are also not considered uses.
     BitVec VarDef;
+    // Variables live-in to this basic block.
     BitVec LiveIn;
+    // Variables live-out of this basic block.
     BitVec LiveOut;
 };
 
@@ -61,10 +63,12 @@ struct BasicBlockLiveness
 //   This relies on downstream phases not requiring/wanting to use per-basic
 //   block live-in/live-out/var-use/var-def sets. To be able to update these we
 //   would need to give the new locals "regular" tracked indices (i.e. allocate
-//   a lvVarIndex); currently the indices allocated are "dense" in the sense
-//   that the bit vectors only have indices for remainders and the replacement
-//   fields introduced by this pass uin other words, we allocate 1 + num_fields
-//   indices for each promoted struct local).
+//   a lvVarIndex).
+//
+//   The indices allocated and used internally within the liveness computation
+//   are "dense" in the sense that the bit vectors only have indices for
+//   remainders and the replacement fields introduced by this pass. In other
+//   words, we allocate 1 + num_fields indices for each promoted struct local).
 //
 void PromotionLiveness::Run()
 {
@@ -586,14 +590,6 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
 
     if (accessType == TYP_STRUCT)
     {
-        if (lcl->OperIs(GT_LCL_ADDR))
-        {
-            // Retbuf -- these are definitions but we do not know of how much.
-            // We never mark them as dead and we never treat them as killing anything.
-            assert(isDef);
-            return;
-        }
-
         // We need an external bit set to represent dying fields/remainder on a struct use.
         BitVecTraits aggTraits(1 + (unsigned)agg->Replacements.size(), m_compiler);
         BitVec       aggDeaths(BitVecOps::MakeEmpty(&aggTraits));
@@ -690,6 +686,14 @@ void PromotionLiveness::FillInLiveness(BitVec& life, BitVec volatileVars, GenTre
     }
     else
     {
+        if (lcl->OperIs(GT_LCL_ADDR))
+        {
+            // Retbuf -- these are definitions but we do not know of how much.
+            // We never mark them as dead and we never treat them as killing anything.
+            assert(isDef);
+            return;
+        }
+
         unsigned offs  = lcl->GetLclOffs();
         size_t   index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, offs);
         if ((ssize_t)index < 0)
@@ -773,7 +777,7 @@ bool PromotionLiveness::IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl,
 // Returns:
 //   Liveness information.
 //
-StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
+StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl)
 {
     assert(lcl->OperIsLocal() && lcl->TypeIs(TYP_STRUCT) && (m_aggregates[lcl->GetLclNum()] != nullptr));
     BitVec aggDeaths;
@@ -782,7 +786,7 @@ StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* 
 
     unsigned       lclNum  = lcl->GetLclNum();
     AggregateInfo* aggInfo = m_aggregates[lclNum];
-    return StructUseDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
+    return StructDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
 }
 
 //------------------------------------------------------------------------
@@ -792,7 +796,7 @@ StructUseDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* 
 // Returns:
 //   True if so.
 //
-bool StructUseDeaths::IsRemainderDying() const
+bool StructDeaths::IsRemainderDying() const
 {
     BitVecTraits traits(1 + m_numFields, nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 0);
@@ -805,7 +809,7 @@ bool StructUseDeaths::IsRemainderDying() const
 // Returns:
 //   True if so.
 //
-bool StructUseDeaths::IsReplacementDying(unsigned index) const
+bool StructDeaths::IsReplacementDying(unsigned index) const
 {
     BitVecTraits traits(1 + m_numFields, nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
@@ -842,13 +846,11 @@ void PromotionLiveness::DumpVarSet(BitVec set, BitVec allVars)
             {
                 if (j == 0)
                 {
-                    // 14 chars
                     printf("%sV%02u(remainder)", sep, (unsigned)i);
                 }
                 else
                 {
                     const Replacement& rep = agg->Replacements[j - 1];
-                    // 14 chars
                     printf("%sV%02u.[%03u..%03u)", sep, (unsigned)i, rep.Offset,
                            rep.Offset + genTypeSize(rep.AccessType));
                 }

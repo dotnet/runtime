@@ -129,6 +129,19 @@ inline AccessKindFlags& operator&=(AccessKindFlags& a, AccessKindFlags b)
     return a = (AccessKindFlags)((uint32_t)a & (uint32_t)b);
 }
 
+//------------------------------------------------------------------------
+// OverlappingReplacements:
+//   Find replacements that overlap the specified [offset..offset+size) interval.
+//
+// Parameters:
+//   offset           - Starting offset of interval
+//   size             - Size of interval
+//   firstReplacement - [out] The first replacement that overlaps
+//   endReplacement   - [out, optional] One past the last replacement that overlaps
+//
+// Returns:
+//   True if any replacement overlaps; otherwise false.
+//
 bool AggregateInfo::OverlappingReplacements(unsigned      offset,
                                             unsigned      size,
                                             Replacement** firstReplacement,
@@ -1234,7 +1247,7 @@ void ReplaceVisitor::LoadStoreAroundCall(GenTreeCall* call, GenTree* user)
 //
 bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 {
-    StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    StructDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
     if (!deaths.IsRemainderDying())
     {
         return false;
@@ -1322,7 +1335,6 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     Replacement& rep = replacements[index];
     assert(accessType == rep.AccessType);
     JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
-
     *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
 
     (*use)->gtFlags |= lcl->gtFlags & GTF_VAR_DEATH;
@@ -1543,12 +1555,28 @@ PhaseStatus Promotion::Run()
 
         jitstd::vector<Replacement>& reps = aggregates[i]->Replacements;
 
+        assert(reps.size() > 0);
+        anyReplacements = true;
+#ifdef DEBUG
+        JITDUMP("V%02u promoted with %d replacements\n", i, (int)reps.size());
+        for (const Replacement& rep : reps)
+        {
+            JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
+                    varTypeName(rep.AccessType), rep.LclNum);
+        }
+#endif
+
+        JITDUMP("Computing unpromoted remainder for V%02u\n", i);
         StructSegments unpromotedParts = SignificantSegments(m_compiler, m_compiler->lvaGetDesc(i)->GetLayout());
         for (size_t i = 0; i < reps.size(); i++)
         {
             unpromotedParts.Subtract(
                 StructSegments::Segment(reps[i].Offset, reps[i].Offset + genTypeSize(reps[i].AccessType)));
         }
+
+        JITDUMP("  Remainder: ");
+        DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+        JITDUMP("\n\n");
 
         StructSegments::Segment unpromotedSegment;
         if (unpromotedParts.CoveringSegment(&unpromotedSegment))
@@ -1561,17 +1589,6 @@ PhaseStatus Promotion::Run()
         {
             // Aggregate is fully promoted, leave UnpromotedMin == UnpromotedMax to indicate this.
         }
-
-        assert(reps.size() > 0);
-        anyReplacements = true;
-#ifdef DEBUG
-        JITDUMP("V%02u promoted with %d replacements\n", i, (int)reps.size());
-        for (const Replacement& rep : reps)
-        {
-            JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
-                    varTypeName(rep.AccessType), rep.LclNum);
-        }
-#endif
     }
 
     if (!anyReplacements)
@@ -1579,7 +1596,7 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Do a liveness pass to refine liveness for the promotions we picked.
+    // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
     liveness.Run();
 
@@ -1616,14 +1633,7 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    if (!liveness.IsReplacementLiveOut(bb, i, (unsigned)j))
-                    {
-                        JITDUMP(
-                            "Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
-                            "\n",
-                            i, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
-                    }
-                    else
+                    if (liveness.IsReplacementLiveOut(bb, i, (unsigned)j))
                     {
                         JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                                 rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
@@ -1632,6 +1642,13 @@ PhaseStatus Promotion::Run()
                         Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
                         DISPSTMT(stmt);
                         m_compiler->fgInsertStmtNearEnd(bb, stmt);
+                    }
+                    else
+                    {
+                        JITDUMP(
+                            "Skipping reading back dead replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB
+                            "\n",
+                            i, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
                     }
                     rep.NeedsReadBack = false;
                 }

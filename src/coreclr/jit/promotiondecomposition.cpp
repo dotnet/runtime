@@ -333,7 +333,7 @@ private:
     //   the rest of the remainder); or by handling a specific 'hole' as a
     //   primitive.
     //
-    RemainderStrategy DetermineRemainderStrategy(const StructUseDeaths& dstDeaths)
+    RemainderStrategy DetermineRemainderStrategy(const StructDeaths& dstDeaths)
     {
         if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && dstDeaths.IsRemainderDying())
         {
@@ -409,8 +409,8 @@ private:
     //
     void FinalizeInit(DecompositionStatementList* statements)
     {
-        uint8_t         initPattern = GetInitPattern();
-        StructUseDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+        uint8_t      initPattern = GetInitPattern();
+        StructDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
 
         AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
         assert((agg != nullptr) && (agg->Replacements.size() > 0));
@@ -463,7 +463,7 @@ private:
     {
         assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) && m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
-        StructUseDeaths dstDeaths;
+        StructDeaths dstDeaths;
         if (m_dstInvolvesReplacements)
         {
             dstDeaths = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
@@ -688,7 +688,7 @@ private:
             statements->AddStatement(indir);
         }
 
-        StructUseDeaths srcDeaths;
+        StructDeaths srcDeaths;
         if (m_srcInvolvesReplacements)
         {
             srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
@@ -831,7 +831,7 @@ private:
     //   entry             - The init/copy entry
     //   remainderStrategy - The strategy we are using for the remainder
     //
-    bool CanSkipEntry(const Entry& entry, const StructUseDeaths& deaths, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
     {
         if (entry.ToReplacement != nullptr)
         {
@@ -1278,8 +1278,8 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
 //
 const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
 {
-    StructUseDeaths deaths = m_liveness->GetDeathsForStructLocal(lcl);
-    AggregateInfo*  agg    = m_aggregates[lcl->GetLclNum()];
+    StructDeaths   deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    AggregateInfo* agg    = m_aggregates[lcl->GetLclNum()];
     assert(agg != nullptr);
     Replacement* firstRep = agg->Replacements.data();
     assert((rep >= firstRep) && (rep < firstRep + agg->Replacements.size()));
