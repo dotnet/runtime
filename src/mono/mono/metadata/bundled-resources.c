@@ -9,7 +9,8 @@
 #include <mono/metadata/assembly-internals.h>
 
 static GHashTable *bundled_resources = NULL;
-static bool bundle_contains_assemblies, bundle_contains_satellite_assemblies = false;
+static bool bundle_contains_assemblies = false;
+static bool bundle_contains_satellite_assemblies = false;
 
 //---------------------------------------------------------------------------------------
 //
@@ -89,7 +90,8 @@ mono_bundled_resources_add (MonoBundledResource **resources_to_bundle, uint32_t 
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_bundled_resources_value_destroy_func);
 
-	bool assemblyAdded, satelliteAssemblyAdded = false;
+	bool assemblyAdded = false;
+	bool satelliteAssemblyAdded = false;
 
 	for (uint32_t i = 0; i < len; ++i) {
 		MonoBundledResource *resource_to_bundle = (MonoBundledResource *)resources_to_bundle[i];
