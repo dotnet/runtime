@@ -1399,12 +1399,12 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     // For longs, we need to change rols into two GT_LSH_HIs and rors into two GT_RSH_LOs
     // so we will get:
     //
-    // shld lo, hi, rotateAmount
+    // shld lo, hiCopy, rotateAmount
     // shld hi, loCopy, rotateAmount
     //
     // or:
     //
-    // shrd lo, hi, rotateAmount
+    // shrd lo, hiCopy, rotateAmount
     // shrd hi, loCopy, rotateAmount
 
     if (oper == GT_ROL)
@@ -1475,6 +1475,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
         }
 
+        if (oper == GT_RSH_LO)
+        {
+            // lsra/codegen expects these operands in the opposite order
+            std::swap(loOp1, hiOp1);
+        }
         Range().Remove(gtLong);
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();

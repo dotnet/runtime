@@ -19,7 +19,7 @@ using Microsoft.CodeAnalysis.Testing.Verifiers;
 namespace Microsoft.Interop.UnitTests.Verifiers
 {
     public static class CSharpSourceGeneratorVerifier<TSourceGenerator>
-        where TSourceGenerator : IIncrementalGenerator, new()
+        where TSourceGenerator : new()
     {
         public static DiagnosticResult Diagnostic(string diagnosticId)
             => new DiagnosticResult(diagnosticId, DiagnosticSeverity.Error);

@@ -642,7 +642,8 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb);
 
     // This does the dataflow analysis and builds the intervals
-    void buildIntervals();
+    template <bool localVarsEnregistered>
+    void           buildIntervals();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -651,7 +652,8 @@ public:
     void allocateRegisters();
 
     // This is the resolution phase, where cross-block mismatches are fixed up
-    void resolveRegisters();
+    template <bool localVarsEnregistered>
+    void           resolveRegisters();
 
     void writeRegisters(RefPosition* currentRefPosition, GenTree* tree);
 
@@ -986,7 +988,8 @@ public:
 
 private:
     // Determine which locals are candidates for allocation
-    void identifyCandidates();
+    template <bool localVarsEnregistered>
+    void           identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
     void identifyCandidatesExceptionDataflow();
@@ -1008,6 +1011,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
+    void resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);

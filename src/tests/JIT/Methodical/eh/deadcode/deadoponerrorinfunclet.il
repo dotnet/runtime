@@ -12,7 +12,7 @@
 {
 }
 .assembly extern eh_common{}
-.assembly 'deadoponerrorinfunclet'
+.assembly ASSEMBLY_NAME
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0

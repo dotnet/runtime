@@ -40,7 +40,7 @@ struct CORDBG_SYMBOL_URL
 
     ULONG Size() const
     {
-        return (ULONG)(sizeof(GUID) + ((wcslen(rcName) + 1) * 2));
+        return (ULONG)(sizeof(GUID) + ((u16_strlen(rcName) + 1) * 2));
     }
 
 #ifdef _PREFAST_

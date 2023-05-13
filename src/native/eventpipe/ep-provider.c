@@ -413,7 +413,7 @@ provider_invoke_callback (EventPipeProviderCallbackData *provider_callback_data)
 	if (callback_function && !ep_rt_process_shutdown ()) {
 		ep_rt_provider_invoke_callback (
 			callback_function,
-			(uint8_t *)&session_id, /* session_id */
+			(uint8_t *)(session_id == 0 ? NULL : &session_id), /* session_id */
 			enabled ? 1 : 0, /* ControlCode */
 			(uint8_t)provider_level,
 			(uint64_t)keywords,

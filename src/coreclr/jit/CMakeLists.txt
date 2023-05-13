@@ -534,6 +534,7 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
+       coreclrminipal
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES
@@ -550,6 +551,7 @@ else()
        bcrypt.lib
        crypt32.lib
        RuntimeObject.lib
+       coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
 

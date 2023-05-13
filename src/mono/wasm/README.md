@@ -133,13 +133,13 @@ The wrapper script used to actually run these tests, accepts:
 
 Exceptions thrown after the runtime starts get symbolicating from js itself. Exceptions before that, like asserts containing native traces get symbolicated by xharness using `src/mono/wasm/symbolicator`.
 
-If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
+If you need to symbolicate some traces manually, then you need the corresponding `dotnet.native.js.symbols` file. Then:
 
 ```console
-src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
+src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.native.js.symbols /path/to/file/with/traces
 ```
 
-When not relinking, or not building with AOT, you can find `dotnet.js.symbols` in the runtime pack.
+When not relinking, or not building with AOT, you can find `dotnet.native.js.symbols` in the runtime pack.
 
 ## Debugger tests on macOS
 

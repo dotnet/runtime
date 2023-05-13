@@ -1308,7 +1308,7 @@ void MethodContext::recGetJitTimeLogFilename(LPCWSTR tempFileName)
     DWORD name_index = -1;
     if (tempFileName != nullptr)
     {
-        name_index = GetJitTimeLogFilename->AddBuffer((unsigned char*)tempFileName, (DWORD)wcslen(tempFileName) + 2);
+        name_index = GetJitTimeLogFilename->AddBuffer((unsigned char*)tempFileName, (DWORD)u16_strlen(tempFileName) + 2);
     }
     GetJitTimeLogFilename->Add(0, name_index);
     DEBUG_REC(dmpGetJitTimeLogFilename(0, name_index));
@@ -3601,34 +3601,39 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
-void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result)
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType, uint32_t result)
 {
     if (GetThreadLocalFieldInfo == nullptr)
-        GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
+        GetThreadLocalFieldInfo = new LightWeightMap<DLD, DWORD>();
 
-    DWORDLONG key = 0;
-
-    key = CastHandle(field);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = isGCType ? 0 : 1;
     GetThreadLocalFieldInfo->Add(key, result);
     DEBUG_REC(dmpGetThreadLocalFieldInfo(key, result));
 }
 
-void MethodContext::dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetThreadLocalFieldInfo(DLD key, DWORD value)
 {
-    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ", result-%u", key, value);
+    printf("GetThreadLocalFieldInfo key hnd-%016" PRIX64 ",gctype-%d result-%u", key.A, key.B, value);
 }
 
-uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
-    DWORDLONG key   = CastHandle(field);
-    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key %016" PRIX64 "", key);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+
+    key.A           = CastHandle(field);
+    key.B           = isGCType ? 0 : 1;
+    DWORD     value = LookupByKeyOrMiss(GetThreadLocalFieldInfo, key, ": key hnd-%016" PRIX64 ", gctype-%u", key.A, key.B);
 
     DEBUG_REP(dmpGetThreadLocalFieldInfo(key, value));
 
     return value;
 }
 
-void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     if (GetThreadLocalStaticBlocksInfo == nullptr)
         GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
@@ -3641,31 +3646,36 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
     value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
     value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
+    value.offsetOfGCDataPointer             = pInfo->offsetOfGCDataPointer;
 
     // This data is same for entire process, so just add it against key '0'.
-    GetThreadLocalStaticBlocksInfo->Add(0, value);
-    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(0, value));
+    DWORD key = isGCType ? 0 : 1;
+    GetThreadLocalStaticBlocksInfo->Add(key, value);
+    DEBUG_REC(dmpGetThreadLocalStaticBlocksInfo(key, value));
 }
 
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
-    printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
-           ", offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfThreadStaticBlocks-%u",
-           value.tlsIndex.handle, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfThreadStaticBlocks);
+    printf("GetThreadLocalStaticBlocksInfo key %u, value tlsIndex-%016" PRIX64
+           ", offsetOfThreadLocalStoragePointer-%u, offsetOfMaxThreadStaticBlocks-%u"
+           ", offsetOfThreadStaticBlocks-%u offsetOfGCDataPointer-%u",
+           key, value.tlsIndex.handle, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadStaticBlocks, value.offsetOfGCDataPointer);
 }
 
-void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
-    Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, 0, ": key %u", 0);
+    int key = isGCType ? 0 : 1;
+    Agnostic_GetThreadLocalStaticBlocksInfo value = LookupByKeyOrMiss(GetThreadLocalStaticBlocksInfo, key, ": key %u", key);
 
-    DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(0, value));
+    DEBUG_REP(dmpGetThreadLocalStaticBlocksInfo(key, value));
 
-    pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
-    pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
-    pInfo->offsetOfMaxThreadStaticBlocks = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->tlsIndex.accessType               = (InfoAccessType)value.tlsIndex.accessType;
+    pInfo->tlsIndex.addr                     = (void*)value.tlsIndex.handle;
+    pInfo->offsetOfMaxThreadStaticBlocks     = value.offsetOfMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfThreadStaticBlocks = value.offsetOfThreadStaticBlocks;
+    pInfo->offsetOfThreadStaticBlocks        = value.offsetOfThreadStaticBlocks;
+    pInfo->offsetOfGCDataPointer             = value.offsetOfGCDataPointer;
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,
@@ -7089,7 +7099,7 @@ void MethodContext::recGetIntConfigValue(const WCHAR* name, int defaultValue, in
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     DWORD index =
-        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(WCHAR) * ((unsigned int)wcslen(name) + 1));
+        (DWORD)GetIntConfigValue->AddBuffer((unsigned char*)name, sizeof(WCHAR) * ((unsigned int)u16_strlen(name) + 1));
 
     key.nameIndex    = index;
     key.defaultValue = defaultValue;
@@ -7119,7 +7129,7 @@ int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
     Agnostic_ConfigIntInfo key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
-    size_t nameLenInBytes = sizeof(WCHAR) * (wcslen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (u16_strlen(name) + 1);
     int    nameIndex      = GetIntConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return defaultValue;
@@ -7141,12 +7151,12 @@ void MethodContext::recGetStringConfigValue(const WCHAR* name, const WCHAR* resu
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
     DWORD nameIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)name,
-                                                             sizeof(WCHAR) * ((unsigned int)wcslen(name) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)u16_strlen(name) + 1));
 
     DWORD resultIndex = (DWORD)-1;
     if (result != nullptr)
         resultIndex = (DWORD)GetStringConfigValue->AddBuffer((unsigned char*)result,
-                                                             sizeof(WCHAR) * ((unsigned int)wcslen(result) + 1));
+                                                             sizeof(WCHAR) * ((unsigned int)u16_strlen(result) + 1));
 
     GetStringConfigValue->Add(nameIndex, resultIndex);
     DEBUG_REC(dmpGetStringConfigValue(nameIndex, resultIndex));
@@ -7170,7 +7180,7 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 
     AssertCodeMsg(name != nullptr, EXCEPTIONCODE_MC, "Name can not be nullptr");
 
-    size_t nameLenInBytes = sizeof(WCHAR) * (wcslen(name) + 1);
+    size_t nameLenInBytes = sizeof(WCHAR) * (u16_strlen(name) + 1);
     int    nameIndex      = GetStringConfigValue->Contains((unsigned char*)name, (unsigned int)nameLenInBytes);
     if (nameIndex == -1) // config name not in map
         return nullptr;
@@ -7555,11 +7565,11 @@ void SetDebugDumpVariables()
         g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
     }
 
-    if (0 == wcscmp(g_debugRecStr, W("1")))
+    if (0 == u16_strcmp(g_debugRecStr, W("1")))
     {
         g_debugRec = true;
     }
-    if (0 == wcscmp(g_debugRepStr, W("1")))
+    if (0 == u16_strcmp(g_debugRepStr, W("1")))
     {
         g_debugRep = true;
     }

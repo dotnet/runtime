@@ -98,6 +98,14 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetGeneration")]
         internal static extern int RhGetGeneration(object obj);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetGenerationSize")]
+        internal static extern int RhGetGenerationSize(int gen);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetLastGCPercentTimeInGC")]
+        internal static extern int RhGetLastGCPercentTimeInGC();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGcLatencyMode")]
         internal static extern GCLatencyMode RhGetGcLatencyMode();
@@ -312,21 +320,6 @@ namespace System.Runtime
 
         internal static unsafe object IsInstanceOf(EETypePtr pTargetType, object obj)
             => IsInstanceOf(pTargetType.ToPointer(), obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        private  static extern unsafe object IsInstanceOfClass(MethodTable* pTargetType, object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static extern unsafe object IsInstanceOfInterface(MethodTable* pTargetType, object obj);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfException")]
-        internal static extern unsafe bool IsInstanceOfException(MethodTable* pTargetType, object obj);
-
-        internal static unsafe object IsInstanceOfInterface(EETypePtr pTargetType, object obj)
-            => IsInstanceOfInterface(pTargetType.ToPointer(), obj);
 
         //
         // calls to runtime for allocation

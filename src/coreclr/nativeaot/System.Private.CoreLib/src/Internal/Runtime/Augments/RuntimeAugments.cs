@@ -455,11 +455,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
 
-        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
-        }
-
         //
         // Return a type's base type using the runtime type system. If the underlying runtime type system does not support
         // this operation, return false and TypeInfo.BaseType will fall back to metadata.
@@ -917,11 +912,6 @@ namespace Internal.Runtime.Augments
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
         {
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
-        }
-
-        public static string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.LastResortToString;
         }
 
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)
