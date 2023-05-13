@@ -793,7 +793,6 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     {
         // Access a local that will be set if we successfully unroll it
         spanLclNum                  = lvaGrabTemp(true DEBUGARG("spilling spanObj"));
-        lvaTable[spanLclNum].lvType = TYP_STRUCT;
         CORINFO_CLASS_HANDLE spanCls;
         info.compCompHnd->getArgType(sig, sig->args, &spanCls);
         lvaSetStruct(spanLclNum, spanCls, false);
