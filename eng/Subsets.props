@@ -267,19 +267,6 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
-    <ProjectToBuild
-      Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
-                            HostArchitecture=x86;
-                            PgoInstrument=false;
-                            NoPgoOptimize=true;
-                            CrossBuild=false;
-                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
-      Category="clr" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+clr.paltestlist+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot)pal/tests/palsuite/producepaltestlist.proj" />
   </ItemGroup>

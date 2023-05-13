@@ -743,7 +743,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 //
 void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 {
-    assert(defNode->OperIsSsaDef());
+    assert(defNode->OperIsStore() || defNode->OperIs(GT_CALL));
 
     GenTreeLclVarCommon* lclNode;
     bool                 isFullDef = false;
@@ -1114,7 +1114,7 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block)
     {
         for (GenTree* const tree : stmt->TreeList())
         {
-            if (tree->OperIsSsaDef())
+            if (tree->OperIsStore() || tree->OperIs(GT_CALL))
             {
                 RenameDef(tree, block);
             }

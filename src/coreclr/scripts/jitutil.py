@@ -30,6 +30,7 @@ import zipfile
 ##
 ################################################################################
 
+
 class TempDir:
     """ Class to create a temporary working directory, or use one that is passed as an argument.
 
@@ -69,6 +70,7 @@ class TempDir:
                 except Exception:
                     pass
 
+
 class ChangeDir:
     """ Class to temporarily change to a given directory. Use with "with".
     """
@@ -103,7 +105,6 @@ def set_pipeline_variable(name, value):
     print(define_variable_format.format(name, value))  # set variable
 
 
-
 ################################################################################
 ##
 ## Helper functions
@@ -127,6 +128,7 @@ def decode_and_print(str_to_decode):
     finally:
         return output
 
+
 def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None, _env=None):
     """ Runs the command.
 
@@ -134,7 +136,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
         command_to_run ([string]): Command to run along with arguments.
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
-        _output_file (): 
+        _output_file ():
         _env: environment for sub-process, passed to subprocess.Popen()
     Returns:
         (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
@@ -449,6 +451,48 @@ def is_url(path):
     # Probably could use urllib.parse to be more precise.
     # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
     return path.lower().startswith("http:") or path.lower().startswith("https:")
+
+
+def determine_jit_name(host_os, target_os=None, host_arch=None, target_arch=None, use_cross_compile_jit=False):
+    """ Determine the jit file name to use.
+
+    Args:
+        host_os               (str)  : name of the OS the JIT will run on
+        target_os             (str)  : name of the OS the JIT will generate code for. Only needed for cross-compiler case.
+        host_arch             (str)  : name of the architecture the JIT will run on. Only needed for cross-compiler case.
+        target_arch           (str)  : name of the architecture the JIT will generate code for. Only needed for cross-compiler case.
+        use_cross_compile_jit (bool) : If True, will always generate a fully named "cross-compile" JIT,
+                                       not the default "clrjit.dll".
+
+        If you pass one of target_os, host_arch, or target_arch, you must pass them all.
+
+    Return:
+        (str) : name of the jit for this OS
+    """
+
+    jit_base_name = 'clrjit'
+
+    if use_cross_compile_jit or (host_arch != target_arch) or ((target_os is not None) and (host_os != target_os)):
+        if target_arch.startswith("arm"):
+            jit_os_name = "universal"
+        elif target_os == "windows":
+            jit_os_name = "win"
+        elif target_os == "osx" or target_os == "linux":
+            jit_os_name = "unix"
+        else:
+            raise RuntimeError("Unknown target OS.")
+
+        jit_base_name = 'clrjit_{}_{}_{}'.format(jit_os_name, target_arch, host_arch)
+
+    if host_os == "osx":
+        return "lib" + jit_base_name + ".dylib"
+    elif host_os == "linux":
+        return "lib" + jit_base_name + ".so"
+    elif host_os == "windows":
+        return jit_base_name + ".dll"
+    else:
+        raise RuntimeError("Unknown host OS.")
+
 
 ################################################################################
 ##

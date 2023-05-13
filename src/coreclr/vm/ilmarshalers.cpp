@@ -816,7 +816,7 @@ void ILWSTRBufferMarshaler::EmitConvertSpaceNativeToCLR(ILCodeStream* pslILEmit)
     if (IsIn(m_dwMarshalFlags) || IsCLRToNative(m_dwMarshalFlags))
     {
         EmitLoadNativeValue(pslILEmit);
-        // static int System.String.wcslen(char *ptr)
+        // static int System.String.u16_strlen(char *ptr)
         pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
     }
     else
@@ -845,7 +845,7 @@ void ILWSTRBufferMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     EmitLoadNativeValue(pslILEmit);
 
     pslILEmit->EmitDUP();
-    // static int System.String.wcslen(char *ptr)
+    // static int System.String.u16_strlen(char *ptr)
     pslILEmit->EmitCALL(METHOD__STRING__WCSLEN, 1, 1);
 
     // void System.Text.StringBuilder.ReplaceBuffer(char* newBuffer, int newLength);

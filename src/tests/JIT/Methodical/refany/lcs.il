@@ -14,7 +14,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly lcs// as "lcs"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}
