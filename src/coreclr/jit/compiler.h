@@ -514,7 +514,8 @@ public:
         return lvTracked && lvType != TYP_STRUCT;
     }
 #ifdef DEBUG
-    unsigned char lvTrackedWithoutIndex : 1; // Tracked but has no lvVarIndex (i.e. only valid GTF_VAR_DEATH flags)
+    unsigned char lvTrackedWithoutIndex : 1; // Tracked but has no lvVarIndex (i.e. only valid GTF_VAR_DEATH flags, used
+                                             // by physical promotion)
 #endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
