@@ -11,6 +11,7 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
@@ -35,7 +36,6 @@
 #endif
 #include "gc-common.h"
 #include "driver.h"
-#include "bundled-resources-internals.h"
 
 
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
