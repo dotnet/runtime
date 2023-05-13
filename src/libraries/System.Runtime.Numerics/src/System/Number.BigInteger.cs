@@ -893,13 +893,12 @@ namespace System
             const uint kuBase = 1000000000; // 10^9
             const int kcchBase = 9;
 
+            // Each uint contributes at most 9 digits to the decimal representation.
+            // The current max length is int32.MaxValue bits
             int cuSrc = value._bits.Length;
-            int cuMax;
-            try
-            {
-                cuMax = checked(cuSrc * 10 / 9 + 2);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
+            Debug.Assert(cuSrc < int.MaxValue / kcchBase / 2);
+
+            int cuMax = cuSrc * 10 / 9 + 2;
             uint[] rguDst = new uint[cuMax];
             int cuDst = 0;
 
@@ -922,15 +921,8 @@ namespace System
                 }
             }
 
-            int cchMax;
-            try
-            {
-                // Each uint contributes at most 9 digits to the decimal representation.
-                cchMax = checked(cuDst * kcchBase);
-            }
-            catch (OverflowException e) { throw new FormatException(SR.Format_TooLarge, e); }
-
             ReadOnlySpan<uint> base1E9Value = rguDst.AsSpan(0, cuDst);
+
             int valueDigits = (base1E9Value.Length - 1) * 9 + FormattingHelpers.CountDigits(base1E9Value[^1]);
 
             if (fmt == 'g' || fmt == 'G' || fmt == 'd' || fmt == 'D' || fmt == 'r' || fmt == 'R')
@@ -940,45 +932,15 @@ namespace System
                     : BigIntegerToDecStr(targetSpan, base1E9Value, Math.Max(digits, valueDigits), destination, out charsWritten, out spanSuccess);
             }
 
-            int rgchBufSize = cchMax + 1;
-
-            char[] rgch = new char[rgchBufSize];
-
-            int ichDst = cchMax;
-
-            for (int iuDst = 0; iuDst < cuDst - 1; iuDst++)
+            byte[]? buffer = ArrayPool<byte>.Shared.Rent(valueDigits + 1);
+            fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
             {
-                uint uDig = rguDst[iuDst];
-                Debug.Assert(uDig < kuBase);
-                for (int cch = kcchBase; --cch >= 0;)
-                {
-                    rgch[--ichDst] = (char)('0' + uDig % 10);
-                    uDig /= 10;
-                }
-            }
-            for (uint uDig = rguDst[cuDst - 1]; uDig != 0;)
-            {
-                rgch[--ichDst] = (char)('0' + uDig % 10);
-                uDig /= 10;
-            }
-
-            // sign = true for negative and false for 0 and positive values
-            bool sign = (value._sign < 0);
-            // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
-            // int precision = 29;
-            int scale = cchMax - ichDst;
-
-                byte[]? buffer = ArrayPool<byte>.Shared.Rent(rgchBufSize + 1);
-                fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
-                {
-                    scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
-
-                    for (int i = 0; i < rgch.Length - ichDst; i++)
-                        number.Digits[i] = (byte)rgch[ichDst + i];
-                    number.Digits[rgch.Length - ichDst] = 0;
-                    number.DigitsCount = rgch.Length - ichDst - 1; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
-                    number.Scale = scale;
-                    number.IsNegative = sign;
+                scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, ptr, valueDigits + 1);
+                BigIntegerToDecChars(ptr + valueDigits, base1E9Value, valueDigits);
+                number.Digits[^1] = 0;
+                number.DigitsCount = valueDigits;
+                number.Scale = valueDigits;
+                number.IsNegative = value.Sign < 0;
 
                 scoped var vlb = new ValueListBuilder<char>(stackalloc char[128]); // arbitrary stack cut-off
 
