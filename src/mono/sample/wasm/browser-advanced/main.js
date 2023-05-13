@@ -17,7 +17,7 @@ try {
         // here we show how emscripten could be further configured
         // It is prefered to use specific 'with***' methods instead in all other cases.
         .withModuleConfig({
-            configSrc: "./mono-config.json",
+            configSrc: "./_framework/blazor.boot.json",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');

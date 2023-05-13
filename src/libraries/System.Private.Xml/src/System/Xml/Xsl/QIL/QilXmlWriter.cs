@@ -114,8 +114,8 @@ namespace System.Xml.Xsl.Qil
                 return;
             }
 
-            if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
+            if (!string.IsNullOrEmpty(s))
+                this.writer.WriteComment(!string.IsNullOrEmpty(name) ? $"{name}: {s}" : s);
         }
 
         /// <summary>

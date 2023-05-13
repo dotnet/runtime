@@ -539,7 +539,7 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
 
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)u16_strlen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -2318,7 +2318,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     // Get the name of the class.
     DefineFullyQualifiedNameForClassW();
     szName = GetFullyQualifiedNameForClassNestedAwareW(pIntfMT);
-    cchName = (ULONG)wcslen(szName);
+    cchName = (ULONG)u16_strlen(szName);
 
     // Start with the interface name.
     cbCur = cchName * sizeof(WCHAR);
@@ -2753,12 +2753,12 @@ DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
     CONTRACTL_END;
 
     // Find the first character after the = in the standard DISPID member name.
-    LPWSTR strDispId = wcsstr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W("=")) + 1;
+    LPWSTR strDispId = (LPWSTR)u16_strchr(&strStdDispIdMemberName[STANDARD_DISPID_PREFIX_LENGTH], W('=')) + 1;
     if (!strDispId)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
     // Validate that the last character of the standard member name is a ].
-    LPWSTR strClosingBracket = wcsstr(strDispId, W("]"));
+    LPWSTR strClosingBracket = (LPWSTR)u16_strchr(strDispId, W(']'));
     if (!strClosingBracket || (strClosingBracket[1] != 0))
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_STD_DISPID_NAME);
 
@@ -3578,7 +3578,7 @@ static void GetComClassHelper(
         NewArrayHolder<WCHAR> wszRefServer = NULL;
         if (pClassFactInfo->m_strServerName)
         {
-            size_t len = wcslen(pClassFactInfo->m_strServerName)+1;
+            size_t len = u16_strlen(pClassFactInfo->m_strServerName)+1;
             wszRefServer = new WCHAR[len];
             wcscpy_s(wszRefServer, len, pClassFactInfo->m_strServerName);
         }

@@ -33,7 +33,7 @@ namespace System.Net.Http.Headers
 
         public TransferCodingHeaderValue(string value)
         {
-            HeaderUtilities.CheckValidToken(value, nameof(value));
+            HeaderUtilities.CheckValidToken(value);
             _value = value;
         }
 
