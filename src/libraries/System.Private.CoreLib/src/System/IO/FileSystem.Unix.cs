@@ -34,7 +34,7 @@ namespace System.IO
             // Begins 'CopyFile' by locking and creating the relevant file handles.
             // If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
 
-            (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle? src, SafeFileHandle? dst) startedCopyFile = default;
+            (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) startedCopyFile = default;
             try
             {
                 startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
