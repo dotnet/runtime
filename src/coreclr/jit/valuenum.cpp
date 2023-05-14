@@ -11346,8 +11346,33 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
 
-    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 2) == 2))
+    const bool disableSimdVN = (JitConfig.JitDisableSimdVN() & 2) == 2;
+    if ((tree->GetOperandCount() > 2) || disableSimdVN)
     {
+        if (!disableSimdVN && intrinsicId == NI_Vector128_WithElement)
+        {
+            assert(tree->GetOperandCount() == 3);
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
+            GenTree* op3 = tree->Op(3);
+            if (op1->gtVNPair.BothEqual() && vnStore->IsVNConstant(op1->gtVNPair.GetLiberal()))
+            {
+                if (op2->gtVNPair.BothEqual() && vnStore->IsVNConstant(op2->gtVNPair.GetLiberal()))
+                {
+                    if (op3->gtVNPair.BothEqual() && vnStore->IsVNConstant(op3->gtVNPair.GetLiberal()))
+                    {
+                        ValueNum constVecVN                                  = op1->gtVNPair.GetLiberal();
+                        ValueNum elemIndexVN                                 = op2->gtVNPair.GetLiberal();
+                        ValueNum elemValueVN                                 = op3->gtVNPair.GetLiberal();
+                        simd16_t constVec                                    = vnStore->GetConstantSimd16(constVecVN);
+                        constVec.f32[vnStore->GetConstantInt32(elemIndexVN)] = vnStore->GetConstantSingle(elemValueVN);
+                        ValueNum newSimdVN                                   = vnStore->VNForSimd16Con(constVec);
+                        tree->gtVNPair = vnStore->VNPWithExc(ValueNumPair(newSimdVN, newSimdVN), excSetPair);
+                        return;
+                    }
+                }
+            }
+        }
         // TODO-CQ: allow intrinsics with > 2 operands to be properly VN'ed.
         normalPair = vnStore->VNPairForExpr(compCurBB, tree->TypeGet());
 
