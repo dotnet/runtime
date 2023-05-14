@@ -590,7 +590,7 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     if (lvaHaveManyLocals())
     {
         JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
-        return nullptr;
+        //return nullptr;
     }
 
     StringComparison cmpMode = Ordinal;
@@ -736,7 +736,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     if (lvaHaveManyLocals())
     {
         JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
-        return nullptr;
+        //return nullptr;
     }
 
     StringComparison cmpMode = Ordinal;
