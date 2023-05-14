@@ -28,20 +28,21 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        private static (long fileLength, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
+        private static (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
         {
             // The return value has SafeFileHandles, which are expected to be Disposed by the caller (unless this method throws) once the copy is complete.
             // Begins 'CopyFile' by locking and creating the relevant file handles.
             // If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
 
-            (long fileLength, long fileDev, long fileIno, SafeFileHandle? src, SafeFileHandle? dst) startedCopyFile = default;
+            (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle? src, SafeFileHandle? dst) startedCopyFile = default;
             try
             {
                 startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
                 startedCopyFile.fileLength = fileStatus.Size;
+                startedCopyFile.filePermissions = SafeFileHandle.GetFileMode(fileStatus);
                 startedCopyFile.fileDev = fileStatus.Dev;
                 startedCopyFile.fileIno = fileStatus.Ino;
-                if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
+                if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile.filePermissions, true);
             }
             catch
             {
@@ -54,7 +55,7 @@ namespace System.IO
             return startedCopyFile;
         }
 
-        private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, StartedCopyFileState startedCopyFile, bool openNewFile)
+        private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, UnixFileMode filePermissions, bool openNewFile)
         {
             // This function opens the 'dst' file handle for 'CopyFile', it is
             // split out since the logic on OSX-like OSes is a bit different.
@@ -64,7 +65,7 @@ namespace System.IO
                 try
                 {
                     return SafeFileHandle.Open(destFullPath, FileMode.Open,
-                                                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, startedCopyFile.filePermissions,
+                                                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
                                                     CreateOpenException);
                 }
                 catch (FileNotFoundException)

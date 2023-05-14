@@ -23,7 +23,7 @@ namespace System.IO
             }
 
             // Start the copy
-            (long fileLength, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite, openDst: false);
+            (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite, openDst: false);
             try
             {
                 // Read FileStatus of destination file to determine how to continue
@@ -73,7 +73,7 @@ namespace System.IO
                 {
                     // Delete the destination. This should fail on directories. And update the mode.
                     // Get a lock to the dest file for compat reasons, and then delete it.
-                    using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile, false);
+                    using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, startedCopyFile.filePermissions, false);
                     File.Delete(destFullPath);
                 }
 
@@ -97,7 +97,7 @@ namespace System.IO
                 tryFallback:
                 {
                     // Open the dst handle
-                    startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, openNewFile: true);
+                    startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile.filePermissions, openNewFile: true);
 
                     // Copy the file using the standard unix implementation
                     // dst! because dst is not null if OpenCopyFileDstHandle's openNewFile is true.

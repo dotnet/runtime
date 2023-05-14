@@ -7,7 +7,7 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            var (fileLength, _, _, src, dst) = StartCopyFile(sourceFullPath, destFullPath, overwrite);
+            var (fileLength, _, _, _, src, dst) = StartCopyFile(sourceFullPath, destFullPath, overwrite);
 
             try
             {
