@@ -1721,14 +1721,9 @@ namespace Mono.Linker.Steps
 			if (reportOnMember)
 				origin = new MessageOrigin (member);
 
-
-			// All override methods should have the same annotations as their base methods
-			// (else we will produce warning IL2046 or IL2092 or some other warning).
-			// When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-			bool skipWarningsForOverride = member is MethodDefinition m && m.IsVirtual && Annotations.GetBaseMethods (m) != null;
-
 			bool isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute);
-			if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride) {
+			bool isCompilerGenerated = CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (member);
+			if (isReflectionAccessCoveredByRUC && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
 				Context.LogWarning (origin, id, type.GetDisplayName (),
 					((MemberReference) member).GetDisplayName (), // The cast is valid since it has to be a method or field
@@ -1737,7 +1732,7 @@ namespace Mono.Linker.Steps
 			}
 
 			bool isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member);
-			if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride) {
+			if (isReflectionAccessCoveredByDAM) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
 			}

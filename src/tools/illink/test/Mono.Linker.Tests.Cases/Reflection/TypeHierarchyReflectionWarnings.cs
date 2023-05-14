@@ -277,8 +277,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			// This should produce a warning: https://github.com/dotnet/linker/issues/2161
-			[ExpectedWarning("IL2112", "--RUC on AnnotatedInterfaces.UnusedMethod--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2112", "--RUC on AnnotatedInterfaces.UnusedMethod--")]
 			[RequiresUnreferencedCode ("--RUC on AnnotatedInterfaces.UnusedMethod--")]
 			public void RUCMethod () { }
 		}
@@ -426,7 +425,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			// shouldn't warn because we warn on the base method instead
+			[ExpectedWarning ("IL2112", "--AnnotatedDerivedFromBase.RUCVirtualMethod--")]
 			[RequiresUnreferencedCode ("--AnnotatedDerivedFromBase.RUCVirtualMethod--")]
 			public override void RUCVirtualMethod () { }
 
@@ -438,9 +437,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptBackingField]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			// shouldn't warn because we warn on the base getter instead
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
-			public override string DAMVirtualProperty { [Kept] get; }
+			public override string DAMVirtualProperty {
+				[Kept]
+				[ExpectedWarning ("IL2114", nameof (AnnotatedDerivedFromBase), nameof (DAMVirtualProperty))]
+				get;
+			}
 
 		}
 
@@ -463,7 +465,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			// shouldn't warn because we warn on the base method instead
+			[ExpectedWarning ("IL2112", "--DerivedFromAnnotatedDerivedFromBase.RUCVirtualMethod--")]
 			[RequiresUnreferencedCode ("--DerivedFromAnnotatedDerivedFromBase.RUCVirtualMethod--")]
 			public override void RUCVirtualMethod () { }
 
@@ -476,9 +478,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptBackingField]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			// shouldn't warn because we warn on the base getter instead
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicMethods)]
-			public override string DAMVirtualProperty { [Kept] get; }
+			public override string DAMVirtualProperty {
+				[Kept]
+				[ExpectedWarning ("IL2114", nameof (DerivedFromAnnotatedDerivedFromBase), nameof (DAMVirtualProperty))]
+				get;
+			}
 		}
 
 		[KeptMember (".ctor()")]
@@ -629,8 +634,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-				// https://github.com/dotnet/linker/issues/2815
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
@@ -669,7 +673,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-				public override void RUCVirtualMethod () { }
+                [ExpectedWarning("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+                public override void RUCVirtualMethod () { }
 			}
 
 			[Kept]
@@ -712,7 +717,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
-				public override void RUCVirtualMethod () { }
+                [ExpectedWarning("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+                public override void RUCVirtualMethod () { }
 			}
 
 			[Kept]
@@ -767,7 +773,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[KeptAttributeAttribute (typeof (RequiresDynamicCodeAttribute))]
 				[KeptAttributeAttribute (typeof (RequiresAssemblyFilesAttribute))]
-				[RequiresUnreferencedCode ("--Derived.VirtualMethodWithRequires--")]
+                [ExpectedWarning("IL2112", "--Derived.VirtualMethodWithRequires--")]
+                [RequiresUnreferencedCode ("--Derived.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--Derived.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--Derived.VirtualMethodWithRequires--")]
 				public override void VirtualMethodWithRequires () { }
