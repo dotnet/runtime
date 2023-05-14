@@ -332,5 +332,87 @@ namespace System.Buffers.Text
             value = parsedValue;
             return true;
         }
+
+        private static bool TryParseUInt128X(ReadOnlySpan<byte> source, out UInt128 value, out int bytesConsumed)
+        {
+            if (source.Length < 1)
+            {
+                bytesConsumed = 0;
+                value = default;
+                return false;
+            }
+            byte nextCharacter;
+            byte nextDigit;
+
+            ReadOnlySpan<byte> hexLookup = HexConverter.CharToHexLookup;
+
+            // Parse the first digit separately. If invalid here, we need to return false.
+            nextCharacter = source[0];
+            nextDigit = hexLookup[nextCharacter];
+            if (nextDigit == 0xFF)
+            {
+                bytesConsumed = 0;
+                value = default;
+                return false;
+            }
+            UInt128 parsedValue = nextDigit;
+
+            if (source.Length <= ParserHelpers.UInt128OverflowLengthHex)
+            {
+                // Length is less than or equal to Parsers.Int128OverflowLengthHex; overflow is not possible
+                for (int index = 1; index < source.Length; index++)
+                {
+                    nextCharacter = source[index];
+                    nextDigit = hexLookup[nextCharacter];
+                    if (nextDigit == 0xFF)
+                    {
+                        bytesConsumed = index;
+                        value = parsedValue;
+                        return true;
+                    }
+                    parsedValue = (parsedValue << 4) + nextDigit;
+                }
+            }
+            else
+            {
+                // Length is greater than Parsers.Int128OverflowLengthHex; overflow is only possible after Parsers.Int128OverflowLengthHex
+                // digits. There may be no overflow after Parsers.Int128OverflowLengthHex if there are leading zeroes.
+                for (int index = 1; index < ParserHelpers.Int64OverflowLengthHex; index++)
+                {
+                    nextCharacter = source[index];
+                    nextDigit = hexLookup[nextCharacter];
+                    if (nextDigit == 0xFF)
+                    {
+                        bytesConsumed = index;
+                        value = parsedValue;
+                        return true;
+                    }
+                    parsedValue = (parsedValue << 4) + nextDigit;
+                }
+                for (int index = ParserHelpers.Int128OverflowLengthHex; index < source.Length; index++)
+                {
+                    nextCharacter = source[index];
+                    nextDigit = hexLookup[nextCharacter];
+                    if (nextDigit == 0xFF)
+                    {
+                        bytesConsumed = index;
+                        value = parsedValue;
+                        return true;
+                    }
+                    // If we try to append a digit to anything larger than UInt128.MaxValue / 0x10, there will be overflow
+                    if (parsedValue > UInt128.MaxValue / 0x10)
+                    {
+                        bytesConsumed = 0;
+                        value = default;
+                        return false;
+                    }
+                    parsedValue = (parsedValue << 4) + nextDigit;
+                }
+            }
+
+            bytesConsumed = source.Length;
+            value = parsedValue;
+            return true;
+        }
     }
 }

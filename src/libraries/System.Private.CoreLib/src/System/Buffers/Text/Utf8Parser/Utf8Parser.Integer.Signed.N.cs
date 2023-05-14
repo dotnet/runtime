@@ -378,5 +378,100 @@ namespace System.Buffers.Text
             value = answer * sign;
             return true;
         }
+
+        private static bool TryParseInt128N(ReadOnlySpan<byte> source, out Int128 value, out int bytesConsumed)
+        {
+            if (source.Length < 1)
+                goto FalseExit;
+
+            int sign = 1;
+            int index = 0;
+            int c = source[index];
+            if (c == '-')
+            {
+                sign = -1;
+                index++;
+                if ((uint)index >= (uint)source.Length)
+                    goto FalseExit;
+                c = source[index];
+            }
+            else if (c == '+')
+            {
+                index++;
+                if ((uint)index >= (uint)source.Length)
+                    goto FalseExit;
+                c = source[index];
+            }
+
+            Int128 answer;
+
+            // Handle the first digit (or period) as a special case. This ensures some compatible edge-case behavior with the classic parse routines
+            // (at least one digit must precede any commas, and a string without any digits prior to the decimal point must have at least
+            // one digit after the decimal point.)
+            if (c == Utf8Constants.Period)
+                goto FractionalPartWithoutLeadingDigits;
+            if (!ParserHelpers.IsDigit(c))
+                goto FalseExit;
+            answer = c - '0';
+
+            while (true)
+            {
+                index++;
+                if ((uint)index >= (uint)source.Length)
+                    goto Done;
+
+                c = source[index];
+                if (c == Utf8Constants.Comma)
+                    continue;
+
+                if (c == Utf8Constants.Period)
+                    goto FractionalDigits;
+
+                if (!ParserHelpers.IsDigit(c))
+                    goto Done;
+
+                if (((ulong)answer) > Int128.MaxValue / 10)
+                    goto FalseExit;
+
+                answer = answer * 10 + c - '0';
+
+                // if sign < 0, (-1 * sign + 1) / 2 = 1
+                // else, (-1 * sign + 1) / 2 = 0
+                if ((UInt128)answer > (UInt128)(Int128.MaxValue + (-1 * sign + 1) / 2))
+                    goto FalseExit; // Overflow
+            }
+
+        FractionalPartWithoutLeadingDigits: // If we got here, we found a decimal point before we found any digits. This is legal as long as there's at least one zero after the decimal point.
+            answer = 0;
+            index++;
+            if ((uint)index >= (uint)source.Length)
+                goto FalseExit;
+            if (source[index] != '0')
+                goto FalseExit;
+
+            FractionalDigits: // "N" format allows a fractional portion despite being an integer format but only if the post-fraction digits are all 0.
+            do
+            {
+                index++;
+                if ((uint)index >= (uint)source.Length)
+                    goto Done;
+                c = source[index];
+            }
+            while (c == '0');
+
+            if (ParserHelpers.IsDigit(c))
+                goto FalseExit; // The fractional portion contained a non-zero digit. Treat this as an error, not an early termination.
+            goto Done;
+
+        FalseExit:
+            bytesConsumed = default;
+            value = default;
+            return false;
+
+        Done:
+            bytesConsumed = index;
+            value = answer * sign;
+            return true;
+        }
     }
 }

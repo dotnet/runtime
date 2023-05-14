@@ -355,5 +355,80 @@ namespace System.Buffers.Text
             value = default;
             return false;
         }
+
+        private static bool TryParseUInt128D(ReadOnlySpan<byte> source, out UInt128 value, out int bytesConsumed)
+        {
+            if (source.IsEmpty)
+            {
+                goto FalseExit;
+            }
+
+            // We use 'nuint' for the firstDigit and nextChar data types in this method because
+            // it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
+            //
+            // Parse the first digit separately. If invalid here, we need to return false.
+
+            nuint firstDigit = (uint)source[0] - '0';
+            if ((uint)firstDigit > 9) { goto FalseExit; }
+            UInt128 parsedValue = firstDigit;
+
+            // At this point, we successfully read a single digit character.
+            // The only failure condition from here on out is integer overflow.
+
+            int idx = 1;
+            if (source.Length < ParserHelpers.UInt128OverflowLength)
+            {
+                // If the input span is short enough such that integer overflow isn't an issue,
+                // don't bother performing overflow checks. Just keep shifting in new digits
+                // until we see a non-digit character or until we've exhausted our input buffer.
+
+                while (true)
+                {
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    parsedValue = parsedValue * 10 + nextChar;
+                    idx++;
+                }
+            }
+            else
+            {
+                while (true)
+                {
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    idx++;
+
+                    if (parsedValue < ParserHelpers.UInt128OverflowRisk)
+                    {
+                        parsedValue = parsedValue * 10 + nextChar;
+                        continue;
+                    }
+
+                    // If the current accumulator is exactly equal to the const above,
+                    // then "accumulator * 10 + 5" is the highest we can go without overflowing
+                    // ulong.MaxValue. This also implies that if the current accumulator
+                    // is higher than the const above, there's no hope that we'll succeed,
+                    // so we may as well just fail now.
+
+                    if (parsedValue != ParserHelpers.UInt128OverflowRisk || (uint)nextChar > 5)
+                    {
+                        goto FalseExit;
+                    }
+
+                    parsedValue = ParserHelpers.UInt128OverflowRisk * 10 + nextChar;
+                }
+            }
+
+            bytesConsumed = idx;
+            value = parsedValue;
+            return true;
+
+        FalseExit:
+            bytesConsumed = 0;
+            value = default;
+            return false;
+        }
     }
 }

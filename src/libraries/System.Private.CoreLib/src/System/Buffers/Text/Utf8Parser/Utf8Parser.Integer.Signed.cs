@@ -218,5 +218,57 @@ namespace System.Buffers.Text
                     return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
             }
         }
+
+        /// <summary>
+        /// Parses an Int128 at the start of a Utf8 string.
+        /// </summary>
+        /// <param name="source">The Utf8 string to parse</param>
+        /// <param name="value">Receives the parsed value</param>
+        /// <param name="bytesConsumed">On a successful parse, receives the length in bytes of the substring that was parsed </param>
+        /// <param name="standardFormat">Expected format of the Utf8 string</param>
+        /// <returns>
+        /// true for success. "bytesConsumed" contains the length in bytes of the substring that was parsed.
+        /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0.
+        /// </returns>
+        /// <remarks>
+        /// Formats supported:
+        ///     G/g (default)
+        ///     D/d             32767
+        ///     N/n             32,767
+        ///     X/x             7fff
+        /// </remarks>
+        /// <exceptions>
+        /// <cref>System.FormatException</cref> if the format is not valid for this data type.
+        /// </exceptions>
+        public static bool TryParse(ReadOnlySpan<byte> source, out Int128 value, out int bytesConsumed, char standardFormat = default)
+        {
+        FastPath:
+            if (standardFormat == default)
+            {
+                return TryParseInt128D(source, out value, out bytesConsumed);
+            }
+
+            // There's small but measurable overhead when entering the switch block below.
+            // We optimize for the default case by hoisting it above the switch block.
+
+            switch (standardFormat | 0x20) // convert to lowercase
+            {
+                case 'g':
+                case 'd':
+                case 'r':
+                    standardFormat = default;
+                    goto FastPath;
+
+                case 'n':
+                    return TryParseInt128N(source, out value, out bytesConsumed);
+
+                case 'x':
+                    Unsafe.SkipInit(out value); // will be populated by TryParseUInt64X
+                    return TryParseUInt128X(source, out Unsafe.As<Int128, UInt128>(ref value), out bytesConsumed);
+
+                default:
+                    return ParserHelpers.TryParseThrowFormatException(source, out value, out bytesConsumed);
+            }
+        }
     }
 }
