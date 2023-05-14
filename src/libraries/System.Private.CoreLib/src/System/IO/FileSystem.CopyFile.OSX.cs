@@ -23,7 +23,7 @@ namespace System.IO
             }
 
             // Start the copy
-            StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite, openDst: false);
+            (long fileLength, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite, openDst: false);
             try
             {
                 // Read FileStatus of destination file to determine how to continue
@@ -97,15 +97,17 @@ namespace System.IO
                 tryFallback:
                 {
                     // Open the dst handle
-                    startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
+                    startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, openNewFile: true);
 
                     // Copy the file using the standard unix implementation
-                    StandardCopyFile(startedCopyFile);
+                    // dst! because dst is not null if OpenCopyFileDstHandle's openNewFile is true.
+                    StandardCopyFile(startedCopyFile.src, startedCopyFile.dst!, startedCopyFile.fileLength);
                 }
             }
             finally
             {
-                startedCopyFile.Dispose();
+                startedCopyFile.src?.Dispose();
+                startedCopyFile.dst?.Dispose();
             }
         }
     }

@@ -7,10 +7,20 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            using StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite);
+            var (fileLength, _, _, src, dst) = StartCopyFile(sourceFullPath, destFullPath, overwrite);
 
-            // Copy the file using the standard unix implementation
-            StandardCopyFile(startedCopyFile);
+            try
+            {
+                // Copy the file using the standard unix implementation
+                // dst! because dst is not null if StartCopyFile's openDst is true (which is the default value)
+                StandardCopyFile(src, dst!, fileLength);
+            }
+            finally
+            {
+                // Dipose relevant file handles
+                src.Dispose();
+                dst?.Dispose();
+            }
         }
     }
 }

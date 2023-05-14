@@ -28,53 +28,25 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        // Helper type to facilitate returning values from StartCopyFile without having
-        // to declare a massive tuple multiple times, and making it easier to dispose.
-        private struct StartedCopyFileState : IDisposable
+        private static (long fileLength, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
         {
-            public long fileLength;
-            public UnixFileMode filePermissions;
-            public long fileDev;
-            public long fileIno;
-            public SafeFileHandle? src;
-            public SafeFileHandle? dst;
-
-            public StartedCopyFileState(long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle dst)
-            {
-                this.fileLength = fileLength;
-                this.filePermissions = filePermissions;
-                this.fileDev = fileDev;
-                this.fileIno = fileIno;
-                this.src = src;
-                this.dst = dst;
-            }
-
-            public void Dispose()
-            {
-                src?.Dispose();
-                dst?.Dispose();
-            }
-        }
-
-        private static StartedCopyFileState StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
-        {
-            // The return value is expected to be Disposed by the caller (unless this method throws) once the copy is complete.
+            // The return value has SafeFileHandles, which are expected to be Disposed by the caller (unless this method throws) once the copy is complete.
             // Begins 'CopyFile' by locking and creating the relevant file handles.
             // If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
 
-            StartedCopyFileState startedCopyFile = default;
+            (long fileLength, long fileDev, long fileIno, SafeFileHandle? src, SafeFileHandle? dst) startedCopyFile = default;
             try
             {
                 startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
                 startedCopyFile.fileLength = fileStatus.Size;
-                startedCopyFile.filePermissions = SafeFileHandle.GetFileMode(fileStatus);
                 startedCopyFile.fileDev = fileStatus.Dev;
                 startedCopyFile.fileIno = fileStatus.Ino;
                 if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);
             }
             catch
             {
-                startedCopyFile.Dispose();
+                startedCopyFile.src?.Dispose();
+                startedCopyFile.dst?.Dispose();
                 throw;
             }
 
@@ -116,15 +88,12 @@ namespace System.IO
             }
         }
 
-        private static void StandardCopyFile(StartedCopyFileState startedCopyFile)
+        private static void StandardCopyFile(SafeFileHandle src, SafeFileHandle dst, long fileLength)
         {
             // Copy the file in a way that works on all Unix Operating Systems.
-            // The 'startedCopyFile' parameter should take the output from 'StartCopyFile'.
-            // 'startedCopyFile' should be disposed by the caller. Assumes src and dst
-            // are non-null, caller must check this, return values from StartCopyFile
-            // are non-null (except dst when openDst is true), and from return values from
-            // OpenCopyFileDstHandle are non-null (except possibly when openNewFile is false).
-            Interop.CheckIo(Interop.Sys.CopyFile(startedCopyFile.src!, startedCopyFile.dst!, startedCopyFile.fileLength));
+            // The 'src', 'dst', and 'fileLength' parameters should take the output from 'StartCopyFile'.
+            // 'src' and 'dst' should be disposed by the caller.
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
         }
 
         // CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
