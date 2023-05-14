@@ -6,6 +6,10 @@
 #define __EVENTPIPE_RT_AOT_H__
 
 #include <ctype.h>  // For isspace
+#ifdef TARGET_UNIX
+#include <sys/time.h>
+#include <pthread.h>
+#endif
 
 #include <eventpipe/ep-rt-config.h>
 #ifdef ENABLE_PERFTRACING
@@ -41,6 +45,10 @@
 
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) _rt_aot_align_up(val,align)
+
+#ifdef TARGET_UNIX
+extern pthread_key_t eventpipe_tls_key;
+#endif
 
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // TODO: The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
@@ -907,10 +915,47 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
     	value.wMinute,
     	value.wSecond,
     	value.wMilliseconds);
-#else
+#elif TARGET_UNIX
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Get System time
     // PalDebugBreak();
+    // @TODO Copying from mono but doesn't have their full implementation
+    // gmt and milliseconds
+	time_t tt;
+	tt = time (NULL);
+	struct tm *ut_ptr;
+    ut_ptr = gmtime (&tt);
+	
+    struct timeval time_val;
+	int timeofday_retval;
+	timeofday_retval = gettimeofday (&time_val, NULL);
+	uint16_t milliseconds = 0;
+	if (timeofday_retval != -1) {
+		int old_seconds;
+		int new_seconds;
+
+		milliseconds = (uint16_t)(time_val.tv_usec / 1000);
+
+		old_seconds = ut_ptr->tm_sec;
+		new_seconds = time_val.tv_sec % 60;
+
+		/* just in case we reached the next second in the interval between time () and gettimeofday () */
+		if (old_seconds != new_seconds)
+			milliseconds = 999;
+	}
+
+    ut_ptr = gmtime (&tt);
+
+	ep_system_time_set (
+		system_time,
+		(uint16_t)(1900 + ut_ptr->tm_year),
+		(uint16_t)ut_ptr->tm_mon + 1,
+		(uint16_t)ut_ptr->tm_wday,
+		(uint16_t)ut_ptr->tm_mday,
+		(uint16_t)ut_ptr->tm_hour,
+		(uint16_t)ut_ptr->tm_min,
+		(uint16_t)ut_ptr->tm_sec,
+		milliseconds);
 #endif
 
 }
@@ -1030,9 +1075,41 @@ ep_rt_temp_path_get (
     uint32_t buffer_len)
 {
     STATIC_CONTRACT_NOTHROW;
-//    EP_UNREACHABLE ("Can not reach here");
 
+#ifdef TARGET_UNIX
+
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len > 0);
+
+    const ep_char8_t *path = getenv ("TMPDIR");
+    if (path == NULL){
+        path = getenv ("TMP");
+        if (path == NULL){
+            path = getenv ("TEMP");
+            if (path == NULL)
+                path = "/tmp/";
+        }
+    }
+
+	int32_t result = snprintf (buffer, buffer_len, "%s", path);
+	if (result <= 0 || result > buffer_len)
+		ep_raise_error ();
+
+	if (buffer [result - 1] != '/') {
+		buffer [result++] = '/';
+		buffer [result] = '\0';
+	}
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	result = 0;
+	ep_exit_error_handler ();
+
+#else
     return 0;
+#endif
 }
 
 static
@@ -1383,12 +1460,10 @@ ep_rt_utf16_to_utf8_string (
         return NULL;
     
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Temp implementation that is the reverse of ep_rt_utf8_to_utf16le_string
+    // Simple implementation to create a utf8 string from a utf16 one
     size_t len_utf16 = len;
     if(len_utf16 == (size_t)-1)
-    {
         len_utf16 = ep_rt_utf16_string_len (str);
-    }
 
     ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc ((len_utf16 + 1) * sizeof (ep_char8_t)));
     if (!str_utf8)
@@ -1531,6 +1606,44 @@ ep_rt_thread_setup (void)
     // EP_ASSERT (thread_handle != NULL);
 }
 
+#ifdef TARGET_UNIX
+static
+inline
+EventPipeThreadHolder *
+pthread_getThreadHolder (void)
+{
+    void *value = pthread_getspecific(eventpipe_tls_key);
+    if (value) {
+        EventPipeThreadHolder *thread_holder = static_cast<EventPipeThreadHolder*>(value);    
+        return thread_holder;
+    }
+    return NULL;
+}
+
+static
+inline
+EventPipeThreadHolder *
+pthread_createThreadHolder (void)
+{
+    void *value = pthread_getspecific(eventpipe_tls_key);
+    if (value) {
+        // we need to do the unallocation here
+        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
+        ep_thread_unregister (ep_thread_holder_get_thread (thread_holder_old));
+        ep_thread_holder_free (thread_holder_old);
+
+        value = NULL;
+    }
+    EventPipeThreadHolder *instance = ep_thread_holder_alloc (ep_thread_alloc());
+    if (instance){
+        ep_thread_register (ep_thread_holder_get_thread (instance));
+        // we need to let pthread know
+        pthread_setspecific(eventpipe_tls_key, instance);
+    }
+    return instance;
+}
+#endif
+
 static
 inline
 EventPipeThread *
@@ -1538,7 +1651,11 @@ ep_rt_thread_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
+#ifdef TARGET_UNIX
+    EventPipeThreadHolder *thread_holder = pthread_getThreadHolder ();
+#else
     EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
+#endif    
     return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
 }
 
@@ -1549,9 +1666,15 @@ ep_rt_thread_get_or_create (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
+#ifdef TARGET_UNIX
+    EventPipeThreadHolder *thread_holder = pthread_getThreadHolder ();
+    if (!thread_holder)
+        thread_holder = pthread_createThreadHolder ();
+#else
+    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();    
     if (!thread_holder)
         thread_holder = EventPipeAotThreadHolderTLS::createThreadHolder ();
+#endif        
 
     return ep_thread_holder_get_thread (thread_holder);
 }

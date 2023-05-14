@@ -9,10 +9,25 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
     <EnableNativeEventPipe Condition="'$(TestBuildMode)' == 'nativeaot'">true</EnableNativeEventPipe>
+    <IncludeOOBLibraries Condition="'$(TestBuildMode)' == 'nativeaot'">true</IncludeOOBLibraries>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
+  <!-- Hack to get NativeAOT assemblies into IlcReference
+       In CoreCLR tests, these assemblies get copied to CORE_ROOT, which NativeAOT doesn't use
+  -->
+  <Import Project="$(RepoRoot)eng/liveBuilds.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <!-- Get all the *.dll files that has IsNative != "true"-->
+  <Target Name="GetRequiredNativeAOTAssemblies" 
+      DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+      BeforeTargets="ComputeIlcCompileInputs"
+      Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <ItemGroup>
+      <IlcReference Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(LibrariesRuntimeFiles.IsNative)' != 'true'"/>
+    </ItemGroup>
+  </Target>
+
 </Project>

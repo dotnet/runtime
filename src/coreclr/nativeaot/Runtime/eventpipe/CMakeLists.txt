@@ -18,13 +18,25 @@ set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
 include (${SHARED_EVENTPIPE_SOURCE_PATH}/eventpipe.cmake)
 include (${SHARED_CONTAINERS_SOURCE_PATH}/containers.cmake)
 
-list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
-    ds-ipc-pal-namedpipe.c
-)
+if(CLR_CMAKE_HOST_WIN32)
+  list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
+      ds-ipc-pal-namedpipe.c
+  )
 
-list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
-    ds-ipc-pal-namedpipe.h
-)
+  list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
+  ds-ipc-pal-namedpipe.h
+  )
+endif(CLR_CMAKE_HOST_WIN32)
+
+if(CLR_CMAKE_HOST_UNIX)
+  list(APPEND SHARED_DIAGNOSTIC_SERVER_SOURCES
+      ds-ipc-pal-socket.c
+  )
+
+  list(APPEND SHARED_DIAGNOSTIC_SERVER_HEADERS
+      ds-ipc-pal-socket.h
+  )
+endif(CLR_CMAKE_HOST_UNIX)
 
 list(APPEND EVENTPIPE_SOURCES
   ${SHARED_EVENTPIPE_SOURCES}
