@@ -67,7 +67,7 @@ namespace System.IO
             {
                 startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
                 startedCopyFile.fileLength = fileStatus.Size;
-                startedCopyFile.filePermissions = SafeFileHandle.FilePermissionsForStatus(fileStatus);
+                startedCopyFile.filePermissions = SafeFileHandle.GetFileMode(fileStatus);
                 startedCopyFile.fileDev = fileStatus.Dev;
                 startedCopyFile.fileIno = fileStatus.Ino;
                 if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile, true);

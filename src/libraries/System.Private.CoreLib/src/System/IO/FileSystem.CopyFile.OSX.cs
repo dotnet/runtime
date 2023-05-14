@@ -11,37 +11,22 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Attempt to clone the file:
-
-            // Helper function to throw an error for copying onto self
-            [StackTraceHidden]
-            void CopyOntoSelfError()
-            {
-                // Throw an appropriate error
-                if (overwrite) throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
-                else throw new IOException(SR.Format(SR.IO_FileExists_Name, destFullPath));
-            }
-
-            // Helper function to throw an error when the destination exists and overwrite = false.
-            [StackTraceHidden]
-            static void DestinationExistsError()
-            {
-                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EEXIST));
-            }
-
             // Fail fast for blatantly copying onto self
             if (sourceFullPath == destFullPath)
             {
-                CopyOntoSelfError();
+                if (overwrite)
+                {
+                    throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
+                }
+
+                throw new IOException(SR.Format(SR.IO_FileExists_Name, destFullPath));
             }
 
-            // Start the file copy and prepare for finalization
+            // Start the copy
             StartedCopyFileState startedCopyFile = StartCopyFile(sourceFullPath, destFullPath, overwrite, openDst: false);
-
-            // Ensure we dispose startedCopyFile.
             try
             {
-                // Read filestatus of destination file to determine how we continue
+                // Read FileStatus of destination file to determine how to continue
                 int destError = Interop.Sys.Stat(destFullPath, out var destStat);
 
                 // Interpret the error from stat
@@ -65,7 +50,7 @@ namespace System.IO
                     if (!overwrite)
                     {
                         // Throw an error if we're not overriding
-                        DestinationExistsError();
+                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EEXIST));
                     }
                     if (startedCopyFile.fileDev != destStat.Dev)
                     {
@@ -75,7 +60,7 @@ namespace System.IO
                     else if (startedCopyFile.fileIno == destStat.Ino)
                     {
                         // Copying onto itself
-                        CopyOntoSelfError();
+                        throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
                     }
                     else
                     {
@@ -101,21 +86,11 @@ namespace System.IO
                         return;
                     }
 
-                    // Read error
-                    Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-
-                    // Check error
-                    if (error.Error == Interop.Error.EEXIST)
+                    // Throw if the file already exists and we're not overwriting
+                    if (Interop.Sys.GetLastError() == Interop.Error.EEXIST && !overwrite)
                     {
-                        if (!overwrite)
-                        {
-                            // Throw an error if we're not overriding
-                            DestinationExistsError();
-                        }
+                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EEXIST));
                     }
-
-                    // Try fallback
-                    // goto tryFallback;
                 }
 
                 // Try fallback:

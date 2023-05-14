@@ -165,20 +165,18 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        // Specialized Open that returns the filestatus of the opened file.
+        // Specialized Open that returns the FileStatus of the opened file.
         // This information is retrieved from the 'stat' syscall that must be performed to ensure the path is not a directory.
         internal static SafeFileHandle OpenReadOnly(string fullPath, FileOptions options, out Interop.Sys.FileStatus status)
         {
-            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status, out var readStatus, null);
-            Debug.Assert(readStatus);
+            SafeFileHandle handle = Open(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, options, preallocationSize: 0, DefaultCreateMode, out status, out bool isReadOnly);
+            Debug.Assert(isReadOnly);
             return handle;
         }
 
         // Used by callers of OpenReadOnly.
-        internal static UnixFileMode FilePermissionsForStatus(Interop.Sys.FileStatus status)
-        {
-            return ((UnixFileMode)status.Mode) & PermissionMask;
-        }
+        internal static UnixFileMode GetFileMode(Interop.Sys.FileStatus status) =>
+            ((UnixFileMode)status.Mode) & PermissionMask;
 
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode = null,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
@@ -187,7 +185,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode openPermissions,
-                                            out Interop.Sys.FileStatus status, out bool readStatus,
+                                            out Interop.Sys.FileStatus status, out bool isReadOnly,
                                             Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
             // Translate the arguments into arguments for an open call.
@@ -202,7 +200,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // When Init return false, the path has changed to another file entry, and
                     // we need to re-open the path to reflect that.
-                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out status, out readStatus))
+                    if (safeFileHandle.Init(fullPath, mode, access, share, options, preallocationSize, out status, out isReadOnly))
                     {
                         return safeFileHandle;
                     }
@@ -300,12 +298,12 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private bool Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                          out Interop.Sys.FileStatus status, out bool readStatus)
+                          out Interop.Sys.FileStatus status, out bool isReadOnly)
         {
             bool statusHasValue = false;
 
             status = default;
-            readStatus = false;
+            isReadOnly = false;
 
             // Make sure our handle is not a directory.
             // We can omit the check when write access is requested. open will have failed with EISDIR.
@@ -328,7 +326,7 @@ namespace Microsoft.Win32.SafeHandles
                     Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
-                readStatus = true;
+                isReadOnly = true;
             }
 
             IsAsync = (options & FileOptions.Asynchronous) != 0;
