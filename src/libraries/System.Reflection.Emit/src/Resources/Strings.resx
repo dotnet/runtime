@@ -168,4 +168,7 @@
   <data name="Argument_SizeConstMustBeSpecified" xml:space="preserve">
     <value>SizeConst parameter must be specified for UnmanagedType.ByValTStr type.</value>
   </data>
+  <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
+    <value>The generic parameters are already defined on this MethodBuilder.</value>
+  </data>
 </root>

@@ -5,7 +5,9 @@ import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig } from "../types";
 import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
-import { loadBootConfig } from "./blazor/_Integration";
+import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
+import { BootConfigResult } from "./blazor/BootConfig";
+import { BootJsonData } from "../types/blazor";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -80,13 +82,18 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     try {
         const resolveSrc = loaderHelpers.locateFile(configFilePath);
         const configResponse = await loaderHelpers.fetch_like(resolveSrc);
-        const loadedConfig: MonoConfigInternal = (await configResponse.json()) || {};
-        if (loaderHelpers.config.startupOptions) {
-            await loadBootConfig(loaderHelpers.config, module);
+        const loadedAnyConfig: any = (await configResponse.json()) || {};
+        if (loadedAnyConfig.resources) {
+            await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData), module);
         } else {
-            if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
-                throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
-            deep_merge_config(loaderHelpers.config, loadedConfig);
+            const loadedConfig = loadedAnyConfig as MonoConfigInternal;
+            if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
+                await loadBootConfig(loaderHelpers.config, module);
+            } else {
+                if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
+                    throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
+                deep_merge_config(loaderHelpers.config, loadedConfig);
+            }
         }
 
         normalizeConfig();
