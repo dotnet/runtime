@@ -587,10 +587,10 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
     // This optimization spawns several temps so make sure we have a room
-    if (lvaHaveManyLocals())
+    if (lvaHaveManyLocals(0.75))
     {
         JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
-        //return nullptr;
+        return nullptr;
     }
 
     StringComparison cmpMode = Ordinal;
@@ -733,10 +733,10 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     const int  argsCount = sig->numArgs + (isStatic ? 0 : 1);
 
     // This optimization spawns several temps so make sure we have a room
-    if (lvaHaveManyLocals())
+    if (lvaHaveManyLocals(0.75))
     {
         JITDUMP("impSpanEqualsOrStartsWith: Method has too many locals - bail out.\n")
-        //return nullptr;
+        return nullptr;
     }
 
     StringComparison cmpMode = Ordinal;
