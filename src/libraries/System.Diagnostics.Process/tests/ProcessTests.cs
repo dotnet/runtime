@@ -776,7 +776,7 @@ namespace System.Diagnostics.Tests
             }
 
             // On recent Linux kernels (6.2+) working set can be zero just after the process started.
-            RetryHelper.Execute(() =>
+            ExecuteWithRetryOnLinux(() =>
             {
                 try
                 {
@@ -841,7 +841,7 @@ namespace System.Diagnostics.Tests
             }
 
             // On recent Linux kernels (6.2+) working set can be zero just after the process started.
-            RetryHelper.Execute(() =>
+            ExecuteWithRetryOnLinux(() =>
             {
                 try
                 {
@@ -2053,7 +2053,7 @@ namespace System.Diagnostics.Tests
             }
 
             // On recent Linux kernels (6.2+) working set can be zero just after the process started.
-            RetryHelper.Execute(() =>
+            ExecuteWithRetryOnLinux(() =>
             {
                 try
                 {
@@ -2131,7 +2131,7 @@ namespace System.Diagnostics.Tests
             }
 
             // On recent Linux kernels (6.2+) working set can be zero just after the process started.
-            RetryHelper.Execute(() =>
+            ExecuteWithRetryOnLinux(() =>
             {
                 try
                 {
@@ -2738,6 +2738,18 @@ namespace System.Diagnostics.Tests
             }
 
             return secureString;
+        }
+
+        private static void ExecuteWithRetryOnLinux(Action test)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                RetryHelper.Execute(test, retryWhen: ex => ex is XunitException);
+            }
+            else
+            {
+                test();
+            }
         }
     }
 }
