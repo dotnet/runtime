@@ -1126,7 +1126,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string lowerCasePropertyName = propertyName.ToLowerInvariant();
                 propertyNamesWithoutRangeInfo.Add(lowerCasePropertyName);
                 results.Add(lowerCasePropertyName, new ArrayList());
-                // add to the seachers's propertiesToLoad
+                // add to the seachers's s_cn
                 searcher.PropertiesToLoad.Add(propertyName);
             }
 
