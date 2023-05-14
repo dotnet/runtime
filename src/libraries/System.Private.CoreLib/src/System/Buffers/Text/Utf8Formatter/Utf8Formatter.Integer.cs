@@ -333,6 +333,117 @@ namespace System.Buffers.Text
             }
         }
 
+        /// <summary>
+        /// Formats an UInt128 as a UTF8 string.
+        /// </summary>
+        /// <param name="value">Value to format</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
+        /// <param name="format">The standard format to use</param>
+        /// <returns>
+        /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
+        /// </returns>
+        /// <remarks>
+        /// Formats supported:
+        ///     G/g (default)
+        ///     D/d             32767
+        ///     N/n             32,767
+        ///     X/x             7fff
+        /// </remarks>
+        /// <exceptions>
+        /// <cref>System.FormatException</cref> if the format is not valid for this data type.
+        /// </exceptions>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool TryFormat(UInt128 value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+        {
+            if (format.IsDefault)
+            {
+                return Number.TryUInt128ToDecStr(value, destination, out bytesWritten);
+            }
+
+            switch (format.Symbol | 0x20)
+            {
+                case 'd':
+                    return Number.TryUInt128ToDecStr(value, format.PrecisionOrZero, destination, out bytesWritten);
+
+                case 'x':
+                    return Number.TryInt128ToHexStr((Int128)value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+
+                case 'n':
+                    return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
+
+                case 'g' or 'r':
+                    if (format.HasPrecision)
+                    {
+                        ThrowGWithPrecisionNotSupported();
+                    }
+                    goto case 'd';
+
+                default:
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto case 'd';
+            }
+        }
+
+        /// <summary>
+        /// Formats an Int128 as a UTF8 string.
+        /// </summary>
+        /// <param name="value">Value to format</param>
+        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
+        /// <param name="format">The standard format to use</param>
+        /// <returns>
+        /// true for success. "bytesWritten" contains the length of the formatted text in bytes.
+        /// false if buffer was too short. Iteratively increase the size of the buffer and retry until it succeeds.
+        /// </returns>
+        /// <remarks>
+        /// Formats supported:
+        ///     G/g (default)
+        ///     D/d             32767
+        ///     N/n             32,767
+        ///     X/x             7fff
+        /// </remarks>
+        /// <exceptions>
+        /// <cref>System.FormatException</cref> if the format is not valid for this data type.
+        /// </exceptions>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryFormat(Int128 value, Span<byte> destination, out int bytesWritten, StandardFormat format = default)
+        {
+            if (format.IsDefault)
+            {
+                return value >= 0 ?
+                    Number.TryUInt128ToDecStr((UInt128)value, destination, out bytesWritten) :
+                    Number.TryNegativeInt128ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+            }
+
+            switch (format.Symbol | 0x20)
+            {
+                case 'd':
+                    return value >= 0 ?
+                        Number.TryUInt128ToDecStr((UInt128)value, format.PrecisionOrZero, destination, out bytesWritten) :
+                        Number.TryNegativeInt128ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+
+                case 'x':
+                    return Number.TryInt128ToHexStr(value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+
+                case 'n':
+                    return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
+
+                case 'g' or 'r':
+                    if (format.HasPrecision)
+                    {
+                        ThrowGWithPrecisionNotSupported();
+                    }
+                    goto case 'd';
+
+                default:
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    goto case 'd';
+            }
+        }
+
         private static void ThrowGWithPrecisionNotSupported() =>
             // With a precision, 'G' can produce exponential format, even for integers.
             throw new NotSupportedException(SR.Argument_GWithPrecisionNotSupported);

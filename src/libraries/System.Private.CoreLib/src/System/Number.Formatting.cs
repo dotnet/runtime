@@ -2536,7 +2536,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt128ToDecStr<TChar>(Int128 value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryNegativeInt128ToDecStr<TChar>(Int128 value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(Int128.IsNegative(value));
@@ -2589,7 +2589,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt128ToHexStr<TChar>(Int128 value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryInt128ToHexStr<TChar>(Int128 value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2789,7 +2789,27 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            int bufferLength = FormattingHelpers.CountDigits(value);
+
+            if (bufferLength <= destination.Length)
+            {
+                charsWritten = bufferLength;
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
+                {
+                    TChar* p = buffer + bufferLength;
+                    p = UInt128ToDecChars(p, value);
+                    Debug.Assert(p == buffer);
+                }
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
+        }
+
+        internal static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
