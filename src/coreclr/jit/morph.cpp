@@ -10816,61 +10816,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-#if defined(TARGET_ARM64)
-        case NI_Vector64_WithElement:
-#endif // TARGET_ARM64
-        case NI_Vector128_WithElement:
-#if defined(TARGET_AMD64)
-        case NI_Vector256_WithElement:
-        case NI_Vector512_WithElement:
-#endif // TARGET_AMD64
-        {
-            // For WithElement intrinsic where all operands are const,
-            // we can just replace the node with a single const vector, e.g. turn
-            //
-            // HWINTRINSIC simd12 float WithElement
-            // +--* CNS_VEC simd12<0x00000000, 0x00000000, 0x00000000>
-            // +--* CNS_INT int   1
-            // \--* CNS_DBL float 1.0000000000000000
-            //
-            // into
-            //
-            // CNS_VEC simd12<0x00000000, 0x3f800000, 0x00000000>
 
-            var_types baseType = node->GetSimdBaseType();
-
-            if (baseType != TYP_FLOAT)
-            {
-                break;
-            }
-
-            unsigned simdSize     = node->GetSimdSize();
-            unsigned elementCount = simdSize / genTypeSize(baseType);
-
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-            GenTree* op3 = node->Op(3);
-
-            if (op1->OperGet() == GT_CNS_VEC && op2->OperGet() == GT_CNS_INT && op3->OperGet() == GT_CNS_DBL &&
-                op3->TypeGet() == TYP_FLOAT)
-            {
-                GenTreeVecCon* vecCon = op1->AsVecCon();
-                ssize_t        index  = op2->AsIntCon()->IconValue();
-                float          value  = forceCastToFloat(op3->AsDblCon()->DconValue());
-
-                assert(index >= 0 && index < ssize_t(elementCount));
-
-                DEBUG_DESTROY_NODE(node);
-                DEBUG_DESTROY_NODE(op2);
-                DEBUG_DESTROY_NODE(op3);
-                INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-                vecCon->gtSimdVal.f32[index] = value;
-
-                return vecCon;
-            }
-            return node;
-        }
         default:
         {
             break;
@@ -10880,7 +10826,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
     return node;
 }
 
-#endif // FEATURE_HW_INTRINSICS
+#endif
 
 //------------------------------------------------------------------------
 // fgOptimizeCommutativeArithmetic: Optimizes commutative operations.
