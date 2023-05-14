@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Management
@@ -55,7 +56,7 @@ namespace System.Management
     ///    </code>
     /// </example>
     //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC//
-    public class ManagementObjectCollection : ICollection, IEnumerable, IDisposable
+    public class ManagementObjectCollection : IReadOnlyCollection<ManagementBaseObject>, ICollection, IEnumerable, IDisposable
     {
         private static readonly string name = typeof(ManagementObjectCollection).FullName;
 
@@ -344,6 +345,7 @@ namespace System.Management
             return GetEnumerator();
         }
 
+        IEnumerator<ManagementBaseObject> IEnumerable<ManagementBaseObject>.GetEnumerator() => GetEnumerator();
 
 
         //
@@ -397,7 +399,7 @@ namespace System.Management
         ///    </code>
         /// </example>
         //CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-        public class ManagementObjectEnumerator : IEnumerator, IDisposable
+        public class ManagementObjectEnumerator : IEnumerator<ManagementBaseObject>, IEnumerator, IDisposable
         {
             private static readonly string name = typeof(ManagementObjectEnumerator).FullName;
             private IEnumWbemClassObject enumWbem;
