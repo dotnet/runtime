@@ -46,7 +46,6 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     Object.assign(runtimeHelpers, {
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
-        enablePerfMeasure: true,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
         memorySnapshotSkippedOrDone: createPromiseController<void>(),
