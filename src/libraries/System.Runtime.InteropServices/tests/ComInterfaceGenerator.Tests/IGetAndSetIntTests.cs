@@ -41,7 +41,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("When the unmanaged side uses ComWrappers, even when not using the marshaller or StrategyBasedComWrappers, the Unwrap flag causes the underlying object to be returned instead of an RCW.")]
         public unsafe void CallRcwFromGeneratedComInterfaceConstructedByMarshaller()
         {
             var intObj = NewNativeObjectWithMarshaller(); // new_native_object
@@ -52,7 +51,6 @@ namespace ComInterfaceGenerator.Tests
         }
 
         [Fact]
-        [ActiveIssue("When the unmanaged side uses ComWrappers, even when not using the marshaller or StrategyBasedComWrappers, the Unwrap flag causes the underlying object to be returned instead of an RCW.")]
         public unsafe void CallRcwFromGeneratedComInterfaceConstructedByUniqueMarshaller()
         {
             var intObj = NewNativeObjectWithUniqueMarshaller(); // new_native_object
