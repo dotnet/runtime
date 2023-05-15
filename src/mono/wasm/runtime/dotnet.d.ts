@@ -303,6 +303,7 @@ type BootJsonDataExtension = {
     [extensionName: string]: ResourceList;
 };
 interface ResourceGroups {
+    readonly hash?: string;
     readonly assembly: ResourceList;
     readonly lazyAssembly: ResourceList;
     readonly pdb?: ResourceList;
@@ -313,6 +314,9 @@ interface ResourceGroups {
     readonly libraryInitializers?: ResourceList;
     readonly extensions?: BootJsonDataExtension;
     readonly runtimeAssets: ExtendedResourceList;
+    readonly vfs?: {
+        [virtualPath: string]: ResourceList;
+    };
 }
 type ResourceList = {
     [name: string]: string;

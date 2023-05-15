@@ -117,6 +117,18 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!IncludeThreadsWorker && name == "dotnet.native.worker.js")
                 continue;
 
+            if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
+            {
+                if (config.resources.runtimeAssets == null)
+                    config.resources.runtimeAssets = new();
+
+                config.resources.runtimeAssets[name] = new()
+                {
+                    Hash = $"sha256-{item.GetMetadata("FileHash")}",
+                    Behavior = "dotnetwasm"
+                };
+            }
+
             config.resources.runtime[name] = Utils.ComputeIntegrity(item.ItemSpec);
         }
 
@@ -149,7 +161,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 if (DebugLevel != 0)
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
-                    config.resources.pdb[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                    if (File.Exists(pdb))
+                        config.resources.pdb[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
                 }
             }
         }
