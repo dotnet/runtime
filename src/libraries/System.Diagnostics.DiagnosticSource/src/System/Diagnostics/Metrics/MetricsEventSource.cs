@@ -45,7 +45,7 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
-        public const string SharedSessionId = "SHARED";
+        public const string SharedSessionPrefix = "SHARED";
 
         public static class Keywords
         {
@@ -204,9 +204,9 @@ namespace System.Diagnostics.Metrics
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void MultipleSessionsConfiguredIncorrectlyError(string runningSessionId, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
+        public void MultipleSessionsConfiguredIncorrectlyError(string sharedIdentifier, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
         {
-            WriteEvent(17, runningSessionId, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
+            WriteEvent(17, sharedIdentifier, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
         }
 
         /// <summary>
@@ -239,7 +239,8 @@ namespace System.Diagnostics.Metrics
 
             public bool IsSharedSession(string commandSessionId)
             {
-                return _sessionId == SharedSessionId && commandSessionId == SharedSessionId;
+                // commandSessionId may be null if it's the disable command
+                return _sessionId.StartsWith(SharedSessionPrefix) && (string.IsNullOrEmpty(commandSessionId) || commandSessionId.StartsWith(SharedSessionPrefix));
             }
 
             public void OnEventCommand(EventCommandEventArgs command)
@@ -293,13 +294,15 @@ namespace System.Diagnostics.Metrics
                                 return -1;
                             };
 
+                            double refreshInterval;
                             lock (_aggregationManager)
                             {
-                                validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager._collectionPeriod.TotalSeconds) ? validShared : false;
+                                validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager._collectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
                             }
 
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager._maxHistograms) ? validShared : false;
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager._maxTimeSeries) ? validShared : false;
+                            int maxHistograms, maxTimeSeries;
+                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager._maxHistograms, out maxHistograms) ? validShared : false;
+                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager._maxTimeSeries, out maxTimeSeries) ? validShared : false;
 
                             if (command.Command != EventCommand.Disable)
                             {
@@ -320,9 +323,14 @@ namespace System.Diagnostics.Metrics
                                 }
                                 else
                                 {
-                                    lock (_aggregationManager)
+                                    // In theory this should be required as part of the contract to do shared -> not currently safe with !
+                                    if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
                                     {
-                                        Parent.MultipleSessionsConfiguredIncorrectlyError(_sessionId, _aggregationManager._maxHistograms.ToString(), "1", _aggregationManager._maxTimeSeries.ToString(), "1", _aggregationManager._collectionPeriod.TotalSeconds.ToString(), "1");
+                                        lock (_aggregationManager)
+                                        {
+                                            // Use sharedIdentifier to identify the session that is not configured correctly (since the sessionId is just SHARED)
+                                            Parent.MultipleSessionsConfiguredIncorrectlyError(sharedIdentifier!, _aggregationManager._maxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager._maxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager._collectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
+                                        }
                                     }
 
                                     return;
@@ -453,15 +461,17 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private bool ParseArgs<T>(IDictionary<string, string>? arguments, Func<string, T> conversion, string argumentName, T currentValue) where T : IEquatable<T>
+            private bool ParseArgs<T>(IDictionary<string, string>? arguments, Func<string, T> conversion, string argumentName, T currentValue, out T parsedValue) where T : IEquatable<T>
             {
                 if (arguments!.TryGetValue(argumentName, out string? argumentString))
                 {
+                    parsedValue = conversion(argumentString);
                     return EqualityComparer<T>.Default.Equals(conversion(argumentString), currentValue);
                 }
 
                 Parent.Message($"Invalid {argumentName} provided. Using existing value {currentValue}");
 
+                parsedValue = currentValue;
                 return true;
             }
 
@@ -473,10 +483,15 @@ namespace System.Diagnostics.Metrics
                     return id!;
                 }
 
-                string generatedSessionId = Guid.NewGuid().ToString();
-                Parent.Message($"New session started. SessionId auto-generated: {generatedSessionId}");
+                string sessionId = string.Empty;
 
-                return generatedSessionId;
+                if (command.Command != EventCommand.Disable)
+                {
+                    sessionId = Guid.NewGuid().ToString();
+                    Parent.Message($"New session started. SessionId auto-generated: {sessionId}");
+                }
+
+                return sessionId;
             }
 
             private bool LogError(Exception e)

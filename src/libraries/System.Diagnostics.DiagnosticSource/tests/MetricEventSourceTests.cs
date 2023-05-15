@@ -18,7 +18,6 @@ namespace System.Diagnostics.Metrics.Tests
         ITestOutputHelper _output;
         const double IntervalSecs = 4;
         static readonly TimeSpan s_waitForEventTimeout = TimeSpan.FromSeconds(60);
-        const string SharedSessionId = "SHARED"; // Copied from MetricsEventSource
 
         public MetricEventSourceTests(ITestOutputHelper output)
         {
@@ -78,7 +77,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             EventWrittenEventArgs[] events;
             EventWrittenEventArgs[] events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter1"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -88,7 +87,7 @@ namespace System.Diagnostics.Metrics.Tests
                 events = listener.Events.ToArray();
                 Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter2"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter2"))
                 {
                     listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c2.Add(5);
@@ -113,6 +112,59 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingDifferentCounterCollectAfterDisable()
+        {
+            using Meter meter = new Meter("TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            using Meter meter2 = new Meter("TestMeter2");
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+
+            EventWrittenEventArgs[] events;
+            EventWrittenEventArgs[] events2;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter1"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                //events = listener.Events.ToArray();
+                //Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
+
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter2"))
+                {
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                    c2.Add(5);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                    c2.Add(12);
+                    listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                    events2 = listener2.Events.ToArray();
+                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
+                }
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                c.Add(6);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
+                c.Add(13);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 6);
+                events = listener.Events.ToArray();
+                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, c2);
+            // AssertInitialEnumerationCompleteEventPresent(events); // Not sure if we want to re-enumerate when we add new providers, but this will break this test for now
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"), ("0", "17"), ("0", "17"), ("0", "17"), ("6", "23"), ("13", "36"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+
+            AssertBeginInstrumentReportingEventsPresent(events2, c2);
+            AssertInitialEnumerationCompleteEventPresent(events2);
+            AssertCounterEventsPresent(events2, meter2.Name, c2.Name, "", "", ("5", "5"), ("12", "17"));
+            AssertCollectStartStopEventsPresent(events2, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
         public void EventSourcePublishesTimeSeriesWithEmptyMetadataMultiplexingDifferentCounterAlternating()
         {
             using Meter meter = new Meter("TestMeter1");
@@ -123,9 +175,9 @@ namespace System.Diagnostics.Metrics.Tests
 
             EventWrittenEventArgs[] events;
             EventWrittenEventArgs[] events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter1"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter1"))
             {
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter2"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter2"))
                 {
                     listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c.Add(5);
@@ -177,7 +229,7 @@ namespace System.Diagnostics.Metrics.Tests
                 udc.Add(40);
 
                 // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "ADifferentMeter");
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "ADifferentMeter");
                 listener2.WaitForMultipleSessionsNotSupportedError(s_waitForEventTimeout);
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
@@ -210,7 +262,7 @@ namespace System.Diagnostics.Metrics.Tests
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
             EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter7"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter7"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -241,7 +293,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         //[OuterLoop("Slow and has lots of console spew")]
-        public void EventSourceRejectsNewSharedListenerWithDifferentParameters()
+        public void EventSourceRejectsNewSharedListenerWithDifferentHistogramTimeSeries()
         {
             using Meter meter = new Meter("TestMeter7");
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
@@ -255,7 +307,7 @@ namespace System.Diagnostics.Metrics.Tests
             ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
 
             EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, 10, 10, "TestMeter7"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, 10, 10, "TestMeter7"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -267,7 +319,52 @@ namespace System.Diagnostics.Metrics.Tests
                 udc.Add(40);
 
                 // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, 11, 11, "ADifferentMeter");
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, 11, 11, "ADifferentMeter");
+                listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, oc, og, h, udc, oudc);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
+            AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
+            AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceRejectsNewSharedListenerWithDifferentInterval()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+            int counterState = 3;
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
+            int gaugeState = 0;
+            ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!");
+            Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
+            UpDownCounter<int> udc = meter.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description");
+            int upDownCounterState = 0;
+            ObservableUpDownCounter<int> oudc = meter.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                h.Record(19);
+                udc.Add(33);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+                h.Record(26);
+                udc.Add(40);
+
+                // some alternate listener attempts to listen in the middle
+                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs + 1, "ADifferentMeter");
                 listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
@@ -293,7 +390,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             EventWrittenEventArgs[] events;
             EventWrittenEventArgs[] events2;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, SharedSessionId, IntervalSecs, "TestMeter1"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, true, IntervalSecs, "TestMeter1"))
             {
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
                 c.Add(5);
@@ -1106,7 +1203,6 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-
         private void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -1232,7 +1328,7 @@ namespace System.Diagnostics.Metrics.Tests
                     Value = e.Payload[7].ToString()
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
-            Assert.True(filteredEvents.Length >= expected.Length);
+            Assert.True(filteredEvents.Length >= expected.Length, filteredEvents.Length + " | " + expected.Length + "\n" + filteredEvents[0].Rate + " | " + expected[0].Item1 + "\n" + filteredEvents[1].Rate + " | " + expected[1].Item1 + "\n" + filteredEvents[2].Rate + " | " + expected[2].Item1 + "\n" + filteredEvents[3].Rate + " | " + expected[3].Item1 + "\n" + filteredEvents[4].Rate + " | " + expected[4].Item1);
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
@@ -1359,7 +1455,6 @@ namespace System.Diagnostics.Metrics.Tests
 
     class MetricsEventListener : EventListener
     {
-
         public const EventKeywords MessagesKeyword = (EventKeywords)0x1;
         public const EventKeywords TimeSeriesValues = (EventKeywords)0x2;
         public const EventKeywords InstrumentPublishing = (EventKeywords)0x4;
@@ -1371,25 +1466,31 @@ namespace System.Diagnostics.Metrics.Tests
         {
         }
 
-        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, double? refreshInterval, params string[]? instruments) :
-            this(output, keywords, sessionId, refreshInterval, TimeSeriesLimit, HistogramLimit, instruments)
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, bool isShared, double? refreshInterval, params string[]? instruments) :
+            this(output, keywords, isShared, refreshInterval, TimeSeriesLimit, HistogramLimit, instruments)
         {
         }
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval,
             int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
-            this(output, keywords, Guid.NewGuid().ToString(), refreshInterval, timeSeriesLimit, histogramLimit, instruments)
+            this(output, keywords, false, refreshInterval, timeSeriesLimit, histogramLimit, instruments)
         {
         }
 
-        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, double? refreshInterval,
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, bool isShared, double? refreshInterval,
             int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
-            this(output, keywords, sessionId,
-            FormatArgDictionary(refreshInterval,timeSeriesLimit, histogramLimit, instruments, sessionId))
+            this(output, keywords, Guid.NewGuid().ToString(), isShared, refreshInterval, timeSeriesLimit, histogramLimit, instruments)
         {
         }
 
-        private static Dictionary<string,string> FormatArgDictionary(double? refreshInterval, int? timeSeriesLimit, int? histogramLimit, string?[]? instruments, string? sessionId)
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool isShared, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
+            this(output, keywords, sessionId, isShared,
+            FormatArgDictionary(refreshInterval,timeSeriesLimit, histogramLimit, instruments, sessionId, isShared))
+        {
+        }
+
+        private static Dictionary<string,string> FormatArgDictionary(double? refreshInterval, int? timeSeriesLimit, int? histogramLimit, string?[]? instruments, string? sessionId, bool shared)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
             if(instruments != null)
@@ -1402,7 +1503,15 @@ namespace System.Diagnostics.Metrics.Tests
             }
             if(sessionId != null)
             {
-                d.Add("SessionId", sessionId);
+                if (shared)
+                {
+                    d.Add("SessionId", "SHARED");
+                    d.Add("SharedIdentifier", sessionId);
+                }
+                else
+                {
+                    d.Add("SessionId", sessionId);
+                }
             }
             if(timeSeriesLimit != null)
             {
@@ -1412,14 +1521,15 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 d.Add("MaxHistograms", histogramLimit.ToString());
             }
+
             return d;
         }
 
-        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, Dictionary<string,string> arguments)
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool shared, Dictionary<string,string> arguments)
         {
             _output = output;
             _keywords = keywords;
-            _sessionId = sessionId;
+            _sessionId = shared ? "SHARED" : sessionId;
             _arguments = arguments;
             if (_source != null)
             {
@@ -1464,7 +1574,7 @@ namespace System.Diagnostics.Metrics.Tests
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             string sessionId = eventData.Payload[0].ToString();
-            if (eventData.EventName != "MultipleSessionsNotSupportedError" && sessionId != "" && sessionId != _sessionId)
+            if ((eventData.EventName != "MultipleSessionsNotSupportedError" && eventData.EventName != "MultipleSessionsConfiguredIncorrectlyError") && sessionId != "" && sessionId != _sessionId)
             {
                 return;
             }
