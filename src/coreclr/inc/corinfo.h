@@ -548,6 +548,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR,
     CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS,
+    CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
 
     /* Debugger */
@@ -1731,6 +1732,7 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     uint32_t offsetOfThreadLocalStoragePointer;
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
+    uint32_t offsetOfGCDataPointer;
 };
 
 //----------------------------------------------------------------------------
@@ -2733,11 +2735,13 @@ public:
                                CORINFO_FIELD_INFO    *pResult
                               ) = 0;
 
+    // Returns the index against which the field's thread static block in stored in TLS.
     virtual uint32_t getThreadLocalFieldInfo (
-                        CORINFO_FIELD_HANDLE  field) = 0;
+                        CORINFO_FIELD_HANDLE  field, bool isGCType) = 0;
 
+    // Returns the thread static block information like offsets, etc. from current TLS.
     virtual void getThreadLocalStaticBlocksInfo (
-                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) = 0;
+                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;

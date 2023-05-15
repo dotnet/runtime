@@ -445,6 +445,20 @@ namespace System.Runtime.Intrinsics.Wasm
 
         // Conversions
 
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
         internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
         internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
 

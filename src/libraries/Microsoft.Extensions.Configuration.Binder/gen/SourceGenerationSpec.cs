@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         HashSet<ParsableFromStringTypeSpec> PrimitivesForHelperGen,
         HashSet<string> Namespaces)
     {
-        public bool ShouldEmitMethods(MethodSpecifier methods)
-                => (MethodsToGen & methods) != 0;
+        public bool HasRootMethods() =>
+            ShouldEmitMethods(MethodSpecifier.GetMethods | MethodSpecifier.BindMethods | MethodSpecifier.Configure | MethodSpecifier.GetValueMethods);
+
+        public bool ShouldEmitMethods(MethodSpecifier methods) => (MethodsToGen & methods) != 0;
     }
 }

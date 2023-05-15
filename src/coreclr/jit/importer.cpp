@@ -3963,7 +3963,15 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-            typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField);
+            if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+            {
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
+            }
+            else
+            {
+                assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+            }
 
             FALLTHROUGH;
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -7412,7 +7420,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BR_S:
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if ((jmpDist == 0) && opts.CanBeInstrumentedOrIsOptimized())
+                if ((jmpDist == 0) && opts.DoEarlyBlockMerging())
                 {
                     break; /* NOP */
                 }

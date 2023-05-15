@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -35,8 +36,6 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
         private PollingCounter? _fragmentationCounter;
-
-#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private PollingCounter? _committedCounter;
         private IncrementingPollingCounter? _exceptionCounter;
         private PollingCounter? _gcTimeCounter;
@@ -46,12 +45,17 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _lohSizeCounter;
         private PollingCounter? _pohSizeCounter;
         private PollingCounter? _assemblyCounter;
-#endif // !NATIVEAOT
-
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
 
+#if NATIVEAOT
+        // If EventSource feature is enabled, RuntimeEventSource needs to be initialized for NativeAOT
+        // In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
+#pragma warning disable CA2255
+        [ModuleInitializer]
+#pragma warning restore CA2255
+#endif
         public static void Initialize()
         {
             // initializing more than once may lead to missing events
@@ -108,7 +112,6 @@ namespace System.Diagnostics.Tracing
                     return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 
-#if !NATIVEAOT // TODO
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => ((double)GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
@@ -118,7 +121,6 @@ namespace System.Diagnostics.Tracing
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
-#endif // !NATIVEAOT
 
                 _ilBytesJittedCounter ??= new PollingCounter("il-bytes-jitted", this, () => System.Runtime.JitInfo.GetCompiledILBytes()) { DisplayName = "IL Bytes Jitted", DisplayUnits = "B" };
                 _methodsJittedCounter ??= new PollingCounter("methods-jitted-count", this, () => System.Runtime.JitInfo.GetCompiledMethodCount()) { DisplayName = "Number of Methods Jitted" };
