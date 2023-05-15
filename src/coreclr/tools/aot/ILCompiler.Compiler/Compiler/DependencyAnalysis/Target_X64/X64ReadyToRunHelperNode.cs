@@ -200,7 +200,10 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
+                            if (factory.Target.IsWindows && factory.Target.Architecture == TargetArchitecture.X64)
+                                encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethodFast"));
+                            else
+                                encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
                         }
                         else
                         {

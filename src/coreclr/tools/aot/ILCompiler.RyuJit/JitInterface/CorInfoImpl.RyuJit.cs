@@ -1552,10 +1552,10 @@ namespace Internal.JitInterface
             else if ((flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0
                 && targetMethod.OwningType.IsInterface)
             {
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
-
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
+
                     ComputeLookup(ref pResolvedToken,
                         GetRuntimeDeterminedObjectForToken(ref pResolvedToken),
                         ReadyToRunHelperId.VirtualDispatchCell,
@@ -1564,16 +1564,12 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-                    pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
-#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
-                    pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
-                        _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
-#if !SUPPORT_JIT
-                        , _methodCodeNode
-#endif
-                        ));
-#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
+                    pResult->codePointerOrStubLookup.constLookup =
+                        CreateConstLookupToSymbol(
+                            _compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelperId.ResolveVirtualFunction, targetMethod));
                 }
 
                 pResult->nullInstanceCheck = false;

@@ -9,6 +9,7 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
 EXTERN RhpCidResolve : PROC
 EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
+EXTERN RhpResolveInterfaceMethod : PROC
 
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
@@ -113,6 +114,45 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
+
+;; Fast version of RhpResolveInterfaceMethod
+LEAF_ENTRY RhpResolveInterfaceMethodFast, _TEXT
+
+        ;; Load the MethodTable from the object instance in rcx.
+        ;; This will also trigger a NullRef if needed
+        ALTERNATE_ENTRY RhpResolveInterfaceMethodFastAVLocation
+        mov     r9, [rcx]
+
+        ;; rdx currently contains the indirection cell address.
+        ;; load r8 to point to the cache block.
+        mov     r8, [rdx + OFFSETOF__InterfaceDispatchCell__m_pCache]
+        test    r8b, IDC_CACHE_POINTER_MASK
+        jne     RhpResolveInterfaceMethodFast_SlowPath
+
+        ;; set up loop over all entries
+        lea     rax, [r8 + OFFSETOF__InterfaceDispatchCache__m_rgEntries]
+        xor     r10d, r10d
+        mov     r8d, dword ptr [r8 + OFFSETOF__InterfaceDispatchCache__m_cEntries]
+        test    r8d, r8d
+        jz      RhpResolveInterfaceMethodFast_SlowPath
+
+      RhpResolveInterfaceMethodFast_CheckEntry:
+        cmp     qword ptr [rax], r9
+        je      RhpResolveInterfaceMethodFast_FoundEntry
+
+        inc     r10d
+        add     rax, SIZEOF__InterfaceDispatchCacheEntry
+        cmp     r10d, r8d
+        jb      RhpResolveInterfaceMethodFast_CheckEntry
+
+      RhpResolveInterfaceMethodFast_SlowPath:
+        jmp     RhpResolveInterfaceMethod
+
+      RhpResolveInterfaceMethodFast_FoundEntry:
+        mov     rax, qword ptr [rax + 8]
+        ret
+
+LEAF_END RhpResolveInterfaceMethodFast, _TEXT
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 

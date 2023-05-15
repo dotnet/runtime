@@ -99,6 +99,8 @@ private:
     uint32_t      m_slotIndexOrMetadataTokenEncoded;
 };
 
+#define IDC_CACHE_POINTER_MASK (InterfaceDispatchCell::Flags::IDC_CachePointerMask)
+
 // One of these is allocated per interface call site. It holds the stub to call, data to pass to that stub
 // (cache information) and the interface contract, i.e. the interface type and slot being called.
 struct InterfaceDispatchCell
