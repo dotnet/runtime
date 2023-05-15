@@ -51,57 +51,64 @@ namespace Microsoft.Interop
                 .Where(
                     static modelData => modelData is not null);
 
-            var interfaceSymbolAndDiagnostic = attributedInterfaces.Select(static (data, ct) =>
+            var interfaceSymbolAndDiagnostics = attributedInterfaces.Select(static (data, ct) =>
             {
                 var (info, diagnostic) = ComInterfaceInfo.From(data.Symbol, data.Syntax);
                 return (InterfaceInfo: info, Diagnostic: diagnostic, Symbol: data.Symbol);
             });
-            context.RegisterDiagnostics(interfaceSymbolAndDiagnostic.Select((data, ct) => data.Diagnostic));
+            context.RegisterDiagnostics(interfaceSymbolAndDiagnostics.Select((data, ct) => data.Diagnostic));
 
-            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolAndDiagnostic
+            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolAndDiagnostics
                 .Where(data => data.Diagnostic is null)
-                .Select((data, ct) => (data.InterfaceInfo, data.Symbol));
+                .Select((data, ct) =>
+                (data.InterfaceInfo, data.Symbol));
 
-            var interfacesToGenerate = interfaceSymbolsWithoutDiagnostics
-                .Select((data, ct) => data.InterfaceInfo!);
+            var interfaceContexts = interfaceSymbolsWithoutDiagnostics
+                .Select((data, ct) => data.InterfaceInfo!)
+                .Collect()
+                .SelectMany(ComInterfaceContext.GetContexts);
 
-            var interfaceContexts = interfacesToGenerate.Collect().SelectMany(ComInterfaceContext.GetContexts);
-
-            var interfaceMethodsAndSymbolsAndDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
-            context.RegisterDiagnostics(interfaceMethodsAndSymbolsAndDiagnostics.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
-            var interfaceMethodSymbols = interfaceMethodsAndSymbolsAndDiagnostics
+            var comMethodsAndSymbolsAndDiagnostics = interfaceSymbolsWithoutDiagnostics.Select(ComMethodInfo.GetMethodsFromInterface);
+            context.RegisterDiagnostics(comMethodsAndSymbolsAndDiagnostics.SelectMany(static (methodList, ct) => methodList.Select(m => m.Diagnostic)));
+            var methodInfoAndSymbolGroupedByInterface = comMethodsAndSymbolsAndDiagnostics
                 .Select(static (methods, ct) =>
                     methods
                         .Where(pair => pair.Diagnostic is null)
                         .Select(pair => (pair.Symbol, pair.ComMethod))
                         .ToSequenceEqualImmutableArray());
 
-            var methodInfoGroups = interfaceMethodSymbols
+            var methodInfosGroupedByInterface = methodInfoAndSymbolGroupedByInterface
                 .Select(static (methods, ct) =>
                     methods.Select(pair => pair.ComMethod).ToSequenceEqualImmutableArray());
-
-            var methodInfoToSymbolMap = interfaceMethodSymbols
-                .SelectMany((data, ct) => data)
-                .Collect()
-                .Select((data, ct) => data.ToDictionary(static x => x.ComMethod, static x => x.Symbol));
-
-            // Determine which methods each interface declares and inherits
-            var interfaceMethodNoContexts = interfaceContexts
-                .Zip(methodInfoGroups)
+            // Create list of methods (inherited and declared) and their owning interface
+            var comMethodContextBuilders = interfaceContexts
+                .Zip(methodInfosGroupedByInterface)
                 .Collect()
                 .SelectMany(static (data, ct) =>
                 {
                     return ComMethodContext.CalculateAllMethods(data, ct);
                 });
 
-            var interfaceMethodContexts = interfaceMethodNoContexts
-                .Combine(methodInfoToSymbolMap).Combine(context.CreateStubEnvironmentProvider()).Select((param, ct) =>
-            {
-                var ((data, symbolMap), env) = param;
-                return new ComMethodContext(data.Method.DeclaringInterface, data.TypeKeyOwner, data.Method.MethodInfo, data.Method.Index, CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.TypeKeyOwner.Info.Type, ct));
-            }).WithTrackingName(StepNames.CalculateStubInformation);
+            // A dictionary isn't incremental, but it will have symbols, so it will never be incremental anyway.
+            var methodInfoToSymbolMap = methodInfoAndSymbolGroupedByInterface
+                .SelectMany((data, ct) => data)
+                .Collect()
+                .Select((data, ct) => data.ToDictionary(static x => x.ComMethod, static x => x.Symbol));
+            var comMethodContexts = comMethodContextBuilders
+                .Combine(methodInfoToSymbolMap)
+                .Combine(context.CreateStubEnvironmentProvider())
+                .Select((param, ct) =>
+                {
+                    var ((data, symbolMap), env) = param;
+                    return new ComMethodContext(
+                        data.Method.OriginalDeclaringInterface,
+                        data.TypeKeyOwner,
+                        data.Method.MethodInfo,
+                        data.Method.Index,
+                        CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.TypeKeyOwner.Info.Type, ct));
+                }).WithTrackingName(StepNames.CalculateStubInformation);
 
-            var interfaceAndMethodsContexts = interfaceMethodContexts.Collect()
+            var interfaceAndMethodsContexts = comMethodContexts.Collect()
                 .Combine(interfaceContexts.Collect())
                 .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
 
@@ -376,7 +383,7 @@ namespace Microsoft.Interop
             foreach(var iface in interfaces)
             {
                 var methodList = ImmutableArray.CreateBuilder<ComMethodContext>();
-                while (methodIndex < methods.Length && methods[methodIndex].TypeKeyOwner == iface)
+                while (methodIndex < methods.Length && methods[methodIndex].OwningInterface == iface)
                 {
                     methodList.Add(methods[methodIndex++]);
                 }
@@ -666,7 +673,5 @@ namespace Microsoft.Interop
                                         SeparatedList<ExpressionSyntax>(literals)))));
             }
         }
-
-        private sealed record InterfaceSymbolInfo<TBaseInterfaceKey>(ComInterfaceInfo Info, Diagnostic? Diagnostic, TBaseInterfaceKey ThisInterfaceKey, TBaseInterfaceKey? BaseInterfaceKey);
     }
 }

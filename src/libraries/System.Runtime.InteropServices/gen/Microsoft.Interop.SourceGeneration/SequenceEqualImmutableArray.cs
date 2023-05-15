@@ -25,6 +25,8 @@ namespace Microsoft.Interop
         public T this[int i] { get => Array[i]; }
 
         public int Length => Array.Length;
+        public SequenceEqualImmutableArray<T> Insert(int index, T item)
+            => new SequenceEqualImmutableArray<T>(Array.Insert(index, item), Comparer);
 
         public override int GetHashCode() => HashCode.SequentialValuesHash(Array);
 

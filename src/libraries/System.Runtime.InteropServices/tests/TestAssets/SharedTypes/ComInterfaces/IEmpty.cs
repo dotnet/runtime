@@ -9,11 +9,8 @@ namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
     [Guid(_guid)]
-    internal partial interface IGetIntArray
+    internal partial interface Empty
     {
-        [return: MarshalUsing(ConstantElementCount = 10)]
-        int[] GetInts();
-
-        public const string _guid = "7D802A0A-630A-4C8E-A21F-771CC9031FB9";
+        public const string _guid = "95D19F50-F2D8-4E61-884B-0A9162EA4646";
     }
 }

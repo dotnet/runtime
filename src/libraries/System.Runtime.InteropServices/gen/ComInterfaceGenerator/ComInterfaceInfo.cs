@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -18,8 +19,8 @@ namespace Microsoft.Interop
         /// </summary>
         private sealed record ComInterfaceInfo(
             ManagedTypeInfo Type,
-            string ThisInterfaceKey,
-            string? BaseInterfaceKey,
+            string ThisInterfaceKey, // For associating interfaces to its base
+            string? BaseInterfaceKey, // For associating interfaces to its base
             InterfaceDeclarationSyntax Declaration,
             ContainingSyntaxContext TypeDefinitionContext,
             ContainingSyntax ContainingSyntax,
@@ -50,10 +51,10 @@ namespace Microsoft.Interop
                     }
                 }
 
-                if (!TryGetGuid(symbol, syntax, out var guid, out var guidDiagnostic))
+                if (!TryGetGuid(symbol, syntax, out Guid? guid, out Diagnostic? guidDiagnostic))
                     return (null, guidDiagnostic);
 
-                if (!TryGetBaseComInterface(symbol, syntax, out var baseSymbol, out var baseDiagnostic))
+                if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
                     return (null, baseDiagnostic);
 
                 return (new ComInterfaceInfo(
@@ -69,7 +70,7 @@ namespace Microsoft.Interop
             /// <summary>
             /// Returns true if there is 0 or 1 base Com interfaces (i.e. the inheritance is valid), and returns false when there are 2 or more base Com interfaces and sets <paramref name="diagnostic"/>.
             /// </summary>
-            private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax syntax, [NotNullWhen(true)] out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out Diagnostic? diagnostic)
+            private static bool TryGetBaseComInterface(INamedTypeSymbol comIface, InterfaceDeclarationSyntax syntax, out INamedTypeSymbol? baseComIface, [NotNullWhen(false)] out Diagnostic? diagnostic)
             {
                 baseComIface = null;
                 foreach (var implemented in comIface.Interfaces)
@@ -78,8 +79,6 @@ namespace Microsoft.Interop
                     {
                         if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute)
                         {
-                            // We'll filter out cases where there's multiple matching interfaces when determining
-                            // if this is a valid candidate for generation.
                             if (baseComIface is not null)
                             {
                                 diagnostic = Diagnostic.Create(
@@ -103,14 +102,14 @@ namespace Microsoft.Interop
             {
                 guid = null;
                 AttributeData? guidAttr = null;
-                AttributeData? interfaceTypeAttr = null;
+                AttributeData? _ = null; // Interface Attribute Type. We'll always assume IUnkown for now.
                 foreach (var attr in interfaceSymbol.GetAttributes())
                 {
                     var attrDisplayString = attr.AttributeClass?.ToDisplayString();
                     if (attrDisplayString is TypeNames.System_Runtime_InteropServices_GuidAttribute)
                         guidAttr = attr;
                     else if (attrDisplayString is TypeNames.InterfaceTypeAttribute)
-                        interfaceTypeAttr = attr;
+                        _ = attr;
                 }
 
                 if (guidAttr is not null
@@ -122,10 +121,12 @@ namespace Microsoft.Interop
                 }
 
                 // Assume interfaceType is IUnknown for now
-                if (interfaceTypeAttr is not null
-                    && guid is null)
+                if (guid is null)
                 {
-                    diagnostic = Diagnostic.Create(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute, syntax.Identifier.GetLocation(), interfaceSymbol.ToDisplayString());
+                    diagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute,
+                        syntax.Identifier.GetLocation(),
+                        interfaceSymbol.ToDisplayString());
                     return false;
                 }
                 diagnostic = null;

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using SharedTypes.ComInterfaces;
 using Xunit;
 
 namespace ComInterfaceGenerator.Tests;
@@ -26,22 +27,22 @@ public partial class GeneratedComInterfaceTests
         var cw = new StrategyBasedComWrappers();
         var obj = cw.GetOrCreateObjectForComInstance((nint)ptr, CreateObjectFlags.None);
 
-        var intObj = (IComInterface1)obj;
-        Assert.Equal(0, intObj.GetData());
-        intObj.SetData(2);
-        Assert.Equal(2, intObj.GetData());
+        var intObj = (IGetAndSetInt)obj;
+        Assert.Equal(0, intObj.GetInt());
+        intObj.SetInt(2);
+        Assert.Equal(2, intObj.GetInt());
     }
 
     [Fact]
     public unsafe void DerivedInterfaceTypeProvidesBaseInterfaceUnmanagedToManagedMembers()
     {
         // Make sure that we have the correct derived and base types here.
-        Assert.Contains(typeof(IComInterface1), typeof(IDerivedComInterface).GetInterfaces());
+        Assert.Contains(typeof(IGetAndSetInt), typeof(IDerivedComInterface).GetInterfaces());
 
-        IIUnknownDerivedDetails baseInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IComInterface1).TypeHandle);
+        IIUnknownDerivedDetails baseInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IGetAndSetInt).TypeHandle);
         IIUnknownDerivedDetails derivedInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IDerivedComInterface).TypeHandle);
 
-        var numBaseMethods = typeof(IComInterface1).GetMethods().Length;
+        var numBaseMethods = typeof(IGetAndSetInt).GetMethods().Length;
 
         var numPointersToCompare = 3 + numBaseMethods;
 
@@ -60,10 +61,9 @@ public partial class GeneratedComInterfaceTests
         var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
         IDerivedComInterface iface = (IDerivedComInterface)obj;
 
-        Assert.Equal(3, iface.GetData());
-        // https://github.com/dotnet/runtime/issues/85795
-        //iface.SetData(5);
-        //Assert.Equal(5, iface.GetData());
+        Assert.Equal(3, iface.GetInt());
+        iface.SetInt(5);
+        Assert.Equal(5, iface.GetInt());
 
         // https://github.com/dotnet/runtime/issues/85795
         //Assert.Equal("myName", iface.GetName());
@@ -80,10 +80,14 @@ public partial class GeneratedComInterfaceTests
     {
         int data = 3;
         string myName = "myName";
-        public int GetData() => data;
+
+        public int GetInt() => data;
+
         [return: MarshalUsing(typeof(Utf16StringMarshaller))]
         public string GetName() => myName;
-        public void SetData(int n) => data = n;
+
+        public void SetInt(int n) => data = n;
+
         public void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name) => myName = name;
     }
 

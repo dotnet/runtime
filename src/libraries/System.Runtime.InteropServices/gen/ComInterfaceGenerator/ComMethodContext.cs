@@ -18,17 +18,29 @@ namespace Microsoft.Interop
         /// Represents a method, its declaring interface, and its index in the interface's vtable.
         /// This type contains all information necessary to generate the corresponding methods in the ComInterfaceGenerator
         /// </summary>
+        /// <param name="OriginalDeclaringInterface">
+        /// The interface that originally declared the method in user code
+        /// </param>
+        /// <param name="OwningInterface">
+        /// The interface that this methods is being generated for (may be different that OriginalDeclaringInterface if it is an inherited method)
+        /// </param>
+        /// <param name="MethodInfo">The basic information about the method.</param>
+        /// <param name="Index">The index on the interface vtable that points to this method</param>
+        /// <param name="GenerationContext"></param>
         private sealed record ComMethodContext(
-            ComInterfaceContext DeclaringInterface,
-            // TypeKeyOwner is also the interface that the code is being generated for.
-            ComInterfaceContext TypeKeyOwner,
+            ComInterfaceContext OriginalDeclaringInterface,
+            ComInterfaceContext OwningInterface,
             ComMethodInfo MethodInfo,
             int Index,
             IncrementalMethodStubGenerationContext GenerationContext)
         {
-            public bool IsInheritedMethod => DeclaringInterface != TypeKeyOwner;
+            /// <summary>
+            /// A partially constructed <see cref="ComMethodContext"/> that does not have a <see cref="IncrementalMethodStubGenerationContext"/> generated for it yet.
+            /// <see cref="Builder"/> can be constructed without a reference to an ISymbol, whereas the <see cref="IncrementalMethodStubGenerationContext"/> requires an ISymbol
+            /// </summary>
+            public sealed record Builder(ComInterfaceContext OriginalDeclaringInterface, ComMethodInfo MethodInfo, int Index);
 
-            public sealed record Builder(ComInterfaceContext DeclaringInterface, ComMethodInfo MethodInfo, int Index);
+            public bool IsInheritedMethod => OriginalDeclaringInterface != OwningInterface;
 
             public GeneratedMethodContextBase ManagedToUnmanagedStub
             {
@@ -36,7 +48,7 @@ namespace Microsoft.Interop
                 {
                     if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
                     {
-                        return new SkippedStubContext(DeclaringInterface.Info.Type);
+                        return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
                     }
                     var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext);
                     return new GeneratedStubCodeContext(GenerationContext.TypeKeyOwner, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
@@ -60,9 +72,10 @@ namespace Microsoft.Interop
             {
                 // DeclarationCopiedFromBaseDeclaration(<Arguments>) => throw new UnreachableException("This method should not be reached");
                 return MethodInfo.Syntax
+                    .WithModifiers(TokenList())
                     .WithAttributeLists(List<AttributeListSyntax>())
                     .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(
-                        ParseName(DeclaringInterface.Info.Type.FullTypeName)))
+                        ParseName(OriginalDeclaringInterface.Info.Type.FullTypeName)))
                     .WithExpressionBody(ArrowExpressionClause(
                         ThrowExpression(
                             ObjectCreationExpression(
@@ -85,7 +98,7 @@ namespace Microsoft.Interop
                                 MemberAccessExpression(
                                     SyntaxKind.SimpleMemberAccessExpression,
                                     ParenthesizedExpression(
-                                        CastExpression(DeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
+                                        CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                     IdentifierName(MethodInfo.MethodName)),
                                 ArgumentList(
                                     // TODO: RefKind keywords
@@ -99,12 +112,13 @@ namespace Microsoft.Interop
             /// </summary>
             public static List<(ComInterfaceContext TypeKeyOwner, Builder Method)> CalculateAllMethods(IEnumerable<(ComInterfaceContext, SequenceEqualImmutableArray<ComMethodInfo>)> ifaceAndDeclaredMethods, CancellationToken _)
             {
-            // opt : change this to only take in a hierarchy of interfaces. we calc that before and select ober that
-                var ifaceToDeclaredMethodsMap = ifaceAndDeclaredMethods.ToDictionary(static pair => pair.Item1, static pair => pair.Item2);
-                // Track insertion order
-                var allMethodsCache = new Dictionary<ComInterfaceContext, ImmutableArray<Builder>>();
+                // Optimization : This step technically only needs a single interface inheritance hierarchy.
+                // We can calculate all inheritance chains in a previous step and only pass a single inheritance chain to this method.
+                // This way, when a single method changes, we would only need to recalculate this for the inheritance chain in which that method exists.
 
-                List<(ComInterfaceContext TypeKeyOwner, Builder Method)> accumulator = new();
+                var ifaceToDeclaredMethodsMap = ifaceAndDeclaredMethods.ToDictionary(static pair => pair.Item1, static pair => pair.Item2);
+                var allMethodsCache = new Dictionary<ComInterfaceContext, ImmutableArray<Builder>>();
+                var accumulator = new List<(ComInterfaceContext TypeKeyOwner, Builder Method)>();
                 foreach (var kvp in ifaceAndDeclaredMethods)
                 {
                     var methods = AddMethods(kvp.Item1, kvp.Item2);
@@ -115,6 +129,9 @@ namespace Microsoft.Interop
                 }
                 return accumulator;
 
+                /// <summary>
+                /// Adds methods to a cache and returns inherited and declared methods for the interface in vtable order
+                /// </summary>
                 ImmutableArray<Builder> AddMethods(ComInterfaceContext iface, IEnumerable<ComMethodInfo> declaredMethods)
                 {
                     if (allMethodsCache.TryGetValue(iface, out var cachedValue))
