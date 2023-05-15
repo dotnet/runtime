@@ -16,21 +16,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         private static Version ReadRidGraphDisabledVersion = new Version(8, 0);
         public class TestSetup
         {
+            // Explicit RID (environment variable) to set when running the test
+            // Value of null indicates unset (default)
             public string? Rid { get; init; }
 
+            // Represents the configuration (System.Host.Resolution.ReadRidGraph) for whether to read the RID graph
+            // Value of null indicates unset (default setting)
             public bool? ReadRidGraph { get; init; }
-            public bool HasRuntimeFallbacks { get; init; }
 
+            // Whether or not the root deps file has a RID graph
+            public bool HasRidGraph { get; init; }
+
+            // Expected behaviour of the test based on above settings
             public bool ShouldReadRidGraph => ReadRidGraph == true;
-            public bool ShouldUseFallbackRid => ShouldReadRidGraph && (Rid == UnknownRid || !HasRuntimeFallbacks);
+            public bool ShouldUseFallbackRid => ShouldReadRidGraph && (Rid == UnknownRid || !HasRidGraph);
 
             public override string ToString() => $"""
-                RID: {(Rid ?? "<null>")}
-                ReadRidGraph: {(ReadRidGraph.HasValue ? ReadRidGraph : "<null>")}
-                HasRuntimeFallbacks: {HasRuntimeFallbacks}
+                {nameof(Rid)}: {(Rid ?? "<null>")}
+                {nameof(ReadRidGraph)}: {(ReadRidGraph.HasValue ? ReadRidGraph : "<null>")}
+                {nameof(HasRidGraph)}: {HasRidGraph}
                 [computed]
-                  ShouldReadRidGraph: {ShouldReadRidGraph}
-                  ShouldUseFallbackRid: {ShouldUseFallbackRid}
+                  {nameof(ShouldReadRidGraph)}: {ShouldReadRidGraph}
+                  {nameof(ShouldUseFallbackRid)}: {ShouldUseFallbackRid}
                 """;
         };
 
@@ -105,7 +112,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public void RidSpecificAssembly_RidGraph(string rid, string includedPath, string excludedPath)
         {
             RidSpecificAssemblyImpl(
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 includedPath,
                 excludedPath);
         }
@@ -140,7 +147,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             RidSpecificAssemblyImpl(
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 includedPath,
                 excludedPath);
         }
@@ -193,7 +200,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public void RidSpecificNativeLibrary_RidGraph(string rid, string includedPath, string excludedPath)
         {
             RidSpecificNativeLibraryImpl(
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 includedPath, excludedPath);
         }
 
@@ -227,7 +234,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             RidSpecificNativeLibraryImpl(
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                new TestSetup() { Rid = rid, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 includedPath,
                 excludedPath);
         }
@@ -272,7 +279,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithAssemblyGroup("any", g => g.WithAsset("any/ManagedAny.dll"))
                     .WithAssemblyGroup("win", g => g.WithAsset("win/ManagedWin.dll"))
                     .WithAssemblyGroup("win-x64", g => g.WithAsset("win-x64/ManagedWin64.dll")),
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 new ResolvedPaths() { IncludedAssemblyPaths = expectedPath });
         }
 
@@ -332,7 +339,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     }
                 },
                 // RID is computed at run-time
-                new TestSetup() { Rid = null, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                new TestSetup() { Rid = null, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 new ResolvedPaths() { IncludedAssemblyPaths = includedPath, ExcludedAssemblyPaths = excludedPath });
         }
 
@@ -347,7 +354,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithNativeLibraryGroup("any", g => g.WithAsset("any/NativeAny.dll"))
                     .WithNativeLibraryGroup("win", g => g.WithAsset("win/NativeWin.dll"))
                     .WithNativeLibraryGroup("win-x64", g => g.WithAsset("win-x64/NativeWin64.dll")),
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 new ResolvedPaths() { IncludedNativeLibraryPaths = expectedPath });
         }
 
@@ -395,7 +402,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     }
                 },
                 // RID is computed at run-time
-                new TestSetup() { Rid = null, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                new TestSetup() { Rid = null, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 new ResolvedPaths() { IncludedNativeLibraryPaths = includedPath, ExcludedNativeLibraryPaths = excludedPath });
         }
 
@@ -412,7 +419,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithNativeLibraryGroup("win-x64", g => g.WithAsset("native/win-x64/n.dll"))
                     .WithNativeLibraryGroup("win-x86", g => g.WithAsset("native/win-x86/n.dll"))
                     .WithNativeLibraryGroup("linux", g => g.WithAsset("native/linux/n.so")),
-                new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 new ResolvedPaths() { IncludedAssemblyPaths = expectedAssemblyPath, IncludedNativeLibraryPaths = expectedNativePath });
         }
 
@@ -447,7 +454,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithNativeLibraryGroup(CurrentOS, g => g.WithAsset($"native/{CurrentOSAsset}"))
                     .WithNativeLibraryGroup(CurrentRid, g => g.WithAsset($"native/{CurrentRidAsset}")),
                 // RID is computed at run-time
-                new TestSetup() { Rid = null, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                new TestSetup() { Rid = null, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 new ResolvedPaths()
                 {
                     IncludedAssemblyPaths = includedAssemblyPath, ExcludedAssemblyPaths = excludedAssemblyPath,
@@ -480,7 +487,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                         .WithNativeLibraryGroup("linux", g => g.WithAsset("native/linux/n.so")))
                     .WithPackage("ridAgnosticLib", "2.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset("PortableLib.dll").WithAsset("PortableLib2.dll"))),
-                setup: new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
+                setup: new TestSetup() { Rid = rid, HasRidGraph = true, ReadRidGraph = true },
                 // PortableLib and PortableLib2 are from a separate package which has no RID specific assets,
                 // so the RID-agnostic assets are always included
                 expected: new ResolvedPaths()
@@ -532,7 +539,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                         .WithNativeLibraryGroup(DifferentArch, g => g.WithAsset($"native/{DifferentArchAsset}")))
                     .WithPackage("ridAgnosticLib", "1.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset("PortableLib.dll").WithAsset("PortableLib2.dll"))),
-                setup: new TestSetup() { Rid = null, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                setup: new TestSetup() { Rid = null, HasRidGraph = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
                 // PortableLib and PortableLib2 are from a separate package which has no RID specific assets,
                 // so the RID-agnostic assets are always included. noRidMatch is from a package where none of
                 // RID-specific assets match, so the RID-agnostic asset is included.
@@ -604,7 +611,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Build())
             {
                 DotNetCli dotnet;
-                if (setup.HasRuntimeFallbacks)
+                if (setup.HasRidGraph)
                 {
                     // Use the fallbacks from the product when testing the computed RID
                     dotnet = setup.Rid == null ? SharedState.DotNetWithNetCoreApp_RuntimeFallbacks : SharedState.DotNetWithNetCoreApp;
@@ -655,7 +662,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .WithCustomizer(appCustomizer));
 
             DotNetCli dotnet;
-            if (setup.HasRuntimeFallbacks)
+            if (setup.HasRidGraph)
             {
                 // Use the fallbacks from the product when testing the computed RID
                 dotnet = setup.Rid == null ? SharedState.DotNetWithNetCoreApp_RuntimeFallbacks : SharedState.DotNetWithNetCoreApp;
@@ -704,7 +711,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .WithCustomizer(appCustomizer));
 
             TestApp app;
-            if (setup.HasRuntimeFallbacks)
+            if (setup.HasRidGraph)
             {
                 // Use the fallbacks from the product when testing the computed RID
                 app = setup.Rid == null ? SharedState.HostApp_RuntimeFallbacks : SharedState.HostApp;

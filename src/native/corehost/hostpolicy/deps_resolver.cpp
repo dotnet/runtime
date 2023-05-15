@@ -646,7 +646,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                 trace::verbose(_X("Using specified additional deps.json: '%s'"),
                     additional_deps_path.c_str());
 
-                m_additional_deps.push_back(deps_json_t::load_framework_dependent(additional_deps_path, rid_resolution_options));
+                m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(additional_deps_path, rid_resolution_options));
             }
             else
             {
@@ -706,7 +706,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                         trace::verbose(_X("Using specified additional deps.json: '%s'"),
                             json_full_path.c_str());
 
-                        m_additional_deps.push_back(deps_json_t::load_framework_dependent(json_full_path, rid_resolution_options));
+                        m_additional_deps.push_back(deps_json_t::create_for_framework_dependent(json_full_path, rid_resolution_options));
                     }
                 }
             }

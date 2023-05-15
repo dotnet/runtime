@@ -597,7 +597,7 @@ void deps_json_t::load(bool is_framework_dependent, std::function<void(const jso
         post_process(json.document());
 }
 
-std::unique_ptr<deps_json_t> deps_json_t::load_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options)
+std::unique_ptr<deps_json_t> deps_json_t::create_for_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options)
 {
     std::unique_ptr<deps_json_t> deps = std::unique_ptr<deps_json_t>(new deps_json_t(deps_path, rid_resolution_options));
     if (rid_resolution_options.use_fallback_graph)
@@ -617,7 +617,7 @@ std::unique_ptr<deps_json_t> deps_json_t::load_self_contained(const pal::string_
     return deps;
 }
 
-std::unique_ptr<deps_json_t> deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options)
+std::unique_ptr<deps_json_t> deps_json_t::create_for_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options)
 {
     std::unique_ptr<deps_json_t> deps = std::unique_ptr<deps_json_t>(new deps_json_t(deps_path, rid_resolution_options));
     deps->load(true);

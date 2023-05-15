@@ -78,11 +78,11 @@ public:
             // framework, but framework-dependent is specified (for example, components)
             if (i != lowest_framework || (lowest_framework == 0 && m_is_framework_dependent))
             {
-                m_fx_deps[i] = deps_json_t::load_framework_dependent(deps_file, rid_resolution_options);
+                m_fx_deps[i] = deps_json_t::create_for_framework_dependent(deps_file, rid_resolution_options);
             }
             else
             {
-                m_fx_deps[i] = deps_json_t::load_self_contained(deps_file, rid_resolution_options);
+                m_fx_deps[i] = deps_json_t::create_for_self_contained(deps_file, rid_resolution_options);
             }
         }
 

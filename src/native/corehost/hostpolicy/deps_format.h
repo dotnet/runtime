@@ -62,12 +62,12 @@ public:
     }
 
 public: // static
-    // Load a self-contained deps file
+    // Create a deps_json_t instance from a self-contained deps file
     // If rid_resolution_options specify to read the RID fallback graph, it will be updated with the fallback_graph.
-    static std::unique_ptr<deps_json_t> load_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options);
+    static std::unique_ptr<deps_json_t> create_for_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options);
 
-    // Load a framework-dependent deps file
-    static std::unique_ptr<deps_json_t> load_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options);
+    // Create a deps_json_t instance from a framework-dependent deps file
+    static std::unique_ptr<deps_json_t> create_for_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options);
 
     // Get the RID fallback graph for a deps file.
     // Parse failures or non-existent files will return an empty fallback graph
