@@ -127,34 +127,6 @@ namespace Microsoft.Interop
             context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
         }
 
-        internal static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
-        {
-            const string CallConvsField = "CallConvs";
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Builder callingConventions = ImmutableArray.CreateBuilder<FunctionPointerUnmanagedCallingConventionSyntax>();
-
-            if (suppressGCTransitionAttribute is not null)
-            {
-                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier("SuppressGCTransition")));
-            }
-            if (unmanagedCallConvAttribute is not null)
-            {
-                foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
-                {
-                    if (arg.Key == CallConvsField)
-                    {
-                        foreach (TypedConstant callConv in arg.Value.Values)
-                        {
-                            ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
-                            if (callConvSymbol.Name.StartsWith("CallConv", StringComparison.Ordinal))
-                            {
-                                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
-                            }
-                        }
-                    }
-                }
-            }
-            return callingConventions.ToImmutable();
-        }
         private static VirtualMethodIndexCompilationData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
         {
             // Found the attribute, but it has an error so report the error.
@@ -308,7 +280,7 @@ namespace Microsoft.Interop
 
             var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripAccessibilityModifiers().StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
 
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultCallingConventions: ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Empty);
 
             var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 

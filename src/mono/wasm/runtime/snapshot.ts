@@ -4,7 +4,7 @@
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { ENVIRONMENT_IS_WEB, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
@@ -159,7 +159,7 @@ async function getCacheKey(): Promise<string | null> {
     // Now we remove assets collection from the hash.
     delete inputs.assets;
     // some things are calculated at runtime, so we need to add them to the hash
-    inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
+    inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for memory snapshot
@@ -175,6 +175,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
+    delete inputs.assetUniqueQuery;
 
     inputs.GitHash = GitHash;
     inputs.ProductVersion = ProductVersion;

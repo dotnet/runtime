@@ -174,9 +174,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ObjCopyNameAlternative Condition="$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(_IsApplePlatform)' == 'true'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(_IsApplePlatform)' == 'true'" Text="Platform linker ('$(CppLinker)') not found in PATH. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' != ''"
-      Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Try installing appropriate package for $(CppLinker) or $(CppCompilerAndLinkerAlternative) to resolve the problem." />
+      Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 

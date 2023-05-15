@@ -47,18 +47,18 @@ namespace System.Net.Http.Headers
 
         public ViaHeaderValue(string protocolVersion, string receivedBy, string? protocolName, string? comment)
         {
-            HeaderUtilities.CheckValidToken(protocolVersion, nameof(protocolVersion));
+            HeaderUtilities.CheckValidToken(protocolVersion);
             CheckReceivedBy(receivedBy);
 
             if (!string.IsNullOrEmpty(protocolName))
             {
-                HeaderUtilities.CheckValidToken(protocolName, nameof(protocolName));
+                HeaderUtilities.CheckValidToken(protocolName);
                 _protocolName = protocolName;
             }
 
             if (!string.IsNullOrEmpty(comment))
             {
-                HeaderUtilities.CheckValidComment(comment, nameof(comment));
+                HeaderUtilities.CheckValidComment(comment);
                 _comment = comment;
             }
 
@@ -275,10 +275,7 @@ namespace System.Net.Http.Headers
 
         private static void CheckReceivedBy(string receivedBy)
         {
-            if (string.IsNullOrEmpty(receivedBy))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(receivedBy));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(receivedBy);
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.;

@@ -268,20 +268,6 @@
       Category="clr" />
   </ItemGroup>
 
-  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and $([MSBuild]::IsOsPlatform(Windows)) and '$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' == 'x64'">
-    <ProjectToBuild
-      Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
-                            HostArchitecture=x86;
-                            PgoInstrument=false;
-                            NoPgoOptimize=true;
-                            CrossBuild=false;
-                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
-      UndefineProperties="EnableNativeSanitizers"
-      Category="clr" />
-  </ItemGroup>
-
   <!-- Build the debugging components of CoreCLR for the same target architecture as an unsanitized build whenever we build a sanitized coreclr build. -->
   <ItemGroup Condition="'$(ClrRuntimeBuildSubsets)' != '' and '$(EnableNativeSanitizers)' != ''">
     <ProjectToBuild

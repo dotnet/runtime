@@ -3869,6 +3869,9 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Argument_EmptyOrWhiteSpaceString" xml:space="preserve">
+    <value>The value cannot be an empty string or composed entirely of whitespace.</value>
+  </data>
   <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
     <value>FrameworkName is invalid.</value>
   </data>
@@ -4219,5 +4222,8 @@
   </data>
   <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
     <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
+  </data>
+  <data name="OutOfMemory_StringTooLong" xml:space="preserve">
+    <value>String length exceeded supported range.</value>
   </data>
 </root>

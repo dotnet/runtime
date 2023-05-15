@@ -1284,7 +1284,7 @@ __inline bool IsCultureEnglishOrInvariant(LPCWSTR localeName)
     LIMITED_METHOD_CONTRACT;
     if (localeName != NULL &&
         (localeName[0] == W('\0') ||
-         wcscmp(localeName, W("en-US")) == 0))
+         u16_strcmp(localeName, W("en-US")) == 0))
     {
         return true;
     }

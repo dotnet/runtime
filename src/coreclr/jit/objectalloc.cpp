@@ -530,7 +530,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         //------------------------------------------------------------------------
 
         GenTree* tree = comp->gtNewLclvNode(lclNum, TYP_STRUCT);
-        tree          = comp->gtNewBlkOpNode(tree, comp->gtNewIconNode(0));
+        tree          = comp->gtNewAssignNode(tree, comp->gtNewIconNode(0));
 
         Statement* newStmt = comp->gtNewStmt(tree);
 

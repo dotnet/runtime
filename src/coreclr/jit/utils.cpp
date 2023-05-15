@@ -1054,6 +1054,19 @@ void FixedBitVect::bitVectSet(UINT bitNum)
     bitVect[index] |= bitNumToBit(bitNum);
 }
 
+// bitVectClear() - Clears the given bit
+void FixedBitVect::bitVectClear(UINT bitNum)
+{
+    UINT index;
+
+    assert(bitNum <= bitVectSize);
+
+    index = bitNum / bitChunkSize();
+    bitNum -= index * bitChunkSize();
+
+    bitVect[index] &= ~bitNumToBit(bitNum);
+}
+
 // bitVectTest() - Tests the given bit
 bool FixedBitVect::bitVectTest(UINT bitNum)
 {
@@ -1463,6 +1476,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
 

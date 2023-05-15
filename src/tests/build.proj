@@ -115,7 +115,7 @@
     </RemoveDuplicates>
     <ItemGroup>
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
-      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/System.Net.Quic.dll" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
       <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>

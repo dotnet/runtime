@@ -917,16 +917,16 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
-    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field, isGCType);
 }
 
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
-    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
 }
 
 // Returns true iff "fldHnd" represents a static field.
@@ -1139,60 +1139,6 @@ CorInfoHFAElemType MyICJI::getHFAType(CORINFO_CLASS_HANDLE hClass)
     jitInstance->mc->cr->AddCall("getHFAType");
     CorInfoHFAElemType value = jitInstance->mc->repGetHFAType(hClass);
     return value;
-}
-
-/*****************************************************************************
-* ICorErrorInfo contains methods to deal with SEH exceptions being thrown
-* from the corinfo interface.  These methods may be called when an exception
-* with code EXCEPTION_COMPLUS is caught.
-*****************************************************************************/
-
-// Returns the HRESULT of the current exception
-HRESULT MyICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("GetErrorHRESULT");
-    LogError("Hit unimplemented GetErrorHRESULT");
-    DebugBreakorAV(76);
-    return 0;
-}
-
-// Fetches the message of the current exception
-// Returns the size of the message (including terminating null). This can be
-// greater than bufferLength if the buffer is insufficient.
-uint32_t MyICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
-{
-    jitInstance->mc->cr->AddCall("GetErrorMessage");
-    LogError("Hit unimplemented GetErrorMessage");
-    DebugBreakorAV(77);
-    return 0;
-}
-
-// returns EXCEPTION_EXECUTE_HANDLER if it is OK for the compile to handle the
-//                        exception, abort some work (like the inlining) and continue compilation
-// returns EXCEPTION_CONTINUE_SEARCH if exception must always be handled by the EE
-//                    things like ThreadStoppedException ...
-// returns EXCEPTION_CONTINUE_EXECUTION if exception is fixed up by the EE
-
-int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("FilterException");
-    int result = jitInstance->mc->repFilterException(pExceptionPointers);
-    return result;
-}
-
-void MyICJI::ThrowExceptionForJitResult(HRESULT result)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
-    LogError("Hit unimplemented ThrowExceptionForJitResult");
-    DebugBreakorAV(80);
-}
-
-// Throws an exception defined by the given throw helper.
-void MyICJI::ThrowExceptionForHelper(const CORINFO_HELPER_DESC* throwHelper)
-{
-    jitInstance->mc->cr->AddCall("ThrowExceptionForHelper");
-    LogError("Hit unimplemented ThrowExceptionForHelper");
-    DebugBreakorAV(81);
 }
 
 /*****************************************************************************

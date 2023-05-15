@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert, MonoType, MonoMethod } from "./types";
+import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import {
@@ -11,7 +11,7 @@ import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions
+    recordFailure, getOptions, bytesFromHex
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -157,7 +157,7 @@ class TrampolineInfo {
 }
 
 // this is cached replacements for Module.getWasmTableEntry();
-// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
+// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" />
 // if we need to export the original
 function getWasmTableEntry(index: number) {
     let result = fnCache[index];
@@ -236,9 +236,7 @@ function getIsWasmEhSupported(): boolean {
     // Probe whether the current environment can handle wasm exceptions
     try {
         // Load and compile the wasm version of do_jit_call_indirect. This serves as a way to probe for wasm EH
-        const bytes = new Uint8Array(doJitCall16.length / 2);
-        for (let i = 0; i < doJitCall16.length; i += 2)
-            bytes[i / 2] = parseInt(doJitCall16.substring(i, i + 2), 16);
+        const bytes = bytesFromHex(doJitCall16);
 
         counters.bytesGenerated += bytes.length;
         doJitCallModule = new WebAssembly.Module(bytes);
@@ -396,7 +394,12 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++)
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], false, trampImports[i][2]);
+
+        // Assign import indices so they get emitted in the import section
+        for (let i = 0; i < trampImports.length; i++)
+            builder.markImportAsUsed(trampImports[i][0]);
+
         builder._generateImportSection();
 
         // Function section
@@ -444,12 +447,9 @@ export function mono_interp_flush_jitcall_queue(): void {
             console.log(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
+        const wasmImports = builder.getWasmImports();
 
-        const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: builder.getImportedFunctionTable(),
-            c: <any>builder.getConstants(),
-            m: { h: (<any>Module).asm.memory }
-        });
+        const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
