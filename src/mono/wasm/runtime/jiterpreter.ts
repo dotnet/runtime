@@ -44,9 +44,6 @@ export const
     traceTooSmall = false,
     // For instrumented methods, trace their exact IP during execution
     traceEip = false,
-    // Wraps traces in a JS function that will trap errors and log the trace responsible.
-    // Very expensive!!!!
-    trapTraceErrors = false,
     // When eliminating a null check, replace it with a runtime 'not null' assertion
     //  that will print a diagnostic message if the value is actually null or if
     //  the value does not match the value on the native interpreter stack in memory
@@ -183,8 +180,6 @@ struct InterpMethod {
 export let traceBuilder: WasmBuilder;
 export let traceImports: Array<[string, string, Function]> | undefined;
 
-export let _wrap_trace_function: Function;
-
 const mathOps1d =
     [
         "asin",
@@ -319,45 +314,6 @@ function getTraceImports() {
     return traceImports;
 }
 
-function wrap_trace_function(
-    f: Function, name: string, traceBuf: any,
-    base: MintOpcodePtr, instrumentedTraceId: number
-) {
-    const tup = instrumentedTraces[instrumentedTraceId];
-    if (instrumentedTraceId)
-        console.log(`instrumented ${tup.name}`);
-
-    if (!_wrap_trace_function) {
-        // If we used a regular closure, the js console would print the entirety of
-        //  dotnet.native.js when printing an error stack trace, which is... not helpful
-        const js = `return function trace_enter (locals) {
-            let threw = true;
-            try {
-                let result = trace(locals);
-                threw = false;
-                return result;
-            } finally {
-                if (threw) {
-                    let msg = "Unhandled error in trace '" + name + "'";
-                    if (tup) {
-                        msg += " at offset " + (tup.eip + base).toString(16);
-                        msg += " with most recent operands " + tup.operand1.toString(16) + ", " + tup.operand2.toString(16);
-                    }
-                    console.error(msg);
-                    if (traceBuf) {
-                        for (let i = 0, l = traceBuf.length; i < l; i++)
-                            console.log(traceBuf[i]);
-                    }
-                }
-            }
-        };`;
-        _wrap_trace_function = new Function("trace", "name", "traceBuf", "tup", "base", js);
-    }
-    return _wrap_trace_function(
-        f, name, traceBuf, instrumentedTraces[instrumentedTraceId], base
-    );
-}
-
 function initialize_builder(builder: WasmBuilder) {
     // Function type for compiled traces
     builder.defineType(
@@ -379,7 +335,8 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "copy_ptr", {
+        "copy_ptr",
+        {
             "dest": WasmValtype.i32,
             "src": WasmValtype.i32
         },
@@ -696,25 +653,31 @@ function initialize_builder(builder: WasmBuilder) {
         WasmValtype.i32, true
     );
     builder.defineType(
-        "simd_p_p", {
+        "simd_p_p",
+        {
             "arg0": WasmValtype.i32,
             "arg1": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "simd_p_pp", {
+        "simd_p_pp",
+        {
             "arg0": WasmValtype.i32,
             "arg1": WasmValtype.i32,
             "arg2": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
     builder.defineType(
-        "simd_p_ppp", {
+        "simd_p_ppp",
+        {
             "arg0": WasmValtype.i32,
             "arg1": WasmValtype.i32,
             "arg2": WasmValtype.i32,
             "arg3": WasmValtype.i32,
-        }, WasmValtype.void, true
+        },
+        WasmValtype.void, true
     );
 
     const traceImports = getTraceImports();
@@ -887,15 +850,7 @@ function generate_wasm(
         rejected = false;
         mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        const idx =
-            trapTraceErrors
-                ? Module.addFunction(
-                    wrap_trace_function(
-                        <any>fn, methodFullName || methodName, traceOnRuntimeError ? builder.traceBuf : undefined,
-                        builder.base, instrumentedTraceId
-                    ), "iii"
-                )
-                : addWasmFunctionPointer(<any>fn);
+        const idx = addWasmFunctionPointer(<any>fn);
         if (!idx)
             throw new Error("add_function_pointer returned a 0 index");
         else if (trace >= 2)
@@ -1021,7 +976,7 @@ export function mono_interp_tier_prepare_jiterpreter(
 
     counters.traceCandidates++;
     let methodFullName: string | undefined;
-    if (trapTraceErrors || mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
+    if (mostRecentOptions.estimateHeat || (instrumentedMethodNames.length > 0) || useFullNames) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = Module.UTF8ToString(pMethodName);
         Module._free(<any>pMethodName);
@@ -1218,7 +1173,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     for (const k in counters.simdFallback)
         console.log(`// simd ${k}: ${counters.simdFallback[k]} fallback insn(s)`);
 
-    if ((typeof(globalThis.setTimeout) === "function") && (b !== undefined))
+    if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
         setTimeout(
             () => jiterpreter_dump_stats(b),
             15000

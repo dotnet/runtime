@@ -290,7 +290,7 @@ export class HostBuilder implements DotnetHostBuilder {
         deep_merge_config(monoConfig, {
             startupOptions
         });
-        return this.withConfigSrc("blazor.boot.json");
+        return this;
     }
 
     async create(): Promise<RuntimeAPI> {
@@ -402,12 +402,18 @@ function initializeModules(es6Modules: [RuntimeModuleExportsInternal, NativeModu
 }
 
 async function createEmscriptenMain(): Promise<RuntimeAPI> {
+    await init_polyfills(module);
+
     if (!module.configSrc && (!module.config || Object.keys(module.config).length === 0 || !module.config.assets)) {
         // if config file location nor assets are provided
-        module.configSrc = "./mono-config.json";
+        if (loaderHelpers.scriptDirectory.indexOf("/_framework") == -1) {
+            // we are not inside _framework (= wasm template)
+            module.configSrc = "./_framework/blazor.boot.json";
+        } else {
+            // blazor app
+            module.configSrc = "./blazor.boot.json";
+        }
     }
-
-    await init_polyfills(module);
 
     // download config
     await mono_wasm_load_config(module);

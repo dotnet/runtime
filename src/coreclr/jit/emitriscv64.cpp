@@ -2447,9 +2447,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             else
                             {
                                 assert((-0x100000 <= imm) && (imm < 0x100000));
-                                assert((INS_bne & 0xefff) == INS_beq);
+                                assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
 
-                                code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                                code = emitInsCode(ins) ^ 0x1000;
                                 code |= (code_t)reg1 << 15; /* rj */
                                 code |= (code_t)reg2 << 20; /* rd */
                                 code |= 0x8 << 7;
@@ -2469,10 +2469,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         else if ((INS_blt <= ins) && (ins <= INS_bgeu))
                         {
                             assert((-0x100000 <= imm) && (imm < 0x100000));
-                            assert((INS_bge & 0xefff) == INS_blt);
-                            assert((INS_bgeu & 0xefff) == INS_bltu);
+                            assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
+                            assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
 
-                            code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                            code = emitInsCode(ins) ^ 0x1000;
                             code |= (code_t)reg1 << 15; /* rj */
                             code |= (code_t)reg2 << 20; /* rd */
                             code |= 0x8 << 7;
