@@ -91,7 +91,7 @@ if (MSVC)
     add_linker_flag(/INCREMENTAL:NO DEBUG)
     add_linker_flag(/OPT:REF DEBUG)
     add_linker_flag(/OPT:NOICF DEBUG)
-  endif (CMAKE_GENERATOR MATCHES "(Visual Studio)")
+  endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
 
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
