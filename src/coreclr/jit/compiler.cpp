@@ -5371,11 +5371,8 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                             bbHavingAlign->bbNum, loopTop->bbNum);
                 }
 
-                if (bbHavingAlign != nullptr)
-                {
-                    madeChanges = true;
-                    bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
-                }
+                madeChanges = true;
+                bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
 
             minBlockSoFar         = BB_MAX_WEIGHT;
