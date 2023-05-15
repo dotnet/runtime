@@ -87,7 +87,8 @@ if (MSVC)
 
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
-    # until https://github.com/dotnet/runtime/issues/64082 is fixed.
+    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
+    # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
     add_linker_flag(/INCREMENTAL:NO DEBUG)
     add_linker_flag(/OPT:REF DEBUG)
     add_linker_flag(/OPT:NOICF DEBUG)
