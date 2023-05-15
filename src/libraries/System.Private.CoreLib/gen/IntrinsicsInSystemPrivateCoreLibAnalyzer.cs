@@ -440,15 +440,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
 
         private static INamespaceSymbol? SymbolToNamespaceSymbol(ISymbol symbol)
         {
-            if (symbol.ContainingType != null)
-                return SymbolToNamespaceSymbol(symbol.ContainingType);
-
-            if (symbol.ContainingNamespace != null)
-            {
-                return symbol.ContainingNamespace;
-            }
-
-            return null;
+            return symbol.ContainingNamespace;
         }
         private static void AnalyzeOperation(IOperation operation, IMethodSymbol methodSymbol, OperationAnalysisContext context, IntrinsicsAnalyzerOnLoadData onLoadData)
         {
