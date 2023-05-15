@@ -179,7 +179,7 @@ namespace System.Buffers
         {
             ref short currentSearchSpace = ref searchSpace;
 
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
@@ -236,7 +236,9 @@ namespace System.Buffers
 
             Vector128<byte> bitmap = bitmapRef._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 characters (2 * Vector128<short>).
                 // We're mainly interested in a single byte of each character, and the core lookup operates on a Vector128<byte>.
@@ -408,7 +410,7 @@ namespace System.Buffers
         {
             ref byte currentSearchSpace = ref searchSpace;
 
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
@@ -518,7 +520,7 @@ namespace System.Buffers
         {
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
@@ -628,7 +630,7 @@ namespace System.Buffers
         {
             ref byte currentSearchSpace = ref searchSpace;
 
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
@@ -685,7 +687,9 @@ namespace System.Buffers
             Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
             Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -740,7 +744,7 @@ namespace System.Buffers
         {
             ref byte currentSearchSpace = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
             {
 #pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
@@ -797,7 +801,9 @@ namespace System.Buffers
             Vector128<byte> bitmap0 = bitmapsRef._lower._lower;
             Vector128<byte> bitmap1 = bitmapsRef._upper._lower;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The behavior of the rest of the function remains the same if Avx2.IsSupported is false
             if (!Avx2.IsSupported && searchSpaceLength > Vector128<byte>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 // Process the input in chunks of 16 bytes.
                 // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
