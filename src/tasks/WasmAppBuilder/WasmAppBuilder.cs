@@ -162,7 +162,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 {
                     var pdb = Path.ChangeExtension(assembly, ".pdb");
                     if (File.Exists(pdb))
+                    {
+                        if (config.resources.pdb == null)
+                            config.resources.pdb = new();
+
                         config.resources.pdb[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                    }
                 }
             }
         }
