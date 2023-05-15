@@ -573,6 +573,30 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
 }
 
 /*********************************************************************/
+// helper function to truncate double numbers to nearest integer (round towards zero)
+double TrucateDouble(double val)
+{
+    FCALL_CONTRACT;
+    int64_t *dintVal = (int64_t *)&val;
+
+    uint64_t uintVal = (uint64_t)*dintVal;
+    int exponent = (int)((uintVal >> 52) & 0x7FF);
+    if (exponent < 1023)
+    {
+        uintVal = uintVal & 0x8000000000000000ull;
+    }
+    else if (exponent < 1075)
+    {
+        uintVal = uintVal &  (unsigned long long)(~(0xFFFFFFFFFFFFF >> (exponent - 1023)));
+    }
+    int64_t intVal = (int64_t)uintVal;
+    double *doubleVal = (double *)&intVal;
+    double retVal = *doubleVal;
+
+    return retVal;
+}
+
+/*********************************************************************/
 HCIMPL1_V(UINT32, JIT_Dbl2UIntOvf, double val)
 {
     FCALL_CONTRACT;
@@ -592,7 +616,9 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
     const double uint64_max_plus_1 = -2.0 * (double)INT64_MIN;
-    return ((val != val) || ((val < 0) && (val + 1 <= 0)) || (val >= uint64_max_plus_1)) ? UINT64_MAX : ((val < 0) && (val + 1 > 0)) ? 0 : (UINT64)val;
+    val = TrucateDouble(val);
+    //return ((val != val) || ((val < 0) && (val + 1 < 0)) || (val >= uint64_max_plus_1)) ? UINT64_MAX : ((val < 0) && (val + 1 > 0)) ? 0 : (UINT64)val;
+    return ((val != val) || (val < 0) || (val >= uint64_max_plus_1)) ? UINT64_MAX : (UINT64)val;
 
 #else
     const double two63  = 2147483648.0 * 4294967296.0;
