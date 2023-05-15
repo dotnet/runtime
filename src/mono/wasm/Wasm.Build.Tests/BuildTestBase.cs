@@ -19,6 +19,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Microsoft.Playwright;
+using System.Runtime.Serialization.Json;
+using Microsoft.NET.Sdk.WebAssembly;
 
 #nullable enable
 
@@ -834,6 +836,33 @@ namespace Wasm.Build.Tests
                         dotnetJsPath!,
                         "Expected dotnet.native.js to be same as the runtime pack",
                         same: dotnetWasmFromRuntimePack);
+
+            string bootConfigPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
+            Assert.True(File.Exists(bootConfigPath), $"Missing '{bootConfigPath}'");
+
+            using (var bootConfigContent = File.OpenRead(bootConfigPath))
+            {
+                var bootConfig = ParseBootData(bootConfigContent);
+                foreach (var dotnetJs in bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")))
+                {
+                    Assert.DoesNotContain(dotnetJs, "..");
+
+                    string dotnetJsAbsolutePath = Path.Combine(binFrameworkDir, dotnetJs);
+                    Assert.True(File.Exists(dotnetJsPath), $"Missing '{dotnetJsAbsolutePath}'");
+                }
+            }
+        }
+
+        private static BootJsonData ParseBootData(Stream stream)
+        {
+            stream.Position = 0;
+            var serializer = new DataContractJsonSerializer(
+                typeof(BootJsonData),
+                new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
+
+            var config = (BootJsonData?)serializer.ReadObject(stream);
+            Assert.NotNull(config);
+            return config;
         }
 
         protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir=null)
