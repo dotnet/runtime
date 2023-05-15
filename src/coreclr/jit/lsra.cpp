@@ -460,10 +460,10 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 // Return Value:
 //     New regMask that has minRegCount registers after instersection.
 //     Otherwise returns regMaskActual.
-regMaskTP LinearScan::getConstrainedRegMask(const RefPosition* refPosition,
-                                            regMaskTP          regMaskActual,
-                                            regMaskTP          regMaskConstraint,
-                                            unsigned           minRegCount)
+regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
+                                            regMaskTP    regMaskActual,
+                                            regMaskTP    regMaskConstraint,
+                                            unsigned     minRegCount)
 {
     regMaskTP newMask = regMaskActual & regMaskConstraint;
     if (genCountBits(newMask) < minRegCount)
