@@ -268,7 +268,8 @@ namespace Tracing.Tests
             OperatingSystem.IsAndroid() ||
             OperatingSystem.IsIOS() ||
             OperatingSystem.IsTvOS() ||
-            OperatingSystem.IsBrowser();
+            OperatingSystem.IsBrowser() ||
+            OperatingSystem.IsWasi();
 
         private ConsoleColor ConsoleForegroundColor
         {
