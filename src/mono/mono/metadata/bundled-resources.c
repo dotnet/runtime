@@ -45,9 +45,9 @@ mono_bundled_resources_free_bundled_resource_func (void *resource)
 	MonoBundledResource *bundled_resource = (MonoBundledResource *)resource;
 
 	if (bundled_resource->type == MONO_BUNDLED_SATELLITE_ASSEMBLY)
-		free ((void *)bundled_resource->id);
+		g_free ((void *)bundled_resource->id);
 
-	free (resource);
+	g_free (resource);
 }
 
 //---------------------------------------------------------------------------------------
