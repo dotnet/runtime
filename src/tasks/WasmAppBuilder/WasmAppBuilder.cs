@@ -176,6 +176,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         ProcessSatelliteAssemblies(args =>
         {
+            if (config.resources.satelliteResources == null)
+                config.resources.satelliteResources = new();
+
             string name = Path.GetFileName(args.fullPath);
             string directory = Path.Combine(AppDir, args.culture);
             Directory.CreateDirectory(directory);
