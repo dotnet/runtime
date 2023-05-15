@@ -128,12 +128,13 @@ export class WebAssemblyResourceLoader {
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
         const fetchOptions: RequestInit = {
-            cache: networkFetchCacheMode,
-            integrity: this.bootConfig.cacheBootResources ? contentHash : undefined,
+            cache: networkFetchCacheMode
         };
 
         if (resourceType === "configuration") {
             fetchOptions.credentials = "include";
+        } else {
+            fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
         }
 
         return fetch(url, fetchOptions);
