@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { assertNever } from "../../types";
+import { assertNever } from "../../types/internal";
 import { VoidPtr } from "../../types/emscripten";
 import { Module } from "../../globals";
 import type { CommonSocket } from "./common-socket";

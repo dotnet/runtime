@@ -86,16 +86,16 @@ namespace System.Text.Json.Reflection
             return ((TypeWrapper)type).Location;
         }
 
-        public static Location? GetDiagnosticLocation(this PropertyInfo propertyInfo)
+        public static Location? GetDiagnosticLocation(this MemberInfo memberInfo)
         {
-            Debug.Assert(propertyInfo is PropertyInfoWrapper);
-            return ((PropertyInfoWrapper)propertyInfo).Location;
+            Debug.Assert(memberInfo is FieldInfoWrapper or PropertyInfoWrapper);
+            return memberInfo is PropertyInfoWrapper w ? w.Location : ((FieldInfoWrapper)memberInfo).Location;
         }
 
-        public static Location? GetDiagnosticLocation(this FieldInfo fieldInfo)
+        public static Type GetMemberType(this MemberInfo memberInfo)
         {
-            Debug.Assert(fieldInfo is FieldInfoWrapper);
-            return ((FieldInfoWrapper)fieldInfo).Location;
+            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
+            return memberInfo is FieldInfo fI ? fI.FieldType : ((PropertyInfo)memberInfo).PropertyType;
         }
     }
 }

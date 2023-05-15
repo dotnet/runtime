@@ -5,7 +5,7 @@ import type {
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
-} from "./types";
+} from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { disableLegacyJsInterop, Module } from "./globals";
