@@ -148,8 +148,6 @@ namespace System.Formats.Asn1.Tests.Reader
 
             if (output.Length > 0)
             {
-                output[0] = 'a';
-
                 copied = reader.TryReadCharacterString(
                     output.AsSpan(0, expectedValue.Length - 1),
                     UniversalTagNumber.UTF8String,
@@ -157,7 +155,6 @@ namespace System.Formats.Asn1.Tests.Reader
 
                 Assert.False(copied, "reader.TryCopyUTF8String - too short");
                 Assert.Equal(0, charsWritten);
-                Assert.Equal('a', output[0]);
             }
 
             copied = reader.TryReadCharacterString(

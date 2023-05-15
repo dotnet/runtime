@@ -173,7 +173,7 @@ namespace Mono.Linker.Steps
                     continue;
 
                 bool match = true;
-                for (int ii = 0; match && ii != args.Length; ++ii)
+                for (int ii = 0; match && ii < args.Length; ++ii)
                 {
                     //
                     // No candidates betterness, only exact matches are supported

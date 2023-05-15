@@ -341,7 +341,7 @@ namespace System.Net.Mail
 
         internal void SetContentTypeName(bool allowUnicode)
         {
-            if (!allowUnicode && _name != null && _name.Length != 0 && !MimeBasePart.IsAscii(_name, false))
+            if (!allowUnicode && !string.IsNullOrEmpty(_name) && !MimeBasePart.IsAscii(_name, false))
             {
                 Encoding encoding = NameEncoding ?? Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
                 MimePart.ContentType.Name = MimeBasePart.EncodeHeaderValue(_name, encoding, MimeBasePart.ShouldUseBase64Encoding(encoding));

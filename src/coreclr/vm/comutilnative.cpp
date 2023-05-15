@@ -1210,6 +1210,35 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+
+extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    QCALL_CONTRACT;
+
+    int result = 0;
+
+    BEGIN_QCALL;
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    result = GCInterface::RefreshMemoryLimit();
+    END_QCALL;
+
+    return result;
+}
+
+int GCInterface::RefreshMemoryLimit()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
+}
+
 #ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
 #else // HOST_64BIT

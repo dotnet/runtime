@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -37,6 +38,7 @@ namespace System.Net.Primitives.Functional.Tests
         public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString.AsSpan());
         public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString.AsSpan(), out address);
         public virtual bool TryFormat(IPAddress address, Span<char> destination, out int charsWritten) => address.TryFormat(destination, out charsWritten);
+        public virtual bool TryFormat(IPAddress address, Span<byte> utf8Destination, out int bytesWritten) => address.TryFormat(utf8Destination, out bytesWritten);
 
         [Theory]
         [MemberData(nameof(ValidIpv4Addresses))]
@@ -45,10 +47,49 @@ namespace System.Net.Primitives.Functional.Tests
         {
             _ = expected;
             IPAddress address = Parse(addressString);
-            var result = new char[address.ToString().Length - 1];
-            Assert.False(TryFormat(address, new Span<char>(result), out int charsWritten));
-            Assert.Equal(0, charsWritten);
-            Assert.Equal<char>(new char[result.Length], result);
+
+            // UTF16
+            {
+                var result = new char[address.ToString().Length - 1];
+                Assert.False(TryFormat(address, new Span<char>(result), out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
+
+            // UTF8
+            {
+                var result = new byte[address.ToString().Length - 1];
+                Assert.False(TryFormat(address, new Span<byte>(result), out int bytesWritten));
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Addresses))]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryFormat_ProvidedBufferExactRightSize_Success(string addressString, string expected)
+        {
+            IPAddress address = Parse(addressString);
+            int requiredLength = address.ToString().Length;
+
+            // UTF16
+            {
+                var exactRequired = new char[requiredLength];
+                Assert.True(TryFormat(address, new Span<char>(exactRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    new string(exactRequired));
+            }
+
+            // UTF8
+            {
+                var exactRequired = new byte[requiredLength];
+                Assert.True(TryFormat(address, new Span<byte>(exactRequired), out int bytesWritten));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    Encoding.UTF8.GetString(exactRequired));
+            }
         }
 
         [Theory]
@@ -57,18 +98,27 @@ namespace System.Net.Primitives.Functional.Tests
         public void TryFormat_ProvidedBufferLargerThanNeeded_Success(string addressString, string expected)
         {
             IPAddress address = Parse(addressString);
+            int requiredLength = address.ToString().Length;
 
-            const int IPv4MaxLength = 15; // TryFormat currently requires at least this amount of space for IPv4 addresses
-            int requiredLength = address.AddressFamily == AddressFamily.InterNetwork ?
-                IPv4MaxLength :
-                address.ToString().Length;
+            // UTF16
+            {
+                var largerThanRequired = new char[requiredLength + 1];
+                Assert.True(TryFormat(address, new Span<char>(largerThanRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    new string(largerThanRequired, 0, charsWritten));
+            }
 
-            var largerThanRequired = new char[requiredLength + 1];
-            Assert.True(TryFormat(address, new Span<char>(largerThanRequired), out int charsWritten));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(
-                address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
-                new string(largerThanRequired, 0, charsWritten));
+            // UTF8
+            {
+                var largerThanRequired = new byte[requiredLength + 1];
+                Assert.True(TryFormat(address, new Span<byte>(largerThanRequired), out int charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal(
+                    address.AddressFamily == AddressFamily.InterNetworkV6 ? expected.ToLowerInvariant() : expected,
+                    Encoding.UTF8.GetString(largerThanRequired.AsSpan(0, charsWritten)));
+            }
         }
     }
 

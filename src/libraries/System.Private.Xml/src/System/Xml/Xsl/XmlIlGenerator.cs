@@ -49,6 +49,7 @@ namespace System.Xml.Xsl
     /// As visits to each node in the tree start and end, various Analyzers are invoked.  These Analyzers incrementally
     /// collect and store information that is later used to generate faster and smaller code.
     /// </remarks>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILGenerator
     {
         private QilExpression? _qil;

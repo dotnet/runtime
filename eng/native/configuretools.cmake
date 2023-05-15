@@ -53,6 +53,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
   if(NOT CLR_CMAKE_TARGET_APPLE AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP YES)
+    locate_toolchain_exec(readelf CMAKE_READELF YES)
 
     unset(CMAKE_OBJCOPY CACHE)
     locate_toolchain_exec(objcopy CMAKE_OBJCOPY NO)

@@ -6,10 +6,10 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <NoWarn>0612</NoWarn>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
-    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'">$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(DefineConstants);DISABLE_LEGACY_JS_INTEROP</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(WasmEnableLegacyJsInterop)' == 'true'">
+  <ItemGroup Condition="'$(WasmEnableLegacyJsInterop)' != 'false'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\MemoryTests.cs" />

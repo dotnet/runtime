@@ -58,7 +58,7 @@ namespace Microsoft.Interop
 
             generatorFactory = new ManagedHResultExceptionMarshallerFactory(generatorFactory, direction);
 
-            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
+            generatorFactory = new ComInterfaceDispatchMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 

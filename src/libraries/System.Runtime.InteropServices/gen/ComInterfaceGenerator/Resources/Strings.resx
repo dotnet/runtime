@@ -228,4 +228,13 @@
   <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
     <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
   </data>
-</root>
+  <data name="MultipleComInterfaceBaseTypesDescription" xml:space="preserve">
+    <value>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesMessage" xml:space="preserve">
+    <value>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
+    <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
+  </data>
+</root>

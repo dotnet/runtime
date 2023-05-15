@@ -29,6 +29,7 @@ The component that writes out object files (objwriter.dll/libobjwriter.so/libobj
 Run `build[.cmd|.sh] -c Release` from the repo root to build the NativeAOT toolchain packages. The build will place the toolchain packages at `artifacts\packages\Release\Shipping`. To publish your project using these packages:
 
 * Add the package directory to your `nuget.config` file. For example, add `<add key="local" value="C:\runtime\artifacts\packages\Release\Shipping" />`
+* Run `dotnet add package Microsoft.DotNet.ILCompiler -v 8.0.0-dev` to add the local package reference to your project.
 * Run `dotnet publish --packages pkg -r [win-x64|linux-x64|osx-64] -c [Debug|Release]` to publish your project. `--packages pkg` option restores the package into a local directory that is easy to cleanup once you are done. It avoids polluting the global nuget cache with your locally built dev package.
 
 ## High Level Overview

@@ -930,8 +930,6 @@ namespace DefaultNamespace
             }
         }
 
-        public static int Main(String[] args) => Run(args.Length > 0 && args[0].Equals("-v"));
-
         [Fact]
         public static int TestEntryPoint() => Run(false);
 

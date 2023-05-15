@@ -266,7 +266,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (wcscmp(szName, pszName) == 0)
+                if (u16_strcmp(szName, pszName) == 0)
     #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
     #endif
@@ -300,7 +300,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
                 // If the name matches...
                 LPCWSTR pszName = pRegMeta->GetNameOfDBFile();
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-                if (wcscmp(szName, pszName) == 0)
+                if (u16_strcmp(szName, pszName) == 0)
     #else
                 if (SString::_wcsicmp(szName, pszName) == 0)
     #endif
@@ -444,7 +444,7 @@ ErrExit:
 //
 // Determine the blob size base of the ELEMENT_TYPE_* associated with the blob.
 // This cannot be a table lookup because ELEMENT_TYPE_STRING is an unicode string.
-// The size of the blob is determined by calling wcsstr of the string + 1.
+// The size of the blob is determined by calling u16_strstr of the string + 1.
 //
 //*******************************************************************************
 ULONG _GetSizeOfConstantBlob(
@@ -488,7 +488,7 @@ ULONG _GetSizeOfConstantBlob(
         if (cchString != (ULONG) -1)
             ulSize = cchString * sizeof(WCHAR);
         else
-            ulSize = (ULONG)(sizeof(WCHAR) * wcslen((LPWSTR)pValue));
+            ulSize = (ULONG)(sizeof(WCHAR) * u16_strlen((LPWSTR)pValue));
         break;
 
     case ELEMENT_TYPE_CLASS:

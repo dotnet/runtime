@@ -1,8 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <PropertyGroup>
-    <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
-  </PropertyGroup>
-
+  <Import Project="..\..\Directory.Merged.props" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <ItemGroup>

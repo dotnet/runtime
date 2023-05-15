@@ -19,7 +19,6 @@
 #cmakedefine01 HAVE_RUNETYPE_H
 #cmakedefine01 HAVE_GNU_LIBNAMES_H
 #cmakedefine01 HAVE_PRCTL_H
-#cmakedefine01 HAVE_NUMA_H
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_SYS_PTRACE_H
@@ -68,6 +67,7 @@
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
+#cmakedefine HAVE_UNW_AARCH64_X19
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT

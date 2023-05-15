@@ -101,6 +101,8 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
+    pal::initialize_createdump();
+
     pal::string_t host_path;
     if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
     {

@@ -57,8 +57,6 @@ struct _SgenThreadPoolContext {
 int sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc init_func, SgenThreadPoolIdleJobFunc idle_func, SgenThreadPoolContinueIdleJobFunc continue_idle_func, SgenThreadPoolShouldWorkFunc should_work_func, void **thread_datas);
 void sgen_thread_pool_start (void);
 
-void sgen_thread_pool_shutdown (void);
-
 SgenThreadPoolJob* sgen_thread_pool_job_alloc (const char *name, SgenThreadPoolJobFunc func, size_t size);
 /* This only needs to be called on jobs that are not enqueued. */
 void sgen_thread_pool_job_free (SgenThreadPoolJob *job);

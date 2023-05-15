@@ -198,8 +198,8 @@
 
 <HRESULT NumericValue="0x80131058">
 	<SymbolicName>COR_E_LOADING_REFERENCE_ASSEMBLY</SymbolicName>
-	<Message>"Reference assemblies cannot not be loaded for execution."</Message>
-	<Comment> Reference assemblies cannot not be loaded for execution.  </Comment>
+	<Message>"Reference assemblies cannot be loaded for execution."</Message>
+	<Comment> Reference assemblies cannot be loaded for execution </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x8013106A">
@@ -1182,6 +1182,12 @@
     <Comment> The runtime cannot be suspened since a suspension is already in progress. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131389">
+    <SymbolicName>CORPROF_E_NOT_GC_OBJECT</SymbolicName>
+    <Message>"This object belongs to a non-gc heap."</Message>
+    <Comment> This object belongs to a non-gc heap </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131416">
 	<SymbolicName>CORSEC_E_POLICY_EXCEPTION</SymbolicName>
 	<Message>"PolicyException thrown."</Message>
@@ -1788,8 +1794,8 @@
 
 <HRESULT NumericValue="0x80131c14">
 	<SymbolicName>CORDBG_E_NGEN_NOT_SUPPORTED</SymbolicName>
-	<Message>"NGEN must be supported to perform the requested operation."</Message>
-	<Comment> NGEN must be supported to perform the requested operation </Comment>
+	<Message>"NGEN is not supported."</Message>
+	<Comment> NGEN is not supported </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c15">

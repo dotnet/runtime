@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver, IBuiltInJsonTypeInfoResolver
     {
         private JsonSerializerOptions? _options;
 
@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization
         /// Indicates whether pre-generated serialization logic for types in the context
         /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
-        internal bool IsCompatibleWithGeneratedOptions(JsonSerializerOptions options)
+        bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
             Debug.Assert(options != null);
 

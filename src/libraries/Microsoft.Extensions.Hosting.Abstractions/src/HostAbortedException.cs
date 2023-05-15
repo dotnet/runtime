@@ -11,6 +11,9 @@ namespace Microsoft.Extensions.Hosting
     [Serializable]
     public sealed class HostAbortedException : Exception
     {
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+#endif
         private HostAbortedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         /// <summary>

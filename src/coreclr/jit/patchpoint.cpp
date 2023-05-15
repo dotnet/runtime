@@ -165,7 +165,7 @@ private:
         GenTree* ppCounterAfter  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree* one             = compiler->gtNewIconNode(1, TYP_INT);
         GenTree* ppCounterSub    = compiler->gtNewOperNode(GT_SUB, TYP_INT, ppCounterBefore, one);
-        GenTree* ppCounterAsg    = compiler->gtNewOperNode(GT_ASG, TYP_INT, ppCounterAfter, ppCounterSub);
+        GenTree* ppCounterAsg    = compiler->gtNewAssignNode(ppCounterAfter, ppCounterSub);
 
         compiler->fgNewStmtAtEnd(block, ppCounterAsg);
 
@@ -202,7 +202,7 @@ private:
 
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
         GenTree* ppCounterRef       = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAsg       = compiler->gtNewOperNode(GT_ASG, TYP_INT, ppCounterRef, initialCounterNode);
+        GenTree* ppCounterAsg       = compiler->gtNewAssignNode(ppCounterRef, initialCounterNode);
 
         compiler->fgNewStmtNearEnd(block, ppCounterAsg);
     }

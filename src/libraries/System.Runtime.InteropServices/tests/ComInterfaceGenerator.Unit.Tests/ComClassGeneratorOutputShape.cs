@@ -5,8 +5,10 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.Interop.UnitTests;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
+
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComClassGenerator>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -27,15 +29,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 [GeneratedComClass]
                 partial class C : INativeAPI {}
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComClassGenerator());
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
-            // We'll create one syntax tree for the new interface.
-            Assert.Equal(comp.SyntaxTrees.Count() + 1, newComp.SyntaxTrees.Count());
-
-            VerifyShape(newComp, "C");
+            await VerifySourceGeneratorAsync(source, "C");
         }
 
         [Fact]
@@ -69,36 +64,56 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-            var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.ComClassGenerator());
-            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
-            // We'll create one syntax tree per user-defined interface.
-            Assert.Equal(comp.SyntaxTrees.Count() + 3, newComp.SyntaxTrees.Count());
-
-            VerifyShape(newComp, "C");
-            VerifyShape(newComp, "D");
-            VerifyShape(newComp, "E");
+            await VerifySourceGeneratorAsync(source, "C", "D", "E");
         }
-        private static void VerifyShape(Compilation comp, string userDefinedClassMetadataName)
+
+        private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
-            INamedTypeSymbol? userDefinedClass = comp.Assembly.GetTypeByMetadataName(userDefinedClassMetadataName);
-            Assert.NotNull(userDefinedClass);
+            GeneratedShapeTest test = new(typeNames)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            INamedTypeSymbol? comExposedClassAttribute = comp.GetTypeByMetadataName("System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute`1");
+            await test.RunAsync();
+        }
+        class GeneratedShapeTest : VerifyCS.Test
+        {
+            private readonly string[] _typeNames;
 
-            Assert.NotNull(comExposedClassAttribute);
+            public GeneratedShapeTest(params string[] typeNames)
+                :base(referenceAncillaryInterop: false)
+            {
+                _typeNames = typeNames;
+            }
 
-            AttributeData iUnknownDerivedAttribute = Assert.Single(
-                userDefinedClass.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, comExposedClassAttribute));
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                // Generate one source file per attributed interface.
+                Assert.Equal(TestState.Sources.Count + _typeNames.Length, compilation.SyntaxTrees.Count());
+                Assert.All(_typeNames, name => VerifyShape(compilation, name));
+            }
 
-            Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
-                infoType =>
-                {
-                    Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
-                });
+            private static void VerifyShape(Compilation comp, string userDefinedClassMetadataName)
+            {
+                INamedTypeSymbol? userDefinedClass = comp.Assembly.GetTypeByMetadataName(userDefinedClassMetadataName);
+                Assert.NotNull(userDefinedClass);
+
+                INamedTypeSymbol? comExposedClassAttribute = comp.GetTypeByMetadataName("System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute`1");
+
+                Assert.NotNull(comExposedClassAttribute);
+
+                AttributeData iUnknownDerivedAttribute = Assert.Single(
+                    userDefinedClass.GetAttributes(),
+                    attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass?.OriginalDefinition, comExposedClassAttribute));
+
+                Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
+                    infoType =>
+                    {
+                        Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
+                    });
+            }
         }
     }
 }

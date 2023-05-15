@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace PortableApp
 {
@@ -14,9 +16,15 @@ namespace PortableApp
             Console.WriteLine(string.Join(Environment.NewLine, args));
             Console.WriteLine(RuntimeInformation.FrameworkDescription);
 
-            // A small operation involving NewtonSoft.Json to ensure the assembly is loaded properly
-            var t = typeof(Newtonsoft.Json.JsonReader);
-            System.Diagnostics.Trace.WriteLine(t);
+            if (args.Length == 0)
+                return;
+
+            if (args[0] == "load_shared_library")
+            {
+                var asm = AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("SharedLibrary"));
+                FieldInfo field = asm.GetType("SharedLibrary.SharedType").GetField("Value");
+                Console.WriteLine($"SharedLibrary.SharedType.Value={field.GetValue(null)}");
+            }
         }
     }
 }
