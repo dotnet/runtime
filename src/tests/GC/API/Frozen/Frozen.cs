@@ -21,8 +21,9 @@ namespace HelloFrozenSegment
 
         public void Release()
         {
-            GCHelpers.UnregisterFrozenSegment(this.underlyingSegment);
-            Marshal.FreeHGlobal(this.underlyingBuffer);
+            // Workaround for GitHub 85863
+            // GCHelpers.UnregisterFrozenSegment(this.underlyingSegment);
+            // Marshal.FreeHGlobal(this.underlyingBuffer);
         }
     }
 
