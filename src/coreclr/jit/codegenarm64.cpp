@@ -3652,13 +3652,15 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
+        unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+
         unsigned i = 0;
         while (i < slots)
         {
-            if (layout->GetGCPtrType(i) != TYP_REF)
+            if (!layout->IsGCPtr(i))
             {
-                // Check if the next slot's type is also non-ref and use ldp/stp
-                if ((i + 1 < slots) && (layout->GetGCPtrType(i + 1) != TYP_REF))
+                // Check if the next slot's type is also TYP_GC_NONE and use ldp/stp
+                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
                     emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
                                           2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);
@@ -3678,9 +3680,11 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             {
                 // In the case of a GC-Pointer we'll call the ByRef write barrier helper
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                gcPtrCount--;
             }
             ++i;
         }
+        assert(gcPtrCount == 0);
     }
 
     if (cpObjNode->IsVolatile())

@@ -2457,13 +2457,15 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
+        unsigned gcPtrCount = cpObjNode->GetLayout()->GetGCPtrCount();
+
         unsigned i = 0;
         while (i < slots)
         {
-            if (layout->GetGCPtrType(i) != TYP_REF)
+            if (!layout->IsGCPtr(i))
             {
-                // Check if the next slot's type is also non-ref and use two ld/sd
-                if ((i + 1 < slots) && (layout->GetGCPtrType(i + 1) != TYP_REF))
+                // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
+                if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
                     if ((i + 2) == slots)
                     {
@@ -2499,9 +2501,11 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             {
                 // In the case of a GC-Pointer we'll call the ByRef write barrier helper
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                gcPtrCount--;
             }
             ++i;
         }
+        assert(gcPtrCount == 0);
     }
 
     if (cpObjNode->IsVolatile())

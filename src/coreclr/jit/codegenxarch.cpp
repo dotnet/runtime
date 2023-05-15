@@ -4096,30 +4096,31 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     else
     {
         ClassLayout* layout     = cpObjNode->GetLayout();
+        unsigned     gcPtrCount = layout->GetGCPtrCount();
 
         unsigned i = 0;
         while (i < slots)
         {
-            if (layout->GetGCPtrType(i) != TYP_REF)
+            if (!layout->IsGCPtr(i))
             {
                 // Let's see if we can use rep movsp instead of a sequence of movsp instructions
                 // to save cycles and code size.
-                unsigned nonRefSlotCount = 0;
+                unsigned nonGcSlotCount = 0;
 
                 do
                 {
-                    nonRefSlotCount++;
+                    nonGcSlotCount++;
                     i++;
-                } while ((i < slots) && (layout->GetGCPtrType(i) != TYP_REF));
+                } while ((i < slots) && !layout->IsGCPtr(i));
 
                 // If we have a very small contiguous non-gc region, it's better just to
                 // emit a sequence of movsp instructions
-                if (nonRefSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
+                if (nonGcSlotCount < CPOBJ_NONGC_SLOTS_LIMIT)
                 {
-                    while (nonRefSlotCount > 0)
+                    while (nonGcSlotCount > 0)
                     {
                         instGen(INS_movsp);
-                        nonRefSlotCount--;
+                        nonGcSlotCount--;
                     }
                 }
                 else
@@ -4127,16 +4128,20 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                     // Otherwise, we can save code-size and improve CQ by emitting
                     // rep movsp (alias for movsd/movsq for x86/x64)
                     assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
-                    GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonRefSlotCount);
+
+                    GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                     instGen(INS_r_movsp);
                 }
             }
             else
             {
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+                gcPtrCount--;
                 i++;
             }
         }
+
+        assert(gcPtrCount == 0);
     }
 
     // Clear the gcInfo for RSI and RDI.
