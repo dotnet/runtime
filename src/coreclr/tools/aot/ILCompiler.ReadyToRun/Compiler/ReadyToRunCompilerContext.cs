@@ -37,12 +37,11 @@ namespace ILCompiler
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
-        private readonly InstructionSetSupport _instructionSetSupport;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, InstructionSetSupport instructionSetSupport, CompilerTypeSystemContext oldTypeSystemContext = null)
             : base(details, genericsMode)
         {
-            _instructionSetSupport = instructionSetSupport;
+            InstructionSetSupport = instructionSetSupport;
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
@@ -69,7 +68,7 @@ namespace ILCompiler
             }
         }
 
-        public InstructionSetSupport InstructionSetSupport { get { return _instructionSetSupport; } }
+        public InstructionSetSupport InstructionSetSupport { get; }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {
