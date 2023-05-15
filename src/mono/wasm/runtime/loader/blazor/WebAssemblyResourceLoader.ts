@@ -6,6 +6,8 @@ import type { BootJsonData, ResourceList } from "../../types/blazor";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
 
+const cacheSkipResourceTypes = ["configuration"];
+
 export class WebAssemblyResourceLoader {
     private usedCacheKeys: { [key: string]: boolean } = {};
 
@@ -27,7 +29,7 @@ export class WebAssemblyResourceLoader {
     }
 
     loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
-        const response = this.cacheIfUsed
+        const response = this.cacheIfUsed && !cacheSkipResourceTypes.includes(resourceType)
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
