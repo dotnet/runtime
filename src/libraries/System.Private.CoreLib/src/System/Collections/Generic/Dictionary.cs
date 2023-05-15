@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -83,7 +85,7 @@ namespace System.Collections.Generic
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
 
         public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
-            this(dictionary != null ? dictionary.Count : 0, comparer)
+            this(dictionary?.Count ?? 0, comparer)
         {
             if (dictionary == null)
             {
@@ -106,15 +108,26 @@ namespace System.Collections.Generic
             AddRange(collection);
         }
 
-        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> collection)
+        private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            // It is likely that the passed-in dictionary is Dictionary<TKey,TValue>. When this is the case,
+            // Special-case ReadOnlyDictionary<TKey, TValue> to extract its underlying dictionary
+            // rather than going through it as a wrapper. ReadOnlyDictionary's GetEnumerator just returns
+            // the underlying dictionary's GetEnumerator, so this doesn't reduce iteration costs if
+            // the wrapped type isn't known; rather, this exposes the wrapped type to the subsequent
+            // type checks, so in the very common case where the wrapped collection is a Dictionary<TKey, TValue>,
+            // we get to take the fast path below.
+            if (enumerable.GetType() == typeof(ReadOnlyDictionary<TKey, TValue>))
+            {
+                enumerable = ((ReadOnlyDictionary<TKey, TValue>)enumerable).m_dictionary;
+            }
+
+            // It is likely that the passed-in enumerable is Dictionary<TKey,TValue>. When this is the case,
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (collection.GetType() == typeof(Dictionary<TKey, TValue>))
+            if (enumerable.GetType() == typeof(Dictionary<TKey, TValue>))
             {
-                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)collection;
+                Dictionary<TKey, TValue> source = (Dictionary<TKey, TValue>)enumerable;
 
                 if (source.Count == 0)
                 {
@@ -150,8 +163,30 @@ namespace System.Collections.Generic
                 return;
             }
 
-            // Fallback path for IEnumerable that isn't a non-subclassed Dictionary<TKey,TValue>.
-            foreach (KeyValuePair<TKey, TValue> pair in collection)
+            // We similarly special-case KVP<>[] and List<KVP<>>, as they're commonly used to seed dictionaries, and
+            // we want to avoid the enumerator costs (e.g. allocation) for them as well.
+
+            if (enumerable is KeyValuePair<TKey, TValue>[] array)
+            {
+                foreach (KeyValuePair<TKey, TValue> pair in array)
+                {
+                    Add(pair.Key, pair.Value);
+                }
+                return;
+            }
+
+            if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
+            {
+                foreach (KeyValuePair<TKey, TValue> pair in CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable))
+                {
+                    Add(pair.Key, pair.Value);
+                }
+                return;
+            }
+
+            // Fallback path for all other enumerables
+
+            foreach (KeyValuePair<TKey, TValue> pair in enumerable)
             {
                 Add(pair.Key, pair.Value);
             }
