@@ -186,7 +186,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
-      <_DotNetJsItem Include="@(ReferenceCopyLocalPaths)" Condition="'%(FileName)' == 'dotnet.native' and '%(Extension)' == '.js'" />
+      <_DotNetJsItem Include="@(ReferenceCopyLocalPaths)" Condition="('%(FileName)' == 'dotnet' or '%(FileName)' == 'dotnet.native') and '%(Extension)' == '.js'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
