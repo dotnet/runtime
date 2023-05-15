@@ -110,27 +110,62 @@ public class WebcilWasmWrapper
     // 1 byte to encode "passive" data segment
     private const uint SegmentCodeSize = 1;
 
+    // Align the payload start to a 4-byte boundary within the wrapper.  If the runtime reads the
+    // payload directly, instead of by instantiatng the wasm module, we don't want the WebAssembly
+    // prefix to push some of the values inside the image to odd byte offsets as the runtime assumes
+    // the image will be aligned.
+    //
+    // There are requirements in ECMA-335 (Section II.25.4) that fat method headers and method data
+    // sections be 4-byte aligned.
+    private const uint WebcilPayloadInternalAlignment = 4;
+
     private void WriteDataSection(BinaryWriter writer)
     {
+
         uint dataSectionSize = 0;
         // uleb128 encoding of number of segments
         dataSectionSize += 1; // there's always 2 segments which encodes to 1 byte
         // compute the segment 0 size:
-        //   segment 0 has 1 byte segment code, 1 byte of size and 4 bytes of payload
-        dataSectionSize += SegmentCodeSize + 1 + 4;
+        //   segment 0 has 1 byte segment code, 1 byte of size and at least 4 bytes of payload
+        uint segment0MinimumSize = SegmentCodeSize + 1 + 4;
+        dataSectionSize += segment0MinimumSize;
 
         // encode webcil size as a uleb128
-        byte[] ulebSegmentSize = ULEB128Encode(_webcilPayloadSize);
+        byte[] ulebWebcilPayloadSize = ULEB128Encode(_webcilPayloadSize);
 
         // compute the segment 1 size:
         //   segment 1 has 1 byte segment code, a uleb128 encoding of the webcilPayloadSize, and the payload
+        // don't count the size of the payload yet
         checked
         {
-            dataSectionSize += SegmentCodeSize + (uint)ulebSegmentSize.Length + _webcilPayloadSize;
+            dataSectionSize += SegmentCodeSize + (uint)ulebWebcilPayloadSize.Length;
+        }
+
+        // at this point the data section size includes everything except the data section code, the data section size and the webcil payload itself
+        // and any extra padding that we may want to add to segment 0.
+        // So we can compute the offset of the payload within the wasm module.
+        byte[] putativeULEBDataSectionSize = ULEB128Encode(dataSectionSize + _webcilPayloadSize);
+        uint payloadOffset = (uint)s_wasmWrapperPrefix.Length + 1 + (uint)putativeULEBDataSectionSize.Length + dataSectionSize ;
+
+        uint paddingSize = PadTo(payloadOffset, WebcilPayloadInternalAlignment);
+
+        if (paddingSize > 0)
+        {
+            checked
+            {
+                dataSectionSize += paddingSize;
+            }
+        }
+
+        checked
+        {
+            dataSectionSize += _webcilPayloadSize;
         }
 
         byte[] ulebSectionSize = ULEB128Encode(dataSectionSize);
 
+        if (putativeULEBDataSectionSize.Length != ulebSectionSize.Length)
+            throw new InvalidOperationException  ("adding padding would cause data section's encoded length to chane"); // TODO: fixme: there's upto one extra byte to encode the section length - take away a padding byte.
         writer.Write((byte)11); // section Data
         writer.Write(ulebSectionSize, 0, ulebSectionSize.Length);
 
@@ -138,12 +173,20 @@ public class WebcilWasmWrapper
 
         // write segment 0
         writer.Write((byte)1); // passive segment
-        writer.Write((byte)4); // segment size: 4
+        if (paddingSize + 4 > 127) {
+            throw new InvalidOperationException ("padding would cause segment 0 to need a multi-byte ULEB128 size encoding");
+        }
+        writer.Write((byte)(4 + paddingSize)); // segment size: 4 plus any padding
         writer.Write((uint)_webcilPayloadSize); // payload is an unsigned 32 bit number
+        for (int i = 0; i < paddingSize; i++)
+            writer.Write((byte)0);
 
         // write segment 1
         writer.Write((byte)1); // passive segment
-        writer.Write(ulebSegmentSize, 0, ulebSegmentSize.Length); // segment size:  _webcilPayloadSize
+        writer.Write(ulebWebcilPayloadSize, 0, ulebWebcilPayloadSize.Length); // segment size:  _webcilPayloadSize
+        if (writer.BaseStream.Position % WebcilPayloadInternalAlignment != 0) {
+            throw new Exception ($"predited offset {payloadOffset}, actual position {writer.BaseStream.Position}");
+        }
         _webcilPayloadStream.CopyTo(writer.BaseStream); // payload is the entire webcil content
     }
 
@@ -168,5 +211,16 @@ public class WebcilWasmWrapper
             arr[i++] = b;
         } while (n != 0);
         return arr;
+    }
+
+    private static uint PadTo (uint value, uint align)
+    {
+        uint newValue = AlignTo(value, align);
+        return newValue - value;
+    }
+
+    private static uint AlignTo (uint value, uint align)
+    {
+        return (value + (align - 1)) & ~(align - 1);
     }
 }

@@ -144,6 +144,9 @@ webcil_image_load_pe_data (MonoImage *image)
 	image->raw_data = image->storage->raw_data;
 	image->raw_data_len = image->storage->raw_data_len;
 	offset -= webcil_section_adjustment;
+	if (((intptr_t)image->raw_data) % 4 != 0) {
+		g_warning ("webcil image %s [%p] raw data %p not 4 byte aligned\n", image->name, image, image->raw_data);
+	}
 	
 	top = iinfo->cli_header.coff.coff_sections;
 
@@ -230,7 +233,7 @@ webcil_in_wasm_section_visitor (uint8_t sec_code, const uint8_t *sec_content, ui
 	if (num_segments != 2)
 		return FALSE;
 
-	// skip over data segment 0, it's the webcil payload length as a u32 - we don't care about it
+	// skip over data segment 0, it's the webcil payload length as a u32 plus padding - we don't care about it
 	uint32_t passive_segment_len = 0;
 	const uint8_t *passive_segment_start = NULL;
 	if (!mono_wasm_module_decode_passive_data_segment (ptr, boundp, &ptr, &passive_segment_len, &passive_segment_start))
