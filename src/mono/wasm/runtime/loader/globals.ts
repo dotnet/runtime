@@ -54,7 +54,6 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
-        enablePerfMeasure: true,
         diagnosticTracing: false,
     });
     Object.assign(loaderHelpers, {
