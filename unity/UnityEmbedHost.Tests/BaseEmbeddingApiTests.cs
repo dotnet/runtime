@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -46,29 +47,42 @@ public abstract class BaseEmbeddingApiTests
     //     }
     // }
 
-    class TestException : Exception
-    {
-        public TestException(string msg) : base(msg)
-        {
-        }
-    }
-
-    /*[Test] // Commented out because currently there is no way to get the GC Handle for the test assembly correctly
+    [Test]
     public unsafe void ExceptionFromClassWorks()
     {
         string msg = "An Exception Message";
         byte[] msg_bytes = Encoding.UTF8.GetBytes(msg);
-        byte[] name_bytes = "TestException"u8.ToArray();
-        byte[] namespace_bytes = ""u8.ToArray();
+        byte[] name_bytes = "Exception"u8.ToArray();
+        byte[] namespace_bytes = "System"u8.ToArray();
         Exception ex;
-        IntPtr assembly = ClrHost.class_get_image(typeof(TestException));
+        IntPtr assembly = ClrHost.class_get_image(typeof(Exception));
 
         fixed (byte* p = msg_bytes, n = name_bytes, ns = namespace_bytes)
         {
             ex = (Exception)ClrHost.exception_from_name_msg(assembly, (sbyte*)ns, (sbyte*)n, (sbyte*)p).ToManagedRepresentation();
         }
         Assert.That(msg, Is.EqualTo(ex.Message));
-    }*/
+    }
+
+#pragma warning disable CS0612
+    [TestCase(typeof(Bacon), nameof(Bacon.Fry), true)]
+    [TestCase(typeof(Bacon), nameof(Bacon.Smoke), false)]
+#pragma warning restore CS0612
+    public void MethodHasAttributeWorks(Type type, string methodName, bool shouldBeObsolete)
+    {
+        Assert.That(ClrHost.unity_method_has_attribute(type.GetMethod(methodName)!.MethodHandle, typeof(ObsoleteAttribute)),
+            Is.EqualTo(shouldBeObsolete));
+    }
+
+#pragma warning disable CS0612
+    [TestCase(typeof(Bacon), true)]
+    [TestCase(typeof(Mammal), false)]
+#pragma warning restore CS0612
+    public void ClassHasAttributeWorks(Type type, bool shouldBeObsolete)
+    {
+        Assert.That(ClrHost.unity_class_has_attribute(type, typeof(ObsoleteAttribute)),
+            Is.EqualTo(shouldBeObsolete));
+    }
 
     [Test]
     public unsafe void ValueBoxWorks()
@@ -326,6 +340,94 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(fieldName, Is.Not.Null);
         var result = ClrHost.field_get_object(type, fieldInfo!.FieldHandle);
         Assert.That(result, Is.EqualTo(fieldInfo));
+    }
+
+    [TestCase(typeof(Mammal), nameof(Mammal))]
+    [TestCase(typeof(Cat), nameof(Cat))]
+    [TestCase(typeof(NoInterfaces), nameof(NoInterfaces))]
+    [TestCase(typeof(IAnimal), nameof(IAnimal))]
+    public unsafe void ClassFromNameReturnsClass(Type type, string typeName)
+    {
+        Assert.NotNull(type.Namespace);
+        byte[] name_space = Encoding.UTF8.GetBytes(type.Namespace!);
+        byte[] name = Encoding.UTF8.GetBytes(typeName);
+        Type t;
+        fixed (byte* ns = name_space, n = name)
+        {
+            t = ClrHost.class_from_name(ClrHost.class_get_image(type), (sbyte*)ns, (sbyte*)n, false);
+        }
+        Assert.That(type, Is.EqualTo(t));
+    }
+
+    [TestCase(typeof(object))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Cat))]
+    [TestCase(typeof(Rock))]
+    [TestCase(typeof(CatOnlyInterface))]
+    [TestCase(typeof(ValueMammal))]
+    [TestCase(typeof(ValueCat))]
+    [TestCase(typeof(ValueRock))]
+    [TestCase(typeof(ValueNoInterfaces))]
+    public void ClassGet(Type type)
+    {
+        uint MONO_TOKEN_TYPE_DEF = 0x02000000;
+        bool found = false;
+        for (uint i = 0; i < Assembly.GetAssembly(type)!.GetTypes().Length; i++)
+        {
+            var t = ClrHost.unity_class_get(ClrHost.class_get_image(type), MONO_TOKEN_TYPE_DEF | (i + 1));
+            Assert.NotNull(t);
+            if (t!.Equals(type))
+            {
+                found = true;
+                break;
+            }
+        }
+        Assert.IsTrue(found);
+    }
+
+    [TestCase(typeof(object))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Socket))]
+    public void ClassGetImage(Type type)
+    {
+        Assembly? assembly = Assembly.GetAssembly(type);
+        Assembly? foundAssembly = ClrHost.class_get_image(type).AssemblyFromGCHandleIntPtr();
+        Assert.NotNull(assembly);
+        Assert.NotNull(foundAssembly);
+        Assert.That(assembly, Is.EqualTo(foundAssembly));
+    }
+
+    [TestCase(typeof(IntPtr))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Socket))]
+    public unsafe void ImageLoaded(Type type)
+    {
+        byte[] nameBytes = Encoding.UTF8.GetBytes(type.Assembly.GetName().Name!);
+        Assembly? assembly = Assembly.GetAssembly(type);
+        Assembly? foundAssembly;
+        fixed (byte* b = nameBytes)
+        {
+            foundAssembly = ClrHost.image_loaded((sbyte*)b).AssemblyFromGCHandleIntPtr();
+        }
+        Assert.NotNull(assembly);
+        Assert.NotNull(foundAssembly);
+        Assert.That(assembly, Is.EqualTo(foundAssembly));
+    }
+
+    [Test]
+    public void GetCorlib()
+    {
+        Assert.That(typeof(Object).Assembly, Is.EqualTo(ClrHost.get_corlib().AssemblyFromGCHandleIntPtr()));
+    }
+
+    [TestCase(typeof(IntPtr))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Socket))]
+    public void ImageGetName(Type type)
+    {
+        string? name = Marshal.PtrToStringAnsi(ClrHost.image_get_name(ClrHost.class_get_image(type)));
+        Assert.NotNull(name);
+        Assert.That(type.Assembly.GetName().Name, Is.EqualTo(name));
     }
 
     /// <summary>

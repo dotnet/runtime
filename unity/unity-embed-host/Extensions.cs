@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Unity.CoreCLRHelpers;
@@ -21,11 +22,7 @@ static class Extensions
         => obj.GetType().TypeHandleIntPtr();
 
     public static nint TypeHandleIntPtr(this Type type)
-    {
-        if (type != null)
-            return RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
-        return IntPtr.Zero;
-    }
+        => type == null ? IntPtr.Zero : RuntimeTypeHandle.ToIntPtr(type.TypeHandle);
 
     public static nint MethodHandleIntPtr(this RuntimeMethodHandle handle)
         => RuntimeMethodHandle.ToIntPtr(handle);
@@ -35,4 +32,6 @@ static class Extensions
 
     public static GCHandle ToGCHandle(this nint intPtr)
         => GCHandle.FromIntPtr(intPtr);
+
+    public static Assembly AssemblyFromGCHandleIntPtr(this nint intPtr) => (Assembly)intPtr.ToGCHandle().Target;
 }

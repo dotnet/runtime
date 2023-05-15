@@ -90,6 +90,6 @@ static unsafe partial class CoreCLRHost
     {
         if (methodSymbol.Parameters.Length == 0)
             return $"{methodSymbol.ReturnType}";
-        return $"{methodSymbol.Parameters.Select(p => p.Type.ToString()).Concat(new[] { methodSymbol.ReturnType.ToString() }).AggregateWithCommaSpace()}";
+        return $"{methodSymbol.Parameters.Select(p => p.Type.ToString()).AggregateWithCommaSpace()}, {methodSymbol.ReturnType}";
     }
 }
