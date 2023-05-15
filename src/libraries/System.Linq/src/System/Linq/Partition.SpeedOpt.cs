@@ -254,11 +254,7 @@ namespace System.Linq
                 }
 
                 TSource[] array = new TSource[count];
-                for (int i = 0, curIdx = _minIndexInclusive; i < array.Length; ++i, ++curIdx)
-                {
-                    array[i] = _source[curIdx];
-                }
-
+                Fill(_source, array, _minIndexInclusive);
                 return array;
             }
 
@@ -271,13 +267,16 @@ namespace System.Linq
                 }
 
                 List<TSource> list = new List<TSource>(count);
-                int end = _minIndexInclusive + count;
-                for (int i = _minIndexInclusive; i != end; ++i)
-                {
-                    list.Add(_source[i]);
-                }
-
+                Fill(_source, SetCountAndGetSpan(list, count), _minIndexInclusive);
                 return list;
+            }
+
+            private static void Fill(IList<TSource> source, Span<TSource> destination, int sourceIndex)
+            {
+                for (int i = 0; i < destination.Length; i++, sourceIndex++)
+                {
+                    destination[i] = source[sourceIndex];
+                }
             }
 
             public int GetCount(bool onlyIfCheap) => Count;

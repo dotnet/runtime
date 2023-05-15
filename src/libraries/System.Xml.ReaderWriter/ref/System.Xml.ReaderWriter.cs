@@ -2808,6 +2808,7 @@ namespace System.Xml.Xsl
         System.Xml.XPath.XPathResultType VariableType { get; }
         object Evaluate(System.Xml.Xsl.XsltContext xsltContext);
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed partial class XslCompiledTransform
     {
         public XslCompiledTransform() { }

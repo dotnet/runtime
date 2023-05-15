@@ -12,6 +12,7 @@ if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/s390x-alpine-linux-musl OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/ppc64le-alpine-linux-musl OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/i586-alpine-linux-musl OR
+   EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/x86_64-alpine-linux-musl OR
    EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/riscv64-alpine-linux-musl)
 
   set(ALPINE_LINUX 1)
@@ -74,7 +75,7 @@ if(DARWIN)
   else()
     message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only arm64 or x64 is supported for OSX cross build!")
   endif()
-elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s390x|ppc64le|x86)$" OR FREEBSD OR ILLUMOS OR TIZEN)
+elseif(TARGET_ARCH_NAME MATCHES "^(armel|arm|armv6|arm64|loongarch64|riscv64|s390x|ppc64le|x86|x64)$" OR FREEBSD OR ILLUMOS OR TIZEN)
   set_cache_value(FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL_EXITCODE 1)
   set_cache_value(GETPWUID_R_SETS_ERRNO_EXITCODE 0)
   set_cache_value(HAS_POSIX_SEMAPHORES_EXITCODE 0)
@@ -160,6 +161,8 @@ else()
   message(FATAL_ERROR "Unsupported platform. OS: ${CMAKE_SYSTEM_NAME}, arch: ${TARGET_ARCH_NAME}")
 endif()
 
-if(TARGET_ARCH_NAME MATCHES "^(x86|s390x|armv6|loongarch64|riscv64|ppc64le)$")
+if(TARGET_ARCH_NAME MATCHES "^(x86|x64|s390x|armv6|loongarch64|ppc64le)$")
   set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
+elseif (TARGET_ARCH_NAME STREQUAL "riscv64")
+  set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 1)
 endif()

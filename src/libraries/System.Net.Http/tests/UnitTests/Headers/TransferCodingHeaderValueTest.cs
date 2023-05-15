@@ -13,7 +13,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ValueNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("value", () => { new TransferCodingHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("value", () => { new TransferCodingHeaderValue(null); });
         }
 
         [Fact]

@@ -4541,29 +4541,42 @@ COPY_VALUE_CLASS:
                         total += cur->startoffset - elemOfs;
 
                         SSIZE_T cnt = (SSIZE_T) pArrayOpScript->m_gcDesc->GetNumSeries();
-                        // special array encoding
-                        _ASSERTE(cnt < 0);
 
-                        for (SSIZE_T __i = 0; __i > cnt; __i--)
+                        if (cnt == 1)
                         {
-                            HALF_SIZE_T skip =  cur->val_serie[__i].skip;
-                            HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
-                            total += nptrs*sizeof (DWORD*);
-                            do
+                            // all pointers
+                            for (size_t i = 0; i < size; i += sizeof(Object*))
                             {
-                                AMD64_ONLY(_ASSERTE(fNeedScratchArea));
-
-                                X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
-                            } while (--nptrs);
-                            if (skip > 0)
-                            {
-                                //check if we are at the end of the series
-                                if (__i == (cnt + 1))
-                                    skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
-                                if (skip > 0)
-                                    generate_noref_copy (skip, this);
+                                X86EmitCall(NewExternalCodeLabel((LPVOID)JIT_ByRefWriteBarrier), 0);
+                                total += sizeof(Object*);
                             }
-                            total += skip;
+                        }
+                        else
+                        {
+                            // special array encoding
+                            _ASSERTE(cnt < 0);
+
+                            for (SSIZE_T __i = 0; __i > cnt; __i--)
+                            {
+                                HALF_SIZE_T skip =  cur->val_serie[__i].skip;
+                                HALF_SIZE_T nptrs = cur->val_serie[__i].nptrs;
+                                total += nptrs*sizeof (Object*);
+                                do
+                                {
+                                    AMD64_ONLY(_ASSERTE(fNeedScratchArea));
+
+                                    X86EmitCall(NewExternalCodeLabel((LPVOID) JIT_ByRefWriteBarrier), 0);
+                                } while (--nptrs);
+                                if (skip > 0)
+                                {
+                                    //check if we are at the end of the series
+                                    if (__i == (cnt + 1))
+                                        skip = skip - (HALF_SIZE_T)(cur->startoffset - elemOfs);
+                                    if (skip > 0)
+                                        generate_noref_copy (skip, this);
+                                }
+                                total += skip;
+                            }
                         }
 
                         _ASSERTE (size == total);

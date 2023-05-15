@@ -31,7 +31,8 @@ namespace System
           IComparable<float>,
           IEquatable<float>,
           IBinaryFloatingPointIeee754<float>,
-          IMinMaxValue<float>
+          IMinMaxValue<float>,
+          IUtf8SpanFormattable
     {
         private readonly float m_value; // Do not rename (binary serialization)
 
@@ -355,6 +356,12 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         // Parses a float from a String in the given style.  If

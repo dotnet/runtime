@@ -13,6 +13,11 @@ namespace System.Net.Http
     {
         public static readonly HttpTelemetry Log = new HttpTelemetry();
 
+        public static class Keywords
+        {
+            public const EventKeywords RequestFailedDetailed = (EventKeywords)1;
+        }
+
         private long _startedRequests;
         private long _stoppedRequests;
         private long _failedRequests;
@@ -50,18 +55,39 @@ namespace System.Net.Http
                 request.VersionPolicy);
         }
 
-        [Event(2, Level = EventLevel.Informational)]
-        public void RequestStop()
+        [NonEvent]
+        public void RequestStop(HttpResponseMessage? response)
         {
-            Interlocked.Increment(ref _stoppedRequests);
-            WriteEvent(eventId: 2);
+            RequestStop(response is null ? -1 : (int)response.StatusCode);
         }
 
-        [Event(3, Level = EventLevel.Error)]
-        public void RequestFailed()
+        [Event(2, Level = EventLevel.Informational, Version = 1)]
+        private void RequestStop(int statusCode)
+        {
+            Interlocked.Increment(ref _stoppedRequests);
+            WriteEvent(eventId: 2, statusCode);
+        }
+
+        [NonEvent]
+        public void RequestFailed(Exception exception)
         {
             Interlocked.Increment(ref _failedRequests);
-            WriteEvent(eventId: 3);
+
+            if (IsEnabled(EventLevel.Error, EventKeywords.None))
+            {
+                RequestFailed(exceptionMessage: exception.Message);
+
+                if (IsEnabled(EventLevel.Error, Keywords.RequestFailedDetailed))
+                {
+                    RequestFailedDetailed(exception: exception.ToString());
+                }
+            }
+        }
+
+        [Event(3, Level = EventLevel.Error, Version = 1)]
+        private void RequestFailed(string exceptionMessage)
+        {
+            WriteEvent(eventId: 3, exceptionMessage);
         }
 
         [Event(4, Level = EventLevel.Informational)]
@@ -112,10 +138,10 @@ namespace System.Net.Http
             WriteEvent(eventId: 11);
         }
 
-        [Event(12, Level = EventLevel.Informational)]
-        public void ResponseHeadersStop()
+        [Event(12, Level = EventLevel.Informational, Version = 1)]
+        public void ResponseHeadersStop(int statusCode)
         {
-            WriteEvent(eventId: 12);
+            WriteEvent(eventId: 12, statusCode);
         }
 
         [Event(13, Level = EventLevel.Informational)]
@@ -128,6 +154,12 @@ namespace System.Net.Http
         public void ResponseContentStop()
         {
             WriteEvent(eventId: 14);
+        }
+
+        [Event(15, Level = EventLevel.Error, Keywords = Keywords.RequestFailedDetailed)]
+        private void RequestFailedDetailed(string exception)
+        {
+            WriteEvent(eventId: 15, exception);
         }
 
         [NonEvent]

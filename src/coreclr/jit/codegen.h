@@ -46,6 +46,9 @@ private:
     CORINFO_FIELD_HANDLE absBitmaskFlt;
     CORINFO_FIELD_HANDLE absBitmaskDbl;
 
+    // Bit mask used in zeroing the 3rd element of a SIMD12
+    CORINFO_FIELD_HANDLE zroSimd12Elm3;
+
     // Bit mask used in U8 -> double conversion to adjust the result.
     CORINFO_FIELD_HANDLE u8ToDblBitmask;
 
@@ -777,6 +780,9 @@ protected:
 #endif
 
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
+#if defined(FEATURE_SIMD)
+    void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
     void genCodeForTreeNode(GenTree* treeNode);
     void genCodeForBinary(GenTreeOp* treeNode);
 
@@ -895,6 +901,7 @@ protected:
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
+    void genCodeForCinc(GenTreeOp* cinc);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -924,6 +931,8 @@ protected:
     void genSimdUpperSave(GenTreeIntrinsic* node);
     void genSimdUpperRestore(GenTreeIntrinsic* node);
 
+    void genSimd12UpperClear(regNumber tgtReg);
+
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
     // two reads/writes on 64-bit targets. These routines abstract reading/writing of Vector3
     // values through an indirection. Note that Vector3 locals allocated on stack would have
@@ -933,6 +942,10 @@ protected:
     void genLoadIndTypeSimd12(GenTreeIndir* treeNode);
     void genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode);
     void genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode);
+#ifdef TARGET_XARCH
+    void genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset);
+    void genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsigned offset);
+#endif // TARGET_XARCH
 #ifdef TARGET_X86
     void genStoreSimd12ToStack(regNumber dataReg, regNumber tmpReg);
     void genPutArgStkSimd12(GenTreePutArgStk* treeNode);
@@ -951,6 +964,7 @@ protected:
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
+    void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node);
     void genSSEIntrinsic(GenTreeHWIntrinsic* node);
@@ -961,6 +975,7 @@ protected:
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+    void genPermuteVar2x(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
@@ -1216,8 +1231,6 @@ protected:
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);
     void genTableBasedSwitch(GenTree* tree);
-    void genCodeForArrIndex(GenTreeArrIndex* treeNode);
-    void genCodeForArrOffset(GenTreeArrOffs* treeNode);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else
@@ -1232,10 +1245,10 @@ protected:
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
@@ -1527,6 +1540,8 @@ public:
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
     void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
+    void inst_RV_RV_TT_IV(
+        instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
 #endif
 
     void inst_set_SV_var(GenTree* tree);
@@ -1572,6 +1587,7 @@ public:
 
 #if defined(TARGET_ARM64)
     static insCond JumpKindToInsCond(emitJumpKind condition);
+    static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
 #endif

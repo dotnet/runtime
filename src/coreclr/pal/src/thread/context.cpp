@@ -199,23 +199,20 @@ typedef int __ptrace_request;
 
 #elif defined(HOST_RISCV64)
 
-#error "TODO-RISCV64: review this"
-
 // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/2d865a2964fe06bfc569ab00c74e152b582ed764/riscv-cc.adoc
 
 #define ASSIGN_CONTROL_REGS  \
     ASSIGN_REG(Ra)      \
     ASSIGN_REG(Sp)      \
-    ASSIGN_REG(Sp)      \
-    ASSIGN_REG(Gp)      \
-    ASSIGN_REG(Tp)      \
+    ASSIGN_REG(Fp)      \
     ASSIGN_REG(Pc)
 
 #define ASSIGN_INTEGER_REGS \
+    ASSIGN_REG(Gp)     \
+    ASSIGN_REG(Tp)     \
     ASSIGN_REG(T0)     \
     ASSIGN_REG(T1)     \
     ASSIGN_REG(T2)     \
-    ASSIGN_REG(S0)     \
     ASSIGN_REG(S1)     \
     ASSIGN_REG(A0)     \
     ASSIGN_REG(A1)     \
@@ -744,7 +741,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         }
 #elif defined(HOST_RISCV64)
         native->uc_mcontext.__fpregs.__d.__fcsr = lpContext->Fcsr;
-        for (int i = 0; i < 64; i++)
+        for (int i = 0; i < 32; i++)
         {
             native->uc_mcontext.__fpregs.__d.__f[i] = lpContext->F[i];
         }
@@ -938,7 +935,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         }
 #elif defined(HOST_RISCV64)
         lpContext->Fcsr = native->uc_mcontext.__fpregs.__d.__fcsr;
-        for (int i = 0; i < 64; i++)
+        for (int i = 0; i < 32; i++)
         {
             lpContext->F[i] = native->uc_mcontext.__fpregs.__d.__f[i];
         }

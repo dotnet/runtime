@@ -3673,6 +3673,33 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
+#if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// emitGetSchedInfo: Gets the scheduling information for a given insFmt
+//
+// Arguments:
+//    insFmt - format for which to query scheduling information
+//
+// Return Value:
+//    the scheduling information for insFmt
+//
+const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
+{
+    static const IS_INFO emitFmtToSchedInfo[] = {
+#define IF_DEF(en, op1, op2) static_cast<IS_INFO>(op1),
+#include "emitfmts.h"
+    };
+
+    if (insFmt < ArrLen(emitFmtToSchedInfo))
+    {
+        return emitFmtToSchedInfo[insFmt];
+    }
+
+    assert(!"Unsupported insFmt");
+    return IS_NONE;
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // Interleaved GC info dumping.
 // We'll attempt to line this up with the opcode, which indented differently for
@@ -6164,7 +6191,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // For adaptive, adjust the loop size depending on the alignment boundary
-        maxLoopBlocksAllowed = genLog2((unsigned)alignmentBoundary) - 1;
+        maxLoopBlocksAllowed = genLog2(alignmentBoundary) - 1;
         maxLoopSize          = alignmentBoundary * maxLoopBlocksAllowed;
     }
     else
@@ -7145,129 +7172,141 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         emitCurIG = ig;
 
-        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
-        {
-#ifdef DEBUG
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
-                (id->idCodeSize() > 0))
-            {
-                UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != emitComp->genRichIPmappings.end())
-                {
-                    UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
-
-                    if (mappingOffs > curCodeOffs)
-                    {
-                        // Still haven't reached instruction that next mapping belongs to.
-                        break;
-                    }
-
-                    // We reached the mapping or went past it.
-                    if (mappingOffs == curCodeOffs)
-                    {
-                        emitDispInsIndent();
-                        printf("; ");
-                        nextMapping->debugInfo.Dump(true);
-                        printf("\n");
-                    }
-
-                    ++nextMapping;
-                }
-            }
-#endif
-            size_t insSize = emitIssue1Instr(ig, id, &cp);
-            emitAdvanceInstrDesc(&id, insSize);
-        }
-
-        // Print the alignment boundary
-        if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
-            (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        // Fast loop without any JitDisasm/JitDump TP overhead
+        if (!emitComp->opts.disAsm INDEBUG(&&!emitComp->verbose))
         {
             for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
                 size_t     curInstrAddr = (size_t)cp;
                 instrDesc* curInstrDesc = id;
+                size_t     insSize      = emitIssue1Instr(ig, id, &cp);
+                emitAdvanceInstrDesc(&id, insSize);
+            }
+        }
+        else
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
+            {
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+#ifdef DEBUG
+                if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                    (id->idCodeSize() > 0))
+                {
+                    UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
+                    while (nextMapping != emitComp->genRichIPmappings.end())
+                    {
+                        UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
 
-                size_t      afterInstrAddr   = (size_t)cp;
-                instruction curIns           = curInstrDesc->idIns();
-                bool        isJccAffectedIns = false;
+                        if (mappingOffs > curCodeOffs)
+                        {
+                            // Still haven't reached instruction that next mapping belongs to.
+                            break;
+                        }
+
+                        // We reached the mapping or went past it.
+                        if (mappingOffs == curCodeOffs)
+                        {
+                            emitDispInsIndent();
+                            printf("; ");
+                            nextMapping->debugInfo.Dump(true);
+                            printf("\n");
+                        }
+
+                        ++nextMapping;
+                    }
+                }
+#endif
+                size_t insSize = emitIssue1Instr(ig, id, &cp);
+                emitAdvanceInstrDesc(&id, insSize);
+
+                // Print the alignment boundary
+                if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+                    (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+                {
+                    size_t      afterInstrAddr   = (size_t)cp;
+                    instruction curIns           = curInstrDesc->idIns();
+                    bool        isJccAffectedIns = false;
 
 #if defined(TARGET_XARCH)
 
-                // Determine if this instruction is part of a set that matches the Intel jcc erratum characteristic
-                // described here:
-                // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
-                // This is the case when a jump instruction crosses a 32-byte boundary, or ends on a 32-byte boundary.
-                // "Jump instruction" in this case includes conditional jump (jcc), macro-fused op-jcc (where 'op' is
-                // one of cmp, test, add, sub, and, inc, or dec), direct unconditional jump, indirect jump,
-                // direct/indirect call, and return.
+                    // Determine if this instruction is part of a set that matches the Intel jcc erratum characteristic
+                    // described here:
+                    // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
+                    // This is the case when a jump instruction crosses a 32-byte boundary, or ends on a 32-byte
+                    // boundary.
+                    // "Jump instruction" in this case includes conditional jump (jcc), macro-fused op-jcc (where 'op'
+                    // is
+                    // one of cmp, test, add, sub, and, inc, or dec), direct unconditional jump, indirect jump,
+                    // direct/indirect call, and return.
 
-                size_t jccAlignBoundary     = 32;
-                size_t jccAlignBoundaryMask = jccAlignBoundary - 1;
-                size_t jccLastBoundaryAddr  = afterInstrAddr & ~jccAlignBoundaryMask;
+                    size_t jccAlignBoundary     = 32;
+                    size_t jccAlignBoundaryMask = jccAlignBoundary - 1;
+                    size_t jccLastBoundaryAddr  = afterInstrAddr & ~jccAlignBoundaryMask;
 
-                if (curInstrAddr < jccLastBoundaryAddr)
-                {
-                    isJccAffectedIns = IsJccInstruction(curIns) || IsJmpInstruction(curIns) || (curIns == INS_call) ||
-                                       (curIns == INS_ret);
-
-                    // For op-Jcc there are two cases: (1) curIns is the jcc, in which case the above condition
-                    // already covers us. (2) curIns is the `op` and the next instruction is the `jcc`. Note that
-                    // we will never have a `jcc` as the first instruction of a group, so we don't need to worry
-                    // about looking ahead to the next group after a an `op` of `op-Jcc`.
-
-                    if (!isJccAffectedIns && (cnt > 1))
+                    if (curInstrAddr < jccLastBoundaryAddr)
                     {
-                        // The current `id` is valid, namely, there is another instruction in this group.
-                        instruction nextIns = id->idIns();
-                        if (((curIns == INS_cmp) || (curIns == INS_test) || (curIns == INS_add) ||
-                             (curIns == INS_sub) || (curIns == INS_and) || (curIns == INS_inc) ||
-                             (curIns == INS_dec)) &&
-                            IsJccInstruction(nextIns))
+                        isJccAffectedIns = IsJccInstruction(curIns) || IsJmpInstruction(curIns) ||
+                                           (curIns == INS_call) || (curIns == INS_ret);
+
+                        // For op-Jcc there are two cases: (1) curIns is the jcc, in which case the above condition
+                        // already covers us. (2) curIns is the `op` and the next instruction is the `jcc`. Note that
+                        // we will never have a `jcc` as the first instruction of a group, so we don't need to worry
+                        // about looking ahead to the next group after a an `op` of `op-Jcc`.
+
+                        if (!isJccAffectedIns && (cnt > 1))
                         {
-                            isJccAffectedIns = true;
+                            // The current `id` is valid, namely, there is another instruction in this group.
+                            instruction nextIns = id->idIns();
+                            if (((curIns == INS_cmp) || (curIns == INS_test) || (curIns == INS_add) ||
+                                 (curIns == INS_sub) || (curIns == INS_and) || (curIns == INS_inc) ||
+                                 (curIns == INS_dec)) &&
+                                IsJccInstruction(nextIns))
+                            {
+                                isJccAffectedIns = true;
+                            }
+                        }
+
+                        if (isJccAffectedIns)
+                        {
+                            unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                                   "...............................\n",
+                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
                         }
                     }
-
-                    if (isJccAffectedIns)
-                    {
-                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
-                        printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
-                               "...............................\n",
-                               codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
-                    }
-                }
 
 #elif defined(TARGET_LOONGARCH64)
 
-                isJccAffectedIns = true;
+                    isJccAffectedIns = true;
 #elif defined(TARGET_RISCV64)
 
-                isJccAffectedIns = true;
+                    isJccAffectedIns = true;
 #endif // TARGET_RISCV64
 
-                // Jcc affected instruction boundaries were printed above; handle other cases here.
-                if (!isJccAffectedIns)
-                {
-                    size_t alignBoundaryMask = (size_t)emitComp->opts.compJitAlignLoopBoundary - 1;
-                    size_t lastBoundaryAddr  = afterInstrAddr & ~alignBoundaryMask;
-
-                    // draw boundary if beforeAddr was before the lastBoundary.
-                    if (curInstrAddr < lastBoundaryAddr)
+                    // Jcc affected instruction boundaries were printed above; handle other cases here.
+                    if (!isJccAffectedIns)
                     {
-                        // Indicate if instruction is at the alignment boundary or is split
-                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
-                        if (bytesCrossedBoundary != 0)
+                        size_t alignBoundaryMask = (size_t)emitComp->opts.compJitAlignLoopBoundary - 1;
+                        size_t lastBoundaryAddr  = afterInstrAddr & ~alignBoundaryMask;
+
+                        // draw boundary if beforeAddr was before the lastBoundary.
+                        if (curInstrAddr < lastBoundaryAddr)
                         {
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)",
-                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary);
+                            // Indicate if instruction is at the alignment boundary or is split
+                            unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
+                            if (bytesCrossedBoundary != 0)
+                            {
+                                printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)",
+                                       codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary);
+                            }
+                            else
+                            {
+                                printf("; ...............................");
+                            }
+                            printf(" %dB boundary ...............................\n",
+                                   emitComp->opts.compJitAlignLoopBoundary);
                         }
-                        else
-                        {
-                            printf("; ...............................");
-                        }
-                        printf(" %dB boundary ...............................\n",
-                               emitComp->opts.compJitAlignLoopBoundary);
                     }
                 }
             }

@@ -1250,7 +1250,7 @@ namespace System.Data
                     XmlNode type;
                     string? name = stNode.Name;
 
-                    if (name != null && name.Length != 0)
+                    if (!string.IsNullOrEmpty(name))
                     {
                         // For remoting, always need to work with root schema's namespace
                         string nSpace = (_schFormat != SchemaFormat.Remoting) ? stNode.Namespace :
@@ -1314,7 +1314,7 @@ namespace System.Data
             else
             {
                 string typeName = XmlDataTypeName(col.DataType); // do not update the hashtable, as it will not write msdata:DataType
-                if (typeName == null || typeName.Length == 0)
+                if (string.IsNullOrEmpty(typeName))
                 {
                     if (col.DataType == typeof(Guid) || col.DataType == typeof(Type))
                     {
@@ -1812,7 +1812,7 @@ namespace System.Data
                 // the type for this element
                 DataColumn col = table.Columns[0];
                 string _typeName = XmlDataTypeName(col.DataType);
-                if (_typeName == null || _typeName.Length == 0)
+                if (string.IsNullOrEmpty(_typeName))
                 {
                     _typeName = Keywords.XSD_ANYTYPE;
                 }
@@ -2445,7 +2445,7 @@ namespace System.Data
                     DataColumn column = table.Columns[colNum];
                     string error = row.GetColumnError(column);
                     string columnPrefix = (column.Namespace.Length != 0) ? column.Prefix : string.Empty;
-                    if (error == null || error.Length == 0)
+                    if (string.IsNullOrEmpty(error))
                     {
                         continue;
                     }
@@ -2770,7 +2770,7 @@ namespace System.Data
             {
                 DataColumn column = row.Table.Columns[colNum];
                 string error = row.GetColumnError(column);
-                if (error == null || error.Length == 0)
+                if (string.IsNullOrEmpty(error))
                 {
                     continue;
                 }
@@ -2794,7 +2794,7 @@ namespace System.Data
 
             string prefix = (_ds != null) ? ((_ds.Namespace.Length == 0) ? "" : _ds.Prefix) : ((_dt!.Namespace.Length == 0) ? "" : _dt.Prefix);
 
-            if (_ds == null || _ds.DataSetName == null || _ds.DataSetName.Length == 0)
+            if (_ds == null || string.IsNullOrEmpty(_ds.DataSetName))
                 _xmlw.WriteStartElement(prefix, Keywords.DOCUMENTELEMENT, (_dt!.Namespace == null) ? "" : _dt.Namespace);
             else
                 _xmlw.WriteStartElement(prefix, XmlConvert.EncodeLocalName(_ds.DataSetName), _ds.Namespace);
@@ -2852,7 +2852,7 @@ namespace System.Data
                 }
                 else
                 {
-                    if (_ds.DataSetName == null || _ds.DataSetName.Length == 0)
+                    if (string.IsNullOrEmpty(_ds.DataSetName))
                         _xmlw.WriteStartElement(prefix, Keywords.DOCUMENTELEMENT, _ds.Namespace);
                     else
                         _xmlw.WriteStartElement(prefix, XmlConvert.EncodeLocalName(_ds.DataSetName), _ds.Namespace);

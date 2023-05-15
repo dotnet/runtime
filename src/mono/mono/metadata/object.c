@@ -701,7 +701,6 @@ mono_release_type_locks (MonoInternalThread *thread)
 	mono_type_initialization_unlock ();
 }
 
-static MonoImtTrampolineBuilder imt_trampoline_builder;
 static gboolean always_build_imt_trampolines;
 
 #if (MONO_IMT_SIZE > 32)
@@ -718,12 +717,6 @@ MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void)
 {
 	return &callbacks;
-}
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func)
-{
-	imt_trampoline_builder = func;
 }
 
 void
@@ -1480,7 +1473,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 			/* Collision, build the trampoline */
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
-			result = imt_trampoline_builder (vtable,
+			result = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
 			for (guint i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
@@ -1829,8 +1822,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 			sorted = imt_sort_slot_entries (entries);
 
-			*vtable_slot = imt_trampoline_builder (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
-												   vtable_trampoline);
+			*vtable_slot = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+																				vtable_trampoline);
 
 			while (entries) {
 				MonoImtBuilderEntry *next = entries->next;

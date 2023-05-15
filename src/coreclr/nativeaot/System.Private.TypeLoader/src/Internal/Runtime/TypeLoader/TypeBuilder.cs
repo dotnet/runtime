@@ -159,7 +159,7 @@ namespace Internal.Runtime.TypeLoader
 
         private void InsertIntoNeedsTypeHandleList(TypeDesc type)
         {
-            if ((type is DefType) || (type is ArrayType) || (type is PointerType) || (type is ByRefType))
+            if ((type is DefType) || (type is ArrayType) || (type is PointerType) || (type is ByRefType) || (type is FunctionPointerType))
             {
                 _typesThatNeedTypeHandles.Add(type);
             }
@@ -233,7 +233,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (type is ArrayType typeAsArrayType)
                 {
-                    if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
+                    if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer && !typeAsArrayType.ElementType.IsFunctionPointer)
                     {
                         TypeDesc.ComputeTemplate(state);
                         Debug.Assert(state.TemplateType != null && state.TemplateType is ArrayType && !state.TemplateType.RuntimeTypeHandle.IsNull());
@@ -242,9 +242,15 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer);
+                        Debug.Assert(typeAsArrayType.IsMdArray || typeAsArrayType.ElementType.IsPointer || typeAsArrayType.ElementType.IsFunctionPointer);
                     }
                 }
+            }
+            else if (type is FunctionPointerType functionPointerType)
+            {
+                RegisterForPreparation(functionPointerType.Signature.ReturnType);
+                foreach (TypeDesc paramType in functionPointerType.Signature)
+                    RegisterForPreparation(paramType);
             }
             else
             {
@@ -432,14 +438,6 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.GenericVarianceInfo:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.GenericVarianceInfo");
-                        NativeParser varianceInfoParser = typeInfoParser.GetParserFromRelativeOffset();
-                        state.GenericVarianceFlags = new GenericVariance[varianceInfoParser.GetSequenceCount()];
-                        for (int i = 0; i < state.GenericVarianceFlags.Length; i++)
-                            state.GenericVarianceFlags[i] = checked((GenericVariance)varianceInfoParser.GetUnsigned());
-                        break;
-
                     case BagElementKind.FieldLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
                         typeInfoParser.SkipInteger(); // Handled in type layout algorithm
@@ -590,14 +588,14 @@ namespace Internal.Runtime.TypeLoader
         {
             TypeBuilderState state = type.GetTypeBuilderState();
 
-            Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
+            Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType || type is FunctionPointerType);
 
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
             if (state.ThreadDataSize != 0)
                 TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
-            TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
+            TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->RawBaseSize.LowLevelToString());
         }
 
         private static void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
@@ -788,15 +786,9 @@ namespace Internal.Runtime.TypeLoader
 
                     state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
                     Instantiation instantiation = typeAsDefType.Instantiation;
-                    state.HalfBakedRuntimeTypeHandle.SetGenericArity((uint)instantiation.Length);
                     for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
                     {
                         state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
-                        if (state.GenericVarianceFlags != null)
-                        {
-                            Debug.Assert(state.GenericVarianceFlags.Length == instantiation.Length);
-                            state.HalfBakedRuntimeTypeHandle.SetGenericVariance(argIndex, state.GenericVarianceFlags[argIndex]);
-                        }
                     }
                 }
 
@@ -841,6 +833,19 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
                         state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType = EETypeElementType.ByRef;
                     }
+                }
+            }
+            else if (type is FunctionPointerType)
+            {
+                MethodSignature sig = ((FunctionPointerType)type).Signature;
+                unsafe
+                {
+                    MethodTable* halfBakedMethodTable = state.HalfBakedRuntimeTypeHandle.ToEETypePtr();
+                    halfBakedMethodTable->FunctionPointerReturnType = GetRuntimeTypeHandle(sig.ReturnType).ToEETypePtr();
+                    Debug.Assert(halfBakedMethodTable->NumFunctionPointerParameters == sig.Length);
+                    MethodTableList paramList = halfBakedMethodTable->FunctionPointerParameters;
+                    for (int i = 0; i < sig.Length; i++)
+                        paramList[i] = GetRuntimeTypeHandle(sig[i]).ToEETypePtr();
                 }
             }
             else
@@ -942,24 +947,25 @@ namespace Internal.Runtime.TypeLoader
             int newArrayTypesCount = 0;
             int newPointerTypesCount = 0;
             int newByRefTypesCount = 0;
+            int newFunctionPointerTypesCount = 0;
             int[] mdArrayNewTypesCount = null;
 
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
-                ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
-                if (typeAsParameterizedType == null)
-                    continue;
+                TypeDesc type = _typesThatNeedTypeHandles[i];
 
-                if (typeAsParameterizedType.IsSzArray)
+                if (type.IsSzArray)
                     newArrayTypesCount++;
-                else if (typeAsParameterizedType.IsPointer)
+                else if (type.IsPointer)
                     newPointerTypesCount++;
-                else if (typeAsParameterizedType.IsByRef)
+                else if (type.IsFunctionPointer)
+                    newFunctionPointerTypesCount++;
+                else if (type.IsByRef)
                     newByRefTypesCount++;
-                else if (typeAsParameterizedType.IsMdArray)
+                else if (type.IsMdArray)
                 {
                     mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
-                    mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
+                    mdArrayNewTypesCount[((ArrayType)type).Rank]++;
                 }
             }
             // Reserve space in array/pointer cache's so that the actual adding can be fault-free.
@@ -981,6 +987,7 @@ namespace Internal.Runtime.TypeLoader
 
             TypeSystemContext.PointerTypesCache.Reserve(TypeSystemContext.PointerTypesCache.Count + newPointerTypesCount);
             TypeSystemContext.ByRefTypesCache.Reserve(TypeSystemContext.ByRefTypesCache.Count + newByRefTypesCount);
+            TypeSystemContext.FunctionPointerTypesCache.Reserve(TypeSystemContext.FunctionPointerTypesCache.Count + newFunctionPointerTypesCount);
 
             // Finally, register all generic types and methods atomically with the runtime
             RegisterGenericTypesAndMethods();
@@ -998,7 +1005,14 @@ namespace Internal.Runtime.TypeLoader
             {
                 ParameterizedType typeAsParameterizedType = _typesThatNeedTypeHandles[i] as ParameterizedType;
                 if (typeAsParameterizedType == null)
+                {
+                    if (_typesThatNeedTypeHandles[i] is FunctionPointerType typeAsFunctionPointerType)
+                    {
+                        Debug.Assert(!typeAsFunctionPointerType.RuntimeTypeHandle.IsNull());
+                        TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(typeAsFunctionPointerType.RuntimeTypeHandle);
+                    }
                     continue;
+                }
 
                 Debug.Assert(!typeAsParameterizedType.RuntimeTypeHandle.IsNull());
                 Debug.Assert(!typeAsParameterizedType.ParameterType.RuntimeTypeHandle.IsNull());
@@ -1273,6 +1287,30 @@ namespace Internal.Runtime.TypeLoader
                 TypeSystemContextFactory.Recycle(context);
             }
 
+            return true;
+        }
+
+        public static bool TryBuildFunctionPointerType(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            var key = new TypeSystemContext.FunctionPointerTypeKey(returnTypeHandle, parameterHandles, isUnmanaged);
+            if (!TypeSystemContext.FunctionPointerTypesCache.TryGetValue(key, out runtimeTypeHandle))
+            {
+                TypeSystemContext context = TypeSystemContextFactory.Create();
+                FunctionPointerType functionPointerType = context.GetFunctionPointerType(new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    context.ResolveRuntimeTypeHandle(returnTypeHandle),
+                    context.ResolveRuntimeTypeHandlesInternal(parameterHandles)));
+                runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
+                unsafe
+                {
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                }
+                TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
+
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
+                TypeSystemContextFactory.Recycle(context);
+            }
             return true;
         }
 

@@ -1842,7 +1842,24 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Produce code for a GT_INC_SATURATE node.
 void CodeGen::genCodeForIncSaturate(GenTree* tree)
 {
-    NYI("unimplemented on LOONGARCH64 yet");
+    regNumber targetReg = tree->GetRegNum();
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    GetEmitter()->emitIns_R_R_I(INS_addi_d, emitActualTypeSize(tree), targetReg, operandReg, 1);
+    // bne targetReg, zero, 2 * 4
+    GetEmitter()->emitIns_R_R_I(INS_bne, emitActualTypeSize(tree), targetReg, REG_R0, 8);
+    GetEmitter()->emitIns_R_R_R(INS_orn, emitActualTypeSize(tree), targetReg, REG_R0, targetReg);
+
+    genProduceReg(tree);
 }
 
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
@@ -2175,30 +2192,13 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         emitAttr attr = emitActualTypeSize(targetType);
         if (varTypeUsesFloatArgReg(treeNode))
         {
-            if (attr == EA_4BYTE)
-            {
-                GetEmitter()->emitIns_R_R(INS_fmov_s, attr, retReg, op1->GetRegNum());
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R(INS_fmov_d, attr, retReg, op1->GetRegNum());
-            }
+            instruction ins = attr == EA_4BYTE ? INS_fmov_s : INS_fmov_d;
+            GetEmitter()->emitIns_R_R(ins, attr, retReg, op1->GetRegNum());
         }
         else
         {
-            if (attr == EA_4BYTE)
-            {
-                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    GetEmitter()->emitIns_R_R_I_I(INS_bstrpick_d, EA_PTRSIZE, retReg, op1->GetRegNum(), 31, 0);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slli_w, attr, retReg, op1->GetRegNum(), 0);
-                }
-            }
-            else
-                GetEmitter()->emitIns_R_R_I(INS_ori, attr, retReg, op1->GetRegNum(), 0);
+            instruction ins = (attr == EA_4BYTE) ? INS_slli_w : INS_ori;
+            GetEmitter()->emitIns_R_R_I(ins, attr, retReg, op1->GetRegNum(), 0);
         }
     }
 }
@@ -2580,183 +2580,168 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
         assert(tree->gtOper == GT_DIV);
-        // genCodeForBinary(tree);
+
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
                             tree->gtOp2->GetRegNum());
     }
-    else // an integer divide operation
+    else // an integer divide operation.
     {
-        GenTree* divisorOp = tree->gtGetOp2();
+        GenTree*  divisorOp  = tree->gtGetOp2();
+        regNumber divisorReg = divisorOp->GetRegNum();
+
         // divisorOp can be immed or reg
+        assert(!tree->gtOp1->isContained() && !tree->gtOp1->isContainedIntOrIImmed());
         assert(!divisorOp->isContained() || divisorOp->isContainedIntOrIImmed());
 
-        if (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0)
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
+
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
-            // We unconditionally throw a divide by zero exception
-            genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
-        }
-        else // the divisor is not the constant zero
-        {
-            GenTree* src1     = tree->gtOp1;
-            unsigned TypeSize = genTypeSize(genActualType(tree->TypeGet()));
-            emitAttr size     = EA_ATTR(TypeSize);
-
-            assert(TypeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
-                   TypeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
-
-            // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-            regNumber   Reg1       = src1->GetRegNum();
-            regNumber   divisorReg = divisorOp->GetRegNum();
-            instruction ins;
-
-            // Check divisorOp first as we can always allow it to be a contained immediate
-            if (divisorOp->isContainedIntOrIImmed())
+            if (divisorOp->IsIntegralConst(0) || (divisorReg == REG_R0))
             {
-                ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                divisorReg       = REG_R21;
-                emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(tree);
+
+                return;
             }
-            // Only for commutative operations do we check src1 and allow it to be a contained immediate
-            else if (tree->OperIsCommutative())
+            else
             {
-                // src1 can be immed or reg
-                assert(!src1->isContained() || src1->isContainedIntOrIImmed());
+                assert(emitter::isGeneralRegister(divisorReg));
 
-                // Check src1 and allow it to be a contained immediate
-                if (src1->isContainedIntOrIImmed())
+                // Check if the divisor is zero throw a DivideByZeroException
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+            }
+        }
+
+        GenTree* src1 = tree->gtOp1;
+        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+
+        assert(!divisorOp->IsIntegralConst(0));
+
+        regNumber   Reg1 = src1->GetRegNum();
+        instruction ins;
+
+        // Check divisorOp first as we can always allow it to be a contained immediate
+        if (divisorOp->isContainedIntOrIImmed())
+        {
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            divisorReg       = emitter::isGeneralRegister(divisorReg) ? divisorReg : REG_R21;
+            emit->emitIns_I_la(EA_PTRSIZE, divisorReg, intConst);
+        }
+        else
+        {
+            // src1 can only be a reg
+            assert(!src1->isContained());
+            assert(emitter::isGeneralRegister(Reg1));
+            assert(emitter::isGeneralRegister(divisorReg));
+        }
+
+        // check (MinInt / -1) => ArithmeticException
+        if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+        {
+            if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+            {
+                // Check if the divisor is not -1 branch to 'sdivLabel'
+                emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SCRATCH, REG_R0, -1);
+                BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for loongarch64.
+                emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_SCRATCH, divisorReg);
+
+                // If control flow continues past here the 'divisorReg' is known to be -1
+                regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+                // At this point the divisor is known to be -1
+                //
+                // Whether dividendReg is MinInt or not
+                //
+                if (size == EA_4BYTE)
                 {
-                    assert(!divisorOp->isContainedIntOrIImmed());
-                    ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    Reg1             = REG_R21;
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
+                    // MinInt=0x80000000
+                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_SCRATCH, REG_SCRATCH, 31);
+                }
+                else
+                {
+                    assert(size == EA_8BYTE);
+                    // MinInt=0x8000000000000000
+                    emit->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, 63);
+                }
+                genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_SCRATCH, nullptr, dividendReg);
+                genDefineTempLabel(sdivLabel);
+            }
+
+            // Generate the sdiv instruction
+            if (size == EA_4BYTE)
+            {
+                if (tree->OperGet() == GT_DIV)
+                {
+                    ins = INS_div_w;
+                }
+                else
+                {
+                    ins = INS_mod_w;
                 }
             }
             else
             {
-                // src1 can only be a reg
-                assert(!src1->isContained());
-            }
-
-            // Generate the require runtime checks for GT_DIV or GT_UDIV
-            if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
-            {
-                // Two possible exceptions:
-                //     (AnyVal /  0) => DivideByZeroException
-                //     (MinInt / -1) => ArithmeticException
-                //
-                bool checkDividend = true;
-
-                // Do we have an immediate for the 'divisorOp'?
-                //
-                if (divisorOp->IsCnsIntOrI())
+                if (tree->OperGet() == GT_DIV)
                 {
-                    ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-                    // assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
-                    if (intConstValue != -1)
-                    {
-                        checkDividend = false; // We statically know that the dividend is not -1
-                    }
-                }
-                else // insert check for division by zero
-                {
-                    // Check if the divisor is zero throw a DivideByZeroException
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                if (checkDividend)
-                {
-                    // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, -1);
-                    BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for loongarch64.
-                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_R21, divisorReg);
-
-                    // If control flow continues past here the 'divisorReg' is known to be -1
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
-                    // At this point the divisor is known to be -1
-                    //
-                    // Whether dividendReg is MinInt or not
-                    //
-
-                    emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
-
-                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_add_w : INS_add_d, size, REG_R21, dividendReg,
-                                        dividendReg);
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_R21);
-                    genDefineTempLabel(sdivLabel);
-                }
-
-                // Generate the sdiv instruction
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_div_w;
-                    }
-                    else
-                    {
-                        ins = INS_mod_w;
-                    }
+                    ins = INS_div_d;
                 }
                 else
                 {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_div_d;
-                    }
-                    else
-                    {
-                        ins = INS_mod_d;
-                    }
+                    ins = INS_mod_d;
                 }
-
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
             }
-            else // if (tree->gtOper == GT_UDIV) GT_UMOD
+
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+        }
+        else // if (tree->gtOper == GT_UDIV) GT_UMOD
+        {
+            // Only one possible exception
+            //     (AnyVal /  0) => DivideByZeroException
+            //
+            // Note that division by the constant 0 was already checked for above by the
+            // op2->IsIntegralConst(0) check
+            //
+
+            if (!divisorOp->IsCnsIntOrI())
             {
-                // Only one possible exception
-                //     (AnyVal /  0) => DivideByZeroException
+                // divisorOp is not a constant, so it could be zero
                 //
-                // Note that division by the constant 0 was already checked for above by the
-                // op2->IsIntegralConst(0) check
-                //
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+            }
 
-                if (!divisorOp->IsCnsIntOrI())
+            if (size == EA_4BYTE)
+            {
+                if (tree->OperGet() == GT_UDIV)
                 {
-                    // divisorOp is not a constant, so it could be zero
-                    //
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_div_wu;
-                    }
-                    else
-                    {
-                        ins = INS_mod_wu;
-                    }
-
-                    // TODO-LOONGARCH64: here is just for signed-extension ?
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, divisorReg, divisorReg, 0);
+                    ins = INS_div_wu;
                 }
                 else
                 {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_div_du;
-                    }
-                    else
-                    {
-                        ins = INS_mod_du;
-                    }
+                    ins = INS_mod_wu;
                 }
 
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+                // TODO-LOONGARCH64: here is just for signed-extension ?
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, divisorReg, divisorReg, 0);
             }
+            else
+            {
+                if (tree->OperGet() == GT_UDIV)
+                {
+                    ins = INS_div_du;
+                }
+                else
+                {
+                    ins = INS_mod_du;
+                }
+            }
+
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
         }
     }
     genProduceReg(tree);
@@ -3338,18 +3323,11 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
             case GT_MUL:
                 if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                 {
-                    op2 = treeNode->gtGetOp2();
-                    if (genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
-                        ins = treeNode->IsUnsigned() ? INS_mulw_d_wu : INS_mulw_d_w;
-                    else
-                        ins = INS_mul_d;
+                    ins = INS_mul_d;
                 }
                 else
                 {
-                    if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                        ins = INS_mulw_d_wu;
-                    else
-                        ins = INS_mul_w;
+                    ins = INS_mul_w;
                 }
                 break;
 
@@ -4326,7 +4304,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
-void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
+void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
@@ -4352,10 +4330,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     instruction ins  = INS_invalid;
     int         regs = 0;
 
-    int cond = ((int)tree->gtFlags >> 25) & 0xf; // GenCondition::Code.
-    assert((((int)tree->gtFlags >> 25) & GenCondition::Float) == 0);
-
-    bool IsUnsigned = (cond & GenCondition::Unsigned) != 0;
+    GenCondition cond = tree->gtCondition;
 
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1  = op1->GetRegNum();
@@ -4369,24 +4344,26 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
-                    if (IsUnsigned)
+                {
+                    regNumber tmpRegOp1 = rsGetRsvdReg();
+                    assert(regOp1 != tmpRegOp1);
+                    if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint32_t>(imm);
-
-                        regNumber tmpRegOp1 = rsGetRsvdReg();
-                        assert(regOp1 != tmpRegOp1);
                         emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
-                        regOp1 = tmpRegOp1;
                     }
                     else
                     {
                         imm = static_cast<int32_t>(imm);
+                        emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, tmpRegOp1, regOp1, 0);
                     }
+                    regOp1 = tmpRegOp1;
                     break;
+                }
                 case EA_8BYTE:
                     break;
                 case EA_1BYTE:
-                    if (IsUnsigned)
+                    if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint8_t>(imm);
                     }
@@ -4403,7 +4380,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             regs = (int)REG_RA << 5;
         }
 
-        switch (cond)
+        switch (cond.GetCode())
         {
             case GenCondition::EQ:
                 regs |= ((int)regOp1);
@@ -4416,22 +4393,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             case GenCondition::UGE:
             case GenCondition::SGE:
                 regs |= ((int)regOp1);
-                ins = IsUnsigned ? INS_bgeu : INS_bge;
+                ins = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
                 regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
                 regs |= ((int)regOp1);
-                ins = IsUnsigned ? INS_bltu : INS_blt;
+                ins = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
                 regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
                 NO_WAY("unexpected condition type");
@@ -4448,7 +4425,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
 
-            if (IsUnsigned)
+            if (cond.IsUnsigned())
             {
                 emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                 emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp2, regOp2, 31, 0);
@@ -4463,7 +4440,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             regOp2 = tmpRegOp2;
         }
 
-        switch (cond)
+        switch (cond.GetCode())
         {
             case GenCondition::EQ:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
@@ -4476,22 +4453,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             case GenCondition::UGE:
             case GenCondition::SGE:
                 regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
                 regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
                 NO_WAY("unexpected condition type-regs");
@@ -5085,12 +5062,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-            emit->emitIns_J(INS_bcnez, tgtBlock, (int)1 /* cc */);
+            GenTreeCC* jcc = treeNode->AsCC();
+            assert(jcc->gtCondition.Is(GenCondition::EQ, GenCondition::NE));
+            instruction ins = jcc->gtCondition.Is(GenCondition::EQ) ? INS_bceqz : INS_bcnez;
+            emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
         }
         break;
 
         case GT_JCMP:
-            genCodeForJumpCompare(treeNode->AsOp());
+            genCodeForJumpCompare(treeNode->AsOpCC());
             break;
 
         case GT_RETURNTRAP:
@@ -5206,7 +5186,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -5218,14 +5197,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWITCH_TABLE:
             genTableBasedSwitch(treeNode);
-            break;
-
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
         case GT_IL_OFFSET:
@@ -6019,103 +5990,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     genConsumeRegs(tree->gtOp1);
 
     GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
-//                     producing the effective index by subtracting the lower bound.
-//
-// Arguments:
-//    arrIndex - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
-{
-    emitter*  emit      = GetEmitter();
-    GenTree*  arrObj    = arrIndex->ArrObj();
-    GenTree*  indexNode = arrIndex->IndexExpr();
-    regNumber arrReg    = genConsumeReg(arrObj);
-    regNumber indexReg  = genConsumeReg(indexNode);
-    regNumber tgtReg    = arrIndex->GetRegNum();
-    noway_assert(tgtReg != REG_NA);
-
-    // We will use a temp register to load the lower bound and dimension size values.
-
-    // regNumber tmpReg = arrIndex->GetSingleTempReg();
-    assert(tgtReg != REG_R21);
-
-    unsigned dim  = arrIndex->gtCurrDim;
-    unsigned rank = arrIndex->gtArrRank;
-    unsigned offset;
-
-    offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
-    emit->emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, arrReg, offset);
-    emit->emitIns_R_R_R(INS_sub_w, EA_4BYTE, tgtReg, indexReg, REG_R21);
-
-    offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
-    emit->emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, arrReg, offset);
-    genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, tgtReg, nullptr, REG_R21);
-
-    genProduceReg(arrIndex);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrOffset: Generates code to compute the flattened array offset for
-//    one dimension of an array reference:
-//        result = (prevDimOffset * dimSize) + effectiveIndex
-//    where dimSize is obtained from the arrObj operand
-//
-// Arguments:
-//    arrOffset - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    dimSize and effectiveIndex are always non-negative, the former by design,
-//    and the latter because it has been normalized to be zero-based.
-
-void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
-{
-    GenTree*  offsetNode = arrOffset->gtOffset;
-    GenTree*  indexNode  = arrOffset->gtIndex;
-    regNumber tgtReg     = arrOffset->GetRegNum();
-
-    noway_assert(tgtReg != REG_NA);
-
-    if (!offsetNode->IsIntegralConst(0))
-    {
-        emitter*  emit      = GetEmitter();
-        regNumber offsetReg = genConsumeReg(offsetNode);
-        regNumber indexReg  = genConsumeReg(indexNode);
-        regNumber arrReg    = genConsumeReg(arrOffset->gtArrObj);
-        noway_assert(offsetReg != REG_NA);
-        noway_assert(indexReg != REG_NA);
-        noway_assert(arrReg != REG_NA);
-
-        // regNumber tmpReg = arrOffset->GetSingleTempReg();
-
-        unsigned dim    = arrOffset->gtCurrDim;
-        unsigned rank   = arrOffset->gtArrRank;
-        unsigned offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
-
-        // Load tmpReg with the dimension size and evaluate
-        // tgtReg = offsetReg*tmpReg + indexReg.
-        emit->emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, arrReg, offset);
-        emit->emitIns_R_R_R(INS_mul_d, EA_PTRSIZE, REG_R21, REG_R21, offsetReg);
-        emit->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, tgtReg, REG_R21, indexReg);
-    }
-    else
-    {
-        regNumber indexReg = genConsumeReg(indexNode);
-        if (indexReg != tgtReg)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_ori, emitActualTypeSize(TYP_INT), tgtReg, indexReg, 0);
-        }
-    }
-    genProduceReg(arrOffset);
 }
 
 //------------------------------------------------------------------------
@@ -7544,31 +7418,29 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-    if (blkOp->OperIs(GT_STORE_OBJ))
-    {
-        assert(!blkOp->gtBlkOpGcUnsafe);
-        assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsBlk()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsBlk());
-        return;
-    }
     if (blkOp->gtBlkOpGcUnsafe)
     {
         GetEmitter()->emitDisableGC();
     }
+
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
     switch (blkOp->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
@@ -8578,7 +8450,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     unsigned varNum;
     unsigned regArgMaskIsInt = 0;
-    unsigned regArgNum       = 0;
+    int      regArgNum       = 0;
     // Process any circular dependencies
     unsigned regArg[MAX_REG_ARG * 2]     = {0};
     unsigned regArgInit[MAX_REG_ARG * 2] = {0};
@@ -8928,75 +8800,83 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 assert(genIsValidIntReg((regNumber)regArg[i]));
                 assert(genIsValidIntReg((regNumber)regArgInit[i]));
 
-                regArgNum--;
-                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
+                unsigned tmpRegs[MAX_REG_ARG] = {0};
+
+                unsigned tmpArg  = regArg[i];
+                unsigned nextReg = regArgInit[i] - REG_ARG_FIRST;
+
+                assert(tmpArg <= REG_ARG_LAST);
+                assert(nextReg < MAX_REG_ARG);
+                assert(nextReg != i);
+
+                regArg[i] = 0;
+                int count = 0;
+
+                while (regArg[nextReg] != 0)
                 {
-                    ins = INS_slli_w;
+                    tmpRegs[count] = nextReg;
+                    nextReg        = regArgInit[nextReg] - REG_ARG_FIRST;
+                    assert(nextReg < MAX_REG_ARG);
+
+                    for (int count2 = 0; count2 < count; count2++)
+                    {
+                        if (nextReg == tmpRegs[count2])
+                        {
+                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error: intRegs!");
+                        }
+                    }
+
+                    count++;
+                }
+
+                if (nextReg == i)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
+                    regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
+                    assert(count > 0);
+                }
+                else if (count == 0)
+                {
+                    tmpRegs[0] = i;
+                    regArg[i]  = tmpArg;
                 }
                 else
                 {
-                    ins = INS_ori;
+                    count--;
                 }
 
-                if (regArgNum == 0)
+                do
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    break;
-                }
-                else if (regArgInit[i] > regArg[i])
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                }
-                else
-                {
-                    assert(i > 0);
-                    assert(regArgNum > 0);
+                    tmpArg = tmpRegs[count];
 
-                    int j = regArgInit[i] - REG_ARG_FIRST;
-                    assert((j >= 0) && (j < MAX_REG_ARG));
-                    if (regArg[j] == 0)
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    }
-                    else
-                    {
-                        int k = regArgInit[j] - REG_ARG_FIRST;
-                        assert((k >= 0) && (k < MAX_REG_ARG));
-                        instruction ins2 = (regArgMaskIsInt & (1 << regArg[j])) != 0 ? INS_slli_w : INS_ori;
-                        if ((regArg[k] == 0) || (k > i))
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                        0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else if (k == i)
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_R21, (regNumber)regArg[i], 0);
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            regArg[j] = 0;
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
-                        }
-                    }
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[tmpArg])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[tmpArg],
+                                                (regNumber)regArg[tmpArg], 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)regArg[tmpArg]);
+                    regArg[tmpArg] = 0;
+                    count--;
+                    regArgNum--;
+                    assert(regArgNum >= 0);
+                } while (count >= 0);
+
+                if (nextReg == i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
+                    regArgNum--;
+                    assert(regArgNum >= 0);
                 }
+                else if (tmpRegs[0] != i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],
+                                                (regNumber)(i + REG_ARG_FIRST), 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)(i + REG_ARG_FIRST));
+                    regArgNum--;
+                }
+                assert(regArgNum >= 0);
             }
         }
 

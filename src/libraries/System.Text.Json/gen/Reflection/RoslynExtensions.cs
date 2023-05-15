@@ -10,7 +10,7 @@ namespace System.Text.Json.Reflection
 {
     internal static class RoslynExtensions
     {
-        [return: NotNullIfNotNull("typeSymbol")]
+        [return: NotNullIfNotNull(nameof(typeSymbol))]
         public static Type? AsType(this ITypeSymbol? typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
             if (typeSymbol == null)
@@ -32,6 +32,13 @@ namespace System.Text.Json.Reflection
                 t = t.BaseType;
             }
         }
+
+        /// <summary>
+        /// Creates a copy of the Location instance that does not capture a reference to Compilation.
+        /// </summary>
+        [return: NotNullIfNotNull(nameof(location))]
+        public static Location? GetTrimmedLocation(this Location? location)
+            => location is null ? null : Location.Create(location.SourceTree?.FilePath ?? "", location.SourceSpan, location.GetLineSpan().Span);
 
         public static MethodAttributes GetMethodAttributes(this IMethodSymbol methodSymbol)
         {

@@ -62,8 +62,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
-      <!-- FIXME: The library is currently not available for iOS-like platforms -->
-      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(_IsiOSLikePlatform)' != 'true'" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
@@ -175,11 +174,20 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ObjCopyNameAlternative Condition="$(CppCompilerAndLinker.Contains('clang'))">objcopy</ObjCopyNameAlternative>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereLinker)' != '0' and '$(_IsApplePlatform)' == 'true'" Text="Platform linker ('$(CppLinker)') not found in PATH. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(_IsApplePlatform)' == 'true'" Text="Platform linker ('$(CppLinker)') not found in PATH. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' != ''"
-      Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Try installing appropriate package for $(CppLinker) or $(CppCompilerAndLinkerAlternative) to resolve the problem." />
+      Text="Platform linker ('$(CppLinker)' or '$(CppCompilerAndLinkerAlternative)') not found in PATH. Ensure you have all the required prerequisites documented at https://aka.ms/nativeaot-prerequisites." />
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
+
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
+      <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
+    </PropertyGroup>
 
     <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' != 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
@@ -195,15 +203,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(ObjCopyNameAlternative)' != ''"
-      Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem." />
+      Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem or set the StripSymbols property to false to disable symbol stripping." />
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
-      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH" />
+      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH or set the StripSymbols property to false to disable symbol stripping." />
 
     <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
-      Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH" />
+      Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH or set the StripSymbols property to false to disable symbol stripping." />
 
     <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />

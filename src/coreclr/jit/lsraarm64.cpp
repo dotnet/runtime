@@ -67,6 +67,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
+    assert(consecutiveRegsInUseThisLocation == RBM_NONE);
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
@@ -75,7 +76,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    regMaskTP busyConsecutiveRegMask = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -95,7 +96,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
                 // RefTypeUpperVectorRestore positions of corresponding variables for which (another criteria)
                 // we are trying to find consecutive registers.
 
-                consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
+                consecutiveRefPosition->registerAssignment &= ~consecutiveRegsInUseThisLocation;
             }
             consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         }
@@ -196,18 +197,13 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
-    DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-
-    // If we don't find consecutive registers, also track which registers we can pick so
-    // as to reduce the number of registers we will have to spill, to accomodate the
-    // request of the consecutive registers.
-    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    unsigned regAvailableStartIndex = 0, regAvailableEndIndex = 0;
 
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
-        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
         regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
@@ -224,7 +220,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
@@ -330,13 +326,13 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
     regMaskTP consecutiveResultForBusy = RBM_NONE;
     regMaskTP unprocessedRegs          = consecutiveCandidates;
-    DWORD     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
     regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
@@ -421,77 +417,86 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    if (freeCandidates == RBM_NONE)
+
+#ifdef DEBUG
+    if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
-        return freeCandidates;
+        // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
+        freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
+                           RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
     }
+#endif
 
     *busyCandidates = RBM_NONE;
     regMaskTP    overallResult;
     unsigned int registersNeeded = refPosition->regCount;
 
-    regMaskTP consecutiveResultForFree = filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
-    if (consecutiveResultForFree != RBM_NONE)
+    if (freeCandidates != RBM_NONE)
     {
-        // One last time, check if subsequent RefPositions (all RefPositions except the first for which
-        // we assigned above) already have consecutive registers assigned. If yes, and if one of the
-        // register out of the `consecutiveResult` is available for the first RefPosition, then just use
-        // that. This will avoid unnecessary copies.
+        regMaskTP consecutiveResultForFree =
+            filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
 
-        regNumber firstRegNum  = REG_NA;
-        regNumber prevRegNum   = REG_NA;
-        int       foundCount   = 0;
-        regMaskTP foundRegMask = RBM_NONE;
-
-        RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
-        assert(consecutiveRefPosition != nullptr);
-
-        for (unsigned int i = 1; i < registersNeeded; i++)
+        if (consecutiveResultForFree != RBM_NONE)
         {
-            Interval* interval     = consecutiveRefPosition->getInterval();
-            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+            // One last time, check if subsequent RefPositions (all RefPositions except the first for which
+            // we assigned above) already have consecutive registers assigned. If yes, and if one of the
+            // register out of the `consecutiveResult` is available for the first RefPosition, then just use
+            // that. This will avoid unnecessary copies.
 
-            if (!interval->isActive)
+            regNumber firstRegNum  = REG_NA;
+            regNumber prevRegNum   = REG_NA;
+            int       foundCount   = 0;
+            regMaskTP foundRegMask = RBM_NONE;
+
+            RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
+            assert(consecutiveRefPosition != nullptr);
+
+            for (unsigned int i = 1; i < registersNeeded; i++)
             {
+                Interval* interval     = consecutiveRefPosition->getInterval();
+                consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+
+                if (!interval->isActive)
+                {
+                    foundRegMask = RBM_NONE;
+                    foundCount   = 0;
+                    continue;
+                }
+
+                regNumber currRegNum = interval->assignedReg->regNum;
+                if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
+                    ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+                {
+                    foundRegMask |= genRegMask(currRegNum);
+                    if (prevRegNum == REG_NA)
+                    {
+                        firstRegNum = currRegNum;
+                    }
+                    prevRegNum = currRegNum;
+                    foundCount++;
+                    continue;
+                }
+
                 foundRegMask = RBM_NONE;
                 foundCount   = 0;
-                continue;
+                break;
             }
 
-            regNumber currRegNum = interval->assignedReg->regNum;
-            if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
-                ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+            if (foundCount != 0)
             {
-                foundRegMask |= genRegMask(currRegNum);
-                if (prevRegNum == REG_NA)
+                assert(firstRegNum != REG_NA);
+                regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+
+                if ((overallResult & remainingRegsMask) != RBM_NONE)
                 {
-                    firstRegNum = currRegNum;
+                    // If remaining registers are available, then just set the firstRegister mask
+                    consecutiveResultForFree = 1ULL << (firstRegNum - 1);
                 }
-                prevRegNum = currRegNum;
-                foundCount++;
-                continue;
             }
 
-            foundRegMask = RBM_NONE;
-            foundCount   = 0;
-            break;
+            return consecutiveResultForFree;
         }
-
-        if (foundCount != 0)
-        {
-            assert(firstRegNum != REG_NA);
-            regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
-
-            if ((overallResult & remainingRegsMask) != RBM_NONE)
-            {
-                // If remaining registers are available, then just set the firstRegister mask
-                consecutiveResultForFree = 1ULL << (firstRegNum - 1);
-            }
-        }
-
-        return consecutiveResultForFree;
     }
-
     // There are registers available but they are not consecutive.
     // Here are some options to address them:
     //
@@ -933,6 +938,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_TEST:
         case GT_CCMP:
         case GT_JCMP:
+        case GT_JTEST:
             srcCount = BuildCmp(tree);
             break;
 
@@ -1076,7 +1082,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -1169,44 +1174,10 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_ARR_ELEM:
-            // These must have been lowered to GT_ARR_INDEX
+            // These must have been lowered
             noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
             srcCount = 0;
             assert(dstCount == 0);
-            break;
-
-        case GT_ARR_INDEX:
-        {
-            srcCount = 2;
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            setInternalRegsDelayFree = true;
-
-            // For GT_ARR_INDEX, the lifetime of the arrObj must be extended because it is actually used multiple
-            // times while the result is being computed.
-            RefPosition* arrObjUse = BuildUse(tree->AsArrIndex()->ArrObj());
-            setDelayFree(arrObjUse);
-            BuildUse(tree->AsArrIndex()->IndexExpr());
-            buildInternalRegisterUses();
-            BuildDef(tree);
-        }
-        break;
-
-        case GT_ARR_OFFSET:
-            // This consumes the offset, if any, the arrObj and the effective index,
-            // and produces the flattened offset for this dimension.
-            srcCount = 2;
-            if (!tree->AsArrOffs()->gtOffset->isContained())
-            {
-                BuildUse(tree->AsArrOffs()->gtOffset);
-                srcCount++;
-            }
-            BuildUse(tree->AsArrOffs()->gtIndex);
-            BuildUse(tree->AsArrOffs()->gtArrObj);
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
             break;
 
         case GT_LEA:
@@ -1807,6 +1778,48 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 
     return srcCount;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrain the register requirements for such refpositions, because a lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+//
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+    if (needsConsecutive)
+    {
+        return true;
+    }
+
+    if (refType == RefTypeDef)
+    {
+        if (treeNode->OperIsHWIntrinsic())
+        {
+            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+        }
+    }
+    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    {
+        return consecutiveRegistersLocation == nodeLocation;
+    }
+    return false;
+}
+#endif
+
 #endif
 
 #endif // TARGET_ARM64

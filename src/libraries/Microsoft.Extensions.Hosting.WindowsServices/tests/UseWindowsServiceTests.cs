@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.ServiceProcess;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -16,6 +17,8 @@ namespace Microsoft.Extensions.Hosting
 {
     public class UseWindowsServiceTests
     {
+        private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
+
         private static MethodInfo? _addWindowsServiceLifetimeMethod = null;
 
         [Fact]
@@ -29,7 +32,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<ConsoleLifetime>(lifetime);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void CanCreateService()
         {
             using var serviceTester = WindowsServiceTester.Create(() =>

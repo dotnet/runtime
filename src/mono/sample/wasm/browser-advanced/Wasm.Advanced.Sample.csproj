@@ -3,6 +3,7 @@
   <PropertyGroup>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
     <WasmEnableWebcil>true</WasmEnableWebcil>
     <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
     <EmccEnableAssertions>true</EmccEnableAssertions>

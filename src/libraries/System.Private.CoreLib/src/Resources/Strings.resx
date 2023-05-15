@@ -382,8 +382,8 @@
   <data name="Arg_HandleNotSync" xml:space="preserve">
     <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
   </data>
-  <data name="Arg_HexStyleNotSupported" xml:space="preserve">
-    <value>The number style AllowHexSpecifier is not supported on floating point data types.</value>
+  <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
+    <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>
   <data name="Arg_HTCapacityOverflow" xml:space="preserve">
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
@@ -415,8 +415,8 @@
   <data name="Arg_InvalidHandle" xml:space="preserve">
     <value>Invalid handle.</value>
   </data>
-  <data name="Arg_InvalidHexStyle" xml:space="preserve">
-    <value>With the AllowHexSpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be a subset of those in HexNumber.</value>
+  <data name="Arg_InvalidHexBinaryStyle" xml:space="preserve">
+    <value>With the AllowHexSpecifier or AllowBinarySpecifier bit set in the enum bit field, the only other valid bits that can be combined into the enum value must be AllowLeadingWhite and AllowTrailingWhite.</value>
   </data>
   <data name="Arg_InvalidNeutralResourcesLanguage_Asm_Culture" xml:space="preserve">
     <value>The NeutralResourcesLanguageAttribute on the assembly "{0}" specifies an invalid culture name: "{1}".</value>
@@ -2392,6 +2392,18 @@
   <data name="Format_InvalidStringWithValue" xml:space="preserve">
     <value>The input string '{0}' was not in a correct format.</value>
   </data>
+  <data name="Format_InvalidStringWithOffsetAndReason" xml:space="preserve">
+    <value>Input string was not in a correct format. Failure to parse near offset {0}. {1}</value>
+  </data>
+  <data name="Format_UnexpectedClosingBrace" xml:space="preserve">
+    <value>Unexpected closing brace without a corresponding opening brace.</value>
+  </data>
+  <data name="Format_UnclosedFormatItem" xml:space="preserve">
+    <value>Format item ends prematurely.</value>
+  </data>
+  <data name="Format_ExpectedAsciiDigit" xml:space="preserve">
+    <value>Expected an ASCII digit.</value>
+  </data>
   <data name="Format_MissingIncompleteDate" xml:space="preserve">
     <value>There must be at least a partial date with a year present in the input string '{0}'.</value>
   </data>
@@ -3857,6 +3869,9 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Argument_EmptyOrWhiteSpaceString" xml:space="preserve">
+    <value>The value cannot be an empty string or composed entirely of whitespace.</value>
+  </data>
   <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
     <value>FrameworkName is invalid.</value>
   </data>
@@ -4043,8 +4058,20 @@
   <data name="PlatformNotSupported_AssemblyName_GetAssemblyName" xml:space="preserve">
     <value>AssemblyName.GetAssemblyName() is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
+    <value>CompareOptions = {0} are not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
+    <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithMatchLength" xml:space="preserve">
+    <value>Match length calculation is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this function.</value>
+  </data>
   <data name="PlatformNotSupported_NonZeroLowerBound" xml:space="preserve">
     <value>Arrays with non-zero lower bounds are not supported.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
+    <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
@@ -4195,5 +4222,8 @@
   </data>
   <data name="Argument_UnexpectedStateForKnownCallback" xml:space="preserve">
     <value>An unexpected state object was encountered. This is usually a sign of a bug in async method custom infrastructure, such as a custom awaiter or IValueTaskSource implementation.</value>
+  </data>
+  <data name="OutOfMemory_StringTooLong" xml:space="preserve">
+    <value>String length exceeded supported range.</value>
   </data>
 </root>
