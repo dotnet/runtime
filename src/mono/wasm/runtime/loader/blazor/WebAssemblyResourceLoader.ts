@@ -134,8 +134,10 @@ export class WebAssemblyResourceLoader {
         };
 
         if (resourceType === "configuration") {
+            // Include credentials so the server can allow download / provide user specific file
             fetchOptions.credentials = "include";
         } else {
+            // Any other resource than configuration should provide integrity check
             fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
         }
 
