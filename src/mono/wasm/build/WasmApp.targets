@@ -135,9 +135,6 @@
 
     <!-- by default, don't package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
-
-    <!-- Don't strip when *publishing* for Configuration=Debug -->
-    <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' == 'true'">false</WasmNativeStrip>-->
     <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
   </PropertyGroup>
 
