@@ -576,8 +576,8 @@ namespace Internal.JitInterface
 
             if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
             {
-                // Default to true, and set to false if at least of the types is actually supported in the current environment, and none of the
-                // intrinisc types are in an opportunistic state.
+                // Default to true, and set to false if at least one of the types is actually supported in the current environment, and none of the
+                // intrinsic types are in an opportunistic state.
                 bool doBypass = true;
 
                 foreach (var intrinsicType in compExactlyDependsOnList)
