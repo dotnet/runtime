@@ -30,7 +30,7 @@ namespace Microsoft.Interop
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
 
-        public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => tpi.ManagedIndex >= 0);
+        public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => !TypePositionInfo.IsSpecialIndex(tpi.ManagedIndex));
 
         public TypeSyntax StubReturnType { get; init; }
 
