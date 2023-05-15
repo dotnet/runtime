@@ -417,29 +417,29 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // we can use REP MOVSD/Q instead of a sequence of MOVSD/Q instructions. According to the
             // Intel Manual, the sweet spot for small structs is between 4 to 12 slots of size where
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
-            unsigned nonGCSlots = 0;
+            unsigned nonRefSlots = 0;
 
             if (dstAddr->OperIs(GT_LCL_ADDR))
             {
                 // If the destination is on the stack then no write barriers are needed.
-                nonGCSlots = layout->GetSlotCount();
+                nonRefSlots = layout->GetSlotCount();
             }
             else
             {
-                // Otherwise a write barrier is needed for every GC pointer in the layout
-                // so we need to check if there's a long enough sequence of non-GC slots.
+                // Otherwise a write barrier is needed for every TYP_REF pointer in the layout
+                // so we need to check if there's a long enough sequence of non-TYP_REF slots.
                 unsigned slots = layout->GetSlotCount();
                 for (unsigned i = 0; i < slots; i++)
                 {
-                    if (layout->IsGCPtr(i))
+                    if (layout->GetGCPtrType(i) == TYP_REF)
                     {
-                        nonGCSlots = 0;
+                        nonRefSlots = 0;
                     }
                     else
                     {
-                        nonGCSlots++;
+                        nonRefSlots++;
 
-                        if (nonGCSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
+                        if (nonRefSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
                         {
                             break;
                         }
@@ -447,7 +447,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 }
             }
 
-            if (nonGCSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
+            if (nonRefSlots >= CPOBJ_NONGC_SLOTS_LIMIT)
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjRepInstr;
             }

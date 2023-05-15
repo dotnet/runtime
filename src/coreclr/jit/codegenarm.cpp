@@ -866,12 +866,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
-        unsigned gcPtrCount = layout->GetGCPtrCount();
-
         unsigned i = 0;
         while (i < slots)
         {
-            if (!layout->IsGCPtr(i))
+            if (layout->GetGCPtrType(i) != TYP_REF)
             {
                 emit->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
                                     INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
@@ -881,11 +879,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
             else
             {
                 genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
-                gcPtrCount--;
             }
+
             ++i;
         }
-        assert(gcPtrCount == 0);
     }
 
     if (cpObjNode->IsVolatile())
