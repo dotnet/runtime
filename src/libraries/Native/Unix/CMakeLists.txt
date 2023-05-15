@@ -51,6 +51,15 @@ if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wthread-safety)
     add_compile_options(-Wno-thread-safety-analysis)
     add_compile_options(-Wno-reserved-identifier)
+
+	# clang 16.0 introduced buffer hardening https://discourse.llvm.org/t/rfc-c-buffer-hardening/65734
+    # which we are not conforming to yet.
+    add_compile_options(-Wno-unsafe-buffer-usage)
+
+    # other clang 16.0 suppressions
+    add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
+    add_compile_options(-Wno-cast-function-type-strict)
+    add_compile_options(-Wno-incompatible-function-pointer-types-strict)
 elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
     add_compile_options(-Wno-stringop-truncation)
 endif()
