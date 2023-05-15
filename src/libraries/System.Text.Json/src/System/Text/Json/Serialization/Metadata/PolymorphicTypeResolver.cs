@@ -15,18 +15,16 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class PolymorphicTypeResolver
     {
-        private readonly JsonTypeInfo _declaringTypeInfo;
         private readonly ConcurrentDictionary<Type, DerivedJsonTypeInfo?> _typeToDiscriminatorId = new();
         private readonly Dictionary<object, DerivedJsonTypeInfo>? _discriminatorIdtoType;
+        private readonly JsonSerializerOptions _options;
 
-        public PolymorphicTypeResolver(JsonTypeInfo jsonTypeInfo)
+        public PolymorphicTypeResolver(JsonSerializerOptions options, JsonPolymorphismOptions polymorphismOptions, Type baseType, bool converterCanHaveMetadata)
         {
-            Debug.Assert(jsonTypeInfo.PolymorphismOptions != null);
-
-            JsonPolymorphismOptions polymorphismOptions = jsonTypeInfo.PolymorphismOptions;
             UnknownDerivedTypeHandling = polymorphismOptions.UnknownDerivedTypeHandling;
             IgnoreUnrecognizedTypeDiscriminators = polymorphismOptions.IgnoreUnrecognizedTypeDiscriminators;
-            _declaringTypeInfo = jsonTypeInfo;
+            BaseType = baseType;
+            _options = options;
 
             if (!IsSupportedPolymorphicBaseType(BaseType))
             {
@@ -71,16 +69,16 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (UsesTypeDiscriminators)
             {
-                if (!jsonTypeInfo.Converter.CanHaveMetadata)
+                if (!converterCanHaveMetadata)
                 {
                     ThrowHelper.ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(BaseType);
                 }
 
-                string propertyName = jsonTypeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName;
+                string propertyName = polymorphismOptions.TypeDiscriminatorPropertyName;
 
                 JsonEncodedText jsonEncodedName = propertyName == JsonSerializer.TypePropertyName
                     ? JsonSerializer.s_metadataType
-                    : JsonEncodedText.Encode(propertyName, jsonTypeInfo.Options.Encoder);
+                    : JsonEncodedText.Encode(propertyName, options.Encoder);
 
                 // Check if the property name conflicts with other metadata property names
                 if ((JsonSerializer.GetMetadataPropertyName(jsonEncodedName.EncodedUtf8Bytes, resolver: null) & ~MetadataPropertyName.Type) != 0)
@@ -94,7 +92,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        public Type BaseType => _declaringTypeInfo.Type;
+        public Type BaseType { get; }
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; }
         public bool UsesTypeDiscriminators { get; }
         public bool IgnoreUnrecognizedTypeDiscriminators { get; }
@@ -140,7 +138,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                jsonTypeInfo = result.GetJsonTypeInfo(_declaringTypeInfo.Options);
+                jsonTypeInfo = result.GetJsonTypeInfo(_options);
                 typeDiscriminator = result.TypeDiscriminator;
                 return true;
             }
@@ -155,7 +153,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (_discriminatorIdtoType.TryGetValue(typeDiscriminator, out DerivedJsonTypeInfo? result))
             {
                 Debug.Assert(typeDiscriminator.Equals(result.TypeDiscriminator));
-                jsonTypeInfo = result.GetJsonTypeInfo(_declaringTypeInfo.Options);
+                jsonTypeInfo = result.GetJsonTypeInfo(_options);
                 return true;
             }
 
@@ -252,7 +250,7 @@ namespace System.Text.Json.Serialization.Metadata
             // First, walk up the class hierarchy for any supported types.
             for (Type? candidate = typeInfo.Type.BaseType; candidate != null; candidate = candidate.BaseType)
             {
-                JsonTypeInfo? candidateInfo = typeInfo.Options.GetTypeInfoInternal(candidate, ensureNotNull: null);
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(candidate, typeInfo.Options);
                 if (candidateInfo?.PolymorphismOptions != null)
                 {
                     // stop on the first ancestor that has a match
@@ -264,7 +262,7 @@ namespace System.Text.Json.Serialization.Metadata
             // Now, walk the interface hierarchy for any polymorphic interface declarations.
             foreach (Type interfaceType in typeInfo.Type.GetInterfaces())
             {
-                JsonTypeInfo? candidateInfo = typeInfo.Options.GetTypeInfoInternal(interfaceType, ensureNotNull: null);
+                JsonTypeInfo? candidateInfo = ResolveAncestorTypeInfo(interfaceType, typeInfo.Options);
                 if (candidateInfo?.PolymorphismOptions != null)
                 {
                     if (matchingResult != null)
@@ -294,6 +292,20 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             return matchingResult;
+
+            static JsonTypeInfo? ResolveAncestorTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                try
+                {
+                    return options.GetTypeInfoInternal(type, ensureNotNull: null);
+                }
+                catch
+                {
+                    // The resolver produced an exception when resolving the ancestor type.
+                    // Eat the exception and report no result instead.
+                    return null;
+                }
+            }
         }
 
         /// <summary>

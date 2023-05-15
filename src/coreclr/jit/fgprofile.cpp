@@ -41,11 +41,6 @@
 //
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForImportOnly())
-    {
-        return false;
-    }
-
     return (fgPgoSchema != nullptr);
 }
 
@@ -436,7 +431,7 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1220,6 +1215,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
         }
     }
+
+    // Notify visitor of remaining blocks
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        {
+            visitor->VisitBlock(block);
+        }
+    }
 }
 
 // Map a block into its schema key we will use for storing basic blocks.
@@ -1606,7 +1611,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -2125,7 +2130,7 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewAssignNode(tmpNode3, objUse->GetNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
@@ -2333,12 +2338,42 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
     // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
-        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-        return PhaseStatus::MODIFIED_NOTHING;
+        //... except a few intrinsics that might still need it:
+        bool           shouldBeInstrumented = false;
+        NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
+        switch (ni)
+        {
+            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
+            // In other cases they have large managed implementations we want to profile.
+            case NI_System_String_Equals:
+            case NI_System_Buffer_Memmove:
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_SequenceEqual:
+            case NI_System_MemoryExtensions_StartsWith:
+
+            // Same here, these are only folded when JIT knows the exact types
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+                shouldBeInstrumented = true;
+                break;
+
+            default:
+                // Some Math intrinsics have large managed implementations we want to profile.
+                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                break;
+        }
+
+        if (!shouldBeInstrumented)
+        {
+            fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
     }
 
     if (minimalProfiling && (fgBBcount < 2))
@@ -2425,6 +2460,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
+    // Even though we haven't yet instrumented, we may have made changes in anticipation...
+    //
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const PhaseStatus earlyExitPhaseStatus =
+        madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
@@ -2448,13 +2489,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        return earlyExitPhaseStatus;
     }
 
     if (schema.size() == 0)
     {
         JITDUMP("Not instrumenting method: no schemas were created\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
@@ -2485,13 +2527,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
-            return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        // We may have modified control flow preparing for instrumentation.
-        //
-        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
-        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
@@ -2674,35 +2712,25 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     if (fgPgoHaveWeights)
     {
-        // We expect not to have both block and edge counts. We may have other
-        // forms of profile data even if we do not have any counts.
+        // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        // As of 4/6/2023 the following invariant check turns out to no longer hold.
-        // Tracking issue: https://github.com/dotnet/runtime/issues/84446
-        //
-        // assert(!haveBlockCounts || !haveEdgeCounts);
-
         bool dataIsGood = false;
 
-        if (haveBlockCounts)
-        {
-            dataIsGood = fgIncorporateBlockCounts();
-        }
-        else if (haveEdgeCounts)
+        if (haveEdgeCounts)
         {
             dataIsGood = fgIncorporateEdgeCounts();
         }
+        else if (haveBlockCounts)
+        {
+            dataIsGood = fgIncorporateBlockCounts();
+        }
 
-        // Profile incorporation may have tossed out all PGO data if it
-        // encountered major issues. This is perhaps too drastic. Consider
-        // at least keeping the class profile data, or perhaps enable full synthesis.
-        //
-        // If profile incorporation hit fixable problems, run synthesis in repair mode.
+        // If profile incorporation hit fixable problems, run synthesis in blend mode.
         //
         if (fgPgoHaveWeights && !dataIsGood)
         {
-            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
         }
     }
 
@@ -3264,6 +3292,15 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
+    // If we have dynamic PGO data, we don't expect to see any mismatches,
+    // since the schema we got from the runtime should have come from the
+    // exact same JIT and IL, created in an earlier tier.
+    //
+    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+    {
+        assert(!m_mismatch);
+    }
+
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
@@ -3521,10 +3558,9 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        // Make sure nothing else in the jit looks at the profile data.
+        // Make sure nothing else in the jit looks at the count profile data.
         //
         m_comp->fgPgoHaveWeights = false;
-        m_comp->fgPgoSchema      = nullptr;
 
         if (m_badcode)
         {
@@ -3543,7 +3579,7 @@ void EfficientEdgeCountReconstructor::Propagate()
             m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
         }
 
-        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
+        JITDUMP("... discarding profile count data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
@@ -3586,7 +3622,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 //    for the OSR entry block.
 //
 // Arguments:
-//    block - block in question
+//    block - block in question (OSR entry)
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
@@ -3625,7 +3661,13 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
     }
 
     assert(nEdges == nSucc);
-    assert(info->m_weight > BB_ZERO_WEIGHT);
+
+    if (info->m_weight == BB_ZERO_WEIGHT)
+    {
+        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        EntryWeightZero();
+        return;
+    }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //

@@ -407,6 +407,29 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public void SetNullCallback_NotAllowed_ArgumentException()
+        {
+            var cache = CreateCache();
+            const string someKey = "test";
+            var entry = cache.CreateEntry(someKey);
+
+            var options = new MemoryCacheEntryOptions();
+
+            var notNullCallback = new PostEvictionCallbackRegistration()
+            {
+                EvictionCallback = (_, _, _, _) => {}
+            };
+
+            options.PostEvictionCallbacks.Add(notNullCallback);
+
+            var nullCallback = new PostEvictionCallbackRegistration();
+
+            options.PostEvictionCallbacks.Add(nullCallback);
+
+            Assert.Throws<ArgumentException>(() => entry.SetOptions(options));
+        }
+
+        [Fact]
         public void RemoveRemovesAndInvokesCallback()
         {
             var cache = CreateCache();

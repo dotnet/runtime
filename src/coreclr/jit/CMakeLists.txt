@@ -159,6 +159,7 @@ set( JIT_SOURCES
   patchpoint.cpp
   phase.cpp
   promotion.cpp
+  promotiondecomposition.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
@@ -210,7 +211,7 @@ set( JIT_ARM_SOURCES
   lsraarmarch.cpp
   lsraarm.cpp
   targetarm.cpp
-  unwindarm.cpp
+  unwindarmarch.cpp
 )
 
 set( JIT_I386_SOURCES
@@ -238,7 +239,7 @@ set( JIT_ARM64_SOURCES
   simd.cpp
   simdashwintrinsic.cpp
   targetarm64.cpp
-  unwindarm.cpp
+  unwindarmarch.cpp
   unwindarm64.cpp
   hwintrinsicarm64.cpp
   hwintrinsiccodegenarm64.cpp
@@ -532,6 +533,7 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
+       coreclrminipal
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES
@@ -548,6 +550,7 @@ else()
        bcrypt.lib
        crypt32.lib
        RuntimeObject.lib
+       coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
 

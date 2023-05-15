@@ -514,10 +514,8 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     loStore->gtFlags |= GTF_VAR_USEASG;
 
     // Create the store for the upper half of the GT_LONG and insert it after the low store.
-    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4);
-    hiStore->SetOper(GT_STORE_LCL_FLD);
-    hiStore->gtOp1 = value->gtOp2;
-    hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+    GenTreeLclFld* hiStore =
+        m_compiler->gtNewStoreLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4, value->gtOp2);
 
     Range().InsertAfter(loStore, hiStore);
 
@@ -1401,12 +1399,12 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
     // For longs, we need to change rols into two GT_LSH_HIs and rors into two GT_RSH_LOs
     // so we will get:
     //
-    // shld lo, hi, rotateAmount
+    // shld lo, hiCopy, rotateAmount
     // shld hi, loCopy, rotateAmount
     //
     // or:
     //
-    // shrd lo, hi, rotateAmount
+    // shrd lo, hiCopy, rotateAmount
     // shrd hi, loCopy, rotateAmount
 
     if (oper == GT_ROL)
@@ -1477,6 +1475,11 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
             hiOp1 = RepresentOpAsLocalVar(hiOp1, gtLong, &gtLong->AsOp()->gtOp2);
         }
 
+        if (oper == GT_RSH_LO)
+        {
+            // lsra/codegen expects these operands in the opposite order
+            std::swap(loOp1, hiOp1);
+        }
         Range().Remove(gtLong);
 
         unsigned loOp1LclNum = loOp1->AsLclVarCommon()->GetLclNum();

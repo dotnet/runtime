@@ -687,10 +687,6 @@ typedef struct {
 
 extern MonoStats mono_stats;
 
-typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
-
-typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
-
 static inline gboolean
 method_is_dynamic (MonoMethod *method)
 {
@@ -754,12 +750,6 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
-
-void
-mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
-
-void
-mono_install_get_class_from_name (MonoGetClassFromName func);
 
 MONO_PROFILER_API MonoGenericContext*
 mono_class_get_context (MonoClass *klass);
@@ -1142,7 +1132,7 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 gboolean
 mono_class_can_access_class (MonoClass *access_class, MonoClass *target_class);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass);
 
 gboolean

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GitHub_42719_ro.il" />
+    <Compile Include="GitHub_42719.il" />
+  </ItemGroup>
+</Project>

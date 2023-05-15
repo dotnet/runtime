@@ -2285,6 +2285,7 @@ public:
     inline PTR_BYTE GetGCStaticsBasePointer();
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
+    inline PTR_BYTE GetGCThreadStaticsBaseHandle();
 #endif //!DACCESS_COMPILE
 
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
@@ -3554,20 +3555,14 @@ private:
     }
 
 private:
-    /*
-     * This stuff must be first in the struct and should fit on a cache line - don't move it. Used by the GC.
-     */
-    // struct
-    // {
-
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
     // Used for flags otherwise.
     DWORD           m_dwFlags;
 
     // Base size of instance of this class when allocated on the heap
     DWORD           m_BaseSize;
-    // }
 
+    // See WFLAGS2_ENUM for values.
     WORD            m_wFlags2;
 
     // Class token if it fits into 16-bits. If this is (WORD)-1, the class token is stored in the TokenOverflow optional member.
@@ -3583,7 +3578,7 @@ private:
 
     PTR_MethodTable m_pParentMethodTable;
 
-    PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
+    PTR_Module      m_pLoaderModule;
 
     PTR_MethodTableWriteableData m_pWriteableData;
 

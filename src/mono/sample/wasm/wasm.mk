@@ -42,7 +42,7 @@ run-browser:
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm --module $(MAIN_JS) -- $(ARGS)
 
 run-console-node:
 	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) $(ARGS)

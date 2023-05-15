@@ -44,21 +44,26 @@
     </ItemGroup>
   </Target>
 
-<Target Name="LocateNativeCompiler"
+  <Target Name="LocateNativeCompiler"
           Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
     <PropertyGroup>
       <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-      <!-- TODO: change to <LinkerFlavor>lld</LinkerFlavor> once we pick up an SDK with https://github.com/dotnet/runtime/pull/83558. -->
-      <UseLLVMLinker Condition="'$(CppCompilerAndLinker)' == 'clang' and '$(TargetOS)' == 'linux'">true</UseLLVMLinker>
     </PropertyGroup>
 
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
+    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
     </Exec>
+
+    <PropertyGroup>
+      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
+      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
+      <!-- TODO: change to <LinkerFlavor>lld</LinkerFlavor> once we pick up an SDK with https://github.com/dotnet/runtime/pull/83558. -->
+      <UseLLVMLinker Condition="$(_LDFLAGS.Contains('lld'))">true</UseLLVMLinker>
+    </PropertyGroup>
   </Target>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">

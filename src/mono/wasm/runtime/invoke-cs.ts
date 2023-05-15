@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
@@ -11,7 +11,7 @@ import {
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types";
+import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
