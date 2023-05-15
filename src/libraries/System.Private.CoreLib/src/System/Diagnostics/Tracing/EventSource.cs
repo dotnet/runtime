@@ -2173,7 +2173,7 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW || FEATURE_PERFTRACING
         }
 
-        private static readonly string[] s_payloadNames = new string[] { "message" };
+        private static ReadOnlyCollection<string>? s_errorPayloadNames;
 
         /// <summary>
         /// Since this is a means of reporting errors (see ReportoutOfBandMessage) any failure encountered
@@ -2186,7 +2186,9 @@ namespace System.Diagnostics.Tracing
                 EventName = eventName,
                 Message = msg,
                 Payload = new ReadOnlyCollection<object?>(new object[] { msg }),
-                PayloadNames = new ReadOnlyCollection<string>(s_payloadNames)
+#pragma warning disable CA1861 // Prefer 'static readonly' fields over local constant array arguments
+                PayloadNames = s_errorPayloadNames ??= new ReadOnlyCollection<string>(new string[] { "message" })
+#pragma warning restore CA1861
             };
 
             for (EventDispatcher? dispatcher = m_Dispatchers; dispatcher != null; dispatcher = dispatcher.m_Next)

@@ -84,7 +84,6 @@ namespace System.Formats.Tar
         // If the archive is GNU and the offset, longnames, unused, sparse, isextended and realsize
         // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
         internal byte[]? _gnuUnusedBytes;
-        private static readonly char[] s_equalToSlashN = new char[] { '=', '\n' };
 
         // Constructor called when creating an entry with default common fields.
         internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)

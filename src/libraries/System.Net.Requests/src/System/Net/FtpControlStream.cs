@@ -889,26 +889,28 @@ namespace System.Net
         private DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
-            string[] parsedList = str.Split(s_spaceDot);
-            if (parsedList.Length < 2)
+            Span<Range> parts = stackalloc Range[3];
+            ReadOnlySpan<char> strSpan = str;
+            int count = strSpan.SplitAny(parts, s_spaceDot, StringSplitOptions.RemoveEmptyEntries);
+            if (count < 2)
             {
                 return dateTime;
             }
-            string dateTimeLine = parsedList[1];
+            var dateTimeLine = strSpan[parts[1]];
             if (dateTimeLine.Length < 14)
             {
                 return dateTime;
             }
-            int year = Convert.ToInt32(dateTimeLine.Substring(0, 4), NumberFormatInfo.InvariantInfo);
-            int month = Convert.ToInt16(dateTimeLine.Substring(4, 2), NumberFormatInfo.InvariantInfo);
-            int day = Convert.ToInt16(dateTimeLine.Substring(6, 2), NumberFormatInfo.InvariantInfo);
-            int hour = Convert.ToInt16(dateTimeLine.Substring(8, 2), NumberFormatInfo.InvariantInfo);
-            int minute = Convert.ToInt16(dateTimeLine.Substring(10, 2), NumberFormatInfo.InvariantInfo);
-            int second = Convert.ToInt16(dateTimeLine.Substring(12, 2), NumberFormatInfo.InvariantInfo);
+            int year = int.Parse(dateTimeLine.Slice(0, 4), NumberFormatInfo.InvariantInfo);
+            int month = short.Parse(dateTimeLine.Slice(4, 2), NumberFormatInfo.InvariantInfo);
+            int day = short.Parse(dateTimeLine.Slice(6, 2), NumberFormatInfo.InvariantInfo);
+            int hour = short.Parse(dateTimeLine.Slice(8, 2), NumberFormatInfo.InvariantInfo);
+            int minute = short.Parse(dateTimeLine.Slice(10, 2), NumberFormatInfo.InvariantInfo);
+            int second = short.Parse(dateTimeLine.Slice(12, 2), NumberFormatInfo.InvariantInfo);
             int millisecond = 0;
-            if (parsedList.Length > 2)
+            if (count > 2)
             {
-                millisecond = Convert.ToInt16(parsedList[2], NumberFormatInfo.InvariantInfo);
+                millisecond = short.Parse(strSpan[parts[2]], NumberFormatInfo.InvariantInfo);
             }
             try
             {
@@ -935,22 +937,23 @@ namespace System.Net
             //
             // Not sure what we are doing here but I guess the logic is IIS centric
             //
-            int start = str.IndexOf("for ", StringComparison.Ordinal);
+            ReadOnlySpan<char> strSpan = str;
+            int start = strSpan.IndexOf("for ", StringComparison.Ordinal);
             if (start == -1)
                 return;
             start += 4;
-            int end = str.LastIndexOf('(');
+            int end = strSpan.LastIndexOf('(');
             if (end == -1)
                 end = str.Length;
             if (end <= start)
                 return;
 
-            string filename = str.Substring(start, end - start);
+            var filename = strSpan.Slice(start, end - start);
             filename = filename.TrimEnd(s_whitespaceDot);
             // Do minimal escaping that we need to get a valid Uri
             // when combined with the baseUri
-            string escapedFilename;
-            escapedFilename = filename.Replace("%", "%25");
+            string escapedFilename = filename.ToString();
+            escapedFilename = escapedFilename.Replace("%", "%25");
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
@@ -965,14 +968,14 @@ namespace System.Net
             Uri? newUri;
             if (!Uri.TryCreate(baseUri, escapedFilename, out newUri))
             {
-                throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename));
+                throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename.ToString()));
             }
             else
             {
                 if (!baseUri.IsBaseOf(newUri) ||
                      baseUri.Segments.Length != newUri.Segments.Length - 1)
                 {
-                    throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename));
+                    throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename.ToString()));
                 }
                 else
                 {
@@ -1026,21 +1029,24 @@ namespace System.Net
         /// </summary>
         private static int GetPortV4(string responseString)
         {
-            string[] parsedList = responseString.Split(s_spaceCommaBrackets);
+            Span<Range> parts = stackalloc Range[responseString.Length];
+            ReadOnlySpan<char> responseSpan = responseString;
+
+            int count = responseSpan.SplitAny(parts, s_spaceCommaBrackets, StringSplitOptions.RemoveEmptyEntries);
 
             // We need at least the status code and the port
-            if (parsedList.Length <= 7)
+            if (count <= 7)
             {
                 throw new FormatException(SR.Format(SR.net_ftp_response_invalid_format, responseString));
             }
 
-            int index = parsedList.Length - 1;
+            int index = count - 1;
             // skip the last non-number token (e.g. terminating '.')
-            if (!char.IsNumber(parsedList[index], 0))
+            if (!char.IsNumber(responseSpan[parts[index]][0]))
                 index--;
 
-            int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
-            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
+            int port = byte.Parse(responseSpan[parts[index--]], NumberFormatInfo.InvariantInfo);
+            port |= (byte.Parse(responseSpan[parts[index--]], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }

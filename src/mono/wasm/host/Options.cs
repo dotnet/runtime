@@ -2028,6 +2028,8 @@ namespace Mono.Options
         {
         }
 
+        private static readonly string[] s_help = new string[] { "--help" };
+
         public override int Invoke(IEnumerable<string> arguments)
         {
             var extra = new List<string>(arguments ?? Array.Empty<string>());
@@ -2068,7 +2070,7 @@ namespace Mono.Options
                 command.Options.WriteOptionDescriptions(CommandSet.Out);
                 return 0;
             }
-            return command.Invoke(new[] { "--help" });
+            return command.Invoke(s_help);
         }
 
         private List<KeyValuePair<string, Command>> GetCommands()

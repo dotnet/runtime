@@ -850,7 +850,7 @@ namespace System.Speech.Recognition
                 return Array.Empty<NameValuePair>();
             }
 
-            string[] parameters = initParameters.Split(s_semicolon, StringSplitOptions.None);
+            string[] parameters = initParameters.Split(';', StringSplitOptions.None);
             NameValuePair[] pairs = new NameValuePair[parameters.Length];
 
             for (int i = 0; i < parameters.Length; i++)
@@ -1125,7 +1125,6 @@ namespace System.Speech.Recognition
 
 #if DEBUG
         private bool _loaded;
-        private static readonly char[] s_semicolon = new char[] { ';' };
 #endif
 
         #endregion

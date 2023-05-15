@@ -64,7 +64,7 @@ namespace System.Speech.Internal.ObjectTokens
             }
 
             // If the last character is a '\', get rid of it
-            registryPath = registryPath.Trim(s_backSlash);
+            registryPath = registryPath.Trim('\\');
 
             string rootPath = GetFirstKeyAndParseRemainder(ref registryPath);
 
@@ -445,7 +445,6 @@ namespace System.Speech.Internal.ObjectTokens
         internal ISpDataKey _sapiRegKey;
 
         internal bool _disposeSapiKey;
-        private static readonly char[] s_backSlash = new char[] { '\\' };
 
         #endregion
 

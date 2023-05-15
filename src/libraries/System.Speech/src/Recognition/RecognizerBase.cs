@@ -1489,7 +1489,7 @@ ISpGrammarResourceLoader
                 string ruleName = pbstrMIMEType;
 
                 // The parent is the first
-                string[] ids = pbstrRedirectUrl.Split(s_space, StringSplitOptions.None);
+                string[] ids = pbstrRedirectUrl.Split(' ', StringSplitOptions.None);
                 System.Diagnostics.Debug.Assert(ids.Length == 2);
 
                 uint parentGrammarId = uint.Parse(ids[0], CultureInfo.InvariantCulture);
@@ -3045,7 +3045,6 @@ ISpGrammarResourceLoader
 
         private RecognizerBaseThunk _recoThunk;
         private static readonly char[] s_slashes = new char[] { '\\', '/' };
-        private static readonly char[] s_space = new char[] { ' ' };
         #endregion
 
         private sealed class RecognizerBaseThunk : ISpGrammarResourceLoader

@@ -163,8 +163,6 @@ namespace ILCompiler
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
-        private static readonly string[] s_inputOptions = new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" };
-        private static readonly string[] s_outputOptions = new[] { "o", "out", "exportsfile" };
 
         public ILCompilerRootCommand(string[] args) : base(".NET Native IL Compiler")
         {
@@ -266,9 +264,11 @@ namespace ILCompiler
                         // + the original command line arguments
                         // + a rsp file that should work to directly run out of the zip file
 
+#pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValue(OutputFilePath), args, context.ParseResult,
-                            inputOptions : s_inputOptions,
-                            outputOptions : s_outputOptions);
+                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
+                            outputOptions : new[] { "o", "out", "exportsfile" });
+#pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
                     context.ExitCode = new Program(this).Run();

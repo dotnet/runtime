@@ -2057,8 +2057,6 @@ namespace System.Xml.Schema
             }
         }
 
-        private static readonly string[] s_space = new string[] { " " };
-
         private void CheckStateTransition(ValidatorState toState, string methodName)
         {
             if (!ValidStates[(int)_currentState, (int)toState])
@@ -2598,7 +2596,7 @@ namespace System.Xml.Schema
         {
             if (getParticles)
             {
-                string ContinuationString = SR.Format(SR.Sch_ContinuationString, s_space);
+                string ContinuationString = SR.Format(SR.Sch_ContinuationString, " ");
                 XmlSchemaParticle? currentParticle;
                 XmlSchemaParticle? nextParticle = null;
                 XmlQualifiedName currentQName;
