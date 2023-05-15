@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         static ComInterfaceMarshaller()
         {
-            if (StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(T).TypeHandle) is { } interfaceDetails)
+            if (StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(T).TypeHandle) is IIUnknownDerivedDetails interfaceDetails)
             {
                 TargetInterfaceIID = interfaceDetails.Iid;
             }
