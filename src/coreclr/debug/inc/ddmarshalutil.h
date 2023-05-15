@@ -90,7 +90,7 @@ public:
         if (!fIsNull)
         {
             _ASSERTE(pString != NULL);
-            DWORD len = (DWORD) wcslen(pString);
+            DWORD len = (DWORD) u16_strlen(pString);
             DWORD cbCopy = (len + 1) * sizeof(WCHAR);
 
             EnsureSize(cbCopy);
@@ -179,7 +179,7 @@ public:
         else
         {
             const WCHAR * pString = (WCHAR*) &m_pBuffer[m_idx];
-            DWORD len = (DWORD) wcslen(pString);
+            DWORD len = (DWORD) u16_strlen(pString);
             m_idx += (len + 1) * sizeof(WCHAR); // skip past null
             _ASSERTE(m_idx <= m_size);
             return pString;

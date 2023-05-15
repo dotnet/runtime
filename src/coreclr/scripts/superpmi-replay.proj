@@ -52,15 +52,15 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="win-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="win-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="win-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="win-arm64-3" Platform="windows" Architecture="arm64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-arm64-3" Platform="windows" Architecture="arm64" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="3"/>
     <SPMI_Partition Include="linux-arm64-1" Platform="linux" Architecture="arm64" Partition="1" PartitionCount="3"/>
     <SPMI_Partition Include="linux-arm64-2" Platform="linux" Architecture="arm64" Partition="2" PartitionCount="3"/>
     <SPMI_Partition Include="linux-arm64-3" Platform="linux" Architecture="arm64" Partition="3" PartitionCount="3"/>
@@ -70,12 +70,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <SPMI_Partition Include="win-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="win-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-1" Platform="linux" Architecture="arm" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-2" Platform="linux" Architecture="arm" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="unix-arm-3" Platform="linux" Architecture="arm" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="windows-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-1" Platform="linux" Architecture="arm" Partition="1" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-2" Platform="linux" Architecture="arm" Partition="2" PartitionCount="3"/>
+    <SPMI_Partition Include="linux-arm-3" Platform="linux" Architecture="arm" Partition="3" PartitionCount="3"/>
   </ItemGroup>
 
   <ItemGroup>

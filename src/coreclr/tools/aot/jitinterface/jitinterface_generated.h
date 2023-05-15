@@ -109,8 +109,8 @@ struct JitInterfaceCallbacks
     CorInfoType (* getFieldType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent);
     unsigned (* getFieldOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     void (* getFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult);
-    uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
-    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    uint32_t (* getThreadLocalFieldInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool isGCtype);
+    void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -1165,19 +1165,21 @@ public:
 }
 
     virtual uint32_t getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field)
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype)
 {
     CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->getThreadLocalFieldInfo(_thisHandle, &pException, field);
+    uint32_t temp = _callbacks->getThreadLocalFieldInfo(_thisHandle, &pException, field, isGCtype);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
     virtual void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo);
+    _callbacks->getThreadLocalStaticBlocksInfo(_thisHandle, &pException, pInfo, isGCType);
     if (pException != nullptr) throw pException;
 }
 

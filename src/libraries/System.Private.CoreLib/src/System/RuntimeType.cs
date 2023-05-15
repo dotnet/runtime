@@ -25,7 +25,12 @@ namespace System
         public override int MetadataToken => RuntimeTypeHandle.GetToken(this);
         public override Module Module => GetRuntimeModule();
         public override Type? ReflectedType => DeclaringType;
-        public override RuntimeTypeHandle TypeHandle => new RuntimeTypeHandle(this);
+        public override RuntimeTypeHandle TypeHandle
+        {
+            [Intrinsic] // to avoid round-trip "handle -> RuntimeType -> handle" in JIT
+            get => new RuntimeTypeHandle(this);
+        }
+
         public override Type UnderlyingSystemType => this;
 
         public object Clone() => this;

@@ -165,11 +165,10 @@ public class ComputeWasmPublishAssets : Task
         {
             var key = kvp.Key;
             var asset = kvp.Value;
-            var isDotNetJs = IsDotNetJs(key);
-            var isDotNetWorkerJs = IsDotNetWorkerJs(key);
+            var isDotNetJs = IsAnyDotNetJs(key);
             var isDotNetWasm = IsDotNetWasm(key);
 
-            if (!isDotNetJs && !isDotNetWasm && !isDotNetWorkerJs)
+            if (!isDotNetJs && !isDotNetWasm)
             {
                 if (resolvedNativeAssetToPublish.TryGetValue(Path.GetFileName(asset.GetMetadata("OriginalItemSpec")), out var existing))
                 {
@@ -198,9 +197,17 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (isDotNetJs || isDotNetWorkerJs)
+            if (isDotNetJs)
             {
-                var baseName = isDotNetWorkerJs ? "dotnet.worker" : "dotnet";
+                var baseName = Path.GetFileNameWithoutExtension(key);
+                if (baseName.StartsWith("dotnet.native"))
+                    baseName = "dotnet.native";
+                else if (baseName.StartsWith("dotnet.runtime"))
+                    baseName = "dotnet.runtime";
+                else if (baseName.StartsWith("dotnet.worker"))
+                    baseName = "dotnet.worker";
+                else if (baseName.StartsWith("dotnet"))
+                    baseName = "dotnet";
 
                 var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}.js");
                 ITaskItem newDotNetJs = null;
@@ -235,7 +242,10 @@ public class ComputeWasmPublishAssets : Task
 
             if (isDotNetWasm)
             {
-                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == "dotnet.wasm");
+                var aotDotNetWasm = WasmAotAssets.SingleOrDefault(a => {
+                    var name= $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}";
+                    return name == "dotnet.native.wasm" || name == "dotnet.wasm";
+                });
                 ITaskItem newDotNetWasm = null;
                 if (aotDotNetWasm != null)
                 {
@@ -252,9 +262,13 @@ public class ComputeWasmPublishAssets : Task
 
                 ApplyPublishProperties(newDotNetWasm);
                 nativeStaticWebAssets.Add(newDotNetWasm);
-                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.wasm", out var resolved))
+                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.native.wasm", out var resolved))
                 {
                     filesToRemove.Add(resolved);
+                }
+                else if (resolvedNativeAssetToPublish.TryGetValue("dotnet.wasm", out var resolved2))
+                {
+                    filesToRemove.Add(resolved2);
                 }
                 continue;
             }
@@ -268,19 +282,18 @@ public class ComputeWasmPublishAssets : Task
 
         return nativeStaticWebAssets;
 
-        static bool IsDotNetJs(string key)
+        static bool IsAnyDotNetJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal) && !fileName.Contains("worker");
+            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
         }
 
-        static bool IsDotNetWorkerJs(string key)
+        static bool IsDotNetWasm(string key)
         {
-            var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
+            var name = Path.GetFileName(key);
+            return string.Equals("dotnet.native.wasm", name, StringComparison.Ordinal)
+                || string.Equals("dotnet.wasm", name, StringComparison.Ordinal);
         }
-
-        static bool IsDotNetWasm(string key) => string.Equals("dotnet.wasm", Path.GetFileName(key), StringComparison.Ordinal);
     }
 
     private List<ITaskItem> ProcessSymbolAssets(

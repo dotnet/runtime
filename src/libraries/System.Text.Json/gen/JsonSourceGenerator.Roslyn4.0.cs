@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,8 +17,15 @@ namespace System.Text.Json.SourceGeneration
     [Generator]
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
+#if ROSLYN4_4_OR_GREATER
+        public const string SourceGenerationSpecTrackingName = "SourceGenerationSpec";
+#endif
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+#if LAUNCH_DEBUGGER
+            Diagnostics.Debugger.Launch();
+#endif
             IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
 #if !ROSLYN4_4_OR_GREATER
@@ -30,42 +35,40 @@ namespace System.Text.Json.SourceGeneration
                     (node, _) => node is ClassDeclarationSyntax,
                     (context, _) => (ClassDeclarationSyntax)context.TargetNode);
 
-            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses =
-                context.CompilationProvider.Combine(classDeclarations.Collect());
+            IncrementalValueProvider<SourceGenerationSpec?> sourceGenSpec = context.CompilationProvider
+                .Combine(classDeclarations.Collect())
+                .Select(static (tuple, cancellationToken) =>
+                {
+                    Parser parser = new(tuple.Left);
+                    return parser.GetGenerationSpec(tuple.Right, cancellationToken);
+                })
+#if ROSLYN4_4_OR_GREATER
+                .WithTrackingName(SourceGenerationSpecTrackingName);
+#else
+                ;
+#endif
 
-            context.RegisterSourceOutput(compilationAndClasses, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            context.RegisterSourceOutput(sourceGenSpec, EmitSource);
         }
 
-        private void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> contextClasses, SourceProductionContext sourceProductionContext)
+        private void EmitSource(SourceProductionContext sourceProductionContext, SourceGenerationSpec? sourceGenSpec)
         {
-#if LAUNCH_DEBUGGER
-            if (!Diagnostics.Debugger.IsAttached)
-            {
-                Diagnostics.Debugger.Launch();
-            }
-#endif
-            if (contextClasses.IsDefaultOrEmpty)
+            OnSourceEmitting?.Invoke(sourceGenSpec);
+
+            if (sourceGenSpec is null)
             {
                 return;
             }
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(sourceProductionContext);
-            Parser parser = new(compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(contextClasses, sourceProductionContext.CancellationToken);
-            if (spec != null)
-            {
-                _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
-
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
-            }
+            Emitter emitter = new(context, sourceGenSpec);
+            emitter.Emit();
         }
 
         /// <summary>
-        /// Helper for unit tests.
+        /// Instrumentation helper for unit tests.
         /// </summary>
-        public Dictionary<string, Type>? GetSerializableTypes() => _rootTypes?.ToDictionary(p => p.Type.FullName!, p => p.Type);
-        private List<TypeGenerationSpec>? _rootTypes;
+        public Action<SourceGenerationSpec?>? OnSourceEmitting { get; init; }
     }
 
     internal readonly struct JsonSourceGenerationContext

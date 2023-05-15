@@ -343,10 +343,10 @@ private:
     ComponentSpan GetNextComponentString(LPCWSTR start) const
     {
         const WCHAR ComponentDelimiter = W(':');
-        const WCHAR * end = wcschr(start, ComponentDelimiter);
+        const WCHAR * end = u16_strchr(start, ComponentDelimiter);
         if (end == nullptr)
         {
-            end = start + wcslen(start);
+            end = start + u16_strlen(start);
         }
 
         return ComponentSpan(start, end);
@@ -359,7 +359,7 @@ private:
         {
             auto const length = component.End - component.Start;
             providerName = new WCHAR[length + 1];
-            wcsncpy(providerName, component.Start, length);
+            u16_strncpy_s(providerName, length + 1, component.Start, length);
             providerName[length] = '\0';
         }
         return providerName;
@@ -370,7 +370,7 @@ private:
         auto enabledKeywordsMask = (uint64_t)(-1);
         if ((component.End - component.Start) != 0)
         {
-            enabledKeywordsMask = _wcstoui64(component.Start, nullptr, 16);
+            enabledKeywordsMask = u16_strtoui64(component.Start, nullptr, 16);
         }
         return enabledKeywordsMask;
     }
@@ -392,7 +392,7 @@ private:
         {
             auto const length = component.End - component.Start;
             argument = new WCHAR[length + 1];
-            wcsncpy(argument, component.Start, length);
+            u16_strncpy_s(argument, length + 1, component.Start, length);
             argument[length] = '\0';
         }
         return argument;
@@ -457,7 +457,7 @@ private:
 #ifdef FEATURE_EVENT_TRACE
     static LTTNG_TRACE_CONTEXT * const GetProvider(LPCWSTR providerName)
     {
-        auto length = wcslen(providerName);
+        auto length = u16_strlen(providerName);
         for (auto provider : ALL_LTTNG_PROVIDERS_CONTEXT)
         {
             if (_wcsicmp(provider->Name, providerName) == 0)
@@ -534,7 +534,7 @@ public:
         while (configToParse != nullptr)
         {
             const WCHAR comma = W(',');
-            auto end = wcschr(configToParse, comma);
+            auto end = (LPWSTR)u16_strchr(configToParse, comma);
             configuration.Parse(configToParse);
             XplatEventLoggerController::UpdateProviderContext(configuration);
             if (end == nullptr)

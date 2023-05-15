@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { runtimeHelpers } from "../../globals";
 import type { Mock } from "../mock";
 import { mock } from "../mock";
+import { runtimeHelpers } from "../../globals";
 
 export function importAndInstantiateMock(mockURL: string): Promise<Mock> {
     if (monoDiagnosticsMock) {

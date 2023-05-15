@@ -1873,6 +1873,60 @@ namespace System.Runtime.Intrinsics.Wasm
         // Conversions
 
         /// <summary>
+        ///   f32x4.convert_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) => ConvertToSingle(value);
+        /// <summary>
+        ///   f32x4.convert_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) => ConvertToSingle(value);
+        /// <summary>
+        /// f32x4.demote_f64x2_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) => ConvertToSingle(value);
+
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.convert_low_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) => ConvertToDoubleLower(value);
+        /// <summary>
+        ///   f64x2.promote_low_f32x4
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) => ConvertToDoubleLower(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f32x4_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<float> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_s_zero
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) => ConvertToInt32Saturate(value);
+        /// <summary>
+        ///   i32x4.trunc_sat_f64x2_u_zero
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<uint> ConvertToUnsignedInt32Saturate(Vector128<double> value) => ConvertToUnsignedInt32Saturate(value);
+
+        /// <summary>
         ///   i8x16.narrow_i16x8_s
         /// </summary>
         [Intrinsic]
