@@ -168,9 +168,9 @@ namespace System.Runtime.Serialization.DataContracts
                         XmlRootAttribute xmlRootAttribute = (XmlRootAttribute)xmlRootAttributes[0];
                         _isTopLevelElementNullable = xmlRootAttribute.IsNullable;
                         string elementName = xmlRootAttribute.ElementName;
-                        _topLevelElementName = (elementName == null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
+                        _topLevelElementName = string.IsNullOrEmpty(elementName) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
                         string? elementNs = xmlRootAttribute.Namespace;
-                        _topLevelElementNamespace = (elementNs == null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
+                        _topLevelElementNamespace = string.IsNullOrEmpty(elementNs) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
                     }
                     else
                     {

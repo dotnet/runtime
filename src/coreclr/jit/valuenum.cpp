@@ -7017,6 +7017,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
+            case NI_AVX512CD_LeadingZeroCount:
+            case NI_AVX512CD_VL_LeadingZeroCount:
+            {
+                return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
+            }
+
             case NI_BMI1_TrailingZeroCount:
             {
                 assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
@@ -7302,6 +7308,20 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
+
+#ifdef TARGET_XARCH
+            case NI_AVX512F_RotateLeft:
+            case NI_AVX512F_VL_RotateLeft:
+            {
+                return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+
+            case NI_AVX512F_RotateRight:
+            case NI_AVX512F_VL_RotateRight:
+            {
+                return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+            }
+#endif // TARGET_XARCH
 
 #ifdef TARGET_ARM64
             case NI_AdvSimd_ShiftLeftLogical:
@@ -10272,7 +10292,9 @@ static bool GetStaticFieldSeqAndAddress(ValueNumStore* vnStore, GenTree* tree, s
     if (vnStore->GetVNFunc(tree->gtVNPair.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
     {
         FieldSeq* fseq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
-        if (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic)
+        // TODO-Cleanup: We may see null field seqs here due to how the base of
+        // boxed statics are VN'd. We should get rid of this case.
+        if ((fseq != nullptr) && (fseq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
             *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[2]);
             *pFseq      = fseq;
@@ -10423,7 +10445,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10442,7 +10464,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10732,12 +10754,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // Indirections off of addresses for boxed statics represent bases for
-                    // the address of the static itself. Here we will use "nullptr" for the
-                    // field sequence and assume the actual static field will be appended to
-                    // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
+                        // VN is assigned inside fgValueNumberConstLoad
+                    }
+                    else if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        // Indirections off of addresses for boxed statics represent bases for
+                        // the address of the static itself. Here we will use "nullptr" for the
+                        // field sequence and assume the actual static field will be appended to
+                        // it later, as part of numbering the method table pointer offset addition.
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
                         ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
@@ -11156,23 +11184,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
             }
 
-            // ARR_ELEM is a bounds-checked address. TODO-CQ: model it precisely.
             case GT_ARR_ELEM:
-            {
-                GenTreeArrElem* arrElem = tree->AsArrElem();
-
-                ValueNumPair vnpExcSet = vnStore->VNPExceptionSet(arrElem->gtArrObj->gtVNPair);
-                for (size_t i = 0; i < arrElem->gtArrRank; i++)
-                {
-                    vnpExcSet = vnStore->VNPUnionExcSet(arrElem->gtArrInds[i]->gtVNPair, vnpExcSet);
-                }
-
-                arrElem->gtVNPair = vnStore->VNPUniqueWithExc(arrElem->TypeGet(), vnpExcSet);
-
-                // TODO: model the IndexOutOfRangeException for this node.
-                fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
-            }
-            break;
+                unreached(); // we expect these to be gone by the time value numbering runs
+                break;
 
             // FIELD_LIST is an R-value that we currently don't model.
             case GT_FIELD_LIST:
@@ -11230,7 +11244,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             printTreeID(tree);
             printf(" ");
             gtDispNodeName(tree);
-            if (tree->OperIsLeaf() || tree->OperIsLocalStore()) // local stores used to be leaves
+            if (tree->OperIsLocalStore())
+            {
+                gtDispLocal(tree->AsLclVarCommon(), nullptr);
+            }
+            else if (tree->OperIsLeaf())
             {
                 gtDispLeaf(tree, nullptr);
             }
@@ -12216,6 +12234,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedGcthreadstaticBaseNoctor;
             break;
+        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetsharedGcthreadstaticBaseNoctorOptimized;
+            break;
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
             break;
@@ -12929,19 +12950,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_MDARR_LENGTH:
             case GT_MDARR_LOWER_BOUND:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrCommon()->ArrRef());
-                break;
-
-            case GT_ARR_ELEM:
-                assert(!opts.compJitEarlyExpandMDArrays);
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrElem()->gtArrObj);
-                break;
-
-            case GT_ARR_INDEX:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrIndex()->ArrObj());
-                break;
-
-            case GT_ARR_OFFSET:
-                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsArrOffs()->gtArrObj);
                 break;
 
             case GT_CKFINITE:
