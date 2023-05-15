@@ -73,6 +73,11 @@ public class BootJsonData
 public class ResourcesData
 {
     /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
+    /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
     public ResourceHashesByNameDictionary runtime { get; set; } = new ResourceHashesByNameDictionary();

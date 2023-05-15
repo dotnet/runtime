@@ -255,6 +255,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         if (RemoteSources?.Length > 0)
         {
+            // TODO MF: RemoteSources
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
                     config.RemoteSources.Add(source.ItemSpec);
@@ -289,11 +290,26 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
             var sb = new StringBuilder();
-            foreach (AssetEntry asset in config.Assets)
+
+            static void AddDictionary(StringBuilder sb, Dictionary<string, string> res)
             {
-                sb.Append(asset.Hash);
+                foreach (var asset in res)
+                    sb.Append(asset.Value);
             }
-            config.AssetsHash = Utils.ComputeTextIntegrity(sb.ToString());
+
+            AddDictionary(sb, config.resources.assembly);
+            AddDictionary(sb, config.resources.runtime);
+
+            if (config.resources.lazyAssembly != null)
+                AddDictionary(sb, config.resources.lazyAssembly);
+
+            if (config.resources.satelliteResources != null)
+            {
+                foreach (var culture in config.resources.satelliteResources)
+                    AddDictionary(sb, culture.Value);
+            }
+
+            config.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
 
             var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
