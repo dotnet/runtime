@@ -20,6 +20,8 @@ namespace System.Runtime.InteropServices.Marshalling
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder), MarshalMode.Default, typeof(ComInterfaceMarshaller<>))]
     public static unsafe class ComInterfaceMarshaller<T>
     {
+        private static readonly Guid? TargetInterfaceIID = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(T).TypeHandle)?.Iid;
+
         public static void* ConvertToUnmanaged(T? managed)
         {
             if (managed == null)
@@ -40,16 +42,6 @@ namespace System.Runtime.InteropServices.Marshalling
                 return default;
             }
             return (T)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance((nint)unmanaged, CreateObjectFlags.Unwrap);
-        }
-
-        private static readonly Guid? TargetInterfaceIID;
-
-        static ComInterfaceMarshaller()
-        {
-            if (StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(T).TypeHandle) is IIUnknownDerivedDetails interfaceDetails)
-            {
-                TargetInterfaceIID = interfaceDetails.Iid;
-            }
         }
 
         internal static void* CastIUnknownToInterfaceType(nint unknown)
