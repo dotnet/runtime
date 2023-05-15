@@ -739,9 +739,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: BinaryFormatter</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
             <Issue>Specific to CoreCLR</Issue>
         </ExcludeList>
@@ -2859,11 +2856,8 @@
             <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
+            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
@@ -3800,9 +3794,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/**">
             <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_36614/GitHub_36614/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -4014,10 +4005,6 @@
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
             <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
-        </ExcludeList>
-
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">
-            <Issue>Could not load file or assembly 'System.Drawing.Common, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51' or one of its dependencies.</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
