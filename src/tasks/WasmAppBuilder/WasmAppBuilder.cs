@@ -197,6 +197,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var i = 0;
             StringDictionary targetPathTable = new();
+            var vfs = new Dictionary<string, Dictionary<string, string>>();
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -227,13 +228,14 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
                 FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                // TODO MF: Virtual path for VFS
-                var asset = new VfsEntry($"supportFiles/{generatedFileName}", Utils.ComputeIntegrity(vfsPath))
+                vfs[targetPath] = new()
                 {
-                    VirtualPath = targetPath
+                    [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
-                config.Assets.Add(asset);
             }
+
+            if (vfs.Count > 0)
+                config.resources.vfs = vfs;
         }
 
         if (!InvariantGlobalization)
@@ -307,6 +309,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 foreach (var culture in config.resources.satelliteResources)
                     AddDictionary(sb, culture.Value);
+            }
+
+            if (config.resources.vfs != null)
+            {
+                foreach (var entry in config.resources.vfs)
+                    AddDictionary(sb, entry.Value);
             }
 
             config.resources.hash = Utils.ComputeTextIntegrity(sb.ToString());
