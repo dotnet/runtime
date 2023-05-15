@@ -2021,6 +2021,11 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
+            BOOL value;
+        } IsOptsDisabledData;
+
+        struct MSLAYOUT
+        {
             LSPTR_BREAKPOINT breakpointToken;
         } BreakpointSetErrorData;
 

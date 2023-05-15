@@ -5721,10 +5721,11 @@ interface ICorDebugFunction5 : IUnknown
      * Triggers a new JIT so the next time the function is called, it will be unoptimized.
      */
     HRESULT DisableOptimizations();
+
     /*
-     * Returns the JIT flags the function will have when it is next invoked.
+     * Indicates whether this method had optimizations disabled already.
      */
-    HRESULT GetOptimizationLevel(CorDebugJITCompilerFlags *pFlags);
+    HRESULT AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
 };
 
 /*

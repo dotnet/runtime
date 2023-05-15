@@ -46,6 +46,10 @@ void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
 
 #else // FEATURE_CODE_VERSIONING
 
+// This is just used as a unique id. Overflow is OK. If we happen to have more than 4+Billion rejits
+// and somehow manage to not run out of memory, we'll just have to redefine ReJITID as size_t.
+/* static */
+static ReJITID s_GlobalReJitId = 1;
 
 #ifndef DACCESS_COMPILE
 NativeCodeVersionNode::NativeCodeVersionNode(
@@ -553,7 +557,8 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
     m_rejitState(ILCodeVersion::kStateRequested),
     m_pIL(),
-    m_jitFlags(0)
+    m_jitFlags(0),
+    m_debuggerDeoptimized(FALSE)
 {
     m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
 }
@@ -627,6 +632,12 @@ PTR_ILCodeVersionNode ILCodeVersionNode::GetNextILVersionNode() const
     return m_pNextILVersionNode;
 }
 
+BOOL ILCodeVersionNode::IsDebuggerDeoptimized() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return m_debuggerDeoptimized;
+}
+
 #ifndef DACCESS_COMPILE
 void ILCodeVersionNode::SetRejitState(ILCodeVersion::RejitFlags newState)
 {
@@ -680,6 +691,12 @@ void ILCodeVersionNode::SetNextILVersionNode(ILCodeVersionNode* pNextILVersionNo
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     m_pNextILVersionNode = pNextILVersionNode;
+}
+
+void ILCodeVersionNode::SetDebuggerDeoptimized()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_debuggerDeoptimized = TRUE;
 }
 #endif
 
@@ -941,6 +958,19 @@ const InstrumentedILOffsetMapping* ILCodeVersion::GetInstrumentedILMap() const
     }
 }
 
+BOOL ILCodeVersion::IsDebuggerDeoptimized() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->IsDebuggerDeoptimized();
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
 #ifndef DACCESS_COMPILE
 void ILCodeVersion::SetRejitState(RejitFlags newState)
 {
@@ -970,6 +1000,12 @@ void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetInstrumentedILMap(cMap, rgMap);
+}
+
+void ILCodeVersion::SetDebuggerDeoptimized()
+{
+    LIMITED_METHOD_CONTRACT;
+    AsNode()->SetDebuggerDeoptimized();
 }
 
 HRESULT ILCodeVersion::AddNativeCodeVersion(
@@ -1448,7 +1484,7 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion)
+HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1461,7 +1497,7 @@ HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef method
         return hr;
     }
 
-    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, rejitId);
+    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId)));
     if (pILCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
@@ -1495,7 +1531,7 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     CONTRACTL_END;
     _ASSERTE(!IsLockOwnedByCurrentThread());
     HRESULT hr = S_OK;
-
+    
 #if DEBUG
     for (DWORD i = 0; i < cActiveVersions; i++)
     {

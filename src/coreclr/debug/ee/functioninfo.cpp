@@ -1580,7 +1580,23 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
         if (startAddr == NULL)
         {
-            return NULL;
+            CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(fd);
+            if (!ilVersion.IsDefaultVersion())
+            {
+                // Special case where we may have created a new IL code version without ever jitting the default IL
+                NativeCodeVersion nativeVersion = ilVersion.GetActiveNativeCodeVersion(fd);
+                if (!nativeVersion.IsNull())
+                {
+                    startAddr = nativeVersion.GetNativeCode();
+                }
+            }
+
+            if (startAddr == NULL)
+            {
+                return NULL;
+            }
         }
     }
     else

@@ -5416,7 +5416,7 @@ public:
     //-----------------------------------------------------------
     // ICorDebugFunction5
     //-----------------------------------------------------------
-    COM_METHOD GetOptimizationLevel(CorDebugJITCompilerFlags *pFlags);
+    COM_METHOD AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
     COM_METHOD DisableOptimizations();
 
     //-----------------------------------------------------------

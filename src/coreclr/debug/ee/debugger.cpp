@@ -10441,36 +10441,58 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             GetCanary()->ClearCache();
             break;
         }
-    case DB_IPCE_DISABLE_OPS:
+
+    case DB_IPCE_DISABLE_OPTS:
         {
-            //get app domain get m_tierredCompilationManager
             Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
-            mdToken memberRef = pEvent->DisableOptData.funcMetadataToken;
-            // AppDomain *appDomain = pModule->GetAppDomain();
-            MethodDesc *pMethodDesc = g_pEEInterface->FindLoadedMethodRefOrDef(pModule, memberRef);
-            AppDomain *appDomain = pEvent->DisableOptData.vmAppDomain.GetRawPtr(); //GetAppDomain()?
-            TieredCompilationManager * tieredCompilationManager = appDomain->GetTieredCompilationManager();
-            tieredCompilationManager->DeOptimizeMethod(pMethodDesc);
+            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
+            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
 
+            HRESULT hr = E_INVALIDARG;
+            EX_TRY
+            {
+                hr = GetAppDomain()->GetTieredCompilationManager()->DeoptimizeMethod(pModule, methodDef);
+            }
+            EX_CATCH_HRESULT(hr);
+            
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_DISABLE_OPTS_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
 
+            pIPCResult->hr = hr;
 
+            m_pRCThread->SendIPCReply();
+        }
+        break;
 
-            //Module * pModule = pDebuggerModule->GetRuntimeModule();
-            // NativeCodeVersion newNativeCodeVersion;
-            // MethodDesc *pMethodDesc = g_pEEInterface->FindLoadedMethodRefOrDef(pEvent->DisableOptData.pModule.GetRawPtr(), pEvent->DisableOptData.funcMetadataToken);
-            // NativeCodeVersion::OptimizationTier debugTier = NativeCodeVersion::OptimizationDebug;
-            // CodeVersionManager * pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
-            // ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc);
-            // //Build a new NativeCodeVersion
-            // HRESULT hr = ilCodeVersion.AddNativeCodeVersion(pMethodDesc, debugTier, &newNativeCodeVersion);
-            // if (FAILED(hr))
-            // {
-            //     ThrowHR(hr);
-            // }
-            //Set optimization tier
-            //set as active native code version
+    case DB_IPCE_IS_OPTS_DISABLED:
+        {
+            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
+            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
+            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
 
+            HRESULT hr = E_INVALIDARG;
+            BOOL deoptimized = FALSE; 
+            EX_TRY
+            {
+                hr = GetAppDomain()->GetTieredCompilationManager()->IsMethodDeoptimized(pModule, methodDef, &deoptimized);
+            }
+            EX_CATCH_HRESULT(hr);
+            
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_IS_OPTS_DISABLED_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->IsOptsDisabledData.value = deoptimized;
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
         }
         break;
 

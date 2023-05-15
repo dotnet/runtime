@@ -623,54 +623,77 @@ HRESULT CordbFunction::CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBr
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::DisableOptimizations()
 {
-    HRESULT hr;
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
+    HRESULT hr = S_OK;
 
     CordbProcess * pProcess = GetProcess();
     RSLockHolder lockHolder(pProcess->GetProcessLock());
-    pProcess->ClearPatchTable();
 
-    DebuggerIPCEvent * pEvent = (DebuggerIPCEvent *) _alloca(CorDBIPC_BUFFER_SIZE);
+    DebuggerIPCEvent event;
     CordbAppDomain * pAppDomain = GetAppDomain();
     _ASSERTE (pAppDomain != NULL);
 
-    pProcess->InitIPCEvent(pEvent, DB_IPCE_DISABLE_OPS, true, pAppDomain->GetADToken());
-    pEvent->DisableOptData.funcMetadataToken = m_MDToken;
-    pEvent->DisableOptData.pModule = m_pModule->GetRuntimeModule();
+    pProcess->InitIPCEvent(&event, DB_IPCE_DISABLE_OPTS, true, pAppDomain->GetADToken());
+    event.DisableOptData.funcMetadataToken = m_MDToken;
+    event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
 
     lockHolder.Release();
-    hr = pProcess->SendIPCEvent(pEvent, CorDBIPC_BUFFER_SIZE);
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
     lockHolder.Acquire();
 
-    hr = WORST_HR(hr, pEvent->hr);
+    _ASSERTE(event.type == DB_IPCE_DISABLE_OPTS_RESULT);
 
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    return hr;
+    return event.hr;
 }
 
 //-----------------------------------------------------------------------------
-// CordbFunction::GetOptimizationLevel
-//  Public method for ICorDebugFunction5::GetOptimizationLevel.
-//   Returns the JIT flags the function will have when it is next invoked.
+// CordbFunction::AreOptimizationsDisabled
+//  Public method for ICorDebugFunction5::AreOptimizationsDisabled.
+//   Indicates whether this method had optimizations disabled already.
 //
 // Parameters:
-//   CorDebugJITCompilerFlags *pFlags
+//   BOOL *pOptimizationsDisabled
 //   
 //
 // Returns:
 //   S_OK on success.
 //-----------------------------------------------------------------------------
-HRESULT CordbFunction::GetOptimizationLevel(CorDebugJITCompilerFlags *pFlags)
+HRESULT CordbFunction::AreOptimizationsDisabled(BOOL *pOptimizationsDisabled)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
-    return E_NOTIMPL;
+
+    HRESULT hr = S_OK;
+
+    if (pOptimizationsDisabled == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    CordbProcess * pProcess = GetProcess();
+    RSLockHolder lockHolder(pProcess->GetProcessLock());
+
+    DebuggerIPCEvent event;
+    CordbAppDomain * pAppDomain = GetAppDomain();
+    _ASSERTE (pAppDomain != NULL);
+
+    pProcess->InitIPCEvent(&event, DB_IPCE_IS_OPTS_DISABLED, true, pAppDomain->GetADToken());
+    event.DisableOptData.funcMetadataToken = m_MDToken;
+    event.DisableOptData.pModule = m_pModule->GetRuntimeModule();
+
+    lockHolder.Release();
+    hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event, sizeof(DebuggerIPCEvent));
+    lockHolder.Acquire();
+
+    _ASSERTE(event.type == DB_IPCE_IS_OPTS_DISABLED_RESULT);
+    
+    *pOptimizationsDisabled = event.IsOptsDisabledData.value;
+
+    return event.hr;;
 }
 
 // determine whether we have a native-only implementation

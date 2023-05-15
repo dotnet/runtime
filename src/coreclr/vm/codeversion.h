@@ -80,7 +80,6 @@ public:
         OptimizationTierOptimized, // may do less optimizations than tier 1
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
-        OptimizationTierDebug,
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
@@ -214,9 +213,11 @@ public:
 
     RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
+    BOOL IsDebuggerDeoptimized() const;
 #ifndef DACCESS_COMPILE
     void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
+    void SetDebuggerDeoptimized();
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -377,6 +378,7 @@ public:
     ILCodeVersion::RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
+    BOOL IsDebuggerDeoptimized() const;
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
@@ -384,6 +386,7 @@ public:
     void SetRejitState(ILCodeVersion::RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
+    void SetDebuggerDeoptimized();
 #endif
 
 private:
@@ -395,6 +398,7 @@ private:
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
+    BOOL m_debuggerDeoptimized;
 };
 
 class ILCodeVersionCollection
@@ -592,7 +596,7 @@ public:
         HRESULT hrStatus;
     };
 
-    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ReJITID rejitId, ILCodeVersion* pILCodeVersion);
+    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
         PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     PCODE PublishVersionableCodeIfNecessary(
