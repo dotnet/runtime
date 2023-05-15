@@ -144,8 +144,10 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         private static unsafe void OnNativeIOCompleted(IntPtr instance, IntPtr context, IntPtr overlappedPtr, uint ioResult, nuint numberOfBytesTransferred, IntPtr ioPtr)
         {
-            // PR-Comment: Assuming it's not necessary, might be wrong about this
-            // var wrapper = ThreadPoolCallbackWrapper.Enter();
+            // Enabling for NativeAot first
+#if NATIVEAOT
+            var wrapper = ThreadPoolCallbackWrapper.Enter();
+#endif
             Win32ThreadPoolNativeOverlapped* overlapped = (Win32ThreadPoolNativeOverlapped*)overlappedPtr;
 
             ThreadPoolBoundHandle? boundHandle = overlapped->Data._boundHandle;
@@ -156,7 +158,9 @@ namespace System.Threading
 
             Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
             ThreadPool.IncrementCompletedWorkItemCount();
-            // wrapper.Exit();
+#if NATIVEAOT
+            wrapper.Exit();
+#endif
         }
 
         private bool AddRef()
