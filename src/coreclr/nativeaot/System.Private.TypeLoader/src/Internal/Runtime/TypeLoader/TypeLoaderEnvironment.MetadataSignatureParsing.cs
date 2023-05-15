@@ -360,14 +360,6 @@ namespace Internal.Runtime.TypeLoader
                                 }
                                 break;
 
-                            case HandleType.TypeReference:
-                                if (!TypeLoaderEnvironment.TryResolveNamedTypeForTypeReference(
-                                    _metadataReader, typeHandle.ToTypeReferenceHandle(_metadataReader), out type2))
-                                {
-                                    return false;
-                                }
-                                break;
-
                             default:
                                 return false;
                         }

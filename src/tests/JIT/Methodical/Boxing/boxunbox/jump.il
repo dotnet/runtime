@@ -8,7 +8,7 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'jump' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_jump_boxunbox
 {

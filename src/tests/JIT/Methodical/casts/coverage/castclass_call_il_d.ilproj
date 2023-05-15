@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="castclass_call_d.il" />
     <Compile Include="castclass_call.il" />
   </ItemGroup>
 </Project>

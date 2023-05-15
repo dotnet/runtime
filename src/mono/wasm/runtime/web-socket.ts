@@ -3,11 +3,10 @@
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { PromiseController, createPromiseController } from "./promise-controller";
-import { mono_assert } from "./types";
-import { Module } from "./imports";
+import { Module, createPromiseController } from "./globals";
 import { setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
+import { PromiseController } from "./types/internal";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");

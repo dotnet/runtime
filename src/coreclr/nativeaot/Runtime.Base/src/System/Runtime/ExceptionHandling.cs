@@ -850,8 +850,17 @@ namespace System.Runtime
                 else
                 {
                     byte* pFilterFunclet = ehClause._filterAddress;
-                    bool shouldInvokeHandler =
-                        InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
+
+                    bool shouldInvokeHandler = false;
+                    try
+                    {
+                        shouldInvokeHandler =
+                            InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, frameIter.RegisterSet);
+                    }
+                    catch when (true)
+                    {
+                        // Prevent leaking any exception from the filter funclet
+                    }
 
                     if (shouldInvokeHandler)
                     {

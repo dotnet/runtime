@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Xunit;
 
 internal delegate int Deleg(int i, int j, int k, int l, int m, int n);
 
@@ -18,11 +19,13 @@ public class cs1
 
     [System.Runtime.CompilerServices.MethodImpl(
       System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    public static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         cs1 t = new cs1();
 
-        Console.WriteLine(t.GetType() == typeof(cs1) ? 100 : args.Length);
-        return 100;
+        int result = t.GetType() == typeof(cs1) ? 100 : 1;
+        Console.WriteLine(result);
+        return result;
     }
 }

@@ -23,7 +23,8 @@ internal sealed class MsQuicTlsSecret : IDisposable
     {
         if (s_fileStream != null)
         {
-            try {
+            try
+            {
                 QUIC_TLS_SECRETS* ptr = handle.GetSecretsBuffer();
                 if (ptr != null)
                 {

@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // Verify that the Jit_Patchpoint helper inserted for OSR preserves last error
 
 public class Runtime_75828
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Marshal.SetLastSystemError(42);
         

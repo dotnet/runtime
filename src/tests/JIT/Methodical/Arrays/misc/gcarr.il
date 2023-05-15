@@ -16,7 +16,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'gcarr'// as "gcarr"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

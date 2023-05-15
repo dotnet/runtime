@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.ComponentModel.DataAnnotations
 {
     /// <summary>
-    ///     Validation attribute to indicate that a property field or parameter is required.
+    ///     Validation attribute to indicate that a property, field or parameter is required.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
         AllowMultiple = false)]

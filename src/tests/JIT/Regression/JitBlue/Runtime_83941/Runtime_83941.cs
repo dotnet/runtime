@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test
 {
@@ -21,7 +22,8 @@ public class Test
 		return 0;
 	}
 
-	public static int Main () {
+	[Fact]
+	public static int TestEntryPoint() {
 		try {
 			var t = new Test ();
 			t.test (null);

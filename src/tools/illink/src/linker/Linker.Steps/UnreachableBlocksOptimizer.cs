@@ -571,8 +571,8 @@ namespace Mono.Linker.Steps
 
 			Collection<Instruction>? FoldedInstructions { get; set; }
 
-			[MemberNotNull ("FoldedInstructions")]
-			[MemberNotNull ("mapping")]
+			[MemberNotNull (nameof(FoldedInstructions))]
+			[MemberNotNull (nameof(mapping))]
 			void InitializeFoldedInstruction ()
 			{
 				FoldedInstructions = new Collection<Instruction> (Instructions);
@@ -1475,7 +1475,7 @@ namespace Mono.Linker.Steps
 			//
 			public bool SideEffectFreeResult { get; private set; }
 
-			[MemberNotNullWhen (true, "Result")]
+			[MemberNotNullWhen (true, nameof(Result))]
 			public bool Analyze (in CalleePayload callee, Stack<MethodDefinition> callStack)
 			{
 				MethodDefinition method = callee.Method;
@@ -1852,7 +1852,7 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			[MemberNotNullWhen (true, "Result")]
+			[MemberNotNullWhen (true, nameof(Result))]
 			bool ConvertStackToResult ()
 			{
 				if (stack_instr == null)

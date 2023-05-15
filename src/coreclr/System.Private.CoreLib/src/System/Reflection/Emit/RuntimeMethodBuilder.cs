@@ -519,17 +519,18 @@ namespace System.Reflection.Emit
             if (m_inst != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
-            for (int i = 0; i < names.Length; i++)
-                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
-
             if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
-            m_bIsGenMethDef = true;
             m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(name, i, this));
+            }
 
+            m_bIsGenMethDef = true;
             return m_inst;
         }
 
@@ -646,7 +647,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
             attributes &= ~ParameterAttributes.ReservedMask;
-            return new ParameterBuilder(this, position, attributes, strParamName);
+            return new RuntimeParameterBuilder(this, position, attributes, strParamName);
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
@@ -695,7 +696,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ThrowIfGeneric();
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
@@ -704,15 +705,6 @@ namespace System.Reflection.Emit
 
             if (IsKnownCA(con))
                 ParseCA(con);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            ThrowIfGeneric();
-            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
-
-            if (IsKnownCA(customBuilder.m_con))
-                ParseCA(customBuilder.m_con);
         }
 
         // this method should return true for any and every ca that requires more work

@@ -32,6 +32,7 @@ namespace System
             HResult = HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private MulticastNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

@@ -81,7 +81,6 @@ __Compiler=clang
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
-__DistroRid=""
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=0
@@ -114,7 +113,7 @@ __IntermediatesDir="$__ArtifactsIntermediatesDir/$__ConfigTriplet"
 
 export __IntermediatesDir __ArtifactsIntermediatesDir
 
-if [[ "$__TargetArch" != "$__HostArch" ]]; then
+if [[ "$__ExplicitHostArch" == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
 fi

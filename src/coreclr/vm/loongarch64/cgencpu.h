@@ -49,13 +49,13 @@ extern PCODE GetPreStubEntryPoint();
 #define LOG2SLOT                                LOG2_PTRSIZE
 
 #define ENREGISTERED_RETURNTYPE_MAXSIZE         16  // bytes (two FP registers: f0 and f1)
-#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: v0 and v1)
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 16  // bytes (two int registers: a0 and a1)
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          16  // bytes (max value type size that can be passed by value)
 
 #define CALLDESCR_ARGREGS                       1   // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                     1   // CallDescrWorker has FloatArgumentRegisters parameter
 
-#define FLOAT_REGISTER_SIZE 16 // each register in FloatArgumentRegisters is 16 bytes. Loongarch size is ??
+#define FLOAT_REGISTER_SIZE                     8   // each register in FloatArgumentRegisters is 8 bytes.
 
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to arrive at the callsite.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -9,7 +10,7 @@ namespace Test
     public class AA
     {
         public static object[] m_axStatic2 = null;
-        public static void Static3()
+        internal static void Static3()
         {
             bool flag1 = false, flag2 = false, flag3 = false;
             double local4 = 0.19;
@@ -25,7 +26,8 @@ namespace Test
                     throw new Exception();
             } while (flag3);
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

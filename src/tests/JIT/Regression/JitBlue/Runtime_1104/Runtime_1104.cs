@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_1104
 {
@@ -45,7 +46,8 @@ public class Runtime_1104
         return sum;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

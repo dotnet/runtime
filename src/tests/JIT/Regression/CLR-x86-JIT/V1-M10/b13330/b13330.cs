@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace D
 {
     //@BEGINRENAME; Verify this renames
@@ -15,7 +16,8 @@ namespace D
             return (char)(x >> 8);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             f(123);
             return 100;

@@ -27,6 +27,7 @@ namespace System.Runtime
             HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private AmbiguousImplementationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

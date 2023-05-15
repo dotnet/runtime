@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ArrayLengthArithmeticTests
 {
     private static int returnCode = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int arrayLength = 0; arrayLength < 100; arrayLength++)
         {

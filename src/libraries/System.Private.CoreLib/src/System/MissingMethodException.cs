@@ -10,6 +10,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -43,6 +44,8 @@ namespace System
             HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MissingMethodException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

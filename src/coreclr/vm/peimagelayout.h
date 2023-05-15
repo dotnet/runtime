@@ -50,7 +50,7 @@ public:
 #endif
     static PEImageLayout* Load(PEImage* pOwner, HRESULT* loadFailure);
     static PEImageLayout* LoadFlat(PEImage* pOwner);
-    static PEImageLayout* LoadConverted(PEImage* pOwner);
+    static PEImageLayout* LoadConverted(PEImage* pOwner, bool disableMapping);
     static PEImageLayout* LoadNative(LPCWSTR fullPath);
 #endif
     PEImageLayout();
@@ -104,7 +104,7 @@ class ConvertedImageLayout: public PEImageLayout
 public:
     static const int MAX_PARTS = 16;
 #ifndef DACCESS_COMPILE
-    ConvertedImageLayout(FlatImageLayout* source);
+    ConvertedImageLayout(FlatImageLayout* source, bool disableMapping);
     virtual ~ConvertedImageLayout();
     void  FreeImageParts();
 #endif

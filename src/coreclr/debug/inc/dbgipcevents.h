@@ -870,7 +870,7 @@ template <int nMaxLengthIncludingNull>
 class MSLAYOUT EmbeddedIPCString
 {
 public:
-    // Set, caller responsibility that wcslen(pData) < nMaxLengthIncludingNull
+    // Set, caller responsibility that u16_strlen(pData) < nMaxLengthIncludingNull
     void SetString(const WCHAR * pData)
     {
         // If the string doesn't fit into the buffer, that's an issue (and so this is a real
@@ -1892,6 +1892,13 @@ C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #define DBG_TARGET_REGNUM_SP 3
 #define DBG_TARGET_REGNUM_AMBIENT_SP 34
 #ifdef TARGET_LOONGARCH64
+C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
+C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
+#endif
+#elif defined(TARGET_RISCV64)
+#define DBG_TARGET_REGNUM_SP 2
+#define DBG_TARGET_REGNUM_AMBIENT_SP 34
+#ifdef TARGET_RISCV64
 C_ASSERT(DBG_TARGET_REGNUM_SP == ICorDebugInfo::REGNUM_SP);
 C_ASSERT(DBG_TARGET_REGNUM_AMBIENT_SP == ICorDebugInfo::REGNUM_AMBIENT_SP);
 #endif

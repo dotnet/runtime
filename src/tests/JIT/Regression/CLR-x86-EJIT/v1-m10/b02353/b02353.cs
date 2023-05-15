@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace DefaultNamespace
 {
@@ -135,7 +136,8 @@ namespace DefaultNamespace
         internal static readonly String[,] strArr = {{"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."},
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Bug();
             return 100;

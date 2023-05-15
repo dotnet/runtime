@@ -66,6 +66,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
     NI_System_Type_get_IsByRefLike,
+    NI_System_Type_get_TypeHandle,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
@@ -77,7 +78,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
     NI_System_Object_GetType,
-    NI_System_RuntimeTypeHandle_GetValueInternal,
+    NI_System_RuntimeTypeHandle_ToIntPtr,
+    NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
@@ -104,6 +106,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
+    NI_System_SpanHelpers_SequenceEqual,
     NI_System_ReadOnlySpan_get_Item,
     NI_System_ReadOnlySpan_get_Length,
 

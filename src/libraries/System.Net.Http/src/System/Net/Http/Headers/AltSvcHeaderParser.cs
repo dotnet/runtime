@@ -56,7 +56,8 @@ namespace System.Net.Http.Headers
                 return idx - startIndex;
             }
 
-            if (idx == value.Length || value[idx++] != '=')
+            // Make sure we have at least 2 characters and first one being an '='.
+            if (idx + 1 >= value.Length || value[idx++] != '=')
             {
                 parsedValue = null;
                 return 0;
@@ -73,10 +74,10 @@ namespace System.Net.Http.Headers
             int? maxAge = null;
             bool persist = false;
 
-            while (idx != value.Length)
+            while (idx < value.Length)
             {
                 // Skip OWS before semicolon.
-                while (idx != value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
+                while (idx < value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
 
                 if (idx == value.Length)
                 {
@@ -102,7 +103,7 @@ namespace System.Net.Http.Headers
                 ++idx;
 
                 // Skip OWS after semicolon / before value.
-                while (idx != value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
+                while (idx < value.Length && IsOptionalWhiteSpace(value[idx])) ++idx;
 
                 // Get the parameter key length.
                 int tokenLength = HttpRuleParser.GetTokenLength(value, idx);

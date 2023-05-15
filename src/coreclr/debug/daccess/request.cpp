@@ -559,6 +559,18 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         W("S6"), W("S7"), W("K0"), W("K1"),
         W("GP"), W("SP"), W("FP"), W("RA")
     };
+#elif defined(TARGET_RISCV64)
+    static const WCHAR *regs[] =
+    {
+        W("R0"), W("RA"), W("SP"), W("GP"),
+        W("TP"), W("T0"), W("T1"), W("T2"),
+        W("FP"), W("S1"), W("A0"), W("A1"),
+        W("A2"), W("A3"), W("A4"), W("A5"),
+        W("A6"), W("A7"), W("S2"), W("S3"),
+        W("S4"), W("S5"), W("S6"), W("S7"),
+        W("S8"), W("S9"), W("S10"), W("S11"),
+        W("T3"), W("T4"), W("T5"), W("T6")
+    };
 #endif
 
     // Caller frame registers are encoded as "-(reg+1)".
@@ -572,7 +584,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     const WCHAR callerPrefix[] = W("caller.");
     // Include null terminator in prefixLen/regLen because wcscpy_s will fail otherwise
     unsigned int prefixLen = (unsigned int)ARRAY_SIZE(callerPrefix);
-    unsigned int regLen = (unsigned int)wcslen(regs[regNum]) + 1;
+    unsigned int regLen = (unsigned int)u16_strlen(regs[regNum]) + 1;
     unsigned int needed = (callerFrame ? prefixLen - 1 : 0) + regLen;
     if (pNeeded)
         *pNeeded = needed;
@@ -1987,7 +1999,7 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
     else
     {
         // Turn from bytes to wide characters
-        unsigned int len = (unsigned int)wcslen(pszName);
+        unsigned int len = (unsigned int)u16_strlen(pszName);
 
         if (frameName)
         {
@@ -3443,7 +3455,7 @@ static HRESULT TraverseLoaderHeapBlock(PTR_LoaderHeapBlock firstBlock, VISITHEAP
         pFunc(addr, size, bCurrentBlock);
 
         block = block->pNext;
-        
+
         // Ensure we only see the first block once and that we aren't looping
         // infinitely.
         if (block == firstBlock)
@@ -3460,7 +3472,7 @@ ClrDataAccess::TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, VISITHEAP pFun
         return E_INVALIDARG;
 
     SOSDacEnter();
-    
+
     hr = TraverseLoaderHeapBlock(PTR_LoaderHeap(TO_TADDR(loaderHeapAddr))->m_pFirstBlock, pFunc);
 
     SOSDacLeave();
@@ -3519,24 +3531,8 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
                 pLoaderHeap = pVcsMgr->indcell_heap;
                 break;
 
-            case LookupHeap:
-                pLoaderHeap = pVcsMgr->lookup_heap;
-                break;
-
-            case ResolveHeap:
-                pLoaderHeap = pVcsMgr->resolve_heap;
-                break;
-
-            case DispatchHeap:
-                pLoaderHeap = pVcsMgr->dispatch_heap;
-                break;
-
             case CacheEntryHeap:
                 pLoaderHeap = pVcsMgr->cache_entry_heap;
-                break;
-
-            case VtableHeap:
-                pLoaderHeap = pVcsMgr->vtable_heap;
                 break;
 
             default:
@@ -3576,7 +3572,7 @@ HRESULT ClrDataAccess::GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, C
 // The ordering of these entries must match the order enumerated in GetLoaderAllocatorHeaps.
 // This array isn't fixed, we can reorder/add/remove entries as long as the corresponding
 // code in GetLoaderAllocatorHeaps is updated to match.
-static const char *LoaderAllocatorLoaderHeapNames[] = 
+static const char *LoaderAllocatorLoaderHeapNames[] =
 {
     "LowFrequencyHeap",
     "HighFrequencyHeap",
@@ -3585,11 +3581,7 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
     "IndcellHeap",
-    "LookupHeap",
-    "ResolveHeap",
-    "DispatchHeap",
     "CacheEntryHeap",
-    "VtableHeap",
 };
 
 
@@ -3622,7 +3614,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetNewStubPrecodeHeap());
-            
+
             VirtualCallStubManager *pVcsMgr = pLoaderAllocator->GetVirtualCallStubManager();
             if (pVcsMgr == nullptr)
             {
@@ -3632,13 +3624,9 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             else
             {
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->indcell_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->lookup_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->resolve_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->dispatch_heap);
                 pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->cache_entry_heap);
-                pLoaderHeaps[i++] = HOST_CDADDR(pVcsMgr->vtable_heap);
             }
-            
+
             // All of the above are "LoaderHeap" and not the ExplicitControl version.
             for (int j = 0; j < i; j++)
                 pKinds[j] = LoaderHeapKindNormal;
@@ -3653,7 +3641,7 @@ HRESULT
 ClrDataAccess::GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded)
 {
     SOSDacEnter();
-    
+
     const int loaderHeapCount = ARRAY_SIZE(LoaderAllocatorLoaderHeapNames);
     if (pNeeded)
         *pNeeded = loaderHeapCount;
@@ -5304,6 +5292,98 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     SOSDacEnter();
     *allocPtr = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_ptr);
     *allocLimit = (CLRDATA_ADDRESS)((&g_global_alloc_context)->alloc_limit);
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetHandleTableMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacHandleTableMemoryEnumerator* htEnum = new (nothrow) DacHandleTableMemoryEnumerator();
+    if (htEnum)
+    {
+        hr = htEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = htEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete htEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacGCBookkeepingEnumerator* bkEnum = new (nothrow) DacGCBookkeepingEnumerator();
+    if (bkEnum)
+    {
+        hr = bkEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = bkEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete bkEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+
+HRESULT ClrDataAccess::GetGCFreeRegions(ISOSMemoryEnum **ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacFreeRegionEnumerator* frEnum = new (nothrow) DacFreeRegionEnumerator();
+    if (frEnum)
+    {
+        hr = frEnum->Init();
+
+        if (SUCCEEDED(hr))
+            hr = frEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+
+        if (FAILED(hr))
+            delete frEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::LockedFlush()
+{
+    SOSDacEnter();
+
+    Flush();
+
     SOSDacLeave();
     return hr;
 }

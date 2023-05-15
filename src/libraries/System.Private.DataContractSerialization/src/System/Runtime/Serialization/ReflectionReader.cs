@@ -50,10 +50,12 @@ namespace System.Runtime.Serialization
                 ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             }
 
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
             if (obj is IObjectReference objectReference)
             {
                 obj = context.GetRealObject(objectReference, context.GetObjectId());
             }
+#pragma warning restore SYSLIB0050
 
             obj = ResolveAdapterObject(obj);
             InvokeDeserializationCallback(obj);
