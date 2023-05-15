@@ -258,9 +258,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (RemoteSources?.Length > 0)
         {
             // TODO MF: RemoteSources
-            foreach (var source in RemoteSources)
-                if (source != null && source.ItemSpec != null)
-                    config.RemoteSources.Add(source.ItemSpec);
+            //foreach (var source in RemoteSources)
+            //    if (source != null && source.ItemSpec != null)
+            //        config.RemoteSources.Add(source.ItemSpec);
         }
 
         var extraConfiguration = new Dictionary<string, object?>();
