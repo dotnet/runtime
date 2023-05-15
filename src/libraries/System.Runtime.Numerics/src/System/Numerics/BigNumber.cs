@@ -1019,8 +1019,8 @@ namespace System.Numerics
 
             byte highByte = bits[^1];
 
-            long tmpCharCount = highByte == 0 ? 1 : 8 - byte.LeadingZeroCount(highByte);
-            tmpCharCount += (long)(bits.Length - 1) << 3;
+            int charsInHighByte = 9 - byte.LeadingZeroCount(value._sign >= 0 ? highByte : (byte)~highByte);
+            long tmpCharCount = charsInHighByte + ((long)(bits.Length - 1) << 3);
 
             if (tmpCharCount > Array.MaxLength)
             {
@@ -1033,7 +1033,7 @@ namespace System.Numerics
             int charsForBits = (int)tmpCharCount;
 
             Debug.Assert(digits < Array.MaxLength);
-            int charsIncludeDigits = digits > charsForBits ? digits : charsForBits;
+            int charsIncludeDigits = Math.Max(digits, charsForBits);
 
             // each byte is typically eight chars
             ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
@@ -1043,14 +1043,7 @@ namespace System.Numerics
                 sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
             }
 
-            if (highByte == 0)
-            {
-                sb.Append('0');
-            }
-            else
-            {
-                AppendByte(ref sb, highByte, 7 - byte.LeadingZeroCount(highByte));
-            }
+            AppendByte(ref sb, highByte, charsInHighByte - 1);
 
             for (int i = bits.Length - 2; i >= 0; i--)
             {
