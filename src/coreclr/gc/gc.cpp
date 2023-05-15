@@ -24740,6 +24740,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
     // first do some steps that may fail and cause us to give up
 
+    // if the number of heaps is becoming smaller,
     // move finalizer list items from heaps going out of service to remaining heaps
     // if this step fails, we have to give up
     if (new_n_heaps < old_n_heaps)
@@ -24750,6 +24751,8 @@ bool gc_heap::change_heap_count (int new_n_heaps)
             gc_heap* from_hp = g_heaps[i];
             gc_heap* to_hp = g_heaps[to_heap_number];
 
+            // we always add the finalizer list items from a heap going out of service
+            // to one of the remaining heaps, which we select in round robin fashion
             if (!to_hp->finalize_queue->MergeFinalizationData (from_hp->finalize_queue))
             {
                 // failing to merge finalization data from one of the heaps about to go idle
@@ -24841,7 +24844,8 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     // after having checked for sufficient resources, we are now committed to actually change the heap count
     dprintf (3, ("switching heap count from %d to %d heaps", old_n_heaps, new_n_heaps));
 
-    // spread finalization data out to heaps coming into service
+    // if the number of heaps is increasing, spread finalization data from existing heaps
+    // out to heaps coming into service
     // if this step fails, we can still continue
     int from_heap_number = 0;
     for (int i = old_n_heaps; i < new_n_heaps; i++)
@@ -24849,6 +24853,8 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         gc_heap* to_hp = g_heaps[i];
         gc_heap* from_hp = g_heaps[from_heap_number];
 
+        // always do a 50:50 split of finalization data from an existing heap (determined in round robin fasion)
+        // to one coming into service
         if (!from_hp->finalize_queue->SplitFinalizationData (to_hp->finalize_queue))
         {
             // we can live with this failure - it just means finalization data
@@ -24883,7 +24889,6 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     // inititalize the new heaps
     if (old_n_heaps < new_n_heaps)
     {
-        // initialize the region lists of the new heaps
         for (int i = old_n_heaps; i < new_n_heaps; i++)
         {
             gc_heap* hp = g_heaps[i];
@@ -24897,11 +24902,13 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         gc_idle_thread_event.Set();
     }
 
+    // if the heaps are getting retired, we need to move their regions
     if (new_n_heaps < old_n_heaps)
     {
-        // move all regions from the heaps about to be retired to another heap < new_n_heaps
         assert (new_n_heaps > 0);
 
+        // move all regions from all generations from the heaps about to be retired to
+        // another heap staying in service
         for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
         {
             for (int i = new_n_heaps; i < old_n_heaps; i++)
@@ -24957,7 +24964,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         }
     }
 
-    // transfer the free regions from the heaps going idle
+    // transfer the free regions from the heaps going out of service
     for (int i = new_n_heaps; i < old_n_heaps; i++)
     {
         gc_heap* hp = g_heaps[i];
