@@ -287,6 +287,15 @@ jobs:
             ${{ else }}:
               hostArchType: x64
 
+    - ${{ if and(in(parameters.osGroup, 'windows'), eq(parameters.archType, 'x86'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+        - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
+          parameters:
+            archType: arm
+            osGroup: ${{ parameters.osGroup }}
+            osSubgroup: ${{ parameters.osSubgroup }}
+            isOfficialBuild: ${{ parameters.signBinaries }}
+            hostArchType: x86
+
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:

@@ -4,9 +4,6 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
-    
-    <!-- Stripping symbols causes problems for running the test on macOS -->
-    <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>

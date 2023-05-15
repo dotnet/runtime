@@ -519,17 +519,18 @@ namespace System.Reflection.Emit
             if (m_inst != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
-            for (int i = 0; i < names.Length; i++)
-                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
-
             if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
-            m_bIsGenMethDef = true;
             m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(name, i, this));
+            }
 
+            m_bIsGenMethDef = true;
             return m_inst;
         }
 

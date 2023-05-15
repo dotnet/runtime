@@ -5088,6 +5088,10 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
 	{SN_ConvertNarrowingSignedSaturate},
 	{SN_ConvertNarrowingUnsignedSaturate},
+	{SN_ConvertToDoubleLower, OP_CVTDQ2PD, 0, OP_WASM_SIMD_CONV_U4_TO_R8_LOW, 0, OP_CVTPS2PD},
+	{SN_ConvertToInt32Saturate},
+	{SN_ConvertToSingle, OP_CVT_SI_FP, 0, OP_CVT_UI_FP, 0, OP_WASM_SIMD_CONV_R8_TO_R4},
+	{SN_ConvertToUnsignedInt32Saturate},
 	{SN_Divide},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
@@ -5376,6 +5380,38 @@ emit_wasm_supported_intrinsics (
 						break;
 
 				return NULL;
+			}
+			case SN_ConvertToInt32Saturate: {
+				switch (arg0_type) {
+					case MONO_TYPE_R4:
+						op = OP_CVT_FP_SI;
+						break;
+					case MONO_TYPE_R8:
+						op = OP_WASM_SIMD_CONV_R8_TO_I4_ZERO;
+						c0 = INTRINS_WASM_CONV_R8_TO_I4;
+						break;
+					default:
+						return NULL;
+				}
+
+				// continue with default emit
+				break;
+			}
+			case SN_ConvertToUnsignedInt32Saturate: {
+				switch (arg0_type) {
+					case MONO_TYPE_R4:
+						op = OP_CVT_FP_UI;
+						break;
+					case MONO_TYPE_R8:
+						op = OP_WASM_SIMD_CONV_R8_TO_I4_ZERO;
+						c0 = INTRINS_WASM_CONV_R8_TO_U4;
+						break;
+					default:
+						return NULL;
+				}
+
+				// continue with default emit
+				break;
 			}
 			case SN_ExtractLane: {
 				op = type_to_xextract_op (arg0_type);

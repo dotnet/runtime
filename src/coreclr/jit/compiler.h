@@ -3082,6 +3082,7 @@ public:
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
+    void gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
 #if FEATURE_MULTIREG_RET
     unsigned gtDispMultiRegCount(GenTree* tree);
@@ -7817,7 +7818,6 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
-    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 
@@ -9393,11 +9393,19 @@ public:
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
-        bool CanBeInstrumentedOrIsOptimized() const
+        bool DoEarlyBlockMerging() const
         {
-            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
-                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC) || jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE))
+            {
+                return false;
+            }
+
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
@@ -9588,9 +9596,6 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
-
-        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
-        bool compJitEarlyExpandMDArrays;
 
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
@@ -9917,6 +9922,14 @@ public:
 #endif
 
     } info;
+
+#if defined(DEBUG)
+    // Are we running a replay under SuperPMI?
+    bool RunningSuperPmiReplay() const
+    {
+        return info.compMethodSuperPMIIndex != -1;
+    }
+#endif // DEBUG
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -11085,28 +11098,6 @@ public:
                     {
                         return result;
                     }
-                }
-                break;
-            }
-
-            case GT_ARR_OFFSET:
-            {
-                GenTreeArrOffs* const arrOffs = node->AsArrOffs();
-
-                result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
                 }
                 break;
             }
