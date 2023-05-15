@@ -37,6 +37,7 @@ namespace Microsoft.Interop
             public const string GenerateNativeToManagedVTable = nameof(GenerateNativeToManagedVTable);
             public const string GenerateInterfaceInformation = nameof(GenerateInterfaceInformation);
             public const string GenerateIUnknownDerivedAttribute = nameof(GenerateIUnknownDerivedAttribute);
+            public const string GenerateShadowingMethods = nameof(GenerateShadowingMethods);
         }
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -109,13 +110,14 @@ namespace Microsoft.Interop
                         CalculateStubInformation(data.Method.MethodInfo.Syntax, symbolMap[data.Method.MethodInfo], data.Method.Index, env, data.TypeKeyOwner.Info.Type, ct));
                 }).WithTrackingName(StepNames.CalculateStubInformation);
 
-            var interfaceAndMethodsContexts = comMethodContexts.Collect()
+            var interfaceAndMethodsContexts = comMethodContexts
+                .Collect()
                 .Combine(interfaceContexts.Collect())
                 .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
 
             // Generate the code for the managed-to-unmanaged stubs and the diagnostics from code-generation.
             context.RegisterDiagnostics(interfaceAndMethodsContexts
-                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics)));
+                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.GetManagedToUnmanagedStub().Diagnostics)));
             var managedToNativeInterfaceImplementations = interfaceAndMethodsContexts
                 .Select(GenerateImplementationInterface)
                 .WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
@@ -124,7 +126,7 @@ namespace Microsoft.Interop
 
             // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
             context.RegisterDiagnostics(interfaceAndMethodsContexts
-                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.NativeToManagedStub.Diagnostics)));
+                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.GetNativeToManagedStub().Diagnostics)));
             var nativeToManagedVtableMethods = interfaceAndMethodsContexts
                 .Select(GenerateImplementationVTableMethods)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTableMethods)
@@ -150,6 +152,8 @@ namespace Microsoft.Interop
                         .WithMembers(List(methods));
                     return data.Interface.Info.TypeDefinitionContext.WrapMemberInContainingSyntaxWithUnsafeModifier(typeDecl);
                 })
+                .WithTrackingName(StepNames.GenerateShadowingMethods)
+                .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
             // Generate a method named CreateManagedVirtualFunctionTable on the native interface implementation
@@ -347,6 +351,8 @@ namespace Microsoft.Interop
                 unmanagedCallConvAttribute,
                 ImmutableArray.Create(FunctionPointerUnmanagedCallingConvention(Identifier("MemberFunction"))));
 
+            var declaringType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
+
             var virtualMethodIndexData = new VirtualMethodIndexData(index, ImplicitThisParameter: true, MarshalDirection.Bidirectional, true, ExceptionMarshalling.Com);
 
             return new IncrementalMethodStubGenerationContext(
@@ -360,6 +366,7 @@ namespace Microsoft.Interop
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 typeKeyOwner,
+                declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
                 ComInterfaceDispatchMarshallingInfo.Instance);
         }
@@ -387,7 +394,7 @@ namespace Microsoft.Interop
             // This enable us to group our contexts by their containing syntax rather simply.
             var contextList = ImmutableArray.CreateBuilder<ComInterfaceAndMethodsContext>();
             int methodIndex = 0;
-            foreach(var iface in interfaces)
+            foreach (var iface in interfaces)
             {
                 var methodList = ImmutableArray.CreateBuilder<ComMethodContext>();
                 while (methodIndex < methods.Length && methods[methodIndex].OwningInterface == iface)
@@ -405,7 +412,7 @@ namespace Microsoft.Interop
         private static InterfaceDeclarationSyntax GenerateImplementationInterface(ComInterfaceAndMethodsContext interfaceGroup, CancellationToken _)
         {
             var definingType = interfaceGroup.Interface.Info.Type;
-            var shadowImplementations = interfaceGroup.ShadowingMethods.Select(m => (m, m.ManagedToUnmanagedStub))
+            var shadowImplementations = interfaceGroup.ShadowingMethods.Select(m => (Method: m, ManagedToUnmanagedStub: m.GetManagedToUnmanagedStub()))
                 .Where(p => p.ManagedToUnmanagedStub is GeneratedStubCodeContext)
                 .Select(ctx => ((GeneratedStubCodeContext)ctx.ManagedToUnmanagedStub).Stub.Node
                 .WithExplicitInterfaceSpecifier(
@@ -416,7 +423,7 @@ namespace Microsoft.Interop
                 .WithMembers(
                     List<MemberDeclarationSyntax>(
                         interfaceGroup.DeclaredMethods
-                        .Select(m => m.ManagedToUnmanagedStub)
+                        .Select(m => m.GetManagedToUnmanagedStub())
                         .OfType<GeneratedStubCodeContext>()
                         .Select(ctx => ctx.Stub.Node)
                         .Concat(shadowImplementations)
@@ -429,7 +436,7 @@ namespace Microsoft.Interop
                 .WithMembers(
                     List<MemberDeclarationSyntax>(
                         comInterfaceAndMethods.DeclaredMethods
-                            .Select(m => m.NativeToManagedStub)
+                            .Select(m => m.GetNativeToManagedStub())
                             .OfType<GeneratedStubCodeContext>()
                             .Select(context => context.Stub.Node)));
         }

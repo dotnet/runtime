@@ -83,12 +83,11 @@ public partial class GeneratedComInterfaceTests
 
         public int GetInt() => data;
 
-        [return: MarshalUsing(typeof(Utf16StringMarshaller))]
         public string GetName() => myName;
 
         public void SetInt(int n) => data = n;
 
-        public void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name) => myName = name;
+        public void SetName(string name) => myName = name;
     }
 
     class SingleQIComWrapper : StrategyBasedComWrappers

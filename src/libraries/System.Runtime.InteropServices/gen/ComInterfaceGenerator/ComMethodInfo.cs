@@ -20,8 +20,7 @@ namespace Microsoft.Interop
         /// </summary>
         private sealed record ComMethodInfo(
             MethodDeclarationSyntax Syntax,
-            string MethodName,
-            SequenceEqualImmutableArray<ParameterInfo> Parameters)
+            string MethodName)
         {
             /// <summary>
             /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
@@ -113,29 +112,9 @@ namespace Microsoft.Interop
                 {
                     return (null, method, diag);
                 }
-
-                List<ParameterInfo> parameters = new();
-                foreach (var parameter in method.Parameters)
-                {
-                    parameters.Add(ParameterInfo.From(parameter));
-                }
-
-                var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, parameters.ToSequenceEqualImmutableArray());
+                var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name);
                 return (comMethodInfo, method, null);
             }
-        }
-    }
-
-    internal record struct ParameterInfo(ManagedTypeInfo Type, string Name, RefKind RefKind, SequenceEqualImmutableArray<AttributeInfo> Attributes)
-    {
-        public static ParameterInfo From(IParameterSymbol parameter)
-        {
-            var attributes = new List<AttributeInfo>();
-            foreach (var attribute in parameter.GetAttributes())
-            {
-                attributes.Add(AttributeInfo.From(attribute));
-            }
-            return new(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(parameter.Type), parameter.Name, parameter.RefKind, attributes.ToSequenceEqualImmutableArray());
         }
     }
 }

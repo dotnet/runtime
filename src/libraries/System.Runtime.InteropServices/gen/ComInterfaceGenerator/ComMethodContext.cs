@@ -42,30 +42,24 @@ namespace Microsoft.Interop
 
             public bool IsInheritedMethod => OriginalDeclaringInterface != OwningInterface;
 
-            public GeneratedMethodContextBase ManagedToUnmanagedStub
+            public GeneratedMethodContextBase GetManagedToUnmanagedStub()
             {
-                get
+                if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
                 {
-                    if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional))
-                    {
-                        return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
-                    }
-                    var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext);
-                    return new GeneratedStubCodeContext(GenerationContext.TypeKeyOwner, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+                    return new SkippedStubContext(OriginalDeclaringInterface.Info.Type);
                 }
+                var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(GenerationContext);
+                return new GeneratedStubCodeContext(GenerationContext.TypeKeyOwner, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
             }
 
-            public GeneratedMethodContextBase NativeToManagedStub
+            public GeneratedMethodContextBase GetNativeToManagedStub()
             {
-                get
+                if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
                 {
-                    if (GenerationContext.VtableIndexData.Direction is not (MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional))
-                    {
-                        return new SkippedStubContext(GenerationContext.OriginalDefiningType);
-                    }
-                    var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext);
-                    return new GeneratedStubCodeContext(GenerationContext.OriginalDefiningType, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+                    return new SkippedStubContext(GenerationContext.OriginalDefiningType);
                 }
+                var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(GenerationContext);
+                return new GeneratedStubCodeContext(GenerationContext.OriginalDefiningType, GenerationContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
             }
 
             public MethodDeclarationSyntax GenerateUnreachableExceptionStub()
@@ -89,9 +83,10 @@ namespace Microsoft.Interop
                 // {
                 //    return ((<baseInterfaceType>)this).<MethodName>(<Arguments>);
                 // }
-                // TODO: Copy full name of parameter types and attributes / attribute arguments for parameters
-                return MethodInfo.Syntax
+                var forwarder = new Forwarder();
+                return MethodDeclaration(GenerationContext.SignatureContext.StubReturnType, MethodInfo.MethodName)
                     .WithModifiers(TokenList(Token(SyntaxKind.NewKeyword)))
+                    .WithParameterList(ParameterList(SeparatedList(GenerationContext.SignatureContext.StubParameters)))
                     .WithExpressionBody(
                         ArrowExpressionClause(
                             InvocationExpression(
@@ -101,9 +96,8 @@ namespace Microsoft.Interop
                                         CastExpression(OriginalDeclaringInterface.Info.Type.Syntax, IdentifierName("this"))),
                                     IdentifierName(MethodInfo.MethodName)),
                                 ArgumentList(
-                                    // TODO: RefKind keywords
-                                    SeparatedList(MethodInfo.Parameters.Select(p =>
-                                    Argument(IdentifierName(p.Name))))))));
+                                    SeparatedList(GenerationContext.SignatureContext.ManagedParameters.Select(p => forwarder.AsArgument(p, new ManagedStubCodeContext())))))))
+                    .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
             }
 
             /// <summary>
