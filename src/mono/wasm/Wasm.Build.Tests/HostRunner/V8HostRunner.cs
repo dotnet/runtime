@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 public class V8HostRunner : IHostRunner
 {
-    private string GetXharnessArgs(string jsRelativePath) => $"--js-file={jsRelativePath} --engine=V8 -v trace";
+    private string GetXharnessArgs(string jsRelativePath) => $"--js-file={jsRelativePath} --engine=V8 -v trace --engine-arg=--experimental-wasm-simd";
 
     public string GetTestCommand() => "wasm test";
     public string GetXharnessArgsWindowsOS(XHarnessArgsOptions options) => GetXharnessArgs(options.jsRelativePath);

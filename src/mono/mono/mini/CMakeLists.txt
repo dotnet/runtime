@@ -82,6 +82,9 @@ if(HAVE_SYS_ICU)
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
   endif()
+
+  add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
+  set(HAVE_ICU_SHIM 1)
 endif()
 
 #
@@ -276,6 +279,7 @@ set(interp_sources
     interp/interp.h
     interp/interp-internals.h
     interp/interp.c
+    interp/interp-simd.c
     interp/interp-intrins.h
     interp/interp-intrins.c
     interp/mintops.h
@@ -349,7 +353,7 @@ if(HOST_WIN32)
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "/wd4005;/wd4127;/wd4131;/wd4244")
 endif()
 
-set(monosgen-sources "${icu_shim_sources};${mini_sources};${ZLIB_SOURCES}")
+set(monosgen-sources "${mini_sources};${ZLIB_SOURCES}")
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
 target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
@@ -378,6 +382,9 @@ if(NOT DISABLE_SHARED_LIBS)
   endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   target_link_libraries(monosgen-shared PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+  if(HAVE_ICU_SHIM)
+    target_link_libraries(monosgen-shared PRIVATE icu_shim_objects)
+  endif()
   target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
@@ -409,7 +416,7 @@ if(NOT DISABLE_SHARED_LIBS)
     # if components are disabled, link the fallback stubs into the runtime
     target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   endif()
-  install(TARGETS monosgen-shared LIBRARY)
+  install_with_stripped_symbols(monosgen-shared TARGETS lib)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     target_link_libraries(monosgen-shared-dac PRIVATE monoapi eglib_api)
@@ -435,6 +442,9 @@ if(NOT DISABLE_SHARED_LIBS)
         add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
         target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
         target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+        if(HAVE_ICU_SHIM)
+          target_link_libraries(${frameworkconfig} PRIVATE icu_shim_objects)
+        endif()
         target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
 
         if(ICU_LDFLAGS)
@@ -451,9 +461,7 @@ if(NOT DISABLE_SHARED_LIBS)
           FRAMEWORK_VERSION C
           MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
         )
-        install(TARGETS ${frameworkconfig}
-          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install_with_stripped_symbols(${frameworkconfig} TARGETS ${CMAKE_INSTALL_LIBDIR})
       endforeach()
     endif()
   endif()
@@ -539,7 +547,11 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static)
+  if(HAVE_ICU_SHIM)
+    target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
+  endif() 
+  target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
@@ -566,8 +578,5 @@ if(NOT DISABLE_EXECUTABLES)
     target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
   endif()
 
-  install(TARGETS mono-sgen RUNTIME)
-  if(HOST_WIN32)
-    install(FILES $<TARGET_PDB_FILE:mono-sgen> DESTINATION bin OPTIONAL)
-  endif()
+  install_with_stripped_symbols(mono-sgen TARGETS bin)
 endif()

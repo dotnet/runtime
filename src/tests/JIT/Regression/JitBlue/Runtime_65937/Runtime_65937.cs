@@ -4,11 +4,13 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class Runtime_65937
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!OperatingSystem.IsLinux())
         {

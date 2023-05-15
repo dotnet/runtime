@@ -183,6 +183,7 @@
     </NetCoreAppLibraryNoReference>
     <!-- List .NETCoreApp shared framework generator project names below. -->
     <NetCoreAppLibraryGenerator>
+      ComInterfaceGenerator;
       LibraryImportGenerator;
       JSImportGenerator;
       Microsoft.Interop.SourceGeneration;
@@ -236,7 +237,6 @@
       System.Diagnostics.EventLog;
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
-      System.Drawing.Common;
       System.IO.Packaging;
       System.Resources.Extensions;
       System.Security.Cryptography.Pkcs;

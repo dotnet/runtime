@@ -94,8 +94,8 @@ namespace System.Text.Json.Serialization.Metadata
                 _parent = parent;
             }
 
-            protected override bool IsImmutable => _parent.DeclaringTypeInfo?.IsReadOnly == true;
-            protected override void VerifyMutable() => _parent.DeclaringTypeInfo?.VerifyMutable();
+            public override bool IsReadOnly => _parent.DeclaringTypeInfo?.IsReadOnly == true;
+            protected override void OnCollectionModifying() => _parent.DeclaringTypeInfo?.VerifyMutable();
         }
 
         internal static JsonPolymorphismOptions? CreateFromAttributeDeclarations(Type baseType)

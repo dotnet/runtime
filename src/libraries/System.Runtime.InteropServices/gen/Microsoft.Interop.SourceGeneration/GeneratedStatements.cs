@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -108,10 +105,16 @@ namespace Microsoft.Interop
                 return ExpressionStatement(invoke);
             }
 
+            var (managed, native) = context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo);
+
+            string targetIdentifier = marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(marshallers.NativeReturnMarshaller.TypeInfo, context)
+                ? native
+                : managed;
+
             return ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
+                        IdentifierName(targetIdentifier),
                         invoke));
         }
 

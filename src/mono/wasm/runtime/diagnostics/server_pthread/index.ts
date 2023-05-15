@@ -4,9 +4,9 @@
 /// <reference lib="webworker" />
 
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { assertNever } from "../../types";
+import { PromiseAndController, assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
-import { Module } from "../../imports";
+import { Module, createPromiseController } from "../../globals";
 import cwraps from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
@@ -17,7 +17,6 @@ import {
 
 import { importAndInstantiateMock } from "./mock-remote";
 import type { Mock, MockRemoteSocket } from "../mock";
-import { PromiseAndController, createPromiseController } from "../../promise-controller";
 import {
     isEventPipeCommand,
     isProcessCommand,
@@ -230,7 +229,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
-        console.info("MONO_WASM: stopEventPipe", sessionID);
+        console.debug("MONO_WASM: stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
         // but the client end should be robust to that.
@@ -266,7 +265,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     resumeRuntime(): void {
         if (!this.runtimeResumed) {
-            console.info("MONO_WASM: resuming runtime startup");
+            console.debug("MONO_WASM: resuming runtime startup");
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
             this.runtimeResumed = true;
         }

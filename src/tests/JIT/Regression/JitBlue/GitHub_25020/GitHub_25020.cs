@@ -4,12 +4,14 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Xunit;
 
 namespace GitHub_25020
 {
     public class Program
     {    
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DynamicMethod dm = new DynamicMethod("MyMethod", typeof(string), new Type[] { typeof(string), typeof(string) });
             

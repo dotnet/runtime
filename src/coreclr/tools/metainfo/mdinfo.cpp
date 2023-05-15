@@ -443,9 +443,10 @@ void MDInfo::Error(const char* szError, HRESULT hr)
     {
         printf("Failed return code: 0x%08x\n", hr);
 
+#ifdef FEATURE_COMINTEROP
         IErrorInfo  *pIErr = NULL;          // Error interface.
         BSTR        bstrDesc = NULL;        // Description text.
-#ifdef FEATURE_COMINTEROP
+
         // Try to get an error info object and display the message.
         if (GetErrorInfo(0, &pIErr) == S_OK &&
             pIErr->GetDescription(&bstrDesc) == S_OK)
@@ -454,11 +455,11 @@ void MDInfo::Error(const char* szError, HRESULT hr)
             printf("%s ", bstrDescUtf8);
             SysFreeString(bstrDesc);
         }
-#endif
+
         // Free the error interface.
         if (pIErr)
             pIErr->Release();
-
+#endif
     }
     exit(hr);
 } // void MDInfo::Error()
@@ -904,9 +905,9 @@ void MDInfo::DisplayMethodInfo(mdMethodDef inMethod, DWORD *pflags)
     if (!*szTempBuf)
         strcpy_s(szTempBuf, STRING_BUFFER_LEN, "[none]");
 
-    bool result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".ctor")));
+    bool result = (((flags) & mdRTSpecialName) && !u16_strcmp((memberName), W(".ctor")));
     if (result) strcat_s(szTempBuf, STRING_BUFFER_LEN, "[.ctor] ");
-    result = (((flags) & mdRTSpecialName) && !wcscmp((memberName), W(".cctor")));
+    result = (((flags) & mdRTSpecialName) && !u16_strcmp((memberName), W(".cctor")));
     if (result) strcat_s(szTempBuf,STRING_BUFFER_LEN, "[.cctor] ");
     // "Reserved" flags
     ISFLAG(Md, HasSecurity);
@@ -1963,7 +1964,7 @@ void MDInfo::DisplayCustomAttributeInfo(mdCustomAttribute inValue, const char *p
     }
 
     // Keep track of coff overhead.
-    if (!wcscmp(W("__DecoratedName"), rcName))
+    if (!u16_strcmp(W("__DecoratedName"), rcName))
     {
         bCoffSymbol = true;
         g_cbCoffNames += cbValue + 6;

@@ -145,7 +145,6 @@
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />
@@ -154,10 +153,13 @@
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />
+    <Compile Include="System\Attribute.NativeAot.cs" />
     <Compile Include="System\Buffer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
@@ -190,7 +192,6 @@
     <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
@@ -356,9 +357,6 @@
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
-    </Compile>
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
@@ -425,7 +423,6 @@
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
-    <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
@@ -501,7 +498,6 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeDefinitionTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />
@@ -509,10 +505,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\GetTypeOptions.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
+    <Compile Include="System\Reflection\TypeNameParser.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />

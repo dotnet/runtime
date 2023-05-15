@@ -175,7 +175,7 @@ void Logger::LogVprintf(
     }
 
     // Early out if we're not logging at this level.
-    if ((level & GetLogLevel()) == 0)
+    if (!IsPassThrough(level) && ((level & GetLogLevel()) == 0))
     {
         return;
     }
@@ -189,15 +189,20 @@ void Logger::LogVprintf(
     _vsnprintf_s(fullMsg, fullMsgLen, fullMsgLen, msg, argList);
     va_end(argList);
 
-    const char* logLevelStr = "INVALID_LOGLEVEL";
+    // Where to write messages? Default to stdout.
+    FILE* dest = stdout;
+
+    const char* logLevelStr = "";
     switch (level)
     {
         case LOGLEVEL_ERROR:
             logLevelStr = "ERROR";
+            dest = stderr;
             break;
 
         case LOGLEVEL_WARNING:
             logLevelStr = "WARNING";
+            dest = stderr;
             break;
 
         case LOGLEVEL_MISSING:
@@ -219,6 +224,19 @@ void Logger::LogVprintf(
         case LOGLEVEL_DEBUG:
             logLevelStr = "DEBUG";
             break;
+
+        case LOGLEVEL_PASSTHROUGH_STDOUT:
+            logLevelStr = "STDOUT";
+            break;
+
+        case LOGLEVEL_PASSTHROUGH_STDERR:
+            logLevelStr = "STDERR";
+            dest = stderr;
+            break;
+
+        default:
+            logLevelStr = "INVALID_LOGLEVEL";
+            break;
     }
 
     // NOTE: This implementation doesn't guarantee that log messages will be written in chronological
@@ -227,9 +245,6 @@ void Logger::LogVprintf(
     // for log messages.
 
     EnterCriticalSection(&s_critSec);
-
-    // Sends error messages to stderr instead out stdout
-    FILE* dest = (level <= LOGLEVEL_WARNING) ? stderr : stdout;
 
     if (level < LOGLEVEL_INFO)
         fprintf(dest, "%s: ", logLevelStr);
@@ -262,15 +277,16 @@ void Logger::LogVprintf(
 #endif // TARGET_UNIX
 
         const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
-        size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + 10 +
+        size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + /* line number */ 10 +
                                   strlen(logLevelStr) + strlen(fullMsg);
 
         char* logEntry = new char[logEntryBuffSize];
         sprintf_s(logEntry, logEntryBuffSize, logEntryFmtStr, timeStr, function, file, line, logLevelStr, fullMsg);
+        size_t logEntryLen = strlen(logEntry);
 
         DWORD bytesWritten;
 
-        if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryBuffSize - 1, &bytesWritten, nullptr))
+        if (!WriteFile(s_logFile, logEntry, (DWORD)logEntryLen, &bytesWritten, nullptr))
             fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. GetLastError()=%u\n",
                     GetLastError());
 

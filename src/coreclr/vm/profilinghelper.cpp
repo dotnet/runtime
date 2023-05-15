@@ -673,7 +673,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return S_FALSE;
     }
 
-    if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
+    if ((wszProfilerDLL != NULL) && (u16_strlen(wszProfilerDLL) >= MAX_LONGPATH))
     {
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but CORECLR_PROFILER_PATH was not set properly.\n"));
 
@@ -931,7 +931,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         if (profilerCompatibilityFlag == kPreventLoad)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
                  "Profiler will not be loaded.\n"));
 
             MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
@@ -1014,7 +1014,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     {
         if (profilerCompatibilityFlag == kDisableV2Profiler)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
                  "V2 profilers are not allowed, so that the configured V2 profiler is going to be unloaded.\n"));
 
             LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, szClsid);
@@ -1023,7 +1023,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         _ASSERTE(profilerCompatibilityFlag == kEnableV2Profiler);
 
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
         MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);

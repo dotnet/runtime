@@ -264,7 +264,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(stack, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableStack.Create<string>("1", "2", "3"));

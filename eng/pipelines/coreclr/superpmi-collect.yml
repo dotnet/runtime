@@ -49,6 +49,7 @@ extends:
             testBuildPlatforms:
             - linux_x64
             - windows_x64
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       # superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
       # We don't collect osx-x64 (it's essentially the same as linux-x64). If we did, we'd add osx_x64 in the
@@ -61,6 +62,7 @@ extends:
           - osx_x64
           jobParameters:
             testGroup: outerloop
+            disableComponentGovernance: true # No shipping artifacts produced by this pipeline
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -149,6 +151,46 @@ extends:
             testGroup: outerloop
             liveLibrariesBuildConfig: Release
             collectionType: run
+            collectionName: benchmarks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run_tiered
+            collectionName: benchmarks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+          buildConfig: checked
+          platforms:
+          - osx_arm64
+          - linux_arm
+          - linux_arm64
+          - linux_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            collectionType: run_pgo
             collectionName: benchmarks
 
       #

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -444,7 +445,7 @@ namespace System.Threading
     // A timer in our TimerQueue.
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(TimerDebuggerTypeProxy))]
-    internal sealed class TimerQueueTimer : IThreadPoolWorkItem
+    internal sealed class TimerQueueTimer : ITimer, IThreadPoolWorkItem
     {
         // The associated timer queue.
         private readonly TimerQueue _associatedTimerQueue;
@@ -484,6 +485,19 @@ namespace System.Threading
         internal bool _everQueued;
         private object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task
 
+        internal TimerQueueTimer(TimerCallback timerCallback, object? state, TimeSpan dueTime, TimeSpan period, bool flowExecutionContext) :
+            this(timerCallback, state, GetMilliseconds(dueTime), GetMilliseconds(period), flowExecutionContext)
+        {
+        }
+
+        private static uint GetMilliseconds(TimeSpan time, [CallerArgumentExpression(nameof(time))] string? parameter = null)
+        {
+            long tm = (long)time.TotalMilliseconds;
+            ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, parameter);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(tm, Timer.MaxSupportedTimeout, parameter);
+            return (uint)tm;
+        }
+
         internal TimerQueueTimer(TimerCallback timerCallback, object? state, uint dueTime, uint period, bool flowExecutionContext)
         {
             _timerCallback = timerCallback;
@@ -494,7 +508,7 @@ namespace System.Threading
             {
                 _executionContext = ExecutionContext.Capture();
             }
-            _associatedTimerQueue = TimerQueue.Instances[Thread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
+            _associatedTimerQueue = TimerQueue.Instances[(uint)Thread.GetCurrentProcessorId() % TimerQueue.Instances.Length];
 
             // After the following statement, the timer may fire.  No more manipulation of timer state outside of
             // the lock is permitted beyond this point!
@@ -519,7 +533,10 @@ namespace System.Threading
             }
         }
 
-        internal bool Change(uint dueTime, uint period, bool throwIfDisposed = true)
+        public bool Change(TimeSpan dueTime, TimeSpan period) =>
+            Change(GetMilliseconds(dueTime), GetMilliseconds(period));
+
+        internal bool Change(uint dueTime, uint period)
         {
             bool success;
 
@@ -527,7 +544,6 @@ namespace System.Threading
             {
                 if (_canceled)
                 {
-                    ObjectDisposedException.ThrowIf(throwIfDisposed, this);
                     return false;
                 }
 
@@ -549,8 +565,7 @@ namespace System.Threading
             return success;
         }
 
-
-        public void Close()
+        public void Dispose()
         {
             lock (_associatedTimerQueue)
             {
@@ -562,8 +577,7 @@ namespace System.Threading
             }
         }
 
-
-        public bool Close(WaitHandle toSignal)
+        public bool Dispose(WaitHandle toSignal)
         {
             Debug.Assert(toSignal != null);
 
@@ -592,7 +606,7 @@ namespace System.Threading
             return success;
         }
 
-        public ValueTask CloseAsync()
+        public ValueTask DisposeAsync()
         {
             lock (_associatedTimerQueue)
             {
@@ -779,25 +793,25 @@ namespace System.Threading
 
         ~TimerHolder()
         {
-            _timer.Close();
+            _timer.Dispose();
         }
 
-        public void Close()
+        public void Dispose()
         {
-            _timer.Close();
+            _timer.Dispose();
             GC.SuppressFinalize(this);
         }
 
-        public bool Close(WaitHandle notifyObject)
+        public bool Dispose(WaitHandle notifyObject)
         {
-            bool result = _timer.Close(notifyObject);
+            bool result = _timer.Dispose(notifyObject);
             GC.SuppressFinalize(this);
             return result;
         }
 
-        public ValueTask CloseAsync()
+        public ValueTask DisposeAsync()
         {
-            ValueTask result = _timer.CloseAsync();
+            ValueTask result = _timer.DisposeAsync();
             GC.SuppressFinalize(this);
             return result;
         }
@@ -805,7 +819,7 @@ namespace System.Threading
 
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(TimerQueueTimer.TimerDebuggerTypeProxy))]
-    public sealed class Timer : MarshalByRefObject, IDisposable, IAsyncDisposable
+    public sealed class Timer : MarshalByRefObject, IDisposable, IAsyncDisposable, ITimer
     {
         internal const uint MaxSupportedTimeout = 0xfffffffe;
 
@@ -899,10 +913,8 @@ namespace System.Threading
             return _timer._timer.Change((uint)dueTime, (uint)period);
         }
 
-        public bool Change(TimeSpan dueTime, TimeSpan period)
-        {
-            return Change((long)dueTime.TotalMilliseconds, (long)period.TotalMilliseconds);
-        }
+        public bool Change(TimeSpan dueTime, TimeSpan period) =>
+            _timer._timer.Change(dueTime, period);
 
         [CLSCompliant(false)]
         public bool Change(uint dueTime, uint period)
@@ -944,17 +956,17 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(notifyObject);
 
-            return _timer.Close(notifyObject);
+            return _timer.Dispose(notifyObject);
         }
 
         public void Dispose()
         {
-            _timer.Close();
+            _timer.Dispose();
         }
 
         public ValueTask DisposeAsync()
         {
-            return _timer.CloseAsync();
+            return _timer.DisposeAsync();
         }
 
         private string DisplayString => _timer._timer.DisplayString;

@@ -10,7 +10,7 @@ public class CompareVectorWithZero
 {
     [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
     [Fact]
-    public static void Test()
+    public static void AllTests()
     {
         Test(Vector128.Create(0));
         Test(Vector128.Create(0.0f));
@@ -62,29 +62,29 @@ public class CompareVectorWithZero
     public static T ToVar<T>(T t) => t;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void AssertTrue(bool expr)
+    static void AssertTrue(bool expr)
     {
         if (!expr)
             throw new InvalidOperationException();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test<T>(Vector128<T> v) where T : unmanaged =>
+    static void Test<T>(Vector128<T> v) where T : unmanaged =>
         AssertTrue((v == Vector128<T>.Zero) == 
                    (v == Vector128.Create(ToVar(default(T)))));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test<T>(Vector64<T> v) where T : unmanaged =>
+    static void Test<T>(Vector64<T> v) where T : unmanaged =>
         AssertTrue((v == Vector64<T>.Zero) == 
                    (v == Vector64.Create(ToVar(default(T)))));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestReversed<T>(Vector128<T> v) where T : unmanaged =>
+    static void TestReversed<T>(Vector128<T> v) where T : unmanaged =>
         AssertTrue((Vector128<T>.Zero == v) == 
                    (v == Vector128.Create(ToVar(default(T)))));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestReversed<T>(Vector64<T> v) where T : unmanaged =>
+    static void TestReversed<T>(Vector64<T> v) where T : unmanaged =>
         AssertTrue((Vector64<T>.Zero == v) == 
                    (v == Vector64.Create(ToVar(default(T)))));
 }

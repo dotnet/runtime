@@ -354,6 +354,7 @@ public:
     simd16_t GetConstantSimd16(ValueNum argVN);
 #if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -438,8 +439,10 @@ public:
     ValueNum VNForSimd16Con(simd16_t cnsVal);
 #if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(simd32_t cnsVal);
+    ValueNum VNForSimd64Con(simd64_t cnsVal);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+    ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
 #ifdef TARGET_64BIT
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)
@@ -861,6 +864,9 @@ public:
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
 
+    // Returns true if the VN represents a node that is never negative.
+    bool IsVNNeverNegative(ValueNum vn);
+
     typedef SmallHashTable<ValueNum, bool, 8U> CheckedBoundVNSet;
 
     // Returns true if the VN is known or likely to appear as the conservative value number
@@ -940,8 +946,8 @@ public:
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
-    // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
-    int GetNewArrSize(ValueNum vn);
+    // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
+    bool TryGetNewArrSize(ValueNum vn, int* size);
 
     // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
@@ -984,6 +990,9 @@ public:
 
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
+
+    // Returns true iff the VN represents an object handle constant.
+    bool IsVNObjHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1113,6 +1122,12 @@ public:
     T CoercedConstantValue(ValueNum vn)
     {
         return ConstantValueInternal<T>(vn DEBUGARG(true));
+    }
+
+    CORINFO_OBJECT_HANDLE ConstantObjHandle(ValueNum vn)
+    {
+        assert(IsVNObjHandle(vn));
+        return reinterpret_cast<CORINFO_OBJECT_HANDLE>(CoercedConstantValue<size_t>(vn));
     }
 
     // Requires "mthFunc" to be an intrinsic math function (one of the allowable values for the "gtMath" field
@@ -1609,6 +1624,7 @@ private:
         return m_simd16CnsMap;
     }
 
+#if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
         static bool Equals(simd32_t x, simd32_t y)
@@ -1643,6 +1659,50 @@ private:
         }
         return m_simd32CnsMap;
     }
+
+    struct Simd64PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd64_t>
+    {
+        static bool Equals(simd64_t x, simd64_t y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simd64_t val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+            hash = static_cast<unsigned>(hash ^ val.u32[2]);
+            hash = static_cast<unsigned>(hash ^ val.u32[3]);
+            hash = static_cast<unsigned>(hash ^ val.u32[4]);
+            hash = static_cast<unsigned>(hash ^ val.u32[5]);
+            hash = static_cast<unsigned>(hash ^ val.u32[6]);
+            hash = static_cast<unsigned>(hash ^ val.u32[7]);
+            hash = static_cast<unsigned>(hash ^ val.u32[8]);
+            hash = static_cast<unsigned>(hash ^ val.u32[9]);
+            hash = static_cast<unsigned>(hash ^ val.u32[10]);
+            hash = static_cast<unsigned>(hash ^ val.u32[11]);
+            hash = static_cast<unsigned>(hash ^ val.u32[12]);
+            hash = static_cast<unsigned>(hash ^ val.u32[13]);
+            hash = static_cast<unsigned>(hash ^ val.u32[14]);
+            hash = static_cast<unsigned>(hash ^ val.u32[15]);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simd64_t, Simd64PrimitiveKeyFuncs> Simd64ToValueNumMap;
+    Simd64ToValueNumMap* m_simd64CnsMap;
+    Simd64ToValueNumMap* GetSimd64CnsMap()
+    {
+        if (m_simd64CnsMap == nullptr)
+        {
+            m_simd64CnsMap = new (m_alloc) Simd64ToValueNumMap(m_alloc);
+        }
+        return m_simd64CnsMap;
+    }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -1734,7 +1794,7 @@ private:
 #ifdef DEBUG
     // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
     // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
-    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
+    // and if this exceeds a limit, indicated by a DOTNET_ variable, we assert.
     unsigned m_numMapSels;
 #endif
 };
@@ -1789,6 +1849,13 @@ struct ValueNumStore::VarTypConv<TYP_SIMD32>
 {
     typedef simd32_t Type;
     typedef simd32_t Lang;
+};
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD64>
+{
+    typedef simd64_t Type;
+    typedef simd64_t Lang;
 };
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -1859,6 +1926,13 @@ FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD32);
     return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD64);
+    return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
+}
 #endif // TARGET_XARCH
 
 template <>
@@ -1916,6 +1990,20 @@ FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn 
     assert(!coerce);
 
     return SafeGetConstantValue<simd32_t>(c, offset);
+}
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD64);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd64_t>(c, offset);
 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD

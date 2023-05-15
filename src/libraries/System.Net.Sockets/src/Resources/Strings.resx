@@ -294,9 +294,6 @@
   <data name="InvalidOperation_IncorrectToken" xml:space="preserve">
     <value>The result of the operation was already consumed and may not be used again.</value>
   </data>
-  <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
-    <value>Another continuation was already registered.</value>
-  </data>
   <data name="net_sockets_sendpackelement_FileStreamMustBeAsync" xml:space="preserve">
     <value>The FileStream must have been opened for asynchronous reading and writing.</value>
   </data>

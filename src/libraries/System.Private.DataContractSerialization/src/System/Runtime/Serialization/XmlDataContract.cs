@@ -138,9 +138,9 @@ namespace System.Runtime.Serialization.DataContracts
                 Type type) : base(type)
             {
                 if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type)));
                 if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type)));
                 bool hasRoot;
                 XmlSchemaType? xsdType;
                 XmlQualifiedName xmlName;
@@ -168,13 +168,13 @@ namespace System.Runtime.Serialization.DataContracts
                         XmlRootAttribute xmlRootAttribute = (XmlRootAttribute)xmlRootAttributes[0];
                         _isTopLevelElementNullable = xmlRootAttribute.IsNullable;
                         string elementName = xmlRootAttribute.ElementName;
-                        _topLevelElementName = (elementName == null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
+                        _topLevelElementName = string.IsNullOrEmpty(elementName) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
                         string? elementNs = xmlRootAttribute.Namespace;
-                        _topLevelElementNamespace = (elementNs == null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
+                        _topLevelElementNamespace = string.IsNullOrEmpty(elementNs) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
                     }
                     else
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IsAnyCannotHaveXmlRoot, DataContract.GetClrTypeFullName(UnderlyingType!))));
+                        throw new InvalidDataContractException(SR.Format(SR.IsAnyCannotHaveXmlRoot, DataContract.GetClrTypeFullName(UnderlyingType!)));
                     }
                 }
             }
@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             ConstructorInfo? ctor = UnderlyingType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, Type.EmptyTypes);
             if (ctor == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(UnderlyingType))));
+                throw new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(UnderlyingType)));
 
             return ctor;
         }
@@ -340,9 +340,8 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 if (securityException != null)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        new SecurityException(SR.Format(SR.PartialTrustIXmlSerializableTypeNotPublic, DataContract.GetClrTypeFullName(UnderlyingType)),
-                        securityException));
+                    throw new SecurityException(SR.Format(SR.PartialTrustIXmlSerializableTypeNotPublic, DataContract.GetClrTypeFullName(UnderlyingType)),
+                        securityException);
                 }
                 return true;
             }
@@ -351,9 +350,8 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 if (securityException != null)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        new SecurityException(SR.Format(SR.PartialTrustIXmlSerialzableNoPublicConstructor, DataContract.GetClrTypeFullName(UnderlyingType)),
-                        securityException));
+                    throw new SecurityException(SR.Format(SR.PartialTrustIXmlSerialzableNoPublicConstructor, DataContract.GetClrTypeFullName(UnderlyingType)),
+                        securityException);
                 }
                 return true;
             }

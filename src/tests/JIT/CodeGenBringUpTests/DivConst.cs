@@ -346,7 +346,7 @@ static class DivProgram
         }
         catch (Exception)
         {
-            return Pass;
+            return Fail;
         }
 
         if (DivConst.I8_Div_1(42) != 42)

@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_64208
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Method0() != null)
         {

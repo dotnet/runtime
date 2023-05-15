@@ -185,6 +185,19 @@ namespace Microsoft.Interop
             }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
+            // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
+            // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
+            // If we ever move the "this" object handling out of this type, we'll move the handling to be emitted in that phase.
+            // GC.KeepAlive(this);
+            tryStatements.Add(
+                ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseTypeName(TypeNames.System_GC),
+                            IdentifierName("KeepAlive")),
+                        ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
+
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
@@ -225,7 +238,7 @@ namespace Microsoft.Interop
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
-            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(attributeLists: default, p.Modifiers, p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 
             // ((delegate* unmanaged<...>)<untypedFunctionPointerExpression>)

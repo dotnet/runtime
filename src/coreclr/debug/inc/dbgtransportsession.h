@@ -57,10 +57,10 @@ struct DbgEventBufferEntry;
 // channel (and we've run out of bits for an additional channel) and is likely to be of limited use to anyone
 // besides the transport developer (and even then only occasionally).
 //
-// To enable use 'set|export COMPlus_DbgTransportLog=X' where X is 1 for RS logging, 2 for LS logging and 3
-// for both (default is disabled). Use 'set|export COMPlus_DbgTransportLogClass=X' where X is the hex
+// To enable use 'set|export DOTNET_DbgTransportLog=X' where X is 1 for RS logging, 2 for LS logging and 3
+// for both (default is disabled). Use 'set|export DOTNET_DbgTransportLogClass=X' where X is the hex
 // representation of one or more DbgTransportLogClass flags defined below (default is all classes enabled).
-// For instance, 'set COMPlus_DbgTransportLogClass=f' will enable only message send and receive logging (for
+// For instance, 'set DOTNET_DbgTransportLogClass=f' will enable only message send and receive logging (for
 // all message types).
 enum DbgTransportLogEnable
 {
@@ -172,7 +172,7 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 #ifdef _DEBUG
 //
 // Debug-only network fault injection (in order to help test the robust session code). Control is via a single
-// DWORD read from the environment (COMPlus_DbgTransportFaultInject). This DWORD is treated as a set of bit
+// DWORD read from the environment (DOTNET_DbgTransportFaultInject). This DWORD is treated as a set of bit
 // fields as follows:
 //
 //    +-------+-------+-------+----------------+-----------+
@@ -196,10 +196,10 @@ inline void DbgTransportLog(DbgTransportLogClass eClass, const char *szFormat, .
 //
 // For example:
 //
-//  export COMPlus_DbgTransportFaultInject=1ff00001
+//  export DOTNET_DbgTransportFaultInject=1ff00001
 //  --> Fail all network operations on the left side 1% of the time
 //
-//  export COMPlus_DbgTransportFaultInject=34200063
+//  export DOTNET_DbgTransportFaultInject=34200063
 //  --> Fail Send() calls on both sides while the session is Open 99% of the time
 //
 

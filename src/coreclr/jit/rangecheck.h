@@ -569,9 +569,7 @@ public:
         BasicBlock*          block;
         Statement*           stmt;
         GenTreeLclVarCommon* tree;
-        GenTree*             parent;
-        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, GenTree* parent)
-            : block(block), stmt(stmt), tree(tree), parent(parent)
+        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) : block(block), stmt(stmt), tree(tree)
         {
         }
 

@@ -33,7 +33,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	class RequiresWithCopyAssembly
 	{
 		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--")]
+		[ExpectedWarning ("IL3002", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = Tool.NativeAot)]
 		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
+		[ExpectedWarning ("IL3002", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = Tool.NativeAot)]
 		public static void Main ()
 		{
 			TestRequiresInMethodFromCopiedAssembly ();
@@ -51,6 +55,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--")]
+		[ExpectedWarning ("IL3002", "--MethodCalledThroughReflection--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "--MethodCalledThroughReflection--", ProducedBy = Tool.NativeAot)]
 		static void TestRequiresThroughReflectionInMethodFromCopiedAssembly ()
 		{
 			typeof (RequiresInCopyAssembly)

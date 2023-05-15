@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Numerics;
+using Xunit;
 
 namespace FPBehaviorApp
 {
@@ -259,7 +260,7 @@ namespace FPBehaviorApp
         }
     }
 
-    class Program
+    public class Program
     {
         static int failures = 0;
         static FPtoIntegerConversionType ManagedConversionRule = FPtoIntegerConversionType.CONVERT_MANAGED_BACKWARD_COMPATIBLE_X86_X64;
@@ -371,7 +372,8 @@ namespace FPBehaviorApp
             }
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             switch (RuntimeInformation.ProcessArchitecture)
             {
@@ -389,14 +391,6 @@ namespace FPBehaviorApp
                     break;
             }
             Console.WriteLine($"Expected managed float behavior is {Program.ManagedConversionRule} Execute with parameter to adjust");
-            if (args.Length > 0)
-            {
-                if (!Enum.TryParse(args[0], out ManagedConversionRule))
-                {
-                    Console.WriteLine($"Unable to parse {args[0]}");
-                    return 1;
-                }
-            }
             Console.WriteLine("Specific test cases");
 
             TestBitValue(0, 9223372036854777856.0);

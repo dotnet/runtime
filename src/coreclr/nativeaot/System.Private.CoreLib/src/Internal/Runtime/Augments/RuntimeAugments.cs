@@ -34,7 +34,6 @@ namespace Internal.Runtime.Augments
     using BinderBundle = System.Reflection.BinderBundle;
     using Pointer = System.Reflection.Pointer;
 
-    [ReflectionBlocked]
     public static class RuntimeAugments
     {
         /// <summary>
@@ -401,6 +400,12 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(elementType);
         }
 
+        public static unsafe int GetArrayRankOrMinusOneForSzArray(RuntimeTypeHandle arrayHandle)
+        {
+            Debug.Assert(IsArrayType(arrayHandle));
+            return arrayHandle.ToMethodTable()->IsSzArray ? -1 : arrayHandle.ToMethodTable()->ArrayRank;
+        }
+
         public static bool IsValueType(RuntimeTypeHandle type)
         {
             return type.ToEETypePtr().IsValueType;
@@ -440,15 +445,6 @@ namespace Internal.Runtime.Augments
         }
 
         //
-        // Returns the name of a virtual assembly we dump types private class library-Reflectable ty[es for internal class library use.
-        // The assembly binder visible to apps will never reveal this assembly.
-        //
-        // Note that this is not versionable as it is exposed as a const (and needs to be a const so we can used as a custom attribute argument - which
-        // is the other reason this string is not versionable.)
-        //
-        public const string HiddenScopeAssemblyName = "HiddenScope, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-
-        //
         // This implements the "IsAssignableFrom()" api for runtime-created types. By policy, we let the underlying runtime decide assignability.
         //
         public static bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
@@ -457,11 +453,6 @@ namespace Internal.Runtime.Augments
             EETypePtr srcEEType = srcType.ToEETypePtr();
 
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
-        }
-
-        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
         }
 
         //
@@ -473,7 +464,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -490,7 +481,7 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
                 return null;
 
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
@@ -498,9 +489,6 @@ namespace Internal.Runtime.Augments
             {
                 EETypePtr ifcEEType = eeType.Interfaces[i];
                 RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
-                if (Callbacks.IsReflectionBlocked(ifcrth))
-                    continue;
-
                 implementedInterfaces.Add(ifcrth);
             }
             return implementedInterfaces.ToArray();
@@ -637,6 +625,48 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().IsPointer;
         }
 
+        public static bool IsFunctionPointerType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsFunctionPointer;
+        }
+
+        public static unsafe RuntimeTypeHandle GetFunctionPointerReturnType(RuntimeTypeHandle typeHandle)
+        {
+            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerReturnType));
+        }
+
+        public static unsafe int GetFunctionPointerParameterCount(RuntimeTypeHandle typeHandle)
+        {
+            return (int)typeHandle.ToMethodTable()->NumFunctionPointerParameters;
+        }
+
+        public static unsafe RuntimeTypeHandle GetFunctionPointerParameterType(RuntimeTypeHandle typeHandle, int argumentIndex)
+        {
+            Debug.Assert(argumentIndex < GetFunctionPointerParameterCount(typeHandle));
+            return new RuntimeTypeHandle(new EETypePtr(typeHandle.ToMethodTable()->FunctionPointerParameters[argumentIndex]));
+        }
+
+        public static unsafe RuntimeTypeHandle[] GetFunctionPointerParameterTypes(RuntimeTypeHandle typeHandle)
+        {
+            int paramCount = GetFunctionPointerParameterCount(typeHandle);
+            if (paramCount == 0)
+                return Array.Empty<RuntimeTypeHandle>();
+
+            RuntimeTypeHandle[] result = new RuntimeTypeHandle[paramCount];
+            MethodTableList parameters = typeHandle.ToMethodTable()->FunctionPointerParameters;
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new RuntimeTypeHandle(new EETypePtr(parameters[i]));
+            }
+
+            return result;
+        }
+
+        public static unsafe bool IsUnmanagedFunctionPointerType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToMethodTable()->IsUnmanagedFunctionPointer;
+        }
+
         public static bool IsByRefType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsByRef;
@@ -658,6 +688,8 @@ namespace Internal.Runtime.Augments
             if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
                 return false;
             if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+            if (srcEEType.IsFunctionPointer || dstEEType.IsFunctionPointer)
                 return false;
             if (srcEEType.IsByRef || dstEEType.IsByRef)
                 return false;
@@ -726,11 +758,6 @@ namespace Internal.Runtime.Augments
             string modulePath = new string(pModuleName, 0, numChars);
 #endif // TARGET_UNIX
             return modulePath;
-        }
-
-        public static IntPtr GetRuntimeTypeHandleRawValue(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            return runtimeTypeHandle.RawValue;
         }
 
         // if functionPointer points at an import or unboxing stub, find the target of the stub
@@ -885,11 +912,6 @@ namespace Internal.Runtime.Augments
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
         {
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
-        }
-
-        public static string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.LastResortToString;
         }
 
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)

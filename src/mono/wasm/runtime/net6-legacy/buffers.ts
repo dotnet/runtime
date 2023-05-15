@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../imports";
+import { Module } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
-import { MonoArray, MonoObjectRef, MonoObject } from "../types";
+import { MonoArray, MonoObjectRef, MonoObject } from "../types/internal";
 import { Int32Ptr, TypedArray } from "../types/emscripten";
 import { js_to_mono_obj_root } from "./js-to-cs";
 

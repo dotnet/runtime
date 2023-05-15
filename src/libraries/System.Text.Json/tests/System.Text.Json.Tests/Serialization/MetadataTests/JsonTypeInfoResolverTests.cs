@@ -3,11 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -46,7 +44,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else
                 {
-                    Assert.Equal(expectedResolvers, GetCombinedResolvers(combinedResolver));
+                    Assert.Equal(expectedResolvers, GetAndValidateCombinedResolvers(combinedResolver));
                 }
             }
         }
@@ -150,23 +148,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(4, resolverId);
         }
 
-        private static IJsonTypeInfoResolver[] GetCombinedResolvers(IJsonTypeInfoResolver resolver)
+        private static IList<IJsonTypeInfoResolver> GetAndValidateCombinedResolvers(IJsonTypeInfoResolver resolver)
         {
-            (Type combinedResolverType, PropertyInfo underlyingResolverProperty) = s_combinedResolverMembers.Value;
-            Assert.IsType(combinedResolverType, resolver);
-            return (IJsonTypeInfoResolver[])underlyingResolverProperty.GetValue(resolver);
-        }
+            var list = (IList<IJsonTypeInfoResolver>)resolver;
 
-        private static Lazy<(Type, PropertyInfo)> s_combinedResolverMembers = new Lazy<(Type, PropertyInfo)>
-        (
-            static () =>
-            {
-                Type? combinedResolverType = typeof(JsonTypeInfoResolver).GetNestedType("CombiningJsonTypeInfoResolver", BindingFlags.NonPublic);
-                Assert.NotNull(combinedResolverType);
-                PropertyInfo underlyingResolverProperty = combinedResolverType.GetProperty("Resolvers", BindingFlags.NonPublic | BindingFlags.Instance);
-                Assert.NotNull(underlyingResolverProperty);
-                return (combinedResolverType, underlyingResolverProperty);
-            }
-        );
+            Assert.True(list.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => list.Clear());
+            Assert.Throws<InvalidOperationException>(() => list.Add(new DefaultJsonTypeInfoResolver()));
+
+            return list;
+        }
     }
 }

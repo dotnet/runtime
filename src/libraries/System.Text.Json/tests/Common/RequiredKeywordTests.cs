@@ -568,6 +568,28 @@ namespace System.Text.Json.Serialization.Tests
             public required string SomeProperty { get; set; }
         }
 
+        [Fact]
+        public async Task ClassWithCustomRequiredPropertyName_Roundtrip()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/82730
+            var value = new ClassWithCustomRequiredPropertyName { Property = 42, PropertyWithInitOnlySetter = 43 };
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal("""{"Prop":42,"PropWithInit":43}""", json);
+
+            value = await Serializer.DeserializeWrapper<ClassWithCustomRequiredPropertyName>(json);
+            Assert.Equal(42, value.Property);
+            Assert.Equal(43, value.PropertyWithInitOnlySetter);
+        }
+
+        public class ClassWithCustomRequiredPropertyName
+        {
+            [JsonPropertyName("Prop")]
+            public required int Property { get; set; }
+
+            [JsonPropertyName("PropWithInit")]
+            public required int PropertyWithInitOnlySetter { get; init; }
+        }
+
         private static JsonTypeInfo GetTypeInfo<T>(JsonSerializerOptions options)
         {
             options.TypeInfoResolver ??= JsonSerializerOptions.Default.TypeInfoResolver;

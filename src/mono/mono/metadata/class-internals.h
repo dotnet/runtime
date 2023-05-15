@@ -687,10 +687,6 @@ typedef struct {
 
 extern MonoStats mono_stats;
 
-typedef gboolean (*MonoGetCachedClassInfo) (MonoClass *klass, MonoCachedClassInfo *res);
-
-typedef gboolean (*MonoGetClassFromName) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
-
 static inline gboolean
 method_is_dynamic (MonoMethod *method)
 {
@@ -754,15 +750,6 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
-
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass);
-
-void
-mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
-
-void
-mono_install_get_class_from_name (MonoGetClassFromName func);
 
 MONO_PROFILER_API MonoGenericContext*
 mono_class_get_context (MonoClass *klass);
@@ -1145,7 +1132,7 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 gboolean
 mono_class_can_access_class (MonoClass *access_class, MonoClass *target_class);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass);
 
 gboolean
@@ -1432,6 +1419,9 @@ mono_method_has_no_body (MonoMethod *method);
 // Internal callers expected to use ERROR_DECL. External callers are not.
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
+
+MONO_COMPONENT_API void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names);
 
 MonoType*
 mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);

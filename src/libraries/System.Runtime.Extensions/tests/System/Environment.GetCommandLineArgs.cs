@@ -103,5 +103,30 @@ namespace System.Tests
 
             return RemoteExecutor.SuccessExitCode;
         }
+
+        public static bool IsWindowsCoreCLRJit
+            => PlatformDetection.IsWindows
+            && PlatformDetection.IsNotMonoRuntime
+            && PlatformDetection.IsNotNativeAot;
+
+        [ConditionalTheory(typeof(GetCommandLineArgs), nameof(IsWindowsCoreCLRJit))]
+        [InlineData(@"cmd ""abc"" d e", new[] { "cmd", "abc", "d", "e" })]
+        [InlineData(@"cmd a\\b d""e f""g h", new[] { "cmd", @"a\\b", "de fg", "h" })]
+        [InlineData(@"cmd a\\\""b c d", new[] { "cmd", @"a\""b", "c", "d" })]
+        [InlineData(@"cmd a\\\\""b c"" d e", new[] { "cmd", @"a\\b c", "d", "e" })]
+        [InlineData(@"cmd a""b"""" c d", new[] { "cmd", @"ab"" c d" })]
+        [InlineData(@"X:\No""t A"""" P""ath arg", new[] { @"X:\Not A Path", "arg" })]
+        [InlineData(@"""\\Some Server\cmd"" ""arg", new[] { @"\\Some Server\cmd", "arg" })]
+        public static unsafe void CheckCommandLineParser(string cmdLine, string[] args)
+        {
+            var method = typeof(Environment).GetMethod("SegmentCommandLine", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var span = cmdLine.AsSpan(); // Workaround
+            fixed (char* p = span)
+            {
+                Assert.Equal(args, method.Invoke(null, new object[] { Pointer.Box(p, typeof(char*)) }));
+            }
+        }
     }
 }

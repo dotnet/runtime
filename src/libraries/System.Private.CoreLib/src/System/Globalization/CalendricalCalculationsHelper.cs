@@ -77,7 +77,7 @@ namespace System.Globalization
             Year1620to1699
         }
 
-        private struct EphemerisCorrectionAlgorithmMap
+        private readonly struct EphemerisCorrectionAlgorithmMap
         {
             public EphemerisCorrectionAlgorithmMap(int year, CorrectionAlgorithm algorithm)
             {
@@ -85,8 +85,8 @@ namespace System.Globalization
                 _algorithm = algorithm;
             }
 
-            internal int _lowestYear;
-            internal CorrectionAlgorithm _algorithm;
+            internal readonly int _lowestYear;
+            internal readonly CorrectionAlgorithm _algorithm;
         }
 
         private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]

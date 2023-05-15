@@ -93,12 +93,12 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {
             if (!_method.IsGenericMethodDefinition || (_typeArguments != null))
-                throw new InvalidOperationException("Method is not a generic method definition");
+                throw new InvalidOperationException(SR.Argument_NeedGenericMethodDefinition);
 
             ArgumentNullException.ThrowIfNull(typeArgs);
 
             if (_method.GetGenericArguments().Length != typeArgs.Length)
-                throw new ArgumentException("Incorrect length", nameof(typeArgs));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, _method.GetGenericArguments().Length, typeArgs.Length));
 
             foreach (Type type in typeArgs)
             {

@@ -4,10 +4,10 @@
 import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage } from "../shared";
 import { pthread_ptr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
-import { PromiseController, createPromiseController } from "../../promise-controller";
-import { MonoConfig, mono_assert } from "../../types";
 import Internals from "../shared/emscripten-internals";
-import { runtimeHelpers } from "../../imports";
+import { createPromiseController, runtimeHelpers } from "../../globals";
+import { PromiseController } from "../../types/internal";
+import { MonoConfig } from "../../types";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -139,13 +139,7 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
     // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
     const workers = Internals.getUnusedWorkerPool();
     if (workers.length > 0) {
-        const allLoaded = createPromiseController<void>();
-        let leftToLoad = workers.length;
-        workers.forEach((w) => {
-            Internals.loadWasmModuleToWorker(w, function () {
-                if (!--leftToLoad) allLoaded.promise_control.resolve();
-            });
-        });
-        await allLoaded.promise;
+        const promises = workers.map(Internals.loadWasmModuleToWorker);
+        await Promise.all(promises);
     }
 }

@@ -7,6 +7,7 @@
     <Description>IL Linker</Description>
     <RootNamespace>Mono.Linker</RootNamespace>
     <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
     <PackageId>Microsoft.NET.ILLink</PackageId>
     <!-- Disabling baseline validation since this is a brand new package.
        Once this package has shipped a stable version, the following line
@@ -20,6 +21,7 @@
     <UseAppHost>false</UseAppHost>
     <NoWarn>$(NoWarn);NU5131</NoWarn>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
+    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
   <!-- The default pack logic will include the implementation assembly in lib.

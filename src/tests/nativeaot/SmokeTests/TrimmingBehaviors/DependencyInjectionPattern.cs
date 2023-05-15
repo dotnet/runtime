@@ -24,6 +24,13 @@ public class DependencyInjectionPattern
         var created = customFactory.Create();
         Assert.Equal(42, created.GetValue());
 
+        services.RegisterService(typeof(ICustomFactoryWithConstraint<>), typeof(CustomFactoryWithConstraintImpl<>));
+        services.RegisterService(typeof(ICustomFactoryWithConstraintWrapper), typeof(CustomFactoryWithConstraintWrapperImpl));
+
+        var customFactoryWithConstraintWrapper = services.GetService<ICustomFactoryWithConstraintWrapper>();
+        var createdWithConstraint = customFactoryWithConstraintWrapper.Create();
+        Assert.Equal(42, createdWithConstraint.GetValue());
+
         return 100;
     }
 }
@@ -169,6 +176,48 @@ class FactoryCreated
     int _value;
 
     public FactoryCreated()
+    {
+        _value = 42;
+    }
+
+    public int GetValue() => _value;
+}
+
+interface ICustomFactoryWithConstraintWrapper
+{
+    FactoryWithConstraintCreated Create();
+}
+
+class CustomFactoryWithConstraintWrapperImpl : ICustomFactoryWithConstraintWrapper
+{
+    private FactoryWithConstraintCreated _value;
+
+    public CustomFactoryWithConstraintWrapperImpl(ICustomFactoryWithConstraint<FactoryWithConstraintCreated> factory)
+    {
+        _value = factory.Create();
+    }
+
+    public FactoryWithConstraintCreated Create() => _value;
+}
+
+interface ICustomFactoryWithConstraint<T> where T : new()
+{
+    T Create();
+}
+
+class CustomFactoryWithConstraintImpl<T> : ICustomFactoryWithConstraint<T> where T : new()
+{
+    public T Create()
+    {
+        return Activator.CreateInstance<T>();
+    }
+}
+
+class FactoryWithConstraintCreated
+{
+    int _value;
+
+    public FactoryWithConstraintCreated()
     {
         _value = 42;
     }

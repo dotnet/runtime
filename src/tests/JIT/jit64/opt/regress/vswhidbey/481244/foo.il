@@ -11,7 +11,7 @@
   .ver 2:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly foo
+.assembly ASSEMBLY_NAME
 {
 }
 
@@ -19,7 +19,7 @@
 
 
 
-.class private auto ansi test extends [mscorlib]System.Object
+.class public auto ansi test extends [mscorlib]System.Object
 {
   .method privatescope static int32  M1(float32 Arg_0x4) cil managed
   {
@@ -45,7 +45,7 @@
     ret
   }
 
-  .method privatescope static int32  Main() cil managed
+  .method public static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

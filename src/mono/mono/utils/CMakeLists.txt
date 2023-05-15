@@ -17,6 +17,7 @@ if(HOST_WIN32 AND HOST_AMD64)
     list(APPEND utils_win32_sources win64.asm)
 elseif(HOST_WASI)
     set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
     enable_language(ASM)
 endif()
 
@@ -166,12 +167,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    networking.c
-    networking-posix.c
-    networking-fallback.c
-    networking-missing.c
-    networking-windows.c
-    networking.h
     mono-rand.c
     mono-rand-windows.c
     mono-rand.h

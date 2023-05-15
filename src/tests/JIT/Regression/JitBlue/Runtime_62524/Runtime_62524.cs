@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_62524
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem(new() { Value = 1 }) == 1 ? 100 : 101;
     }

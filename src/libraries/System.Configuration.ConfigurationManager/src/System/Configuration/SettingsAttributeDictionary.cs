@@ -13,7 +13,6 @@ namespace System.Configuration
         public SettingsAttributeDictionary(SettingsAttributeDictionary attributes) : base(attributes) { }
 
         protected SettingsAttributeDictionary(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
         }

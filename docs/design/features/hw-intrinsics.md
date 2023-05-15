@@ -49,7 +49,7 @@ The bulk of the implementation work for hardware intrinsics is in the JIT.
 
 ### Platform Target Information
 
-The JIT depends on the VM and configuration settings to determine what target platform to generate code for. The VM settings are communicated in the `JitFlags` on `Compiler::opts` and the JIT checks the various `COMPlus_EnableXXX` configuration settings as well. See `Compiler::compSetProcessor()` and `jitconfigvalues.h`.
+The JIT depends on the VM and configuration settings to determine what target platform to generate code for. The VM settings are communicated in the `JitFlags` on `Compiler::opts` and the JIT checks the various `DOTNET_EnableXXX` configuration settings as well. See `Compiler::compSetProcessor()` and `jitconfigvalues.h`.
 
 ### Importation
 

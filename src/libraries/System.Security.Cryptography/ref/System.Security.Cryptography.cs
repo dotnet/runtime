@@ -123,11 +123,16 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AesGcm : System.IDisposable
     {
+        [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public AesGcm(byte[] key) { }
+        public AesGcm(byte[] key, int tagSizeInBytes) { }
+        [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public AesGcm(System.ReadOnlySpan<byte> key) { }
+        public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
+        public int? TagSizeInBytes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
         public void Decrypt(System.ReadOnlySpan<byte> nonce, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> tag, System.Span<byte> plaintext, System.ReadOnlySpan<byte> associatedData = default(System.ReadOnlySpan<byte>)) { }
         public void Dispose() { }
@@ -542,6 +547,8 @@ namespace System.Security.Cryptography
     public partial class CryptographicUnexpectedOperationException : System.Security.Cryptography.CryptographicException
     {
         public CryptographicUnexpectedOperationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected CryptographicUnexpectedOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicUnexpectedOperationException(string? message) { }
         public CryptographicUnexpectedOperationException(string? message, System.Exception? inner) { }
@@ -969,6 +976,7 @@ namespace System.Security.Cryptography
         public virtual byte[] DeriveKeyFromHmac(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[]? hmacKey, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
         public virtual byte[] DeriveKeyMaterial(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
         public virtual byte[] DeriveKeyTls(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
+        public virtual byte[] DeriveRawSecretAgreement(System.Security.Cryptography.ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
         public override void FromXmlString(string xmlString) { }
         public override string ToXmlString(bool includePrivateParameters) { throw null; }
     }
@@ -2748,6 +2756,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.IntPtr handle) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(System.Security.Cryptography.X509Certificates.X509Certificate cert) { }
@@ -2845,6 +2855,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected X509Certificate2(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.Security.Cryptography.X509Certificates.X509Certificate certificate) { }

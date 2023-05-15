@@ -32,10 +32,6 @@
     <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Manpage Include="$(ManPagesDir)/**/*" />
-  </ItemGroup>
-
   <Target Name="PublishToDisk">
     <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 

@@ -1,12 +1,14 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class FieldListByteNodeTypeMismatchX86
 {
     private static readonly byte* _addr = (byte*)Marshal.AllocHGlobal(20);
     private static int _result = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int sum = 0;
         Problem(&sum);

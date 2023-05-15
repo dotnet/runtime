@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -11,41 +11,6 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
-        // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
-        // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
-        private static unsafe bool IsValidAddress(ReadOnlySpan<char> ipSpan)
-        {
-            int end = ipSpan.Length;
-
-            if (ipSpan.Contains(':'))
-            {
-                // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
-                // we don't support/parse a port specification at the end of an IPv4 address.
-                Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
-
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    return IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
-                }
-            }
-            else if (char.IsDigit(ipSpan[0]))
-            {
-                long tmpAddr;
-
-                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
-                {
-                    tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
-                }
-
-                if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -83,17 +48,11 @@ namespace System.Net.Security
             IsServer = false;
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
-            if (!string.IsNullOrEmpty(sslClientAuthenticationOptions.TargetHost))
-            {
-                // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-                TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
 
-                // RFC 6066 forbids IP literals
-                if (IsValidAddress(TargetHost))
-                {
-                    TargetHost = string.Empty;
-                }
-            }
+            // RFC 6066 forbids IP literals
+            TargetHost = TargetHostNameHelper.IsValidAddress(sslClientAuthenticationOptions.TargetHost)
+                ? string.Empty
+                : sslClientAuthenticationOptions.TargetHost ?? string.Empty;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -163,7 +122,7 @@ namespace System.Net.Security
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
                 }
                 else
                 {

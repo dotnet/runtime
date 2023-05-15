@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -46,6 +47,8 @@ namespace System.Runtime.InteropServices
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ExternalException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

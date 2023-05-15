@@ -2,43 +2,47 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 
-using Internal.Text;
 using Internal.TypeSystem;
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using AssemblyName = System.Reflection.AssemblyName;
-using System.Collections.Generic;
 
 namespace ILCompiler
 {
     public class MstatObjectDumper : ObjectDumper
     {
-        private const int VersionMajor = 1;
-        private const int VersionMinor = 1;
+        private const int VersionMajor = 2;
+        private const int VersionMinor = 0;
 
         private readonly string _fileName;
-        private readonly TypeSystemMetadataEmitter _emitter;
+        private readonly MstatEmitter _emitter;
 
         private readonly InstructionEncoder _types = new InstructionEncoder(new BlobBuilder());
 
-        private Dictionary<MethodDesc, (string MangledName, int Size, int GcInfoSize)> _methods = new();
+        private readonly BlobBuilder _mangledNames = new BlobBuilder();
+
+        private List<(MethodDesc Method, string MangledName, int Size, int GcInfoSize)> _methods = new();
         private Dictionary<MethodDesc, int> _methodEhInfo = new();
         private Dictionary<string, int> _blobs = new();
-
-        private Utf8StringBuilder _utf8StringBuilder = new Utf8StringBuilder();
 
         public MstatObjectDumper(string fileName, TypeSystemContext context)
         {
             _fileName = fileName;
             var asmName = new AssemblyName(Path.GetFileName(fileName));
             asmName.Version = new Version(VersionMajor, VersionMinor);
-            _emitter = new TypeSystemMetadataEmitter(asmName, context);
+            _emitter = new MstatEmitter(asmName, context);
             _emitter.AllowUseOfAddGlobalMethod();
         }
 
@@ -46,24 +50,23 @@ namespace ILCompiler
         {
         }
 
-        protected override void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+        protected override void DumpObjectNode(NodeFactory factory, ObjectNode node, ObjectData objectData)
         {
-            string mangledName = null;
-            if (node is ISymbolNode symbol)
-            {
-                _utf8StringBuilder.Clear();
-                symbol.AppendMangledName(mangler, _utf8StringBuilder);
-                mangledName = _utf8StringBuilder.ToString();
-            }
-
             switch (node)
             {
                 case EETypeNode eeType:
-                    SerializeSimpleEntry(_types, eeType.Type, objectData);
+                    _types.OpCode(ILOpCode.Ldtoken);
+                    _types.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(eeType.Type));
+                    _types.LoadConstantI4(objectData.Data.Length);
+                    _types.LoadConstantI4(AppendMangledName(DependencyNodeCore<NodeFactory>.GetNodeName(node, factory)));
                     break;
                 case IMethodBodyNode methodBody:
                     var codeInfo = (INodeWithCodeInfo)node;
-                    _methods.Add(methodBody.Method, (mangledName, objectData.Data.Length, codeInfo.GCInfo.Length));
+                    _methods.Add((
+                        methodBody.Method,
+                        DependencyNodeCore<NodeFactory>.GetNodeName(node, factory),
+                        objectData.Data.Length,
+                        codeInfo.GCInfo.Length));
                     break;
                 case MethodExceptionHandlingInfoNode ehInfoNode:
                     _methodEhInfo.Add(ehInfoNode.Method, objectData.Data.Length);
@@ -77,13 +80,11 @@ namespace ILCompiler
             }
         }
 
-        private void SerializeSimpleEntry(InstructionEncoder encoder, TypeSystemEntity entity, ObjectData blob)
+        private int AppendMangledName(string mangledName)
         {
-            encoder.OpCode(ILOpCode.Ldtoken);
-            encoder.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(entity));
-            // Would like to do this but mangled names are very long and go over the 16 MB string limit quickly.
-            // encoder.LoadString(_emitter.GetUserStringHandle(mangledName));
-            encoder.LoadConstantI4(blob.Data.Length);
+            int index = _mangledNames.Count;
+            _mangledNames.WriteSerializedString(mangledName);
+            return index;
         }
 
         internal override void End()
@@ -92,12 +93,11 @@ namespace ILCompiler
             foreach (var m in _methods)
             {
                 methods.OpCode(ILOpCode.Ldtoken);
-                methods.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(m.Key));
-                // Would like to do this but mangled names are very long and go over the 16 MB string limit quickly.
-                // methods.LoadString(_emitter.GetUserStringHandle(m.Value.MangledName));
-                methods.LoadConstantI4(m.Value.Size);
-                methods.LoadConstantI4(m.Value.GcInfoSize);
-                methods.LoadConstantI4(_methodEhInfo.GetValueOrDefault(m.Key));
+                methods.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(m.Method));
+                methods.LoadConstantI4(m.Size);
+                methods.LoadConstantI4(m.GcInfoSize);
+                methods.LoadConstantI4(_methodEhInfo.GetValueOrDefault(m.Method));
+                methods.LoadConstantI4(AppendMangledName(m.MangledName));
             }
 
             var blobs = new InstructionEncoder(new BlobBuilder());
@@ -111,8 +111,60 @@ namespace ILCompiler
             _emitter.AddGlobalMethod("Types", _types, 0);
             _emitter.AddGlobalMethod("Blobs", blobs, 0);
 
-            using (var fs = File.OpenWrite(_fileName))
+            _emitter.AddPESection(".names", _mangledNames);
+
+            using (var fs = File.Create(_fileName))
                 _emitter.SerializeToStream(fs);
+        }
+
+        private sealed class MstatEmitter : TypeSystemMetadataEmitter
+        {
+            private readonly List<(string Name, BlobBuilder Content)> _customSections = new();
+
+            public MstatEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null)
+                : base(assemblyName, context, flags, publicKeyArray)
+            {
+            }
+
+            public void AddPESection(string name, BlobBuilder content)
+            {
+                _customSections.Add((name, content));
+            }
+
+            protected override ManagedPEBuilder CreateManagedPEBuilder(BlobBuilder ilBuilder)
+            {
+                return new MstatPEBuilder(this, ilBuilder);
+            }
+
+            private sealed class MstatPEBuilder : ManagedPEBuilder
+            {
+                private readonly MstatEmitter _emitter;
+
+                public MstatPEBuilder(
+                    MstatEmitter emitter,
+                    BlobBuilder ilStream)
+                    : base(PEHeaderBuilder.CreateLibraryHeader(), new MetadataRootBuilder(emitter.Builder), ilStream, deterministicIdProvider: content => s_contentId)
+                {
+                    _emitter = emitter;
+                }
+
+                protected override ImmutableArray<Section> CreateSections()
+                {
+                    ImmutableArray<Section> result = base.CreateSections();
+                    return result.AddRange(_emitter._customSections.Select(s => new Section(s.Name, SectionCharacteristics.MemRead)));
+                }
+
+                protected override BlobBuilder SerializeSection(string name, SectionLocation location)
+                {
+                    foreach (var section in _emitter._customSections)
+                    {
+                        if (section.Name == name)
+                            return section.Content;
+                    }
+
+                    return base.SerializeSection(name, location);
+                }
+            }
         }
     }
 }

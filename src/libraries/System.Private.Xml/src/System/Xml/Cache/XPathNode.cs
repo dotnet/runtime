@@ -474,7 +474,7 @@ namespace MS.Internal.Xml.Cache
     /// A reference to a XPathNode is composed of two values: the page on which the node is located, and the node's
     /// index in the page.
     /// </summary>
-    internal struct XPathNodeRef
+    internal readonly struct XPathNodeRef
     {
         private readonly XPathNode[] _page;
         private readonly int _idx;

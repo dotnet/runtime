@@ -7,7 +7,7 @@ namespace System.Threading
     {
         private sealed partial class HillClimbing
         {
-            private struct Complex
+            private readonly struct Complex
             {
                 public Complex(double real, double imaginary)
                 {

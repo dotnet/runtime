@@ -3,8 +3,8 @@
     <NeedsToRunOnBrowser>true</NeedsToRunOnBrowser>
     <WorkItemPrefix>$(DebuggerHost)-</WorkItemPrefix>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
-    <_DebuggerTestsWorkItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:30:00</_DebuggerTestsWorkItemTimeout>
-    <_DebuggerTestsWorkItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests' and '$(BrowserHost)' == 'windows'">00:40:00</_DebuggerTestsWorkItemTimeout>
+    <_DebuggerTestsWorkItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:50:00</_DebuggerTestsWorkItemTimeout>
+    <_DebuggerTestsWorkItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests' and '$(BrowserHost)' == 'windows'">00:50:00</_DebuggerTestsWorkItemTimeout>
 
     <HelixExtensionTargets>$(HelixExtensionTargets);_AddWorkItemsForWasmDebuggerTests</HelixExtensionTargets>
   </PropertyGroup>

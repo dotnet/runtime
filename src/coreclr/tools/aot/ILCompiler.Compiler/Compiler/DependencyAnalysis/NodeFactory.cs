@@ -24,6 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         private CompilationModuleGroup _compilationModuleGroup;
         private VTableSliceProvider _vtableSliceProvider;
         private DictionaryLayoutProvider _dictionaryLayoutProvider;
+        private InlinedThreadStatics _inlinedThreadStatics;
         protected readonly ImportedNodeProvider _importedNodeProvider;
         private bool _markingComplete;
 
@@ -36,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy lazyGenericsPolicy,
             VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider,
+            InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
             PreinitializationManager preinitializationManager)
         {
@@ -44,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
             _dictionaryLayoutProvider = dictionaryLayoutProvider;
+            _inlinedThreadStatics = inlinedThreadStatics;
             NameMangler = nameMangler;
             InteropStubManager = interoptStubManager;
             CreateNodeCaches();
@@ -168,13 +171,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _constructedTypeSymbols = new ConstructedTypeSymbolHashtable(this);
 
-            _clonedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
-            {
-                // Only types that reside in other binaries should be cloned
-                Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
-                return new ClonedConstructedEETypeNode(this, type);
-            });
-
             _importedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>((TypeDesc type) =>
             {
                 Debug.Assert(_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
@@ -214,8 +210,21 @@ namespace ILCompiler.DependencyAnalysis
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
+            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
+            }
+
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
+                if (inlinedThreadStatiscIndexNode != null &&
+                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
+                {
+                    return inlinedThreadStatiscIndexNode;
+                }
+
                 return new TypeThreadStaticIndexNode(type);
             });
 
@@ -282,6 +291,11 @@ namespace ILCompiler.DependencyAnalysis
             _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
             {
                 return new GVMDependenciesNode(method);
+            });
+
+            _gvmImpls = new NodeCache<MethodDesc, GenericVirtualMethodImplNode>(method =>
+            {
+                return new GenericVirtualMethodImplNode(method);
             });
 
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
@@ -393,14 +407,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new EmbeddedTrimmingDescriptorNode(module);
             });
 
-            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
-            {
-                return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
-            });
-
-            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
+            });
+
+            _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
+            {
+                return new GenericVarianceNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -434,17 +448,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _typeGenericDictionaries = new NodeCache<TypeDesc, ISortableSymbolNode>(type =>
+            _typeGenericDictionaries = new NodeCache<TypeDesc, TypeGenericDictionaryNode>(type =>
             {
-                if (CompilationModuleGroup.ContainsTypeDictionary(type))
-                {
-                    Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
-                    return new TypeGenericDictionaryNode(type, this);
-                }
-                else
-                {
-                    return _importedNodeProvider.ImportedTypeDictionaryNode(this, type);
-                }
+                Debug.Assert(CompilationModuleGroup.ContainsTypeDictionary(type));
+                Debug.Assert(!this.LazyGenericsPolicy.UsesLazyGenerics(type));
+                return new TypeGenericDictionaryNode(type, this);
             });
 
             _typesWithMetadata = new NodeCache<MetadataType, TypeMetadataNode>(type =>
@@ -614,20 +622,12 @@ namespace ILCompiler.DependencyAnalysis
             return _constructedTypeSymbols.GetOrCreateValue(type);
         }
 
-        private NodeCache<TypeDesc, IEETypeNode> _clonedTypeSymbols;
-
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
             if (ConstructedEETypeNode.CreationAllowed(type))
                 return ConstructedTypeSymbol(type);
             else
                 return NecessaryTypeSymbol(type);
-        }
-
-        public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
-        {
-            Debug.Assert(!TypeCannotHaveEEType(type));
-            return _clonedTypeSymbols.GetOrAdd(type);
         }
 
         private NodeCache<TypeDesc, IEETypeNode> _importedTypeSymbols;
@@ -662,6 +662,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MetadataType, ISymbolDefinitionNode> _threadStatics;
+        private ThreadStaticsNode _inlinedThreadStatiscNode;
 
         public ISymbolDefinitionNode TypeThreadStaticsSymbol(MetadataType type)
         {
@@ -770,18 +771,18 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMaps.GetOrAdd(type);
         }
 
-        private NodeCache<TypeDesc, EmbeddedObjectNode> _interfaceDispatchMapIndirectionNodes;
+        private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
 
-        public EmbeddedObjectNode InterfaceDispatchMapIndirection(TypeDesc type)
-        {
-            return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
-        }
-
-        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
-
-        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
+
+        internal ISymbolNode GenericVariance(GenericVarianceDetails details)
+        {
+            return _genericVariances.GetOrAdd(details);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -842,8 +843,8 @@ namespace ILCompiler.DependencyAnalysis
             return _methodGenericDictionaries.GetOrAdd(method);
         }
 
-        private NodeCache<TypeDesc, ISortableSymbolNode> _typeGenericDictionaries;
-        public ISortableSymbolNode TypeGenericDictionary(TypeDesc type)
+        private NodeCache<TypeDesc, TypeGenericDictionaryNode> _typeGenericDictionaries;
+        public TypeGenericDictionaryNode TypeGenericDictionary(TypeDesc type)
         {
             return _typeGenericDictionaries.GetOrAdd(type);
         }
@@ -858,6 +859,17 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode StringAllocator(MethodDesc stringConstructor)
         {
             return _stringAllocators.GetOrAdd(stringConstructor);
+        }
+
+        public uint ThreadStaticBaseOffset(MetadataType type)
+        {
+            if (_inlinedThreadStatics.IsComputed() &&
+                _inlinedThreadStatics.GetOffsets().TryGetValue(type, out var offset))
+            {
+                return (uint)offset;
+            }
+
+            return 0;
         }
 
         private sealed class MethodEntrypointHashtable : LockFreeReaderHashtable<MethodDesc, IMethodNode>
@@ -943,6 +955,12 @@ namespace ILCompiler.DependencyAnalysis
             return _gvmDependenciesNode.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, GenericVirtualMethodImplNode> _gvmImpls;
+        public GenericVirtualMethodImplNode GenericVirtualMethodImpl(MethodDesc method)
+        {
+            return _gvmImpls.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
@@ -952,6 +970,9 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, ReflectedMethodNode> _reflectedMethods;
         public ReflectedMethodNode ReflectedMethod(MethodDesc method)
         {
+            // We track reflectability at canonical method body level
+            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
             return _reflectedMethods.GetOrAdd(method);
         }
 
@@ -1036,8 +1057,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTClass ??= _systemArrayOfTClass = _context.SystemModule.GetKnownType("System", "Array`1");
-                return _systemArrayOfTClass;
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
             }
         }
 
@@ -1046,8 +1066,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                _systemArrayOfTEnumeratorType ??= _systemArrayOfTEnumeratorType = ArrayOfTClass.GetNestedType("ArrayEnumerator");
-                return _systemArrayOfTEnumeratorType;
+                // This type is optional, but it's fine for this cache to be ineffective if that happens.
+                // Those scenarios are rare and typically deal with small compilations.
+                return _systemArrayOfTEnumeratorType ??= _context.SystemModule.GetType("System", "SZGenericArrayEnumerator`1", throwIfNotFound: false);
             }
         }
 
@@ -1058,9 +1079,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
-
-                return _instanceMethodRemovedHelper;
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
             }
         }
 
@@ -1245,11 +1264,6 @@ namespace ILCompiler.DependencyAnalysis
             "__EagerCctorEnd",
             null);
 
-        public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            "__DispatchMapTableStart",
-            "__DispatchMapTableEnd",
-            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
-
         public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
@@ -1273,16 +1287,19 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
-            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
+
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 

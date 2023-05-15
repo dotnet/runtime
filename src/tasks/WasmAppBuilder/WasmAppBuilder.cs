@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -17,19 +18,13 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
-    [NotNull]
-    [Required]
-    public string? MainJS { get; set; }
-
-    public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
-    public string? MainHTMLPath { get; set; }
-    public bool IncludeThreadsWorker {get; set; }
-    public int PThreadPoolSize {get; set; }
+    public bool IncludeThreadsWorker { get; set; }
+    public int PThreadPoolSize { get; set; }
     public bool UseWebcil { get; set; }
 
     // <summary>
-    // Extra json elements to add to mono-config.json
+    // Extra json elements to add to _framework/blazor.boot.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -54,48 +49,68 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remoteSources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("globalizationMode")]
+        public string? GlobalizationMode { get; set; }
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
+        [JsonPropertyName("assetsHash")]
+        public string AssetsHash { get; set; } = "none";
     }
 
     private class AssetEntry
     {
-        protected AssetEntry (string name, string behavior)
+        protected AssetEntry(string name, string hash, string behavior)
         {
             Name = name;
             Behavior = behavior;
+            Hash = hash;
         }
         [JsonPropertyName("behavior")]
         public string Behavior { get; init; }
         [JsonPropertyName("name")]
         public string Name { get; init; }
-        // TODO [JsonPropertyName("hash")]
-        // TODO public string? Hash { get; set; }
+        [JsonPropertyName("hash")]
+        public string? Hash { get; set; }
     }
 
     private sealed class WasmEntry : AssetEntry
     {
-        public WasmEntry(string name) : base(name, "dotnetwasm") { }
+        public WasmEntry(string name, string hash) : base(name, hash, "dotnetwasm") { }
+    }
+
+    private sealed class LoaderJsEntry : AssetEntry
+    {
+        public LoaderJsEntry(string name, string hash) : base(name, hash, "js-module-dotnet") { }
+    }
+
+    private sealed class NativeJsEntry : AssetEntry
+    {
+        public NativeJsEntry(string name, string hash) : base(name, hash, "js-module-native") { }
+    }
+
+    private sealed class RuntimeJsEntry : AssetEntry
+    {
+        public RuntimeJsEntry(string name, string hash) : base(name, hash, "js-module-runtime") { }
     }
 
     private sealed class ThreadsWorkerEntry : AssetEntry
     {
-        public ThreadsWorkerEntry(string name) : base(name, "js-module-threads") { }
+        public ThreadsWorkerEntry(string name, string hash) : base(name, hash, "js-module-threads") { }
     }
 
     private sealed class AssemblyEntry : AssetEntry
     {
-        public AssemblyEntry(string name) : base(name, "assembly") {}
+        public AssemblyEntry(string name, string hash) : base(name, hash, "assembly") { }
     }
 
     private sealed class PdbEntry : AssetEntry
     {
-        public PdbEntry(string name) : base(name, "pdb") {}
+        public PdbEntry(string name, string hash) : base(name, hash, "pdb") { }
     }
 
     private sealed class SatelliteAssemblyEntry : AssetEntry
     {
-        public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
+        public SatelliteAssemblyEntry(string name, string hash, string culture) : base(name, hash, "resource")
         {
             CultureName = culture;
         }
@@ -106,16 +121,21 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
     private sealed class VfsEntry : AssetEntry
     {
-        public VfsEntry(string name) : base(name, "vfs") {}
+        public VfsEntry(string name, string hash) : base(name, hash, "vfs") { }
         [JsonPropertyName("virtualPath")]
         public string? VirtualPath { get; set; }
     }
 
     private sealed class IcuData : AssetEntry
     {
-        public IcuData(string name) : base(name, "icu") {}
+        public IcuData(string name, string hash) : base(name, hash, "icu") { }
         [JsonPropertyName("loadRemote")]
         public bool LoadRemote { get; set; }
+    }
+
+    private sealed class SymbolsData : AssetEntry
+    {
+        public SymbolsData(string name, string hash) : base(name, hash, "symbols") { }
     }
 
     protected override bool ValidateArguments()
@@ -123,8 +143,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (!base.ValidateArguments())
             return false;
 
-        if (!File.Exists(MainJS))
-            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
             throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
 
@@ -150,9 +168,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ()
+        var config = new WasmAppConfig()
         {
             MainAssemblyName = MainAssemblyName,
+            GlobalizationMode = InvariantGlobalization ? "invariant" : HybridGlobalization ? "hybrid" : "icu"
         };
 
         // Create app
@@ -160,7 +179,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         if (UseWebcil)
-            Log.LogMessage (MessageImportance.Normal, "Converting assemblies to Webcil");
+            Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
         foreach (var assembly in _assemblies)
         {
             if (UseWebcil)
@@ -190,29 +209,34 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         foreach (ITaskItem item in NativeAssets)
         {
-            string dest = Path.Combine(AppDir!, Path.GetFileName(item.ItemSpec));
+            var name = Path.GetFileName(item.ItemSpec);
+            var dest = Path.Combine(AppDir!, name);
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
-        }
-
-        var mainFileName=Path.GetFileName(MainJS);
-        Log.LogMessage(MessageImportance.Low, $"MainJS path: '{MainJS}', fileName : '{mainFileName}', destination: '{Path.Combine(AppDir, mainFileName)}'");
-        FileCopyChecked(MainJS!, Path.Combine(AppDir, mainFileName), string.Empty);
-
-        string indexHtmlPath = Path.Combine(AppDir, "index.html");
-        if (string.IsNullOrEmpty(MainHTMLPath))
-        {
-            if (!File.Exists(indexHtmlPath))
+            if (name == "dotnet.js")
             {
-                var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-                File.WriteAllText(indexHtmlPath, html);
+                config.Assets.Add(new LoaderJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
             }
-        }
-        else
-        {
-            FileCopyChecked(MainHTMLPath, Path.Combine(AppDir, indexHtmlPath), "html");
-            //var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
-            //File.WriteAllText(indexHtmlPath, html);
+            else if (name == "dotnet.native.wasm")
+            {
+                config.Assets.Add(new WasmEntry(name, Utils.ComputeIntegrity(item.ItemSpec)));
+            }
+            else if (name == "dotnet.native.js")
+            {
+                config.Assets.Add(new NativeJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+            }
+            else if (name == "dotnet.runtime.js")
+            {
+                config.Assets.Add(new RuntimeJsEntry (name, Utils.ComputeIntegrity(item.ItemSpec)) );
+            }
+            else if (IncludeThreadsWorker && name == "dotnet.native.worker.js")
+            {
+                config.Assets.Add(new ThreadsWorkerEntry(name, Utils.ComputeIntegrity(item.ItemSpec)));
+            }
+            else if (name == "dotnet.native.js.symbols")
+            {
+                config.Assets.Add(new SymbolsData(name, Utils.ComputeIntegrity(item.ItemSpec)));
+            }
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -225,14 +249,29 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         foreach (var assembly in _assemblies)
         {
             string assemblyPath = assembly;
-            if (UseWebcil)
-                assemblyPath = Path.ChangeExtension(assemblyPath, ".webcil");
-            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath)));
-            if (DebugLevel != 0) {
-                var pdb = assembly;
-                pdb = Path.ChangeExtension(pdb, ".pdb");
-                if (File.Exists(pdb))
-                    config.Assets.Add(new PdbEntry(Path.GetFileName(pdb)));
+            var bytes = File.ReadAllBytes(assemblyPath);
+            // for the is IL IsAssembly check we need to read the bytes from the original DLL
+            if (!Utils.IsManagedAssembly(bytes))
+            {
+                Log.LogMessage(MessageImportance.Low, "Skipping non-assembly file: " + assemblyPath);
+            }
+            else
+            {
+                if (UseWebcil)
+                {
+                    assemblyPath = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                    // For the hash, read the bytes from the webcil file, not the dll file.
+                    bytes = File.ReadAllBytes(assemblyPath);
+                }
+
+                config.Assets.Add(new AssemblyEntry(Path.GetFileName(assemblyPath), Utils.ComputeIntegrity(bytes)));
+                if (DebugLevel != 0)
+                {
+                    var pdb = assembly;
+                    pdb = Path.ChangeExtension(pdb, ".pdb");
+                    if (File.Exists(pdb))
+                        config.Assets.Add(new PdbEntry(Path.GetFileName(pdb), Utils.ComputeIntegrity(pdb)));
+                }
             }
         }
 
@@ -254,16 +293,17 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 else
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
                 _fileWrites.Add(finalWebcil);
-                config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), args.culture));
+                config.Assets.Add(new SatelliteAssemblyEntry(Path.GetFileName(finalWebcil), Utils.ComputeIntegrity(finalWebcil), args.culture));
             }
             else
             {
-                FileCopyChecked(args.fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
-                config.Assets.Add(new SatelliteAssemblyEntry(name, args.culture));
+                var satellitePath = Path.Combine(directory, name);
+                FileCopyChecked(args.fullPath, satellitePath, "SatelliteAssemblies");
+                config.Assets.Add(new SatelliteAssemblyEntry(name, Utils.ComputeIntegrity(satellitePath), args.culture));
             }
         });
 
-        if (FilesToIncludeInFileSystem != null)
+        if (FilesToIncludeInFileSystem.Length > 0)
         {
             string supportFilesDir = Path.Combine(AppDir, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
@@ -297,10 +337,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 targetPathTable[targetPath] = item.ItemSpec;
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
+                var vfsPath = Path.Combine(supportFilesDir, generatedFileName);
+                FileCopyChecked(item.ItemSpec, vfsPath, "FilesToIncludeInFileSystem");
 
-                FileCopyChecked(item.ItemSpec, Path.Combine(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
-
-                var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
+                var asset = new VfsEntry($"supportFiles/{generatedFileName}", Utils.ComputeIntegrity(vfsPath))
+                {
                     VirtualPath = targetPath
                 };
                 config.Assets.Add(asset);
@@ -317,15 +358,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     Log.LogError($"Expected the file defined as ICU resource: {idfn} to exist but it does not.");
                     return false;
                 }
-                config.Assets.Add(new IcuData(Path.GetFileName(idfn)) { LoadRemote = loadRemote });
+                config.Assets.Add(new IcuData(Path.GetFileName(idfn), Utils.ComputeIntegrity(idfn)) { LoadRemote = loadRemote });
             }
         }
 
-
-        config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
-        config.Assets.Add(new WasmEntry ("dotnet.wasm") );
-        if (IncludeThreadsWorker)
-            config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 
         if (RemoteSources?.Length > 0)
         {
@@ -338,7 +374,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
         }
-        else
+        else if (PThreadPoolSize > -1)
         {
             config.Extra["pthreadPoolSize"] = PThreadPoolSize;
         }
@@ -355,36 +391,45 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         string tmpMonoConfigPath = Path.GetTempFileName();
         using (var sw = File.CreateText(tmpMonoConfigPath))
         {
-            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
+            var sb = new StringBuilder();
+            foreach (AssetEntry asset in config.Assets)
+            {
+                sb.Append(asset.Hash);
+            }
+            config.AssetsHash = Utils.ComputeTextIntegrity(sb.ToString());
+
+            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
             sw.Write(json);
         }
-        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
+
+        string monoConfigDir = Path.Combine(AppDir, "_framework");
+        if (!Directory.Exists(monoConfigDir))
+            Directory.CreateDirectory(monoConfigDir);
+
+        string monoConfigPath = Path.Combine(monoConfigDir, "blazor.boot.json"); // TODO: Unify with Wasm SDK
         Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
-        if (ExtraFilesToDeploy != null)
+        foreach (ITaskItem item in ExtraFilesToDeploy!)
         {
-            foreach (ITaskItem item in ExtraFilesToDeploy!)
+            string src = item.ItemSpec;
+            string dst;
+
+            string tgtPath = item.GetMetadata("TargetPath");
+            if (!string.IsNullOrEmpty(tgtPath))
             {
-                string src = item.ItemSpec;
-                string dst;
-
-                string tgtPath = item.GetMetadata("TargetPath");
-                if (!string.IsNullOrEmpty(tgtPath))
-                {
-                    dst = Path.Combine(AppDir!, tgtPath);
-                    string? dstDir = Path.GetDirectoryName(dst);
-                    if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
-                        Directory.CreateDirectory(dstDir!);
-                }
-                else
-                {
-                    dst = Path.Combine(AppDir!, Path.GetFileName(src));
-                }
-
-                if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
-                    return false;
+                dst = Path.Combine(AppDir!, tgtPath);
+                string? dstDir = Path.GetDirectoryName(dst);
+                if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir!);
             }
+            else
+            {
+                dst = Path.Combine(AppDir!, Path.GetFileName(src));
+            }
+
+            if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
+                return false;
         }
 
         UpdateRuntimeConfigJson();

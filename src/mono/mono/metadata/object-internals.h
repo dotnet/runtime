@@ -616,6 +616,7 @@ struct _MonoInternalThread {
 	 * longer */
 	MonoLongLivedThreadData *longlived;
 	MonoBoolean threadpool_thread;
+	MonoBoolean external_eventloop;
 	guint8	apartment_state;
 	gint32 managed_id;
 	guint32 small_id;
@@ -665,6 +666,40 @@ TYPED_HANDLE_DECL (MonoDelegate);
 
 typedef void (*InterpJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 
+#ifdef MONO_SMALL_CONFIG
+#define MONO_IMT_SIZE 9
+#else
+#define MONO_IMT_SIZE 19
+#endif
+
+typedef union {
+	int vtable_slot;
+	gpointer target_code;
+} MonoImtItemValue;
+
+typedef struct _MonoImtBuilderEntry {
+	gpointer key;
+	struct _MonoImtBuilderEntry *next;
+	MonoImtItemValue value;
+	int children;
+	guint8 has_target_code : 1;
+} MonoImtBuilderEntry;
+
+typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
+
+struct _MonoIMTCheckItem {
+	gpointer          key;
+	int               check_target_idx;
+	MonoImtItemValue  value;
+	guint8           *jmp_code;
+	guint8           *code_target;
+	guint8            is_equals;
+	guint8            compare_done;
+	guint8            chunk_size;
+	guint8            short_branch;
+	guint8            has_target_code;
+};
+
 /*
  * Callbacks supplied by the runtime and called by the modules in metadata/
  * This interface is easier to extend than adding a new function type +
@@ -687,7 +722,6 @@ typedef struct {
 	gpointer (*create_jit_trampoline) (MonoMethod *method, MonoError *error);
 	/* used to free a dynamic method */
 	void     (*free_method) (MonoMethod *method);
-	gpointer (*create_delegate_trampoline) (MonoClass *klass);
 	GHashTable *(*get_weak_field_indexes) (MonoImage *image);
 	gboolean (*is_interpreter_enabled) (void);
 	void (*init_mem_manager)(MonoMemoryManager*);
@@ -696,7 +730,7 @@ typedef struct {
 	void (*get_jit_stats)(gint64 *methods_compiled, gint64 *cil_code_size_bytes, gint64 *native_code_size_bytes, gint64 *jit_time);
 	void (*get_exception_stats)(guint32 *exception_count);
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
-	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
+	gpointer (*get_ftnptr)(MonoMethod *method, gboolean need_unbox, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
 	gboolean (*interp_sufficient_stack)(gsize size);
 	void (*init_class) (MonoClass *klass);
@@ -704,6 +738,10 @@ typedef struct {
 	MonoBoolean (*get_frame_info) (gint32 skip, MonoMethod **out_method,
 								   MonoDebugSourceLocation **out_location,
 								   gint32 *iloffset, gint32 *native_offset);
+	gboolean (*get_cached_class_info) (MonoClass *klass, MonoCachedClassInfo *res);
+	gboolean (*get_class_from_name) (MonoImage *image, const char *name_space, const char *name, MonoClass **res);
+	gpointer (*build_imt_trampoline) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
+	MonoJitInfo *(*find_jit_info_in_aot) (MonoImage *image, gpointer addr);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -836,17 +874,15 @@ struct _MonoDelegate {
 	gpointer delegate_trampoline;
 	/* Extra argument passed to the target method in llvmonly mode */
 	gpointer extra_arg;
-	/*
-	 * If non-NULL, this points to a memory location which stores the address of
-	 * the compiled code of the method, or NULL if it is not yet compiled.
-	 */
-	guint8 **method_code;
+	/* MonoDelegateTrampInfo */
+	gpointer invoke_info;
 	gpointer interp_method;
 	/* Interp method that is executed when invoking the delegate */
 	gpointer interp_invoke_impl;
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };
@@ -1466,8 +1502,10 @@ MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMe
 
 MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
+MONO_COMPONENT_API
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
+
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle type, int type_argc, MonoType **types, MonoError *error);
 void
@@ -1578,45 +1616,6 @@ mono_nullable_box_handle (gpointer buf, MonoClass *klass, MonoError *error);
 // A code size optimization (source and object) equivalent to MONO_HANDLE_NEW (MonoObject, NULL);
 MonoObjectHandle
 mono_new_null (void);
-
-#ifdef MONO_SMALL_CONFIG
-#define MONO_IMT_SIZE 9
-#else
-#define MONO_IMT_SIZE 19
-#endif
-
-typedef union {
-	int vtable_slot;
-	gpointer target_code;
-} MonoImtItemValue;
-
-typedef struct _MonoImtBuilderEntry {
-	gpointer key;
-	struct _MonoImtBuilderEntry *next;
-	MonoImtItemValue value;
-	int children;
-	guint8 has_target_code : 1;
-} MonoImtBuilderEntry;
-
-typedef struct _MonoIMTCheckItem MonoIMTCheckItem;
-
-struct _MonoIMTCheckItem {
-	gpointer          key;
-	int               check_target_idx;
-	MonoImtItemValue  value;
-	guint8           *jmp_code;
-	guint8           *code_target;
-	guint8            is_equals;
-	guint8            compare_done;
-	guint8            chunk_size;
-	guint8            short_branch;
-	guint8            has_target_code;
-};
-
-typedef gpointer (*MonoImtTrampolineBuilder) (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count, gpointer fail_trunk);
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func);
 
 void
 mono_set_always_build_imt_trampolines (gboolean value);

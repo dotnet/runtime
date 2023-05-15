@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_72926
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (CallForLongAsVector64_Zero() != Vector64<double>.Zero)
         {

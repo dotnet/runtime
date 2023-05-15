@@ -109,6 +109,10 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
+    if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_RISCV64))
+      add_linker_flag(-Wl,-z,notext)
+    endif()
+
     if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
       add_subdirectory(hosts)
@@ -117,6 +121,13 @@ else()
     if(CLR_CMAKE_TARGET_UNIX)
         add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
     endif()
+endif()
+
+#----------------------------------------------------
+# Build the test watchdog alongside the CLR
+#----------------------------------------------------
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
 # Add this subdir. We install the headers for the jit.
@@ -275,3 +286,4 @@ endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAK
 if(CLR_CROSS_COMPONENTS_BUILD)
   include(crosscomponents.cmake)
 endif(CLR_CROSS_COMPONENTS_BUILD)
+

@@ -356,6 +356,29 @@ namespace ILLink.Shared.TrimAnalysis
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.String")
 					=> IntrinsicId.Assembly_CreateInstance,
 
+				// System.Reflection.Assembly.Location getter
+				"get_Location" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					=> IntrinsicId.Assembly_get_Location,
+
+				// System.Reflection.Assembly.GetFile (string)
+				"GetFile" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					&& calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.String")
+					=> IntrinsicId.Assembly_GetFile,
+
+				// System.Reflection.Assembly.GetFiles ()
+				// System.Reflection.Assembly.GetFiles (bool)
+				"GetFiles" when calledMethod.IsDeclaredOnType ("System.Reflection.Assembly")
+					&& (calledMethod.HasMetadataParametersCount (0) || calledMethod.HasParameterOfType ((ParameterIndex) 1, "System.Boolean"))
+					=> IntrinsicId.Assembly_GetFiles,
+
+				// System.Reflection.AssemblyName.CodeBase getter
+				"get_CodeBase" when calledMethod.IsDeclaredOnType ("System.Reflection.AssemblyName")
+					=> IntrinsicId.AssemblyName_get_CodeBase,
+
+				// System.Reflection.AssemblyName.EscapedCodeBase getter
+				"get_EscapedCodeBase" when calledMethod.IsDeclaredOnType ("System.Reflection.AssemblyName")
+					=> IntrinsicId.AssemblyName_get_EscapedCodeBase,
+
 				// System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor (RuntimeTypeHandle type)
 				"RunClassConstructor" when calledMethod.IsDeclaredOnType ("System.Runtime.CompilerServices.RuntimeHelpers")
 					&& calledMethod.HasParameterOfType ((ParameterIndex) 0, "System.RuntimeTypeHandle")

@@ -24,8 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReflectedMethodNode(MethodDesc method)
         {
-            Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) ||
-                method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
         }
 
@@ -53,25 +52,22 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
             }
 
-            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            if (canonMethod != _method)
-            {
-                dependencies.Add(factory.ReflectedMethod(canonMethod), "Canonical version of the reflectable method");
-            }
-
             // Make sure we generate the method body and other artifacts.
             if (MetadataManager.IsMethodSupportedInReflectionInvoke(_method))
             {
                 if (_method.IsVirtual)
                 {
+                    // Virtual method use is tracked on the slot defining method only.
+                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
                     if (_method.HasInstantiation)
                     {
-                        dependencies.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
+                        // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
+                        if (slotDefiningMethod.IsMethodDefinition)
+                            slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, _method.Instantiation);
+                        dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
                     }
                     else
                     {
-                        // Virtual method use is tracked on the slot defining method only.
-                        MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(_method);
                         if (!factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
                             dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Virtually callable reflectable method");
                     }
@@ -79,11 +75,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (!_method.IsAbstract)
                 {
-                    dependencies.Add(factory.MethodEntrypoint(canonMethod), "Body of a reflectable method");
-
-                    if (_method.HasInstantiation
-                        && _method != canonMethod)
-                        dependencies.Add(factory.MethodGenericDictionary(_method), "Dictionary of a reflectable method");
+                    dependencies.Add(factory.MethodEntrypoint(_method), "Body of a reflectable method");
                 }
             }
 

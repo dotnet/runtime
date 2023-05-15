@@ -284,13 +284,13 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_BYREF:
         case TYP_FLOAT:
         case TYP_STRUCT:
-        case TYP_BLK: // Needed because of the TYP_BLK stress mode
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 #ifdef TARGET_64BIT
@@ -427,6 +427,7 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         case TYP_SIMD16:
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
 #endif // TARGET_XARCH
         {
             this->vlType = VLT_REG_FP;
@@ -896,7 +897,7 @@ void CodeGen::psiBegProlog()
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             if (varTypeIsStruct(lclVarDsc))
             {
-                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->GetStructHnd();
+                CORINFO_CLASS_HANDLE typeHnd = lclVarDsc->GetLayout()->GetClassHandle();
                 assert(typeHnd != nullptr);
                 compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
                 if (structDesc.passedInRegisters)
@@ -941,7 +942,7 @@ void CodeGen::psiBegProlog()
             if (!isStructHandled)
             {
 #ifdef DEBUG
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 var_types regType;
                 if (varTypeIsStruct(lclVarDsc))
                 {
@@ -962,7 +963,7 @@ void CodeGen::psiBegProlog()
                     regType = compiler->mangleVarArgsType(lclVarDsc->TypeGet());
                     if (emitter::isGeneralRegisterOrR0(lclVarDsc->GetArgReg()) && isFloatRegType(regType))
                     {
-                        // For LoongArch64's ABI, the float args may be passed by integer register.
+                        // For LoongArch64 and RISCV64's ABI, the float args may be passed by integer register.
                         regType = TYP_LONG;
                     }
                 }
@@ -972,7 +973,7 @@ void CodeGen::psiBegProlog()
                 {
                     regType = lclVarDsc->GetHfaType();
                 }
-#endif
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                 assert(genMapRegNumToRegArgNum(lclVarDsc->GetArgReg(), regType) != (unsigned)-1);
 #endif // DEBUG
                 varLocation.storeVariableInRegisters(lclVarDsc->GetArgReg(), REG_NA);

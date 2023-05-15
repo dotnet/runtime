@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -784,6 +785,7 @@ namespace System
             return -1;
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
@@ -821,15 +823,16 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -843,9 +846,10 @@ namespace System
                 current0 = ref current1;
                 offsetInVector -= Vector128<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
         {
@@ -857,9 +861,10 @@ namespace System
                 current0 = ref current1;
                 offsetInVector -= Vector256<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {

@@ -626,14 +626,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
-            IntPtr errorInfo = (IntPtr)0;
+            void* pErrors = null;
 
             if (!Partitions.Contains(partition))
                 throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, void**, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (dsReplicaSyncAllW == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
@@ -643,16 +643,16 @@ namespace System.DirectoryServices.ActiveDirectory
             fixed (char* partitionPtr = partition)
             {
                 IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
-                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &errorInfo);
+                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &pErrors);
                 GC.KeepAlive(syncAllCallback);
             }
 
             try
             {
                 // error happens during the synchronization
-                if (errorInfo != (IntPtr)0)
+                if (pErrors is not null)
                 {
-                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)pErrors, false);
                     if (e == null)
                         return;
                     else
@@ -668,8 +668,8 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // release the memory
-                if (errorInfo != (IntPtr)0)
-                    global::Interop.Kernel32.LocalFree(errorInfo);
+                if (pErrors is not null)
+                    global::Interop.Kernel32.LocalFree(pErrors);
             }
         }
 

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
-
 using static Microsoft.Quic.MsQuic;
 
 #if TARGET_WINDOWS
@@ -66,8 +65,21 @@ internal sealed unsafe partial class MsQuicApi
 #pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
     static MsQuicApi()
     {
-        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{s_minMsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) &&
-            !NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
+        bool loaded = false;
+        IntPtr msQuicHandle;
+        if (OperatingSystem.IsWindows())
+        {
+            // Windows ships msquic in the assembly directory.
+            loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+        }
+        else
+        {
+            // Non-Windows relies on the package being installed on the system and may include the version in its name
+            loaded = NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{s_minMsQuicVersion.Major}", typeof(MsQuicApi).Assembly, null, out msQuicHandle) ||
+                     NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, null, out msQuicHandle);
+        }
+
+        if (!loaded)
         {
             // MsQuic library not loaded
             if (NetEventSource.Log.IsEnabled())
@@ -118,7 +130,7 @@ internal sealed unsafe partial class MsQuicApi
             }
             string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
 
-            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} version={version} commit={gitHash}";
+            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {version} ({gitHash})";
 
             if (version < s_minMsQuicVersion)
             {
@@ -131,7 +143,7 @@ internal sealed unsafe partial class MsQuicApi
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(null, $"Loaded MsQuic library version '{version}', commit '{gitHash}'.");
+                NetEventSource.Info(null, $"Loaded MsQuic library '{MsQuicLibraryVersion}'.");
             }
 
             // Assume SChannel is being used on windows and query for the actual provider from the library if querying is supported

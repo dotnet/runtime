@@ -16,6 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set defaults for unspecified properties -->
   <PropertyGroup>
+    <StripSymbols Condition="'$(StripSymbols)' == '' and '$(_targetOS)' != 'win'">true</StripSymbols>
     <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == '' and '$(IlcMultiModule)' != 'true'">Shared</NativeLib>
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
@@ -25,6 +26,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <IlcPgoOptimize Condition="'$(IlcPgoOptimize)' == '' and '$(OptimizationPreference)' == 'Speed'">true</IlcPgoOptimize>
     <RunILLink>false</RunILLink>
     <_IsiOSLikePlatform Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos'))">true</_IsiOSLikePlatform>
     <_IsApplePlatform Condition="'$(_targetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
@@ -75,7 +77,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
-    <IlcExportUnmanagedEntrypoints Condition="'$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
+    <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
@@ -87,7 +89,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <SharedLibrary Condition="'$(_targetOS)' == 'win'">$(FrameworkLibPath)\Framework$(LibFileExt)</SharedLibrary>
     <SharedLibrary Condition="'$(_targetOS)' != 'win'">$(FrameworkLibPath)\libframework$(LibFileExt)</SharedLibrary>
-    <IlcDynamicBuildPropertyDependencies Condition="'$(IlcCalledViaPackage)' == 'true'">SetupProperties</IlcDynamicBuildPropertyDependencies>
+    <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IlcCompileDependsOn)'=='' and '$(NativeCompilationDuringPublish)' != 'false'">
@@ -98,6 +100,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
+    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(IlcDisableReflection) != 'true' or $(IlcGenerateStackTraceData) == 'true'" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
@@ -220,8 +223,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
       <IlcArg Condition="$(IlcScanReflection) == 'true' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
-      <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
-      <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
+      <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instruction-set:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
@@ -232,6 +235,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
+      <IlcArg Condition="$(IlcVerboseLogging) == 'true'" Include="--verbose" />
       <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(_targetOS)' == 'win'" Include="--guard:cf" />
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
@@ -240,6 +244,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Filename)')" />
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Include="--resilient" />
+      <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
 
@@ -247,6 +252,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
+
+      <!-- The managed debugging support in libraries is unused - trim it -->
+      <IlcArg Condition="'$(IlcKeepManagedDebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
@@ -306,12 +314,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(IlcExportUnmanagedEntrypoints)' == 'true' and '$(NativeLib)' == ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
     <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd' or '$(LinkerFlavor)' == 'lld'" />
+      <CustomLinkerArg Include="-Wl,-T,&quot;$(NativeIntermediateOutputPath)sections.ld&quot;" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />
@@ -325,8 +335,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
       <_IgnoreLinkerWarnings Condition="'$(_IsApplePlatform)' == 'true'">true</_IgnoreLinkerWarnings>
-      <StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
+      <_StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(IlcExportUnmanagedEntrypoints)' == 'true'">-x</_StripFlag> <!-- keep only global symbols -->
     </PropertyGroup>
+
+    <!-- write linker script for lld (13+) to retain the __modules section -->
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'" />
@@ -349,7 +362,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
-        strip -no_code_signature_warning $(StripFlag) &quot;$(NativeBinary)&quot;" />
+        strip -no_code_signature_warning $(_StripFlag) &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"

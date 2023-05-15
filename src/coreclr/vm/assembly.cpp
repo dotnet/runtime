@@ -397,9 +397,9 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
     if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
-        || wcschr(pAssemblyNameParts->_pName, '\\') != NULL
-        || wcschr(pAssemblyNameParts->_pName, ':') != NULL
-        || wcschr(pAssemblyNameParts->_pName, '/') != NULL)
+        || u16_strchr(pAssemblyNameParts->_pName, '\\') != NULL
+        || u16_strchr(pAssemblyNameParts->_pName, ':') != NULL
+        || u16_strchr(pAssemblyNameParts->_pName, '/') != NULL)
     {
         COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
     }
@@ -465,7 +465,6 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
-            pCollectibleLoaderAllocator->SetCollectible();
             pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
@@ -1726,7 +1725,7 @@ BOOL Assembly::IsInstrumentedHelper()
     do
     {
         _ASSERTE(pCur[0] != W('\0'));
-        const WCHAR * pNextSpace = wcschr(pCur, W(' '));
+        const WCHAR * pNextSpace = u16_strchr(pCur, W(' '));
         _ASSERTE(pNextSpace == NULL || pNextSpace[0] == W(' '));
 
         if (pCur != pNextSpace)

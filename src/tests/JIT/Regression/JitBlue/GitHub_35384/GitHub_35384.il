@@ -3,7 +3,7 @@
 
 // This tests a calli with explicit this in the signature
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly GitHub_35384 {}
 .assembly extern xunit.core {}
 

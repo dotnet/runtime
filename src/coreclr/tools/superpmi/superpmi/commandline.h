@@ -17,6 +17,7 @@ public:
             : nameOfJit(nullptr)
             , nameOfJit2(nullptr)
             , nameOfInputMethodContextFile(nullptr)
+            , verbosity(nullptr)
             , writeLogFile(nullptr)
             , reproName(nullptr)
             , breakOnError(false)
@@ -55,6 +56,7 @@ public:
         char* nameOfJit;
         char* nameOfJit2;
         char* nameOfInputMethodContextFile;
+        char* verbosity;
         char* writeLogFile;
         char* reproName;
         bool  breakOnError;

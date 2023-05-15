@@ -6,14 +6,15 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
-.assembly 'localloc' {
+.assembly 'localloc_unaligned_1' {
                         }
 
 
 
-.class			_localloc {
+.class public			_localloc {
 
 .method void .ctor() {
 
@@ -23,7 +24,10 @@
 	ret
 }
 
-.method static	int32 main() {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals		(class [mscorlib]System.IO.TextWriter,int32*,int32,class [mscorlib]System.Text.StringBuilder,int32,string)
 .entrypoint
 	call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()

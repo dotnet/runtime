@@ -12,14 +12,15 @@ ARG VERSION=8.0
 ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `
+    -p:MsQuicInteropIncludes="C:/live-runtime-artifacts/msquic-interop/*.cs" `
     -p:TargetingPacksTargetsLocation=C:/live-runtime-artifacts/targetingpacks.targets `
     -p:MicrosoftNetCoreAppRefPackDir=C:/live-runtime-artifacts/microsoft.netcore.app.ref/ `
     -p:MicrosoftNetCoreAppRuntimePackDir=C:/live-runtime-artifacts/microsoft.netcore.app.runtime.win-x64/$env:CONFIGURATION/
 
 # Enable dump collection
-ENV COMPlus_DbgEnableMiniDump=1
-ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV COMPlus_DbgMiniDumpName="C:/dumps-share/coredump.%p"
+ENV DOTNET_DbgEnableMiniDump=1
+ENV DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV DOTNET_DbgMiniDumpName="C:/dumps-share/coredump.%p"
 
 EXPOSE 5001
 

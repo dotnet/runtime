@@ -107,7 +107,7 @@ internal sealed class FieldStore
         else if (t.IsClass || t.IsInterface)
             loc = null;
         else
-            throw new ArgumentException("EnC: Expected a primitive, valuetype, class or interface field");
+            throw new ArgumentException(SR.Arg_EnC_ExpectedPrimitive);
         /* FIXME: do we want FieldStore to be pinned? */
         return new FieldStore(loc);
     }

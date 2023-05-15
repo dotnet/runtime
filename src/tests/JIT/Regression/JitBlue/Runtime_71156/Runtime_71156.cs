@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_71156
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem() ? 101 : 100;
     }

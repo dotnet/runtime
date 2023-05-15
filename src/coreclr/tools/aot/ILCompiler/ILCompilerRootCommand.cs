@@ -68,8 +68,6 @@ namespace ILCompiler
             new(new[] { "--mstat" }, "Generate an mstat file");
         public Option<string> MetadataLogFileName { get; } =
             new(new[] { "--metadatalog" }, "Generate a metadata log file");
-        public Option<bool> NoMetadataBlocking { get; } =
-            new(new[] { "--nometadatablocking" }, "Ignore metadata blocking for internal implementation details");
         public Option<bool> CompleteTypesMetadata { get; } =
             new(new[] { "--completetypemetadata" }, "Generate complete metadata for types");
         public Option<string> ReflectionData { get; } =
@@ -160,6 +158,8 @@ namespace ILCompiler
             new(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method");
         public Option<string> MakeReproPath { get; } =
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+        public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
+            new(new[] { "--generateunmanagedentrypoints" }, Array.Empty<string>, "Generate unmanaged entrypoints for a given assembly");
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -193,7 +193,6 @@ namespace ILCompiler
             AddOption(MapFileName);
             AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
-            AddOption(NoMetadataBlocking);
             AddOption(CompleteTypesMetadata);
             AddOption(ReflectionData);
             AddOption(ScanReflection);
@@ -232,6 +231,7 @@ namespace ILCompiler
             AddOption(SingleMethodName);
             AddOption(SingleMethodGenericArgs);
             AddOption(MakeReproPath);
+            AddOption(UnmanagedEntryPointsAssemblies);
 
             this.SetHandler(context =>
             {

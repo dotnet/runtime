@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This is a regression test for a bug that was exposed with jitStressRegs=8 in
 // System.Text.ConsoleEncoding::GetMaxByteCount, due to the lack of handling
@@ -16,7 +17,8 @@ namespace GitHub_19397
         {
             return(0x0101010101010101L);
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             long value = getValue();
             Console.WriteLine($"Result is {value}");

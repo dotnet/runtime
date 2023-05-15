@@ -38,24 +38,19 @@ static void log_icu_error(const char* name, UErrorCode status)
     log_shim_error("ICU call %s failed with error #%d '%s'.", name, status, statusText);
 }
 
+#if defined(ICU_TRACING)
 static void U_CALLCONV icu_trace_data(const void* context, int32_t fnNumber, int32_t level, const char* fmt, va_list args)
 {
     char buf[1000];
     utrace_vformat(buf, sizeof(buf), 0, fmt, args);
     printf("[ICUDT] %s: %s\n", utrace_functionName(fnNumber), buf);
 }
+#endif
 
 static int32_t load_icu_data(const void* pData);
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture);
-
-EMSCRIPTEN_KEEPALIVE const char* mono_wasm_get_icudt_name(const char* culture)
-{
-    return GlobalizationNative_GetICUDTName(culture);
-}
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
 
@@ -134,7 +129,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    file_buf = malloc(sizeof(char) * (file_buf_size + 1));
+    file_buf = malloc(sizeof(char) * (unsigned long)(file_buf_size + 1));
 
     if (file_buf == NULL)
     {
@@ -148,7 +143,7 @@ cstdlib_load_icu_data(const char *path)
         goto error;
     }
 
-    fread(file_buf, sizeof(char), file_buf_size, fp);
+    fread(file_buf, sizeof(char), (unsigned long)file_buf_size, fp);
     if (ferror( fp ) != 0)
     {
         log_shim_error("Unable to read ICU dat file");
@@ -198,35 +193,6 @@ GlobalizationNative_LoadICUData(const char* path)
     }
 
     return GlobalizationNative_LoadICU();
-}
-
-const char* GlobalizationNative_GetICUDTName(const char* culture)
-{
-    // Based on https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
-
-    // Use full one if culture is null or empty
-    if (!culture || strlen(culture) < 2)
-        return "icudt.dat";
-
-    // CJK: starts with "ja", "ko" or "zh"
-    if (!strncasecmp("ja", culture, 2) ||
-        !strncasecmp("ko", culture, 2) ||
-        !strncasecmp("zh", culture, 2))
-        return "icudt_CJK.dat"; // contains "en" as well.
-
-    // EFIGS
-    const char* efigsCultures[15] = {
-        "en-US", "fr-FR", "es-ES", "it-IT", "de-DE",
-        "en_US", "fr_FR", "es_ES", "it_IT", "de_DE",
-        "en",    "fr",    "es",    "it",    "de"
-    };
-
-    for (int i = 0; i < 15; i++)
-        if (!strcasecmp(culture, efigsCultures[i]))
-            return "icudt_EFIGS.dat";
-
-    // full except CJK cultures
-    return "icudt_no_CJK.dat";
 }
 
 int32_t GlobalizationNative_LoadICU(void)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Internal.TypeSystem;
 
@@ -267,6 +268,26 @@ namespace TypeSystemTests
             ResolveInterfaceDispatch_ForMultiGenericTest(intImplementorType, out md1, out md2);
             Assert.Contains("!0,!1", md1.Name);
             Assert.Contains("!1,!0", md2.Name);
+        }
+
+        [Fact]
+        public void TestFunctionPointerOverloads()
+        {
+            MetadataType baseClass = _testModule.GetType("VirtualFunctionOverride", "FunctionPointerOverloadBase");
+            MetadataType derivedClass = _testModule.GetType("VirtualFunctionOverride", "FunctionPointerOverloadDerived");
+
+            var resolvedMethods = new List<MethodDesc>();
+            foreach (MethodDesc baseMethod in baseClass.GetVirtualMethods())
+                resolvedMethods.Add(derivedClass.FindVirtualFunctionTargetMethodOnObjectType(baseMethod));
+
+            var expectedMethods = new List<MethodDesc>();
+            foreach (MethodDesc derivedMethod in derivedClass.GetVirtualMethods())
+                expectedMethods.Add(derivedMethod);
+
+            Assert.Equal(expectedMethods, resolvedMethods);
+
+            Assert.Equal(expectedMethods[0].Signature[0], expectedMethods[1].Signature[0]);
+            Assert.NotEqual(expectedMethods[0].Signature[0], expectedMethods[3].Signature[0]);
         }
     }
 }

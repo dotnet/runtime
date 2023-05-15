@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# create dummy console app to workaround https://github.com/dotnet/runtime/issues/80619
+(CONSOLE_TEMP_DIR="$(mktemp -d)"; "$DOTNET_ROOT/dotnet" new console -o "$CONSOLE_TEMP_DIR"; rm -rf "$CONSOLE_TEMP_DIR") || true
+
 set
 echo "------------------------ start -------------------"
 

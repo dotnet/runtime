@@ -267,7 +267,7 @@ namespace System.Xml
         }
     }
 
-    internal struct BinXmlSqlMoney
+    internal readonly struct BinXmlSqlMoney
     {
         private readonly long _data;
 
