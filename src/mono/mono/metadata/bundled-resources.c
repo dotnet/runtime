@@ -166,6 +166,63 @@ mono_bundled_resources_get_data_resource (const char *id)
 	return data;
 }
 
+bool
+mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out, const uint8_t **symbol_data_out, uint32_t *symbol_size_out)
+{
+	*data_out = NULL;
+	*size_out = 0;
+	*symbol_data_out = NULL;
+	*size_out = 0;
+	MonoBundledAssemblyResource *bundled_assembly_resource = mono_bundled_resources_get_assembly_resource (id);
+	if (!bundled_assembly_resource ||
+		!bundled_assembly_resource->assembly.data ||
+		bundled_assembly_resource->assembly.size == 0)
+		return false;
+
+	*data_out = bundled_assembly_resource->assembly.data;
+	*size_out = bundled_assembly_resource->assembly.size;
+	*symbol_data_out = bundled_assembly_resource->symbol_data.data;
+	*symbol_size_out = bundled_assembly_resource->symbol_data.size;
+
+	return true;
+}
+
+bool
+mono_bundled_resources_get_satellite_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)
+{
+	*data_out = NULL;
+	*size_out = 0;
+
+	MonoBundledSatelliteAssemblyResource *bundled_satellite_assembly_resource = mono_bundled_resources_get_satellite_assembly_resource (id);
+	if (!bundled_satellite_assembly_resource ||
+		!bundled_satellite_assembly_resource->satellite_assembly.data ||
+		bundled_satellite_assembly_resource->satellite_assembly.size == 0)
+		return false;
+
+	*data_out = bundled_satellite_assembly_resource->satellite_assembly.data;
+	*size_out = bundled_satellite_assembly_resource->satellite_assembly.size;
+
+	return true;
+}
+
+bool
+mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out)
+{
+	*data_out = NULL;
+	*size_out = 0;
+
+	MonoBundledDataResource *bundled_data_resource = mono_bundled_resources_get_data_resource (id);
+	if (!bundled_data_resource ||
+		!bundled_data_resource->data.data ||
+		bundled_data_resource->data.size == 0)
+		return false;
+
+	*data_out = bundled_data_resource->data.data;
+	*size_out = bundled_data_resource->data.size;
+
+	return true;
+}
+
 //---------------------------------------------------------------------------------------
 //
 // mono_bundled_resources_contains_assemblies returns whether or not assemblies

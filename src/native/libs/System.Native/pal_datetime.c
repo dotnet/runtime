@@ -21,7 +21,7 @@ static const int64_t TICKS_PER_MICROSECOND = 10; /* 1000 / 100 */
 #endif
 
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-extern MonoBundledResource * mono_get_bundled_resource_data (const char *id);
+extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
 #endif
 
 //
@@ -67,15 +67,9 @@ const char* SystemNative_GetTimeZoneData(const char* name, int* length)
     assert(name != NULL);
     assert(length != NULL);
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-    MonoBundledDataResource *timezoneData = (MonoBundledDataResource *)mono_get_bundled_resource_data (name);
-    if (!timezoneData)
-    {
-        *length = 0;
-        return NULL;
-    }
-
-    length = timezoneData->data.size;
-    return timezoneData->data.data;
+    unsigned char *data = NULL;
+    mono_bundled_resources_get_data_resource_values (name, &data, length);
+    return data;
 #else
     assert_msg(false, "Not supported on this platform", 0);
     (void)name; // unused

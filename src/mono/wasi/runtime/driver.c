@@ -346,12 +346,12 @@ void load_icu_data (void)
 #ifdef WASM_SINGLE_FILE
 	mono_register_icu_bundle ();
 
-	MonoBundledDataResource *icu_data = mono_bundled_resources_get_data_resource ("icudt.dat");
-	if (!icu_data) {
+	unsigned char *buffer = NULL;
+	int data_len = 0;
+	if (!mono_bundled_resources_get_data_resource_values ("icudt.dat", &buffer, &data_len)) {
 		printf("Could not load icudt.dat from the bundle");
 		assert(buffer);
 	}
-	const unsigned char *buffer = icu_data->data.data;
 #else /* WASM_SINGLE_FILE */
 	FILE *fileptr;
 	unsigned char *buffer;

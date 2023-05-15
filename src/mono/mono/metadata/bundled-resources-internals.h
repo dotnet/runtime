@@ -83,6 +83,15 @@ MonoBundledDataResource *
 mono_bundled_resources_get_data_resource (const char *id);
 
 bool
+mono_bundled_resources_get_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out, const uint8_t **symbol_data_out, uint32_t *symbol_size_out);
+
+bool
+mono_bundled_resources_get_satellite_assembly_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
+
+bool
+mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
+
+bool
 mono_bundled_resources_contains_assemblies (void);
 
 bool
