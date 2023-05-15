@@ -14,11 +14,23 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class EventSourceLoggerFactoryExtensions
     {
+        /// <summary>
+        /// Adds an logger that writes messages to the <see cref="LoggingEventSource"/> instance.
+        /// </summary>
+        /// <param name="factory">The extension method argument.</param>
+        /// <returns>The <see cref="ILoggerFactory"/> so that additional calls can be chained.</returns>
         [System.Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).")]
-        public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory) { throw new NotImplementedException(); }
+        public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory)
+        {
+            ThrowHelper.ThrowIfNull(factory);
+
+            factory.AddProvider(new EventSourceLoggerProvider(LoggingEventSource.Instance));
+
+            return factory;
+        }
 
         /// <summary>
-        /// Adds an event logger named 'EventSource' to the factory.
+        /// Adds an logger that writes messages to the <see cref="LoggingEventSource"/> instance.
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>

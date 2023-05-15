@@ -12,8 +12,4 @@
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\ref\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
-  </ItemGroup>
 </Project>
