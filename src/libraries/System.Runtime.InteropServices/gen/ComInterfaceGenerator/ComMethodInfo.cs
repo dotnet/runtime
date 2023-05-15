@@ -86,7 +86,7 @@ namespace Microsoft.Interop
                 // TODO: this should cause a diagnostic
                 if (methodLocationInAttributedInterfaceDeclaration is null)
                 {
-                    throw new NotImplementedException($"Could not find location for method {method.ToDisplayString()} within the attributed declaration");
+                    return (null, method, Diagnostic.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
                 }
 
 
@@ -104,7 +104,7 @@ namespace Microsoft.Interop
                 }
                 if (comMethodDeclaringSyntax is null)
                 {
-                    throw new NotImplementedException("Found a method that was declared in the attributed interface declaration, but couldn't find the syntax for it.");
+                    return (null, method, Diagnostic.Create(GeneratorDiagnostics.CannotAnalyzeMethodPattern, method.Locations.FirstOrDefault(), method.ToDisplayString()));
                 }
 
                 var diag = GetDiagnosticIfInvalidMethodForGeneration(comMethodDeclaringSyntax, method);
