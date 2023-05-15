@@ -35,6 +35,7 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
+// NOTE: this is called before setRuntimeGlobals
 export function normalizeConfig() {
     // normalize
     const config = loaderHelpers.config;
