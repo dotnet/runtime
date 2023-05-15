@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 #pragma warning disable 219
 public class Test_Inline_Vars
@@ -2815,7 +2816,8 @@ public class Test_Inline_Vars
         Console.WriteLine(a400);
         return 100;
     }
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         (new Test_Inline_Vars()).RunTest0_Inline();
 

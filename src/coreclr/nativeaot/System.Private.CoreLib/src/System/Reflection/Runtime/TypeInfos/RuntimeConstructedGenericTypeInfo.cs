@@ -213,10 +213,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                RuntimeTypeInfo genericTypeDefinition = this.GenericTypeDefinitionTypeInfo;
-                if (!(genericTypeDefinition is RuntimeNamedTypeInfo genericTypeDefinitionNamedTypeInfo))
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericTypeDefinition);
-                return genericTypeDefinitionNamedTypeInfo;
+                return (RuntimeNamedTypeInfo)GenericTypeDefinitionTypeInfo;
             }
         }
 

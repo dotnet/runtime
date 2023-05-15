@@ -189,6 +189,24 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 500 
 
+      # run coreclr Linux arm64 ampere microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 500 
+              pgoRunType: --dynamicpgo
+
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -220,7 +238,24 @@ extends:
               runKind: micro
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
-        
+
+      # run coreclr Windows arm64 ampere dynamic Pgo microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - windows_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              pgoRunType: -DynamicPgo
+
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance
         - template: /eng/pipelines/common/platform-matrix.yml

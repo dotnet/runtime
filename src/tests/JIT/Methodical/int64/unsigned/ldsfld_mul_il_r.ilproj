@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ldsfld_mul_r.il" />
     <Compile Include="ldsfld_mul.il" />
   </ItemGroup>
 </Project>

@@ -269,7 +269,7 @@ namespace System.Runtime.Serialization.Json
         {
             string value = reader.ReadContentAsString();
 
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 throw new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, "UInt64")));
             }
@@ -302,7 +302,7 @@ namespace System.Runtime.Serialization.Json
 
             string value = reader.ReadElementContentAsString();
 
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 throw new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, "UInt64")));
             }

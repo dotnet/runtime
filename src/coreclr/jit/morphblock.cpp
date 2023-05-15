@@ -1086,10 +1086,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 {
     GenTree* result = nullptr;
 
-    GenTree* dstAddr       = nullptr;
-    GenTree* srcAddr       = nullptr;
-    GenTree* addrSpill     = nullptr;
-    unsigned addrSpillTemp = BAD_VAR_NUM;
+    GenTree*       addr               = nullptr;
+    target_ssize_t addrBaseOffs       = 0;
+    FieldSeq*      addrBaseOffsFldSeq = nullptr;
+    GenTree*       addrSpill          = nullptr;
+    unsigned       addrSpillTemp      = BAD_VAR_NUM;
 
     GenTree* addrSpillStore = nullptr;
 
@@ -1122,20 +1123,22 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (!m_srcUseLclFld)
         {
-            srcAddr = m_src->AsIndir()->Addr();
+            addr = m_src->AsIndir()->Addr();
 
-            // "srcAddr" might be a complex expression that we need to clone
+            m_comp->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
+            // "addr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
             if (fieldCnt - dyingFieldCnt > 1)
             {
-                if (CanReuseAddressForDecomposedStore(srcAddr))
+                if (CanReuseAddressForDecomposedStore(addr))
                 {
                     // "srcAddr" is simple expression. No need to spill.
-                    noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                    noway_assert((addr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
                 }
                 else
                 {
-                    addrSpill = srcAddr;
+                    addrSpill = addr;
                 }
             }
         }
@@ -1154,24 +1157,85 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         if (!m_dstUseLclFld)
         {
-            dstAddr = m_store->AsIndir()->Addr();
+            addr = m_store->AsIndir()->Addr();
 
-            // "dstAddr" might be a complex expression that we need to clone
+            m_comp->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
+
+            // "addr" might be a complex expression that we need to clone
             // and spill, unless we only end up using the address once.
             if (m_srcVarDsc->lvFieldCnt > 1)
             {
-                if (CanReuseAddressForDecomposedStore(dstAddr))
+                if (CanReuseAddressForDecomposedStore(addr))
                 {
                     // "dstAddr" is simple expression. No need to spill
-                    noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+                    noway_assert((addr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
                 }
                 else
                 {
-                    addrSpill = dstAddr;
+                    addrSpill = addr;
                 }
             }
         }
     }
+
+    if (addrSpill != nullptr)
+    {
+        // 'addrSpill' is already morphed
+
+        // Spill the (complex) address to a temp.
+        // Note, at most one address may need to be spilled.
+        addrSpillTemp = m_comp->lvaGrabTemp(true DEBUGARG("BlockOp address local"));
+
+        LclVarDsc* addrSpillDsc = m_comp->lvaGetDesc(addrSpillTemp);
+        addrSpillDsc->lvType = addrSpill->TypeIs(TYP_REF) ? TYP_REF : TYP_BYREF; // TODO-ASG: zero-diff quirk, delete.
+        addrSpillStore       = m_comp->gtNewTempAssign(addrSpillTemp, addrSpill);
+    }
+
+    auto grabAddr = [=, &result](unsigned offs) {
+        GenTree* addrClone = nullptr;
+        // Need address of the source.
+        if (addrSpill)
+        {
+            assert(addrSpillTemp != BAD_VAR_NUM);
+            addrClone = m_comp->gtNewLclvNode(addrSpillTemp, addrSpill->TypeGet());
+        }
+        else
+        {
+            if (result == nullptr)
+            {
+                // Reuse the original address tree for the first field.
+                addrClone = addr;
+            }
+            else
+            {
+                // We can't clone multiple copies of a tree with persistent side effects
+                noway_assert((addr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                addrClone = m_comp->gtCloneExpr(addr);
+                noway_assert(addrClone != nullptr);
+
+                JITDUMP("Multiple Fields Clone created:\n");
+                DISPTREE(addrClone);
+
+                // Morph the newly created tree
+                addrClone = m_comp->fgMorphTree(addrClone);
+            }
+        }
+
+        assert(addrClone != nullptr);
+        target_ssize_t fullOffs = addrBaseOffs + (target_ssize_t)offs;
+        if ((fullOffs != 0) || (addrBaseOffsFldSeq != nullptr))
+        {
+            // Avoid using unsigned overload of gtNewIconNode
+            // that takes field seq to get correct overflow
+            // handling.
+            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fullOffs, TYP_I_IMPL);
+            fldOffsetNode->gtFieldSeq    = addrBaseOffsFldSeq;
+            addrClone                    = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, addrClone, fldOffsetNode);
+        }
+
+        return addrClone;
+    };
 
     if (dyingFieldCnt == fieldCnt)
     {
@@ -1184,21 +1248,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         else
         {
             JITDUMP("  ...but keeping a nullcheck\n");
-            return m_comp->gtNewIndir(TYP_BYTE, srcAddr);
+            return m_comp->gtNewIndir(TYP_BYTE, grabAddr(0));
         }
-    }
-
-    if (addrSpill != nullptr)
-    {
-        // 'addrSpill' is already morphed
-
-        // Spill the (complex) address to a BYREF temp.
-        // Note, at most one address may need to be spilled.
-        addrSpillTemp = m_comp->lvaGrabTemp(true DEBUGARG("BlockOp address local"));
-
-        LclVarDsc* addrSpillDsc = m_comp->lvaGetDesc(addrSpillTemp);
-        addrSpillDsc->lvType    = TYP_BYREF; // TODO-ASG: zero-diff quirk, delete.
-        addrSpillStore          = m_comp->gtNewTempAssign(addrSpillTemp, addrSpill);
     }
 
     // We may have allocated a temp above, and that may have caused the lvaTable to be expanded.
@@ -1236,39 +1287,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
             else
             {
-                GenTree* srcAddrClone = nullptr;
-                if (!m_srcUseLclFld)
-                {
-                    // Need address of the source.
-                    if (addrSpill)
-                    {
-                        assert(addrSpillTemp != BAD_VAR_NUM);
-                        srcAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
-                    }
-                    else
-                    {
-                        if (result == nullptr)
-                        {
-                            // Reuse the original m_srcAddr tree for the first field.
-                            srcAddrClone = srcAddr;
-                        }
-                        else
-                        {
-                            // We can't clone multiple copies of a tree with persistent side effects
-                            noway_assert((srcAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-
-                            srcAddrClone = m_comp->gtCloneExpr(srcAddr);
-                            noway_assert(srcAddrClone != nullptr);
-
-                            JITDUMP("m_srcAddr - Multiple Fields Clone created:\n");
-                            DISPTREE(srcAddrClone);
-
-                            // Morph the newly created tree
-                            srcAddrClone = m_comp->fgMorphTree(srcAddrClone);
-                        }
-                    }
-                }
-
                 unsigned  fldOffset = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
                 var_types destType  = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
 
@@ -1299,14 +1317,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 {
                     if (!m_srcUseLclFld)
                     {
-                        assert(srcAddrClone != nullptr);
-                        if (fldOffset != 0)
-                        {
-                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, TYP_I_IMPL);
-                            srcAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
-                        }
-
-                        srcFld = m_comp->gtNewIndir(destType, srcAddrClone);
+                        GenTree* fldAddr = grabAddr(fldOffset);
+                        srcFld           = m_comp->gtNewIndir(destType, fldAddr);
                     }
                     else
                     {
@@ -1326,7 +1338,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTree* dstFldStore;
         if (m_dstDoFldAsg)
         {
-            noway_assert((m_dstLclNum != BAD_VAR_NUM) && (dstAddr == nullptr));
+            noway_assert(m_dstLclNum != BAD_VAR_NUM);
 
             unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i;
             dstFldStore             = m_comp->gtNewStoreLclVarNode(dstFieldLclNum, srcFld);
@@ -1345,39 +1357,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
             else
             {
-                GenTree* dstAddrClone = nullptr;
-                if (!m_dstUseLclFld)
-                {
-                    // Need address of the destination.
-                    if (addrSpill)
-                    {
-                        assert(addrSpillTemp != BAD_VAR_NUM);
-                        dstAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
-                    }
-                    else
-                    {
-                        if (result == nullptr)
-                        {
-                            // Reuse the original "dstAddr" tree for the first field.
-                            dstAddrClone = dstAddr;
-                        }
-                        else
-                        {
-                            // We can't clone multiple copies of a tree with persistent side effects
-                            noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-
-                            dstAddrClone = m_comp->gtCloneExpr(dstAddr);
-                            noway_assert(dstAddrClone != nullptr);
-
-                            JITDUMP("dstAddr - Multiple Fields Clone created:\n");
-                            DISPTREE(dstAddrClone);
-
-                            // Morph the newly created tree
-                            dstAddrClone = m_comp->fgMorphTree(dstAddrClone);
-                        }
-                    }
-                }
-
                 LclVarDsc* srcVarDsc      = m_comp->lvaGetDesc(m_srcLclNum);
                 unsigned   srcFieldLclNum = srcVarDsc->lvFieldLclStart + i;
                 LclVarDsc* srcFieldVarDsc = m_comp->lvaGetDesc(srcFieldLclNum);
@@ -1386,18 +1365,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
                 if (!m_dstUseLclFld)
                 {
-                    if (srcFieldOffset != 0)
-                    {
-                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldOffset, TYP_I_IMPL);
-                        dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
-                    }
-
-                    dstFldStore = m_comp->gtNewStoreIndNode(srcType, dstAddrClone, srcFld);
+                    GenTree* fldAddr = grabAddr(srcFieldOffset);
+                    dstFldStore      = m_comp->gtNewStoreIndNode(srcType, fldAddr, srcFld);
                 }
                 else
                 {
-                    assert(dstAddrClone == nullptr);
-
                     // If the dst was a struct type field "B" in a struct "A" then we add
                     // add offset of ("B" in "A") + current offset in "B".
                     unsigned totalOffset = m_dstLclOffset + srcFieldOffset;

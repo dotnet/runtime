@@ -2419,14 +2419,12 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 static void
 set_nonnull_load_flag (LLVMValueRef v)
 {
-	LLVMValueRef md_arg;
 	int md_kind;
 	const char *flag_name;
 
 	flag_name = "nonnull";
 	md_kind = LLVMGetMDKindID (flag_name, (unsigned int)strlen (flag_name));
-	md_arg = md_string ("<index>");
-	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (NULL, 0));
 }
 
 static void
@@ -11753,7 +11751,8 @@ MONO_RESTORE_WARNING
 		case OP_TAILCALL:
 		case OP_TAILCALL_REG:
 		case OP_TAILCALL_MEMBASE:
-		case OP_CKFINITE: {
+		case OP_CKFINITE:
+		case OP_LOAD_GOTADDR: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));

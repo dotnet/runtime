@@ -99,7 +99,7 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
@@ -305,6 +305,7 @@ async function dry_run(runArgs) {
             appendElementOnExit: false,
             logExitCode: false,
             pthreadPoolSize: 0,
+            assetUniqueQuery: "?dry_run=true",
             // this just means to not continue startup after the snapshot is taken. 
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true

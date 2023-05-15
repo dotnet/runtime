@@ -22,7 +22,7 @@
 
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
-      - $(WasmEmitSymbolMap)      - Generates a `dotnet.js.symbols` file with a map of wasm function number to name.
+      - $(WasmEmitSymbolMap)      - Generates a `dotnet.native.js.symbols` file with a map of wasm function number to name.
       - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
@@ -84,7 +84,7 @@
       - @(WasmFilesToIncludeInFileSystem) - Files to include in the vfs
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
-      - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
+      - @(WasmExtraConfig)        - json elements to add to `_framework/blazor.boot.json`
                                     Eg. <WasmExtraConfig Include="xxx" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
@@ -328,10 +328,10 @@
     <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
     <PropertyGroup>
       <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true'">false</HybridGlobalization>
-      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
-      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
-      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
-      <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
+      <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
+      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
+      <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
+      <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
@@ -343,13 +343,15 @@
 
     <ItemGroup>
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols"
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
-                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
+                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols')" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">

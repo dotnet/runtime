@@ -41,7 +41,7 @@ namespace System.Data
 
             // Get Locale and CaseSensitive properties
 
-            if (_schemaName == null || _schemaName.Length == 0)
+            if (string.IsNullOrEmpty(_schemaName))
                 _schemaName = "NewDataSet";
 
             ds.Namespace = _schemaUri;
@@ -85,7 +85,7 @@ namespace System.Data
             if (FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
                 FEqualIdentity(node, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS))
             {
-                if (strType == null || strType.Length == 0)
+                if (string.IsNullOrEmpty(strType))
                     return null;
 
                 // Find an ELEMENTTYPE or ATTRIBUTETYPE with name=strType
@@ -133,7 +133,7 @@ namespace System.Data
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), $"Invalid node type {node.LocalName}");
 
             string value = node.GetAttribute(Keywords.CONTENT);
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
             {
                 string type = node.GetAttribute(Keywords.DT_TYPE, Keywords.DTNS);
                 return !string.IsNullOrEmpty(type);
@@ -311,7 +311,7 @@ namespace System.Data
             }
 
             NameType nt = FindNameType(strType);
-            if (nt == s_enumerationNameType && (dtValues == null || dtValues.Length == 0))
+            if (nt == s_enumerationNameType && string.IsNullOrEmpty(dtValues))
                 throw ExceptionBuilder.MissingAttribute("type", Keywords.DT_VALUES);
             return nt.type;
         }
@@ -332,7 +332,7 @@ namespace System.Data
             else
             {
                 instanceName = node.GetAttribute(Keywords.TYPE);
-                if (instanceName == null || instanceName.Length == 0)
+                if (string.IsNullOrEmpty(instanceName))
                     throw ExceptionBuilder.MissingAttribute("Element", Keywords.TYPE);
             }
 
@@ -400,7 +400,7 @@ namespace System.Data
 
             strType = typeNode.GetAttribute(Keywords.DT_TYPE, Keywords.DTNS);
             strValues = typeNode.GetAttribute(Keywords.DT_VALUES, Keywords.DTNS);
-            if (strType == null || strType.Length == 0)
+            if (string.IsNullOrEmpty(strType))
             {
                 strType = string.Empty;
                 type = typeof(string);
@@ -480,7 +480,7 @@ namespace System.Data
                 column.Namespace = targetNamespace;
 
             table.Columns.Add(column);
-            if (strDefault != null && strDefault.Length != 0)
+            if (!string.IsNullOrEmpty(strDefault))
                 try
                 {
                     column.DefaultValue = SqlConvert.ChangeTypeForXML(strDefault, type);

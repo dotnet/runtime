@@ -7,9 +7,24 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test has a secondary thread with an infinite loop -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <EventSourceSupport Condition="'$(TestBuildMode)' == 'nativeaot'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="runtimecounters.cs" />
     <ProjectReference Include="../common/common.csproj" />
   </ItemGroup>
+
+  <!-- Hack to get NativeAOT assemblies into IlcReference
+       In CoreCLR tests, these assemblies get copied to CORE_ROOT, which NativeAOT doesn't use
+  -->
+  <Import Project="$(RepoRoot)eng/liveBuilds.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <!-- Get all the *.dll files that has IsNative != "true"-->
+  <Target Name="GetRequiredNativeAOTAssemblies"
+      DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild"
+      BeforeTargets="ComputeIlcCompileInputs"
+      Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <ItemGroup>
+      <IlcReference Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(LibrariesRuntimeFiles.IsNative)' != 'true'"/>
+    </ItemGroup>
+  </Target>  
 </Project>
