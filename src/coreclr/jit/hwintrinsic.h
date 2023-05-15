@@ -190,6 +190,17 @@ enum HWIntrinsicFlag : unsigned int
     // MaybeNoJmpTable IMM
     // the imm intrinsic may not need jumptable fallback when it gets non-const argument
     HW_Flag_MaybeNoJmpTableIMM = 0x800000,
+
+#if defined(TARGET_XARCH)
+    // The intrinsic is an RMW intrinsic
+    HW_Flag_RmwIntrinsic = 0x1000000,
+
+    // The intrinsic is a FusedMultiplyAdd intrinsic
+    HW_Flag_FmaIntrinsic = 0x2000000,
+
+    // The intrinsic is a PermuteVar2x intrinsic
+    HW_Flag_PermuteVar2x = 0x4000000,
+#endif // TARGET_XARCH
 };
 
 #if defined(TARGET_XARCH)
@@ -983,6 +994,26 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeNoJmpTableIMM) != 0;
     }
+
+#if defined(TARGET_XARCH)
+    static bool IsRmwIntrinsic(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_RmwIntrinsic) != 0;
+    }
+
+    static bool IsFmaIntrinsic(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_FmaIntrinsic) != 0;
+    }
+
+    static bool IsPermuteVar2x(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_PermuteVar2x) != 0;
+    }
+#endif // TARGET_XARCH
 };
 
 #ifdef TARGET_ARM64

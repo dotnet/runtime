@@ -9942,6 +9942,22 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_WASM)
+		case OP_WASM_SIMD_CONV_R8_TO_R4: {
+			LLVMValueRef val = LLVMBuildFPTrunc (builder, lhs, v64_r4_t, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_r4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
+		case OP_WASM_SIMD_CONV_U4_TO_R8_LOW: {
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_2_i32 (0, 1), "");
+			values [ins->dreg] = LLVMBuildUIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_WASM_SIMD_CONV_R8_TO_I4_ZERO: {
+			LLVMValueRef args [] = { lhs };
+			LLVMValueRef val = call_intrins (ctx, ins->inst_c0, args, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_i4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
 		case OP_WASM_SIMD_BITMASK: {
 			LLVMValueRef args [] = { lhs };
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
@@ -11561,16 +11577,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_CVT_UI_FP:
 		case OP_CVT_SI_FP:
 		case OP_CVT_UI_FP_SCALAR:
@@ -11620,6 +11626,16 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildFPToSI (builder, result, cvt_t, "fp2si");
 			if (scalar)
 				result = vector_from_scalar (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		case OP_ONES_COMPLEMENT: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "");
+			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
 		}

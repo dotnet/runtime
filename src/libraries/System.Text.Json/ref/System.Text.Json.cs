@@ -913,7 +913,7 @@ namespace System.Text.Json.Serialization
             T value,
 #nullable restore
             System.Text.Json.JsonSerializerOptions options);
-        public virtual void WriteAsPropertyName(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options) { }
+        public virtual void WriteAsPropertyName(System.Text.Json.Utf8JsonWriter writer, [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T value, System.Text.Json.JsonSerializerOptions options) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface, AllowMultiple=true, Inherited=false)]
     public partial class JsonDerivedTypeAttribute : System.Text.Json.Serialization.JsonAttribute
@@ -1128,7 +1128,7 @@ namespace System.Text.Json.Serialization.Metadata
     public static partial class JsonMetadataServices
     {
         public static System.Text.Json.Serialization.JsonConverter<bool> BooleanConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<byte[]> ByteArrayConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<byte[]?> ByteArrayConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<byte> ByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<char> CharConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.DateTime> DateTimeConverter { get { throw null; } }
@@ -1139,17 +1139,17 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<short> Int16Converter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<int> Int32Converter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<long> Int64Converter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonArray> JsonArrayConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.JsonDocument> JsonDocumentConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonArray?> JsonArrayConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.JsonDocument?> JsonDocumentConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.JsonElement> JsonElementConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonNode> JsonNodeConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonObject> JsonObjectConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonValue> JsonValueConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonNode?> JsonNodeConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonObject?> JsonObjectConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonValue?> JsonValueConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<object?> ObjectConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<float> SingleConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<string> StringConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<string?> StringConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.TimeSpan> TimeSpanConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<ushort> UInt16Converter { get { throw null; } }
@@ -1157,8 +1157,8 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<uint> UInt32Converter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<ulong> UInt64Converter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Uri> UriConverter { get { throw null; } }
-        public static System.Text.Json.Serialization.JsonConverter<System.Version> VersionConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Uri?> UriConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Version?> VersionConverter { get { throw null; } }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TElement[]> CreateArrayInfo<TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TElement[]> collectionInfo) { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateConcurrentQueueInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Concurrent.ConcurrentQueue<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateConcurrentStackInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Concurrent.ConcurrentStack<TElement> { throw null; }

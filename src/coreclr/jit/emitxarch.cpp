@@ -100,6 +100,42 @@ bool emitter::IsBMIInstruction(instruction ins)
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
 }
 
+//------------------------------------------------------------------------
+// IsPermuteVar2xInstruction: Is this an Avx512 permutex2var instruction?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a permutex2var instruction.
+//
+bool emitter::IsPermuteVar2xInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_vpermi2d:
+        case INS_vpermi2pd:
+        case INS_vpermi2ps:
+        case INS_vpermi2q:
+        case INS_vpermt2d:
+        case INS_vpermt2pd:
+        case INS_vpermt2ps:
+        case INS_vpermt2q:
+        case INS_vpermi2w:
+        case INS_vpermt2w:
+        case INS_vpermi2b:
+        case INS_vpermt2b:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -8321,7 +8357,7 @@ void emitter::emitIns_SIMD_R_R_S_I(
 void emitter::emitIns_SIMD_R_R_R_A(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTreeIndir* indir)
 {
-    assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -8329,31 +8365,6 @@ void emitter::emitIns_SIMD_R_R_R_A(
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
     emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir);
-}
-
-//------------------------------------------------------------------------
-// emitIns_SIMD_R_R_R_AR: emits the code for a SIMD instruction that takes two register operands, a base memory
-//                        register, and that returns a value in register
-//
-// Arguments:
-//    ins       -- The instruction being emitted
-//    attr      -- The emit attribute
-//    targetReg -- The target register
-//    op1Reg    -- The register of the first operands
-//    op2Reg    -- The register of the second operand
-//    base      -- The base register used for the memory address
-//
-void emitter::emitIns_SIMD_R_R_R_AR(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber base)
-{
-    assert(IsFMAInstruction(ins));
-    assert(UseSimdEncoding());
-
-    // Ensure we aren't overwriting op2
-    assert((op2Reg != targetReg) || (op1Reg == targetReg));
-
-    emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_AR(ins, attr, targetReg, op2Reg, base, 0);
 }
 
 //------------------------------------------------------------------------
@@ -8377,7 +8388,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    CORINFO_FIELD_HANDLE fldHnd,
                                    int                  offs)
 {
-    assert(IsFMAInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -8402,7 +8413,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 void emitter::emitIns_SIMD_R_R_R_R(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
 {
-    if (IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins))
+    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
 
@@ -8470,7 +8481,7 @@ void emitter::emitIns_SIMD_R_R_R_R(
 void emitter::emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs)
 {
-    assert(IsFMAInstruction(ins) || IsAVXVNNIInstruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -18278,6 +18289,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+        case INS_vpermi2b:
+        case INS_vpermt2b:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
+            break;
+        }
+
+        case INS_vpermi2w:
+        case INS_vpermt2w:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+        }
+
         case INS_vpmovdb:
         case INS_vpmovdw:
         case INS_vpmovqb:
@@ -18715,6 +18742,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
+        case INS_vpermi2d:
+        case INS_vpermi2pd:
+        case INS_vpermi2ps:
+        case INS_vpermi2q:
+        case INS_vpermt2d:
+        case INS_vpermt2pd:
+        case INS_vpermt2ps:
+        case INS_vpermt2q:
+        case INS_vshuff32x4:
+        case INS_vshuff64x2:
+        case INS_vshufi32x4:
+        case INS_vshufi64x2:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_3C;

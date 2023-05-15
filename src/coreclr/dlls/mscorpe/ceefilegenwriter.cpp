@@ -490,7 +490,7 @@ HRESULT CeeFileGenWriter::setOutputFileName(_In_ LPWSTR fileName)
 {
     if (m_outputFileName)
         delete[] m_outputFileName;
-    size_t len = wcslen(fileName) + 1;
+    size_t len = u16_strlen(fileName) + 1;
     m_outputFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_outputFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_outputFileName, len, fileName);
@@ -501,7 +501,7 @@ HRESULT CeeFileGenWriter::setResourceFileName(_In_ LPWSTR fileName)
 {
     if (m_resourceFileName)
         delete[] m_resourceFileName;
-    size_t len = wcslen(fileName) + 1;
+    size_t len = u16_strlen(fileName) + 1;
     m_resourceFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_resourceFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_resourceFileName, len, fileName);
