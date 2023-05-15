@@ -127,10 +127,16 @@ export class WebAssemblyResourceLoader {
         // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
-        return fetch(url, {
+        const fetchOptions: RequestInit = {
             cache: networkFetchCacheMode,
             integrity: this.bootConfig.cacheBootResources ? contentHash : undefined,
-        });
+        };
+
+        if (resourceType === "configuration") {
+            fetchOptions.credentials = "include";
+        }
+
+        return fetch(url, fetchOptions);
     }
 
     private async addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {

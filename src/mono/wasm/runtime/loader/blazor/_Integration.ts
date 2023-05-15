@@ -6,7 +6,7 @@ import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResou
 import type { BootJsonData } from "../../types/blazor";
 
 import { INTERNAL, loaderHelpers } from "../globals";
-import { BootConfigResult, LoadBootResourceCallback } from "./BootConfig";
+import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
@@ -22,9 +22,8 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
-    const candidateOptions = startupOptions ?? {};
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions);
-    mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment, candidateOptions.loadBootResource);
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
+    mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
     setupModuleForBlazor(module);
 }
 
@@ -32,21 +31,20 @@ let resourcesLoaded = 0;
 let totalResources = 0;
 
 const behaviorByName = (name: string): AssetBehaviours | "other" => {
-    return name === "dotnet.timezones.blat" ? "vfs"
-        : name === "dotnet.native.wasm" ? "dotnetwasm"
-            : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
-                : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
-                    : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
-                        : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                            : name.startsWith("icudt") ? "icu"
-                                : "other";
+    return name === "dotnet.native.wasm" ? "dotnetwasm"
+        : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
+            : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
+                : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
+                    : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
+                        : name.startsWith("icudt") ? "icu"
+                            : "other";
 };
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
     "assembly": "assembly",
     "pdb": "pdb",
     "icu": "globalization",
-    "vfs": "globalization",
+    "vfs": "configuration",
     "dotnetwasm": "dotnetwasm",
 };
 
@@ -78,7 +76,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     module.disableDotnet6Compatibility = false;
 }
 
-export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string, customLoadBootResource?: LoadBootResourceCallback) {
+export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
     const resources = resourceLoader.bootConfig.resources;
 
     const assets: AssetEntry[] = [];
@@ -163,40 +161,13 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         assets.push(asset);
     }
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
-        let config = resourceLoader.bootConfig.config[i];
+        const config = resourceLoader.bootConfig.config[i];
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
-            const asset: AssetEntry = {
+            assets.push({
                 name: config,
-                resolvedUrl: `_framework/${name}`,
+                resolvedUrl: config,
                 behavior: "vfs",
-            };
-
-            let response: Promise<Response> | null = null;
-            if (customLoadBootResource) {
-                const customLoadResult = customLoadBootResource("configuration", config, config, "");
-                if (customLoadResult instanceof Promise<Response>) {
-                    // They are supplying an entire custom response, so just use that
-                    response = customLoadResult;
-                } else if (typeof customLoadResult === "string") {
-                    // They are supplying a custom URL, so use that with the default fetch behavior
-                    config = customLoadResult;
-                }
-            }
-
-            if (!response) {
-                response = fetch(config, {
-                    method: "GET",
-                    credentials: "include",
-                    cache: "no-cache",
-                });
-            }
-
-            asset.pendingDownload = {
-                name: config,
-                url: config,
-                response
-            };
-            assets.push(asset);
+            });
         }
     }
 
