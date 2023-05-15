@@ -48,19 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _symbolNodeFactory = symbolNodeFactory;
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            if (_module != null)
-            {
-                sb.Append("__ReadyToRunInliningInfoTable__");
-                sb.Append(_module.Assembly.GetName().Name);
-            }
-            else
-            {
-                sb.Append("__ReadyToRunCrossModuleInliningInfoTable__");
-            }
-        }
+        protected override string ModuleSpecificName => "__ReadyToRunInliningInfoTable__";
 
         private bool AllowCrossModuleInlines => _inlineInfoType == InfoType.CrossModuleAllMethods || _inlineInfoType == InfoType.CrossModuleInliningForCrossModuleDataOnly;
         private bool ReportAllInlinesInSearch => _inlineInfoType == InfoType.CrossModuleAllMethods;

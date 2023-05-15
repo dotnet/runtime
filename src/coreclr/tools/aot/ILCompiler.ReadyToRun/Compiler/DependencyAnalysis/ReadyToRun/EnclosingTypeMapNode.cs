@@ -37,11 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 990540812;
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__EnclosingTypeMap");
-        }
+        protected override string ModuleSpecificName => "__EnclosingTypeMap";
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

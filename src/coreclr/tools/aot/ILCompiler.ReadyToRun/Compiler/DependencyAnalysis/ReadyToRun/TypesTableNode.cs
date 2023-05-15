@@ -20,13 +20,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public TypesTableNode(EcmaModule module) : base(module)
         {
         }
-        
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAvailableTypesTable__");
-            sb.Append(_module.Assembly.GetName().Name);
-        }
+
+        protected override string ModuleSpecificName => "__ReadyToRunAvailableTypesTable__";
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

@@ -59,6 +59,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return _module.Assembly.GetName().Name.CompareTo(otherModuleSpecificHeaderTableNode._module.Assembly.GetName().Name);
         }
+
+        protected abstract string ModuleSpecificName { get; }
+
+        public sealed override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            if (_module != null)
+            {
+                sb.Append(ModuleSpecificName);
+                sb.Append(_module.Assembly.GetName().Name);
+            }
+            else
+            {
+                sb.Append(ModuleSpecificName);
+            }
+
+        }
     }
 
     public abstract class HeaderNode : ObjectNode, ISymbolDefinitionNode

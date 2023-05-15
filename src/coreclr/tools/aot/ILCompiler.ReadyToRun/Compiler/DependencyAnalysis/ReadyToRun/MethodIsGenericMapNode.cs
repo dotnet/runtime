@@ -27,11 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 606284890;
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__MethodIsGenericMap");
-        }
+        protected override string ModuleSpecificName => "__MethodIsGenericMap__";
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
