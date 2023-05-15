@@ -450,7 +450,7 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 // minRegCount registers, otherwise returns regMaskActual.
 //
 // Arguments:
-//     Refposition        -  Refposition for which we want to constaint.
+//     refposition        -  RefPosition for which we want to constain.
 //     regMaskActual      -  regMask that needs to be constrained
 //     regMaskConstraint  -  regMask constraint that needs to be
 //                           applied to regMaskActual
@@ -460,15 +460,15 @@ RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 // Return Value:
 //     New regMask that has minRegCount registers after instersection.
 //     Otherwise returns regMaskActual.
-regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
-                                            regMaskTP    regMaskActual,
-                                            regMaskTP    regMaskConstraint,
-                                            unsigned     minRegCount)
+regMaskTP LinearScan::getConstrainedRegMask(const RefPosition* refPosition,
+                                            regMaskTP          regMaskActual,
+                                            regMaskTP          regMaskConstraint,
+                                            unsigned           minRegCount)
 {
     regMaskTP newMask = regMaskActual & regMaskConstraint;
     if (genCountBits(newMask) < minRegCount)
     {
-        // Constrained mask does not have minium required registers needed.
+        // Constrained mask does not have minimum required registers needed.
         return regMaskActual;
     }
 
@@ -477,7 +477,7 @@ regMaskTP LinearScan::getConstrainedRegMask(RefPosition* refPosition,
         regMaskTP busyRegs = regsBusyUntilKill | regsInUseThisLocation;
         if ((newMask & ~busyRegs) == RBM_NONE)
         {
-            // Constrained mask do not have at least one free register to allocate.
+            // Constrained mask does not have at least one free register to allocate.
             // Skip for RegOptional, because its ok to not have registers for them.
             return regMaskActual;
         }

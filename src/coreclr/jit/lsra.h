@@ -811,10 +811,10 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    regMaskTP getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskTP    regMaskActual,
-                                    regMaskTP    regMaskConstrain,
-                                    unsigned     minRegCount);
+    regMaskTP getConstrainedRegMask(const RefPosition* refPosition,
+                                    regMaskTP          regMaskActual,
+                                    regMaskTP          regMaskConstrain,
+                                    unsigned           minRegCount);
     regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
 
     // This controls the heuristics used to select registers
