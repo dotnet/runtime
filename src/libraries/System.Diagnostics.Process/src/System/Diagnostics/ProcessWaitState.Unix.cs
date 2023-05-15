@@ -418,7 +418,6 @@ namespace System.Diagnostics
                 // Polling loop
                 while (true)
                 {
-                    bool createdTask = false;
                     CancellationTokenSource? cts = null;
                     Task waitTask;
 
@@ -464,33 +463,25 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            createdTask = true;
                             CancellationToken token = remainingTimeout == Timeout.Infinite ?
                                 CancellationToken.None :
-                                (cts = new CancellationTokenSource(remainingTimeout)).Token;
+                                (cts = new CancellationTokenSource()).Token;
                             waitTask = WaitForExitAsync(token);
                         }
                     } // lock(_gate)
 
-                    if (createdTask)
+                    // Wait the task whoever it was created by. This Wait should wake up when:
+                    // 1. the process has exited; or
+                    // 2. our remainingTimeout expired; or
+                    // 3. the task was created by someone else and the creator's remainingTimeout expired.
+                    // In any case, we'll loop around again, and the loop will catch these cases,
+                    // potentially issuing another wait to make up any remaining time.
+                    waitTask.Wait(remainingTimeout);
+
+                    if (cts != null) // we created the task and our remainingTimeout expired
                     {
-                        // We created this task, and it'll get canceled automatically after our timeout.
-                        // This Wait should only wake up when either the process has exited or the timeout
-                        // has expired.  Either way, we'll loop around again; if the process exited, that'll
-                        // be caught first thing in the loop where we check _exited, and if it didn't exit,
-                        // our remaining time will be zero, so we'll do a quick remaining check and bail.
-                        waitTask.Wait();
-                        cts?.Dispose();
-                    }
-                    else
-                    {
-                        // It's someone else's task.  We'll wait for it to complete. This could complete
-                        // either because our remainingTimeout expired or because the task completed,
-                        // which could happen because the process exited or because whoever created
-                        // that task gave it a timeout.  In any case, we'll loop around again, and the loop
-                        // will catch these cases, potentially issuing another wait to make up any
-                        // remaining time.
-                        waitTask.Wait(remainingTimeout);
+                        cts.Cancel();
+                        cts.Dispose();
                     }
                 }
             }
@@ -505,7 +496,7 @@ namespace System.Diagnostics
             Debug.Assert(_waitInProgress == null);
             Debug.Assert(!_isChild);
 
-            Task task = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
+            return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
             {
                 // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
                 // to handle quickly completing processes, but fall back to longer polling to minimize
@@ -548,14 +539,7 @@ namespace System.Diagnostics
                         _waitInProgress = null;
                     }
                 }
-            }, cancellationToken);
-
-            if (task.IsCanceled) // Task.Run is canceled and the delegate is skipped
-            {
-                // Translate the result to be a completed task so we can safely Wait() it later
-                return Task.CompletedTask;
-            }
-            return _waitInProgress = task;
+            }, CancellationToken.None); // Avoid this Task.Run being cancelled and the delegate being skipped
         }
 
         private void ChildReaped(int exitCode, bool configureConsole)
