@@ -5207,7 +5207,8 @@ extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
 	return extract_half_elements (ctx, src_vec, FALSE);
 }
 
-LLVMTypeRef extended_type (LLVMTypeRef src_t) {
+static G_GNUC_UNUSED LLVMTypeRef extended_type (LLVMTypeRef src_t)
+{
 	int nelems = LLVMGetVectorSize (src_t) / 2;
 	unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
 	LLVMTypeRef int_t = LLVMIntType (width * 2);
