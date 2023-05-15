@@ -5,34 +5,33 @@ import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
-import type { DotnetHostBuilder, RuntimeAPI } from "./types-api";
+import type { RuntimeAPI } from "./types";
 
-import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, } from "./globals";
-import { is_nullish } from "./types";
+import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { GlobalObjects, is_nullish } from "./types/internal";
 import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
 import { export_api } from "./export-api";
-import { mono_exit } from "./run";
-import { globalObjectsRoot, unifyModuleConfig } from "./run-outer";
-import { HostBuilder } from "./run-outer";
-import { initializeReplacements, init_polyfills } from "./polyfills";
+import { initializeReplacements } from "./polyfills";
 
 // legacy
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
 import { initializeLegacyExports } from "./net6-legacy/globals";
+import { mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { instantiate_asset, instantiate_symbols_asset } from "./assets";
+import { jiterpreter_dump_stats } from "./jiterpreter";
 
-function initializeExports(): RuntimeAPI {
+function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
-    const globals = globalObjectsRoot;
+    const globals = globalObjects;
     const globalThisAny = globalThis as any;
 
     if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         initializeLegacyExports(globals);
     }
-    init_polyfills();
 
     // here we merge methods from the local objects into exported objects
     if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
@@ -41,6 +40,13 @@ function initializeExports(): RuntimeAPI {
         Object.assign(globals.internal, export_internal_api());
     }
     Object.assign(globals.internal, export_internal());
+    Object.assign(runtimeHelpers, {
+        stringify_as_error_with_stack: mono_wasm_stringify_as_error_with_stack,
+        instantiate_symbols_asset,
+        instantiate_asset,
+        jiterpreter_dump_stats,
+    });
+
     const API = export_api();
     Object.assign(exportedRuntimeAPI, {
         INTERNAL: globals.internal,
@@ -135,9 +141,6 @@ class RuntimeList {
 }
 
 // export external API
-const dotnet: DotnetHostBuilder = new HostBuilder();
-const exit = mono_exit;
 export {
-    dotnet, exit,
-    globalObjectsRoot as earlyExports, passEmscriptenInternals, initializeExports, initializeReplacements, unifyModuleConfig, configureEmscriptenStartup, configureWorkerStartup
+    passEmscriptenInternals, initializeExports, initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals
 };

@@ -8,7 +8,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'indcall'
+.assembly ASSEMBLY_NAME
 {
 
   

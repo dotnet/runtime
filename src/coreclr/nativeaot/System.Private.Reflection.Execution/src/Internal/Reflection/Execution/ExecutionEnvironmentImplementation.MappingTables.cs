@@ -159,10 +159,9 @@ namespace Internal.Reflection.Execution
         //
         // This is not equivalent to calling TryGetMultiDimTypeElementType() with a rank of 1!
         //
-        public sealed override unsafe bool TryGetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, out RuntimeTypeHandle elementTypeHandle)
+        public sealed override RuntimeTypeHandle GetArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle)
         {
-            elementTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(arrayTypeHandle);
         }
 
 
@@ -210,10 +209,9 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      pointerTypeHandle is a valid RuntimeTypeHandle of type pointer.
         //
-        public sealed override unsafe bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override RuntimeTypeHandle GetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle)
         {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
         }
 
         public override bool TryGetFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle functionPointerTypeHandle)
@@ -253,10 +251,9 @@ namespace Internal.Reflection.Execution
         // Preconditions:
         //      byRefTypeHandle is a valid RuntimeTypeHandle of a byref.
         //
-        public sealed override unsafe bool TryGetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle, out RuntimeTypeHandle targetTypeHandle)
+        public sealed override unsafe RuntimeTypeHandle GetByRefTypeTargetType(RuntimeTypeHandle byRefTypeHandle)
         {
-            targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
-            return true;
+            return RuntimeAugments.GetRelatedParameterTypeHandle(byRefTypeHandle);
         }
 
         //

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class B
 {
@@ -34,7 +35,8 @@ public class Q
     }
 
     // The calls to F should be devirtualized late
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int v0 = Choose(false).F(V(67));
         B b = Choose(true);

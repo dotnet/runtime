@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <RestorePackages>true</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- There is a 32 and 64 version of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="sizeof32_Target_64Bit_and_arm_r.il" />
+    <Compile Include="sizeof32_Target_64Bit_and_arm.il" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

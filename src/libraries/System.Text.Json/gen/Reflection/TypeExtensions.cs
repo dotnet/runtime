@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 
 namespace System.Text.Json.Reflection
@@ -167,10 +166,6 @@ namespace System.Text.Json.Reflection
             constructorInfo = null;
             return false;
         }
-
-        public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
-
-        public static bool IsStringType(this Type type) => type.FullName == "System.String";
 
         public static Type? GetCompatibleBaseClass(this Type type, string baseTypeFullName)
         {

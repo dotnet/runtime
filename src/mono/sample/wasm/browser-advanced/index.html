@@ -7,10 +7,13 @@
   <title>Wasm Browser Advanced Sample</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval';" />
   <script type='module' src="./main.js"></script>
   <script type='module' src="./dotnet.js"></script>
-  <link rel="preload" href="./mono-config.json" as="fetch" crossorigin="anonymous">
-  <link rel="prefetch" href="./dotnet.wasm" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.native.js" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.runtime.js" as="fetch" crossorigin="anonymous">
+  <link rel="prefetch" href="./dotnet.native.wasm" as="fetch" crossorigin="anonymous">
   <!-- users should consider if they optimize for the first load or subsequent load from memory snapshot -->
   <link rel="prefetch" href="./icudt.dat" as="fetch" crossorigin="anonymous">
   <link rel="prefetch" href="./managed/System.Private.CoreLib.webcil" as="fetch" crossorigin="anonymous">

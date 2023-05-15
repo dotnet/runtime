@@ -236,7 +236,7 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     else
     {
         pszMessage = W("There is not enough memory to print the supplied FailFast message.");
-        cchMessage = (DWORD)wcslen(pszMessage);
+        cchMessage = (DWORD)u16_strlen(pszMessage);
     }
 
     if (cchMessage == 0) {
