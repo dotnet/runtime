@@ -2285,6 +2285,7 @@ public:
     inline PTR_BYTE GetGCStaticsBasePointer();
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
+    inline PTR_BYTE GetGCThreadStaticsBaseHandle();
 #endif //!DACCESS_COMPILE
 
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);

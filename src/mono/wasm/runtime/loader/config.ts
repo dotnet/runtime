@@ -35,6 +35,7 @@ export function deep_merge_module(target: DotnetModuleInternal, source: DotnetMo
     return Object.assign(target, providedConfig);
 }
 
+// NOTE: this is called before setRuntimeGlobals
 export function normalizeConfig() {
     // normalize
     const config = loaderHelpers.config;
@@ -80,16 +81,20 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
-        const resolveSrc = loaderHelpers.locateFile(configFilePath);
-        const configResponse = await loaderHelpers.fetch_like(resolveSrc);
-        const loadedAnyConfig: any = (await configResponse.json()) || {};
-        if (loadedAnyConfig.resources) {
-            await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData), module);
+        if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
+            // If we have custom loadBootResource
+            await loadBootConfig(loaderHelpers.config, module);
         } else {
-            const loadedConfig = loadedAnyConfig as MonoConfigInternal;
-            if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
-                await loadBootConfig(loaderHelpers.config, module);
+            // Otherwise load using fetch_like
+            const resolveSrc = loaderHelpers.locateFile(configFilePath);
+            const configResponse = await loaderHelpers.fetch_like(resolveSrc);
+            const loadedAnyConfig: any = (await configResponse.json()) || {};
+            if (loadedAnyConfig.resources) {
+                // If we found boot config schema
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData), module);
             } else {
+                // Otherwise we found mono config schema
+                const loadedConfig = loadedAnyConfig as MonoConfigInternal;
                 if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
                     throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
                 deep_merge_config(loaderHelpers.config, loadedConfig);

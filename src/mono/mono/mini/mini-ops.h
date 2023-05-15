@@ -859,6 +859,9 @@ MINI_OP(OP_WASM_EXTMUL_LOWER, "wasm_extmul_lower", XREG, XREG, XREG)
 MINI_OP(OP_WASM_EXTMUL_UPPER, "wasm_extmul_upper", XREG, XREG, XREG)
 MINI_OP(OP_WASM_EXTMUL_LOWER_U, "wasm_extmul_lower_u", XREG, XREG, XREG)
 MINI_OP(OP_WASM_EXTMUL_UPPER_U, "wasm_extmul_upper_u", XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_CONV_R8_TO_R4, "wasm_simd_conv_r8_to_r4", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_CONV_R8_TO_I4_ZERO, "wasm_simd_conv_r8_to_i4_zero", XREG, XREG, NONE)
+MINI_OP(OP_WASM_SIMD_CONV_U4_TO_R8_LOW, "wasm_simd_conv_u4_to_r8_low", XREG, XREG, NONE)
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
@@ -1805,18 +1808,17 @@ MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 MINI_OP(OP_ONES_COMPLEMENT, "ones_complement", XREG, XREG, NONE)
 
+#endif // TARGET_ARM64 || TARGET_AMD64
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 MINI_OP(OP_CVT_FP_UI,        "convert_fp_to_ui", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_SI,        "convert_fp_to_si", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_UI_SCALAR, "convert_fp_to_ui_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_FP_SI_SCALAR, "convert_fp_to_si_scalar", XREG, XREG, NONE)
-
 MINI_OP(OP_CVT_UI_FP,        "convert_ui_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP,        "convert_si_to_fp", XREG, XREG, NONE)
 MINI_OP(OP_CVT_UI_FP_SCALAR, "convert_ui_to_fp_scalar", XREG, XREG, NONE)
 MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
-#endif // TARGET_ARM64 || TARGET_AMD64
-
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)

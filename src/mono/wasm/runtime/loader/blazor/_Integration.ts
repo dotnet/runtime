@@ -73,7 +73,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         return undefined;
     };
 
-    module.downloadResource = downloadResource;
+    loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
     module.disableDotnet6Compatibility = false;
 }
 
