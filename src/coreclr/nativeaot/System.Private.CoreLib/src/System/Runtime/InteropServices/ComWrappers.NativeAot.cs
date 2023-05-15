@@ -718,7 +718,7 @@ namespace System.Runtime.InteropServices
                     // managed object wrappers for A created with C1 and C2 respectively.
                     // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
                     // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                    var unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
                     if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                     {
                         // The unwrapped object has a CCW in this context. Get the IUnknown for the externalComObject

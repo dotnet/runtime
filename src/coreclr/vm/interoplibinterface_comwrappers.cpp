@@ -878,10 +878,9 @@ namespace
 
             SyncBlock* syncBlock = objRef->GetSyncBlock();
             InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
-            _ASSERTE(syncBlock->IsPrecious());
 
             // If we found a managed object wrapper in this ComWrappers instance
-            // and it's has the same identity pointer as the one we're creating an EOC for,
+            // and it's the same identity pointer as the one we're creating an EOC for,
             // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
             //
             // A managed object can have multiple managed object wrappers, with a max of one per context.
@@ -894,6 +893,10 @@ namespace
                 && wrapperRawMaybe == identity)
             {
                 gc.objRefMaybe = objRef;
+            }
+            else
+            {
+                STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Not unwrapping handle (0x%p) because the object's MOW in this ComWrappers instance (if any) (0x%p) is not the provided identity\n", handle, wrapperRawMaybe);
             }
             GCPROTECT_END();
         }

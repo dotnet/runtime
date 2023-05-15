@@ -193,7 +193,6 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
         }
 
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         [Fact]
         public void ValidateComInterfaceUnwrapWrapperSpecific()
