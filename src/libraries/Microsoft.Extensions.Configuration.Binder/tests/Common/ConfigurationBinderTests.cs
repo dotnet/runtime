@@ -19,7 +19,7 @@ namespace Microsoft.Extensions
 {
     public partial class ConfigurationBinderTests
     {
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for records.
+        [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
         {
             IConfiguration configuration = new ConfigurationBuilder()
@@ -920,7 +920,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void ExceptionWhenTryingToBindClassWherePropertiesDoMatchConstructorParameters()
         {
             var input = new Dictionary<string, string>
@@ -941,7 +941,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
         {
             var input = new Dictionary<string, string>
@@ -961,7 +961,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
         {
             var input = new Dictionary<string, string>
@@ -982,7 +982,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void BindsToClassConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
@@ -1003,7 +1003,7 @@ namespace Microsoft.Extensions
             Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField()
         {
             var input = new Dictionary<string, string>
@@ -1025,7 +1025,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void BindsToRecordPrimaryConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
@@ -1101,7 +1101,7 @@ namespace Microsoft.Extensions
             Assert.Equal("hello world", options.MyString);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass()
         {
             var dic = new Dictionary<string, string>
@@ -1118,7 +1118,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindMutableClassWitNestedImmutableObject()
         {
             var dic = new Dictionary<string, string>
@@ -1139,7 +1139,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has multiple public parameterized constructors, then throw
         // an exception.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors()
         {
             var dic = new Dictionary<string, string>
@@ -1162,7 +1162,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructor, then throw
         // that constructor has an 'in' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1185,7 +1185,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // that constructor has a 'ref' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1208,7 +1208,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // if the constructor has an 'out' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1229,7 +1229,7 @@ namespace Microsoft.Extensions
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]// Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindMutableStruct_UnmatchedConstructorsAreIgnored()
         {
             var dic = new Dictionary<string, string>
@@ -1248,7 +1248,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a public parameterized constructor,
         // then pick it.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindImmutableClass_PicksParameterizedConstructorIfNoParameterlessConstructorExists()
         {
             var dic = new Dictionary<string, string>
@@ -1269,7 +1269,7 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.Int2);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindSemiImmutableClass()
         {
             var dic = new Dictionary<string, string>
@@ -1288,7 +1288,7 @@ namespace Microsoft.Extensions
             Assert.Equal(1.23m, options.Thickness);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindSemiImmutableClass_WithInitProperties()
         {
             var dic = new Dictionary<string, string>
@@ -1307,7 +1307,7 @@ namespace Microsoft.Extensions
             Assert.Equal(1.23m, options.Thickness);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindRecordOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1324,7 +1324,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindRecordStructOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1341,7 +1341,7 @@ namespace Microsoft.Extensions
             Assert.Equal("Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindNestedRecordOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1364,7 +1364,7 @@ namespace Microsoft.Extensions
             Assert.Equal(24, options.Nested2.ValueB);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
         public void CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor()
         {
             var dic = new Dictionary<string, string>
@@ -1381,7 +1381,7 @@ namespace Microsoft.Extensions
             Assert.Equal("the color is Green", options.Color);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        [Fact]
         public void CanBindReadonlyRecordStructOptions()
         {
             var dic = new Dictionary<string, string>

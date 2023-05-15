@@ -8,10 +8,10 @@ internal static class GeneratedConfigurationBinder
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Extensions.Configuration;
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
 
     internal static class Helpers

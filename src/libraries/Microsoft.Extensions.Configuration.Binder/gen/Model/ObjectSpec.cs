@@ -8,10 +8,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record ObjectSpec : TypeSpec
     {
-        public ObjectSpec(INamedTypeSymbol type) : base(type) { }
+        public ObjectSpec(INamedTypeSymbol type) : base(type)
+        {
+            InstantiateMethodName = $"Initialize{MinimalDisplayString.Replace(".", string.Empty).Replace("<", string.Empty).Replace(">", string.Empty)}";
+        }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Object;
-
-        public Dictionary<string, PropertySpec?> Properties { get; } = new();
+        public List<ParameterSpec> ConstructorParameters { get; } = new();
+        public Dictionary<string, PropertySpec?> PropertiesBindableAfterInit { get; } = new();
+        public List<PropertySpec> InitOnlyProperties { get; } = new();
+        public string InstantiateMethodName { get; }
     }
 }

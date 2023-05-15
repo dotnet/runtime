@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public abstract TypeSpecKind SpecKind { get; }
 
-        public virtual ConstructionStrategy ConstructionStrategy { get; init; }
+        public virtual ConstructionStrategy ConstructionStrategy { get; set; }
 
         /// <summary>
         /// Where in the input compilation we picked up a call to Bind, Get, or Configure.

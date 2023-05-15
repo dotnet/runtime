@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -9,7 +10,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> RootConfigTypes,
         BinderMethodSpecifier MethodsToGen,
         HashSet<ParsableFromStringSpec> PrimitivesForHelperGen,
-        HashSet<string> TypeNamespaces)
+        ImmutableSortedSet<string> TypeNamespaces)
     {
         public bool HasRootMethods() =>
             ShouldEmitMethods(BinderMethodSpecifier.Get | BinderMethodSpecifier.Bind | BinderMethodSpecifier.Configure | BinderMethodSpecifier.GetValue);
