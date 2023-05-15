@@ -6,17 +6,12 @@
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Crossgen2.linux-x64/*8.*" />
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Runtime.linux-x64/*8.*" />
     <UsagePattern IdentityGlob="*Microsoft.DotNet.ILCompiler/*8.*" />
-
-    <!-- Will be removed once the package is added to SBRP -->
-    <UsagePattern IdentityGlob="Microsoft.CodeAnalysis*/*4.5.0*" />
     
     <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
   </IgnorePatterns>
   <Usages>
     <!-- Should be removed as part of https://github.com/dotnet/runtime/issues/82298 -->
     <Usage Id="Microsoft.NETFramework.ReferenceAssemblies*" Version="1.0.3" />
-    <!-- Transitive dependency of Microsoft.CodeAnalysis 4.5.0, will be removed by SBRP -->
-    <Usage Id="System.Threading.Channels" Version="6.0.0" />
 
     <!-- Temporary exclusion while an issue with SharedFrameworks is investigated -->
     <Usage Id="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.23259.5" />
