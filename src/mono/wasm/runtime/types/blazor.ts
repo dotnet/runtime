@@ -22,6 +22,7 @@ export interface BootJsonData {
 export type BootJsonDataExtension = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
+    readonly hash?: string;
     readonly assembly: ResourceList;
     readonly lazyAssembly: ResourceList;
     readonly pdb?: ResourceList;
@@ -30,6 +31,7 @@ export interface ResourceGroups {
     readonly libraryInitializers?: ResourceList,
     readonly extensions?: BootJsonDataExtension
     readonly runtimeAssets: ExtendedResourceList;
+    readonly vfs?: { [virtualPath: string]: ResourceList };
 }
 
 export type ResourceList = { [name: string]: string };

@@ -85,6 +85,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
     moduleConfig.applicationEnvironment = applicationEnvironment;
 
+    moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
     moduleConfig.globalizationMode = "icu";
     moduleConfig.environmentVariables = environmentVariables;
@@ -160,6 +161,17 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             behavior,
         };
         assets.push(asset);
+    }
+
+    for (const virtualPath in resources.vfs) {
+        for (const name in resources.vfs[virtualPath]) {
+            const asset: AssetEntry = {
+                name,
+                hash: resources.vfs[virtualPath][name],
+                behavior: "vfs",
+            };
+            assets.push(asset);
+        }
     }
 
     if (!hasIcuData) {
