@@ -6600,5 +6600,29 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw null; }
         public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw null; }
         public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw null; }
+        public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) { throw null; }
+        public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) { throw null; }
+        public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) { throw null; }
+        public static Vector128<uint>   SignExtendWideningLower(Vector128<ushort> value) { throw null; }
+        public static Vector128<long>   SignExtendWideningLower(Vector128<int>    value) { throw null; }
+        public static Vector128<ulong>  SignExtendWideningLower(Vector128<uint>   value) { throw null; }
+        public static Vector128<short>  SignExtendWideningUpper(Vector128<sbyte>  value) { throw null; }
+        public static Vector128<ushort> SignExtendWideningUpper(Vector128<byte>   value) { throw null; }
+        public static Vector128<int>    SignExtendWideningUpper(Vector128<short>  value) { throw null; }
+        public static Vector128<uint>   SignExtendWideningUpper(Vector128<ushort> value) { throw null; }
+        public static Vector128<long>   SignExtendWideningUpper(Vector128<int>    value) { throw null; }
+        public static Vector128<ulong>  SignExtendWideningUpper(Vector128<uint>   value) { throw null; }
+        public static Vector128<short>  ZeroExtendWideningLower(Vector128<sbyte>  value) { throw null; }
+        public static Vector128<ushort> ZeroExtendWideningLower(Vector128<byte>   value) { throw null; }
+        public static Vector128<int>    ZeroExtendWideningLower(Vector128<short>  value) { throw null; }
+        public static Vector128<uint>   ZeroExtendWideningLower(Vector128<ushort> value) { throw null; }
+        public static Vector128<long>   ZeroExtendWideningLower(Vector128<int>    value) { throw null; }
+        public static Vector128<ulong>  ZeroExtendWideningLower(Vector128<uint>   value) { throw null; }
+        public static Vector128<short>  ZeroExtendWideningUpper(Vector128<sbyte>  value) { throw null; }
+        public static Vector128<ushort> ZeroExtendWideningUpper(Vector128<byte>   value) { throw null; }
+        public static Vector128<int>    ZeroExtendWideningUpper(Vector128<short>  value) { throw null; }
+        public static Vector128<uint>   ZeroExtendWideningUpper(Vector128<ushort> value) { throw null; }
+        public static Vector128<long>   ZeroExtendWideningUpper(Vector128<int>    value) { throw null; }
+        public static Vector128<ulong>  ZeroExtendWideningUpper(Vector128<uint>   value) { throw null; }
     }
 }

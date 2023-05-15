@@ -5114,6 +5114,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
 	{SN_ShiftRightLogical, OP_SIMD_USHR},
 	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
+	{SN_SignExtendWideningLower, OP_WASM_SIMD_SEXT_LOWER},
+	{SN_SignExtendWideningUpper, OP_WASM_SIMD_SEXT_UPPER},
 	{SN_Splat},
 	{SN_Sqrt},
 	{SN_Subtract},
@@ -5121,6 +5123,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
 	{SN_Truncate, OP_XOP_OVR_X_X, INTRINS_SIMD_TRUNC},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
+	{SN_ZeroExtendWideningLower, OP_WASM_SIMD_ZEXT_LOWER},
+	{SN_ZeroExtendWideningUpper, OP_WASM_SIMD_ZEXT_UPPER},
 	{SN_get_IsSupported},
 };
 
