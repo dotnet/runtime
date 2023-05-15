@@ -19,10 +19,10 @@ static partial class CoreCLRHostNative
     }
 
     [UnmanagedCallersOnly]
-    static unsafe int InitCallback(IntPtr ptr, int size)
-        => CoreCLRHost.InitMethod((HostStruct*)ptr, size);
+    static unsafe int InitCallback(IntPtr ptr, int size, IntPtr hostStructNativePtr, int hostStructNativeSize)
+        => CoreCLRHost.InitMethod((HostStruct*)ptr, size, (HostStructNative*)hostStructNativePtr, hostStructNativeSize);
 
     [DllImport("coreclr", EntryPoint = nameof(mono_unity_initialize_host_apis), CharSet = CharSet.Unicode, ExactSpelling = true,
         CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern void mono_unity_initialize_host_apis(delegate* unmanaged<nint, int, int> callback);
+    public unsafe static extern void mono_unity_initialize_host_apis(delegate* unmanaged<nint, int, nint, int, int> callback);
 }

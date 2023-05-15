@@ -24,7 +24,21 @@
 // we only need domain reload for Editor
 // #define UNITY_SUPPORT_DOMAIN_UNLOAD 1
 
-static vprintf_func our_vprintf = vprintf;
+// Match the behavior of Unity.  We need to flush immediately because this is used to log stack traces
+// on the managed side of the embedding api before we call Environment.Exit.  If we were to let the msg be buffered we may not
+// always see the stack trace before the application exits.
+#ifdef WIN32
+int __cdecl print_and_flush(const char* msg, va_list args)
+#else
+int print_and_flush(const char* msg, va_list args)
+#endif
+{
+    auto result = vprintf(msg, args);
+    fflush(stdout);
+    return result;
+}
+
+static vprintf_func our_vprintf = print_and_flush;
 
 void unity_log(const char *format, ...)
 {
@@ -92,6 +106,12 @@ struct HostStruct
     MonoObject* (*value_box)(MonoDomain* domain, MonoClass* klass, gpointer val);
 };
 HostStruct* g_HostStruct;
+
+struct HostStructNative
+{
+    void (*unity_log)(const char *format);
+};
+HostStructNative* g_HostStructNative;
 
 //MonoImage *gCoreCLRHelperAssembly;
 //MonoClass* gALCWrapperClass;
@@ -1623,7 +1643,8 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init(const char *file)
     return mono_jit_init_version(file, "4.0");
 }
 
-typedef int32_t (*initialize_func)(HostStruct* s, int32_t size);
+typedef int32_t (*initialize_func)(HostStruct* s, int32_t size, HostStructNative* n, int32_t sizeNative);
+typedef void (*unity_log_func)(const char* format);
 
 void list_tpa(const SString& searchPath, SString& tpa)
 {
@@ -1651,7 +1672,12 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_initialize_host_apis(initialize_
     g_HostStruct = (HostStruct*)malloc(sizeof(HostStruct));
     memset(g_HostStruct, 0, sizeof(HostStruct));
 
-    hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct));
+    g_HostStructNative = (HostStructNative*)malloc(sizeof(HostStructNative));
+    memset(g_HostStructNative, 0, sizeof(HostStructNative));
+
+    g_HostStructNative->unity_log = (unity_log_func)&unity_log;
+
+    hr = init_func(g_HostStruct, (int32_t)sizeof(HostStruct), g_HostStructNative, (int32_t)sizeof(HostStructNative));
 
     AppDomain *pCurDomain = SystemDomain::GetCurrentDomain();
     gRootDomain = gCurrentDomain = (MonoDomain*)pCurDomain;

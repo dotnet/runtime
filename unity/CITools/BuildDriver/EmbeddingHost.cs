@@ -53,19 +53,68 @@ public class EmbeddingHost
 
     static void TestManagedUsingOurRuntime(GlobalConfig gConfig)
     {
+        DotNetManagedSolution(gConfig, test: false,
+            additionalArgs: new[] { "-p:TestingUnityCoreClr=true" });
+
+        RunManagedTests(gConfig,
+            nunitWhereStatement: "cat != ExcludeFromNormalTestRun");
+
+        RunExceptionsCauseAbortTest(gConfig);
+    }
+
+    /// <summary>
+    /// Verifying that an exception will cause an abort and that the exception message makes it to stdout is more complicated than simply running nunit
+    /// </summary>
+    /// <param name="gConfig"></param>
+    static void RunExceptionsCauseAbortTest(GlobalConfig gConfig)
+    {
+        var result = RunManagedTests(gConfig,
+            nunitWhereStatement: "test == UnityEmbedHost.Tests.NativeEmbeddingApiTests.ExceptionDoesNotCauseACrash",
+            captureOutput: true);
+
+        const int expectedExitCode = 1;
+        // First check that we get the exit code that we expect
+        if (result.ExitCode != expectedExitCode)
+        {
+            Console.WriteLine(result.Stdout);
+            Console.WriteLine(result.StdErr);
+
+            throw new Exception($"Expected exit code {expectedExitCode} but got {result.ExitCode}");
+        }
+
+        // Now check that the exception message made it into stdout
+        const string expectedExceptionMessage = "System.ArgumentException: Type handle 'UnityEmbedHost.Tests.Mammal' and field handle with declaring type 'UnityEmbedHost.Tests.Cat' are incompatible. Get RuntimeFieldHandle and declaring RuntimeTypeHandle off the same FieldInfo.";
+        const string partOfExpectedCallStack = "at Unity.CoreCLRHelpers.CoreCLRHost.field_get_object_native(IntPtr domain, IntPtr klass, IntPtr field) in";
+
+        if (!result.Stdout.Contains(expectedExceptionMessage))
+        {
+            Console.WriteLine(result.Stdout);
+            Console.WriteLine(result.StdErr);
+
+            throw new Exception("Expected exception message not found in stdout");
+        }
+
+        if (!result.Stdout.Contains(partOfExpectedCallStack))
+        {
+            Console.WriteLine(result.Stdout);
+            Console.WriteLine(result.StdErr);
+
+            throw new Exception("Call stack not found in stdout");
+        }
+    }
+
+    private static (int ExitCode, string Stdout, string StdErr) RunManagedTests(GlobalConfig gConfig, string? nunitWhereStatement = null, bool captureOutput = false)
+    {
         // dotnet test will crash if we attempt to run it with the null gc.
         // We need to defer setting DOTNET_GCName until our test process.
         // Using a runsettings file let's us set env vars for the test process itself
         //
         // There are still issues getting our gc to initialize on macOS & Linux
         var useUnityGc = CanRunWithUnityGc();
-        var runSettingsFile = GenerateRunSettings(useUnityGc);
+        var runSettingsFile = GenerateRunSettings(useUnityGc, nunitWhereStatement);
 
         try
         {
-            DotNetManagedSolution(gConfig, test: false,
-                additionalArgs: new[] { "-p:TestingUnityCoreClr=true" });
-
             const string name = "UnityEmbedHost.Tests";
             var testAssemblyPath = Paths.UnityRoot.Combine(name, "bin", gConfig.Configuration).Directories().Single()
                 .Combine($"{name}.dll");
@@ -110,7 +159,15 @@ public class EmbeddingHost
             if (psi.Environment.ContainsKey("DOTNET_ROOT_X64"))
                 psi.Environment.Remove("DOTNET_ROOT_X64");
 
-            Utils.RunProcess(psi, gConfig);
+            if (!captureOutput)
+            {
+                Utils.RunProcess(psi, gConfig);
+                return (0, string.Empty, string.Empty);
+            }
+            else
+            {
+                return Utils.RunProcessNoThrow(psi, gConfig, alwaysCaptureOutput: true);
+            }
         }
         finally
         {
@@ -146,11 +203,17 @@ public class EmbeddingHost
         return false;
     }
 
-    static NPath GenerateRunSettings(bool useUnityGc)
+    static NPath GenerateRunSettings(bool useUnityGc, string? nunitWhereStatement = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
         sb.AppendLine("<RunSettings>");
+        if (nunitWhereStatement != null)
+        {
+            sb.AppendLine("    <NUnit>");
+            sb.AppendLine($"        <Where>{nunitWhereStatement}</Where>");
+            sb.AppendLine("    </NUnit>");
+        }
         sb.AppendLine("    <RunConfiguration>");
         sb.AppendLine("        <EnvironmentVariables>");
         if (useUnityGc)
