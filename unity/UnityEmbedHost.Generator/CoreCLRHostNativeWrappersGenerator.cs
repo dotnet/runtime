@@ -5,12 +5,13 @@ using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
+using Unity.CoreCLRHelpers;
 
 namespace UnityEmbedHost.Generator;
 
 public class CoreCLRHostNativeWrappersGenerator
 {
-    private const string NoManagedWrapperAttributeName = "NoManagedWrapperAttribute";
+    public const string ManagedWrapperOptionsAttributeName = "ManagedWrapperOptionsAttribute";
 
     public static void Run(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
     {
@@ -97,11 +98,11 @@ namespace Unity.CoreCLRHelpers;
     }
 
     static IEnumerable<IMethodSymbol> MethodsToGenerateWrappersFor(IMethodSymbol[] callbackMethods)
-        => callbackMethods.Where(m => !m.HasAttribute(NoManagedWrapperAttributeName));
+        => callbackMethods.Where(m => m.ManagedWrapperOptions() != ManagedWrapperOptions.Exclude);
 
     static string FormatMethodParametersForManagedWrapperMethodSignature(IMethodSymbol methodSymbol) =>
         methodSymbol.Parameters
-            .Where(p => !p.HasAttribute(NoManagedWrapperAttributeName))
+            .Where(p =>  p.ManagedWrapperOptions() != ManagedWrapperOptions.Exclude)
             .Select(p => $"{ManagedWrapperType(p)} {p.Name}")
             .AggregateWithCommaSpace();
 
@@ -110,6 +111,12 @@ namespace Unity.CoreCLRHelpers;
 
     static string ManagedWrapperType(ITypeSymbol typeSymbol, ImmutableArray<AttributeData> providerAttributes)
     {
+        if (providerAttributes.ManagedWrapperOptions() == ManagedWrapperOptions.AsIs)
+            return typeSymbol.ToString();
+
+        if (providerAttributes.ManagedWrapperOptions() == ManagedWrapperOptions.Custom)
+            return providerAttributes.ManagedWrapperOptionsValue<string>(1)!;
+
         switch (typeSymbol.NativeWrapperTypeFor(providerAttributes))
         {
             case "MonoClass*":
@@ -139,13 +146,17 @@ namespace Unity.CoreCLRHelpers;
 
     static string FormatToNativeRepresentation(IParameterSymbol parameterSymbol)
     {
-        if (parameterSymbol.HasAttribute(NoManagedWrapperAttributeName))
+        var managedWrapperOptions = parameterSymbol.ManagedWrapperOptions();
+        if (managedWrapperOptions == ManagedWrapperOptions.Exclude)
         {
             if (parameterSymbol.Type.Name == "IntPtr")
                 return "nint.Zero";
 
             return "null";
         }
+
+        if (managedWrapperOptions == ManagedWrapperOptions.AsIs)
+            return parameterSymbol.Name;
 
         switch (parameterSymbol.NativeWrapperTypeFor())
         {
@@ -166,6 +177,9 @@ namespace Unity.CoreCLRHelpers;
 
     static string FormatToManagedRepresentation(IMethodSymbol methodSymbol)
     {
+        if (methodSymbol.ManagedWrapperOptionsForReturnType() == ManagedWrapperOptions.AsIs)
+            return string.Empty;
+
         switch (methodSymbol.NativeWrapperTypeForReturnType())
         {
             case "MonoObject*":

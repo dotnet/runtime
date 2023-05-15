@@ -18,8 +18,8 @@ static class Utils
     public static bool TryReturnTypeFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value)
         => methodSymbol.GetReturnTypeAttributes().TryFirstAttributeValue(attributeName, out value);
 
-    public static bool TryFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value, int ctorParameterIndex = 0)
-        => methodSymbol.GetAttributes().TryFirstAttributeValue<T>(attributeName, out value, ctorParameterIndex: ctorParameterIndex);
+    public static bool TryFirstAttributeValue<T>(this ISymbol symbol, string attributeName, out T? value, int ctorParameterIndex = 0)
+        => symbol.GetAttributes().TryFirstAttributeValue<T>(attributeName, out value, ctorParameterIndex: ctorParameterIndex);
 
     public static bool TryFirstAttributeValue<T>(this ImmutableArray<AttributeData> attributes, string attributeName, out T? value, int ctorParameterIndex = 0)
     {
