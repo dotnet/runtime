@@ -2419,14 +2419,12 @@ set_metadata_flag (LLVMValueRef v, const char *flag_name)
 static void
 set_nonnull_load_flag (LLVMValueRef v)
 {
-	LLVMValueRef md_arg;
 	int md_kind;
 	const char *flag_name;
 
 	flag_name = "nonnull";
 	md_kind = LLVMGetMDKindID (flag_name, (unsigned int)strlen (flag_name));
-	md_arg = md_string ("<index>");
-	LLVMSetMetadata (v, md_kind, LLVMMDNode (&md_arg, 1));
+	LLVMSetMetadata (v, md_kind, LLVMMDNode (NULL, 0));
 }
 
 static void
@@ -5207,6 +5205,14 @@ static LLVMValueRef
 extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
 {
 	return extract_half_elements (ctx, src_vec, FALSE);
+}
+
+static G_GNUC_UNUSED LLVMTypeRef extended_type (LLVMTypeRef src_t)
+{
+	int nelems = LLVMGetVectorSize (src_t) / 2;
+	unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
+	LLVMTypeRef int_t = LLVMIntType (width * 2);
+	return LLVMVectorType (int_t, nelems);
 }
 
 static LLVMValueRef
@@ -9944,6 +9950,33 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_WASM)
+		case OP_WASM_SIMD_SEXT_LOWER:
+		case OP_WASM_SIMD_SEXT_UPPER:
+		case OP_WASM_SIMD_ZEXT_LOWER:
+		case OP_WASM_SIMD_ZEXT_UPPER: {
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
+			gboolean upper = (ins->opcode == OP_WASM_SIMD_SEXT_UPPER || ins->opcode == OP_WASM_SIMD_ZEXT_UPPER);
+			gboolean sext = (ins->opcode == OP_WASM_SIMD_SEXT_LOWER || ins->opcode == OP_WASM_SIMD_SEXT_UPPER);
+			LLVMValueRef ext = upper ? extract_high_elements (ctx, lhs) : extract_low_elements (ctx, lhs);
+			values [ins->dreg] = sext ? LLVMBuildSExt (builder, ext, ret_t, "") : LLVMBuildZExt (builder, ext, ret_t, "");
+			break;
+		}
+		case OP_WASM_SIMD_CONV_R8_TO_R4: {
+			LLVMValueRef val = LLVMBuildFPTrunc (builder, lhs, v64_r4_t, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_r4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
+		case OP_WASM_SIMD_CONV_U4_TO_R8_LOW: {
+			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, lhs, LLVMConstNull (LLVMTypeOf (lhs)), create_const_vector_2_i32 (0, 1), "");
+			values [ins->dreg] = LLVMBuildUIToFP (builder, shuffle, LLVMVectorType (LLVMDoubleType (), 2), dname);
+			break;
+		}
+		case OP_WASM_SIMD_CONV_R8_TO_I4_ZERO: {
+			LLVMValueRef args [] = { lhs };
+			LLVMValueRef val = call_intrins (ctx, ins->inst_c0, args, "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_i4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
+			break;
+		}
 		case OP_WASM_SIMD_BITMASK: {
 			LLVMValueRef args [] = { lhs };
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
@@ -10054,11 +10087,7 @@ MONO_RESTORE_WARNING
 		case OP_WASM_EXTMUL_UPPER_U:
 		case OP_WASM_EXTMUL_LOWER:
 		case OP_WASM_EXTMUL_UPPER: {
-			LLVMTypeRef src_t = LLVMTypeOf (lhs);
-			int nelems = LLVMGetVectorSize (src_t) / 2;
-			unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
-			LLVMTypeRef int_t = LLVMIntType (width * 2);
-			LLVMTypeRef ret_t = LLVMVectorType (int_t, nelems);
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
 			int lower = ins->opcode == OP_WASM_EXTMUL_LOWER || ins->opcode == OP_WASM_EXTMUL_LOWER_U;
 			gboolean is_unsigned = ins->opcode == OP_WASM_EXTMUL_LOWER_U || ins->opcode == OP_WASM_EXTMUL_UPPER_U;
 			LLVMValueRef part1 = lower ? extract_low_elements (ctx, lhs) : extract_high_elements(ctx, lhs);
@@ -11563,16 +11592,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-#endif
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		case OP_ONES_COMPLEMENT: {
-			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
-			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
-			result = LLVMBuildNot (builder, result, "");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_CVT_UI_FP:
 		case OP_CVT_SI_FP:
 		case OP_CVT_UI_FP_SCALAR:
@@ -11622,6 +11641,16 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildFPToSI (builder, result, cvt_t, "fp2si");
 			if (scalar)
 				result = vector_from_scalar (ctx, ret_t, result);
+			values [ins->dreg] = result;
+			break;
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		case OP_ONES_COMPLEMENT: {
+			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
+			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
+			result = LLVMBuildNot (builder, result, "");
+			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
 		}
@@ -11753,7 +11782,8 @@ MONO_RESTORE_WARNING
 		case OP_TAILCALL:
 		case OP_TAILCALL_REG:
 		case OP_TAILCALL_MEMBASE:
-		case OP_CKFINITE: {
+		case OP_CKFINITE:
+		case OP_LOAD_GOTADDR: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));

@@ -10106,6 +10106,9 @@ append_mangled_wrapper_subtype (GString *s, WrapperSubtype subtype)
 	case WRAPPER_SUBTYPE_LLVM_FUNC:
 		label = "llvm_func";
 		break;
+	case WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT:
+		label = "native_func_indirect";
+		break;
 	default:
 		g_assert_not_reached ();
 	}
@@ -10269,6 +10272,9 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 			append_sig = FALSE;
 		} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 			success = success && append_mangled_method (s, info->d.managed_to_native.method);
+		} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+			append_mangled_signature (s, info->d.native_func.sig);
+			append_sig = FALSE;
 		} else {
 			g_assert (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_PINVOKE);
 			success = success && append_mangled_method (s, info->d.managed_to_native.method);
@@ -11646,11 +11652,15 @@ emit_class_name_table (MonoAotCompile *acfg)
 	name_p = name_buf = (guint8 *)g_malloc0 (name_buf_size);
 #endif
 
+	guint table_len = table->len;
+	if (table_size > 65000 || table->len > 65000) {
+		table_size = 0;
+		table_len = 0;
+	}
+
 	/* FIXME: Optimize memory usage */
-	g_assert (table_size < 65000);
 	encode_int16 (GINT_TO_UINT16 (table_size), p, &p);
-	g_assert (table->len < 65000);
-	for (guint i = 0; i < table->len; ++i) {
+	for (guint i = 0; i < table_len; ++i) {
 		entry = (ClassNameTableEntry *)g_ptr_array_index (table, i);
 		if (entry == NULL) {
 			encode_int16 (0, p, &p);

@@ -19,15 +19,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "corexcep.h"
 
-#define Verify(cond, msg)                                                                                              \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(cond))                                                                                                   \
-        {                                                                                                              \
-            verRaiseVerifyExceptionIfNeeded(INDEBUG(msg) DEBUGARG(__FILE__) DEBUGARG(__LINE__));                       \
-        }                                                                                                              \
-    } while (0)
-
 /*****************************************************************************/
 
 void Compiler::impInit()
@@ -79,54 +70,6 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
 void Compiler::impPushNullObjRefOnStack()
 {
     impPushOnStack(gtNewIconNode(0, TYP_REF), typeInfo(TI_NULL));
-}
-
-// This method gets called when we run into unverifiable code
-// (and we are verifying the method)
-
-void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) DEBUGARG(const char* file)
-                                                   DEBUGARG(unsigned line))
-{
-#ifdef DEBUG
-    const char* tail = strrchr(file, DIRECTORY_SEPARATOR_CHAR_A);
-    if (tail)
-    {
-        file = tail + 1;
-    }
-
-    if (JitConfig.JitBreakOnUnsafeCode())
-    {
-        assert(!"Unsafe code detected");
-    }
-#endif
-
-    JITLOG((LL_INFO10000, "Detected unsafe code: %s:%d : %s, while compiling %s opcode %s, IL offset %x\n", file, line,
-            msg, info.compFullName, impCurOpcName, impCurOpcOffs));
-
-    if (compIsForImportOnly())
-    {
-        JITLOG((LL_ERROR, "Verification failure:  %s:%d : %s, while compiling %s opcode %s, IL offset %x\n", file, line,
-                msg, info.compFullName, impCurOpcName, impCurOpcOffs));
-        verRaiseVerifyException(INDEBUG(msg) DEBUGARG(file) DEBUGARG(line));
-    }
-}
-
-void DECLSPEC_NORETURN Compiler::verRaiseVerifyException(INDEBUG(const char* msg) DEBUGARG(const char* file)
-                                                             DEBUGARG(unsigned line))
-{
-    JITLOG((LL_ERROR, "Verification failure:  %s:%d : %s, while compiling %s opcode %s, IL offset %x\n", file, line,
-            msg, info.compFullName, impCurOpcName, impCurOpcOffs));
-
-#ifdef DEBUG
-    //    BreakIfDebuggerPresent();
-    if (getBreakOnBadCode())
-    {
-        assert(!"Typechecking error");
-    }
-#endif
-
-    RaiseException(SEH_VERIFICATION_EXCEPTION, EXCEPTION_NONCONTINUABLE, 0, nullptr);
-    UNREACHABLE();
 }
 
 // helper function that will tell us if the IL instruction at the addr passed
@@ -4037,7 +3980,15 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-            typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField);
+            if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+            {
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
+            }
+            else
+            {
+                assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
+            }
 
             FALLTHROUGH;
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
@@ -4229,16 +4180,7 @@ void Compiler::impHandleAccessAllowedInternal(CorInfoIsAccessAllowedResult resul
         case CORINFO_ACCESS_ALLOWED:
             break;
         case CORINFO_ACCESS_ILLEGAL:
-            // if we're verifying, then we need to reject the illegal access to ensure that we don't think the
-            // method is verifiable.  Otherwise, delay the exception to runtime.
-            if (compIsForImportOnly())
-            {
-                info.compCompHnd->ThrowExceptionForHelper(helperCall);
-            }
-            else
-            {
-                impInsertHelperCall(helperCall);
-            }
+            impInsertHelperCall(helperCall);
             break;
     }
 }
@@ -6818,7 +6760,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 lclNum = getU1LittleEndian(codeAddr);
             LDARGA:
                 JITDUMP(" %u", lclNum);
-                Verify(lclNum < info.compILargsCount, "bad arg num");
+
+                if (lclNum >= info.compILargsCount)
+                {
+                    BADCODE("Bad IL");
+                }
 
                 if (compIsForInlining())
                 {
@@ -6938,8 +6884,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = gtNewOperNode(GT_RETFILT, op1->TypeGet(), op1);
                 if (verCurrentState.esStackDepth != 0)
                 {
-                    verRaiseVerifyException(INDEBUG("stack must be 1 on end of filter") DEBUGARG(__FILE__)
-                                                DEBUGARG(__LINE__));
+                    BADCODE("stack must be 1 on end of filter");
                 }
                 goto APPEND;
 
@@ -7492,7 +7437,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_BR_S:
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if ((jmpDist == 0) && opts.CanBeInstrumentedOrIsOptimized())
+                if ((jmpDist == 0) && opts.DoEarlyBlockMerging())
                 {
                     break; /* NOP */
                 }
@@ -7577,7 +7522,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Try to fold the really simple cases like 'iconst *, ifne/ifeq'*/
                 /* Don't make any blocks unreachable in import only mode */
 
-                if ((op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
+                if (op1->gtOper == GT_CNS_INT)
                 {
                     /* gtFoldExpr() should prevent this as we don't want to make any blocks
                        unreachable under compDbgCode */
@@ -7832,7 +7777,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
                 // Fold Switch for GT_CNS_INT
-                if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT) && !compIsForImportOnly())
+                if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
                 {
                     // Find the jump target
                     size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
@@ -8440,7 +8385,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Alignment unaligned. must be 1, 2, or 4");
                 }
 
-                Verify(!(prefixFlags & PREFIX_UNALIGNED), "Multiple unaligned. prefixes");
                 prefixFlags |= PREFIX_UNALIGNED;
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
@@ -8453,7 +8397,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_VOLATILE:
 
-                Verify(!(prefixFlags & PREFIX_VOLATILE), "Multiple volatile. prefixes");
                 prefixFlags |= PREFIX_VOLATILE;
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, true);
@@ -8585,7 +8528,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 codeAddr += sizeof(unsigned); // prefix instructions must increment codeAddr manually
                 JITDUMP(" (%08X) ", constrainedResolvedToken.token);
 
-                Verify(!(prefixFlags & PREFIX_CONSTRAINED), "Multiple constrained. prefixes");
                 prefixFlags |= PREFIX_CONSTRAINED;
 
                 {
@@ -8601,7 +8543,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_READONLY:
                 JITDUMP(" readonly.");
 
-                Verify(!(prefixFlags & PREFIX_READONLY), "Multiple readonly. prefixes");
                 prefixFlags |= PREFIX_READONLY;
 
                 {
@@ -8618,7 +8559,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_TAILCALL:
                 JITDUMP(" tail.");
 
-                Verify(!(prefixFlags & PREFIX_TAILCALL_EXPLICIT), "Multiple tailcall. prefixes");
                 prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
 
                 {
@@ -10793,8 +10733,6 @@ void Compiler::impLoadVar(unsigned lclNum, IL_OFFSET offset)
 // It will be mapped to the correct lvaTable index
 void Compiler::impLoadArg(unsigned ilArgNum, IL_OFFSET offset)
 {
-    Verify(ilArgNum < info.compILargsCount, "bad arg num");
-
     if (compIsForInlining())
     {
         if (ilArgNum >= info.compArgsCount)
@@ -11368,16 +11306,6 @@ void Compiler::impReimportMarkSuccessors(BasicBlock* block)
  *  from it).
  */
 
-LONG FilterVerificationExceptions(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    if (pExceptionPointers->ExceptionRecord->ExceptionCode == SEH_VERIFICATION_EXCEPTION)
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
 {
     assert(block->hasTryIndex());
@@ -11534,17 +11462,6 @@ void Compiler::impImportBlock(BasicBlock* block)
 
     /* Now walk the code and import the IL into GenTrees */
 
-    struct FilterVerificationExceptionsParam
-    {
-        Compiler*   pThis;
-        BasicBlock* block;
-    };
-    FilterVerificationExceptionsParam param;
-
-    param.pThis = this;
-    param.block = block;
-
-    PAL_TRY(FilterVerificationExceptionsParam*, pParam, &param)
     {
         /* @VERIFICATION : For now, the only state propagation from try
            to it's handler is "thisInit" state (stack is empty at start of try).
@@ -11572,26 +11489,21 @@ void Compiler::impImportBlock(BasicBlock* block)
 
         // merge the start state of the try begin
         //
-        if (pParam->block->bbFlags & BBF_TRY_BEG)
+        if (block->bbFlags & BBF_TRY_BEG)
         {
-            pParam->pThis->impVerifyEHBlock(pParam->block, true);
+            impVerifyEHBlock(block, true);
         }
 
-        pParam->pThis->impImportBlockCode(pParam->block);
+        impImportBlockCode(block);
 
         // As discussed above:
         // merge the post-state of each block that is part of this try region
         //
-        if (pParam->block->hasTryIndex())
+        if (block->hasTryIndex())
         {
-            pParam->pThis->impVerifyEHBlock(pParam->block, false);
+            impVerifyEHBlock(block, false);
         }
     }
-    PAL_EXCEPT_FILTER(FilterVerificationExceptions)
-    {
-        verHandleVerificationFailure(block DEBUGARG(false));
-    }
-    PAL_ENDTRY
 
     if (compDonotInline())
     {
@@ -12538,10 +12450,6 @@ void Compiler::impImport()
             impImportBlock(dsc->pdBB);
 
             if (compDonotInline())
-            {
-                return;
-            }
-            if (compIsForImportOnly())
             {
                 return;
             }

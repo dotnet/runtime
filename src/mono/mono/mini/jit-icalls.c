@@ -1597,6 +1597,11 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
+
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
@@ -1610,6 +1615,11 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 {
 	ERROR_DECL (error);
 	gpointer res;
+
+	if (mono_opt_experimental_gshared_mrgctx) {
+		g_assert_not_reached ();
+		return NULL;
+	}
 
 	res = mono_method_fill_runtime_generic_context (mrgctx, index, error);
 	if (!is_ok (error)) {

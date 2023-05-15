@@ -7,12 +7,7 @@ namespace System.Text.Json.Serialization
     /// Determines how <see cref="JsonSerializer"/> handles JSON properties that
     /// cannot be mapped to a specific .NET member when deserializing object types.
     /// </summary>
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-     enum JsonUnmappedMemberHandling
+    public enum JsonUnmappedMemberHandling
     {
         /// <summary>
         /// Silently skips any unmapped properties. This is the default behavior.

@@ -292,6 +292,7 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
+        public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {

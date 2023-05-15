@@ -212,10 +212,7 @@ namespace System.Xml
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual void WriteNmToken(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
             WriteString(XmlConvert.VerifyNMTOKEN(name, ExceptionType.ArgumentException));
         }
 
