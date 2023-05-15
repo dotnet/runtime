@@ -3335,6 +3335,10 @@ namespace System
                     }
                     while (!Unsafe.IsAddressGreaterThan(ref current, ref oneVectorAwayFromEnd));
 
+                    // If there are just a few elements remaining, then processing these elements by the scalar loop
+                    // is cheaper than doing bitmask + popcount on the full last vector. To avoid complicated type
+                    // based checks, other remainder-count based logic to determine the correct cut-off, for simplicity
+                    // a half-vector size is chosen (based on benchmarks).
                     uint remaining = (uint)Unsafe.ByteOffset(ref current, ref end) / (uint)Unsafe.SizeOf<T>();
                     if (remaining > Vector256<T>.Count / 2)
                     {
