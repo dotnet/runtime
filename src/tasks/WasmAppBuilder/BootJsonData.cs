@@ -7,6 +7,8 @@ using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<str
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
+#nullable disable
+
 /// <summary>
 /// Defines the structure of a Blazor boot JSON file
 /// </summary>
@@ -67,7 +69,7 @@ public class BootJsonData
     /// <summary>
     /// Gets or sets configuration extensions.
     /// </summary>
-    public Dictionary<string, Dictionary<string, object?>> extensions { get; set; }
+    public Dictionary<string, Dictionary<string, object>> extensions { get; set; }
 }
 
 public class ResourcesData
