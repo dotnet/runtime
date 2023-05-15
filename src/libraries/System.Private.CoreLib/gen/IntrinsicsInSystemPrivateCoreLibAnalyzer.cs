@@ -452,7 +452,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
             }
 
             bool methodNeedsProtectionWithIsSupported = false;
-#pragma warning disable RS1024
+#pragma warning disable RS1024 // The hashset is constructed with the correct comparer
             if (onLoadData.NamedTypesToBeProtected.Contains(symbol.ContainingSymbol))
             {
                 methodNeedsProtectionWithIsSupported = true;
