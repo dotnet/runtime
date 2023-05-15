@@ -119,11 +119,11 @@ namespace IntrinsicsInSystemPrivateCoreLib
         {
             public IntrinsicsAnalyzerOnLoadData(HashSet<INamedTypeSymbol> namedTypesToBeProtected,
                                                 INamedTypeSymbol? bypassReadyToRunAttribute,
-                                                INamedTypeSymbol? compExaclyDependsOn)
+                                                INamedTypeSymbol? compExactlyDependsOn)
             {
                 NamedTypesToBeProtected = namedTypesToBeProtected;
                 BypassReadyToRunAttribute = bypassReadyToRunAttribute;
-                CompExactlyDependsOn = compExaclyDependsOn;
+                CompExactlyDependsOn = compExactlyDependsOn;
             }
             public readonly HashSet<INamedTypeSymbol> NamedTypesToBeProtected;
             public readonly INamedTypeSymbol? BypassReadyToRunAttribute;
@@ -139,9 +139,9 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 HashSet<INamedTypeSymbol> namedTypesToBeProtected = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
                 INamespaceSymbol systemRuntimeIntrinsicsNamespace = GetNamespace(context.Compilation.Assembly, "System", "Runtime", "Intrinsics");
                 INamedTypeSymbol? bypassReadyToRunAttribute = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.BypassReadyToRunAttribute");
-                INamedTypeSymbol? compExaclyDependsOn = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.CompilerServices.CompExactlyDependsOnAttribute");
+                INamedTypeSymbol? compExactlyDependsOn = context.Compilation.Assembly.GetTypeByMetadataName("System.Runtime.CompilerServices.CompExactlyDependsOnAttribute");
 
-                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, compExaclyDependsOn);
+                IntrinsicsAnalyzerOnLoadData onLoadData = new IntrinsicsAnalyzerOnLoadData(namedTypesToBeProtected, bypassReadyToRunAttribute, compExactlyDependsOn);
 
                 // Find all types in the System.Runtime.Intrinsics namespace that have an IsSupported property that are NOT
                 // directly in the System.Runtime.Intrinsics namespace
@@ -370,14 +370,14 @@ namespace IntrinsicsInSystemPrivateCoreLib
             return Array.Empty<INamedTypeSymbol[]>();
         }
 
-        private static IEnumerable<INamedTypeSymbol> GetBypassForIntrinsicHelperUseList(ISymbol symbol, IntrinsicsAnalyzerOnLoadData onLoadData)
+        private static IEnumerable<INamedTypeSymbol> GetCompExactlyDependsOnUseList(ISymbol symbol, IntrinsicsAnalyzerOnLoadData onLoadData)
         {
-            var compExaclyDependsOn = onLoadData.CompExactlyDependsOn;
-            if (compExaclyDependsOn != null)
+            var compExactlyDependsOn = onLoadData.CompExactlyDependsOn;
+            if (compExactlyDependsOn != null)
             {
                 foreach (var attributeData in symbol.GetAttributes())
                 {
-                    if (attributeData.AttributeClass.Equals(compExaclyDependsOn, SymbolEqualityComparer.Default))
+                    if (attributeData.AttributeClass.Equals(compExactlyDependsOn, SymbolEqualityComparer.Default))
                     {
                         if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
                         {
@@ -400,7 +400,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 if (symbolOfInvokeTarget.ContainingSymbol.Equals(symbol, SymbolEqualityComparer.Default))
                     return true;
 
-                foreach (var helperForType in GetBypassForIntrinsicHelperUseList(symbolOfInvokeTarget, onLoadData))
+                foreach (var helperForType in GetCompExactlyDependsOnUseList(symbolOfInvokeTarget, onLoadData))
                 {
                     if (helperForType.Equals(symbol, SymbolEqualityComparer.Default))
                         return true;
@@ -477,7 +477,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
 
             if (!methodNeedsProtectionWithIsSupported)
             {
-                if (GetBypassForIntrinsicHelperUseList(symbol, onLoadData).Any())
+                if (GetCompExactlyDependsOnUseList(symbol, onLoadData).Any())
                     methodNeedsProtectionWithIsSupported = true;
             }
 
@@ -486,22 +486,22 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 return;
             }
 
-            var compExaclyDependsOn = onLoadData.CompExactlyDependsOn;
+            var compExactlyDependsOn = onLoadData.CompExactlyDependsOn;
 
-            ISymbol? symbolThatMightHaveIntrinsicsHelperAttribute = methodSymbol;
+            ISymbol? symbolThatMightHaveCompExactlyDependsOnAttribute = methodSymbol;
             IOperation operationSearch = operation;
             while (operationSearch != null)
             {
                 if (operationSearch.Kind == OperationKind.AnonymousFunction)
                 {
-                    symbolThatMightHaveIntrinsicsHelperAttribute = null;
+                    symbolThatMightHaveCompExactlyDependsOnAttribute = null;
                     break;
                 }
                 if (operationSearch.Kind == OperationKind.LocalFunction)
                 {
-                    // Assign symbolThatMightHaveIntrinsicsHelperAttribute to the symbol for the LocalFunction
+                    // Assign symbolThatMightHaveCompExactlyDependsOnAttribute to the symbol for the LocalFunction
                     ILocalFunctionOperation localFunctionOperation = (ILocalFunctionOperation)operationSearch;
-                    symbolThatMightHaveIntrinsicsHelperAttribute = localFunctionOperation.Symbol;
+                    symbolThatMightHaveCompExactlyDependsOnAttribute = localFunctionOperation.Symbol;
                     break;
                 }
 
@@ -514,11 +514,11 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 {
                     ISymbol? attributeExplicitlyAllowsRelatedSymbol = null;
                     ISymbol? attributeExplicitlyAllowsExactSymbol = null;
-                    if ((compExaclyDependsOn != null) && symbolThatMightHaveIntrinsicsHelperAttribute != null)
+                    if ((compExactlyDependsOn != null) && symbolThatMightHaveCompExactlyDependsOnAttribute != null)
                     {
-                        foreach (var attributeData in symbolThatMightHaveIntrinsicsHelperAttribute.GetAttributes())
+                        foreach (var attributeData in symbolThatMightHaveCompExactlyDependsOnAttribute.GetAttributes())
                         {
-                            if (attributeData.AttributeClass.Equals(compExaclyDependsOn, SymbolEqualityComparer.Default))
+                            if (attributeData.AttributeClass.Equals(compExactlyDependsOn, SymbolEqualityComparer.Default))
                             {
                                 if (attributeData.ConstructorArguments[0].Value is INamedTypeSymbol attributeTypeSymbol)
                                 {
@@ -552,9 +552,9 @@ namespace IntrinsicsInSystemPrivateCoreLib
                 }
             }
 
-            if (symbolThatMightHaveIntrinsicsHelperAttribute != null)
+            if (symbolThatMightHaveCompExactlyDependsOnAttribute != null)
             {
-                foreach (var attributeTypeSymbol in GetBypassForIntrinsicHelperUseList(symbolThatMightHaveIntrinsicsHelperAttribute, onLoadData))
+                foreach (var attributeTypeSymbol in GetCompExactlyDependsOnUseList(symbolThatMightHaveCompExactlyDependsOnAttribute, onLoadData))
                 {
                     if (ConditionAllowsSymbol(symbol, attributeTypeSymbol, onLoadData))
                     {
