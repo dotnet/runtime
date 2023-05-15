@@ -70,7 +70,7 @@ constexpr CorDebugRegister g_JITToCorDbgReg[] =
     REGISTER_AMD64_R12,
     REGISTER_AMD64_R13,
     REGISTER_AMD64_R14,
-    REGISTER_AMD64_R15,
+    REGISTER_AMD64_R15
 };
 
 //
