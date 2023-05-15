@@ -5779,6 +5779,23 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 
             switch (intrinsicId)
             {
+                case NI_Vector128_ToScalar:
+                case NI_Vector256_ToScalar:
+                case NI_Vector512_ToScalar:
+                {
+                    // These intrinsics are "ins reg/mem, xmm" or "ins xmm, reg/mem"
+                    //
+                    // In the case we are coming from and going to memory, we want to
+                    // preserve the original containment as we'll end up emitting:
+                    //    movss xmm0, [addr1]           ; Size: 4, Latency: 4-7,  TP: 0.5
+                    //    movss [addr2], xmm0           ; Size: 4, Latency: 4-10, TP: 1
+
+                    assert(varTypeIsFloating(simdBaseType));
+                    isContainable = !hwintrinsic->Op(1)->isContained();
+
+                    break;
+                }
+
                 case NI_SSE2_ConvertToInt32:
                 case NI_SSE2_ConvertToUInt32:
                 case NI_SSE2_X64_ConvertToInt64:
@@ -5800,15 +5817,31 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     // However, we still want to do the efficient thing and write directly
                     // to memory in the case where the extract is immediately used by a store
 
-                    // TODO-XArch-CQ: We really should specially handle TYP_DOUBLE here but
-                    // it requires lowering GetElement(1) the GT_STOREIND to NI_SSE2_StoreHigh
-                    // while leaving GetElement(0) alone (it is already converted to ToScalar)
-
-                    if (simdBaseType == TYP_FLOAT)
+                    if (varTypeIsFloating(simdBaseType) && hwintrinsic->Op(2)->IsCnsIntOrI())
                     {
-                        // SSE41_Extract is "extractps reg/mem, xmm, imm8"
-                        isContainable = hwintrinsic->Op(2)->IsCnsIntOrI() &&
-                                        comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+                        assert(!hwintrinsic->Op(2)->IsIntegralConst(0));
+
+                        if (simdBaseType == TYP_FLOAT)
+                        {
+                            // SSE41_Extract is "extractps reg/mem, xmm, imm8"
+                            //
+                            // In the case we are coming from and going to memory, we want to
+                            // preserve the original containment as we'll end up emitting:
+                            //    movss xmm0, [addr1]           ; Size: 4, Latency: 4-7,  TP: 0.5
+                            //    movss [addr2], xmm0           ; Size: 4, Latency: 4-10, TP: 1
+                            //
+                            // The alternative would be emitting the slightly more expensive
+                            //    movups xmm0, [addr1]          ; Size: 4, Latency: 4-7,  TP: 0.5
+                            //    extractps [addr2], xmm0, cns  ; Size: 6, Latency: 5-10, TP: 1
+
+                            isContainable = comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) &&
+                                            !hwintrinsic->Op(1)->isContained();
+                        }
+                        else
+                        {
+                            // TODO-XArch-CQ: We really should specially handle TYP_DOUBLE here but
+                            // it requires handling GetElement(1) and GT_STOREIND as NI_SSE2_StoreHigh
+                        }
                     }
                     break;
                 }
@@ -5931,11 +5964,6 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
             if (isContainable && IsInvariantInRange(src, node))
             {
                 MakeSrcContained(node, src);
-
-                if (intrinsicId == NI_Vector128_GetElement)
-                {
-                    hwintrinsic->Op(1)->ClearContained();
-                }
             }
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -7508,9 +7536,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if ((simdSize == 8) || (simdSize == 12))
     {
-        // We want to handle GetElement still for Vector2/3
-        if ((intrinsicId != NI_Vector128_GetElement) && (intrinsicId != NI_Vector256_GetElement) &&
-            (intrinsicId != NI_Vector512_GetElement))
+        // We want to handle GetElement/ToScalar still for Vector2/3
+        if ((intrinsicId != NI_Vector128_GetElement) && (intrinsicId != NI_Vector128_ToScalar) &&
+            (intrinsicId != NI_Vector256_GetElement) && (intrinsicId != NI_Vector256_ToScalar) &&
+            (intrinsicId != NI_Vector512_GetElement) && (intrinsicId != NI_Vector512_ToScalar))
         {
             // TODO-XArch-CQ: Ideally we would key this off of the size the containing node
             // expects vs the size node actually is or would be if spilled to the stack
