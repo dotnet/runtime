@@ -914,11 +914,6 @@ namespace Internal.Runtime.Augments
             return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
         }
 
-        public static string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return typeHandle.LastResortToString;
-        }
-
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
             return RuntimeImports.RhHandleAlloc(value, type);

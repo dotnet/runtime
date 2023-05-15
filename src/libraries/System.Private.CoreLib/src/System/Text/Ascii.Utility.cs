@@ -1518,6 +1518,7 @@ namespace System.Text
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1550,7 +1551,7 @@ namespace System.Text
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
             Vector128<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer);
+            asciiVector.StoreLowerUnsafe(ref asciiBuffer, 0);
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
             // We're going to get the best performance when we have aligned writes, so we'll take the
@@ -1577,7 +1578,7 @@ namespace System.Text
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-                asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+                asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1630,7 +1631,7 @@ namespace System.Text
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+            asciiVector.StoreLowerUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
