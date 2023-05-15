@@ -6592,5 +6592,13 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> Truncate(Vector128<double> value) { throw null; }
         public static Vector128<float>  RoundToNearest(Vector128<float>  value) { throw null; }
         public static Vector128<double> RoundToNearest(Vector128<double> value) { throw null; }
+        public static Vector128<float> ConvertToSingle(Vector128<int>    value) { throw null; }
+        public static Vector128<float> ConvertToSingle(Vector128<uint>   value) { throw null; }
+        public static Vector128<float> ConvertToSingle(Vector128<double> value) { throw null; }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<int>   value) { throw null; }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) { throw null; }
+        public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw null; }
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw null; }
+        public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw null; }
     }
 }
