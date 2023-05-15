@@ -20,7 +20,7 @@
 
 #if defined(BUNDLED_RESOURCES)
 extern void mono_register_resources_bundle (void);
-%EXTERN_RUNTIMECONFIG_SYMBOLS%#endif
+%EXTERN_RUNTIMECONFIG_SYMBOLS%
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)

@@ -311,6 +311,8 @@ public class LibraryBuilderTask : AppBuilderTask
                 externRuntimeConfigSymbols.AppendLine($"extern const uint32_t {dataLenSymbol}[];");
             }
 
+            externRuntimeConfigSymbols.AppendLine("#endif");
+
             autoInitialization = autoInitialization
                 .Replace("%EXTERN_RUNTIMECONFIG_SYMBOLS%", externRuntimeConfigSymbols.ToString())
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
