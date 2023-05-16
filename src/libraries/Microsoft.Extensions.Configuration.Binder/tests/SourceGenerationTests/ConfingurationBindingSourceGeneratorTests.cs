@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -37,7 +39,7 @@ public class Program
         config.Bind(configObj, options => { })
         config.Bind(""key"", configObj);
 	}
-	
+
 	public class MyClass
 	{
 		public string MyString { get; set; }
@@ -75,7 +77,7 @@ public class Program
         configObj = config.Get<MyClass>(binderOptions => { });
         configObj = config.Get(typeof(MyClass2), binderOptions => { });
 	}
-	
+
 	public class MyClass
 	{
 		public string MyString { get; set; }
@@ -159,7 +161,7 @@ public class Program
 		ServiceCollection services = new();
         services.Configure<MyClass>(section);
 	}
-	
+
 	public class MyClass
 	{
 		public string MyString { get; set; }
@@ -249,19 +251,84 @@ public class Program
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
+        [Fact]
+        public async Task TestCollectionsGen()
+        {
+            string testSourceCode = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        IConfigurationSection section = config.GetSection(""MySection"");
+
+                        section.Get<MyClassWithCustomCollections>();
+                    }
+
+                    public class MyClassWithCustomCollections
+                    {
+                        public CustomDictionary<string, int> CustomDictionary { get; set; }
+                        public CustomList CustomList { get; set; }
+                        public ICustomDictionary<string> ICustomDictionary { get; set; }
+                        public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
+                        public IReadOnlyList<int> IReadOnlyList { get; set; }
+                        public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
+                        public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
+                    }
+
+                    public class CustomDictionary<TKey, TValue> : Dictionary<TKey, TValue>
+                    {
+                    }
+
+                    public class CustomList : List<string>
+                    {
+                    }
+
+                    public interface ICustomDictionary<T> : IDictionary<T, string>
+                    {
+                    }
+
+                    public interface ICustomSet<T> : ISet<T>
+                    {
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("TestCollectionsGen.generated.txt", testSourceCode, assessDiagnostics: (d) =>
+            {
+                Assert.Equal(6, d.Length);
+                Test(d.Where(diagnostic => diagnostic.Id is "SYSLIB1100"), "Did not generate binding logic for a type");
+                Test(d.Where(diagnostic => diagnostic.Id is "SYSLIB1101"), "Did not generate binding logic for a property on a type");
+
+                static void Test(IEnumerable<Diagnostic> d, string expectedTitle)
+                {
+                    Assert.Equal(3, d.Count());
+                    foreach (Diagnostic diagnostic in d)
+                    {
+                        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+                        Assert.Contains(expectedTitle, diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+                    }
+                }
+            });
+        }
+
         private async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
-            LanguageVersion languageVersion = LanguageVersion.Preview)
+            LanguageVersion languageVersion = LanguageVersion.Preview,
+            Action<ImmutableArray<Diagnostic>>? assessDiagnostics = null)
         {
             string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingSourceGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
-
-            Assert.Empty(d);
             Assert.Single(r);
+            (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
 
             Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);
