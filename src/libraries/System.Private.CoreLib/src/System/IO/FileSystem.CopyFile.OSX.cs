@@ -62,11 +62,9 @@ namespace System.IO
             }
 
             // Try deleting destination:
-            tryDelete:
             {
                 // Delete the destination. This should fail on directories. And update the mode.
                 // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
-                SafeFileHandle? dstHandle = null;
                 try
                 {
                     using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
