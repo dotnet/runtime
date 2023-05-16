@@ -9,7 +9,7 @@ namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
     [Guid(_guid)]
-    internal partial interface IDerivedComInterface : IGetAndSetInt
+    internal partial interface IDerived : IGetAndSetInt
     {
         void SetName([MarshalUsing(typeof(Utf16StringMarshaller))] string name);
 
