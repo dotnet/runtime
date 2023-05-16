@@ -237,7 +237,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             _text_encoder_utf8 = new TextEncoder();
         }
         event_queue.enqueue({
-            type: 0,// WebSocketMessageType.Text
+            type: 0, // WebSocketMessageType.Text
             // according to the spec https://encoding.spec.whatwg.org/
             // - Unpaired surrogates will get replaced with 0xFFFD
             // - utf8 encode specifically is defined to never throw
@@ -250,7 +250,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             throw new Error("ERR19: WebSocket receive expected ArrayBuffer");
         }
         event_queue.enqueue({
-            type: 1,// WebSocketMessageType.Binary
+            type: 1, // WebSocketMessageType.Binary
             data: new Uint8Array(event.data),
             offset: 0
         });
@@ -372,7 +372,7 @@ type ReceivePromiseControl = PromiseController<void> & {
 }
 
 type Message = {
-    type: number,// WebSocketMessageType
+    type: number, // WebSocketMessageType
     data: Uint8Array,
     offset: number
 }
