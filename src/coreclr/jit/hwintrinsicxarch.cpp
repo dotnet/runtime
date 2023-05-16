@@ -1678,34 +1678,48 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+            op2 = impStackTop(0).val;
+
             switch (simdBaseType)
             {
-                // Using software fallback if simdBaseType is not supported by hardware
                 case TYP_BYTE:
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    bool useToScalar = op2->IsIntegralConst(0);
+
+#if defined(TARGET_X86)
+                    useToScalar &= !varTypeIsLong(simdBaseType);
+#endif // TARGET_X86
+
+                    if (!useToScalar && !compExactlyDependsOn(InstructionSet_SSE41))
                     {
+                        // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
                     }
                     break;
+                }
 
                 case TYP_DOUBLE:
                 case TYP_FLOAT:
                 case TYP_SHORT:
                 case TYP_USHORT:
+                {
                     // short/ushort/float/double is supported by SSE2
                     break;
+                }
 
                 default:
+                {
                     unreached();
+                }
             }
 
-            GenTree* op2 = impPopStack().val;
-            GenTree* op1 = impSIMDPopStack();
+            impPopStack();
+            op1 = impSIMDPopStack();
 
             retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
             break;
@@ -2543,16 +2557,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
+            op1 = impSIMDPopStack();
+
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
             {
-                // TODO-XARCH-CQ: It may be beneficial to decompose this operation
+                // Create a GetElement node which handles decomposition
+                op2     = gtNewIconNode(0);
+                retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
                 break;
             }
 #endif // TARGET_X86
 
-            // TODO-XARCH-CQ: It may be beneficial to import this as GetElement(0)
-            op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
