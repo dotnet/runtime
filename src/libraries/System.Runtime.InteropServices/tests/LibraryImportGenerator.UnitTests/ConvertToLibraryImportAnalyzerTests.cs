@@ -154,6 +154,32 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
+        public async Task UnmanagedTypeInterfaceWithComImportType_NoDiagnostic(UnmanagedType unmanagedType)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+
+                [ComImport]
+                [Guid("8509bcd0-45bc-4b04-bb45-f3cac0b4cabd")]
+                interface IFoo
+                {
+                    void Bar();
+                }
+
+                unsafe partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static extern void Method_Parameter([MarshalAs(UnmanagedType.Interface)]IFoo p);
+
+                    [DllImport("DoesNotExist")]
+                    [return: MarshalAs(UnmanagedType.Interface, MarshalType = "DNE")]
+                    public static extern IFoo Method_Return();
+                }
+                """;
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
+        [Fact]
         public async Task LibraryImport_NoDiagnostic()
         {
             string source = """
