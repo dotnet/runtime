@@ -71,6 +71,20 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TestData.Int128ParserTheoryData), MemberType = typeof(TestData))]
+        public static void TestParserInt128(ParserTestData<Int128> testData)
+        {
+            ValidateParser(testData);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.UInt128ParserTheoryData), MemberType = typeof(TestData))]
+        public static void TestParserUInt128(ParserTestData<UInt128> testData)
+        {
+            ValidateParser(testData);
+        }
+
+        [Theory]
         [MemberData(nameof(TestData.DecimalParserTheoryData), MemberType = typeof(TestData))]
         public static void TestParserDecimal(ParserTestData<decimal> testData)
         {

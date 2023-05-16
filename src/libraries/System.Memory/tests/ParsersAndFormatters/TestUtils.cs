@@ -94,8 +94,14 @@ namespace System.Buffers.Text.Tests
             if (typeof(T) == typeof(long))
                 return long.MinValue;
 
+            if (typeof(T) == typeof(Int128))
+                return Int128.MinValue;
+
             if (typeof(T) == typeof(ulong))
                 return ulong.MinValue;
+
+            if (typeof(T) == typeof(UInt128))
+                return UInt128.MinValue;
 
             if (typeof(T) == typeof(decimal))
                 return new BigInteger(decimal.MinValue);
@@ -126,8 +132,14 @@ namespace System.Buffers.Text.Tests
             if (typeof(T) == typeof(long))
                 return long.MaxValue;
 
+            if (typeof(T) == typeof(Int128))
+                return Int128.MaxValue;
+
             if (typeof(T) == typeof(ulong))
                 return ulong.MaxValue;
+
+            if (typeof(T) == typeof(UInt128))
+                return UInt128.MaxValue;
 
             if (typeof(T) == typeof(decimal))
                 return new BigInteger(decimal.MaxValue);

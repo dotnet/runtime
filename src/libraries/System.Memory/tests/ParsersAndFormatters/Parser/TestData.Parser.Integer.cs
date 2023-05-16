@@ -181,6 +181,48 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        public static IEnumerable<ParserTestData<Int128>> Int128ParserTestData
+        {
+            get
+            {
+                foreach (ParserTestData<Int128> testData in Int128FormatterTestData.ToParserTheoryDataCollection())
+                {
+                    yield return testData;
+                }
+
+                foreach (ParserTestData<Int128> testData in GeneralIntegerParserTestData<Int128>())
+                {
+                    yield return testData;
+                }
+
+                // Code coverage
+                yield return new ParserTestData<Int128>("5$", 5, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 1 };
+                yield return new ParserTestData<Int128>("5$", 5, 'x', expectedSuccess: true) { ExpectedBytesConsumed = 1 };
+                yield return new ParserTestData<Int128>("5faaccbb11223344f", 0, 'x', expectedSuccess: false);
+            }
+        }
+
+        public static IEnumerable<ParserTestData<UInt128>> UInt128ParserTestData
+        {
+            get
+            {
+                foreach (ParserTestData<UInt128> testData in UInt128FormatterTestData.ToParserTheoryDataCollection())
+                {
+                    yield return testData;
+                }
+
+                foreach (ParserTestData<UInt128> testData in GeneralIntegerParserTestData<UInt128>())
+                {
+                    yield return testData;
+                }
+
+                // Code coverage
+                yield return new ParserTestData<UInt128>("5$", 5, 'D', expectedSuccess: true) { ExpectedBytesConsumed = 1 };
+                yield return new ParserTestData<UInt128>("5$", 5, 'x', expectedSuccess: true) { ExpectedBytesConsumed = 1 };
+                yield return new ParserTestData<UInt128>("5faaccbb11223344f", 0, 'x', expectedSuccess: false);
+            }
+        }
+
         private static IEnumerable<ParserTestData<T>> GeneralIntegerParserTestData<T>()
         {
             string[] GeneralIntegerNegativeInputs =

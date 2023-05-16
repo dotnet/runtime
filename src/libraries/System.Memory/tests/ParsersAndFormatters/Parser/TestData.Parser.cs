@@ -41,6 +41,8 @@ namespace System.Buffers.Text.Tests
         public static IEnumerable<object[]> UInt32ParserTheoryData => UInt32ParserTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> Int64ParserTheoryData => Int64ParserTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> UInt64ParserTheoryData => UInt64ParserTestData.Select(td => new object[] { td });
+        public static IEnumerable<object[]> Int128ParserTheoryData => Int128ParserTestData.Select(td => new object[] { td });
+        public static IEnumerable<object[]> UInt128ParserTheoryData => UInt128ParserTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DecimalParserTheoryData => DecimalParserTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DoubleParserTheoryData => DoubleParserTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> SingleParserTheoryData => SingleParserTestData.Select(td => new object[] { td });

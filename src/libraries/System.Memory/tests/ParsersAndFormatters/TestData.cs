@@ -215,6 +215,34 @@ namespace System.Buffers.Text.Tests
             }
         }
 
+        public static IEnumerable<Int128> Int128TestData
+        {
+            get
+            {
+                foreach (long l in Int64TestData)
+                {
+                    yield return l;
+                }
+
+                yield return Int128.MaxValue;
+                yield return Int128.MinValue;
+            }
+        }
+
+        public static IEnumerable<UInt128> UInt128TestData
+        {
+            get
+            {
+                foreach (ulong l in UInt64TestData)
+                {
+                    yield return l;
+                }
+
+                yield return UInt128.MaxValue;
+                yield return UInt128.MinValue;
+            }
+        }
+
         public static IEnumerable<decimal> DecimalTestData
         {
             get

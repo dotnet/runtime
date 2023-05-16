@@ -71,6 +71,20 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [MemberData(nameof(TestData.Int128FormatterTheoryData), MemberType = typeof(TestData))]
+        public static void TestFormatterInt128(FormatterTestData<Int128> testData)
+        {
+            ValidateFormatter(testData);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.UInt128FormatterTheoryData), MemberType = typeof(TestData))]
+        public static void TestFormatterUInt128(FormatterTestData<UInt128> testData)
+        {
+            ValidateFormatter(testData);
+        }
+
+        [Theory]
         [MemberData(nameof(TestData.DecimalFormatterTheoryData), MemberType = typeof(TestData))]
         public static void TestFormatterDecimal(FormatterTestData<decimal> testData)
         {

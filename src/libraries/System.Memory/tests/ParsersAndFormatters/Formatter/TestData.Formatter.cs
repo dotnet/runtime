@@ -41,6 +41,8 @@ namespace System.Buffers.Text.Tests
         public static IEnumerable<object[]> UInt32FormatterTheoryData => UInt32FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> Int64FormatterTheoryData => Int64FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> UInt64FormatterTheoryData => UInt64FormatterTestData.Select(td => new object[] { td });
+        public static IEnumerable<object[]> Int128FormatterTheoryData => Int128FormatterTestData.Select(td => new object[] { td });
+        public static IEnumerable<object[]> UInt128FormatterTheoryData => UInt128FormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DecimalFormatterTheoryData => DecimalFormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> DoubleFormatterTheoryData => DoubleFormatterTestData.Select(td => new object[] { td });
         public static IEnumerable<object[]> SingleFormatterTheoryData => SingleFormatterTestData.Select(td => new object[] { td });
@@ -58,6 +60,8 @@ namespace System.Buffers.Text.Tests
         public static IEnumerable<FormatterTestData<uint>> UInt32FormatterTestData => CreateFormatterTestData(UInt32TestData, IntegerFormats);
         public static IEnumerable<FormatterTestData<long>> Int64FormatterTestData => CreateFormatterTestData(Int64TestData, IntegerFormats);
         public static IEnumerable<FormatterTestData<ulong>> UInt64FormatterTestData => CreateFormatterTestData(UInt64TestData, IntegerFormats);
+        public static IEnumerable<FormatterTestData<Int128>> Int128FormatterTestData => CreateFormatterTestData(Int128TestData, IntegerFormats);
+        public static IEnumerable<FormatterTestData<UInt128>> UInt128FormatterTestData => CreateFormatterTestData(UInt128TestData, IntegerFormats);
         public static IEnumerable<FormatterTestData<decimal>> DecimalFormatterTestData => CreateFormatterTestData(DecimalTestData, DecimalFormats);
         public static IEnumerable<FormatterTestData<double>> DoubleFormatterTestData => CreateFormatterTestData(DoubleTestData, FloatingPointFormats);
         public static IEnumerable<FormatterTestData<float>> SingleFormatterTestData => CreateFormatterTestData(SingleTestData, FloatingPointFormats);
