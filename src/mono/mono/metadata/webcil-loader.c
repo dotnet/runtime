@@ -137,12 +137,16 @@ webcil_image_load_pe_data (MonoImage *image)
 		goto invalid_image;
 	/* HACK! RVAs and debug table entry pointers are from the beginning of the webcil payload. adjust MonoImage:raw_data to point to it */
 	g_assert (image->ref_count == 1);
-	g_assert (image->storage->ref.ref == 1);
+	// NOTE: image->storage->raw_data could be shared if we loaded this image multiple times (for different ALCs, for example)
+	// Do not adjust image->storage->raw_data.
+#ifdef ENABLE_WEBCIL
+	int32_t old_adjustment;
+	old_adjustment = mono_atomic_cas_i32 ((volatile gint32*)&image->storage->webcil_section_adjustment, webcil_section_adjustment, 0);
+	g_assert (old_adjustment == 0 || old_adjustment == webcil_section_adjustment);
+#endif
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Adjusting offset image %s [%p].", image->name, image);
-	image->storage->raw_data += webcil_section_adjustment;
-	image->storage->raw_data_len -= webcil_section_adjustment;
-	image->raw_data = image->storage->raw_data;
-	image->raw_data_len = image->storage->raw_data_len;
+	image->raw_data += webcil_section_adjustment;
+	image->raw_data_len -= webcil_section_adjustment;
 	offset -= webcil_section_adjustment;
 	// parts of ecma-335 loading depend on 4-byte alignment of the image
 	g_assertf (((intptr_t)image->raw_data) % 4 == 0, "webcil image %s [%p] raw data %p not 4 byte aligned\n", image->name, image, image->raw_data);
