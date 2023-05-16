@@ -63,9 +63,9 @@ namespace System.Diagnostics
         {
             _fileName = fileName;
 
-            foreach (string argument in arguments)
+            if(arguments != null)
             {
-                ArgumentList.Add(argument);
+                _argumentList = new Collection<string>(new List<string>(arguments));
             }
         }
 
