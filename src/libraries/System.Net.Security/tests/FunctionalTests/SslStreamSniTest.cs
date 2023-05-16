@@ -28,7 +28,8 @@ namespace System.Net.Security.Tests
 
             await WithVirtualConnection(async (server, client) =>
                 {
-                    Task clientJob = Task.Run(() => {
+                    Task clientJob = Task.Run(() =>
+                    {
                         client.AuthenticateAsClient(hostName);
                     });
 
@@ -80,7 +81,8 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     client.AuthenticateAsClient(hostName);
                     Assert.True(false, "RemoteCertificateValidationCallback called when AuthenticateAsServerAsync was expected to fail.");
                 });
@@ -128,7 +130,8 @@ namespace System.Net.Security.Tests
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     client.AuthenticateAsClient(hostName);
                 });
 
@@ -148,7 +151,8 @@ namespace System.Net.Security.Tests
         {
             await WithVirtualConnection(async (server, client) =>
             {
-                Task clientJob = Task.Run(() => {
+                Task clientJob = Task.Run(() =>
+                {
                     Assert.Throws<IOException>(() =>
                         client.AuthenticateAsClient("test")
                     );
@@ -190,8 +194,8 @@ namespace System.Net.Security.Tests
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
             {
-                    TargetHost = target,
-                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+                TargetHost = target,
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
             };
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
             {
@@ -237,6 +241,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86003", TestPlatforms.Android)]
         public async Task UnencodedHostName_ValidatesCertificate()
         {
             string rawHostname = "räksmörgås.josefsson.org";
@@ -250,7 +255,7 @@ namespace System.Net.Security.Tests
                     ServerCertificateContext = SslStreamCertificateContext.Create(serverCert, serverChain),
                 };
 
-                SslClientAuthenticationOptions clientOptions = new ()
+                SslClientAuthenticationOptions clientOptions = new()
                 {
                     TargetHost = rawHostname,
                     CertificateChainPolicy = new X509ChainPolicy()
@@ -334,7 +339,8 @@ namespace System.Net.Security.Tests
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)
         {
-            return async () => {
+            return async () =>
+            {
                 try
                 {
                     await a();
