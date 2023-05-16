@@ -334,9 +334,8 @@ namespace System.Text.Json.Reflection
         /// Returns the type hierarchy for the given type, starting from the current type up to the base type(s) in the hierarchy.
         /// Interface hierarchies with multiple inheritance will return results using topological sorting.
         /// </summary>
-        public static Type[] GetSortedTypeHierarchy(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-            this Type type)
+        [RequiresUnreferencedCode("Should only be used by the reflection-based serializer.")]
+        public static Type[] GetSortedTypeHierarchy(this Type type)
         {
             if (!type.IsInterface)
             {
@@ -355,8 +354,7 @@ namespace System.Text.Json.Reflection
                 // Interface hierarchies support multiple inheritance.
                 // For consistency with class hierarchy resolution order,
                 // sort topologically from most derived to least derived.
-                return JsonHelpers.TraverseGraphWithTopologicalSort(type, GetInterfaces);
-                static Type[] GetInterfaces(Type t) => t.GetInterfaces();
+                return JsonHelpers.TraverseGraphWithTopologicalSort(type, static t => t.GetInterfaces());
             }
         }
     }
