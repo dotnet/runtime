@@ -868,7 +868,6 @@ namespace System.Net
             }
         }
 
-        private static readonly char[] s_spaceDot = new char[] { ' ', '.' };
         private static readonly char[] s_whitespaceDot = new char[] { ' ', '.', '\r', '\n' };
         private static readonly char[] s_spaceCommaBrackets = new char[] { ' ', '(', ',', ')' };
 
@@ -889,9 +888,9 @@ namespace System.Net
         private DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
-            Span<Range> parts = stackalloc Range[3];
+            Span<Range> parts = stackalloc Range[4];
             ReadOnlySpan<char> strSpan = str;
-            int count = strSpan.SplitAny(parts, s_spaceDot, StringSplitOptions.RemoveEmptyEntries);
+            int count = strSpan.SplitAny(parts, " .", StringSplitOptions.RemoveEmptyEntries);
             if (count < 2)
             {
                 return dateTime;
