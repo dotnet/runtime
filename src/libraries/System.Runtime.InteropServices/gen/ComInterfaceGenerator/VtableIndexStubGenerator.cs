@@ -312,6 +312,7 @@ namespace Microsoft.Interop
                 VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 interfaceType,
+                interfaceType,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
                 new ObjectUnwrapperInfo(unwrapperSyntax));
         }

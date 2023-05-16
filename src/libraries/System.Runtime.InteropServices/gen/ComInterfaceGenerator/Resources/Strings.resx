@@ -237,4 +237,16 @@
   <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
     <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
   </data>
+  <data name="AnalysisFailedDescription" xml:space="preserve">
+    <value>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</value>
+  </data>
+  <data name="AnalysisFailedInterfaceMessage" xml:space="preserve">
+    <value>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</value>
+  </data>
+  <data name="AnalysisFailedMethodMessage" xml:space="preserve">
+    <value>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</value>
+  </data>
+  <data name="AnalysisFailedTitle" xml:space="preserve">
+    <value>Analysis for generation has failed.</value>
+  </data>
 </root>
