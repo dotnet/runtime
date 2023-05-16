@@ -254,7 +254,7 @@ internal sealed class Xcode
         bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
-        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
+        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "aot-instances.dll", "icudt_EFIGS.dat", "icudt_CJK.dat", "icudt_no_CJK.dat" };
         if (!preferDylibs)
         {
             excludes.Add(".dylib");
