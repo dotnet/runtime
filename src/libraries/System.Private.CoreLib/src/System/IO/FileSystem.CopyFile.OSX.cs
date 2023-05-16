@@ -59,7 +59,7 @@ namespace System.IO
                     // On different device
                     goto tryFallback;
                 }
-                else if (fileStatus.Ino == destStat.Ino)
+                if (fileStatus.Ino == destStat.Ino)
                 {
                     // Copying onto itself
                     throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
