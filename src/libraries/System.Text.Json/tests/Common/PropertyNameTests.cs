@@ -45,6 +45,7 @@ namespace System.Text.Json.Serialization.Tests
             actualValue = await Serializer.DeserializeWrapper<ClassWithEscapablePropertyName>(valueForDeserialize);
 
             Assert.Equal(expectedValue.MyFunnyProperty, actualValue.MyFunnyProperty);
+            Assert.Equal(expectedValue.MyFunnyProperty2, actualValue.MyFunnyProperty2);
         }
 
         private async Task DeserializeAndAssert(JsonNamingPolicy policy, string json, short expected)
@@ -518,6 +519,15 @@ namespace System.Text.Json.Serialization.Tests
             };
             yield return new object[]
             {
+                "{\"abc[!@#№$;%:^&?*()-+~`|]'def'\":\"valueFromMyFunnyPropertyTestCase1\", \"withQuote\\\"\": \"valueFromMyFunnyProperty2\"}",
+                new ClassWithEscapablePropertyName
+                {
+                    MyFunnyProperty = "valueFromMyFunnyPropertyTestCase1",
+                    MyFunnyProperty2 = "valueFromMyFunnyProperty2"
+                },
+            };
+            yield return new object[]
+            {
                 "{\"abc[!@#\\u2116$;%:^\\u0026?*()-\\u002B~\\u0060|]\\u0027def\\u0027\":\"valueFromMyFunnyPropertyTestCase2\"}",
                 new ClassWithEscapablePropertyName
                 {
@@ -530,6 +540,9 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonPropertyName("abc[!@#№$;%:^&?*()-+~`|]'def'")]
             public string MyFunnyProperty { get; set; }
+
+            [JsonPropertyName("withQuote\"")]
+            public string MyFunnyProperty2 { get; set; }
         }
     }
 }

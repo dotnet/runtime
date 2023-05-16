@@ -226,6 +226,20 @@ namespace System.Text.Json.SourceGeneration
                 return new TypeRef(type);
             }
 
+            private static string EscapeString(string representation)
+            {
+                const string Quote = "\"";
+                const string EscapedQuote = "\\\"";
+
+                if (string.IsNullOrEmpty(representation))
+                {
+                    return representation;
+                }
+
+                return representation
+                    .Replace(Quote, EscapedQuote);
+            }
+
             private void ParseJsonSerializerContextAttributes(
                 INamedTypeSymbol contextClassSymbol,
                 out List<TypeToGenerate>? rootSerializableTypes,
@@ -1236,7 +1250,7 @@ namespace System.Text.Json.SourceGeneration
                             case JsonPropertyNameAttributeFullName:
                                 {
                                     ImmutableArray<TypedConstant> ctorArgs = attributeData.ConstructorArguments;
-                                    jsonPropertyName = (string)ctorArgs[0].Value!;
+                                    jsonPropertyName = EscapeString((string)ctorArgs[0].Value!);
                                     // Null check here is done at runtime within JsonSerializer.
                                 }
                                 break;
