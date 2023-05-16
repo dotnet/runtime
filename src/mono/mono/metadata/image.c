@@ -2547,20 +2547,16 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 	MonoCLIHeader *ch = &iinfo->cli_cli_header;
 	const char* data;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "getting resource from offset 0x%x in image %s [%p].", offset, image->name, image);
-
 	if (!ch->ch_resources.rva || offset + 4 > ch->ch_resources.size)
 		return NULL;
 
 	data = mono_image_rva_map (image, ch->ch_resources.rva);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "getting resource from offset 0x%x in image %s [%p]: resource rva is %p mapped to %p", offset, image->name, image, (void*)ch->ch_resources.rva, (void*)data);
 	if (!data)
 		return NULL;
 	data += offset;
 	if (size)
 		*size = read32 (data);
 	data += 4;
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "getting resource from offset 0x%x in image %s [%p]: resource size is 0x%08x, first word is 0x%08x", offset, image->name, image, *size, *(int32_t*)data);
 	return data;
 }
 

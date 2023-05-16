@@ -4532,9 +4532,6 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	if (!field)
 		goto leave;
 
-	MonoClass *k = MONO_HANDLE_RAW(exc)->vtable->klass;
-	g_warning ("unhandled execption '%s.%s' from image %s (%p)\n", m_class_get_name_space (k), m_class_get_name (k), m_class_get_image (k)->name, (void*)m_class_get_image (k));
-
 	MonoObject *delegate = NULL;
 	MonoObjectHandle delegate_handle;
 	MonoVTable *vt = mono_class_vtable_checked (mono_defaults.appcontext_class, error);
