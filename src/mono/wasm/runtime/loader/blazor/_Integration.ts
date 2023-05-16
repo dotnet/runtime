@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../../types";
+import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
 import { INTERNAL, loaderHelpers } from "../globals";
@@ -18,7 +18,11 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
     const environment = candidateOptions.environment;
     const bootConfigPromise = BootConfigResult.initAsync(candidateOptions.loadBootResource, environment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, candidateOptions || {});
+    await initializeBootConfig(bootConfigResult, module, candidateOptions);
+}
+
+export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
     setupModuleForBlazor(module);
 }
@@ -27,21 +31,20 @@ let resourcesLoaded = 0;
 let totalResources = 0;
 
 const behaviorByName = (name: string): AssetBehaviours | "other" => {
-    return name === "dotnet.timezones.blat" ? "vfs"
-        : name === "dotnet.native.wasm" ? "dotnetwasm"
-            : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
-                : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
-                    : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
-                        : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                            : name.startsWith("icudt") ? "icu"
-                                : "other";
+    return name === "dotnet.native.wasm" ? "dotnetwasm"
+        : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
+            : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
+                : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
+                    : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
+                        : name.startsWith("icudt") ? "icu"
+                            : "other";
 };
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
     "assembly": "assembly",
     "pdb": "pdb",
     "icu": "globalization",
-    "vfs": "globalization",
+    "vfs": "configuration",
     "dotnetwasm": "dotnetwasm",
 };
 
@@ -69,7 +72,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         return undefined;
     };
 
-    module.downloadResource = downloadResource;
+    loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
     module.disableDotnet6Compatibility = false;
 }
 
@@ -156,6 +159,16 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             behavior,
         };
         assets.push(asset);
+    }
+    for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
+        const config = resourceLoader.bootConfig.config[i];
+        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+            assets.push({
+                name: config,
+                resolvedUrl: config,
+                behavior: "vfs",
+            });
+        }
     }
 
     if (!hasIcuData) {

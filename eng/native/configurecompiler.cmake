@@ -85,6 +85,15 @@ if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
 
+  if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
+    # Debug build specific flags
+    # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that
+    # the Visual Studio generator has. Therefore we will override the default for Visual Studio only.
+    add_linker_flag(/INCREMENTAL:NO DEBUG)
+    add_linker_flag(/OPT:REF DEBUG)
+    add_linker_flag(/OPT:NOICF DEBUG)
+  endif (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
+
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
   add_linker_flag(/OPT:REF CHECKED)

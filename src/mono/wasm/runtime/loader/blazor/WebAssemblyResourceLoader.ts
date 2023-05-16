@@ -6,6 +6,8 @@ import type { BootJsonData, ResourceList } from "../../types/blazor";
 import { toAbsoluteUri } from "./_Polyfill";
 const networkFetchCacheMode = "no-cache";
 
+const cacheSkipResourceTypes = ["configuration"];
+
 export class WebAssemblyResourceLoader {
     private usedCacheKeys: { [key: string]: boolean } = {};
 
@@ -27,7 +29,7 @@ export class WebAssemblyResourceLoader {
     }
 
     loadResource(name: string, url: string, contentHash: string, resourceType: WebAssemblyBootResourceType): LoadingResource {
-        const response = this.cacheIfUsed
+        const response = this.cacheIfUsed && !cacheSkipResourceTypes.includes(resourceType)
             ? this.loadResourceWithCaching(this.cacheIfUsed, name, url, contentHash, resourceType)
             : this.loadResourceWithoutCaching(name, url, contentHash, resourceType);
 
@@ -127,10 +129,19 @@ export class WebAssemblyResourceLoader {
         // Note that if cacheBootResources was explicitly disabled, we also bypass hash checking
         // This is to give developers an easy opt-out from the entire caching/validation flow if
         // there's anything they don't like about it.
-        return fetch(url, {
-            cache: networkFetchCacheMode,
-            integrity: this.bootConfig.cacheBootResources ? contentHash : undefined,
-        });
+        const fetchOptions: RequestInit = {
+            cache: networkFetchCacheMode
+        };
+
+        if (resourceType === "configuration") {
+            // Include credentials so the server can allow download / provide user specific file
+            fetchOptions.credentials = "include";
+        } else {
+            // Any other resource than configuration should provide integrity check
+            fetchOptions.integrity = this.bootConfig.cacheBootResources ? contentHash : undefined;
+        }
+
+        return fetch(url, fetchOptions);
     }
 
     private async addToCacheAsync(cache: Cache, name: string, cacheKey: string, response: Response) {

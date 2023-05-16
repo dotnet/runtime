@@ -2221,10 +2221,10 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
     lvaSetStruct(spanTempNum, spanHnd, false);
 
-    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
+    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference);
     GenTree*       pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
 
-    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
+    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, OFFSETOF__CORINFO_Span__length);
     GenTree*       lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
 
     // Now append a few statements the initialize the span
@@ -8922,14 +8922,8 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     {
         // The indices should be converted to `int` type, as they would be if the intrinsic was not expanded.
         GenTree* argVal = impPopStack().val;
-        if (impInlineRoot()->opts.compJitEarlyExpandMDArrays)
-        {
-            // This is only enabled when early MD expansion is set because it causes small
-            // asm diffs (only in some test cases) otherwise. The GT_ARR_ELEM lowering code "accidentally" does
-            // this cast, but the new code requires it to be explicit.
-            argVal = impImplicitIorI4Cast(argVal, TYP_INT);
-        }
-        inds[k - 1] = argVal;
+        argVal          = impImplicitIorI4Cast(argVal, TYP_INT);
+        inds[k - 1]     = argVal;
     }
 
     GenTree* arr = impPopStack().val;

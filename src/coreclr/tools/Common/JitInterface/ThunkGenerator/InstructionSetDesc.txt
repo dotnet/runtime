@@ -23,7 +23,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; Definition of X86 instruction sets
-definearch         ,X86   ,32Bit                ,X64
+definearch         ,X86   ,32Bit                ,X64, X64
 
 instructionset     ,X86   ,X86Base              ,        ,22 ,X86Base               ,base
 instructionset     ,X86   ,Sse                  ,        ,1  ,SSE                   ,sse
@@ -126,12 +126,12 @@ implication        ,X86   ,AVX512VBMI           ,AVX512BW
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 
 ; Definition of X64 instruction sets
-definearch         ,X64   ,64Bit     ,X64
+definearch         ,X64   ,64Bit     ,X64, X64
 
 copyinstructionsets,X86   ,X64
 
 ; Definition of Arm64 instruction sets
-definearch         ,ARM64 ,64Bit     ,Arm64
+definearch         ,ARM64 ,64Bit     ,Arm64, Arm64
 
 instructionset     ,ARM64 ,ArmBase   ,        ,16 ,ArmBase  ,base
 instructionset     ,ARM64 ,AdvSimd   ,        ,17 ,AdvSimd  ,neon

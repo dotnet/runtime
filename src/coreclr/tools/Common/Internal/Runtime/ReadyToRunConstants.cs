@@ -343,6 +343,7 @@ namespace Internal.ReadyToRunConstants
         GetRuntimeType,
 
         CheckCastClass,
+        CheckCastClassSpecial,
         CheckInstanceClass,
         CheckCastArray,
         CheckInstanceArray,

@@ -493,7 +493,7 @@ export class WasmBuilder {
         // console.log(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
             const ifi = importsToEmit[i];
-            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}`);
+            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
             this.appendName(ifi.module);
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
@@ -554,6 +554,14 @@ export class WasmBuilder {
             func
         };
         return result;
+    }
+
+    markImportAsUsed(name: string) {
+        const func = this.importedFunctions[name];
+        if (!func)
+            throw new Error("No imported function named " + name);
+        if (typeof (func.index) !== "number")
+            func.index = this.importedFunctionCount++;
     }
 
     defineFunction(
@@ -642,8 +650,11 @@ export class WasmBuilder {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
-        if (typeof (func.index) !== "number")
+        if (typeof (func.index) !== "number") {
+            if (this.lockImports)
+                throw new Error("Import section was emitted before assigning an index to import named " + name);
             func.index = this.importedFunctionCount++;
+        }
         this.appendU8(WasmOpcode.call);
         this.appendULeb(func.index);
     }

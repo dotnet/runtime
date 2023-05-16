@@ -292,6 +292,10 @@ function flush_wasm_entry_trampoline_jit_queue() {
             builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, trampImports[i][2]);
         }
 
+        // Assign import indices so they get emitted in the import section
+        for (let i = 0; i < trampImports.length; i++)
+            builder.markImportAsUsed(trampImports[i][0]);
+
         builder._generateImportSection();
 
         // Function section

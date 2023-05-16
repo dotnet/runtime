@@ -2849,8 +2849,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
-
     opts.disAsm       = false;
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
@@ -2968,18 +2966,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
-        }
-
-        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
-        // JitEarlyExpandMDArraysFilter.
-        if (JitConfig.JitEarlyExpandMDArrays() == 0)
-        {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
-                                                                  &info.compMethodInfo->args))
-            {
-                opts.compJitEarlyExpandMDArrays = true;
-            }
         }
     }
 
@@ -3149,7 +3135,25 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // TBD: Exclude PInvoke stubs
     if (opts.compJitELTHookEnabled)
     {
-        compProfilerMethHnd           = (void*)DummyProfilerELTStub;
+#if defined(DEBUG) // We currently only know if we're running under SuperPMI in DEBUG
+        // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use
+        // the address of `DummyProfilerELTStub` in the JIT binary, without relocation. So just use
+        // a fixed address in this case. It's SuperPMI replay, so the generated code won't be run.
+        if (RunningSuperPmiReplay())
+        {
+#ifdef HOST_64BIT
+            static_assert_no_msg(sizeof(void*) == 8);
+            compProfilerMethHnd = (void*)0x0BADF00DBEADCAFE;
+#else
+            static_assert_no_msg(sizeof(void*) == 4);
+            compProfilerMethHnd = (void*)0x0BADF00D;
+#endif
+        }
+        else
+#endif // DEBUG
+        {
+            compProfilerMethHnd = (void*)DummyProfilerELTStub;
+        }
         compProfilerMethHndIndirected = false;
     }
 
@@ -3533,7 +3537,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     // Does user explicitly prevent using this STRESS_MODE through the command line?
     const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
     if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
+        (u16_strstr(strStressModeNamesNot, s_compStressModeNamesW[stressArea]) != nullptr))
     {
         return false;
     }
@@ -3542,7 +3546,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
     if (strStressModeNames != nullptr)
     {
-        if (wcsstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
+        if (u16_strstr(strStressModeNames, s_compStressModeNamesW[stressArea]) != nullptr)
         {
             return true;
         }
@@ -4730,14 +4734,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -5293,66 +5297,66 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop = block->bbNext;
+            BasicBlock* const loopTop              = block->bbNext;
+            bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+            bool              unmarkedLoopAlign    = false;
 
-            // If jmp was not found, then block before the loop start is where align instruction will be added.
-            // There are two special cases:
-            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
-            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
-            //    region range.
-            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
-            //    can't add alignment because we can't add instructions in that block. In the
-            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
-            //
-            // Currently, we don't align loops for these cases.
-            //
-            if (bbHavingAlign == nullptr)
-            {
-                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
 #if FEATURE_EH_CALLFINALLY_THUNKS
-                if (block->bbJumpKind == BBJ_CALLFINALLY)
-                {
-                    // It must be a retless BBJ_CALLFINALLY if we get here.
-                    assert(!block->isBBCallAlwaysPair());
+            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                // It must be a retless BBJ_CALLFINALLY if we get here.
+                assert(!block->isBBCallAlwaysPair());
 
-                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
-                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
-                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
-                    // BBJ_CALLFINALLY), we allow it.
-                    isSpecialCallFinally = true;
-                }
+                // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                // BBJ_CALLFINALLY), we allow it.
+                isSpecialCallFinally = true;
+            }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-                if (isSpecialCallFinally)
+            if (isSpecialCallFinally)
+            {
+                // There are two special cases:
+                // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+                //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+                //    region range.
+                // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+                //    can't add alignment because we can't add instructions in that block. In the
+                //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+                // Currently, we don't align loops for these cases.
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            {
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+
+            if (!unmarkedLoopAlign)
+            {
+                if (bbHavingAlign == nullptr)
                 {
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
-                    madeChanges = true;
-                }
-                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
-                {
-                    // In some odd cases we may see blocks within the loop before we see the
-                    // top block of the loop. Just bail on aligning such loops.
-                    //
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
-                    madeChanges = true;
-                }
-                else
-                {
+                    // If jmp was not found, then block before the loop start is where align instruction will be added.
+
                     bbHavingAlign = block;
                     JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
                             block->bbNum, loopTop->bbNum);
                 }
-            }
-            else
-            {
-                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
-                        "\n",
-                        bbHavingAlign->bbNum, loopTop->bbNum);
-            }
+                else
+                {
+                    JITDUMP("Marking " FMT_BB
+                            " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            bbHavingAlign->bbNum, loopTop->bbNum);
+                }
 
-            if (bbHavingAlign != nullptr)
-            {
                 madeChanges = true;
                 bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
