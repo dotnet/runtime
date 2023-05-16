@@ -10414,7 +10414,7 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
     if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = (ssize_t)offset;
+        *byteOffset = offset;
         return true;
     }
     return false;
