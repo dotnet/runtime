@@ -37,8 +37,9 @@ const behaviorByName = (name: string): AssetBehaviours | "other" => {
                 : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
                     : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
                         : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                            : name.startsWith("icudt") ? "icu"
-                                : "other";
+                            : (name.startsWith("dotnet") && name.endsWith(".symbols")) ? "symbols"
+                                : name.startsWith("icudt") ? "icu"
+                                    : "other";
 };
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
