@@ -18,7 +18,6 @@
 /*  tn      - TYP_name
     nm      - name string
     jitType - The jit compresses types that are 'equivalent', this is the jit type genActualType()
-    verType - Used for type checking
     sz      - size in bytes (genTypeSize(t))
     sze     - size in bytes for the emitter (GC types are encoded) (emitTypeSize(t))
     asze    - size in bytes for the emitter (GC types are encoded) (emitActualTypeSize(t))
@@ -28,7 +27,7 @@
     regFld  - LSRA: field to use to track available registers
     tf      - flags
 
-DEF_TP(tn      ,nm        , jitType,     verType, sz,sze,asze, st,al, regTyp,    regFld,              tf     )
+DEF_TP(tn      ,nm        , jitType,     sz,sze,asze, st,al, regTyp,    regFld,              tf     )
 */
 
 // clang-format off
