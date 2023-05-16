@@ -225,8 +225,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             if (includeSTJ)
             {
-                result.AssertContainsType("global::System.Int32");
-                result.AssertContainsType("global::System.String");
+                result.AssertContainsType("int");
+                result.AssertContainsType("string");
             }
             else
             {
@@ -377,10 +377,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::MyType");
-            result.AssertContainsType("global::System.Int32");
-            result.AssertContainsType("global::System.String");
-            result.AssertContainsType("global::System.Double");
-            result.AssertContainsType("global::System.Char");
+            result.AssertContainsType("int");
+            result.AssertContainsType("string");
+            result.AssertContainsType("double");
+            result.AssertContainsType("char");
         }
 
         [Fact]
@@ -568,7 +568,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Should find the generated type.
             Assert.Equal(2, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
-            result.AssertContainsType("global::System.Int32");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -632,6 +632,39 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public void EquivalentTupleDeclarations_DoNotConflict()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                #nullable enable
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof((string? Label1, string Label2, int Integer)))]
+                    [JsonSerializable(typeof((string, string, int)))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.Diagnostics);
+            Assert.Empty(result.NewCompilation.GetDiagnostics());
+
+            // Should find the generated type.
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("(string, string, int)");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
