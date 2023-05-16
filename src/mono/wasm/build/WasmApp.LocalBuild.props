@@ -68,10 +68,4 @@
     <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
   </PropertyGroup>
 
-  <!-- Override default definitions of tasks to specify TaskHostFactory so they're run in short-lived processes and never lock the task assemblies
-       in an idle MSBuild process. -->
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmAppBuilder" TaskFactory="TaskHostFactory" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmLoadAssembliesAndReferences" TaskFactory="TaskHostFactory" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasmCalculateInitialHeapSize" TaskFactory="TaskHostFactory" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-
 </Project>
