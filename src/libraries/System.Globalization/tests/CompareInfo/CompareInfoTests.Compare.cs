@@ -55,7 +55,8 @@ namespace System.Globalization.Tests
             // PlatformDetection.IsHybridGlobalizationOnBrowser does not support IgnoreWidth
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
-                yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
+                yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
+                yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, 0 };
                 yield return new object[] { s_invariantCompare, "a", "\uFF41", CompareOptions.IgnoreWidth, 0 };
                 yield return new object[] { s_invariantCompare, "ABCDE", "\uFF21\uFF22\uFF23\uFF24\uFF25", CompareOptions.IgnoreWidth, 0 }; 
                 yield return new object[] { s_invariantCompare, "ABCDE", "\uFF21\uFF22\uFF23D\uFF25", CompareOptions.IgnoreWidth, 0 };
@@ -101,7 +102,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "9999\uFF1910", "1\uFF10", CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, "9999\uFF191010", "1\uFF10", CompareOptions.None, 1 };
 
-            yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF0D", CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\u30FC", CompareOptions.None, 0 };
