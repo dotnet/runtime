@@ -30,6 +30,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 partial interface INativeAPI
                 {
                     void Method();
@@ -48,12 +49,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 partial interface I
                 {
                     void Method();
                     void Method2();
                 }
                 [GeneratedComInterface]
+                [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
                 partial interface J
                 {
                     void Method();
@@ -72,16 +75,19 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 partial interface I
                 {
                     void Method();
                     void Method2();
                 }
                 [GeneratedComInterface]
+                [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
                 partial interface Empty
                 {
                 }
                 [GeneratedComInterface]
+                [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
                 partial interface J
                 {
                     void Method();
@@ -100,12 +106,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices.Marshalling;
                 
                 [GeneratedComInterface]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
                 partial interface I
                 {
                     void Method();
                     void Method2();
                 }
                 [GeneratedComInterface]
+                [Guid("734AFCEC-8862-43CB-AB29-5A7954929E23")]
                 partial interface J : I
                 {
                     void MethodA();
