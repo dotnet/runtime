@@ -36,9 +36,9 @@ const behaviorByName = (name: string): AssetBehaviours | "other" => {
             : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
                 : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
                     : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
-                            : (name.startsWith("dotnet") && name.endsWith(".symbols")) ? "symbols"
-                                : name.startsWith("icudt") ? "icu"
-                                    : "other";
+                        : (name.startsWith("dotnet") && name.endsWith(".symbols")) ? "symbols"
+                            : name.startsWith("icudt") ? "icu"
+                                : "other";
 };
 
 const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | undefined } = {
@@ -162,7 +162,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         };
         assets.push(asset);
     }
-    
+
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
         const config = resourceLoader.bootConfig.config[i];
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
