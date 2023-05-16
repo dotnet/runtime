@@ -4068,8 +4068,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return true; // just always assume we'll need it, for now
 
 #elif defined(TARGET_LOONGARCH64)
-    JITDUMP(" Returning true (LOONGARCH64)\n\n");
-    return true; // just always assume we'll need it, for now
+    JITDUMP(" Returning false (LOONGARCH64)\n\n");
+    return false; // LoongArch64 reserved other special REG_R21.
 
 #elif defined(TARGET_RISCV64)
     JITDUMP(" Returning true (RISCV64)\n\n");
