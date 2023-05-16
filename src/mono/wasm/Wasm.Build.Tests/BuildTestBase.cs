@@ -62,6 +62,8 @@ namespace Wasm.Build.Tests
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                                                                           // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
+        public const string WebcilInWasmExtension = ".wasm";
+
         static BuildTestBase()
         {
             try
@@ -80,7 +82,7 @@ namespace Wasm.Build.Tests
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 if (UseWebcil)
-                    Console.WriteLine($"=============== Using .webcil ===============");
+                    Console.WriteLine($"=============== Using webcil-in-wasm ===============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -685,7 +687,7 @@ namespace Wasm.Build.Tests
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
-                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+                useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
