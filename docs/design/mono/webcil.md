@@ -51,6 +51,10 @@ as passive data segments 0 and 1, respectively.  The module must not contain add
 segments. The module must store the payload size in data segment 0, and the payload content in data
 segment 1.
 
+The payload content in data segment 1 must be aligned on a 4-byte boundary within the web assembly
+module.  Additional trailing padding may be added to the data segment 0 content to correctly align
+data segment 1's content.
+
 (**Rationale**: With this wrapper it is possible to split the WebAssembly module into a *prefix*
 consisting of everything before the data section, the data section, and a *suffix* that consists of
 everything after the data section.  The prefix and suffix do not depend on the contents of the
@@ -62,6 +66,11 @@ assemblies)
 allows a runtime that does not include a WebAssembly host or a runtime that does not wish to
 instantiate the WebAssembly module to extract the payload by traversing the WebAssembly module and
 locating the Webcil payload in the data section at segment 1.)
+
+(**Rationale**: The alignment requirement is due to ECMA-335 metadata requiring certain portions of
+the physical layout to be 4-byte aligned, for example ECMA-335 Section II.25.4 and II.25.4.5.
+Aligning the Webcil content within the wasm module allows tools that directly examine the wasm
+module without instantiating it to properly parse the ECMA-335 metadata in the Webcil payload.)
 
 (**Note**: the wrapper may be versioned independently of the payload.)
 
