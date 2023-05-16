@@ -301,7 +301,7 @@ ds_rt_transport_get_default_name (
     EP_ASSERT (format_result <= name_len);
 
 	format_result = snprintf(name, name_len, "%s%s-%d-%llu-%s", format_buffer, prefix, id, (unsigned long long)disambiguation_key, suffix);
-	if (format_result <= 0 || (uint32_t)format_result > name_len) {
+	if (format_result <= 0 || format_result > name_len) {
 		DS_LOG_ERROR_0 ("name buffer to small");
 		ep_raise_error ();
 	}

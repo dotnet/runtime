@@ -1092,7 +1092,7 @@ ep_rt_temp_path_get (
     }
 
 	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || result > buffer_len)
+	if (result <= 0 || (uint32_t)result > buffer_len)
 		ep_raise_error ();
 
 	if (buffer [result - 1] != '/') {
