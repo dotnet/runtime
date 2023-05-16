@@ -86,7 +86,7 @@
       <LLVMFiles Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(MonoLLVMHostOS)-%(PackageReference.PackageArch)\**"
                  FileArch="%(PackageReference.PackageArch)" />
     </ItemGroup>
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFiles="@(LLVMFiles->'$(MonoLLVMDir)\%(FileArch)\%(RecursiveDir)%(FileName)%(Extension)')" SkipUnchangedFiles="true">
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>
