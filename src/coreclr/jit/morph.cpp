@@ -359,7 +359,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
                     case TYP_ULONG:
 #ifdef TARGET_AMD64
-                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) && srcType != TYP_FLOAT)
                             return nullptr;
 #endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
