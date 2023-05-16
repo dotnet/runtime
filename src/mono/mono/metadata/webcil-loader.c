@@ -144,10 +144,9 @@ webcil_image_load_pe_data (MonoImage *image)
 	image->raw_data = image->storage->raw_data;
 	image->raw_data_len = image->storage->raw_data_len;
 	offset -= webcil_section_adjustment;
-	if (((intptr_t)image->raw_data) % 4 != 0) {
-		g_warning ("webcil image %s [%p] raw data %p not 4 byte aligned\n", image->name, image, image->raw_data);
-	}
-	
+	// parts of ecma-335 loading depend on 4-byte alignment of the image
+	g_assertf (((intptr_t)image->raw_data) % 4 == 0, "webcil image %s [%p] raw data %p not 4 byte aligned\n", image->name, image, image->raw_data);
+
 	top = iinfo->cli_header.coff.coff_sections;
 
 	iinfo->cli_section_count = top;
