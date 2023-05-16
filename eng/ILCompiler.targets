@@ -1,11 +1,14 @@
 <Project>
   
-  <PropertyGroup>
-    <NeedIlcFixes Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
-    <NeedIlcFixes Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
-    <NeedIlcFixes Condition="'$(TestBuildMode)' == 'nativeaot' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
-    <NeedIlcFixes Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'">true</NeedIlcFixes>
-  </PropertyGroup>
+  <Target Name="ComputeNeedIlcFixes"
+          BeforeTargets="LocateNativeCompiler">
+    <PropertyGroup>
+      <NeedIlcFixes Condition="'$(NativeAotSupported)' == 'true' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
+      <NeedIlcFixes Condition="'$(TestNativeAot)' == 'true' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
+      <NeedIlcFixes Condition="'$(TestBuildMode)' == 'nativeaot' and '$(HostOS)' != 'windows'">true</NeedIlcFixes>
+      <NeedIlcFixes Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'">true</NeedIlcFixes>
+    </PropertyGroup>
+  </Target>
 
  <!--
     Use init-compiler.sh to locate the compiler toolchain which was resolved for rest of the build.
