@@ -37,10 +37,10 @@ public partial class GeneratedComInterfaceTests
     public unsafe void DerivedInterfaceTypeProvidesBaseInterfaceUnmanagedToManagedMembers()
     {
         // Make sure that we have the correct derived and base types here.
-        Assert.Contains(typeof(IGetAndSetInt), typeof(IDerivedComInterface).GetInterfaces());
+        Assert.Contains(typeof(IGetAndSetInt), typeof(IDerived).GetInterfaces());
 
         IIUnknownDerivedDetails baseInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IGetAndSetInt).TypeHandle);
-        IIUnknownDerivedDetails derivedInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IDerivedComInterface).TypeHandle);
+        IIUnknownDerivedDetails derivedInterfaceDetails = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IDerived).TypeHandle);
 
         var numBaseMethods = typeof(IGetAndSetInt).GetMethods().Length;
 
@@ -59,7 +59,7 @@ public partial class GeneratedComInterfaceTests
         var derivedImpl = new DerivedImpl();
         var nativeObj = cw.GetOrCreateComInterfaceForObject(derivedImpl, CreateComInterfaceFlags.None);
         var obj = cw.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
-        IDerivedComInterface iface = (IDerivedComInterface)obj;
+        IDerived iface = (IDerived)obj;
 
         Assert.Equal(3, iface.GetInt());
         iface.SetInt(5);
@@ -76,7 +76,7 @@ public partial class GeneratedComInterfaceTests
     }
 
     [GeneratedComClass]
-    partial class DerivedImpl : IDerivedComInterface
+    partial class DerivedImpl : IDerived
     {
         int data = 3;
         string myName = "myName";

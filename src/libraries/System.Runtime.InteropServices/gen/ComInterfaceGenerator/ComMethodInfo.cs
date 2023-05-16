@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -10,6 +11,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -20,7 +22,8 @@ namespace Microsoft.Interop
         /// </summary>
         private sealed record ComMethodInfo(
             MethodDeclarationSyntax Syntax,
-            string MethodName)
+            string MethodName,
+            SequenceEqualImmutableArray<AttributeInfo> Attributes)
         {
             /// <summary>
             /// Returns a list of tuples of ComMethodInfo, IMethodSymbol, and Diagnostic. If ComMethodInfo is null, Diagnostic will not be null, and vice versa.
@@ -112,7 +115,9 @@ namespace Microsoft.Interop
                 {
                     return (null, method, diag);
                 }
-                var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name);
+
+                var attributes = method.GetAttributes().Select(AttributeInfo.From);
+                var comMethodInfo = new ComMethodInfo(comMethodDeclaringSyntax, method.Name, attributes.ToSequenceEqualImmutableArray());
                 return (comMethodInfo, method, null);
             }
         }

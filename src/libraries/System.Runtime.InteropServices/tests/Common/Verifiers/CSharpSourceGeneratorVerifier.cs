@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,6 +52,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
 
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
+            var asdf = test.TestState.Sources.Select(asdf => asdf.content.ToString());
         }
 
         public static async Task VerifySourceGeneratorWithAncillaryInteropAsync(string source, params DiagnosticResult[] expected)
@@ -105,6 +107,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 }
                 SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
             }
+
             public Test(bool referenceAncillaryInterop)
                 :this(TestTargetFramework.Net)
             {

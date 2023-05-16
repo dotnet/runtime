@@ -28,12 +28,12 @@ namespace Microsoft.Interop
         {
             public static (ComInterfaceInfo? Info, Diagnostic? Diagnostic) From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax)
             {
-                // Verify the method has no generic types or defined implementation
+                // Verify the interface has no generic types or defined implementation
                 // and is not marked static or sealed
                 if (syntax.TypeParameterList is not null)
                 {
                     return (null, Diagnostic.Create(
-                        GeneratorDiagnostics.InvalidAttributedMethodSignature,
+                        GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
                         syntax.Identifier.GetLocation(),
                         symbol.Name));
                 }
