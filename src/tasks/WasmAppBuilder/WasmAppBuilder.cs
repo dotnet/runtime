@@ -117,6 +117,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!IncludeThreadsWorker && name == "dotnet.native.worker.js")
                 continue;
 
+            var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
+
             if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
             {
                 if (config.resources.runtimeAssets == null)
@@ -124,12 +126,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
                 config.resources.runtimeAssets[name] = new()
                 {
-                    Hash = $"sha256-{item.GetMetadata("FileHash")}",
-                    Behavior = "dotnetwasm"
+                    hash = itemHash,
+                    behavior = "dotnetwasm"
                 };
             }
 
-            config.resources.runtime[name] = Utils.ComputeIntegrity(item.ItemSpec);
+            config.resources.runtime[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");

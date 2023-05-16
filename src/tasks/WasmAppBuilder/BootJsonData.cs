@@ -162,8 +162,8 @@ public enum ICUDataMode : int
 public class AdditionalAsset
 {
     [DataMember(Name = "hash")]
-    public string Hash { get; set; }
+    public string hash { get; set; }
 
     [DataMember(Name = "behavior")]
-    public string Behavior { get; set; }
+    public string behavior { get; set; }
 }
