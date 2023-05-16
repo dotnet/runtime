@@ -622,10 +622,11 @@ namespace System
             const uint Exponent13 = 0x0680_0000u; // Exponent displacement #2
             const float MaxHalfValueBelowInfinity = 65520.0f;     // Maximum value that is not Infinity in Half
             uint bitValue = BitConverter.SingleToUInt32Bits(value);
-            value = float.Abs(value);  // Clear sign bit
             uint sign = bitValue & float.SignMask;       // Extract sign bit
+            value = float.Abs(value);  // Clear sign bit
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
             value = float.Min(MaxHalfValueBelowInfinity, value);
+            bitValue = BitConverter.SingleToUInt32Bits(value);
             uint realMask = (uint)(Unsafe.BitCast<bool, sbyte>(float.IsNaN(value)) - 1);   // Detecting NaN (~0u if a is not NaN)
             uint underflowMask = (uint)-Unsafe.BitCast<bool, byte>(MinExp > bitValue);
             uint exponentOffset0 = (MinExp & underflowMask) | (~underflowMask & bitValue); // Rectify lower exponent
