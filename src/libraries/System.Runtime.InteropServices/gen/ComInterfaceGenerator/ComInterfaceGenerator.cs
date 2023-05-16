@@ -453,22 +453,6 @@ namespace Microsoft.Interop
             var interfaceType = interfaceMethods.Interface.Info.Type;
             var interfaceMethodStubs = interfaceMethods.DeclaredMethods.Select(m => m.GenerationContext);
 
-            ImmutableArray<IncrementalMethodStubGenerationContext> vtableExposedContexts = interfaceMethodStubs
-                .Where(c => c.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
-                .ToImmutableArray();
-
-            // If none of the methods are exposed as part of the vtable, then don't emit
-            // a vtable (return null).
-            if (vtableExposedContexts.Length == 0)
-            {
-                return ImplementationInterfaceTemplate
-                .AddMembers(
-                    CreateManagedVirtualFunctionTableMethodTemplate
-                        .WithBody(
-                            Block(
-                                ReturnStatement(LiteralExpression(SyntaxKind.NullLiteralExpression)))));
-            }
-
             // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
             var vtableDeclarationStatement =
                 LocalDeclarationStatement(
