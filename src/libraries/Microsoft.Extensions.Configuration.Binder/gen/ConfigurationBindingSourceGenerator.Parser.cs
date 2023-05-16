@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
@@ -561,7 +562,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 // We want a BindCore method for List<TElement> as a temp holder for the array values.
-                EnumerableSpec? listSpec = ConstructGenericTypeSpec(_typeSymbols.List, arrayType.ElementType) as EnumerableSpec;
+                EnumerableSpec? listSpec = GetOrCreateTypeSpec(_typeSymbols.List.Construct(arrayType.ElementType)) as EnumerableSpec;
                 // We know the element type is supported.
                 Debug.Assert(listSpec != null);
                 if (listSpec is not null)
@@ -575,6 +576,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ElementType = elementSpec,
                     ConcreteType = listSpec,
                     PopulationStrategy = CollectionPopulationStrategy.Array,
+                    ToEnumerableMethodCall = null,
                 };
             }
 
@@ -622,6 +624,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 CollectionPopulationStrategy populationStrategy;
                 INamedTypeSymbol? concreteType = null;
                 INamedTypeSymbol? populationCastType = null;
+                string? toEnumerableMethodCall = null;
 
                 if (HasPublicParameterlessCtor(type))
                 {
@@ -652,8 +655,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     concreteType = _typeSymbols.Dictionary;
                     populationCastType = _typeSymbols.GenericIDictionary;
-                    constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
+                    constructionStrategy = ConstructionStrategy.ToEnumerableMethod;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
+                    toEnumerableMethodCall = "ToDictionary(pair => pair.Key, pair => pair.Value)";
+                    _namespaces.Add("System.Linq");
                 }
                 else
                 {
@@ -668,6 +673,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ElementType = elementSpec,
                     ConstructionStrategy = constructionStrategy,
                     PopulationStrategy = populationStrategy,
+                    ToEnumerableMethodCall = toEnumerableMethodCall,
                 };
 
                 Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
@@ -757,6 +763,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ElementType = elementSpec,
                     ConstructionStrategy = constructionStrategy,
                     PopulationStrategy = populationStrategy,
+                    ToEnumerableMethodCall = null,
                 };
 
                 Debug.Assert(!(populationStrategy is CollectionPopulationStrategy.Cast_Then_Add && populationCastType is null));
@@ -974,13 +981,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static bool IsEnum(ITypeSymbol type) => type is INamedTypeSymbol { EnumUnderlyingType: INamedTypeSymbol { } };
 
             private CollectionSpec? ConstructGenericCollectionTypeSpec(INamedTypeSymbol? collectionType, params ITypeSymbol[] parameters) =>
-                (collectionType is not null ? ConstructGenericTypeSpec(collectionType, parameters) : null) as CollectionSpec;
+                (collectionType is not null ? ConstructGenericCollectionSpec(collectionType, parameters) : null);
 
-            private TypeSpec? ConstructGenericTypeSpec(INamedTypeSymbol type, params ITypeSymbol[] parameters)
+            private CollectionSpec? ConstructGenericCollectionSpec(INamedTypeSymbol type, params ITypeSymbol[] parameters)
             {
                 Debug.Assert(type.IsGenericType);
                 INamedTypeSymbol constructedType = type.Construct(parameters);
-                return GetOrCreateTypeSpec(constructedType);
+                return CreateCollectionSpec(constructedType, location: null);
             }
 
             private void ReportUnsupportedType(ITypeSymbol type, DiagnosticDescriptor descriptor, Location? location = null)

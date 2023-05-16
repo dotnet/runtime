@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     using System.Globalization;
     using Microsoft.Extensions.Configuration;
     using System.Collections.Generic;
+    using System.Linq;
 
     internal static class Helpers
     {
@@ -74,42 +75,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static void BindCore(IConfiguration configuration, ref List<int> obj, BinderOptions? binderOptions)
-        {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                int element;
-                if (section.Value is string stringValue3)
-                {
-                    element = ParseInt(stringValue3, () => section.Path);
-                    obj.Add(element);
-                }
-            }
-        }
-
-        public static void BindCore(IConfiguration configuration, ref ICollection<int> obj, BinderOptions? binderOptions)
-        {
-            if (obj is null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
-
-            foreach (IConfigurationSection section in configuration.GetChildren())
-            {
-                int element;
-                if (section.Value is string stringValue4)
-                {
-                    element = ParseInt(stringValue4, () => section.Path);
-                    obj.Add(element);
-                }
-            }
-        }
-
         public static void BindCore(IConfiguration configuration, ref IReadOnlyList<int> obj, BinderOptions? binderOptions)
         {
             if (obj is null)
@@ -125,10 +90,34 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
                 int element;
-                if (section.Value is string stringValue5)
+                if (section.Value is string stringValue3)
                 {
-                    element = ParseInt(stringValue5, () => section.Path);
+                    element = ParseInt(stringValue3, () => section.Path);
                     temp.Add(element);
+                }
+            }
+        }
+
+        public static void BindCore(IConfiguration configuration, ref IReadOnlyDictionary<string, int> obj, BinderOptions? binderOptions)
+        {
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
+
+            if (obj is not IDictionary<string, int> temp)
+            {
+                return;
+            }
+
+            foreach (IConfigurationSection section in configuration.GetChildren())
+            {
+                string key = section.Key;
+                int element;
+                if (section.Value is string stringValue4)
+                {
+                    element = ParseInt(stringValue4, () => section.Path);
+                    temp[key] = element;
                 }
             }
         }
@@ -149,10 +138,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if (HasChildren(section))
                         {
-                            Program.CustomDictionary<string, int> temp6 = obj.CustomDictionary;
-                            temp6 ??= new Program.CustomDictionary<string, int>();
-                            BindCore(section, ref temp6, binderOptions);
-                            obj.CustomDictionary = temp6;
+                            Program.CustomDictionary<string, int> temp5 = obj.CustomDictionary;
+                            temp5 ??= new Program.CustomDictionary<string, int>();
+                            BindCore(section, ref temp5, binderOptions);
+                            obj.CustomDictionary = temp5;
                         }
                     }
                     break;
@@ -160,10 +149,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         if (HasChildren(section))
                         {
-                            Program.CustomList temp7 = obj.CustomList;
-                            temp7 ??= new Program.CustomList();
-                            BindCore(section, ref temp7, binderOptions);
-                            obj.CustomList = temp7;
+                            Program.CustomList temp6 = obj.CustomList;
+                            temp6 ??= new Program.CustomList();
+                            BindCore(section, ref temp6, binderOptions);
+                            obj.CustomList = temp6;
                         }
                     }
                     break;
@@ -171,30 +160,34 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                     }
                     break;
-                    case "CustomCollection":
+                    case "ICustomCollection":
                     {
                     }
                     break;
-                    case "ReadOnlyList":
+                    case "IReadOnlyList":
                     {
                         if (HasChildren(section))
                         {
-                            IReadOnlyList<int> temp8 = obj.ReadOnlyList;
-                            if (temp8 is null)
-                            {
-                                temp8 = new List<int>();
-                            }
-                            else
-                            {
-                                temp8 = new List<int>(temp8);
-                            }
-                            BindCore(section, ref temp8, binderOptions);
-                            obj.ReadOnlyList = temp8;
+                            IReadOnlyList<int> temp7 = obj.IReadOnlyList;
+                            temp7 = temp7 is null ? new List<int>() : new List<int>(temp7);
+                            BindCore(section, ref temp7, binderOptions);
+                            obj.IReadOnlyList = temp7;
                         }
                     }
                     break;
-                    case "ReadOnlyDictionary":
+                    case "UnsupportedIReadOnlyDictionaryUnsupported":
                     {
+                    }
+                    break;
+                    case "IReadOnlyDictionary":
+                    {
+                        if (HasChildren(section))
+                        {
+                            IReadOnlyDictionary<string, int> temp8 = obj.IReadOnlyDictionary;
+                            temp8 = temp8 is null ? new Dictionary<string, int>() : temp8.ToDictionary(pair => pair.Key, pair => pair.Value);
+                            BindCore(section, ref temp8, binderOptions);
+                            obj.IReadOnlyDictionary = temp8;
+                        }
                     }
                     break;
                     default:

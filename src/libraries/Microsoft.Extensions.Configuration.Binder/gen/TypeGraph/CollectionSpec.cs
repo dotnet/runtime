@@ -24,6 +24,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public CollectionSpec? PopulationCastType { get; set; }
 
         public required CollectionPopulationStrategy PopulationStrategy { get; init; }
+
+        public required string? ToEnumerableMethodCall { get; init; }
     }
 
     internal sealed record EnumerableSpec : CollectionSpec

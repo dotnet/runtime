@@ -274,9 +274,10 @@ public class Program
                         public CustomDictionary<string, int> CustomDictionary { get; set; }
                         public CustomList CustomList { get; set; }
                         public ICustomDictionary<string> ICustomDictionary { get; set; }
-                        public ICustomSet<MyClassWithCustomCollections> CustomCollection { get; set; }
-                        public IReadOnlyList<int> ReadOnlyList { get; set; }
-                        public IReadOnlyDictionary<MyClassWithCustomCollections, int> ReadOnlyDictionary { get; set; }
+                        public ICustomSet<MyClassWithCustomCollections> ICustomCollection { get; set; }
+                        public IReadOnlyList<int> IReadOnlyList { get; set; }
+                        public IReadOnlyDictionary<MyClassWithCustomCollections, int> UnsupportedIReadOnlyDictionaryUnsupported { get; set; }
+                        public IReadOnlyDictionary<string, int> IReadOnlyDictionary { get; set; }
                     }
 
                     public class CustomDictionary<TKey, TValue> : Dictionary<TKey, TValue>

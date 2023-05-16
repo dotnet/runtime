@@ -773,14 +773,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitObjectInit(elementType, Identifier.element, InitializationKind.SimpleAssignment);
                         _writer.WriteBlockEnd();
 
-                        if (elementType is CollectionSpec { ConstructionStrategy: ConstructionStrategy.ParameterizedConstructor } collectionSpec)
+                        if (elementType is CollectionSpec
+                            {
+                                ConstructionStrategy: ConstructionStrategy.ParameterizedConstructor or ConstructionStrategy.ToEnumerableMethod
+                            } collectionSpec)
                         {
                             // This is a read-only collection. If the element exists and is not null,
                             // we need to copy its contents into a new instance & then append/bind to that.
+
+                            string initExpression = collectionSpec.ConstructionStrategy is ConstructionStrategy.ParameterizedConstructor
+                                ? $"new {collectionSpec.ConcreteType.MinimalDisplayString}({Identifier.element})"
+                                : $"{Identifier.element}.{collectionSpec.ToEnumerableMethodCall!}";
+
                             _writer.WriteBlock($$"""
                                 else
                                 {
-                                    {{Identifier.element}} = new {{collectionSpec.ConcreteType.MinimalDisplayString}}({{Identifier.element}});
+                                    {{Identifier.element}} = {{initExpression}};
                                 }
                                 """);
                         }
@@ -1092,22 +1100,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind == InitializationKind.AssignmentWithNullCheck)
                 {
-                    if (collectionType?.ConstructionStrategy is not ConstructionStrategy.ParameterizedConstructor)
+                    ConstructionStrategy? collectionConstructionStratey = collectionType?.ConstructionStrategy;
+                    if (collectionConstructionStratey is ConstructionStrategy.ParameterizedConstructor)
                     {
-                        _writer.WriteLine($"{expressionForMemberAccess} ??= {expressionForInit};");
+                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : new {displayString}({expressionForMemberAccess});");
+                    }
+                    else if (collectionConstructionStratey is ConstructionStrategy.ToEnumerableMethod)
+                    {
+                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : {expressionForMemberAccess}.{collectionType.ToEnumerableMethodCall!};");
                     }
                     else
                     {
-                        _writer.WriteBlock($$"""
-                            if ({{expressionForMemberAccess}} is null)
-                            {
-                                {{expressionForMemberAccess}} = {{expressionForInit}};
-                            }
-                            else
-                            {
-                                {{expressionForMemberAccess}} = new {{displayString}}({{expressionForMemberAccess}});
-                            }
-                            """);
+                        _writer.WriteLine($"{expressionForMemberAccess} ??= {expressionForInit};");
                     }
                 }
                 else
