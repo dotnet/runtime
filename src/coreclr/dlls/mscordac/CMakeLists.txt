@@ -49,6 +49,8 @@ else(CLR_CMAKE_HOST_WIN32)
 
         if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_LOONGARCH64)
             set(JUMP_INSTRUCTION b)
+        elseif (CLR_CMAKE_HOST_ARCH_RISCV64)
+            set(JUMP_INSTRUCTION tail)
         else()
             set(JUMP_INSTRUCTION jmp)
         endif()
@@ -164,6 +166,7 @@ if(CLR_CMAKE_HOST_WIN32)
         oleaut32.lib
         uuid.lib
         user32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
@@ -173,6 +176,7 @@ else(CLR_CMAKE_HOST_WIN32)
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
+        coreclrminipal
         ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)

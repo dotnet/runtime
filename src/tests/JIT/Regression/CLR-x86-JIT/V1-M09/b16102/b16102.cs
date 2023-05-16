@@ -9,7 +9,7 @@ namespace N
 {
     internal class X
     {
-        public static void Main()
+        public static void Main(String[] args)
         {
         }
     }

@@ -7,7 +7,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -18,17 +17,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [Generator]
     public sealed partial class ConfigurationBindingSourceGenerator : IIncrementalGenerator
     {
+        private const string GeneratorProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+#if LAUNCH_DEBUGGER
+            if (!System.Diagnostics.Debugger.IsAttached)
+            {
+                System.Diagnostics.Debugger.Launch();
+            }
+#endif
             IncrementalValueProvider<CompilationData?> compilationData =
                 context.CompilationProvider
                     .Select((compilation, _) => compilation.Options is CSharpCompilationOptions options
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider.CreateSyntaxProvider(
-                (node, _) => node is InvocationExpressionSyntax invocation,
-                (context, cancellationToken) => new BinderInvocationOperation(context, cancellationToken));
+            IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    (node, _) => node is InvocationExpressionSyntax invocation,
+                    BinderInvocationOperation.Create)
+                .Where(operation => operation is not null);
 
             IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
@@ -40,12 +49,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// </summary>
         private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
         {
-#if LAUNCH_DEBUGGER
-            if (!System.Diagnostics.Debugger.IsAttached)
-            {
-                System.Diagnostics.Debugger.Launch();
-            }
-#endif
             if (inputCalls.IsDefaultOrEmpty)
             {
                 return;
@@ -53,11 +56,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (compilationData?.LanguageVersionIsSupported != true)
             {
-                context.ReportDiagnostic(Diagnostic.Create(LanguageVersionNotSupported, location: null));
+                context.ReportDiagnostic(Diagnostic.Create(Helpers.LanguageVersionNotSupported, location: null));
                 return;
             }
 
-            Parser parser = new(context, compilationData.TypeData!);
+            Parser parser = new(context, compilationData.TypeSymbols!);
             SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
             if (spec is not null)
             {
@@ -69,58 +72,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         private sealed record CompilationData
         {
             public bool LanguageVersionIsSupported { get; }
-            public KnownTypeData? TypeData { get; }
+            public KnownTypeSymbols? TypeSymbols { get; }
 
             public CompilationData(CSharpCompilation compilation)
             {
                 LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.CSharp11;
                 if (LanguageVersionIsSupported)
                 {
-                    TypeData = new KnownTypeData(compilation);
+                    TypeSymbols = new KnownTypeSymbols(compilation);
                 }
-            }
-        }
-
-        private sealed record KnownTypeData
-        {
-            public INamedTypeSymbol SymbolForGenericIList { get; }
-            public INamedTypeSymbol SymbolForICollection { get; }
-            public INamedTypeSymbol SymbolForIEnumerable { get; }
-            public INamedTypeSymbol SymbolForString { get; }
-
-            public INamedTypeSymbol? SymbolForConfigurationKeyNameAttribute { get; }
-            public INamedTypeSymbol? SymbolForDictionary { get; }
-            public INamedTypeSymbol? SymbolForGenericIDictionary { get; }
-            public INamedTypeSymbol? SymbolForHashSet { get; }
-            public INamedTypeSymbol? SymbolForIConfiguration { get; }
-            public INamedTypeSymbol? SymbolForIConfigurationSection { get; }
-            public INamedTypeSymbol? SymbolForIDictionary { get; }
-            public INamedTypeSymbol? SymbolForIServiceCollection { get; }
-            public INamedTypeSymbol? SymbolForISet { get; }
-            public INamedTypeSymbol? SymbolForList { get; }
-
-            public KnownTypeData(CSharpCompilation compilation)
-            {
-                SymbolForIEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
-                SymbolForConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName(TypeFullName.ConfigurationKeyNameAttribute);
-                SymbolForIConfiguration = compilation.GetBestTypeByMetadataName(TypeFullName.IConfiguration);
-                SymbolForIConfigurationSection = compilation.GetBestTypeByMetadataName(TypeFullName.IConfigurationSection);
-                SymbolForIServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.IServiceCollection);
-                SymbolForString = compilation.GetSpecialType(SpecialType.System_String);
-
-                // Collections
-                SymbolForIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.IDictionary);
-
-                // Use for type equivalency checks for unbounded generics
-                SymbolForICollection = compilation.GetSpecialType(SpecialType.System_Collections_Generic_ICollection_T).ConstructUnboundGenericType();
-                SymbolForGenericIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.GenericIDictionary)?.ConstructUnboundGenericType();
-                SymbolForGenericIList = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
-                SymbolForISet = compilation.GetBestTypeByMetadataName(TypeFullName.ISet)?.ConstructUnboundGenericType();
-
-                // Used to construct concrete types at runtime; cannot also be constructed
-                SymbolForDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.Dictionary);
-                SymbolForHashSet = compilation.GetBestTypeByMetadataName(TypeFullName.HashSet);
-                SymbolForList = compilation.GetBestTypeByMetadataName(TypeFullName.List);
             }
         }
 
@@ -130,76 +90,43 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Configure = 1,
             Get = 2,
             Bind = 3,
+            GetValue = 4,
         }
 
-        private readonly record struct BinderInvocationOperation()
+        private sealed record BinderInvocationOperation()
         {
-            public IInvocationOperation? InvocationOperation { get; }
-            public BinderMethodKind BinderMethodKind { get; }
-            public Location? Location { get; }
+            public IInvocationOperation InvocationOperation { get; private set; }
+            public BinderMethodKind Kind { get; private set; }
+            public Location? Location { get; private set; }
 
-            public BinderInvocationOperation(GeneratorSyntaxContext context, CancellationToken cancellationToken) : this()
+            public static BinderInvocationOperation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
             {
-                if (context.Node is not InvocationExpressionSyntax syntax ||
-                    context.SemanticModel.GetOperation(syntax, cancellationToken) is not IInvocationOperation operation)
+                BinderMethodKind kind;
+                if (context.Node is not InvocationExpressionSyntax invocationSyntax ||
+                    invocationSyntax.Expression is not MemberAccessExpressionSyntax memberAccessSyntax ||
+                    (kind = GetBindingMethodKind(memberAccessSyntax.Name.Identifier.ValueText)) is BinderMethodKind.None ||
+                    context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation operation)
                 {
-                    return;
+                    return null;
                 }
 
-                InvocationOperation = operation;
-                Location = syntax.GetLocation();
-
-                if (IsGetCall(syntax))
+                return new BinderInvocationOperation
                 {
-                    BinderMethodKind = BinderMethodKind.Get;
-                }
-                else if (IsConfigureCall(syntax))
-                {
-                    BinderMethodKind = BinderMethodKind.Configure;
-                }
-                else if (IsBindCall(syntax))
-                {
-                    BinderMethodKind = BinderMethodKind.Bind;
-                }
+                    InvocationOperation = operation,
+                    Kind = kind,
+                    Location = invocationSyntax.GetLocation()
+                };
             }
 
-            private static bool IsBindCall(InvocationExpressionSyntax invocation) =>
-                invocation is
+            private static BinderMethodKind GetBindingMethodKind(string name) =>
+                name switch
                 {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: IdentifierNameSyntax
-                        {
-                            Identifier.ValueText: "Bind"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 1
-                };
+                    "Bind" => BinderMethodKind.Bind,
+                    "Get" => BinderMethodKind.Get,
+                    "GetValue" => BinderMethodKind.GetValue,
+                    "Configure" => BinderMethodKind.Configure,
+                    _ => default,
 
-            private static bool IsConfigureCall(InvocationExpressionSyntax invocation) =>
-                invocation is
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: GenericNameSyntax
-                        {
-                            Identifier.ValueText: "Configure"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 1
-                };
-
-            private static bool IsGetCall(InvocationExpressionSyntax invocation) =>
-                invocation is
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name: GenericNameSyntax
-                        {
-                            Identifier.ValueText: "Get"
-                        }
-                    },
-                    ArgumentList.Arguments.Count: 0
                 };
         }
     }

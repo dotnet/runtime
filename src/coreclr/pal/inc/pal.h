@@ -344,12 +344,6 @@ PAL_Initialize(
     char * const argv[]);
 
 PALIMPORT
-void
-PALAPI
-PAL_InitializeWithFlags(
-    DWORD flags);
-
-PALIMPORT
 int
 PALAPI
 PAL_InitializeDLL();
@@ -401,6 +395,17 @@ VOID
 PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
+
+/// <summary>
+/// Used by the single-file and native AOT hosts to connect the linked in version of createdump
+/// </summary>
+typedef int (*PCREATEDUMP_CALLBACK)(const int argc, const char* argv[]);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetCreateDumpCallback(
+    IN PCREATEDUMP_CALLBACK callback); 
 
 // Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
 enum
@@ -1314,6 +1319,10 @@ QueueUserAPC(
          IN PAPCFUNC pfnAPC,
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
+
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
@@ -2236,10 +2245,8 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 #elif defined(HOST_RISCV64)
 
-#error "TODO-RISCV64: review this when src/coreclr/pal/src/arch/riscv64/asmconstants.h is ported"
-
 // Please refer to src/coreclr/pal/src/arch/riscv64/asmconstants.h
-#define CONTEXT_RISCV64 0x04000000L
+#define CONTEXT_RISCV64 0x01000000L
 
 #define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1)
 #define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2)
@@ -2286,6 +2293,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Integer registers.
     //
+    DWORD64 R0;
     DWORD64 Ra;
     DWORD64 Sp;
     DWORD64 Gp;
@@ -2293,7 +2301,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     DWORD64 T0;
     DWORD64 T1;
     DWORD64 T2;
-    DWORD64 S0;
+    DWORD64 Fp;
     DWORD64 S1;
     DWORD64 A0;
     DWORD64 A1;
@@ -2333,20 +2341,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
-    PDWORD64 Ra;
-    PDWORD64 Tp;
-    PDWORD64 T0;
-    PDWORD64 T1;
-    PDWORD64 S0;
     PDWORD64 S1;
-    PDWORD64 A0;
-    PDWORD64 A1;
-    PDWORD64 A2;
-    PDWORD64 A3;
-    PDWORD64 A4;
-    PDWORD64 A5;
-    PDWORD64 A6;
-    PDWORD64 A7;
     PDWORD64 S2;
     PDWORD64 S3;
     PDWORD64 S4;
@@ -2357,31 +2352,23 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
     PDWORD64 S9;
     PDWORD64 S10;
     PDWORD64 S11;
-    PDWORD64 T3;
-    PDWORD64 T4;
-    PDWORD64 T5;
-    PDWORD64 T6;
+    PDWORD64 Fp;
+    PDWORD64 Gp;
+    PDWORD64 Tp;
+    PDWORD64 Ra;
 
-    PDWORD64 FS0;
-    PDWORD64 FS1;
-    PDWORD64 FA0;
-    PDWORD64 FA1;
-    PDWORD64 FA2;
-    PDWORD64 FA3;
-    PDWORD64 FA4;
-    PDWORD64 FA5;
-    PDWORD64 FA6;
-    PDWORD64 FA7;
-    PDWORD64 FS2;
-    PDWORD64 FS3;
-    PDWORD64 FS4;
-    PDWORD64 FS5;
-    PDWORD64 FS6;
-    PDWORD64 FS7;
-    PDWORD64 FS8;
-    PDWORD64 FS9;
-    PDWORD64 FS10;
-    PDWORD64 FS11;
+    PDWORD64 F8;
+    PDWORD64 F9;
+    PDWORD64 F18;
+    PDWORD64 F19;
+    PDWORD64 F20;
+    PDWORD64 F21;
+    PDWORD64 F22;
+    PDWORD64 F23;
+    PDWORD64 F24;
+    PDWORD64 F25;
+    PDWORD64 F26;
+    PDWORD64 F27;
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
 #elif defined(HOST_S390X)
@@ -3849,7 +3836,8 @@ YieldProcessor()
 #elif defined(HOST_LOONGARCH64)
     __asm__ volatile( "dbar 0;  \n");
 #elif defined(HOST_RISCV64)
-    __asm__ __volatile__( "wfi");
+    // TODO-RISCV64-CQ: When Zihintpause is supported, replace with `pause` instruction.
+    __asm__ __volatile__(".word 0x0100000f");
 #else
     return;
 #endif
@@ -4057,18 +4045,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define wcstod        PAL_wcstod
-#define wcstoul       PAL_wcstoul
-#define wcscat        PAL_wcscat
-#define wcscpy        PAL_wcscpy
-#define wcslen        PAL_wcslen
-#define wcsncmp       PAL_wcsncmp
-#define wcschr        PAL_wcschr
-#define wcsrchr       PAL_wcsrchr
-#define wcsstr        PAL_wcsstr
-#define wcspbrk       PAL_wcspbrk
-#define wcscmp        PAL_wcscmp
-#define wcsncpy       PAL_wcsncpy
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4117,10 +4093,8 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
-#define _wcstoui64    PAL__wcstoui64
 #define _flushall     PAL__flushall
 #define strnlen       PAL_strnlen
-#define wcsnlen       PAL_wcsnlen
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4229,10 +4203,10 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
-PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
+PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
+PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
-PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
@@ -4247,10 +4221,6 @@ inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
 inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
         {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
-#endif
-
-#ifndef __has_builtin
-#define __has_builtin(x) 0
 #endif
 
 #if !__has_builtin(_rotl)

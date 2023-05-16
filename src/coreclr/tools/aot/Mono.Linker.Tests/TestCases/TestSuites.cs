@@ -38,6 +38,21 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Reflection), MemberType = typeof (TestDatabase))]
+		public void Reflection (string t)
+		{
+			switch (t) {
+			case "TypeHierarchyReflectionWarnings":
+			case "ParametersUsedViaReflection":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Repro), MemberType = typeof (TestDatabase))]
 		public void Repro (string t)
 		{

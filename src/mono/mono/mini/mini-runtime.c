@@ -1235,7 +1235,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SEQ_POINT_INFO:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
 	case MONO_PATCH_INFO_SIGNATURE:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_GSHARED_METHOD_INFO:
@@ -1493,22 +1492,6 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		mono_error_assert_ok (error);
 		break;
 	}
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
-		gpointer code_slot;
-
-		MonoJitMemoryManager *jit_mm = jit_mm_for_method (patch_info->data.method);
-		jit_mm_lock (jit_mm);
-		if (!jit_mm->method_code_hash)
-			jit_mm->method_code_hash = g_hash_table_new (NULL, NULL);
-		code_slot = g_hash_table_lookup (jit_mm->method_code_hash, patch_info->data.method);
-		if (!code_slot) {
-			code_slot = mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (gpointer));
-			g_hash_table_insert (jit_mm->method_code_hash, patch_info->data.method, code_slot);
-		}
-		jit_mm_unlock (jit_mm);
-		target = code_slot;
-		break;
-	}
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE: {
 		target = mono_mem_manager_alloc0 (mem_manager, sizeof (gpointer));
 		break;
@@ -1678,9 +1661,13 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		target = mini_method_get_rgctx (patch_info->data.method);
 		break;
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
-		int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
+		if (mono_opt_experimental_gshared_mrgctx) {
+			g_assert_not_reached ();
+		} else {
+			int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
 
-		target = GINT_TO_POINTER (MONO_RGCTX_SLOT_INDEX (slot));
+			target = GINT_TO_POINTER (MONO_RGCTX_SLOT_INDEX (slot));
+		}
 		break;
 	}
 	case MONO_PATCH_INFO_BB_OVF:
@@ -1689,9 +1676,13 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 	case MONO_PATCH_INFO_NONE:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
-		int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
+		if (mono_opt_experimental_gshared_mrgctx) {
+			g_assert_not_reached ();
+		} else {
+			int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
 
-		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
+			target = mono_create_rgctx_lazy_fetch_trampoline (slot);
+		}
 		break;
 	}
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
@@ -2099,7 +2090,7 @@ mono_enable_jit_dump (void)
 
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
-		perf_dump_file = fopen (name, "w");
+		perf_dump_file = fopen (name, "w+");
 
 		add_file_header_info (&header);
 		if (perf_dump_file) {
@@ -2834,11 +2825,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
  * On llvmonly, this returns a MonoFtnDesc, otherwise it returns a normal function pointer.
  */
 static gpointer
-get_ftnptr_for_method (MonoMethod *method, MonoError *error)
+get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
-		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), FALSE);
+		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
 		return res;
 	} else {
 		return mini_llvmonly_load_method_ftndesc (method, FALSE, FALSE, error);
@@ -3900,7 +3891,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	if (!method && !addr) {
 		// Multicast delegate init
 		if (!mono_llvm_only) {
-			MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+			del->invoke_impl = mono_create_delegate_trampoline (mono_handle_class (delegate));
 		} else {
 			mini_llvmonly_init_delegate (del, NULL);
 		}
@@ -3925,13 +3916,11 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	}
 
 	if (method)
-		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
-
+		del->method = method;
 	if (addr)
-		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
-
-	MONO_HANDLE_SET (delegate, target, target);
-	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+		del->method_ptr = addr;
+	MONO_OBJECT_SETREF_INTERNAL (del, target, MONO_HANDLE_RAW (target));
+	del->invoke_impl = mono_create_delegate_trampoline (mono_handle_class (delegate));
 
 	MonoDelegateTrampInfo *info = NULL;
 
@@ -4302,7 +4291,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_foreach (info->dynamic_code_hash, dynamic_method_info_free, NULL);
 		g_hash_table_destroy (info->dynamic_code_hash);
 	}
-	g_hash_table_destroy (info->method_code_hash);
 	g_hash_table_destroy (info->jump_trampoline_hash);
 	g_hash_table_destroy (info->jit_trampoline_hash);
 	g_hash_table_destroy (info->delegate_info_hash);
@@ -4562,7 +4550,6 @@ mini_init (const char *filename)
 #ifdef JIT_TRAMPOLINES_WORK
 	callbacks.compile_method = mono_jit_compile_method;
 	callbacks.create_jit_trampoline = mono_create_jit_trampoline;
-	callbacks.create_delegate_trampoline = mono_create_delegate_trampoline;
 	callbacks.free_method = mono_jit_free_method;
 	callbacks.get_ftnptr = get_ftnptr_for_method;
 #endif
@@ -4570,7 +4557,7 @@ mini_init (const char *filename)
 #if ENABLE_WEAK_ATTR
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 #endif
-
+	callbacks.find_jit_info_in_aot = mono_aot_find_jit_info;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
@@ -4582,6 +4569,17 @@ mini_init (const char *filename)
 	callbacks.init_class = init_class;
 	callbacks.get_trace = mono_get_trace;
 	callbacks.get_frame_info = mono_get_frame_info;
+	callbacks.get_cached_class_info = mono_aot_get_cached_class_info;
+	callbacks.get_class_from_name = mono_aot_get_class_from_name;
+
+	if (mono_llvm_only) {
+		callbacks.build_imt_trampoline = mini_llvmonly_get_imt_trampoline;
+		mono_set_always_build_imt_trampolines (TRUE);
+	} else if (mono_aot_only) {
+		callbacks.build_imt_trampoline = mono_aot_get_imt_trampoline;
+	} else {
+		callbacks.build_imt_trampoline = mono_arch_build_imt_trampoline;
+	}
 
 	mono_install_callbacks (&callbacks);
 
@@ -4651,10 +4649,6 @@ mini_init (const char *filename)
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 
-	mono_install_get_cached_class_info (mono_aot_get_cached_class_info);
-	mono_install_get_class_from_name (mono_aot_get_class_from_name);
-	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
-
 	mono_profiler_state.context_enable = mini_profiler_context_enable;
 	mono_profiler_state.context_get_this = mini_profiler_context_get_this;
 	mono_profiler_state.context_get_argument = mini_profiler_context_get_argument;
@@ -4701,15 +4695,6 @@ mini_init (const char *filename)
 		/* This helps catch code allocation requests */
 		mono_code_manager_set_read_only (mono_mem_manager_get_ambient ()->code_mp);
 		mono_marshal_use_aot_wrappers (TRUE);
-	}
-
-	if (mono_llvm_only) {
-		mono_install_imt_trampoline_builder (mini_llvmonly_get_imt_trampoline);
-		mono_set_always_build_imt_trampolines (TRUE);
-	} else if (mono_aot_only) {
-		mono_install_imt_trampoline_builder (mono_aot_get_imt_trampoline);
-	} else {
-		mono_install_imt_trampoline_builder (mono_arch_build_imt_trampoline);
 	}
 
 	/*Init arch tls information only after the metadata side is inited to make sure we see dynamic appdomain tls keys*/

@@ -9,10 +9,12 @@
 // Release: Outputs 4294967295
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_70333_2
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         uint vr6 = (uint)M50(255);
         if (vr6 == 255)

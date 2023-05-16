@@ -27,6 +27,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private AmbiguousMatchException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

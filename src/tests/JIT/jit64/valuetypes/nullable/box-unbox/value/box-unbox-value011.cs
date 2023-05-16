@@ -13,8 +13,9 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
-internal class NullableTest
+public class NullableTest
 {
     private static bool BoxUnboxToNQ(ValueType o)
     {
@@ -26,7 +27,8 @@ internal class NullableTest
         return Helper.Compare((float?)o, Helper.Create(default(float)));
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float? s = Helper.Create(default(float));
 

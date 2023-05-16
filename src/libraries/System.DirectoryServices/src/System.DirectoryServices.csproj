@@ -218,8 +218,6 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"

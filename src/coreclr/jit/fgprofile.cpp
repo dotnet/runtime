@@ -41,11 +41,6 @@
 //
 bool Compiler::fgHaveProfileData()
 {
-    if (compIsForImportOnly())
-    {
-        return false;
-    }
-
     return (fgPgoSchema != nullptr);
 }
 
@@ -436,7 +431,7 @@ void BlockCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -558,6 +553,16 @@ void BlockCountInstrumentor::RelocateProbes()
 //
 void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
+    unsigned numCountersPerProbe = 1;
+
+    // When we have both interlocked and scalable profile modes enabled, we will
+    // count both ways, so allocate two count slots per probe.
+    //
+    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    {
+        numCountersPerProbe = 2;
+    }
+
     // Remember the schema index for this block.
     //
     assert(block->bbCountSchemaIndex == -1);
@@ -570,7 +575,7 @@ void BlockCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& sche
     assert((int)offset >= 0);
 
     ICorJitInfo::PgoInstrumentationSchema schemaElem;
-    schemaElem.Count               = 1;
+    schemaElem.Count               = numCountersPerProbe;
     schemaElem.Other               = 0;
     schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                          ? ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount
@@ -761,32 +766,67 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* prof
 //
 GenTree* BlockCountInstrumentor::CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType)
 {
-    if (JitConfig.JitInterlockedProfiling() > 0)
+    const bool interlocked = JitConfig.JitInterlockedProfiling() > 0;
+    const bool scalable    = JitConfig.JitScalableProfiling() > 0;
+
+    if (interlocked || scalable)
     {
-        // Form counter address
-        GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+        GenTree* result = nullptr;
 
-        // Interlocked increment
-        GenTree* xAddNode = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+        if (interlocked)
+        {
+            // Form counter address
+            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
 
-        return xAddNode;
+            // Interlocked increment
+            result = comp->gtNewOperNode(GT_XADD, countType, addressNode, comp->gtNewIconNode(1, countType));
+        }
+
+        if (scalable)
+        {
+            if (interlocked)
+            {
+                assert(result != nullptr);
+                counterAddr += (countType == TYP_INT) ? 4 : 8;
+            }
+
+            // Form counter address
+            GenTree* addressNode = comp->gtNewIconHandleNode(reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR);
+
+            // Scalable increment
+            GenTree* scalableNode = comp->gtNewHelperCallNode((countType == TYP_INT) ? CORINFO_HELP_COUNTPROFILE32
+                                                                                     : CORINFO_HELP_COUNTPROFILE64,
+                                                              countType, addressNode);
+
+            if (interlocked)
+            {
+                result = comp->gtNewOperNode(GT_COMMA, countType, result, scalableNode);
+            }
+            else
+            {
+                result = scalableNode;
+            }
+        }
+
+        return result;
     }
-    else
-    {
-        // Read Basic-Block count value
-        GenTree* valueNode =
-            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
-        // Increment value by 1
-        GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+    // Else do an unsynchronized update
+    //
 
-        // Write new Basic-Block count value
-        GenTree* lhsNode =
-            comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
-        GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+    // Read Basic-Block count value
+    GenTree* valueNode =
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
 
-        return asgNode;
-    }
+    // Increment value by 1
+    GenTree* rhsNode = comp->gtNewOperNode(GT_ADD, countType, valueNode, comp->gtNewIconNode(1, countType));
+
+    // Write new Basic-Block count value
+    GenTree* lhsNode =
+        comp->gtNewIndOfIconHandleNode(countType, reinterpret_cast<size_t>(counterAddr), GTF_ICON_BBC_PTR, false);
+    GenTree* asgNode = comp->gtNewAssignNode(lhsNode, rhsNode);
+
+    return asgNode;
 }
 
 //------------------------------------------------------------------------
@@ -945,7 +985,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 __fallthrough;
 
             case BBJ_RETURN:
-
             {
                 // Pseudo-edge back to method entry.
                 //
@@ -960,6 +999,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
             case BBJ_LEAVE:
@@ -1173,6 +1213,16 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 }
             }
             break;
+        }
+    }
+
+    // Notify visitor of remaining blocks
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        {
+            visitor->VisitBlock(block);
         }
     }
 }
@@ -1561,7 +1611,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 {
     // We only see such blocks when optimizing. They are flagged by the importer.
     //
-    if (!m_comp->opts.IsInstrumentedOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
+    if (!m_comp->opts.IsInstrumentedAndOptimized() || ((m_comp->optMethodFlags & OMF_HAS_TAILCALL_SUCCESSOR) == 0))
     {
         // No problematic blocks to worry about.
         //
@@ -1685,6 +1735,16 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
 //
 void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
 {
+    unsigned numCountersPerProbe = 1;
+
+    // When we have both interlocked and scalable profile modes enabled, we will
+    // count both ways, so allocate two count slots per probe.
+    //
+    if ((JitConfig.JitScalableProfiling() > 0) && (JitConfig.JitInterlockedProfiling() > 0))
+    {
+        numCountersPerProbe = 2;
+    }
+
     // Walk the bbSparseProbeList, emitting one schema element per...
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -1711,7 +1771,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         int32_t targetKey = EfficientEdgeCountBlockToKey(target);
 
         ICorJitInfo::PgoInstrumentationSchema schemaElem;
-        schemaElem.Count               = 1;
+        schemaElem.Count               = numCountersPerProbe;
         schemaElem.Other               = targetKey;
         schemaElem.InstrumentationKind = m_comp->opts.compCollect64BitCounts
                                              ? ICorJitInfo::PgoInstrumentationKind::EdgeLongCount
@@ -1736,6 +1796,17 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
 //
 void EfficientEdgeCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
 {
+    // What type of probe(s) will we emit?
+    //
+    const bool interlocked    = JitConfig.JitInterlockedProfiling() > 0;
+    const bool scalable       = JitConfig.JitScalableProfiling() > 0;
+    const bool unsynchronized = !interlocked && !scalable;
+    const bool dual           = interlocked && scalable;
+
+    JITDUMP("Using %s probes\n",
+            unsynchronized ? "unsychronized"
+                           : (dual ? "both interlocked and scalable" : (interlocked ? "interlocked" : "scalable")));
+
     // Walk the bbSparseProbeList, adding instrumentation.
     //
     for (Probe* probe = (Probe*)block->bbSparseProbeList; probe != nullptr; probe = probe->next)
@@ -2059,7 +2130,7 @@ public:
         GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
         GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
         GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgNode       = compiler->gtNewAssignNode(tmpNode3, objUse->GetNode());
         GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
@@ -2267,12 +2338,42 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
         prejit ? (JitConfig.JitMinimalPrejitProfiling() > 0) : (JitConfig.JitMinimalJitProfiling() > 0);
 
     // In majority of cases, methods marked with [Intrinsic] are imported directly
-    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes.
+    // in Tier1 so the profile will never be consumed. Thus, let's avoid unnecessary probes...
     if (minimalProfiling && (info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
-        fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
-        fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
-        return PhaseStatus::MODIFIED_NOTHING;
+        //... except a few intrinsics that might still need it:
+        bool           shouldBeInstrumented = false;
+        NamedIntrinsic ni                   = lookupNamedIntrinsic(info.compMethodHnd);
+        switch (ni)
+        {
+            // These are marked as [Intrinsic] only to be handled (unrolled) for constant inputs.
+            // In other cases they have large managed implementations we want to profile.
+            case NI_System_String_Equals:
+            case NI_System_Buffer_Memmove:
+            case NI_System_MemoryExtensions_Equals:
+            case NI_System_MemoryExtensions_SequenceEqual:
+            case NI_System_MemoryExtensions_StartsWith:
+
+            // Same here, these are only folded when JIT knows the exact types
+            case NI_System_Type_IsAssignableFrom:
+            case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_op_Equality:
+            case NI_System_Type_op_Inequality:
+                shouldBeInstrumented = true;
+                break;
+
+            default:
+                // Some Math intrinsics have large managed implementations we want to profile.
+                shouldBeInstrumented = ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
+                break;
+        }
+
+        if (!shouldBeInstrumented)
+        {
+            fgCountInstrumentor     = new (this, CMK_Pgo) NonInstrumentor(this);
+            fgHistogramInstrumentor = new (this, CMK_Pgo) NonInstrumentor(this);
+            return PhaseStatus::MODIFIED_NOTHING;
+        }
     }
 
     if (minimalProfiling && (fgBBcount < 2))
@@ -2359,6 +2460,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
+    // Even though we haven't yet instrumented, we may have made changes in anticipation...
+    //
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const PhaseStatus earlyExitPhaseStatus =
+        madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
@@ -2382,13 +2489,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        return earlyExitPhaseStatus;
     }
 
     if (schema.size() == 0)
     {
         JITDUMP("Not instrumenting method: no schemas were created\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
@@ -2419,13 +2527,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
-            return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        // We may have modified control flow preparing for instrumentation.
-        //
-        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
-        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
@@ -2606,18 +2710,28 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
 
-    // We expect not to have both block and edge counts. We may have other
-    // forms of profile data even if we do not have any counts.
-    //
-    assert(!haveBlockCounts || !haveEdgeCounts);
+    if (fgPgoHaveWeights)
+    {
+        // If for some reason we have both block and edge counts, prefer the edge counts.
+        //
+        bool dataIsGood = false;
 
-    if (haveBlockCounts)
-    {
-        fgIncorporateBlockCounts();
-    }
-    else if (haveEdgeCounts)
-    {
-        fgIncorporateEdgeCounts();
+        if (haveEdgeCounts)
+        {
+            dataIsGood = fgIncorporateEdgeCounts();
+        }
+        else if (haveBlockCounts)
+        {
+            dataIsGood = fgIncorporateBlockCounts();
+        }
+
+        // If profile incorporation hit fixable problems, run synthesis in blend mode.
+        //
+        if (fgPgoHaveWeights && !dataIsGood)
+        {
+            JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
+        }
     }
 
 #ifdef DEBUG
@@ -2667,6 +2781,9 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 // fgIncorporateBlockCounts: read block count based profile data
 //   and set block weights
 //
+// Returns:
+//   True if data is in good shape
+//
 // Notes:
 //   Since we are now running before the importer, we do not know which
 //   blocks will be imported, and we should not see any internal blocks.
@@ -2680,7 +2797,7 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 //   Find some other mechanism for handling cases where handler entry
 //   blocks must be in the hot section.
 //
-void Compiler::fgIncorporateBlockCounts()
+bool Compiler::fgIncorporateBlockCounts()
 {
     for (BasicBlock* const block : Blocks())
     {
@@ -2691,6 +2808,10 @@ void Compiler::fgIncorporateBlockCounts()
             fgSetProfileWeight(block, profileWeight);
         }
     }
+
+    // For now assume data is always good.
+    //
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -2871,6 +2992,7 @@ private:
     bool m_negativeCount;
     bool m_failedToConverge;
     bool m_allWeightsZero;
+    bool m_entryWeightZero;
 
 public:
     EfficientEdgeCountReconstructor(Compiler* comp)
@@ -2889,6 +3011,7 @@ public:
         , m_negativeCount(false)
         , m_failedToConverge(false)
         , m_allWeightsZero(true)
+        , m_entryWeightZero(false)
     {
     }
 
@@ -2914,6 +3037,24 @@ public:
     void FailedToConverge()
     {
         m_failedToConverge = true;
+    }
+
+    void EntryWeightZero()
+    {
+        m_entryWeightZero = true;
+    }
+
+    // Are there are reparable issues with the reconstruction?
+    //
+    // Ideally we'd also have || !m_negativeCount here, but this
+    // leads to lots of diffs in async methods.
+    //
+    // Looks like we might first need to resolve reconstruction
+    // shortcomings with irreducible loops.
+    //
+    bool IsGood() const
+    {
+        return !m_entryWeightZero;
     }
 
     void VisitBlock(BasicBlock*) override
@@ -3151,6 +3292,15 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
+    // If we have dynamic PGO data, we don't expect to see any mismatches,
+    // since the schema we got from the runtime should have come from the
+    // exact same JIT and IL, created in an earlier tier.
+    //
+    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
+    {
+        assert(!m_mismatch);
+    }
+
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
@@ -3381,52 +3531,15 @@ void EfficientEdgeCountReconstructor::Solve()
 
     JITDUMP("\nSolver: converged in %u passes\n", nPasses);
 
-    // If, after solving, the entry weight ends up as zero, set it to
-    // the max of the weight of successor edges or join-free successor
-    // block weight. We do this so we can determine a plausible scale
-    // count.
-    //
-    // This can happen for methods that do not return (say they always
-    // throw, or had not yet returned when we snapped the counts).
-    //
-    // Note we know there are nonzero counts elsewhere in the method, otherwise
-    // m_allWeightsZero would be true and we would have bailed out above.
+    // If, after solving, the entry weight ends up as zero, note
+    // this so we can run a profile repair immediately.
     //
     BlockInfo* const firstInfo = BlockToInfo(m_comp->fgFirstBB);
     if (firstInfo->m_weight == BB_ZERO_WEIGHT)
     {
         assert(!m_allWeightsZero);
-
-        weight_t newWeight = BB_ZERO_WEIGHT;
-
-        for (Edge* edge = firstInfo->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
-        {
-            if (edge->m_weightKnown)
-            {
-                newWeight = max(newWeight, edge->m_weight);
-            }
-
-            BlockInfo* const targetBlockInfo  = BlockToInfo(edge->m_targetBlock);
-            Edge* const      targetBlockEdges = targetBlockInfo->m_incomingEdges;
-
-            if (targetBlockInfo->m_weightKnown && (targetBlockEdges->m_nextIncomingEdge == nullptr))
-            {
-                newWeight = max(newWeight, targetBlockInfo->m_weight);
-            }
-        }
-
-        if (newWeight == BB_ZERO_WEIGHT)
-        {
-            // TODO -- throw out profile data or trigger repair/synthesis.
-            //
-            JITDUMP("Entry block weight and neighborhood was zero\n");
-        }
-        else
-        {
-            JITDUMP("Entry block weight was zero, setting entry weight to neighborhood max " FMT_WT "\n", newWeight);
-        }
-
-        firstInfo->m_weight = newWeight;
+        JITDUMP("\nSolver: entry block weight is zero\n");
+        EntryWeightZero();
     }
 }
 
@@ -3436,9 +3549,6 @@ void EfficientEdgeCountReconstructor::Solve()
 //
 void EfficientEdgeCountReconstructor::Propagate()
 {
-    // We don't expect mismatches or convergence failures.
-    //
-
     // Mismatches are currently expected as the flow for static pgo doesn't prevent them now.
     //    assert(!m_mismatch);
 
@@ -3448,10 +3558,9 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        // Make sure nothing else in the jit looks at the profile data.
+        // Make sure nothing else in the jit looks at the count profile data.
         //
         m_comp->fgPgoHaveWeights = false;
-        m_comp->fgPgoSchema      = nullptr;
 
         if (m_badcode)
         {
@@ -3470,7 +3579,7 @@ void EfficientEdgeCountReconstructor::Propagate()
             m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
         }
 
-        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
+        JITDUMP("... discarding profile count data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
@@ -3513,7 +3622,7 @@ void EfficientEdgeCountReconstructor::Propagate()
 //    for the OSR entry block.
 //
 // Arguments:
-//    block - block in question
+//    block - block in question (OSR entry)
 //    info - model info for the block
 //    nSucc - number of successors of the block in the flow graph
 //
@@ -3552,7 +3661,13 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
     }
 
     assert(nEdges == nSucc);
-    assert(info->m_weight > BB_ZERO_WEIGHT);
+
+    if (info->m_weight == BB_ZERO_WEIGHT)
+    {
+        JITDUMP("\nPropagate: OSR entry block weight is zero\n");
+        EntryWeightZero();
+        return;
+    }
 
     // Transfer model edge weight onto the FlowEdges as likelihoods.
     //
@@ -3939,6 +4054,10 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 // fgIncorporateEdgeCounts: read sparse edge count based profile data
 //   and set block weights
 //
+// Returns:
+//    true if incorporated profile is in good shape (consistent, etc).
+//    false if some repair seems necessary
+//
 // Notes:
 //   Because edge counts are sparse, we need to solve for the missing
 //   edge counts; in the process, we also determine block counts.
@@ -3948,7 +4067,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 //   Since we have edge weights here, we might as well set them
 //   (or likelihoods)
 //
-void Compiler::fgIncorporateEdgeCounts()
+bool Compiler::fgIncorporateEdgeCounts()
 {
     JITDUMP("\nReconstructing block counts from sparse edge instrumentation\n");
 
@@ -3957,6 +4076,8 @@ void Compiler::fgIncorporateEdgeCounts()
     WalkSpanningTree(&e);
     e.Solve();
     e.Propagate();
+
+    return e.IsGood();
 }
 
 //------------------------------------------------------------------------
@@ -4568,6 +4689,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 case BBJ_COND:
                 case BBJ_SWITCH:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                     if (edge->edgeWeightMax() > bSrc->bbWeight)
                     {
@@ -5266,7 +5388,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingWeightMin  = 0;

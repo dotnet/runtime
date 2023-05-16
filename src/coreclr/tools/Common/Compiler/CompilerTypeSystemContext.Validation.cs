@@ -153,9 +153,16 @@ namespace ILCompiler
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
-
-                    // TODO: validate constraints
                 }
+
+                // Don't validate constraints with crossgen2 - the type system is not set up correctly
+                // and doesn't see generic interfaces on arrays.
+#if !READYTORUN
+                if (!defType.IsCanonicalSubtype(CanonicalFormKind.Any) && !defType.CheckConstraints())
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+#endif
 
                 // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
                 defType.GetFinalizer();

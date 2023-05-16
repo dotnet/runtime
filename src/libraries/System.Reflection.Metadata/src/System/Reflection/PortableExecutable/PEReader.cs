@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ImmutableArrayExtensions = System.Linq.ImmutableArrayExtensions;
 
@@ -659,7 +660,7 @@ namespace System.Reflection.PortableExecutable
 
             return new PdbChecksumDebugDirectoryData(
                 algorithmName,
-                ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref checksum));
+                ImmutableCollectionsMarshal.AsImmutableArray(checksum));
         }
 
         /// <summary>

@@ -6,8 +6,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class GitHub_1161
+public class GitHub_1161
 {
     struct Number
     {
@@ -33,7 +34,8 @@ class GitHub_1161
             Number x = 4, y = 2;
             return (int)(x + y);
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return (Test() == 6) ? 100 : -1;
         }

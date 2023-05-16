@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // OSR entry in a try region
 
-class MainLoopTry
+public class MainLoopTry
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        Console.WriteLine($"starting sum");
        int result = 0;

@@ -109,6 +109,8 @@ namespace ILCompiler
             public const int Avx512cd_vl = 0x100000;
             public const int Avx512dq = 0x200000;
             public const int Avx512dq_vl = 0x400000;
+            public const int Avx512Vbmi = 0x800000;
+            public const int Avx512Vbmi_vl = 0x1000000;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
@@ -164,6 +166,10 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
                     InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
                     InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
+                    InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi_vl,
+                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
 
                     // SSE and SSE2 are baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,

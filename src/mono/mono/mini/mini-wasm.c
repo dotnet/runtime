@@ -316,7 +316,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 
 	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
-			MONO_EMIT_NEW_UNALU (cfg, cfg->r4fp ? OP_RMOVE : OP_FMOVE, cfg->ret->dreg, val->dreg);
+			MONO_EMIT_NEW_UNALU (cfg, OP_RMOVE, cfg->ret->dreg, val->dreg);
 			return;
 		} else if (ret->type == MONO_TYPE_R8) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);

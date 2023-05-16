@@ -275,7 +275,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: true) : null;
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: true) : null;
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -318,7 +318,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: false) : null;
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: false) : null;
                     }
                 };
             }
@@ -328,7 +328,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: false) : null;
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: false) : null;
                     }
                 };
             }

@@ -123,7 +123,7 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
 
     return pUnwindInfo;
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64)
 
     // if this function uses packed unwind data then at least one of the two least significant bits
     // will be non-zero.  if this is the case then there will be no xdata record to enumerate.
@@ -133,15 +133,9 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     PTR_UInt32 xdata = dac_cast<PTR_UInt32>(pRuntimeFunction->UnwindData + moduleBase);
     int size = 4;
 
-#if defined(TARGET_ARM)
-    // See https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
-    int unwindWords = xdata[0] >> 28;
-    int epilogScopes = (xdata[0] >> 23) & 0x1f;
-#else
     // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
-#endif
 
     if (unwindWords == 0 && epilogScopes == 0)
     {
@@ -191,10 +185,6 @@ static int LookupUnwindInfoForMethod(uint32_t relativePc,
                                      int low,
                                      int high)
 {
-#ifdef TARGET_ARM
-    relativePc |= THUMB_CODE;
-#endif
-
     // Binary search the RUNTIME_FUNCTION table
     // Use linear search once we get down to a small number of elements
     // to avoid Binary search overhead.
@@ -504,7 +494,7 @@ uintptr_t CoffNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
             upperBound = dac_cast<TADDR>(pRegisterSet->GetFP() - ((PTR_UNWIND_INFO) pUnwindDataBlob)->FrameOffset);
         }
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64)
         // Unwind the current method context to get the caller's stack pointer
         // and use it as the upper bound for the callee
         SIZE_T  EstablisherFrame;
@@ -733,9 +723,9 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     // Decode the GC info for the current method to determine its return type
     GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
     flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM64
     GcInfoDecoder decoder(GCInfoToken(p), flags);
 
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());

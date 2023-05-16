@@ -97,53 +97,9 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse(&index, mask);
-    return 1L << index;
-}
-
-//------------------------------------------------------------------------
-// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
-//                     highest bit).
-//
-// Return Value:
-//    The highest position (0 is LSB) of bit that is set in the 'value'.
-//
-// Note:
-//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
-//    but the highest bit.
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-#if defined(_MSC_VER)
-    unsigned long index;
-#else
-    unsigned int index;
-#endif
-    BitScanReverse64(&index, mask);
-    return 1LL << index;
-}
-
 /*****************************************************************************
 *
-*  Return true if the given 64-bit value has exactly zero or one bits set.
+*  Return true if the given value has exactly zero or one bits set.
 */
 
 template <typename T>
@@ -154,31 +110,11 @@ inline bool genMaxOneBit(T value)
 
 /*****************************************************************************
 *
-*  Return true if the given 32-bit value has exactly zero or one bits set.
-*/
-
-inline bool genMaxOneBit(unsigned value)
-{
-    return (value & (value - 1)) == 0;
-}
-
-/*****************************************************************************
-*
-*  Return true if the given 64-bit value has exactly one bit set.
+*  Return true if the given value has exactly one bit set.
 */
 
 template <typename T>
 inline bool genExactlyOneBit(T value)
-{
-    return ((value != 0) && genMaxOneBit(value));
-}
-
-/*****************************************************************************
-*
-*  Return true if the given 32-bit value has exactly zero or one bits set.
-*/
-
-inline bool genExactlyOneBit(unsigned value)
 {
     return ((value != 0) && genMaxOneBit(value));
 }
@@ -190,8 +126,22 @@ inline bool genExactlyOneBit(unsigned value)
  */
 inline unsigned genLog2(unsigned value)
 {
-    return BitPosition(value);
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
 }
+
+inline unsigned genLog2(unsigned __int64 value)
+{
+    assert(genExactlyOneBit(value));
+    return BitOperations::BitScanForward(value);
+}
+
+#ifdef __APPLE__
+inline unsigned genLog2(size_t value)
+{
+    return genLog2((unsigned __int64)value);
+}
+#endif // __APPLE__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -205,49 +155,6 @@ inline unsigned ulo32(unsigned __int64 value)
 inline unsigned uhi32(unsigned __int64 value)
 {
     return static_cast<unsigned>(value >> 32);
-}
-
-/*****************************************************************************
- *
- *  Given a value that has exactly one bit set, return the position of that
- *  bit, in other words return the logarithm in base 2 of the given value.
- */
-
-inline unsigned genLog2(unsigned __int64 value)
-{
-#ifdef HOST_64BIT
-    return BitPosition(value);
-#else // HOST_32BIT
-    unsigned     lo32 = ulo32(value);
-    unsigned     hi32 = uhi32(value);
-
-    if (lo32 != 0)
-    {
-        assert(hi32 == 0);
-        return genLog2(lo32);
-    }
-    else
-    {
-        return genLog2(hi32) + 32;
-    }
-#endif
-}
-
-#ifdef __APPLE__
-inline unsigned genLog2(size_t value)
-{
-    return genLog2((unsigned __int64)value);
-}
-#endif // __APPLE__
-
-/*****************************************************************************
- *
- *  Return the lowest bit that is set in the given register mask.
- */
-
-inline regMaskTP genFindLowestReg(regMaskTP value)
-{
-    return (regMaskTP)genFindLowestBit(value);
 }
 
 /*****************************************************************************
@@ -607,7 +514,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -665,7 +572,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 /*****************************************************************************/
 
@@ -844,38 +751,6 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
-
-    if (oper == GT_ADDR)
-    {
-        switch (op1->OperGet())
-        {
-            case GT_LCL_VAR:
-                return gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), type);
-
-            case GT_LCL_FLD:
-                return gtNewLclFldAddrNode(op1->AsLclFld()->GetLclNum(), op1->AsLclFld()->GetLclOffs(), type);
-
-            case GT_BLK:
-            case GT_OBJ:
-            case GT_IND:
-                return op1->AsIndir()->Addr();
-
-            case GT_FIELD:
-            {
-                GenTreeField* fieldAddr =
-                    new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(),
-                                                           op1->AsField()->gtFldHnd, op1->AsField()->gtFldOffset);
-                fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN
-                fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
-#endif
-                return fieldAddr;
-            }
-
-            default:
-                unreached();
-        }
-    }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
@@ -1106,9 +981,9 @@ inline GenTreeIndexAddr* Compiler::gtNewArrayIndexAddr(GenTree*             arra
 inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 {
     GenTreeIndir* index;
-    if (varTypeIsStruct(indexAddr->gtElemType))
+    if (indexAddr->gtElemType == TYP_STRUCT)
     {
-        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+        index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
     else
     {
@@ -1210,27 +1085,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
 }
 
 //------------------------------------------------------------------------------
-// gtNewIndir : Helper to create an indirection node.
-//
-// Arguments:
-//    typ   -  Type of the node
-//    addr  -  Address of the indirection
-//
-// Return Value:
-//    New GT_IND node
-
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    return indir->AsIndir();
-}
-
-//------------------------------------------------------------------------------
 // gtNewNullCheck : Helper to create a null check node.
 //
 // Arguments:
@@ -1314,6 +1168,82 @@ inline void Compiler::fgUpdateConstTreeValueNumber(GenTree* tree)
     }
 }
 
+inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
+{
+    GenTree* keepalive = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, op);
+
+    // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
+    // very subtle and hard to observe. Thus we are conservatively marking it with both
+    // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
+    // necessary. The conservative side-effects are unlikely to have negative impact
+    // on code quality in this case.
+    keepalive->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    return keepalive;
+}
+
+inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
+{
+    GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
+
+    return cast;
+}
+
+inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
+{
+    /* Some casts get transformed into 'GT_CALL' or 'GT_IND' nodes */
+
+    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_CAST]);
+    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_IND]);
+
+    /* Make a big node first and then change it to be GT_CAST */
+
+    GenTreeCast* cast =
+        new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
+
+    return cast;
+}
+
+inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
+{
+    assert(object->TypeIs(TYP_REF));
+    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
+    return result;
+}
+
+inline void GenTree::SetOperRaw(genTreeOps oper)
+{
+    // Please do not do anything here other than assign to gtOper (debug-only
+    // code is OK, but should be kept to a minimum).
+    RecordOperBashing(OperGet(), oper); // nop unless NODEBASH_STATS is enabled
+
+    // Bashing to MultiOp nodes is currently not supported.
+    assert(!OperIsMultiOp(oper));
+
+    gtOper = oper;
+}
+
+//------------------------------------------------------------------------
+// SetOper: Bash this tree to an oper within its "class".
+//
+// "Bashing" refers to the act of mutating a node in-place to represent
+// a different oper. It is effectively a custom version of the placement
+// new operator. This method encapsulates the common logic for bashing
+// nodes and is intended to be used when the new oper has the same "class"
+// as that being bashed from. "Class" here is used somewhat loosely, but
+// in general is tied to the GenTree subtype the new oper uses and what
+// "namespace" of GenTreeFlags it belongs to - this method does not clear
+// them. For example, GT_LCL_VAR and GT_LCL_FLD share the same "class", as
+// do GT_IND and GT_BLK, etc.
+//
+// This method initializes some fields on a limited number of common tree
+// subtypes, however, in general, it is the caller's responsibility to make
+// sure the new node ends up in a valid state.
+//
+// Arguments:
+//    oper     - The new oper
+//    vnUpdate - Whether to clear or preserve the VN (default: clear)
+//
 inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(((gtDebugFlags & GTF_DEBUG_NODE_SMALL) != 0) != ((gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0));
@@ -1360,8 +1290,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         gtVNPair.SetBoth(ValueNumStore::NoVN);
     }
 
-    // Do "oper"-specific initializations. TODO-Cleanup: these are too ad-hoc to be reliable.
-    // The bashing code should decide itself what to initialize and what to leave as it was.
+    // Do some "oper"-specific initializations. These are not intended to be exhaustive but
+    // rather simplify calling code for common patterns.
     switch (oper)
     {
         case GT_CNS_INT:
@@ -1376,84 +1306,39 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             break;
 #endif
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetLayout(nullptr);
+            break;
+
+        case GT_LCL_ADDR:
             AsLclFld()->SetLayout(nullptr);
             break;
 
         case GT_CALL:
             new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
-
+#ifdef DEBUG
+        case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
+            AsLclVar()->ResetLclILoffs();
+            break;
+#endif
         default:
             break;
     }
 }
 
-inline GenTree* Compiler::gtNewKeepAliveNode(GenTree* op)
-{
-    GenTree* keepalive = gtNewOperNode(GT_KEEPALIVE, TYP_VOID, op);
-
-    // Prevent both reordering and removal. Invalid optimizations of GC.KeepAlive are
-    // very subtle and hard to observe. Thus we are conservatively marking it with both
-    // GTF_CALL and GTF_GLOB_REF side-effects even though it may be more than strictly
-    // necessary. The conservative side-effects are unlikely to have negative impact
-    // on code quality in this case.
-    keepalive->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
-
-    return keepalive;
-}
-
-inline GenTreeCast* Compiler::gtNewCastNode(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
-{
-    GenTreeCast* cast = new (this, GT_CAST) GenTreeCast(typ, op1, fromUnsigned, castType);
-
-    return cast;
-}
-
-inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool fromUnsigned, var_types castType)
-{
-    /* Some casts get transformed into 'GT_CALL' or 'GT_IND' nodes */
-
-    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_CAST]);
-    assert(GenTree::s_gtNodeSizes[GT_CALL] >= GenTree::s_gtNodeSizes[GT_IND]);
-
-    /* Make a big node first and then change it to be GT_CAST */
-
-    GenTreeCast* cast =
-        new (this, LargeOpOpcode()) GenTreeCast(typ, op1, fromUnsigned, castType DEBUGARG(/*largeNode*/ true));
-
-    return cast;
-}
-
-inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
-{
-    GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object);
-    result->gtFlags |= GTF_IND_INVARIANT;
-    return result;
-}
-
-/*****************************************************************************/
-
-/*****************************************************************************/
-
-inline void GenTree::SetOperRaw(genTreeOps oper)
-{
-    // Please do not do anything here other than assign to gtOper (debug-only
-    // code is OK, but should be kept to a minimum).
-    RecordOperBashing(OperGet(), oper); // nop unless NODEBASH_STATS is enabled
-
-    // Bashing to MultiOp nodes is not currently supported.
-    assert(!OperIsMultiOp(oper));
-
-    gtOper = oper;
-}
-
-inline void GenTree::SetOperResetFlags(genTreeOps oper)
-{
-    SetOper(oper);
-    gtFlags &= GTF_NODE_MASK;
-}
-
+//------------------------------------------------------------------------
+// ChangeOper: Bash this tree to an oper from a foreign "class".
+//
+// This bashing method, unlike "SetOper", clears oper-specific flags and
+// so is more suitable to bashing nodes between different "classes".
+//
+// Arguments:
+//    oper     - The new oper
+//    vnUpdate - Whether to clear or preserve the VN (default: clear)
+//
 inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use BashToConst() instead
@@ -1464,17 +1349,6 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         mask |= GTF_IND_NONFAULTING;
     }
     SetOper(oper, vnUpdate);
-    gtFlags &= mask;
-}
-
-inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
-{
-    GenTreeFlags mask = GTF_COMMON_MASK;
-    if (this->OperIsIndirOrArrMetaData() && OperIsIndirOrArrMetaData(oper))
-    {
-        mask |= GTF_IND_NONFAULTING;
-    }
-    SetOperRaw(oper); // Trust the caller and don't use SetOper()
     gtFlags &= mask;
 }
 
@@ -1532,7 +1406,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
         oper = (type == TYP_LONG) ? GT_CNS_NATIVELONG : GT_CNS_INT;
     }
 
-    SetOperResetFlags(oper);
+    SetOper(oper);
+    gtFlags &= GTF_NODE_MASK;
     gtType = type;
 
     switch (oper)
@@ -1651,9 +1526,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-inline bool Compiler::lvaHaveManyLocals() const
+inline bool Compiler::lvaHaveManyLocals(float percent) const
 {
-    return (lvaCount >= (unsigned)JitConfig.JitMaxLocalsToTrack());
+    assert((percent >= 0.0) && (percent <= 1.0));
+    return (lvaCount >= (unsigned)JitConfig.JitMaxLocalsToTrack() * percent);
 }
 
 /*****************************************************************************
@@ -3047,6 +2923,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_F0;
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
+#elif defined(TARGET_RISCV64)
+    return regNum - REG_FLTARG_0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3329,28 +3207,15 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 #ifdef DEBUG
     assert(lpFlags & LPFLG_ITER);
 
-    // iterTree should be "lcl ASG lcl <op> const"
+    // iterTree should be "lcl = lcl <op> const"
 
-    assert(lpIterTree->OperIs(GT_ASG));
+    assert(lpIterTree->OperIs(GT_STORE_LCL_VAR));
 
-    const GenTree* lhs = lpIterTree->AsOp()->gtOp1;
-    const GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    assert(lhs->OperGet() == GT_LCL_VAR);
-
-    switch (rhs->gtOper)
-    {
-        case GT_ADD:
-        case GT_SUB:
-        case GT_MUL:
-        case GT_RSH:
-        case GT_LSH:
-            break;
-        default:
-            assert(!"Unknown operator for loop increment");
-    }
-    assert(rhs->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
-    assert(rhs->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() == lhs->AsLclVarCommon()->GetLclNum());
-    assert(rhs->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
+    const GenTree* value = lpIterTree->AsLclVar()->Data();
+    assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
+    assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
+    assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
+    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
 #endif
 }
 
@@ -3359,7 +3224,7 @@ inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
 inline unsigned Compiler::LoopDsc::lpIterVar() const
 {
     VERIFY_lpIterTree();
-    return lpIterTree->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
+    return lpIterTree->AsLclVar()->GetLclNum();
 }
 
 //-----------------------------------------------------------------------------
@@ -3367,8 +3232,8 @@ inline unsigned Compiler::LoopDsc::lpIterVar() const
 inline int Compiler::LoopDsc::lpIterConst() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return (int)rhs->AsOp()->gtOp2->AsIntCon()->gtIconVal;
+    GenTree* value = lpIterTree->AsLclVar()->Data();
+    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
 }
 
 //-----------------------------------------------------------------------------
@@ -3376,8 +3241,7 @@ inline int Compiler::LoopDsc::lpIterConst() const
 inline genTreeOps Compiler::LoopDsc::lpIterOper() const
 {
     VERIFY_lpIterTree();
-    GenTree* rhs = lpIterTree->AsOp()->gtOp2;
-    return rhs->OperGet();
+    return lpIterTree->AsLclVar()->Data()->OperGet();
 }
 
 inline var_types Compiler::LoopDsc::lpIterOperType() const
@@ -3386,11 +3250,6 @@ inline var_types Compiler::LoopDsc::lpIterOperType() const
 
     var_types type = lpIterTree->TypeGet();
     assert(genActualType(type) == TYP_INT);
-
-    if ((lpIterTree->gtFlags & GTF_UNSIGNED) && type == TYP_INT)
-    {
-        type = TYP_UINT;
-    }
 
     return type;
 }
@@ -3579,6 +3438,57 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
+//------------------------------------------------------------------------
+// IsStaticHelperEligibleForExpansion: Determine whether this node is a static init
+//    helper eligible for late expansion
+//
+// Arguments:
+//    tree       - tree node
+//    isGC       - [OUT] whether the helper returns GCStaticBase or NonGCStaticBase
+//    retValKind - [OUT] describes its return value
+//
+// Return Value:
+//    Returns true if eligible for late expansion
+//
+inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc, StaticHelperReturnValue* retValKind)
+{
+    if (!tree->IsHelperCall())
+    {
+        return false;
+    }
+
+    bool                    gc     = false;
+    bool                    result = false;
+    StaticHelperReturnValue retVal = {};
+    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    {
+        case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+            result = true;
+            gc     = true;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+            result = true;
+            gc     = false;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        // TODO: other helpers
+        default:
+            break;
+    }
+    if (isGc != nullptr)
+    {
+        *isGc = gc;
+    }
+    if (retValKind != nullptr)
+    {
+        *retValKind = retVal;
+    }
+    return result;
+}
+
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 
@@ -3609,7 +3519,9 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR ||
+        helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
+        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
 #ifdef FEATURE_READYTORUN
@@ -3659,12 +3571,12 @@ inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 // Note that we want to have two special FIELD_HANDLES that will both
 // be considered non-Data Offset handles
 //
-// The special values that we use are FLD_GLOBAL_DS and FLD_GLOBAL_FS
+// The special values that we use are FLD_GLOBAL_DS, FLD_GLOBAL_FS or FLD_GLOBAL_GS.
 //
 
 inline bool jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
 {
-    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS);
+    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS || fldHnd == FLD_GLOBAL_GS);
 }
 
 /*
@@ -3719,16 +3631,6 @@ inline bool Compiler::impIsThis(GenTree* obj)
         return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) &&
                 lvaIsOriginalThisArg(obj->AsLclVarCommon()->GetLclNum()));
     }
-}
-
-/*****************************************************************************
- *
- * Returns true if the compiler instance is created for import only (verification).
- */
-
-inline bool Compiler::compIsForImportOnly()
-{
-    return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IMPORT_ONLY);
 }
 
 /*****************************************************************************
@@ -4040,8 +3942,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_VAR_ADDR:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:
@@ -4074,7 +3975,6 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
-        case GT_FIELD:
         case GT_FIELD_ADDR:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4087,6 +3987,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -4104,7 +4005,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CKFINITE:
         case GT_LCLHEAP:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_BOX:
         case GT_ALLOCOBJ:
@@ -4188,21 +4088,6 @@ void GenTree::VisitOperands(TVisitor visitor)
                     return;
                 }
             }
-            return;
-        }
-
-        case GT_ARR_OFFSET:
-        {
-            GenTreeArrOffs* const arrOffs = this->AsArrOffs();
-            if (visitor(arrOffs->gtOffset) == VisitResult::Abort)
-            {
-                return;
-            }
-            if (visitor(arrOffs->gtIndex) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(arrOffs->gtArrObj);
             return;
         }
 
@@ -4450,10 +4335,9 @@ inline unsigned short LclVarDsc::lvRefCnt(RefCountState state) const
 // Notes:
 //    It is currently the caller's responsibility to ensure this increment
 //    will not cause overflow.
-
+//
 inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
 {
-
 #if defined(DEBUG)
     assert(state != RCS_INVALID);
     Compiler* compiler = JitTls::GetCompiler();
@@ -4463,6 +4347,25 @@ inline void LclVarDsc::incLvRefCnt(unsigned short delta, RefCountState state)
     unsigned short oldRefCnt = m_lvRefCnt;
     m_lvRefCnt += delta;
     assert(m_lvRefCnt >= oldRefCnt);
+}
+
+//------------------------------------------------------------------------------
+// incLvRefCntSaturating: increment reference count for this local var (with saturating semantics)
+//
+// Arguments:
+//    delta: the amount of the increment
+//    state: the requestor's expected ref count state; defaults to RCS_NORMAL
+//
+inline void LclVarDsc::incLvRefCntSaturating(unsigned short delta, RefCountState state)
+{
+#if defined(DEBUG)
+    assert(state != RCS_INVALID);
+    Compiler* compiler = JitTls::GetCompiler();
+    assert(compiler->lvaRefCountState == state);
+#endif
+
+    int newRefCnt = m_lvRefCnt + delta;
+    m_lvRefCnt    = static_cast<unsigned short>(min(USHRT_MAX, newRefCnt));
 }
 
 //------------------------------------------------------------------------------

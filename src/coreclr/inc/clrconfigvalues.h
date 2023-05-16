@@ -131,6 +131,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitPitchMaxVal, W("JitPitchMaxVal"), (DWORD)0x
 CONFIG_DWORD_INFO(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoadedIgnoreRidMap"), 0, "Used to force loader to ignore assemblies cached in the rid-map")
 
 ///
+/// PE Loader
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_PELoader_DisableMapping, W("PELoader_DisableMapping"), 0, "Disable file mapping when performing non-OS layout.")
+
+///
 /// Conditional breakpoints
 ///
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BreakOnBadExit, W("BreakOnBadExit"), 0, "")
@@ -293,7 +298,13 @@ CONFIG_DWORD_INFO(INTERNAL_JitDebuggable, W("JitDebuggable"), 0, "")
 #define INTERNAL_JitEnableNoWayAssert_Default 1
 #endif
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitEnableNoWayAssert, W("JitEnableNoWayAssert"), INTERNAL_JitEnableNoWayAssert_Default, "")
+
+#if defined(TARGET_RISCV64)
+// TODO-RISCV64-CQ: In RISCV64, currently jitc always generates JitFramed codes.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 1, "Forces EBP frames")
+#else
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitFramed, W("JitFramed"), 0, "Forces EBP frames")
+#endif // TARGET_RISCV64
 CONFIG_DWORD_INFO(INTERNAL_JitThrowOnAssertionFailure, W("JitThrowOnAssertionFailure"), 0, "Throw managed exception on assertion failures during JIT instead of failfast")
 CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for jit")
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
@@ -737,52 +748,55 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //TODO: should implement LoongArch64's features.
+//TODO-RISCV64-CQ: should implement RISCV64's features.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  0, "Allows Base+ hardware intrinsics to be disabled")
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
-#endif // defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,          W("EnableAES"),          1, "Allows AES+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,          W("EnableAVX"),          1, "Allows AVX+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,         W("EnableAVX2"),         1, "Allows AVX2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW,     W("EnableAVX512BW"),     1, "Allows AVX512BW+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1, "Allows AVX512BW_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,     W("EnableAVX512CD"),     1, "Allows AVX512CD+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,     W("EnableAVX512DQ"),     1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,      W("EnableAVX512F"),      1, "Allows AVX512F+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,      W("EnableAVXVNNI"),      1, "Allows AVX VNNI+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,         W("EnableBMI1"),         1, "Allows BMI1+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,         W("EnableBMI2"),         1, "Allows BMI2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableFMA,          W("EnableFMA"),          1, "Allows FMA+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableLZCNT,        W("EnableLZCNT"),        1, "Allows LZCNT+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePCLMULQDQ,    W("EnablePCLMULQDQ"),    1, "Allows PCLMULQDQ+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableMOVBE,        W("EnableMOVBE"),        1, "Allows MOVBE+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePOPCNT,       W("EnablePOPCNT"),       1, "Allows POPCNT+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE,          W("EnableSSE"),          1, "Allows SSE+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE2,         W("EnableSSE2"),         1, "Allows SSE2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3,         W("EnableSSE3"),         1, "Allows SSE3+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3_4,       W("EnableSSE3_4"),       1, "Allows SSE3+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,        W("EnableSSE41"),        1, "Allows SSE4.1+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE42,        W("EnableSSE42"),        1, "Allows SSE4.2+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSSE3,        W("EnableSSSE3"),        1, "Allows SSSE3+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableX86Serialize, W("EnableX86Serialize"), 1, "Allows X86Serialize+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,                    W("EnableAES"),                 1, "Allows AES+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,                    W("EnableAVX"),                 1, "Allows AVX+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,                   W("EnableAVX2"),                1, "Allows AVX2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW,               W("EnableAVX512BW"),            1, "Allows AVX512BW+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW_VL,            W("EnableAVX512BW_VL"),         1, "Allows AVX512BW_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,               W("EnableAVX512CD"),            1, "Allows AVX512CD+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,            W("EnableAVX512CD_VL"),         1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,               W("EnableAVX512DQ"),            1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,            W("EnableAVX512DQ_VL"),         1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,                W("EnableAVX512F"),             1, "Allows AVX512F+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,             W("EnableAVX512F_VL"),          1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI,             W("EnableAVX512VBMI"),          1, "Allows AVX512VBMI+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI_VL,          W("EnableAVX512VBMI_VL"),       1, "Allows AVX512VBMI_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,                W("EnableAVXVNNI"),             1, "Allows AVXVNNI+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,                   W("EnableBMI1"),                1, "Allows BMI1+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,                   W("EnableBMI2"),                1, "Allows BMI2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableFMA,                    W("EnableFMA"),                 1, "Allows FMA+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableLZCNT,                  W("EnableLZCNT"),               1, "Allows LZCNT+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePCLMULQDQ,              W("EnablePCLMULQDQ"),           1, "Allows PCLMULQDQ+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableMOVBE,                  W("EnableMOVBE"),               1, "Allows MOVBE+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePOPCNT,                 W("EnablePOPCNT"),              1, "Allows POPCNT+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE,                    W("EnableSSE"),                 1, "Allows SSE+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE2,                   W("EnableSSE2"),                1, "Allows SSE2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3,                   W("EnableSSE3"),                1, "Allows SSE3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3_4,                 W("EnableSSE3_4"),              1, "Allows SSE3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,                  W("EnableSSE41"),               1, "Allows SSE4.1+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE42,                  W("EnableSSE42"),               1, "Allows SSE4.2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSSE3,                  W("EnableSSSE3"),               1, "Allows SSSE3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableX86Serialize,           W("EnableX86Serialize"),        1, "Allows X86Serialize+ hardware intrinsics to be disabled")
 #elif defined(TARGET_ARM64)
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64AdvSimd, W("EnableArm64AdvSimd"), 1, "Allows Arm64 AdvSimd+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Aes,     W("EnableArm64Aes"),     1, "Allows Arm64 Aes+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Atomics, W("EnableArm64Atomics"), 1, "Allows Arm64 Atomics+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Crc32,   W("EnableArm64Crc32"),   1, "Allows Arm64 Crc32+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dczva,   W("EnableArm64Dczva"),   1, "Allows Arm64 Dczva+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dp,      W("EnableArm64Dp"),      1, "Allows Arm64 Dp+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rdm,     W("EnableArm64Rdm"),     1, "Allows Arm64 Rdm+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,    W("EnableArm64Sha1"),    1, "Allows Arm64 Sha1+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,  W("EnableArm64Sha256"),  1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,    W("EnableArm64Rcpc"),    1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64AdvSimd,           W("EnableArm64AdvSimd"),        1, "Allows Arm64 AdvSimd+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Aes,               W("EnableArm64Aes"),            1, "Allows Arm64 Aes+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Atomics,           W("EnableArm64Atomics"),        1, "Allows Arm64 Atomics+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Crc32,             W("EnableArm64Crc32"),          1, "Allows Arm64 Crc32+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dczva,             W("EnableArm64Dczva"),          1, "Allows Arm64 Dczva+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dp,                W("EnableArm64Dp"),             1, "Allows Arm64 Dp+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rdm,               W("EnableArm64Rdm"),            1, "Allows Arm64 Rdm+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sha1"),           1, "Allows Arm64 Sha1+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 #endif
 
 ///

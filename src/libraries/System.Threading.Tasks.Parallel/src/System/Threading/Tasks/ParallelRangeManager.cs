@@ -8,6 +8,7 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -89,7 +90,7 @@ namespace System.Threading.Tasks
         ///       to execute the sequential loop
         ///    3) if we return false it means there is no more work left. It's time to quit.
         ///
-        internal bool FindNewWork(out long nFromInclusiveLocal, out long nToExclusiveLocal)
+        private bool FindNewWork(out long nFromInclusiveLocal, out long nToExclusiveLocal)
         {
             // since we iterate over index ranges circularly, we will use the
             // count of visited ranges as our exit condition
@@ -172,25 +173,20 @@ namespace System.Threading.Tasks
             return false;
         }
 
-
-        /// <summary>
-        /// 32 bit integer version of FindNewWork. Assumes the ranges were initialized with 32 bit values.
-        /// </summary>
-        internal bool FindNewWork32(out int nFromInclusiveLocal32, out int nToExclusiveLocal32)
+        internal bool FindNewWork<TInt>(out TInt fromInclusive, out TInt toExclusive) where TInt : struct, IBinaryInteger<TInt>, IMinMaxValue<TInt>
         {
-            long nFromInclusiveLocal;
-            long nToExclusiveLocal;
+            Debug.Assert(typeof(TInt) == typeof(int) || typeof(TInt) == typeof(long));
 
-            bool bRetVal = FindNewWork(out nFromInclusiveLocal, out nToExclusiveLocal);
+            bool success = FindNewWork(out long fromInclusiveInt64, out long toExclusiveInt64);
 
-            Debug.Assert((nFromInclusiveLocal <= int.MaxValue) && (nFromInclusiveLocal >= int.MinValue) &&
-                            (nToExclusiveLocal <= int.MaxValue) && (nToExclusiveLocal >= int.MinValue));
+            Debug.Assert(
+                fromInclusiveInt64 <= long.CreateTruncating(TInt.MaxValue) && fromInclusiveInt64 >= long.CreateTruncating(TInt.MinValue) &&
+                toExclusiveInt64 <= long.CreateTruncating(TInt.MaxValue) && toExclusiveInt64 >= long.CreateTruncating(TInt.MinValue));
 
-            // convert to 32 bit before returning
-            nFromInclusiveLocal32 = (int)nFromInclusiveLocal;
-            nToExclusiveLocal32 = (int)nToExclusiveLocal;
+            fromInclusive = TInt.CreateTruncating(fromInclusiveInt64);
+            toExclusive = TInt.CreateTruncating(toExclusiveInt64);
 
-            return bRetVal;
+            return success;
         }
     }
 

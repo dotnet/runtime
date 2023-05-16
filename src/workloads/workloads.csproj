@@ -45,6 +45,10 @@
                           Description="Shared build tasks for mobile platform development."/>
       <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="wasm-experimental" Title=".NET WebAssembly Experimental Tools"
+                          Description=".NET WebAssembly experimental tooling"/>
+      <_ComponentResources Include="wasi-experimental" Title=".NET Wasi Experimental"
+                          Description=".NET Experimental SDK and tooling for WASI"/>
       <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
       <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
@@ -144,7 +148,7 @@
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
                                 AllowMissingPacks="True"
                                 BaseOutputPath="$(WorkloadOutputPath)"
-                                ComponentResources="$(ComponentResources)"
+                                ComponentResources="@(ComponentResources)"
                                 PackageSource="$(PackageSource)"
                                 ShortNames="@(ShortNames)"
                                 WorkloadManifestPackageFiles="@(ManifestPackages)"
@@ -160,10 +164,13 @@
       <SwixWorkloadPackProjects Include="@(SwixProjects)" Condition="'%(PackageType)' == 'msi-pack'"
                                 ManifestOutputPath="$(VStemp)\p\%(SwixProjects.SdkFeatureBand)"
                                 ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).packs.zip"/>
-      <SwixComponentsAndManifests Include="@(SwixProjects)" Condition="'%(PackageType)' == 'msi-manifest' Or '%(PackageType)' == 'component'"
+      <SwixComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'false')"
                                   ManifestOutputPath="$(VStemp)\c\%(SwixProjects.SdkFeatureBand)"
                                   ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand).components.zip"/>
-      <PartitionedSwixProjects Include="@(SwixWorkloadPackProjects);@(SwixComponentsAndManifests)" />
+      <SwixPreviewComponentsAndManifests Include="@(SwixProjects)" Condition="('%(PackageType)' == 'msi-manifest') Or ('%(PackageType)' == 'component' And '%(IsPreview)' == 'true')"
+                                         ManifestOutputPath="$(VStemp)\c\%(SwixProjects.SdkFeatureBand).pre"
+                                         ZipFile="Workload.VSDrop.mono.net.$(MajorVersion).$(MinorVersion)-%(SwixProjects.SdkFeatureBand)-pre.components.zip"/>
+      <PartitionedSwixProjects Include="@(SwixWorkloadPackProjects);@(SwixComponentsAndManifests);@(SwixPreviewComponentsAndManifests)" />
     </ItemGroup>
 
     <!-- Can't build in parallel to the same output folder because of a shared file from the SWIX compiler. -->

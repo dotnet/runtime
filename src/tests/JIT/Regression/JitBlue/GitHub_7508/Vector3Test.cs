@@ -11,6 +11,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 namespace Test01
 {
@@ -133,7 +134,8 @@ namespace Test01
             Console.WriteLine("SIMD Vector3: {0},{1},{2}", c.X, c.Y, c.Z);
             return c.X + c.Y + c.Z;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int returnVal = 100;
 

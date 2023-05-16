@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 #pragma warning disable 219
 public class Test_b19679
@@ -2815,7 +2816,8 @@ public class Test_b19679
         Console.WriteLine(a400);
         return 100;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         (new Test_b19679()).RunTest0_Inline();
 

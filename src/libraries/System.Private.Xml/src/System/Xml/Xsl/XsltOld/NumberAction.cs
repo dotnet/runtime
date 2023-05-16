@@ -681,7 +681,7 @@ namespace System.Xml.Xsl.XsltOld
         [return: NotNullIfNotNull(nameof(formatString))]
         private static List<FormatInfo?>? ParseFormat(string? formatString)
         {
-            if (formatString == null || formatString.Length == 0)
+            if (string.IsNullOrEmpty(formatString))
             {
                 return null;
             }

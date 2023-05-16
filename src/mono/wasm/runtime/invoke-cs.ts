@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from "./imports";
+import MonoWasmThreads from "consts:monoWasmThreads";
+import { Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
@@ -10,7 +11,7 @@ import {
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types";
+import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
@@ -299,6 +300,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 }
             }
         } else {
+            mono_assert(!MonoWasmThreads, () => `JSExport with multi-threading enabled is not supported with assembly ${assembly} as it was generated with the .NET 7 SDK`);
             // this needs to stay here for compatibility with assemblies generated in Net7
             // it doesn't have the __GeneratedInitializer class
             cwraps.mono_wasm_runtime_run_module_cctor(asm);

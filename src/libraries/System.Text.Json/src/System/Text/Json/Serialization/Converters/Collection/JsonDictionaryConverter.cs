@@ -40,6 +40,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (typeInfo.CreateObject is null)
@@ -146,7 +151,7 @@ namespace System.Text.Json.Serialization
 
                         // Get the value from the converter and add it.
                         state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element);
+                        _valueConverter.TryRead(ref reader, ElementType, options, ref state, out TValue? element, out _);
                         Add(key, element!, options, ref state);
                     }
                 }
@@ -185,7 +190,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
@@ -206,7 +211,7 @@ namespace System.Text.Json.Serialization
 
                     CreateCollection(ref reader, ref state);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
                         Debug.Assert(state.ReferenceId != null);
                         Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -283,7 +288,7 @@ namespace System.Text.Json.Serialization
                     {
                         // Get the value from the converter and add it.
                         state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
-                        bool success = _valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element);
+                        bool success = _valueConverter.TryRead(ref reader, typeof(TValue), options, ref state, out TValue? element, out _);
                         if (!success)
                         {
                             state.Current.DictionaryKey = key;

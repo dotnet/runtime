@@ -6,10 +6,6 @@
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);VEX_INTRINSICS</DefineConstants>
-    <StripSymbols>true</StripSymbols>
-    
-    <!-- We should be able to delete once CI machines no longer use ancient LLVM -->
-    <ObjCopyName>objcopy</ObjCopyName>
   </PropertyGroup>
 
   <ItemGroup>

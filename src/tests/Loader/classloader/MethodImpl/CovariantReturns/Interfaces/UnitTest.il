@@ -321,7 +321,7 @@
     throw
   }
 
-  .method public hidebysig virtual instance class IGenRetType<!0, class IDictionary<string,!1>> MyGenFunc(string& res)
+  .method public hidebysig virtual instance class IGenRetType<!2, class IDictionary<string,!3>> MyGenFunc(string& res)
   {
     ldstr "Should never execute this method"
     newobj instance void [System.Runtime]System.Exception::.ctor(string)

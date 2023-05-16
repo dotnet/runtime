@@ -5,10 +5,11 @@
 // a jagged array a[i][j].
 
 using System;
+using Xunit;
 
 public class Runtime_66254
 {
-    public static void t1()
+    internal static void t1()
     {
         var a = new ValueTuple<int[], int>[]
         {
@@ -26,7 +27,7 @@ public class Runtime_66254
         }
     }
 
-    public static void t2()
+    internal static void t2()
     {
         var a = new ValueTuple<int[], int>[]
         {
@@ -45,7 +46,7 @@ public class Runtime_66254
         }
     }
 
-    public static void t3()
+    internal static void t3()
     {
         var a = new ValueTuple<int, int[]>[]
         {
@@ -64,7 +65,8 @@ public class Runtime_66254
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
 

@@ -4,12 +4,14 @@
 // Regression test for insufficient guard on inference of initial values
 // of induction variables.
 using System.Numerics;
+using Xunit;
 
 namespace N
 {
     public static class C
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int x = 0;
 

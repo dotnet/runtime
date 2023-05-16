@@ -97,6 +97,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.NewMultiDimArr:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
+                case ReadyToRunHelper.NewMultiDimArrRare:
+                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArrayRare");
+                    break;
 
                 case ReadyToRunHelper.NewArray:
                     mangledName = "RhNewArray";
@@ -130,10 +133,6 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.GetRuntimeFieldHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeFieldHandle");
-                    break;
-
-                case ReadyToRunHelper.AreTypesEquivalent:
-                    mangledName = "RhTypeCast_AreTypesEquivalent";
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
@@ -260,6 +259,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckCastClass:
                     mangledName = "RhTypeCast_CheckCastClass";
                     break;
+                case ReadyToRunHelper.CheckCastClassSpecial:
+                    mangledName = "RhTypeCast_CheckCastClassSpecial";
+                    break;
                 case ReadyToRunHelper.CheckInstanceClass:
                     mangledName = "RhTypeCast_IsInstanceOfClass";
                     break;
@@ -334,21 +336,6 @@ namespace ILCompiler
                 return "RhpNewArrayAlign8";
 
             return "RhpNewArray";
-        }
-
-        public static string GetCastingHelperNameForType(TypeDesc type, bool throwing)
-        {
-            if (type.IsArray)
-                return throwing ? "RhTypeCast_CheckCastArray" : "RhTypeCast_IsInstanceOfArray";
-
-            if (type.IsInterface)
-                return throwing ? "RhTypeCast_CheckCastInterface" : "RhTypeCast_IsInstanceOfInterface";
-
-            if (type.IsDefType)
-                return throwing ? "RhTypeCast_CheckCastClass" : "RhTypeCast_IsInstanceOfClass";
-
-            // No specialized helper for the rest of the types because they don't make much sense anyway.
-            return throwing ? "RhTypeCast_CheckCast" : "RhTypeCast_IsInstanceOf";
         }
     }
 }

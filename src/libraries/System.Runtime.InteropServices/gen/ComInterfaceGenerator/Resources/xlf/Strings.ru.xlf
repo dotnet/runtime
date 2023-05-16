@@ -147,6 +147,21 @@
         <target state="translated">Метод объявлен в частичном объявлении, отличном от атрибута GeneratedComInterface.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Интерфейс с атрибутом GeneratedComInterfaceAttribute может быть производным не более чем от одного другого интерфейса с атрибутом "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">Интерфейс "{0}" является производным от двух или более интерфейсов, атрибутированных с помощью "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Указанный интерфейс является производным от двух или более интерфейсов с атрибутом "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">Для типов, которые не поддерживаются в P/Invoke с созданием источника, в полученном P/Invoke для маршализации указанного типа будет использоваться среда выполнения.</target>
