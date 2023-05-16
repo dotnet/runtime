@@ -238,11 +238,11 @@ namespace System
 
         public static bool Parse(ReadOnlySpan<char> value)
         {
-            if (!TryParse(value, out bool _))
+            if (!TryParse(value, out bool result))
             {
                 ThrowHelper.ThrowFormatException_BadBoolean(value);
             }
-            return true;
+            return result;
         }
 
         // Determines whether a String represents true or false.
