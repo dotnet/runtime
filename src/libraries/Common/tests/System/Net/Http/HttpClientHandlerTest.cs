@@ -276,6 +276,7 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
@@ -410,6 +411,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -1369,6 +1371,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_Cancellation()
         {
             var tcs = new TaskCompletionSource<bool>();

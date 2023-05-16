@@ -639,6 +639,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -733,6 +734,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
         {
             await LoopbackServer.CreateClientAndServerAsync(
