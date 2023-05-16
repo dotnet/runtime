@@ -33,11 +33,11 @@ namespace System.IO
             if (destError != 0)
             {
                 // Some error, let's see what it is:
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                Interop.Error error = Interop.Sys.GetLastError();
 
                 // Destination not existing is expected, so if this is the case we try clonefile,
                 // otherwise we got some other error that the fallback code can deal with.
-                if (error.Error == Interop.Error.ENOENT)
+                if (error == Interop.Error.ENOENT)
                 {
                     goto tryCloneFile;
                 }
