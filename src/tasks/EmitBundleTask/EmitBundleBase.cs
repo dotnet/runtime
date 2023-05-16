@@ -116,7 +116,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                     }
 
                     contentSourceFile.SetMetadata("DataSymbol", $"{symbolName}_data");
-                    contentSourceFile.SetMetadata("DataLenSymbol", $"{symbolName}_len");
+                    contentSourceFile.SetMetadata("DataLenSymbol", $"{symbolName}_data_len");
                     contentSourceFile.SetMetadata("DataLenSymbolValue", symbolDataLen[symbolName].ToString());
                     bundledResources.Add(contentSourceFile);
                 });
@@ -136,7 +136,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                         shouldAddHeader = false;
 
                         destinationFile.SetMetadata("DataSymbol", $"{symbolName}_data");
-                        destinationFile.SetMetadata("DataLenSymbol", $"{symbolName}_len");
+                        destinationFile.SetMetadata("DataLenSymbol", $"{symbolName}_data_len");
                         destinationFile.SetMetadata("DataLenSymbolValue", symbolDataLen[symbolName].ToString());
                         bundledResources.Add(destinationFile);
                     }
@@ -162,8 +162,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             string culture = registeredFile.GetMetadata("Culture");
             string? resourceSymbolName = null;
             resourceSymbols.AppendLine($"extern uint8_t {resourceName}_data[];");
-            resourceSymbols.AppendLine($"extern const uint32_t {resourceName}_len;");
-            resourceSymbols.AppendLine($"#define {resourceName}_len_val {symbolDataLen[resourceName]}");
+            resourceSymbols.AppendLine($"extern const uint32_t {resourceName}_data_len;");
+            resourceSymbols.AppendLine($"#define {resourceName}_data_len_val {symbolDataLen[resourceName]}");
             if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
                 resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
             return (registeredFilename, resourceName, culture, resourceSymbolName);
@@ -278,7 +278,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             preallocatedSource.Add(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
                                          .Replace("%ResourceID%", resourceId)
                                          .Replace("%RegisteredFilename%", tuple.registeredFilename)
-                                         .Replace("%Len%", $"{tuple.resourceName}_len_val"));
+                                         .Replace("%Len%", $"{tuple.resourceName}_data_len_val"));
         }
 
         var addPreallocatedResources = new StringBuilder();
@@ -339,7 +339,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
 
         outputUtf8Writer.WriteLine("0\n};");
-        outputUtf8Writer.WriteLine($"const uint32_t {symbolName}_len = {generatedArrayLength};");
+        outputUtf8Writer.WriteLine($"const uint32_t {symbolName}_data_len = {generatedArrayLength};");
         outputUtf8Writer.Flush();
         outputUtf8Writer.BaseStream.Flush();
 

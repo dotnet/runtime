@@ -308,7 +308,7 @@ public class LibraryBuilderTask : AppBuilderTask
                     throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
                 }
                 externRuntimeConfigSymbols.AppendLine($"extern uint8_t {dataSymbol}[];");
-                externRuntimeConfigSymbols.AppendLine($"extern const uint32_t {dataLenSymbol}[];");
+                externRuntimeConfigSymbols.AppendLine($"extern const uint32_t {dataLenSymbol};");
             }
 
             externRuntimeConfigSymbols.AppendLine("#endif");
