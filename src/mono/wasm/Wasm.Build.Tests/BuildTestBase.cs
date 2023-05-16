@@ -838,17 +838,20 @@ namespace Wasm.Build.Tests
                         same: dotnetWasmFromRuntimePack);
 
             string bootConfigPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
-            Assert.True(File.Exists(bootConfigPath), $"Missing '{bootConfigPath}'");
+            Assert.True(File.Exists(bootConfigPath), $"Expected to find '{bootConfigPath}'");
 
             using (var bootConfigContent = File.OpenRead(bootConfigPath))
             {
                 var bootConfig = ParseBootData(bootConfigContent);
-                foreach (var dotnetJs in bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")))
+                var dotnetJsEntries = bootConfig.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.") && k.EndsWith(".js")).ToArray();
+
+                Assert.Equal(3, dotnetJsEntries.Length);
+                foreach (var dotnetJs in dotnetJsEntries)
                 {
                     Assert.DoesNotContain(dotnetJs, "..");
 
                     string dotnetJsAbsolutePath = Path.Combine(binFrameworkDir, dotnetJs);
-                    Assert.True(File.Exists(dotnetJsPath), $"Missing '{dotnetJsAbsolutePath}'");
+                    Assert.True(File.Exists(dotnetJsPath), $"Expected to find '{dotnetJsAbsolutePath}'");
                 }
             }
         }
