@@ -64,10 +64,6 @@ namespace System.IO
                     // Copying onto itself
                     throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
                 }
-                else
-                {
-                    goto tryDelete;
-                }
             }
 
             // Try deleting destination:
