@@ -213,11 +213,11 @@ namespace System.Net.Security
 
                 _buffer.EnsureAvailableSpace(InitialHandshakeBufferSize);
 
-                ProtocolToken message = default;
+                ProtocolToken message;
                 do
                 {
                     int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, ref message);
+                    ProcessTlsFrame(frameSize, out message);
 
                     if (message.Size > 0)
                     {
@@ -262,7 +262,7 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    NextMessage(reAuthenticationData, ref message);
+                    NextMessage(reAuthenticationData, out message);
 
                     if (message.Size > 0)
                     {
@@ -292,7 +292,7 @@ namespace System.Net.Security
                 while (!handshakeCompleted)
                 {
                     int frameSize = await ReceiveTlsFrameAsync<TIOAdapter>(cancellationToken).ConfigureAwait(false);
-                    ProcessTlsFrame(frameSize, ref message);
+                    ProcessTlsFrame(frameSize, out message);
 
                     ReadOnlyMemory<byte> payload = default;
                     if (message.Size > 0)
@@ -438,7 +438,7 @@ namespace System.Net.Security
         }
 
         // Calls crypto on received data. No IO inside.
-        private void ProcessTlsFrame(int frameSize, ref ProtocolToken message)
+        private void ProcessTlsFrame(int frameSize, out ProtocolToken message)
         {
             int chunkSize = frameSize;
 
@@ -471,18 +471,18 @@ namespace System.Net.Security
                 _buffer.DiscardEncrypted(frameSize);
             }
 
-            NextMessage(availableData.Slice(0, chunkSize), ref message);
+            NextMessage(availableData.Slice(0, chunkSize), out message);
         }
 
         //
         //  This is to reset auth state on remote side.
         //  If this write succeeds we will allow auth retrying.
         //
-        private void SendAuthResetSignal(ref ProtocolToken message, ExceptionDispatchInfo exception)
+        private void SendAuthResetSignal(ReadOnlySpan<byte> alert, ExceptionDispatchInfo exception)
         {
             SetException(exception.SourceException);
 
-            if (message.Size == 0)
+            if (alert.Length == 0)
             {
                 //
                 // We don't have an alert to send so cannot retry and fail prematurely.
@@ -490,7 +490,7 @@ namespace System.Net.Security
                 exception.Throw();
             }
 
-            InnerStream.Write(message.Payload!, 0, message.Size);
+            InnerStream.Write(alert);
 
             exception.Throw();
         }
@@ -556,17 +556,17 @@ namespace System.Net.Security
                 if (sslAuthenticationOptions!.CertValidationDelegate != null)
                 {
                     // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
-                    SendAuthResetSignal(ref alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
                 }
                 else if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors && chainStatus != X509ChainStatusFlags.NoError)
                 {
                     // We failed only because of chain and we have some insight.
-                    SendAuthResetSignal(ref alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_chain_validation, chainStatus), null)));
                 }
                 else
                 {
                     // Simple add sslPolicyErrors as crude info.
-                    SendAuthResetSignal(ref alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
+                    SendAuthResetSignal(new ReadOnlySpan<byte>(alertToken.Payload), ExceptionDispatchInfo.Capture(new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, sslPolicyErrors), null)));
                 }
             }
         }

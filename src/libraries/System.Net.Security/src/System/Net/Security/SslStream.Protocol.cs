@@ -751,7 +751,7 @@ namespace System.Net.Security
         }
 
         //
-        internal void NextMessage(ReadOnlySpan<byte> incomingBuffer, ref ProtocolToken token)
+        internal void NextMessage(ReadOnlySpan<byte> incomingBuffer, out ProtocolToken token)
         {
             byte[]? nextmsg = null;
             token.Status = GenerateToken(incomingBuffer, ref nextmsg);
