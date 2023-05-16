@@ -118,7 +118,7 @@ namespace Internal.IL
                 // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
                 // Otherwise follow the rules from ECMA-335 I.8.9.5.
                 if (!_isFallbackBodyCompilation &&
-                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
+                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType || owningType.IsInterface))
                 {
                     // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
