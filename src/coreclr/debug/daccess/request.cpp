@@ -3676,7 +3676,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
         if (ste->m_SyncBlock != NULL)
         {
-            SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
+            PTR_SyncBlock pBlock = ste->m_SyncBlock;
             pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
 #ifdef FEATURE_COMINTEROP
             if (pBlock->m_pInteropInfo)
