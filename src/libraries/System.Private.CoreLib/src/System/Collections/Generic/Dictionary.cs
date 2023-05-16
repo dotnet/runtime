@@ -110,17 +110,6 @@ namespace System.Collections.Generic
 
         private void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> enumerable)
         {
-            // Special-case ReadOnlyDictionary<TKey, TValue> to extract its underlying dictionary
-            // rather than going through it as a wrapper. ReadOnlyDictionary's GetEnumerator just returns
-            // the underlying dictionary's GetEnumerator, so this doesn't reduce iteration costs if
-            // the wrapped type isn't known; rather, this exposes the wrapped type to the subsequent
-            // type checks, so in the very common case where the wrapped collection is a Dictionary<TKey, TValue>,
-            // we get to take the fast path below.
-            if (enumerable.GetType() == typeof(ReadOnlyDictionary<TKey, TValue>))
-            {
-                enumerable = ((ReadOnlyDictionary<TKey, TValue>)enumerable).m_dictionary;
-            }
-
             // It is likely that the passed-in enumerable is Dictionary<TKey,TValue>. When this is the case,
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
@@ -164,29 +153,28 @@ namespace System.Collections.Generic
             }
 
             // We similarly special-case KVP<>[] and List<KVP<>>, as they're commonly used to seed dictionaries, and
-            // we want to avoid the enumerator costs (e.g. allocation) for them as well.
-
+            // we want to avoid the enumerator costs (e.g. allocation) for them as well. Extract a span if possible.
+            ReadOnlySpan<KeyValuePair<TKey, TValue>> span;
             if (enumerable is KeyValuePair<TKey, TValue>[] array)
             {
-                foreach (KeyValuePair<TKey, TValue> pair in array)
-                {
-                    Add(pair.Key, pair.Value);
-                }
-                return;
+                span = array;
             }
-
-            if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
+            else if (enumerable.GetType() == typeof(List<KeyValuePair<TKey, TValue>>))
             {
-                foreach (KeyValuePair<TKey, TValue> pair in CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable))
+                span = CollectionsMarshal.AsSpan((List<KeyValuePair<TKey, TValue>>)enumerable);
+            }
+            else
+            {
+                // Fallback path for all other enumerables
+                foreach (KeyValuePair<TKey, TValue> pair in enumerable)
                 {
                     Add(pair.Key, pair.Value);
                 }
                 return;
             }
 
-            // Fallback path for all other enumerables
-
-            foreach (KeyValuePair<TKey, TValue> pair in enumerable)
+            // We got a span. Add the elements to the dictionary.
+            foreach (KeyValuePair<TKey, TValue> pair in span)
             {
                 Add(pair.Key, pair.Value);
             }
