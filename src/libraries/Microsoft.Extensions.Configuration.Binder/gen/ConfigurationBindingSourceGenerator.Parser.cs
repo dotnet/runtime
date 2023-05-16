@@ -561,7 +561,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 // We want a BindCore method for List<TElement> as a temp holder for the array values.
-                EnumerableSpec? listSpec = ConstructGenericTypeSpec(_typeSymbols.List_Unconstructed, arrayType.ElementType) as EnumerableSpec;
+                EnumerableSpec? listSpec = ConstructGenericTypeSpec(_typeSymbols.List, arrayType.ElementType) as EnumerableSpec;
                 // We know the element type is supported.
                 Debug.Assert(listSpec != null);
                 if (listSpec is not null)
@@ -631,9 +631,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         populationStrategy = CollectionPopulationStrategy.Add;
                     }
-                    else if (GetInterface(type, _typeSymbols.GenericIDictionary) is not null)
+                    else if (GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) is not null)
                     {
-                        populationCastType = _typeSymbols.GenericIDictionary_Unconstructed;
+                        populationCastType = _typeSymbols.GenericIDictionary;
                         populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                     }
                     else
@@ -642,16 +642,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return null;
                     }
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary) || IsInterfaceMatch(type, _typeSymbols.IDictionary))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericIDictionary_Unbound) || IsInterfaceMatch(type, _typeSymbols.IDictionary))
                 {
-                    concreteType = _typeSymbols.Dictionary_Unconstructed;
+                    concreteType = _typeSymbols.Dictionary;
                     constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
                     populationStrategy = CollectionPopulationStrategy.Add;
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyDictionary))
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyDictionary_Unbound))
                 {
-                    concreteType = _typeSymbols.Dictionary_Unconstructed;
-                    populationCastType = _typeSymbols.GenericIDictionary_Unconstructed;
+                    concreteType = _typeSymbols.Dictionary;
+                    populationCastType = _typeSymbols.GenericIDictionary;
                     constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
@@ -698,9 +698,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         populationStrategy = CollectionPopulationStrategy.Add;
                     }
-                    else if (GetInterface(type, _typeSymbols.GenericICollection) is not null)
+                    else if (GetInterface(type, _typeSymbols.GenericICollection_Unbound) is not null)
                     {
-                        populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                        populationCastType = _typeSymbols.GenericICollection;
                         populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                     }
                     else
@@ -709,37 +709,37 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return null;
                     }
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.GenericICollection) ||
-                    IsInterfaceMatch(type, _typeSymbols.GenericIList))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericICollection_Unbound) ||
+                    IsInterfaceMatch(type, _typeSymbols.GenericIList_Unbound))
                 {
-                    concreteType = _typeSymbols.List_Unconstructed;
+                    concreteType = _typeSymbols.List;
                     constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
                     populationStrategy = CollectionPopulationStrategy.Add;
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.GenericIEnumerable))
+                else if (IsInterfaceMatch(type, _typeSymbols.GenericIEnumerable_Unbound))
                 {
-                    concreteType = _typeSymbols.List_Unconstructed;
-                    populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                    concreteType = _typeSymbols.List;
+                    populationCastType = _typeSymbols.GenericICollection;
                     constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.ISet))
+                else if (IsInterfaceMatch(type, _typeSymbols.ISet_Unbound))
                 {
-                    concreteType = _typeSymbols.HashSet_Unconstructed;
+                    concreteType = _typeSymbols.HashSet;
                     constructionStrategy = ConstructionStrategy.ParameterlessConstructor;
                     populationStrategy = CollectionPopulationStrategy.Add;
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlySet))
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlySet_Unbound))
                 {
-                    concreteType = _typeSymbols.HashSet_Unconstructed;
-                    populationCastType = _typeSymbols.ISet_Unconstructed;
+                    concreteType = _typeSymbols.HashSet;
+                    populationCastType = _typeSymbols.ISet;
                     constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
-                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection))
+                else if (IsInterfaceMatch(type, _typeSymbols.IReadOnlyList_Unbound) || IsInterfaceMatch(type, _typeSymbols.IReadOnlyCollection_Unbound))
                 {
-                    concreteType = _typeSymbols.List_Unconstructed;
-                    populationCastType = _typeSymbols.GenericICollection_Unconstructed;
+                    concreteType = _typeSymbols.List;
+                    populationCastType = _typeSymbols.GenericICollection;
                     constructionStrategy = ConstructionStrategy.ParameterizedConstructor;
                     populationStrategy = CollectionPopulationStrategy.Cast_Then_Add;
                 }
@@ -830,7 +830,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool TryGetElementType(INamedTypeSymbol type, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIEnumerable);
+                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIEnumerable_Unbound);
 
                 if (candidate is not null)
                 {
@@ -844,7 +844,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private bool IsCandidateDictionary(INamedTypeSymbol type, out ITypeSymbol? keyType, out ITypeSymbol? elementType)
             {
-                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIDictionary) ?? GetInterface(type, _typeSymbols.IReadOnlyDictionary);
+                INamedTypeSymbol? candidate = GetInterface(type, _typeSymbols.GenericIDictionary_Unbound) ?? GetInterface(type, _typeSymbols.IReadOnlyDictionary_Unbound);
 
                 if (candidate is not null)
                 {
