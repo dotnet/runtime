@@ -14371,7 +14371,9 @@ gc_heap::init_semi_shared()
 #endif //FEATURE_EVENT_TRACE
 
     conserve_mem_setting  = (int)GCConfig::GetGCConserveMem();
-    if (conserve_mem_setting  < 0)
+    if (conserve_mem_setting == 0 && GCConfig::GetGCDynamicAdaptation())
+        conserve_mem_setting = 5;
+    if (conserve_mem_setting < 0)
         conserve_mem_setting = 0;
     if (conserve_mem_setting > 9)
         conserve_mem_setting = 9;
@@ -42689,6 +42691,33 @@ size_t gc_heap::desired_new_allocation (dynamic_data* dd,
                     new_allocation = min (new_allocation,
                                           max (min_gc_size, (max_size/3)));
                 }
+
+                if (conserve_mem_setting != 0)
+                {
+                    // if this is set, limit gen 0 size to a small multiple of the older generations
+                    float f_older_gen = ((10.0f / conserve_mem_setting) - 1) * 0.5f;
+
+                    // compute the total size of the older generations
+                    size_t older_size = 0;
+                    for (int gen_index_older = 1; gen_index_older < total_generation_count; gen_index_older++)
+                    {
+                        dynamic_data* dd_older = dynamic_data_of (gen_index_older);
+                        older_size += dd_current_size (dd_older);
+                    }
+                    // derive a new allocation size from it
+                    size_t new_allocation_from_older = (size_t)(older_size*f_older_gen);
+
+                    // limit the new allocation to this value
+                    new_allocation = min (new_allocation, new_allocation_from_older);
+
+                    // but make sure it doesn't drop below the minimum size
+                    new_allocation = max (new_allocation, min_gc_size);
+
+                    dprintf (2, ("f_older_gen: %d%% older_size: %zd new_allocation: %zd",
+                        (int)(f_older_gen*100),
+                        older_size,
+                        new_allocation));
+                }
             }
         }
 
@@ -50263,6 +50292,12 @@ size_t gc_heap::get_gen0_min_size()
         trueSize = max(trueSize, (256*1024));
         int n_heaps = 1;
 #endif //SERVER_GC
+
+        if (GCConfig::GetGCConserveMem() != 0 || GCConfig::GetGCDynamicAdaptation())
+        {
+            // if we are asked to be stingy with memory, limit gen 0 size
+            gen0size = min (gen0size, (4*1024*1024));
+        }
 
         dprintf (1, ("gen0size: %zd * %d = %zd, physical mem: %zd / 6 = %zd",
                 gen0size, n_heaps, (gen0size * n_heaps),
