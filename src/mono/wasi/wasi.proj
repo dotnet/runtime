@@ -89,7 +89,7 @@
     <EmitBundleObjectFiles
       FilesToBundle="@(_WasmBundleTimezonesWithHashes)" 
       ClangExecutable="$(WasiClang)"
-      BundleName="mono_register_timezones_bundle"
+      BundleRegistrationFunctionName="mono_register_timezones_bundle"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
       OutputDirectory="$(WasiObjDir)"
       />

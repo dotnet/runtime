@@ -370,7 +370,7 @@
     <EmitBundleObjectFiles
       FilesToBundle="@(WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
-      BundleName="mono_register_assemblies_bundle"
+      BundleRegistrationFunctionName="mono_register_assemblies_bundle"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
       OutputDirectory="$(_WasmIntermediateOutputPath)"
       />
@@ -391,7 +391,7 @@
       Condition="'$(InvariantGlobalization)' != 'true'"
       FilesToBundle="@(WasmBundleIcuWithHashes)"
       ClangExecutable="$(WasiClang)"
-      BundleName="mono_register_icu_bundle"
+      BundleRegistrationFunctionName="mono_register_icu_bundle"
       BundleFile="$(_WasmIcuBundleObjectFile)"
       OutputDirectory="$(_WasmIntermediateOutputPath)"
       />
