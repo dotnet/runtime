@@ -15,8 +15,8 @@ namespace System.Buffers.Text
         public const int UInt16OverflowLengthHex = 4;
         public const int UInt32OverflowLength = 10;
         public const int UInt32OverflowLengthHex = 8;
-        public const int UInt64OverflowLength = 32;
-        public const int UInt64OverflowLengthHex = 32;
+        public const int UInt64OverflowLength = 20;
+        public const int UInt64OverflowLengthHex = 16;
         public const int UInt128OverflowLength = 39;
         public const int UInt128OverflowLengthHex = 32;
 
@@ -29,7 +29,7 @@ namespace System.Buffers.Text
         public const int Int64OverflowLength = 19;
         public const int Int64OverflowLengthHex = 16;
         public const int Int128OverflowLength = 39;
-        public const int Int128OverflowLengthHex = 39;
+        public const int Int128OverflowLengthHex = 32;
 
         // The consts below are the smallest unsigned x for which "x * 10 + 9"
         // might overflow {U}Int128.MaxValue. If the current accumulator is below
