@@ -11,7 +11,6 @@
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/threads.h>
@@ -67,6 +66,7 @@ extern void mono_register_timezones_bundle (void);
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
 #ifndef INVARIANT_GLOBALIZATION
+extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
 extern void mono_register_icu_bundle (void);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
