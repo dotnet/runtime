@@ -282,7 +282,7 @@ namespace Microsoft.Interop
             AttributeData? generatedComAttribute = null;
             foreach (var attr in symbol.ContainingType.GetAttributes())
             {
-                if (generatedComAttribute is not null && attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute)
+                if (generatedComAttribute is null && attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute)
                 {
                     generatedComAttribute = attr;
                 }
@@ -296,8 +296,21 @@ namespace Microsoft.Interop
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
+            var args = generatedComAttribute?.NamedArguments.ToImmutableDictionary();
+            var iacd = new InteropAttributeCompilationData();
+            if (args is not null)
+                iacd = iacd.WithValuesFromNamedArguments(args);
             // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, new InteropAttributeCompilationData(), generatedComAttribute), environment, typeof(VtableIndexStubGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(
+                symbol,
+                DefaultMarshallingInfoParser.Create(
+                    environment,
+                    generatorDiagnostics,
+                    symbol,
+                    iacd,
+                    generatedComAttribute),
+                environment,
+                typeof(VtableIndexStubGenerator).Assembly);
 
             if (!symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))
             {

@@ -6,5 +6,7 @@ namespace System.Runtime.InteropServices.Marshalling
     [AttributeUsage(AttributeTargets.Interface)]
     public class GeneratedComInterfaceAttribute : Attribute
     {
+        public StringMarshalling StringMarshalling { get; set; }
+        public Type? StringMarshallingCustomType { get; set; }
     }
 }
