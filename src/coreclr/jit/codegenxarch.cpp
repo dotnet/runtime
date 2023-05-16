@@ -1014,29 +1014,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         unsigned lclNum2 = (unsigned)-2;
 
 #ifdef DEBUG
-        if (op1->OperIsLocalRead())
+        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+
+        if (op1Skip->OperIsLocalRead())
         {
-            lclNum1 = op1->AsLclVarCommon()->GetLclNum();
+            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
         }
-        else if (op1->IsCopyOrReload())
+        if (op2Skip->OperIsLocalRead())
         {
-            GenTree* copySrc = op1->AsCopyOrReload()->gtGetOp1();
-            if (copySrc->OperIsLocalRead())
-            {
-                lclNum1 = copySrc->AsLclVarCommon()->GetLclNum();
-            }
-        }
-        if (op2->OperIsLocalRead())
-        {
-            lclNum2 = op2->AsLclVarCommon()->GetLclNum();
-        }
-        else if (op2->IsCopyOrReload())
-        {
-            GenTree* copySrc = op2->AsCopyOrReload()->gtGetOp1();
-            if (copySrc->OperIsLocalRead())
-            {
-                lclNum2 = copySrc->AsLclVarCommon()->GetLclNum();
-            }
+            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
         }
 #endif
         noway_assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
