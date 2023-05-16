@@ -668,11 +668,11 @@ namespace Wasm.Build.Tests
             var filesToExist = new List<string>()
             {
                 mainJS,
-                "dotnet.native.wasm",
+                "_framework/dotnet.native.wasm",
                 "_framework/blazor.boot.json",
-                "dotnet.js",
-                "dotnet.native.js",
-                "dotnet.runtime.js"
+                "_framework/dotnet.js",
+                "_framework/dotnet.native.js",
+                "_framework/dotnet.runtime.js"
             };
 
             if (isBrowserProject)
@@ -837,7 +837,7 @@ namespace Wasm.Build.Tests
                         same: dotnetWasmFromRuntimePack);
         }
 
-        protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir=null)
+        protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
