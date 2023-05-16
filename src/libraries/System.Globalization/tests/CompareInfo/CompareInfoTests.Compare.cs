@@ -101,8 +101,8 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "9999\uFF1910", "1\uFF10", CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, "9999\uFF191010", "1\uFF10", CompareOptions.None, 1 };
 
-            yield return new object[] { s_invariantCompare, "'\u3000'", "' '", validIgnoreKanaTypeOption, 0 };
-            yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", validIgnoreKanaTypeOption, 0 };
+            yield return new object[] { s_invariantCompare, "'\u3000'", "' '", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase, 0 };
+            yield return new object[] { s_invariantCompare, "\u30FC", "\uFF70", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\uFF0D", CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\u30FC", CompareOptions.None, 0 };
             yield return new object[] { s_invariantCompare, "\u30FC", "\u2015", CompareOptions.None, 1 };
