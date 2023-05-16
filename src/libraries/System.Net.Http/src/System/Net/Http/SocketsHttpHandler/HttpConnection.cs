@@ -669,7 +669,7 @@ namespace System.Net.Http
                     ParseHeaderNameValue(this, line.Span, response, isFromTrailer: false);
                 }
 
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)response.StatusCode);
 
                 if (allowExpect100ToContinue != null)
                 {

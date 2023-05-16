@@ -266,6 +266,7 @@ namespace System.Net.Http.Json.Functional.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // No Socket support
         [MemberData(nameof(GetFromJsonAsync_EnforcesMaxResponseContentBufferSize_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public async Task GetFromJsonAsync_EnforcesMaxResponseContentBufferSize(int limit, int contentLength, bool chunked)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
