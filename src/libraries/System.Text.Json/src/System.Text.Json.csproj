@@ -8,7 +8,7 @@
     <NoWarn>CS8969</NoWarn>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ServicingVersion>3</ServicingVersion>
     <!-- This library has been annotated to be AOT safe -->
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
