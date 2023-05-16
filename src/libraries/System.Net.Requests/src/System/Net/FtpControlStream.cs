@@ -896,7 +896,7 @@ namespace System.Net
             {
                 return dateTime;
             }
-            var dateTimeLine = strSpan[parts[1]];
+            ReadOnlySpan<char> dateTimeLine = strSpan[parts[1]];
             if (dateTimeLine.Length < 14)
             {
                 return dateTime;

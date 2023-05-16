@@ -69,6 +69,10 @@ namespace System.Xml.Serialization
         private static readonly string[] s_xmlReader = new string[] { "xmlReader" };
         private static readonly string[] s_objectToSerializeWriter = new string[] { "objectToSerialize", "writer" };
         private static readonly string[] s_reader = new string[] { "reader" };
+        private static readonly Type[] s_aType = new Type[] { typeof(Type) };
+        private static readonly Type[] s_xmlReaderType = new Type[] { typeof(XmlReader) };
+        private static readonly Type[] s_objectToSerializeWriterType = new Type[] { typeof(object), typeof(XmlSerializationWriter) };
+        private static readonly Type[] s_readerType = new Type[] { typeof(XmlSerializationReader) };
 
         internal MethodBuilder EnsureMethodBuilder(TypeBuilder typeBuilder, string methodName,
             MethodAttributes attributes, Type? returnType, Type[] parameterTypes)
@@ -233,7 +237,7 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(bool),
                 "CanSerialize",
-                new Type[] { typeof(Type) },
+                s_aType,
                 s_type,
                 CodeGenerator.PublicOverrideMethodAttributes);
             var uniqueTypes = new HashSet<Type>();
@@ -328,7 +332,7 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(bool),
                 "CanDeserialize",
-                new Type[] { typeof(XmlReader) },
+                s_xmlReaderType,
                 s_xmlReader,
                 CodeGenerator.PublicOverrideMethodAttributes
             );
@@ -363,7 +367,7 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(void),
                     "Serialize",
-                    new Type[] { typeof(object), typeof(XmlSerializationWriter) },
+                    s_objectToSerializeWriterType,
                     s_objectToSerializeWriter,
                     CodeGenerator.ProtectedOverrideMethodAttributes);
                 MethodInfo writerType_writeMethod = CreatedTypes[writerClass].GetMethod(
@@ -387,7 +391,7 @@ namespace System.Xml.Serialization
                 ilg.BeginMethod(
                     typeof(object),
                     "Deserialize",
-                    new Type[] { typeof(XmlSerializationReader) },
+                    s_readerType,
                     s_reader,
                     CodeGenerator.ProtectedOverrideMethodAttributes);
                 MethodInfo readerType_readMethod = CreatedTypes[readerClass].GetMethod(
@@ -441,7 +445,7 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 typeof(XmlSerializer),
                 "GetSerializer",
-                new Type[] { typeof(Type) },
+                s_aType,
                 s_type,
                 CodeGenerator.PublicOverrideMethodAttributes);
 

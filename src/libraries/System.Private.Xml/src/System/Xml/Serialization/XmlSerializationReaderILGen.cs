@@ -27,6 +27,7 @@ namespace System.Xml.Serialization
         internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
 
         private static readonly string[] s_checkType = new string[] { "checkType" };
+        private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
 
         private sealed class Member
         {
@@ -505,7 +506,7 @@ namespace System.Xml.Serialization
                 MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                     "set_IsReturnValue",
                     CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     )!;
                 ilg.Ldarg(0);
                 ilg.Ldc(true);
@@ -1291,7 +1292,7 @@ namespace System.Xml.Serialization
             ilg.BeginMethod(
                 nullableMapping.TypeDesc!.Type!,
                 GetMethodBuilder(methodName!),
-                new Type[] { typeof(bool) },
+                s_boolType,
                 s_checkType,
                 CodeGenerator.PrivateMethodAttributes);
 
@@ -1527,7 +1528,7 @@ namespace System.Xml.Serialization
                     MethodInfo XmlSerializationReader_set_DecodeName = typeof(XmlSerializationReader).GetMethod(
                          "set_DecodeName",
                          CodeGenerator.InstanceBindingFlags,
-                         new Type[] { typeof(bool) }
+                         s_boolType
                          )!;
                     ilg.Ldarg(0);
                     ilg.Ldc(false);
@@ -2561,7 +2562,7 @@ namespace System.Xml.Serialization
                         MethodInfo XmlSerializationReader_set_IsReturnValue = typeof(XmlSerializationReader).GetMethod(
                             "set_IsReturnValue",
                             CodeGenerator.InstanceBindingFlags,
-                            new Type[] { typeof(bool) }
+                            s_boolType
                             )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(false);
@@ -3017,7 +3018,7 @@ namespace System.Xml.Serialization
                     CodeGenerator.PrivateMethodAttributes,
                     // See WriteNullableMethod for different return type logic
                     element.Mapping.TypeDesc!.Type,
-                    new Type[] { typeof(bool) }
+                    s_boolType
                     );
                 ilg.Call(methodBuilder);
                 WriteSourceEnd(source, element.Mapping.TypeDesc.Type!);
@@ -3211,7 +3212,7 @@ namespace System.Xml.Serialization
                         MethodInfo XmlSerializationReader_ReadXmlXXX = typeof(XmlSerializationReader).GetMethod(
                               isDoc ? "ReadXmlDocument" : "ReadXmlNode",
                               CodeGenerator.InstanceBindingFlags,
-                              new Type[] { typeof(bool) }
+                              s_boolType
                               )!;
                         ilg.Ldarg(0);
                         ilg.Ldc(element.Any ? false : true);
