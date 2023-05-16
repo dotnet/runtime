@@ -787,7 +787,10 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 #ifdef DEBUG
     if (accessType == TYP_STRUCT)
     {
-        assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+        if (lcl->OperIsLocalRead())
+        {
+            assert((user == nullptr) || user->OperIs(GT_CALL, GT_RETURN) || user->OperIsStore());
+        }
     }
     else
     {
@@ -833,7 +836,6 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
     if (isDef)
     {
-        (*use)->gtFlags |= GTF_VAR_DEF; // TODO-ASG: delete.
         rep.NeedsWriteBack = true;
         rep.NeedsReadBack  = false;
     }
