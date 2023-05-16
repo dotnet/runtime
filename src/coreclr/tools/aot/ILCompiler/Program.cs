@@ -29,7 +29,7 @@ namespace ILCompiler
     internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
-        internal static readonly char[] s_separator = new char[] { ',', ';', ' ' };
+        private static readonly char[] s_separator = new char[] { ',', ';', ' ' };
 
         public Program(ILCompilerRootCommand command)
         {
