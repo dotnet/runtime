@@ -3445,10 +3445,6 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                 }
                 else if (fieldType == ELEMENT_TYPE_CLASS)
                 {
-                    // Here is just skip the array as its elements' count greater than 1.
-                    // The `struct {int array[1]; float field_2;}` which the array field is only one element,
-                    // just skip it although it can be passed by registers one integer and one float-register.
-                    // Details see github https://github.com/dotnet/runtime/pull/62885#discussion_r821878981
                     size = STRUCT_NO_FLOAT_FIELD;
                     goto _End_arg;
                 }
