@@ -14161,7 +14161,7 @@ gc_heap::init_semi_shared()
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
 #ifdef DYNAMIC_HEAP_COUNT
-    if (GCConfig::GetGCDynamicHeapCount() && GCConfig::GetHeapCount() == 0)
+    if (GCConfig::GetGCDynamicAdaptation() && GCConfig::GetHeapCount() == 0)
     {
         // we'll actually start with one heap in this case
         g_mark_list_total_size = mark_list_size;
@@ -24789,7 +24789,7 @@ void gc_heap::check_heap_count ()
         return;
     }
 
-    if (!GCConfig::GetGCDynamicHeapCount())
+    if (!GCConfig::GetGCDynamicAdaptation())
     {
         // don't change the heap count dynamically if the feature isn't explicitly enabled
         return;        
@@ -24819,7 +24819,7 @@ void gc_heap::check_heap_count ()
 
                 // estimate the size of each generation as the live data size plus the budget
                 heap_size += dd_promoted_size (dd) + dd_desired_allocation (dd);
-                dprintf (5555, ("h%d g%d promoted: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
+                dprintf (6666, ("h%d g%d promoted: %zd desired allocation: %zd", i, gen_idx, dd_promoted_size (dd), dd_desired_allocation (dd)));
             }
         }
 
@@ -24834,7 +24834,7 @@ void gc_heap::check_heap_count ()
         sample.allocating_thread_count = allocating_thread_count;
         sample.heap_size = heap_size;
 
-        dprintf (5555, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
+        dprintf (6666, ("sample %d: msl_wait_time: %zd, elapsed_between_gcs: %zd, gc_elapsed_time: %d, heap_size: %zd MB",
             dynamic_heap_count_data.sample_index,
             sample.msl_wait_time,
             sample.elapsed_between_gcs,
@@ -24868,7 +24868,7 @@ void gc_heap::check_heap_count ()
                     percent_overhead[i] = 0;
                 else if (percent_overhead[i] > 100)
                     percent_overhead[i] = 100;
-                dprintf (5555, ("sample %d: percent_overhead: %d%%", i, (int)percent_overhead[i]));
+                dprintf (6666, ("sample %d: percent_overhead: %d%%", i, (int)percent_overhead[i]));
             }
             // compute the median of the percent overhead samples
         #define compare_and_swap(i, j)                                       \
@@ -24887,16 +24887,10 @@ void gc_heap::check_heap_count ()
 
             // the middle element is the median overhead percentage
             float median_percent_overhead = percent_overhead[1];
-            dprintf (5555, ("median overhead: %d%%", median_percent_overhead));
+            dprintf (6666, ("median overhead: %d%%", median_percent_overhead));
 
-            // estimate the space cost of adding a heap as the min gen0 size plus
-            // 2 basic regions (for gen 1 and gen 2) plus
-            // 2 large regions (for LOH and POH)
-            // this neglects other space (like the mark list and the mark list piece)
-            // but it likely overestimates the contribution from regions
-            size_t basic_region_size = global_region_allocator.get_region_alignment();
-            size_t large_region_size = global_region_allocator.get_large_region_alignment();
-            size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0) + basic_region_size*2 + large_region_size*2;
+            // estimate the space cost of adding a heap as the min gen0 size
+            size_t heap_space_cost_per_heap = dd_min_size (hp0_dd0);
 
             // compute the % space cost of adding a heap
             float percent_heap_space_cost_per_heap = heap_space_cost_per_heap * 100.0f / heap_size;
@@ -24935,18 +24929,32 @@ void gc_heap::check_heap_count ()
             }
     #else //STRESS_DYNAMIC_HEAP_COUNT
             int new_n_heaps = n_heaps;
+            if (median_percent_overhead > 5.0f)
+            {
+                if (median_percent_overhead > 10.0f)
+                {
+                    // ramp up more agressively - use as many heaps as it would take to bring
+                    // the overhead down to 5%
+                    new_n_heaps = (int)(n_heaps * (median_percent_overhead / 5.0));
+                    new_n_heaps = min (new_n_heaps, n_max_heaps - extra_heaps);
+                }
+                else
+                {
+                    new_n_heaps += step_up;
+                }
+            }
             // if we can save at least 1% more in time than we spend in space, increase number of heaps
-            if (overhead_reduction_per_step_up - space_cost_increase_per_step_up >= 1.0f)
+            else if (overhead_reduction_per_step_up - space_cost_increase_per_step_up >= 1.0f)
             {
                 new_n_heaps += step_up;
             }
             // if we can save at least 1% more in space than we spend in time, decrease number of heaps
-            else if (space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
+            else if (median_percent_overhead < 1.0f && space_cost_decrease_per_step_down - overhead_increase_per_step_down >= 1.0f)
             {
                 new_n_heaps -= step_down;
             }
 
-            dprintf (5555, ("or: %d, si: %d,  sd: %d, oi: %d => %d -> %d",
+            dprintf (6666, ("or: %d, si: %d,  sd: %d, oi: %d => %d -> %d",
                 (int)overhead_reduction_per_step_up,
                 (int)space_cost_increase_per_step_up,
                 (int)space_cost_decrease_per_step_down,
@@ -25006,7 +25014,7 @@ void gc_heap::check_heap_count ()
 
 bool gc_heap::prepare_to_change_heap_count (int new_n_heaps)
 {
-    dprintf (5555, ("trying to change heap count %d -> %d", n_heaps, new_n_heaps));
+    dprintf (6666, ("trying to change heap count %d -> %d", n_heaps, new_n_heaps));
 
     // use this variable for clarity - n_heaps will change during the transition
     int old_n_heaps = n_heaps;
@@ -46057,13 +46065,14 @@ void gc_heap::descr_generations (const char* msg)
         }
 
         int bgcs = VolatileLoadWithoutBarrier (&current_bgc_state);
+#ifdef SIMPLE_DPRINTF
         dprintf (REGIONS_LOG, ("[%s] GC#%Id (bgcs: %d, %s) g0: %Idmb (f: %Idmb %d%%), g1: %Idmb (f: %Idmb %d%%), g2: %Idmb (f: %Idmb %d%%), g3: %Idmb (f: %Idmb %d%%)",
             msg, idx, bgcs, str_bgc_state[bgcs],
             total_gen_size_mb[0], total_gen_fragmentation_mb[0], (total_gen_size_mb[0] ? (int)((double)total_gen_fragmentation_mb[0] * 100.0 / (double)total_gen_size_mb[0]) : 0),
             total_gen_size_mb[1], total_gen_fragmentation_mb[1], (total_gen_size_mb[1] ? (int)((double)total_gen_fragmentation_mb[1] * 100.0 / (double)total_gen_size_mb[1]) : 0),
             total_gen_size_mb[2], total_gen_fragmentation_mb[2], (total_gen_size_mb[2] ? (int)((double)total_gen_fragmentation_mb[2] * 100.0 / (double)total_gen_size_mb[2]) : 0),
             total_gen_size_mb[3], total_gen_fragmentation_mb[3], (total_gen_size_mb[3] ? (int)((double)total_gen_fragmentation_mb[3] * 100.0 / (double)total_gen_size_mb[3]) : 0)));
-
+#endif //SIMPLE_DPRINTF
         // print every 20 GCs so it's easy to see if we are making progress.
         if ((idx % 20) == 0)
         {
@@ -47823,7 +47832,7 @@ HRESULT GCHeap::Initialize()
     {
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
-        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicHeapCount())
+        if (GCConfig::GetHeapCount() == 0 && GCConfig::GetGCDynamicAdaptation())
         {
             // ... start with only 1 heap
             gc_heap::g_heaps[0]->change_heap_count (1);
