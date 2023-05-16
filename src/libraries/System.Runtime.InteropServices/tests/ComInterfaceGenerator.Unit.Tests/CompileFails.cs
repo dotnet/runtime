@@ -134,50 +134,50 @@ namespace ComInterfaceGenerator.Unit.Tests
                 .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
-        [Fact]
 
-        public async Task ValidateAttributesAreCopiedToShadowingMethods()
+        [Fact]
+        public async Task ValidateInterfaceWithoutGuidWarns()
         {
             var source = $$"""
-                using System;
-                using System.Runtime.InteropServices;
-                using System.Runtime.InteropServices.Marshalling;
 
-                namespace Test
+                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface]
+                partial interface {|#0:IFoo|}
                 {
-                    [GeneratedComInterface]
-                    [Guid("EA4319EA-AE9A-4261-B42D-BB027AD81F5F")]
-                    partial interface IFoo
+                    void Method();
+                }
+
+            """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute)
+                .WithLocation(0).WithArguments("IFoo");
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        [Fact]
+        public async Task VerifyGenericInterfaceCreatesDiagnostic()
+        {
+            var source = $$"""
+
+                namespace Tests
+                {
+                    public interface IFoo1<T>
                     {
-                        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("message")]
-                        void Bar();
+                        void Method();
                     }
 
-                    [GeneratedComInterface]
-                    [Guid("8A501001-02CA-490A-AA23-0ECC646F07A3")]
-                    partial interface IDerivedIface : IFoo
+                    [System.Runtime.InteropServices.Marshalling.GeneratedComInterface]
+                    [System.Runtime.InteropServices.Guid("36722BA8-A03B-406E-AFE6-27AA2F7AC032")]
+                    partial interface {|#0:IFoo2|}<T>
                     {
+                        void Method();
                     }
                 }
-            """;
+                """;
 
-            var test = new VerifyCompilationTest(false)
-            {
-                TestCode = source,
-                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
-                CompilationVerifier = VerifyCompilation
-            };
-            await test.RunAsync();
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported)
+                .WithLocation(0).WithArguments("IFoo2");
 
-            static void VerifyCompilation(Compilation comp)
-            {
-                Assert.True(comp.GetTypeByMetadataName("Test.IFoo")
-                    ?.GetMembers()
-                    .Where(m => m.Kind == SymbolKind.Method && m.Name == "Bar")
-                    .SingleOrDefault()
-                    ?.GetAttributes()
-                    .Any(att => att.AttributeClass?.Name == nameof(RequiresUnreferencedCodeAttribute)));
-            }
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
     }
 }
