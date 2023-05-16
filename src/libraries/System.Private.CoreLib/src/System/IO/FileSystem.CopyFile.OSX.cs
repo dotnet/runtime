@@ -104,7 +104,7 @@ namespace System.IO
 
                 // Copy the file using the standard unix implementation.
                 // Note: this code needs to be kept in sync with the code in FileSystem.CopyFile.OtherUnix.cs.
-                StandardCopyFile(src, dst, fileStatus.Size);
+                Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileStatus.Size));
             }
         }
     }
