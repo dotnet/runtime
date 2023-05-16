@@ -346,8 +346,8 @@ void load_icu_data (void)
 #ifdef WASM_SINGLE_FILE
 	mono_register_icu_bundle ();
 
-	unsigned char *buffer = NULL;
-	int data_len = 0;
+	const uint8_t *buffer = NULL;
+	uint32_t data_len = 0;
 	if (!mono_bundled_resources_get_data_resource_values ("icudt.dat", &buffer, &data_len)) {
 		printf("Could not load icudt.dat from the bundle");
 		assert(buffer);

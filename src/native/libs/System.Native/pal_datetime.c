@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_datetime.h"
 #include "pal_utilities.h"
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,9 +68,18 @@ const char* SystemNative_GetTimeZoneData(const char* name, int* length)
     assert(name != NULL);
     assert(length != NULL);
 #if defined(TARGET_WASI) || defined(TARGET_BROWSER)
-    unsigned char *data = NULL;
-    mono_bundled_resources_get_data_resource_values (name, &data, length);
-    return data;
+    const uint8_t *data = NULL;
+    uint32_t data_len = 0;
+
+    mono_bundled_resources_get_data_resource_values (name, &data, &data_len);
+    assert (data_len <= INT_MAX);
+    if (data_len > INT_MAX) {
+        data_len = 0;
+        data = NULL;
+    }
+
+    *length = (int)data_len;
+    return (const char *)data;
 #else
     assert_msg(false, "Not supported on this platform", 0);
     (void)name; // unused
