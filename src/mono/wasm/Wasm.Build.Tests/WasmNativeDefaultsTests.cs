@@ -89,14 +89,45 @@ namespace Wasm.Build.Tests
             Assert.Contains("Stopping the build", output);
         }
 
+        /*
+         * build/publish: if buildnative for any reason .. then strip=false
+         *
+         *
+         */
         [Theory]
-        [MemberData(nameof(DefaultsTestData), parameters: false)]
-        public void WasmNativeStripDefaultWithBuild(string config, string extraProperties, bool aot, bool buildValue, bool publishValue)
+        //[MemberData(nameof(DefaultsTestData), parameters: false)]
+        [InlineData("Debug", "", false, true)]
+        [InlineData("Release", "", false, true)]
+        [InlineData("Debug", "<WasmBuildNative>true</WasmBuildNative>", true, false)]
+        [InlineData("Release", "<WasmBuildNative>true</WasmBuildNative>", true, true)]
+        // Explicitly setting WasmNativeStrip=false
+        [InlineData("Debug", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
+        [InlineData("Release", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
+        public void WasmNativeStripDefaultWithBuild(string config, string extraProperties, bool expectedWasmBuildNative, bool expectedWasmNativeStrip)
         {
-            string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue, publish: false);
+            string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNative, publish: false);
 
             // for build
-            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            Assert.Contains($"** WasmNativeStrip: '{expectedWasmNativeStrip.ToString().ToLower()}'", output);
+            Assert.Contains($"** WasmBuildNative: '{expectedWasmBuildNative.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            Assert.Contains("Stopping the build", output);
+        }
+
+        [Theory]
+        //[MemberData(nameof(DefaultsTestData), parameters: false)]
+        [InlineData("Debug", "", false, true)]
+        [InlineData("Release", "", true, true)]
+        [InlineData("Debug", "<WasmBuildNative>true</WasmBuildNative>", true, false)]
+        // Explicitly setting WasmNativeStrip=false
+        [InlineData("Debug", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
+        [InlineData("Release", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
+        public void WasmNativeStripDefaultWithPublish(string config, string extraProperties, bool expectedWasmBuildNative, bool expectedWasmNativeStrip)
+        {
+            string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNative, publish: true);
+
+            // for build
+            Assert.Contains($"** WasmNativeStrip: '{expectedWasmNativeStrip.ToString().ToLower()}'", output);
+            Assert.Contains($"** WasmBuildNative: '{expectedWasmBuildNative.ToString().ToLower()}', WasmBuildingForNestedPublish: 'true'", output);
             Assert.Contains("Stopping the build", output);
         }
 
@@ -136,8 +167,8 @@ namespace Wasm.Build.Tests
             extraProperties += "<_WasmDevel>true</_WasmDevel>";
 
             string printValueTarget = @"
-                <Target Name=""PrintWasmBuildNative"" AfterTargets=""_SetWasmBuildNativeDefaults"">
-                    <Message Text=""** WasmNativeStrip=$(WasmNativeStrip)"" Importance=""High"" />
+                <Target Name=""PrintWasmBuildNative"" AfterTargets=""_SetWasmNativeStripDefault"">
+                    <Message Text=""** WasmNativeStrip: '$(WasmNativeStrip)'"" Importance=""High"" />
                     <Message Text=""** WasmBuildNative: '$(WasmBuildNative)', WasmBuildingForNestedPublish: '$(WasmBuildingForNestedPublish)'"" Importance=""High"" />
                 " + (publish
                         ? @"<Error Text=""Stopping the build"" Condition=""$(WasmBuildingForNestedPublish) == 'true'"" />"

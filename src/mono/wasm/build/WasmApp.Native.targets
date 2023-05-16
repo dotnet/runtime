@@ -159,7 +159,7 @@
   <Target Name="_SetWasmNativeStripDefault" AfterTargets="_SetWasmBuildNativeDefaults" Condition="'$(WasmNativeStrip)' == ''">
     <PropertyGroup>
       <WasmNativeStrip Condition="'$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
-      <WasmNativeStrip Condition="'$(WasmBuildNative)' != 'true'">true</WasmNativeStrip>
+      <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
     </PropertyGroup>
   </Target>
 
