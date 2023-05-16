@@ -75,9 +75,9 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         };
 
         // Create app
-        var asmRootPath = AppDir;
+        var frameworkPath = Path.Combine(AppDir, "_framework");
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(asmRootPath);
+        Directory.CreateDirectory(frameworkPath);
         if (UseWebcil)
             Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
         foreach (var assembly in _assemblies)
@@ -87,7 +87,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var tmpWebcil = Path.GetTempFileName();
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                var finalWebcil = Path.Combine(frameworkPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
@@ -96,21 +96,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
             else
             {
-                FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+                FileCopyChecked(assembly, Path.Combine(frameworkPath, Path.GetFileName(assembly)), "Assemblies");
             }
             if (DebugLevel != 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    FileCopyChecked(pdb, Path.Combine(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
+                    FileCopyChecked(pdb, Path.Combine(frameworkPath, Path.GetFileName(pdb)), "Assemblies");
             }
         }
 
+        Log.LogMessage(MessageImportance.High, $"MF NativeAssets length '{NativeAssets.Length}'");
         foreach (ITaskItem item in NativeAssets)
         {
             var name = Path.GetFileName(item.ItemSpec);
-            var dest = Path.Combine(AppDir!, name);
+            var dest = Path.Combine(frameworkPath, name);
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
 
@@ -119,8 +120,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
+            Log.LogMessage(MessageImportance.High, $"MF NativeAssets '{name}', '{item.ItemSpec}'");
             if (name.StartsWith("dotnet", StringComparison.OrdinalIgnoreCase) && string.Equals(Path.GetExtension(name), ".wasm", StringComparison.OrdinalIgnoreCase))
             {
+                Log.LogMessage(MessageImportance.High, "MF dotnetwasm");
+
                 if (config.resources.runtimeAssets == null)
                     config.resources.runtimeAssets = new();
 
@@ -154,7 +158,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             {
                 if (UseWebcil)
                 {
-                    assemblyPath = Path.Combine(asmRootPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
+                    assemblyPath = Path.Combine(frameworkPath, Path.ChangeExtension(Path.GetFileName(assembly), ".webcil"));
                     // For the hash, read the bytes from the webcil file, not the dll file.
                     bytes = File.ReadAllBytes(assemblyPath);
                 }
@@ -182,7 +186,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 config.resources.satelliteResources = new();
 
             string name = Path.GetFileName(args.fullPath);
-            string directory = Path.Combine(AppDir, args.culture);
+            string directory = Path.Combine(frameworkPath, args.culture);
             Directory.CreateDirectory(directory);
             if (UseWebcil)
             {
@@ -215,7 +219,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
 
         if (FilesToIncludeInFileSystem.Length > 0)
         {
-            string supportFilesDir = Path.Combine(AppDir, "supportFiles");
+            string supportFilesDir = Path.Combine(frameworkPath, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
 
             var i = 0;
@@ -346,11 +350,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             sw.Write(json);
         }
 
-        string monoConfigDir = Path.Combine(AppDir, "_framework");
-        if (!Directory.Exists(monoConfigDir))
-            Directory.CreateDirectory(monoConfigDir);
-
-        string monoConfigPath = Path.Combine(monoConfigDir, "blazor.boot.json"); // TODO: Unify with Wasm SDK
+        string monoConfigPath = Path.Combine(frameworkPath, "blazor.boot.json"); // TODO: Unify with Wasm SDK
         Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
