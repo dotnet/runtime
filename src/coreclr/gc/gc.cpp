@@ -18,7 +18,6 @@
 
 #include "gcpriv.h"
 #include <math.h>
-#include <time.h>
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 #define USE_VXSORT
@@ -18016,23 +18015,6 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
 #endif //BACKGROUND_GC
 }
 
-// The code of the helper function is a replicate of CRT rand() implementation.
-inline
-int FastRNG(int iMaxValue)
-{
-    static BOOL bisRandInit = FALSE;
-    static int lHoldrand = 1L;
-
-    if (!bisRandInit)
-    {
-        lHoldrand = (int)time(NULL);
-        bisRandInit = TRUE;
-    }
-    int randValue = (((lHoldrand = lHoldrand * 214013L + 2531011L) >> 16) & 0x7fff);
-    return randValue % iMaxValue;
-}
-
-
 inline
 bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* etw_allocation_amount)
 {
@@ -18059,7 +18041,7 @@ bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* 
   #endif
     {
         // compute the next threshold based on a Poisson process with a etw_allocation_tick_mean average
-        etw_threshold = (size_t)(-log(1 - ((double)FastRNG(RAND_MAX)/(double)RAND_MAX)) * etw_allocation_tick_mean) + 1;
+        etw_threshold = (size_t)(-log(1 - ((double)gc_rand::get_rand(RAND_MAX)/(double)RAND_MAX)) * etw_allocation_tick_mean) + 1;
     }
 #endif
     }
@@ -46267,12 +46249,21 @@ void StressHeapDummy ();
 // the test/application run by CLR is enabling any FPU exceptions.
 // We want to avoid any unexpected exception coming from stress
 // infrastructure, so CLRRandom is not an option.
-// The code of the helper function is a replicate of CRT rand() implementation.
+// The code below is a replicate of CRT rand() implementation.
 // Using CRT rand() is not an option because we will interfere with the user application
 // that may also use it.
 int StressRNG(int iMaxValue)
 {
-    return FastRNG(iMaxValue);
+    static BOOL bisRandInit = FALSE;
+    static int lHoldrand = 1L;
+
+    if (!bisRandInit)
+    {
+        lHoldrand = (int)time(NULL);
+        bisRandInit = TRUE;
+    }
+    int randValue = (((lHoldrand = lHoldrand * 214013L + 2531011L) >> 16) & 0x7fff);
+    return randValue % iMaxValue;
 }
 
 #endif // STRESS_HEAP
