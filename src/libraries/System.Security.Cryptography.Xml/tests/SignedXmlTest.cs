@@ -1594,6 +1594,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void VerifyXmlResolver(bool provideResolver)
         {
             HttpListener listener;
