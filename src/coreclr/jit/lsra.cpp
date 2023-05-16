@@ -8155,6 +8155,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
             GenTree* op = lastNode->gtGetOp1();
+
+Consume_Op2:
             consumedRegs |= genRegMask(op->GetRegNum());
 
             if (op->OperIs(GT_COPY))
@@ -8162,16 +8164,20 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 GenTree* srcOp = op->gtGetOp1();
                 consumedRegs |= genRegMask(srcOp->GetRegNum());
             }
-
-            if (op->IsLocal())
+            else if (op->IsLocal())
             {
                 GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
                 terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
             }
 
+            if (!lastNode->gtGetOp2()->isContainedIntOrIImmed() && (op != lastNode->gtGetOp2()))
+            {
+                op = lastNode->gtGetOp2();
+                goto Consume_Op2;
+            }
+
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-            // TODO-LOONGARCH64: Take into account that on LA64, the second
-            // operand of a JCMP can be in a register too.
+            // For LoongArch64/RISC-V, the second operand of a JCMP can be in a register too.
             assert(!lastNode->OperIs(GT_JCMP, GT_JTEST) || lastNode->gtGetOp2()->isContained());
 #endif
         }
