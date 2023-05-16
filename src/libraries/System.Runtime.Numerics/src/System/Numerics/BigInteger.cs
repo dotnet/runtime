@@ -356,7 +356,9 @@ namespace System.Numerics
                 int dwordCount = byteCount / 4 + (unalignedBytes == 0 ? 0 : 1);
 
                 if (dwordCount > MaxLength)
+                {
                     ThrowHelper.ThrowOverflowException();
+                }
 
                 uint[] val = new uint[dwordCount];
                 int byteCountMinus1 = byteCount - 1;
