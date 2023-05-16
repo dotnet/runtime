@@ -1702,11 +1702,15 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
         case NI_Vector512_GetElement:
+        {
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
+        }
 
         default:
+        {
             noway_assert(!"unexpected GT_HWINTRINSIC node in long decomposition");
             break;
+        }
     }
 
     return nullptr;

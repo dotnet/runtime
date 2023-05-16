@@ -5405,6 +5405,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                     switch (intrinsicId)
                     {
+                        case NI_Vector128_ToScalar:
+                        case NI_Vector256_ToScalar:
+                        case NI_Vector512_ToScalar:
                         case NI_SSE2_ConvertToInt32:
                         case NI_SSE2_ConvertToUInt32:
                         case NI_SSE2_X64_ConvertToInt64:

@@ -7124,6 +7124,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
             }
 #endif // TARGET_XARCH
 
+            case NI_Vector128_ToScalar:
+#ifdef TARGET_ARM64
+            case NI_Vector64_ToScalar:
+#else
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif
+            {
+                return EvaluateSimdGetElement(this, type, baseType, arg0VN, 0);
+            }
+
             default:
                 break;
         }
