@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupCompileBeforeAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false, string outputSubFolder = null)
 		{
-			if (sourceFiles == null)
-				throw new ArgumentNullException (nameof (sourceFiles));
+			ArgumentNullException.ThrowIfNull (sourceFiles);
 
 			if (string.IsNullOrEmpty (outputName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (outputName));
@@ -35,8 +34,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 
 		public SetupCompileBeforeAttribute (string outputName, Type[] typesToIncludeSourceFor, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false)
 		{
-			if (typesToIncludeSourceFor == null)
-				throw new ArgumentNullException (nameof (typesToIncludeSourceFor));
+			ArgumentNullException.ThrowIfNull (typesToIncludeSourceFor);
 
 			if (string.IsNullOrEmpty (outputName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (outputName));

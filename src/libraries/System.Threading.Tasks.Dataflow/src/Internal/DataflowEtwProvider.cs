@@ -139,7 +139,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
                     if (completionTask.IsFaulted)
                     {
-                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception!.InnerExceptions.Select(e => e.ToString())); }
+                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception!.InnerExceptions.Select(static e => e.ToString())); }
                         catch { }
                     }
 

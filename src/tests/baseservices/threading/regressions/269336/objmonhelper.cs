@@ -3,12 +3,14 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-class ObjMonHelper {
+public class ObjMonHelper {
 	const string FailMsg = @"Monitor.Enter appears to have mistaken a hash code in an object header for
 a valid lock owned by the current thread.";
 
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		var ok = true;
 		var arr = new object[1024*1024];
 

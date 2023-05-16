@@ -86,9 +86,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
 
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
+    if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
     assert((unsigned)id->idInsFmt() < emitFmtCount);
@@ -128,15 +128,29 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
 
     if (id->idIsLargeCns())
     {
-        if (id->idIsLargeDsp())
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPairCns);
+        }
+        else if (id->idIsLargeDsp())
+        {
             return sizeof(instrDescCnsDsp);
+        }
         else
+        {
             return sizeof(instrDescCns);
+        }
     }
     else
     {
-        if (id->idIsLargeDsp())
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPair);
+        }
+        else if (id->idIsLargeDsp())
+        {
             return sizeof(instrDescDsp);
+        }
         else
         {
 #if FEATURE_LOOP_ALIGN
@@ -444,7 +458,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_2D: // DR_2D   X..........nnnnn cccc..nnnnnmmmmm      Rd Rn    cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -2399,18 +2413,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*static*/ unsigned emitter::NaturalScale_helper(emitAttr size)
 {
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE);
-
-    unsigned result = 0;
-    unsigned utemp  = (unsigned)size;
-
-    // Compute log base 2 of utemp (aka 'size')
-    while (utemp > 1)
-    {
-        result++;
-        utemp >>= 1;
-    }
-
-    return result;
+    return BitOperations::Log2((unsigned)size);
 }
 
 /************************************************************************
@@ -4185,7 +4188,7 @@ void emitter::emitIns_Mov(
 
         case INS_sxtw:
         {
-            assert(size == EA_8BYTE);
+            assert((size == EA_8BYTE) || (size == EA_4BYTE));
             FALLTHROUGH;
         }
 
@@ -5068,6 +5071,7 @@ void emitter::emitIns_R_R_I(
     emitAttr  elemsize   = EA_UNKNOWN;
     insFormat fmt        = IF_NONE;
     bool      isLdSt     = false;
+    bool      isLdrStr   = false;
     bool      isSIMD     = false;
     bool      isAddSub   = false;
     bool      setFlags   = false;
@@ -5529,6 +5533,7 @@ void emitter::emitIns_R_R_I(
             unscaledOp = false;
             scale      = NaturalScale_helper(size);
             isLdSt     = true;
+            isLdrStr   = true;
             break;
 
         case INS_ldur:
@@ -5683,11 +5688,9 @@ void emitter::emitIns_R_R_I(
             }
         }
 
-        // Is the ldr/str even necessary?
-        // For volatile load/store, there will be memory barrier instruction before/after the load/store
-        // and in such case, IsRedundantLdStr() returns false, because the method just checks for load/store
-        // pair next to each other.
-        if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+        // Try to optimize a load/store with an alternative instruction.
+        if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
+            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
         {
             return;
         }
@@ -6494,6 +6497,136 @@ void emitter::emitIns_R_R_R(
     appendToCurIG(id);
 }
 
+//-----------------------------------------------------------------------------------
+// emitIns_R_R_R_I_LdStPair: Add an instruction storing 2 registers into a memory
+//                     (pointed by reg3) and the offset (immediate).
+//
+// Arguments:
+//     ins      - The instruction code
+//     attr     - The emit attribute for register 1
+//     attr2    - The emit attribute for register 2
+//     reg1     - Register 1
+//     reg2     - Register 2
+//     reg3     - Register 3
+//     imm      - Immediate offset, prior to scaling by operand size
+//     varx1    - LclVar number 1
+//     varx2    - LclVar number 2
+//     offs1    - Memory offset of lclvar number 1
+//     offs2    - Memory offset of lclvar number 2
+//
+void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
+                                       emitAttr    attr,
+                                       emitAttr    attr2,
+                                       regNumber   reg1,
+                                       regNumber   reg2,
+                                       regNumber   reg3,
+                                       ssize_t     imm,
+                                       int         varx1,
+                                       int         varx2,
+                                       int         offs1,
+                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
+{
+    assert((ins == INS_stp) || (ins == INS_ldp));
+    emitAttr  size  = EA_SIZE(attr);
+    insFormat fmt   = IF_NONE;
+    unsigned  scale = 0;
+
+    // Is the target a vector register?
+    if (isVectorRegister(reg1))
+    {
+        assert(isValidVectorLSPDatasize(size));
+        assert(isVectorRegister(reg2));
+
+        scale = NaturalScale_helper(size);
+        assert((scale >= 2) && (scale <= 4));
+    }
+    else
+    {
+        assert(isValidGeneralDatasize(size));
+        assert(isGeneralRegisterOrZR(reg2));
+        scale = (size == EA_8BYTE) ? 3 : 2;
+    }
+
+    reg3 = encodingSPtoZR(reg3);
+
+    fmt          = IF_LS_3C;
+    ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+    if (imm == 0)
+    {
+        fmt = IF_LS_3B;
+    }
+    else
+    {
+        if ((imm & mask) == 0)
+        {
+            imm >>= scale; // The immediate is scaled by the size of the ld/st
+        }
+        else
+        {
+            // Unlike emitIns_S_S_R_R(), we would never come here when
+            // (imm & mask) != 0.
+            unreached();
+        }
+    }
+
+    bool validVar1 = varx1 != -1;
+    bool validVar2 = varx2 != -1;
+
+    instrDesc* id;
+
+    if (validVar1 && validVar2)
+    {
+        id = emitNewInstrLclVarPair(attr, imm);
+        id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
+        id->idSetIsLclVar();
+
+        emitGetLclVarPairLclVar2(id)->initLclVarAddr(varx2, offs2);
+    }
+    else
+    {
+        id = emitNewInstrCns(attr, imm);
+        if (validVar1)
+        {
+            id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
+            id->idSetIsLclVar();
+        }
+        if (validVar2)
+        {
+            id->idAddr()->iiaLclVar.initLclVarAddr(varx2, offs2);
+            id->idSetIsLclVar();
+        }
+    }
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+
+    // Record the attribute for the second register in the pair
+    if (EA_IS_GCREF(attr2))
+    {
+        id->idGCrefReg2(GCT_GCREF);
+    }
+    else if (EA_IS_BYREF(attr2))
+    {
+        id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
+    }
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs  = var1RefsOffs;
+    id->idDebugOnlyInfo()->idVarRefOffs2 = var2RefsOffs;
+#endif
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing three registers and a constant.
@@ -6641,6 +6774,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                 scale = (size == EA_8BYTE) ? 3 : 2;
             }
             isLdSt = true;
+            fmt    = IF_LS_3C;
             break;
 
         case INS_ld1:
@@ -6919,6 +7053,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(!"Instruction cannot be encoded: Add/Sub IF_DR_3A");
         }
     }
+
     assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
@@ -7314,7 +7449,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
         case INS_cinv:
         case INS_cneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegisterOrZR(reg2));
             cfi.cond = cond;
             fmt      = IF_DR_2D;
             break;
@@ -7554,10 +7689,11 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
-    emitAttr  size  = EA_SIZE(attr);
-    insFormat fmt   = IF_NONE;
-    int       disp  = 0;
-    unsigned  scale = 0;
+    emitAttr  size     = EA_SIZE(attr);
+    insFormat fmt      = IF_NONE;
+    int       disp     = 0;
+    unsigned  scale    = 0;
+    bool      isLdrStr = false;
 
     assert(offs >= 0);
 
@@ -7584,7 +7720,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         case INS_str:
         case INS_ldr:
             assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
-            scale = genLog2(EA_SIZE_IN_BYTES(size));
+            scale    = genLog2(EA_SIZE_IN_BYTES(size));
+            isLdrStr = true;
             break;
 
         case INS_lea:
@@ -7607,8 +7744,9 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     disp = base + offs;
     assert((scale >= 0) && (scale <= 4));
 
-    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2           = encodingSPtoZR(reg2);
+    bool      useRegForImm = false;
+    regNumber reg2         = FPbased ? REG_FPBASE : REG_SPBASE;
+    reg2                   = encodingSPtoZR(reg2);
 
     if (ins == INS_lea)
     {
@@ -7636,10 +7774,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else
     {
-        bool    useRegForImm = false;
-        ssize_t mask         = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-
-        imm = disp;
+        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+        imm          = disp;
         if (imm == 0)
         {
             fmt = IF_LS_2A;
@@ -7677,13 +7813,14 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         }
     }
 
-    // Is the ldr/str even necessary?
-    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    assert(fmt != IF_NONE);
+
+    // Try to optimize a load/store with an alternative instruction.
+    if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
+        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
-
-    assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
 
@@ -7811,6 +7948,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
     int       disp          = 0;
     unsigned  scale         = 0;
     bool      isVectorStore = false;
+    bool      isStr         = false;
 
     // TODO-ARM64-CQ: use unscaled loads?
     /* Figure out the encoding format of the instruction */
@@ -7839,6 +7977,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
                 scale         = NaturalScale_helper(size);
                 isVectorStore = true;
             }
+            isStr = true;
             break;
 
         default:
@@ -7908,13 +8047,14 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
         fmt = IF_LS_3A;
     }
 
-    // Is the ldr/str even necessary?
-    if (emitComp->opts.OptimizationEnabled() && IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    assert(fmt != IF_NONE);
+
+    // Try to optimize a store with an alternative instruction.
+    if (isStr && emitComp->opts.OptimizationEnabled() &&
+        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
-
-    assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
 
@@ -9921,6 +10061,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             // Backward branches using instruction count must be within the same instruction group.
             assert(insNum + 1 >= (unsigned)(-instrCount));
         }
+
         dstOffs = ig->igOffs + emitFindOffset(ig, (insNum + 1 + instrCount));
         dstAddr = emitOffsetToPtr(dstOffs);
     }
@@ -11724,31 +11865,81 @@ SKIP_GC_UPDATE:
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
+            {
                 emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
+            }
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
-            unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
+            int      varNum2 = varNum;
+            int      adr2    = adr;
+            unsigned ofs2    = ofs;
+            unsigned ofs2Dist;
+
+            if (id->idIsLclVarPair())
+            {
+                bool FPbased2;
+
+                emitLclVarAddr* lclVarAddr2 = emitGetLclVarPairLclVar2(id);
+                varNum2                     = lclVarAddr2->lvaVarNum();
+                ofs2                        = lclVarAddr2->lvaOffset();
+
+                // If there are 2 GC vars in this instrDesc, get the 2nd variable
+                // that should be tracked.
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                ofs2Dist = EA_SIZE_IN_BYTES(size);
+#ifdef DEBUG
+                assert(FPbased == FPbased2);
+                if (FPbased)
+                {
+                    assert(id->idReg3() == REG_FP);
+                }
+                else
+                {
+                    assert(id->idReg3() == REG_SP);
+                }
+                assert(varNum2 != -1);
+#endif // DEBUG
+            }
+            else
+            {
+                ofs2Dist = TARGET_POINTER_SIZE;
+                ofs2 += ofs2Dist;
+            }
+
+            ofs2 = AlignDown(ofs2, ofs2Dist);
+
             if (id->idGCrefReg2() != GCT_NONE)
             {
-                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst DEBUG_ARG(varNum));
+#ifdef DEBUG
+                if (id->idGCref() != GCT_NONE)
+                {
+                    // If 1st register was a gc-var, then make sure the offset
+                    // are correctly set for the 2nd register that is holding
+                    // another gc-var.
+                    assert((adr + ofs + ofs2Dist) == (adr2 + ofs2));
+                }
+#endif
+                emitGCvarLiveUpd(adr2 + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
             }
             else
             {
                 // If the type of the local is a gc ref type, update the liveness.
                 var_types vt;
-                if (varNum >= 0)
+                if (varNum2 >= 0)
                 {
                     // "Regular" (non-spill-temp) local.
-                    vt = var_types(emitComp->lvaTable[varNum].lvType);
+                    vt = var_types(emitComp->lvaTable[varNum2].lvType);
                 }
                 else
                 {
-                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
+                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum2);
                     vt              = tmpDsc->tdTempType();
                 }
                 if (vt == TYP_REF || vt == TYP_BYREF)
-                    emitGCvarDeadUpd(adr + ofs2, dst DEBUG_ARG(varNum));
+                {
+                    emitGCvarDeadUpd(adr2 + ofs2, dst DEBUG_ARG(varNum2));
+                }
             }
         }
     }
@@ -12404,6 +12595,15 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+#ifdef DEBUG
+    if (!emitComp->opts.disAddr)
+    {
+        return;
+    }
+#else // DEBUG
+    return;
+#endif
+
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
@@ -13735,11 +13935,18 @@ void emitter::emitDispInsHelp(
             break;
     }
 
-    if (id->idDebugOnlyInfo()->idVarRefOffs)
+    if (id->idIsLclVar())
     {
         printf("\t// ");
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                          id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+        if (id->idIsLclVarPair())
+        {
+            printf(", ");
+            emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
+            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2,
+                             asmfm);
+        }
     }
 
     printf("\n");
@@ -13767,7 +13974,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 
-    if (varx >= 0 && emitComp->opts.varNames)
+    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
 
@@ -13797,7 +14004,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -13906,7 +14113,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber addrReg = indir->GetSingleTempReg();
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
-            else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+            else if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -13919,6 +14126,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                // On Arm64, TEB is in r18, so load from the r18 as base.
+                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
@@ -13941,7 +14153,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     else // addr is not contained, so we evaluate it into a register
     {
 #ifdef DEBUG
-        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
@@ -16023,7 +16235,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 
     if (canOptimize &&                       // Don't optimize if unsafe.
         (emitLastIns->idIns() == INS_mov) && // Don't optimize if last instruction was not 'mov'.
-        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous instruction.
+        (emitLastIns->idOpSize() == size))   // Don't optimize if operand size is different than previous
+                                             // instruction.
     {
         // Check if we did same move in prev instruction except dst/src were switched.
         regNumber prevDst    = emitLastIns->idReg1();
@@ -16085,7 +16298,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 //
 //    str x1,  [x2, #56]
 //    ldr x1,  [x2, #56]   <-- redundant
-
+//
 // Arguments:
 //    ins  - The current instruction
 //    dst  - The current destination
@@ -16093,13 +16306,19 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 //    imm  - Immediate offset
 //    size - Operand size
 //    fmt  - Format of instruction
+//
 // Return Value:
 //    true if previous instruction already has desired value in register/memory location.
-
+//
+// Notes:
+//    For volatile load/store, there will be memory barrier instruction before/after the load/store
+//    and in such case, this method returns false, because the method just checks for load/store
+//    pair next to each other.
+//
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    if (((ins != INS_ldr) && (ins != INS_str)) || !emitCanPeepholeLastIns())
+    if ((ins != INS_ldr) && (ins != INS_str))
     {
         return false;
     }
@@ -16108,7 +16327,7 @@ bool emitter::IsRedundantLdStr(
     regNumber prevReg2   = emitLastIns->idReg2();
     insFormat lastInsfmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
-    ssize_t prevImm = emitLastIns->idIsLargeCns() ? ((instrDescCns*)emitLastIns)->idcCnsVal : emitLastIns->idSmallCns();
+    ssize_t   prevImm    = emitGetInsSC(emitLastIns);
 
     // Only optimize if:
     // 1. "base" or "base plus immediate offset" addressing modes.
@@ -16159,5 +16378,383 @@ bool emitter::IsRedundantLdStr(
     }
 
     return false;
+}
+
+//-----------------------------------------------------------------------------------
+// OptimizeLdrStr: Try to optimize "ldr" or "str" instruction with an alternative
+//                 instruction.
+//
+// Arguments:
+//     ins      - The instruction code
+//     reg1Attr - The emit attribute for register 1
+//     reg1     - Register 1
+//     reg2     - Register 2
+//     imm      - Immediate offset, prior to scaling by operand size
+//     size     - Operand size
+//     fmt               - Instruction format
+//     localVar          - If current instruction has local var
+//     varx     - LclVarNum if this instruction contains local variable
+//     offs     - Stack offset where it is accessed (loaded / stored).
+//     useRsvdReg     - If this instruction needs reserved register.
+//
+// Return Value:
+//    "true" if the previous instruction has been overwritten.
+//
+bool emitter::OptimizeLdrStr(instruction ins,
+                             emitAttr    reg1Attr,
+                             regNumber   reg1,
+                             regNumber   reg2,
+                             ssize_t     imm,
+                             emitAttr    size,
+                             insFormat   fmt,
+                             bool        localVar,
+                             int         varx,
+                             int offs DEBUG_ARG(bool useRsvdReg))
+{
+    assert(ins == INS_ldr || ins == INS_str);
+
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
+    {
+        return false;
+    }
+
+    // Is the ldr/str even necessary?
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    // Register 2 needs conversion to unencoded value for following optimisation checks.
+    reg2 = encodingZRtoSP(reg2);
+
+    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
+    //
+    if (ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt, localVar, varx, offs))
+    {
+        assert(!useRsvdReg);
+        return true;
+    }
+
+    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
+    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
+    {
+        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
+        return true;
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// ReplaceLdrStrWithPairInstr: Potentially, overwrite a previously-emitted "ldr" or "str"
+//                             instruction with an "ldp" or "stp" instruction.
+//
+// Arguments:
+//     ins      - The instruction code
+//     reg1Attr - The emit attribute for register 1
+//     reg1     - Register 1
+//     reg2     - Register 2
+//     imm      - Immediate offset, prior to scaling by operand size
+//     size     - Operand size
+//     fmt               - Instruction format
+//     localVar          - If current instruction has local var
+//     currLclVarNum     - LclVarNum if this instruction contains local variable
+//     offs     - Stack offset where it is accessed (loaded / stored).
+//
+// Return Value:
+//    "true" if the previous instruction has been overwritten.
+//
+bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
+                                         emitAttr    reg1Attr,
+                                         regNumber   reg1,
+                                         regNumber   reg2,
+                                         ssize_t     imm,
+                                         emitAttr    size,
+                                         insFormat   fmt,
+                                         bool        isCurrLclVar,
+                                         int         varx,
+                                         int         offs)
+{
+    RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
+
+    if (optimizationOrder == eRO_none)
+    {
+        return false;
+    }
+
+    regNumber prevReg1 = emitLastIns->idReg1();
+#ifdef DEBUG
+    unsigned prevVarRefsOffs = emitLastIns->idDebugOnlyInfo()->idVarRefOffs;
+    unsigned newVarRefsOffs  = emitVarRefOffs;
+#endif
+
+    ssize_t     prevImm = emitGetInsSC(emitLastIns);
+    instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
+
+    emitAttr prevReg1Attr;
+    ssize_t  prevImmSize   = prevImm * size;
+    ssize_t  newImmSize    = imm * size;
+    bool     isLastLclVar  = emitLastIns->idIsLclVar();
+    int      prevOffset    = -1;
+    int      prevLclVarNum = -1;
+
+    if (emitLastIns->idIsLclVar())
+    {
+        prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
+        prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
+    }
+
+    if (!isCurrLclVar)
+    {
+        assert((varx == -1) && (offs == -1));
+    }
+
+    switch (emitLastIns->idGCref())
+    {
+        case GCT_GCREF:
+            prevReg1Attr = EA_GCREF;
+            break;
+        case GCT_BYREF:
+            prevReg1Attr = EA_BYREF;
+            break;
+        default:
+            prevReg1Attr = emitLastIns->idOpSize();
+            break;
+    }
+
+    // Remove the last instruction written.
+    emitRemoveLastInstruction();
+
+    // Combine two 32 bit stores of value zero into one 64 bit store
+    if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
+    {
+        // The first register is at the lower offset for the ascending order
+        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
+        emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+        return true;
+    }
+
+    if (optimizationOrder == eRO_ascending)
+    {
+        emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, varx,
+                                 prevOffset, offs DEBUG_ARG(prevVarRefsOffs) DEBUG_ARG(newVarRefsOffs));
+    }
+    else
+    {
+        emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum,
+                                 offs, prevOffset DEBUG_ARG(newVarRefsOffs) DEBUG_ARG(prevVarRefsOffs));
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------------
+// IsOptimizableLdrStrWithPair: Check if it is possible to optimize two "ldr" or "str"
+//                              instructions into a single "ldp" or "stp" instruction.
+//
+// Examples:            ldr     w1, [x20, #0x10]
+//                      ldr     w2, [x20, #0x14]    =>  ldp     w1, w2, [x20, #0x10]
+//
+//                      ldr     w1, [x20, #0x14]
+//                      ldr     w2, [x20, #0x10]    =>  ldp     w2, w1, [x20, #0x10]
+//
+//                      ldr     w1, [x20]
+//                      ldr     w2, [x20, #0x04]    =>  ldp     w1, w2, [x20]
+//
+//                      ldr     q1, [x0, #0x20]
+//                      ldr     q2, [x0, #0x30]     =>  ldp     q1, q2, [x0, #0x20]
+//
+// Arguments:
+//     ins  - The instruction code
+//     reg1 - Register 1 number
+//     reg2 - Register 2 number
+//     imm  - Immediate offset, prior to scaling by operand size
+//     size - Operand size
+//     fmt  - Instruction format
+//
+// Return Value:
+//    eRO_none       - No optimization of consecutive instructions is possible
+//    eRO_ascending  - Registers can be loaded/ stored into ascending store locations
+//    eRO_descending - Registers can be loaded/ stored into decending store locations.
+//
+emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    RegisterOrder optimisationOrder = eRO_none;
+
+    if ((ins != INS_ldr) && (ins != INS_str))
+    {
+        return eRO_none;
+    }
+
+    if (ins != emitLastIns->idIns())
+    {
+        // Not successive ldr or str instructions
+        return eRO_none;
+    }
+
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = emitLastIns->idReg2();
+    insFormat lastInsFmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t   prevImm    = emitGetInsSC(emitLastIns);
+
+    // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
+    // For LDR/ STR, there are 9 bits, so we need to limit the range explicitly in software.
+    if ((imm < -64) || (imm > 63) || (prevImm < -64) || (prevImm > 63))
+    {
+        // Then one or more of the immediate values is out of range, so we cannot optimize.
+        return eRO_none;
+    }
+
+    if ((reg1 == REG_SP) || (prevReg1 == REG_SP) || (isGeneralRegisterOrZR(reg1) != isGeneralRegisterOrZR(prevReg1)))
+    {
+        // We cannot optimise when one of the following conditions are met
+        // 1. reg1 or prevReg1 is SP
+        // 2. both reg1 and prevReg1 are not of the same type (SIMD or non-SIMD)
+        return eRO_none;
+    }
+
+    const bool compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) ||
+                               (lastInsFmt == IF_LS_2A && fmt == IF_LS_2B);
+    if (!compatibleFmt)
+    {
+        // We cannot optimise when all of the following conditions are met
+        // 1. instruction formats differ
+        // 2. instructions are not using "base" or "base plus immediate offset" addressing modes
+        return eRO_none;
+    }
+
+    if ((emitInsIsLoad(ins)) && (prevReg1 == prevReg2))
+    {
+        // Then the previous load overwrote the register that we are indexing against.
+        return eRO_none;
+    }
+
+    if ((emitInsIsLoad(ins)) && (reg1 == prevReg1))
+    {
+        // Cannot load to the same register twice.
+        return eRO_none;
+    }
+
+    if (prevSize != size)
+    {
+        // Operand sizes differ.
+        return eRO_none;
+    }
+
+    // There are two possible orders for consecutive registers.
+    // These may be stored to or loaded from increasing or
+    // decreasing store locations.
+    if (imm == (prevImm + 1))
+    {
+        // Previous Register 1 is at a higher offset than This Register 1
+        optimisationOrder = eRO_ascending;
+    }
+    else if (imm == (prevImm - 1))
+    {
+        // Previous Register 1 is at a lower offset than This Register 1
+        optimisationOrder = eRO_descending;
+    }
+    else
+    {
+        // Not consecutive immediate values.
+        return eRO_none;
+    }
+
+    if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
+    {
+        // The "register 2" should be same as previous instruction and should either be a general
+        // register or stack pointer.
+        return eRO_none;
+    }
+
+    if (emitComp->compGeneratingUnwindProlog || emitComp->compGeneratingUnwindEpilog)
+    {
+        // Don't remove instructions while generating "unwind" part of prologs or epilogs,
+        // because for those instructions, we need to report unwind codes to the OS.
+        return eRO_none;
+    }
+
+    return optimisationOrder;
+}
+
+//-----------------------------------------------------------------------------------
+// IsOptimizableLdrToMov: Check if it is possible to optimize a second "ldr"
+//                        instruction into a cheaper "mov" instruction.
+//
+// Examples:            ldr     w1, [x20, #0x10]
+//                      ldr     w2, [x20, #0x10]    =>  mov     w2, w1
+//
+// Arguments:
+//     ins  - The instruction code
+//     reg1 - Register 1 number
+//     reg2 - Register 2 number
+//     imm  - Immediate offset, prior to scaling by operand size
+//     size - Operand size
+//     fmt  - Instruction format
+//
+// Return Value:
+//    true       - Optimization of the second instruction is possible
+//
+bool emitter::IsOptimizableLdrToMov(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    if (ins != INS_ldr)
+    {
+        // This instruction is not an "ldr" instruction.
+        return false;
+    }
+
+    if (ins != emitLastIns->idIns())
+    {
+        // Not successive "ldr" instructions.
+        return false;
+    }
+
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
+    insFormat lastInsFmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t   prevImm    = emitGetInsSC(emitLastIns);
+
+    if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
+    {
+        // The "register 2" should be same as previous instruction and
+        // should either be a general register or stack pointer.
+        return false;
+    }
+
+    if (prevImm != imm)
+    {
+        // Then we are loading from a different immediate offset.
+        return false;
+    }
+
+    if (!isGeneralRegister(reg1) || !isGeneralRegister(prevReg1))
+    {
+        // We cannot optimise when register 1 or previous register 1 is a general register.
+        return false;
+    }
+
+    if (lastInsFmt != fmt)
+    {
+        // The formats of the two instructions differ.
+        return false;
+    }
+
+    if (prevReg1 == prevReg2)
+    {
+        // Then the previous load overwrote the register that we are indexing against.
+        return false;
+    }
+
+    if (prevSize != size)
+    {
+        // Operand sizes differ.
+        return false;
+    }
+
+    return true;
 }
 #endif // defined(TARGET_ARM64)

@@ -5,6 +5,7 @@ namespace System
 {
     public enum ConsoleKey
     {
+        None = 0x0,
         Backspace = 0x8,
         Tab = 0x9,
         Clear = 0xC,

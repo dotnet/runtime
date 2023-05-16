@@ -9,6 +9,8 @@ namespace System.Collections.Frozen
     public static partial class FrozenDictionary
     {
         public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
+        public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IEqualityComparer<TKey>? comparer, bool optimizeForReading) where TKey : notnull { throw null; }
+        public static System.Collections.Frozen.FrozenDictionary<TKey, TValue> ToFrozenDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, bool optimizeForReading) where TKey : notnull { throw null; }
         public static System.Collections.Frozen.FrozenDictionary<TKey, TSource> ToFrozenDictionary<TSource, TKey>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
         public static System.Collections.Frozen.FrozenDictionary<TKey, TElement> ToFrozenDictionary<TSource, TKey, TElement>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TElement> elementSelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) where TKey : notnull { throw null; }
     }
@@ -71,6 +73,8 @@ namespace System.Collections.Frozen
     public static partial class FrozenSet
     {
         public static System.Collections.Frozen.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IEqualityComparer<T>? comparer = null) { throw null; }
+        public static System.Collections.Frozen.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T> source, System.Collections.Generic.IEqualityComparer<T>? comparer, bool optimizeForReading) { throw null; }
+        public static System.Collections.Frozen.FrozenSet<T> ToFrozenSet<T>(this System.Collections.Generic.IEnumerable<T> source, bool optimizeForReading) { throw null; }
     }
     public abstract partial class FrozenSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
@@ -261,6 +265,7 @@ namespace System.Collections.Immutable
             > CastUp<TDerived>(System.Collections.Immutable.ImmutableArray<TDerived> items) where TDerived : class?, T { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Clear() { throw null; }
         public bool Contains(T item) { throw null; }
+        public bool Contains(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length) { }
         public void CopyTo(T[] destination) { }
         public void CopyTo(T[] destination, int destinationIndex) { }
@@ -1251,5 +1256,13 @@ namespace System.Linq
         public static System.Collections.Generic.Dictionary<TKey, TElement> ToDictionary<TKey, TElement, T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, TKey> keySelector, System.Func<T, TElement> elementSelector) where TKey : notnull { throw null; }
         public static System.Collections.Generic.Dictionary<TKey, TElement> ToDictionary<TKey, TElement, T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, TKey> keySelector, System.Func<T, TElement> elementSelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer) where TKey : notnull { throw null; }
         public static System.Collections.Generic.IEnumerable<T> Where<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
+    }
+}
+namespace System.Runtime.InteropServices
+{
+    public static partial class ImmutableCollectionsMarshal
+    {
+        public static System.Collections.Immutable.ImmutableArray<T> AsImmutableArray<T>(T[]? array) { throw null; }
+        public static T[]? AsArray<T>(System.Collections.Immutable.ImmutableArray<T> array) { throw null; }
     }
 }

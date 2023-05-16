@@ -9,8 +9,8 @@
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
 
-.assembly legacy library ldfldr4 { }
-.class sealed private auto ansi beforefieldinit Test_ldfldr4
+.assembly legacy library ASSEMBLY_NAME { }
+.class sealed public auto ansi beforefieldinit Test_ldfldr4
        extends [mscorlib]System.Object
 {
   .field private initonly float32 a

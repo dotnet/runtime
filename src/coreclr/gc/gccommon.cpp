@@ -17,7 +17,7 @@ IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
 
 #ifdef BUILD_AS_STANDALONE
-IGCToCLR2* g_theGCToCLR;
+IGCToCLR* g_theGCToCLR;
 VersionInfo g_runtimeSupportedVersion;
 #endif // BUILD_AS_STANDALONE
 

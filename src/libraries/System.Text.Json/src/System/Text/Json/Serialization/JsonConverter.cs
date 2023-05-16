@@ -55,6 +55,11 @@ namespace System.Text.Json.Serialization
         internal virtual bool SupportsCreateObjectDelegate => false;
 
         /// <summary>
+        /// Indicates that the converter is compatible with <see cref="JsonObjectCreationHandling.Populate"/>.
+        /// </summary>
+        internal virtual bool CanPopulate => false;
+
+        /// <summary>
         /// Can direct Read or Write methods be called (for performance).
         /// </summary>
         internal bool CanUseDirectReadOrWrite { get; set; }
@@ -90,23 +95,12 @@ namespace System.Text.Json.Serialization
             throw new InvalidOperationException();
         }
 
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        internal virtual JsonTypeInfo CreateReflectionJsonTypeInfo(JsonSerializerOptions options)
+        internal virtual JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
             Debug.Fail("Should not be reachable.");
 
             throw new InvalidOperationException();
         }
-
-        internal virtual JsonTypeInfo CreateCustomJsonTypeInfo(JsonSerializerOptions options)
-        {
-            Debug.Fail("Should not be reachable.");
-
-            throw new InvalidOperationException();
-        }
-
-        internal abstract JsonParameterInfo CreateJsonParameterInfo();
 
         internal abstract JsonConverter<TTarget> CreateCastingConverter<TTarget>();
 

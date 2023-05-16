@@ -37,7 +37,7 @@ namespace System.Net.Http.Headers
 
         public AuthenticationHeaderValue(string scheme, string? parameter)
         {
-            HeaderUtilities.CheckValidToken(scheme, nameof(scheme));
+            HeaderUtilities.CheckValidToken(scheme);
             HttpHeaders.CheckContainsNewLine(parameter);
             _scheme = scheme;
             _parameter = parameter;
@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
 
             parsedValue = null;
 
-            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length))
+            if (string.IsNullOrEmpty(input) || (startIndex >= input.Length) || HttpRuleParser.ContainsNewLine(input, startIndex))
             {
                 return 0;
             }

@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 
 namespace System.Text.Json.Reflection
@@ -14,7 +13,8 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetCompilableName(type.GetElementType()!) + "[]";
+                int rank = type.GetArrayRank();
+                return GetCompilableName(type.GetElementType()!) + TypeWrapper.FormatArrayTypeNameSuffix(rank);
             }
 
             if (type.IsGenericParameter)
@@ -78,7 +78,9 @@ namespace System.Text.Json.Reflection
         {
             if (type.IsArray)
             {
-                return GetTypeInfoPropertyName(type.GetElementType()!) + "Array";
+                int rank = type.GetArrayRank();
+                string suffix = rank == 1 ? "Array" : $"Array{rank}D"; // Array, Array2D, Array3D, ...
+                return GetTypeInfoPropertyName(type.GetElementType()!) + suffix;
             }
             else if (!type.IsGenericType)
             {
@@ -164,10 +166,6 @@ namespace System.Text.Json.Reflection
             constructorInfo = null;
             return false;
         }
-
-        public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
-
-        public static bool IsStringType(this Type type) => type.FullName == "System.String";
 
         public static Type? GetCompatibleBaseClass(this Type type, string baseTypeFullName)
         {

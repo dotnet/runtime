@@ -38,8 +38,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
-                                   DomainAssembly *pStaticParent,
-                                   BOOL fAllowAllocation);
+                                   DomainAssembly *pStaticParent);
 
     // InitializeSpecInternal should be used very carefully so it's made private.
     // functions that take special care (and thus are allowed to use the function) are listed below
@@ -88,12 +87,12 @@ class AssemblySpec  : public BaseAssemblySpec
         CONTRACTL
         {
             INSTANCE_CHECK;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             THROWS;
             MODE_ANY;
         }
         CONTRACTL_END;
-        HRESULT hr=InitializeSpecInternal(kAssemblyRefOrDef, pImport,pStaticParent,TRUE);
+        HRESULT hr=InitializeSpecInternal(kAssemblyRefOrDef, pImport,pStaticParent);
         if(FAILED(hr))
             EEFileLoadException::Throw(this,hr);
     };

@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                bool success = TryRead(ref reader, state.Current.JsonTypeInfo.Type, options, ref state, out T? value);
+                bool success = TryRead(ref reader, state.Current.JsonTypeInfo.Type, options, ref state, out T? value, out _);
                 if (success)
                 {
                     // Read any trailing whitespace. This will throw if JsonCommentHandling=Disallow.

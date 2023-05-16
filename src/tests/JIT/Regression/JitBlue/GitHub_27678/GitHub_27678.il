@@ -18,7 +18,7 @@
 // pop     {r10,lr}
 // bx      jumpAddress
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Diagnostics.Debug {}
 .assembly GitHub_27678 {}
 .assembly extern xunit.core {}

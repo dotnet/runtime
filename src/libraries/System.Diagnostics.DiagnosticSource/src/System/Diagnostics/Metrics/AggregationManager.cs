@@ -275,7 +275,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -309,6 +309,26 @@ namespace System.Diagnostics.Metrics
                         return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
                             null :
                             new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                    }
+                };
+            }
+            else if (genericDefType == typeof(UpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new CounterAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(ObservableUpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new ObservableCounterAggregator(isMonotonic: false) : null;
                     }
                 };
             }

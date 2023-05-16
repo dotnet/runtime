@@ -32,13 +32,13 @@ PALTEST(miscellaneous_GlobalMemoryStatusEx_test1_paltest_globalmemorystatusex_te
     }
 
     printf("GlobalMemoryStatusEx:\n");
-    printf("    ullTotalPhys: %llu\n", memoryStatus.ullTotalPhys);
-    printf("    ullAvailPhys: %llu\n", memoryStatus.ullAvailPhys);
-    printf("    ullTotalVirtual: %llu\n", memoryStatus.ullTotalVirtual);
-    printf("    ullAvailVirtual: %llu\n", memoryStatus.ullAvailVirtual);
-    printf("    ullTotalPageFile: %llu\n", memoryStatus.ullTotalPageFile);
-    printf("    ullAvailPageFile: %llu\n", memoryStatus.ullAvailPageFile);
-    printf("    ullAvailExtendedVirtual: %llu\n", memoryStatus.ullAvailExtendedVirtual);
+    printf("    ullTotalPhys: %" PRIu64 "\n", memoryStatus.ullTotalPhys);
+    printf("    ullAvailPhys: %" PRIu64 "\n", memoryStatus.ullAvailPhys);
+    printf("    ullTotalVirtual: %" PRIu64 "\n", memoryStatus.ullTotalVirtual);
+    printf("    ullAvailVirtual: %" PRIu64 "\n", memoryStatus.ullAvailVirtual);
+    printf("    ullTotalPageFile: %" PRIu64 "\n", memoryStatus.ullTotalPageFile);
+    printf("    ullAvailPageFile: %" PRIu64 "\n", memoryStatus.ullAvailPageFile);
+    printf("    ullAvailExtendedVirtual: %" PRIu64 "\n", memoryStatus.ullAvailExtendedVirtual);
     printf("    dwMemoryLoad: %u\n", memoryStatus.dwMemoryLoad);
 
     if (memoryStatus.ullTotalPhys == 0 ||

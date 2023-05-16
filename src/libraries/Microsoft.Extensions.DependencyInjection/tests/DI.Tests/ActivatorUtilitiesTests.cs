@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using static Microsoft.Extensions.DependencyInjection.Tests.AsyncServiceScopeTests;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
@@ -88,6 +88,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void TypeActivatorThrowsOnNullProvider()
         {
             Assert.Throws<ArgumentNullException>(() => ActivatorUtilities.CreateInstance<ClassWithABCS>(null, "hello"));
+        }
+
+        [Fact]
+        public void FactoryActivatorThrowsOnNullProvider()
+        {
+            var f = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
+            Assert.Throws<ArgumentNullException>(() => f(serviceProvider: null, null));
         }
 
         [Fact]
@@ -191,6 +198,167 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
             Assert.IsType<ClassWithABCS>(item2);
         }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_CreatesFactoryMethod(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithABCS), new Type[] { typeof(B) });
+                var factory2 = ActivatorUtilities.CreateFactory<ClassWithABCS>(new Type[] { typeof(B) });
+
+                var services = new ServiceCollection();
+                services.AddSingleton(new A());
+                services.AddSingleton(new C());
+                services.AddSingleton(new S());
+                using var provider = services.BuildServiceProvider();
+                object item1 = factory1(provider, new[] { new B() });
+                var item2 = factory2(provider, new[] { new B() });
+
+                Assert.IsType<ObjectFactory>(factory1);
+                Assert.IsType<ClassWithABCS>(item1);
+
+                Assert.IsType<ObjectFactory<ClassWithABCS>>(factory2);
+                Assert.IsType<ClassWithABCS>(item2);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NullArguments_Throws(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[] { typeof(A) });
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                Assert.Throws<NullReferenceException>(() => factory1(provider, null));
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoArguments_UseNullDefaultValue(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithADefaultValue), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (ClassWithADefaultValue)factory1(provider, null);
+                Assert.Null(item.A);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoArguments_ThrowRequiredValue(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithA), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var ex = Assert.Throws<InvalidOperationException>(() => factory1(provider, null));
+                Assert.Equal($"Unable to resolve service for type '{typeof(A).FullName}' while attempting to activate '{typeof(ClassWithA).FullName}'.", ex.Message);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NullArgument_UseDefaultValue(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(ClassWithStringDefaultValue), new[] { typeof(string) });
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (ClassWithStringDefaultValue)factory1(provider, new object[] { null });
+                Assert.Equal("DEFAULT", item.Text);
+            }, options);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+#if NETCOREAPP
+        [InlineData(false)]
+#endif
+        public void CreateFactory_RemoteExecutor_NoParameters_Success(bool useDynamicCode)
+        {
+            var options = new RemoteInvokeOptions();
+            if (!useDynamicCode)
+            {
+                DisableDynamicCode(options);
+            }
+
+            using var remoteHandle = RemoteExecutor.Invoke(static () =>
+            {
+                var factory1 = ActivatorUtilities.CreateFactory(typeof(A), new Type[0]);
+
+                var services = new ServiceCollection();
+                using var provider = services.BuildServiceProvider();
+                var item = (A)factory1(provider, null);
+                Assert.NotNull(item);
+            }, options);
+        }
+
+        private static void DisableDynamicCode(RemoteInvokeOptions options)
+        {
+            // We probably only need to set 'IsDynamicCodeCompiled' since only that is checked,
+            // but also set 'IsDynamicCodeSupported for correctness.
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", "false");
+            options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled", "false");
+        }
     }
 
     internal class A { }
@@ -201,8 +369,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     internal class ClassWithABCS : ClassWithABC
     {
         public S S { get; }
-        public ClassWithABCS(A a, B b, C c, S s) : base (a, b, c) { S = s; }
-        public ClassWithABCS(A a, C c, S s) : this (a, null, c, s) { }
+        public ClassWithABCS(A a, B b, C c, S s) : base(a, b, c) { S = s; }
+        public ClassWithABCS(A a, C c, S s) : this(a, null, c, s) { }
     }
 
     internal class ClassWithABC_FirstConstructorWithAttribute : ClassWithABC
@@ -214,9 +382,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
     internal class ClassWithABC_LastConstructorWithAttribute : ClassWithABC
     {
-        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
+        public ClassWithABC_LastConstructorWithAttribute(B b, C c) : this(null, b, c) { }
         [ActivatorUtilitiesConstructor]
-        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b , c) { }
+        public ClassWithABC_LastConstructorWithAttribute(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class FakeServiceProvider : IServiceProvider
@@ -260,6 +428,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public A A { get; }
         public ClassWithA(A a)
+        {
+            A = a;
+        }
+    }
+
+    internal class ClassWithADefaultValue
+    {
+        public A A { get; }
+        public ClassWithADefaultValue(A a = null)
         {
             A = a;
         }
@@ -343,15 +520,25 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     {
         public ClassWithABC_DefaultConstructorFirst() : base() { }
         public ClassWithABC_DefaultConstructorFirst(A a) : base(a) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base (a, b) { }
-        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base (a, b, c) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b) : base(a, b) { }
+        public ClassWithABC_DefaultConstructorFirst(A a, B b, C c) : base(a, b, c) { }
     }
 
     internal class ClassWithABC_DefaultConstructorLast : ClassWithABC
     {
-        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base (a, b, c) { }
-        public ClassWithABC_DefaultConstructorLast(A a, B b) : base (a, b) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b, C c) : base(a, b, c) { }
+        public ClassWithABC_DefaultConstructorLast(A a, B b) : base(a, b) { }
         public ClassWithABC_DefaultConstructorLast(A a) : base(a) { }
         public ClassWithABC_DefaultConstructorLast() : base() { }
     }
+
+    internal class ClassWithStringDefaultValue
+    {
+        public string Text { get; set; }
+        public ClassWithStringDefaultValue(string text = "DEFAULT")
+        {
+            Text = text;
+        }
+    }
 }
+

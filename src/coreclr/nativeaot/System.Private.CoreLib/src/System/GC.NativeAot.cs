@@ -70,6 +70,16 @@ namespace System
             return RuntimeImports.RhGetGeneration(obj);
         }
 
+        internal static int GetGenerationSize(int gen)
+        {
+            return RuntimeImports.RhGetGenerationSize(gen);
+        }
+
+        internal static int GetLastGCPercentTimeInGC()
+        {
+            return RuntimeImports.RhGetLastGCPercentTimeInGC();
+        }
+
         /// <summary>
         /// Returns the current generation number of the target
         /// of a specified <see cref="System.WeakReference"/>.
@@ -114,7 +124,8 @@ namespace System
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking)
         {
-            Collect(generation, mode, blocking, false);
+            bool aggressive = generation == MaxGeneration && mode == GCCollectionMode.Aggressive;
+            Collect(generation, mode, blocking, compacting: aggressive);
         }
 
         public static void Collect(int generation, GCCollectionMode mode, bool blocking, bool compacting)

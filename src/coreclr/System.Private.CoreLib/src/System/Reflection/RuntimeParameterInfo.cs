@@ -107,13 +107,13 @@ namespace System.Reflection
         #endregion
 
         #region Private Data Members
-        private int m_tkParamDef;
-        private MetadataImport m_scope;
-        private Signature? m_signature;
+        private readonly int m_tkParamDef;
+        private readonly MetadataImport m_scope;
+        private readonly Signature? m_signature;
         private volatile bool m_nameIsCached;
         private readonly bool m_noMetadata;
         private bool m_noDefaultValue;
-        private MethodBase? m_originalMember;
+        private readonly MethodBase? m_originalMember;
         #endregion
 
         #region Internal Properties
@@ -439,6 +439,9 @@ namespace System.Reflection
                 Type.EmptyTypes :
                 m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
+
+        public override Type GetModifiedParameterType() =>
+            ModifiedType.Create(unmodifiedType: ParameterType, m_signature, parameterIndex: PositionImpl + 1);
 
         #endregion
 

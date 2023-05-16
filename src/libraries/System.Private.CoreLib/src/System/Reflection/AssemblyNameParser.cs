@@ -52,7 +52,7 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private ReadOnlySpan<char> _input;
+        private readonly ReadOnlySpan<char> _input;
         private int _index;
 
         private AssemblyNameParser(ReadOnlySpan<char> input)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 /* 
 JIT JitDebuggable=0 JitDebugInfo=1
 d:\com99\src\jit\il\dll\..\scopeinfo.cpp, Line 582 : Assertion failed 'lclVar->lvTracked' in 'Test.AA.Method1(int,int,byref):int'
@@ -18,7 +19,8 @@ namespace Test
             if (m_ul == 1u)
                 param1 = param2;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new AA().Method1(0u, 0);
             return 100;

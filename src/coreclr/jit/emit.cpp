@@ -33,6 +33,22 @@ void emitLocation::CaptureLocation(emitter* emit)
     assert(Valid());
 }
 
+void emitLocation::SetLocation(insGroup* _ig, unsigned _codePos)
+{
+    ig      = _ig;
+    codePos = _codePos;
+
+    assert(Valid());
+}
+
+void emitLocation::SetLocation(emitLocation newLocation)
+{
+    ig      = newLocation.ig;
+    codePos = newLocation.codePos;
+
+    assert(Valid());
+}
+
 bool emitLocation::IsCurrentLocation(emitter* emit) const
 {
     assert(Valid());
@@ -48,6 +64,11 @@ UNATIVE_OFFSET emitLocation::CodeOffset(emitter* emit) const
 int emitLocation::GetInsNum() const
 {
     return emitGetInsNumFromCodePos(codePos);
+}
+
+int emitLocation::GetInsOffset() const
+{
+    return emitGetInsOfsFromCodePos(codePos);
 }
 
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
@@ -186,6 +207,12 @@ unsigned emitter::emitTotalDescAlignCnt;
 
 void emitterStaticStats(FILE* fout)
 {
+    // The IG buffer size depends on whether we are storing a debug info pointer or not. For our purposes
+    // here, do not include that.
+
+    const size_t igBuffSize =
+        (SC_IG_BUFFER_NUM_SMALL_DESCS * SMALL_IDSC_SIZE) + (SC_IG_BUFFER_NUM_LARGE_DESCS * sizeof(emitter::instrDesc));
+
     // insGroup members
 
     insGroup* igDummy = nullptr;
@@ -194,6 +221,10 @@ void emitterStaticStats(FILE* fout)
     fprintf(fout, "insGroup:\n");
     fprintf(fout, "Offset / size of igNext           = %2zu / %2zu\n", offsetof(insGroup, igNext),
             sizeof(igDummy->igNext));
+#if EMIT_BACKWARDS_NAVIGATION
+    fprintf(fout, "Offset / size of igPrev           = %2zu / %2zu\n", offsetof(insGroup, igPrev),
+            sizeof(igDummy->igPrev));
+#endif // EMIT_BACKWARDS_NAVIGATION
 #ifdef DEBUG
     fprintf(fout, "Offset / size of igSelf           = %2zu / %2zu\n", offsetof(insGroup, igSelf),
             sizeof(igDummy->igSelf));
@@ -212,6 +243,10 @@ void emitterStaticStats(FILE* fout)
             sizeof(igDummy->igData));
     fprintf(fout, "Offset / size of igPhData         = %2zu / %2zu\n", offsetof(insGroup, igPhData),
             sizeof(igDummy->igPhData));
+#if EMIT_BACKWARDS_NAVIGATION
+    fprintf(fout, "Offset / size of igLastIns        = %2zu / %2zu\n", offsetof(insGroup, igLastIns),
+            sizeof(igDummy->igLastIns));
+#endif // EMIT_BACKWARDS_NAVIGATION
 #if EMIT_TRACK_STACK_DEPTH
     fprintf(fout, "Offset / size of igStkLvl         = %2zu / %2zu\n", offsetof(insGroup, igStkLvl),
             sizeof(igDummy->igStkLvl));
@@ -250,6 +285,9 @@ void emitterStaticStats(FILE* fout)
     // fprintf(fout, "Size   of _idAddrUnion= %2zu\n", sizeof(((emitter::instrDesc*)0)->_idAddrUnion));
 
     fprintf(fout, "Size   of instrDescJmp    = %2zu\n", sizeof(emitter::instrDescJmp));
+#if FEATURE_LOOP_ALIGN
+    fprintf(fout, "Size   of instrDescAlign  = %2zu\n", sizeof(emitter::instrDescAlign));
+#endif // FEATURE_LOOP_ALIGN
 #if !defined(TARGET_ARM64)
     fprintf(fout, "Size   of instrDescLbl    = %2zu\n", sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
@@ -266,23 +304,23 @@ void emitterStaticStats(FILE* fout)
 #endif // TARGET_ARM
 
     fprintf(fout, "\n");
-    fprintf(fout, "SC_IG_BUFFER_SIZE             = %2zu\n", SC_IG_BUFFER_SIZE);
-    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / SMALL_IDSC_SIZE);
-    fprintf(fout, "instrDesc per IG buffer       = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDesc));
-    fprintf(fout, "instrDescJmp per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescJmp));
+    fprintf(fout, "igBuffSize                    = %2zu\n", igBuffSize);
+    fprintf(fout, "SMALL_IDSC_SIZE per IG buffer = %2zu\n", igBuffSize / SMALL_IDSC_SIZE);
+    fprintf(fout, "instrDesc per IG buffer       = %2zu\n", igBuffSize / sizeof(emitter::instrDesc));
+    fprintf(fout, "instrDescJmp per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescJmp));
 #if !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescLbl per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescLbl));
+    fprintf(fout, "instrDescLbl per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescLbl));
 #endif // !defined(TARGET_ARM64)
-    fprintf(fout, "instrDescCns per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCns));
-    fprintf(fout, "instrDescDsp per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescDsp));
-    fprintf(fout, "instrDescCnsDsp per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsDsp));
+    fprintf(fout, "instrDescCns per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescCns));
+    fprintf(fout, "instrDescDsp per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescDsp));
+    fprintf(fout, "instrDescCnsDsp per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsDsp));
 #ifdef TARGET_XARCH
-    fprintf(fout, "instrDescAmd per IG buffer    = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescAmd));
-    fprintf(fout, "instrDescCnsAmd per IG buffer = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCnsAmd));
+    fprintf(fout, "instrDescAmd per IG buffer    = %2zu\n", igBuffSize / sizeof(emitter::instrDescAmd));
+    fprintf(fout, "instrDescCnsAmd per IG buffer = %2zu\n", igBuffSize / sizeof(emitter::instrDescCnsAmd));
 #endif // TARGET_XARCH
-    fprintf(fout, "instrDescCGCA per IG buffer   = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescCGCA));
+    fprintf(fout, "instrDescCGCA per IG buffer   = %2zu\n", igBuffSize / sizeof(emitter::instrDescCGCA));
 #ifdef TARGET_ARM
-    fprintf(fout, "instrDescReloc per IG buffer  = %2zu\n", SC_IG_BUFFER_SIZE / sizeof(emitter::instrDescReloc));
+    fprintf(fout, "instrDescReloc per IG buffer  = %2zu\n", igBuffSize / sizeof(emitter::instrDescReloc));
 #endif // TARGET_ARM
 
     fprintf(fout, "\n");
@@ -469,13 +507,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) asze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -622,6 +660,10 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
     if (!comp->opts.disAsm)
         m_debugInfoSize = 0;
 #endif
+
+#if defined(TARGET_AMD64)
+    rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+#endif // TARGET_AMD64
 }
 
 void emitter::emitEndCG()
@@ -683,6 +725,10 @@ void emitter::emitGenIG(insGroup* ig)
     }
 
     emitCurIGfreeNext = emitCurIGfreeBase;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    emitLastInsFullSize = 0;
+#endif // EMIT_BACKWARDS_NAVIGATION
 }
 
 /*****************************************************************************
@@ -702,7 +748,7 @@ void emitter::emitNewIG()
     if (emitComp->verbose)
     {
         printf("Created:\n      ");
-        emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
+        emitDispIG(ig, /* displayFunc */ false, /* displayInstructions */ false, /* displayLocation */ false);
     }
 #endif // DEBUG
 }
@@ -798,6 +844,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
+    INDEBUG(ig->igDataSize = gs;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -875,7 +922,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         if (emitComp->verbose)
         {
             printf("Saved:\n      ");
-            emitDispIG(ig, nullptr, /* displayInstructions */ false, /* displayLocation */ false);
+            emitDispIG(ig, /* displayFunc */ false, /* displayInstructions */ false, /* displayLocation */ false);
         }
         else
         {
@@ -1025,8 +1072,8 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     // being adding causes a new EXTEND IG to be created. Also, emitLastIns might not be in this IG
     // at all if this IG is empty.
 
-    assert((emitLastIns == nullptr) == (emitLastInsIG == nullptr));
-    if ((emitLastIns != nullptr) && (sz != 0))
+    assert(emitHasLastIns() == (emitLastInsIG != nullptr));
+    if (emitHasLastIns() && (sz != 0))
     {
         // If we get here, emitLastIns must be in the current IG we are saving.
         assert(emitLastInsIG == emitCurIG);
@@ -1042,9 +1089,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
         emitLastIns   = (instrDesc*)((BYTE*)id + ((BYTE*)emitLastIns - (BYTE*)emitCurIGfreeBase));
         emitLastInsIG = ig;
+
+#if EMIT_BACKWARDS_NAVIGATION
+        ig->igLastIns = emitLastIns;
+#endif // EMIT_BACKWARDS_NAVIGATION
     }
 
-    // Reset the buffer free pointers
+    // Reset the buffer free pointer.
 
     emitCurIGfreeNext = emitCurIGfreeBase;
 
@@ -1153,7 +1204,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     emitCounts_INS_OPTS_J = 0;
 #endif
 
@@ -1198,6 +1249,11 @@ void emitter::emitBegFN(bool hasFramePtr
 #endif
 
     ig->igNext = nullptr;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    emitLastInsFullSize = 0;
+    ig->igPrev          = nullptr;
+#endif
 
 #ifdef DEBUG
     emitScratchSigInfo = nullptr;
@@ -1342,6 +1398,12 @@ void emitter::dispIns(instrDesc* id)
     // For LoongArch64 using the emitDisInsName().
     NYI_LOONGARCH64("Not used on LOONGARCH64.");
 }
+#elif defined(TARGET_RISCV64)
+void emitter::dispIns(instrDesc* id)
+{
+    // For RISCV64 using the emitDisInsName().
+    NYI_RISCV64("Not used on RISCV64.");
+}
 #else
 void emitter::dispIns(instrDesc* id)
 {
@@ -1443,8 +1505,6 @@ size_t emitter::emitGenEpilogLst(size_t (*fp)(void*, unsigned), void* cp)
 
 void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 {
-    instrDesc* id;
-
 #ifdef DEBUG
     // Under STRESS_EMITTER, put every instruction in its own instruction group.
     // We can't do this for a prolog, epilog, funclet prolog, or funclet epilog,
@@ -1501,23 +1561,33 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     assert(IsCodeAligned(emitCurIGsize));
 
     // Make sure we have enough space for the new instruction.
-    // `igInsCnt` is currently a byte, so we can't have more than 255 instructions in a single insGroup.
 
     size_t fullSize = sz + m_debugInfoSize;
 
-    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG || (emitCurIGinsCnt >= 255))
+    if ((emitCurIGfreeNext + fullSize >= emitCurIGfreeEndp) || emitForceNewIG ||
+        (emitCurIGinsCnt >= (EMIT_MAX_IG_INS_COUNT - 1)))
     {
         emitNxtIG(true);
     }
 
     /* Grab the space for the instruction */
 
-    emitLastIns = id = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
-    emitLastInsIG    = emitCurIG;
-    emitCurIGfreeNext += fullSize;
+    instrDesc* id = emitLastIns = (instrDesc*)(emitCurIGfreeNext + m_debugInfoSize);
+
+#if EMIT_BACKWARDS_NAVIGATION
+    emitCurIG->igLastIns = id;
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     assert(sz >= sizeof(void*));
     memset(id, 0, sz);
+
+#if EMIT_BACKWARDS_NAVIGATION
+    id->idSetPrevSize(emitLastInsFullSize);
+    emitLastInsFullSize = (unsigned)fullSize;
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+    emitLastInsIG = emitCurIG;
+    emitCurIGfreeNext += fullSize;
 
     // These fields should have been zero-ed by the above
     assert(id->idReg1() == regNumber(0));
@@ -1540,14 +1610,18 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if (m_debugInfoSize > 0)
     {
         instrDescDebugInfo* info = (instrDescDebugInfo*)emitGetMem(sizeof(*info));
-        info->idNum              = emitInsCount;
-        info->idSize             = sz;
-        info->idVarRefOffs       = 0;
-        info->idMemCookie        = 0;
-        info->idFlags            = GTF_EMPTY;
-        info->idFinallyCall      = false;
-        info->idCatchRet         = false;
-        info->idCallSig          = nullptr;
+        memset(info, 0, sizeof(instrDescDebugInfo));
+
+        // These fields should have been zero-ed by the above
+        assert(info->idVarRefOffs == 0);
+        assert(info->idMemCookie == 0);
+        assert(info->idFlags == GTF_EMPTY);
+        assert(info->idFinallyCall == false);
+        assert(info->idCatchRet == false);
+        assert(info->idCallSig == nullptr);
+
+        info->idNum  = emitInsCount;
+        info->idSize = sz;
         id->idDebugOnlyInfo(info);
     }
 
@@ -1632,10 +1706,23 @@ void emitter::emitCheckIGList()
 {
     assert(emitPrologIG != nullptr);
 
+#if EMIT_BACKWARDS_NAVIGATION
+    struct IGIDPair
+    {
+        insGroup*  ig;
+        instrDesc* id;
+    };
+    jitstd::list<IGIDPair> insList(emitComp->getAllocator(CMK_DebugOnly));
+#endif // EMIT_BACKWARDS_NAVIGATION
+
     size_t currentOffset = 0;
 
     for (insGroup *currIG = emitIGlist, *prevIG = nullptr; currIG != nullptr; prevIG = currIG, currIG = currIG->igNext)
     {
+#if EMIT_BACKWARDS_NAVIGATION
+        assert(prevIG == currIG->igPrev);
+#endif // EMIT_BACKWARDS_NAVIGATION
+
         if (currIG->igOffs != currentOffset)
         {
             printf("IG%02u has offset %08X, expected %08X\n", currIG->igNum, currIG->igOffs, currentOffset);
@@ -1660,10 +1747,10 @@ void emitter::emitCheckIGList()
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits(currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
-        assert(genCountBits(currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
 
         if (currIG->igFlags & IGF_EXTEND)
         {
@@ -1713,6 +1800,25 @@ void emitter::emitCheckIGList()
             // // change any semantics of the included instructions.
             // assert((currIG->igFlags & IGF_NOGCINTERRUPT) == (prevIG->igFlags & IGF_NOGCINTERRUPT));
         }
+
+#if EMIT_BACKWARDS_NAVIGATION
+        // Check that the instrDesc "prev" pointers are all correct.
+        unsigned insCnt = currIG->igInsCnt;
+        if (insCnt > 0)
+        {
+            instrDesc* id = emitFirstInstrDesc(currIG->igData);
+            insList.push_front({currIG, id});
+            assert(id->idPrevSize() == 0);
+            for (unsigned i = 0; i < insCnt - 1; i++)
+            {
+                size_t idSize     = emitSizeOfInsDsc(id);
+                size_t idPrevSize = idSize + m_debugInfoSize;
+                emitAdvanceInstrDesc(&id, idSize);
+                insList.push_front({currIG, id});
+                assert(id->idPrevSize() == idPrevSize);
+            }
+        }
+#endif // EMIT_BACKWARDS_NAVIGATION
     }
 
     if (emitTotalCodeSize != 0 && emitTotalCodeSize != currentOffset)
@@ -1720,6 +1826,28 @@ void emitter::emitCheckIGList()
         printf("Total code size is %08X, expected %08X\n", emitTotalCodeSize, currentOffset);
         assert(!"bad total code size");
     }
+
+#if EMIT_BACKWARDS_NAVIGATION
+
+    // Check that walking the instrDescs backwards using `emitPrevID` is correct. Compare the backwards
+    // walk against a list of IDs that was constructed above while walking forwards (but constructed in
+    // reverse order).
+
+    insGroup*  ig;
+    instrDesc* id;
+    if (emitGetLastIns(&ig, &id))
+    {
+        jitstd::list<IGIDPair>::iterator nextPair = insList.begin();
+        jitstd::list<IGIDPair>::iterator endPair  = insList.end();
+        do
+        {
+            assert(nextPair != endPair);
+            assert(ig == nextPair->ig);
+            assert(id == nextPair->id);
+            ++nextPair;
+        } while (emitPrevID(ig, id));
+    }
+#endif // EMIT_BACKWARDS_NAVIGATION
 }
 
 #endif // DEBUG
@@ -2432,7 +2560,7 @@ void emitter::emitSetFrameRangeGCRs(int offsLo, int offsHi)
 #ifdef TARGET_AMD64
             // doesn't have to be all negative on amd
             printf("-%04X ... %04X\n", -offsLo, offsHi);
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (offsHi < 0)
                 printf("-%04X ... -%04X\n", -offsLo, -offsHi);
             else
@@ -2487,20 +2615,15 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
 
 /*****************************************************************************
  *
- *  A conversion table used to map an operand size value (in bytes) into its
- *  small encoding (0 through 3), and vice versa.
+ *  A conversion table used to map an operand size value (in bytes) into its emitAttr
  */
 
-const emitter::opSize emitter::emitSizeEncode[] = {
-    emitter::OPSZ1, emitter::OPSZ2,  OPSIZE_INVALID, emitter::OPSZ4,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    emitter::OPSZ8, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, emitter::OPSZ16, OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, emitter::OPSZ32,
+const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
+#if defined(TARGET_XARCH)
+    EA_32BYTE, EA_64BYTE,
+#endif // TARGET_XARCH
 };
-
-const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYTE,  EA_4BYTE,
-                                                               EA_8BYTE, EA_16BYTE, EA_32BYTE};
 
 /*****************************************************************************
  *
@@ -2767,7 +2890,7 @@ const char* emitter::emitLabelString(insGroup* ig)
     return retbuf;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 // Does the argument location point to an IG at the end of a function or funclet?
 // We can ignore the codePos part of the location, since it doesn't affect the
@@ -3128,9 +3251,9 @@ void emitter::emitGenerateUnwindNop(instrDesc* id, void* context)
     Compiler* comp = (Compiler*)context;
 #if defined(TARGET_ARM)
     comp->unwindNop(id->idCodeSize());
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     comp->unwindNop();
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 }
 
 /*****************************************************************************
@@ -3144,7 +3267,77 @@ void emitter::emitUnwindNopPadding(emitLocation* locFrom, Compiler* comp)
     emitWalkIDs(locFrom, emitGenerateUnwindNop, comp);
 }
 
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#if EMIT_BACKWARDS_NAVIGATION
+
+//------------------------------------------------------------------------
+// emitGetLastIns: Find the last instruction in the function and point ig/id at that instruction.
+//
+// Arguments:
+//   pig - Output. On exit, set *pig to the insGroup* containing the last instruction.
+//   pid - Output. On exit, set *pid to the instrDesc* of the last instruction.
+//
+// Returns:
+//   true if there are any instructions, false otherwise. If `false` is returned, `pig` and `pid`
+//   are untouched.
+//
+// Notes:
+//   If the last IG doesn't contain any instructions, walk backwards until finding an IG that does
+//   contain instructions.
+//
+bool emitter::emitGetLastIns(insGroup** pig, instrDesc** pid)
+{
+    for (insGroup* ig = emitIGlast; ig != nullptr; ig = ig->igPrev)
+    {
+        if (ig->igLastIns != nullptr)
+        {
+            *pig = ig;
+            *pid = (instrDesc*)ig->igLastIns;
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// emitPrevID: Compute the previous instrDesc, either in this IG, or in a previous IG. 'id'
+// will point to this instrDesc. 'ig' will also be updated.
+//
+// Arguments:
+//    ig - Current instruction group
+//    id - Current instrDesc
+//
+// Return Value:
+//    Returns true if there is an instruction, or false if we've iterated over all
+//    the instructions back to the beginning.
+//
+bool emitter::emitPrevID(insGroup*& ig, instrDesc*& id)
+{
+    unsigned idPrevSize = id->idPrevSize();
+    if (idPrevSize != 0)
+    {
+        id = (instrDesc*)((BYTE*)id - idPrevSize);
+        return true;
+    }
+
+    // No previous instructions in the group; walk previous IGs.
+    for (ig = ig->igPrev; ig != nullptr; ig = ig->igPrev)
+    {
+        if (ig->igLastIns != nullptr)
+        {
+            assert(ig->igInsCnt > 0);
+            id = (instrDesc*)ig->igLastIns;
+            return true;
+        }
+
+        assert(ig->igInsCnt == 0);
+    }
+
+    return false;
+}
+
+#endif // EMIT_BACKWARDS_NAVIGATION
 
 #if defined(TARGET_ARM)
 
@@ -3204,10 +3397,18 @@ void emitter::emitDispRegSet(regMaskTP regs)
 
     for (reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg = REG_NEXT(reg))
     {
-        if ((regs & genRegMask(reg)) == 0)
+        if (regs == RBM_NONE)
+        {
+            break;
+        }
+
+        regMaskTP curReg = genRegMask(reg);
+        if ((regs & curReg) == 0)
         {
             continue;
         }
+
+        regs -= curReg;
 
         if (sp)
         {
@@ -3283,7 +3484,6 @@ void emitter::emitDispVarSet()
 // Return Value:
 //    None
 //
-
 void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSize)
 {
     if (EA_IS_GCREF(secondRetSize))
@@ -3378,6 +3578,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #endif // TARGET_XARCH
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -3450,6 +3651,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         assert(!id->idIsLargeCns());
 
         /* Save the live GC registers in the unused register fields */
+        assert((gcrefRegs & RBM_CALLEE_TRASH) == 0);
         emitEncodeCallGCregs(gcrefRegs, id);
 
         return id;
@@ -3471,6 +3673,33 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
+#if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// emitGetSchedInfo: Gets the scheduling information for a given insFmt
+//
+// Arguments:
+//    insFmt - format for which to query scheduling information
+//
+// Return Value:
+//    the scheduling information for insFmt
+//
+const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
+{
+    static const IS_INFO emitFmtToSchedInfo[] = {
+#define IF_DEF(en, op1, op2) static_cast<IS_INFO>(op1),
+#include "emitfmts.h"
+    };
+
+    if (insFmt < ArrLen(emitFmtToSchedInfo))
+    {
+        return emitFmtToSchedInfo[insFmt];
+    }
+
+    assert(!"Unsupported insFmt");
+    return IS_NONE;
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // Interleaved GC info dumping.
 // We'll attempt to line this up with the opcode, which indented differently for
@@ -3490,6 +3719,9 @@ const size_t hexEncodingSize = 19;
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 11;
 #elif defined(TARGET_LOONGARCH64)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19;
+#elif defined(TARGET_RISCV64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
 #endif
@@ -3693,7 +3925,7 @@ void emitter::emitDispIGflags(unsigned flags)
     }
 }
 
-void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstructions, bool displayLocation)
+void emitter::emitDispIG(insGroup* ig, bool displayFunc, bool displayInstructions, bool displayLocation)
 {
     const int TEMP_BUFFER_LEN = 40;
     char      buff[TEMP_BUFFER_LEN];
@@ -3706,7 +3938,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstruction
     // distinct from the verbose on Compiler.)
     bool jitdump = emitComp->verbose;
 
-    if (jitdump && ((igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx)))
+    if (jitdump && displayFunc)
     {
         printf("func=%02u, ", ig->igFuncIdx);
     }
@@ -3871,6 +4103,8 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstruction
 
         printf("\n");
 
+#if !defined(TARGET_RISCV64)
+        // TODO-RISCV64-Bug: When JitDump is on, it asserts in emitDispIns which is not implemented.
         if (displayInstructions)
         {
             instrDesc*     id  = emitFirstInstrDesc(ig->igData);
@@ -3903,18 +4137,25 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool displayInstruction
                 printf("\n");
             }
         }
+#endif // !TARGET_RISCV64
     }
 }
 
 void emitter::emitDispIGlist(bool displayInstructions)
 {
-    insGroup* ig;
-    insGroup* igPrev;
-
-    for (igPrev = nullptr, ig = emitIGlist; ig; igPrev = ig, ig = ig->igNext)
+#if EMIT_BACKWARDS_NAVIGATION
+    for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
-        emitDispIG(ig, igPrev, displayInstructions);
+        const bool displayFunc = (ig->igPrev == nullptr) || (ig->igPrev->igFuncIdx != ig->igFuncIdx);
+        emitDispIG(ig, displayFunc, displayInstructions);
     }
+#else  // !EMIT_BACKWARDS_NAVIGATION
+    for (insGroup *ig = emitIGlist, *igPrev = nullptr; ig != nullptr; igPrev = ig, ig = ig->igNext)
+    {
+        const bool displayFunc = (igPrev == nullptr) || (igPrev->igFuncIdx != ig->igFuncIdx);
+        emitDispIG(ig, displayFunc, displayInstructions);
+    }
+#endif // !EMIT_BACKWARDS_NAVIGATION
 }
 
 void emitter::emitDispGCinfo()
@@ -4337,9 +4578,9 @@ void emitter::emitRemoveJumpToNextInst()
                     printf("   id: %u: ", id->idDebugOnlyInfo()->idNum);
                     emitDispIns(id, false, true, false, 0, nullptr, 0, jmpGroup);
                     printf("jump group:\n");
-                    emitDispIG(jmpGroup, nullptr, /* displayInstructions */ true);
+                    emitDispIG(jmpGroup, /* displayFunc */ false, /* displayInstructions */ true);
                     printf("target group:\n");
-                    emitDispIG(targetGroup, nullptr, /* displayInstructions */ false);
+                    emitDispIG(targetGroup, /* displayFunc */ false, /* displayInstructions */ false);
                     assert(jmp == id);
                 }
 
@@ -4460,7 +4701,7 @@ void emitter::emitRemoveJumpToNextInst()
  *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -5449,10 +5690,14 @@ bool emitter::emitEndsWithAlignInstr()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns:  size of a loop in bytes.
 //
-unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted))
+unsigned emitter::getLoopSize(insGroup* igLoopHeader,
+                              unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)
+                                  DEBUG_ARG(UNATIVE_OFFSET containingIGNum) DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned loopSize = 0;
 
@@ -5465,47 +5710,81 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 
         if (igInLoop->endsWithAlignInstr() || igInLoop->hadAlignInstr())
         {
-            // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
-            // for next IG or some future IG.
-            //
-            // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
-            //
-            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
-            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
-            // be met and we would break as soon as loopSize > maxLoopSize.
-            //
-            // IG05:
-            //      ...
-            //      jmp IG18
-            // ...
-            // IG18:
-            //      ...
-            //      jne IG05
-            //
-            // If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
-            // representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
-            // should have backedge to current loop header.
-            //
-            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
-            //
-            // IG03:
-            //      ...
-            //      align
-            // IG04:
-            //      ...
-            //      ...
-            // IG05:
-            //      ...
-            //      jne IG04
-            //      align     ; <---
-            // IG06:
-            //      ...
-            //      jne IG06
-            //
-            //
-            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
+// If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
+// for next IG or some future IG.
+//
+// For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
+//
+// If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+// set for them and such loops are not aligned. For such cases, the loop size threshold will never
+// be met and we would break as soon as loopSize > maxLoopSize.
+//
+// IG05:
+//      ...
+//      jmp IG18
+// ...
+// IG18:
+//      ...
+//      jne IG05
+//
+// If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
+// representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
+// should have backedge to current loop header.
+//
+// Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+//
+// IG03:
+//      ...
+//      align
+// IG04:
+//      ...
+//      ...
+// IG05:
+//      ...
+//      jne IG04
+//      align     ; <---
+// IG06:
+//      ...
+//      jne IG06
+//
+//
 
 #ifdef DEBUG
+            if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
+            {
+                char buffer[5000];
+                int  written = sprintf_s(buffer, 35, "Mismatch in align instruction.\n");
+                written += sprintf_s(buffer + written, 100, "Containing IG: IG%02u\n", containingIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadPredIG: IG%02u\n", loopHeadPredIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadIG: IG%02u\n", igLoopHeader->igNum);
+                written += sprintf_s(buffer + written, 100, "igInLoop: IG%02u\n", igInLoop->igNum);
+                written +=
+                    sprintf_s(buffer + written, 100, "igInLoop->backEdge: IG%02u\n", igInLoop->igLoopBackEdge->igNum);
+
+#if EMIT_BACKWARDS_NAVIGATION
+                if (igInLoop->endsWithAlignInstr())
+                {
+
+                    instrDescAlign* alignInstr = (instrDescAlign*)igInLoop->igLastIns;
+                    assert(alignInstr->idaIG == igInLoop);
+                    written += sprintf_s(buffer + written, 100, "igInLoop has align instruction for : IG%02u\n",
+                                         alignInstr->idaLoopHeadPredIG->igNext->igNum);
+                }
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+                written += sprintf_s(buffer + written, 35, "Loop:\n");
+                for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
+                {
+                    if (igInLoop->igLoopBackEdge == igLoopHeader)
+                    {
+                        break;
+                    }
+                    written += sprintf_s(buffer + written, 100, "\tIG%02u\n", igInLoop->igNum);
+                }
+                printf("%s", buffer);
+                assert(false);
+            }
+
             if (isAlignAdjusted)
             {
                 // If this IG is already align adjusted, get the adjusted padding already calculated.
@@ -5750,7 +6029,9 @@ void emitter::emitLoopAlignAdjustments()
 
         unsigned actualPaddingNeeded =
             containingIG->endsWithAlignInstr()
-                ? emitCalculatePaddingForLoopAlignment(loopHeadIG, loopIGOffset DEBUG_ARG(false))
+                ? emitCalculatePaddingForLoopAlignment(loopHeadIG,
+                                                       loopIGOffset DEBUG_ARG(false) DEBUG_ARG(containingIG->igNum)
+                                                           DEBUG_ARG(loopHeadPredIG->igNum))
                 : 0;
 
         assert(estimatedPaddingNeeded >= actualPaddingNeeded);
@@ -5864,6 +6145,8 @@ void emitter::emitLoopAlignAdjustments()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns: Padding amount.
 //    0 means no padding is needed, either because loop is already aligned or it
@@ -5888,7 +6171,9 @@ void emitter::emitLoopAlignAdjustments()
 //     3c. return paddingNeeded.
 //
 unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
-                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted))
+                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                           DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                               DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 
@@ -5906,16 +6191,17 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // For adaptive, adjust the loop size depending on the alignment boundary
-        maxLoopBlocksAllowed = genLog2((unsigned)alignmentBoundary) - 1;
+        maxLoopBlocksAllowed = genLog2(alignmentBoundary) - 1;
         maxLoopSize          = alignmentBoundary * maxLoopBlocksAllowed;
     }
     else
     {
-        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        // For non-adaptive, just take whatever is supplied using DOTNET_ variables
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
-    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted));
+    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted) DEBUG_ARG(containingIGNum)
+                                                    DEBUG_ARG(loopHeadPredIGNum));
 
     // No padding if loop is big
     if (loopSize > maxLoopSize)
@@ -6054,8 +6340,9 @@ emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
 
 void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 {
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO-LoongArch64: support idDebugOnlyInfo.
+    // TODO-RISCV64: support idDebugOnlyInfo.
     return;
 #else
 
@@ -6343,8 +6630,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
+    // Alignments greater than 64 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
            isPow2(dataAlignment));
@@ -6385,14 +6672,15 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
-    if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+    if (emitComp->opts.OptimizationEnabled() &&
+        (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)) &&
         (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         codeAlignment = 32;
     }
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64/LoongArch64, we're going to put the data in the code section. So make sure the code section has
     // adequate alignment.
     if (emitConsDsc.dsdOffs > 0)
@@ -6423,6 +6711,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
     }
+    else if (dataAlignment == 64)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN;
+    }
 
     CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
 
@@ -6447,7 +6739,9 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        assert(((size_t)codeBlock & 31) == 0);
+        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
+        // in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
@@ -6456,11 +6750,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 15) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 63) == 0);
+    }
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 31) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 15) == 0);
     }
@@ -6740,7 +7039,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n%s:", emitLabelString(ig));
                 if (!emitComp->opts.disDiffable)
                 {
-                    printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+#ifdef DEBUG
+                    if (emitComp->opts.disAddr)
+                    {
+                        printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                    }
+                    else
+#endif // DEBUG
+                    {
+                        printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
+                    }
                 }
                 printf("\n");
             }
@@ -6864,130 +7172,144 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
         emitCurIG = ig;
 
-        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
+        // Fast loop without any JitDisasm/JitDump TP overhead
+        if (!emitComp->opts.disAsm INDEBUG(&&!emitComp->verbose))
         {
-#ifdef DEBUG
-            size_t     curInstrAddr = (size_t)cp;
-            instrDesc* curInstrDesc = id;
-
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
-                (id->idCodeSize() > 0))
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
-                UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
-                while (nextMapping != emitComp->genRichIPmappings.end())
-                {
-                    UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
-
-                    if (mappingOffs > curCodeOffs)
-                    {
-                        // Still haven't reached instruction that next mapping belongs to.
-                        break;
-                    }
-
-                    // We reached the mapping or went past it.
-                    if (mappingOffs == curCodeOffs)
-                    {
-                        emitDispInsIndent();
-                        printf("; ");
-                        nextMapping->debugInfo.Dump(true);
-                        printf("\n");
-                    }
-
-                    ++nextMapping;
-                }
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+                size_t     insSize      = emitIssue1Instr(ig, id, &cp);
+                emitAdvanceInstrDesc(&id, insSize);
             }
-
-#endif
-
-            size_t insSize = emitIssue1Instr(ig, id, &cp);
-            emitAdvanceInstrDesc(&id, insSize);
-
-#ifdef DEBUG
-            // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+        }
+        else
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
-                size_t      afterInstrAddr   = (size_t)cp;
-                instruction curIns           = curInstrDesc->idIns();
-                bool        isJccAffectedIns = false;
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+#ifdef DEBUG
+                if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
+                    (id->idCodeSize() > 0))
+                {
+                    UNATIVE_OFFSET curCodeOffs = emitCurCodeOffs(cp);
+                    while (nextMapping != emitComp->genRichIPmappings.end())
+                    {
+                        UNATIVE_OFFSET mappingOffs = nextMapping->nativeLoc.CodeOffset(this);
+
+                        if (mappingOffs > curCodeOffs)
+                        {
+                            // Still haven't reached instruction that next mapping belongs to.
+                            break;
+                        }
+
+                        // We reached the mapping or went past it.
+                        if (mappingOffs == curCodeOffs)
+                        {
+                            emitDispInsIndent();
+                            printf("; ");
+                            nextMapping->debugInfo.Dump(true);
+                            printf("\n");
+                        }
+
+                        ++nextMapping;
+                    }
+                }
+#endif
+                size_t insSize = emitIssue1Instr(ig, id, &cp);
+                emitAdvanceInstrDesc(&id, insSize);
+
+                // Print the alignment boundary
+                if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+                    (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+                {
+                    size_t      afterInstrAddr   = (size_t)cp;
+                    instruction curIns           = curInstrDesc->idIns();
+                    bool        isJccAffectedIns = false;
 
 #if defined(TARGET_XARCH)
 
-                // Determine if this instruction is part of a set that matches the Intel jcc erratum characteristic
-                // described here:
-                // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
-                // This is the case when a jump instruction crosses a 32-byte boundary, or ends on a 32-byte boundary.
-                // "Jump instruction" in this case includes conditional jump (jcc), macro-fused op-jcc (where 'op' is
-                // one of cmp, test, add, sub, and, inc, or dec), direct unconditional jump, indirect jump,
-                // direct/indirect call, and return.
+                    // Determine if this instruction is part of a set that matches the Intel jcc erratum characteristic
+                    // described here:
+                    // https://www.intel.com/content/dam/support/us/en/documents/processors/mitigations-jump-conditional-code-erratum.pdf
+                    // This is the case when a jump instruction crosses a 32-byte boundary, or ends on a 32-byte
+                    // boundary.
+                    // "Jump instruction" in this case includes conditional jump (jcc), macro-fused op-jcc (where 'op'
+                    // is
+                    // one of cmp, test, add, sub, and, inc, or dec), direct unconditional jump, indirect jump,
+                    // direct/indirect call, and return.
 
-                size_t jccAlignBoundary     = 32;
-                size_t jccAlignBoundaryMask = jccAlignBoundary - 1;
-                size_t jccLastBoundaryAddr  = afterInstrAddr & ~jccAlignBoundaryMask;
+                    size_t jccAlignBoundary     = 32;
+                    size_t jccAlignBoundaryMask = jccAlignBoundary - 1;
+                    size_t jccLastBoundaryAddr  = afterInstrAddr & ~jccAlignBoundaryMask;
 
-                if (curInstrAddr < jccLastBoundaryAddr)
-                {
-                    isJccAffectedIns = IsJccInstruction(curIns) || IsJmpInstruction(curIns) || (curIns == INS_call) ||
-                                       (curIns == INS_ret);
-
-                    // For op-Jcc there are two cases: (1) curIns is the jcc, in which case the above condition
-                    // already covers us. (2) curIns is the `op` and the next instruction is the `jcc`. Note that
-                    // we will never have a `jcc` as the first instruction of a group, so we don't need to worry
-                    // about looking ahead to the next group after a an `op` of `op-Jcc`.
-
-                    if (!isJccAffectedIns && (cnt > 1))
+                    if (curInstrAddr < jccLastBoundaryAddr)
                     {
-                        // The current `id` is valid, namely, there is another instruction in this group.
-                        instruction nextIns = id->idIns();
-                        if (((curIns == INS_cmp) || (curIns == INS_test) || (curIns == INS_add) ||
-                             (curIns == INS_sub) || (curIns == INS_and) || (curIns == INS_inc) ||
-                             (curIns == INS_dec)) &&
-                            IsJccInstruction(nextIns))
+                        isJccAffectedIns = IsJccInstruction(curIns) || IsJmpInstruction(curIns) ||
+                                           (curIns == INS_call) || (curIns == INS_ret);
+
+                        // For op-Jcc there are two cases: (1) curIns is the jcc, in which case the above condition
+                        // already covers us. (2) curIns is the `op` and the next instruction is the `jcc`. Note that
+                        // we will never have a `jcc` as the first instruction of a group, so we don't need to worry
+                        // about looking ahead to the next group after a an `op` of `op-Jcc`.
+
+                        if (!isJccAffectedIns && (cnt > 1))
                         {
-                            isJccAffectedIns = true;
+                            // The current `id` is valid, namely, there is another instruction in this group.
+                            instruction nextIns = id->idIns();
+                            if (((curIns == INS_cmp) || (curIns == INS_test) || (curIns == INS_add) ||
+                                 (curIns == INS_sub) || (curIns == INS_and) || (curIns == INS_inc) ||
+                                 (curIns == INS_dec)) &&
+                                IsJccInstruction(nextIns))
+                            {
+                                isJccAffectedIns = true;
+                            }
+                        }
+
+                        if (isJccAffectedIns)
+                        {
+                            unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
+                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
+                                   "...............................\n",
+                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
                         }
                     }
-
-                    if (isJccAffectedIns)
-                    {
-                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & jccAlignBoundaryMask);
-                        printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d ; jcc erratum) %dB boundary "
-                               "...............................\n",
-                               codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary, jccAlignBoundary);
-                    }
-                }
 
 #elif defined(TARGET_LOONGARCH64)
 
-                isJccAffectedIns = true;
+                    isJccAffectedIns = true;
+#elif defined(TARGET_RISCV64)
 
-#endif // TARGET_LOONGARCH64
+                    isJccAffectedIns = true;
+#endif // TARGET_RISCV64
 
-                // Jcc affected instruction boundaries were printed above; handle other cases here.
-                if (!isJccAffectedIns)
-                {
-                    size_t alignBoundaryMask = (size_t)emitComp->opts.compJitAlignLoopBoundary - 1;
-                    size_t lastBoundaryAddr  = afterInstrAddr & ~alignBoundaryMask;
-
-                    // draw boundary if beforeAddr was before the lastBoundary.
-                    if (curInstrAddr < lastBoundaryAddr)
+                    // Jcc affected instruction boundaries were printed above; handle other cases here.
+                    if (!isJccAffectedIns)
                     {
-                        // Indicate if instruction is at the alignment boundary or is split
-                        unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
-                        if (bytesCrossedBoundary != 0)
+                        size_t alignBoundaryMask = (size_t)emitComp->opts.compJitAlignLoopBoundary - 1;
+                        size_t lastBoundaryAddr  = afterInstrAddr & ~alignBoundaryMask;
+
+                        // draw boundary if beforeAddr was before the lastBoundary.
+                        if (curInstrAddr < lastBoundaryAddr)
                         {
-                            printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)",
-                                   codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary);
+                            // Indicate if instruction is at the alignment boundary or is split
+                            unsigned bytesCrossedBoundary = (unsigned)(afterInstrAddr & alignBoundaryMask);
+                            if (bytesCrossedBoundary != 0)
+                            {
+                                printf("; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ (%s: %d)",
+                                       codeGen->genInsDisplayName(curInstrDesc), bytesCrossedBoundary);
+                            }
+                            else
+                            {
+                                printf("; ...............................");
+                            }
+                            printf(" %dB boundary ...............................\n",
+                                   emitComp->opts.compJitAlignLoopBoundary);
                         }
-                        else
-                        {
-                            printf("; ...............................");
-                        }
-                        printf(" %dB boundary ...............................\n",
-                               emitComp->opts.compJitAlignLoopBoundary);
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
@@ -7139,8 +7461,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARM64)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
-#elif defined(TARGET_LOONGARCH64)
-                    // For LoongArch64 `emitFwdJumps` is always false.
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7155,8 +7477,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #elif defined(TARGET_ARMARCH)
                     assert(!jmp->idAddr()->iiaHasInstrCount());
                     emitOutputLJ(NULL, adr, jmp);
-#elif defined(TARGET_LOONGARCH64)
-                    // For LoongArch64 `emitFwdJumps` is always false.
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    // For LoongArch64 and Riscv64 `emitFwdJumps` is always false.
                     unreached();
 #else
 #error Unsupported or unset target architecture
@@ -7684,6 +8006,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#if defined(FEATURE_SIMD)
 //------------------------------------------------------------------------
 // emitSimd8Const: Create a simd8 data section constant.
 //
@@ -7700,7 +8023,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 8;
     unsigned cnsAlign = cnsSize;
 
@@ -7713,9 +8035,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd8Const(simd8_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD8);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
 CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
@@ -7725,7 +8044,6 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 16;
     unsigned cnsAlign = cnsSize;
 
@@ -7738,11 +8056,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD16);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
 
+#if defined(TARGET_XARCH)
 CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
 {
     // Access to inline data is 'abstracted' by a special type of static member
@@ -7750,23 +8066,38 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
     // to constant data, not a real static field.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(FEATURE_SIMD)
     unsigned cnsSize  = 32;
     unsigned cnsAlign = cnsSize;
 
-#ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
     {
         cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
-#endif // TARGET_XARCH
 
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
     return emitComp->eeFindJitDataOffs(cnum);
-#else
-    unreached();
-#endif // !FEATURE_SIMD
 }
+
+CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    unsigned cnsSize  = 64;
+    unsigned cnsAlign = cnsSize;
+
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 
 /*****************************************************************************
  *
@@ -8075,12 +8406,13 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 i += j;
                                 break;
 
+                            case 64:
                             case 32:
                             case 16:
                             case 8:
                                 assert((data->dsSize % 8) == 0);
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                                for (j = 8; j < 32; j += 8)
+                                for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;
@@ -8724,6 +9056,14 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
     {
         of = ig->igSize;
     }
+#ifdef TARGET_ARM64
+    else if ((ig->igFlags & IGF_HAS_REMOVED_INSTR) != 0 && no == ig->igInsCnt + 1U)
+    {
+        // This can happen if a instruction was replaced, but the replacement couldn't fit into
+        // the same IG and instead was place in a new IG.
+        return ig->igNext->igOffs + emitFindOffset(ig->igNext, 1);
+    }
+#endif
     else if (ig->igFlags & IGF_UPD_ISZ)
     {
         /*
@@ -8742,7 +9082,6 @@ UNATIVE_OFFSET emitter::emitCodeOffset(void* blockPtr, unsigned codePos)
         // printf("[IG=%02u;ID=%03u;OF=%04X] <= %08X\n", ig->igNum, emitGetInsNumFromCodePos(codePos), of, codePos);
 
         /* Make sure the offset estimate is accurate */
-
         assert(of == emitFindOffset(ig, emitGetInsNumFromCodePos(codePos)));
     }
 
@@ -9118,6 +9457,10 @@ void emitter::emitInitIG(insGroup* ig)
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
 
+#if EMIT_BACKWARDS_NAVIGATION
+    ig->igLastIns = nullptr;
+#endif // EMIT_BACKWARDS_NAVIGATION
+
 #if FEATURE_LOOP_ALIGN
     ig->igLoopBackEdge = nullptr;
 #endif
@@ -9141,6 +9484,15 @@ void emitter::emitInsertIGAfter(insGroup* insertAfterIG, insGroup* ig)
 
     ig->igNext            = insertAfterIG->igNext;
     insertAfterIG->igNext = ig;
+
+#if EMIT_BACKWARDS_NAVIGATION
+    ig->igPrev = insertAfterIG;
+
+    if (ig->igNext != nullptr)
+    {
+        ig->igNext->igPrev = ig;
+    }
+#endif // EMIT_BACKWARDS_NAVIGATION
 
     if (emitIGlast == insertAfterIG)
     {
@@ -9197,6 +9549,88 @@ void emitter::emitNxtIG(bool extend)
     emitCurIG->lastGeneratedBlock = nullptr;
 #endif
 }
+
+//------------------------------------------------------------------------
+// emitRemoveLastInstruction: Remove the last instruction emitted; it has been optimized away by the
+// next instruction we are generating. `emitLastIns` must be non-null, meaning there is a
+// previous instruction. The previous instruction might have already been saved, or it might
+// be in the currently accumulating insGroup buffer.
+//
+// The `emitLastIns` is set to nullptr after this function. It is expected that a new instruction
+// will be immediately generated after this, which will set it again.
+//
+// Removing an instruction can invalidate any captured emitter location
+// (using emitLocation::CaptureLocation()) after the instruction was generated. This is because the
+// emitLocation stores the current IG instruction number and code size. If the instruction is
+// removed and not replaced (e.g., it is at the end of the IG, and any replacement creates a new
+// EXTEND IG), then the saved instruction number is incorrect. The IGF_HAS_REMOVED_INSTR flag is
+// used to check for this later.
+//
+// NOTE: It is expected that the GC effect of the removed instruction will be handled by the newly
+// generated replacement(s).
+//
+#ifdef TARGET_ARM64
+void emitter::emitRemoveLastInstruction()
+{
+    assert(emitLastIns != nullptr);
+    assert(emitLastInsIG != nullptr);
+
+    // We should assert it's not a jmp, as that would require updating the jump lists, e.g. emitCurIGjmpList.
+
+    BYTE*          lastInsActualStartAddr = (BYTE*)emitLastIns - m_debugInfoSize;
+    unsigned short lastCodeSize           = (unsigned short)emitLastIns->idCodeSize();
+
+    if ((emitCurIGfreeBase <= lastInsActualStartAddr) && (lastInsActualStartAddr < emitCurIGfreeEndp))
+    {
+        JITDUMP("Removing saved instruction in current IG %s:\n> ", emitLabelString(emitLastInsIG));
+        JITDUMPEXEC(emitDispIns(emitLastIns, /* isNew */ false, /* doffs */ false, /* asmfm */ false));
+
+        // The last instruction is in the current buffer. That means the current IG is non-empty.
+        assert(emitCurIGnonEmpty());
+        assert(lastInsActualStartAddr < emitCurIGfreeNext);
+        assert(emitCurIGinsCnt >= 1);
+        assert(emitCurIGsize >= emitLastIns->idCodeSize());
+
+        size_t insSize = emitCurIGfreeNext - lastInsActualStartAddr;
+
+        emitCurIGfreeNext = lastInsActualStartAddr;
+        emitCurIGinsCnt -= 1;
+        emitCurIGsize -= lastCodeSize;
+
+        // We're going to overwrite the memory; zero it.
+        memset(emitCurIGfreeNext, 0, insSize);
+
+        // Remember this happened.
+        emitCurIG->igFlags |= IGF_HAS_REMOVED_INSTR;
+    }
+    else
+    {
+        JITDUMP("Removing saved instruction in saved IG %s:\n> ", emitLabelString(emitLastInsIG));
+        JITDUMPEXEC(emitDispIns(emitLastIns, /* isNew */ false, /* doffs */ false, /* asmfm */ false));
+
+        // The last instruction has already been saved. It must be the last instruction in the group.
+        // In the below calculation, we don't include the m_debugInfoSize because it comes before `emitLastIns`.
+        assert(emitLastInsIG->igData + emitLastInsIG->igDataSize == (BYTE*)emitLastIns + emitSizeOfInsDsc(emitLastIns));
+        assert(emitLastInsIG->igInsCnt >= 1);
+        assert(emitLastInsIG->igSize >= lastCodeSize);
+
+        emitLastInsIG->igInsCnt -= 1;
+        emitLastInsIG->igSize -= lastCodeSize;
+
+        // Zero the memory we aren't using anymore. Note that this doesn't get reused, so this is not
+        // strictly necessary.
+        size_t insSize = m_debugInfoSize + emitSizeOfInsDsc(emitLastIns);
+        memset(lastInsActualStartAddr, 0, insSize);
+
+        // Remember this happened.
+        emitLastInsIG->igFlags |= IGF_HAS_REMOVED_INSTR;
+    }
+
+    emitInsCount -= 1;
+    emitLastIns   = nullptr;
+    emitLastInsIG = nullptr;
+}
+#endif // TARGET_ARM64
 
 /*****************************************************************************
  *
@@ -9852,7 +10286,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
-#if !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
             result = RBM_PROFILER_ENTER_TRASH;
             break;
@@ -9869,7 +10303,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_PROF_FCN_TAILCALL:
             result = RBM_PROFILER_TAILCALL_TRASH;
             break;
-#endif // !defined(TARGET_LOONGARCH64)
+#endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:

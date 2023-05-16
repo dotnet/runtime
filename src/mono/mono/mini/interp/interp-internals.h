@@ -29,6 +29,8 @@
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
 // This alignment provides us with straight forward support for Vector128
 #define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
+#define MINT_SIMD_ALIGNMENT (MINT_STACK_ALIGNMENT)
+#define SIZEOF_V128 16
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -99,6 +101,10 @@ typedef enum {
 } InterpMethodCodeType;
 
 #define PROFILE_INTERP 0
+
+#if __GNUC__
+#define INTERP_ENABLE_SIMD
+#endif
 
 #define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
 #define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
@@ -172,6 +178,12 @@ struct InterpMethod {
 	unsigned int needs_thread_attach : 1;
 	// If set, this method is MulticastDelegate.Invoke
 	unsigned int is_invoke : 1;
+#if HOST_BROWSER
+	unsigned int contains_traces : 1;
+	guint16 *backward_branch_offsets;
+	unsigned int backward_branch_offsets_count;
+	MonoBitSet *address_taken_bits;
+#endif
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -301,6 +313,12 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 void
 mono_interp_error_cleanup (MonoError *error);
 
+int
+mono_mint_type (MonoType *type);
+
+int
+mono_interp_type_size (MonoType *type, int mt, int *align_p);
+
 #if HOST_BROWSER
 
 gboolean
@@ -321,73 +339,27 @@ mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
 void
 mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
 
-int
+void
 mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
 
-int
+void
 mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+int
+mono_jiterp_get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index);
 
 gpointer
 mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
 
-#endif
+gpointer
+mono_jiterp_get_simd_intrinsic (int arity, int index);
 
-static inline int
-mint_type(MonoType *type)
-{
-	if (m_type_is_byref (type))
-		return MINT_TYPE_I;
-enum_type:
-	switch (type->type) {
-	case MONO_TYPE_I1:
-		return MINT_TYPE_I1;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-		return MINT_TYPE_U1;
-	case MONO_TYPE_I2:
-		return MINT_TYPE_I2;
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-		return MINT_TYPE_U2;
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-		return MINT_TYPE_I4;
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-		return MINT_TYPE_I;
-	case MONO_TYPE_R4:
-		return MINT_TYPE_R4;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		return MINT_TYPE_I8;
-	case MONO_TYPE_R8:
-		return MINT_TYPE_R8;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-		return MINT_TYPE_O;
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
-			goto enum_type;
-		} else
-			return MINT_TYPE_VT;
-	case MONO_TYPE_TYPEDBYREF:
-		return MINT_TYPE_VT;
-	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
-		goto enum_type;
-	case MONO_TYPE_VOID:
-		return MINT_TYPE_VOID;
-	default:
-		g_warning ("got type 0x%02x", type->type);
-		g_assert_not_reached ();
-	}
-	return -1;
-}
+int
+mono_jiterp_get_simd_opcode (int arity, int index);
+
+int
+mono_jiterp_get_opcode_info (int opcode, int type);
+
+#endif
 
 #endif /* __MONO_MINI_INTERPRETER_INTERNALS_H__ */

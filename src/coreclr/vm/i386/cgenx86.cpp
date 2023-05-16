@@ -39,9 +39,6 @@
 
 #include "stublink.inl"
 
-extern "C" DWORD STDCALL GetSpecificCpuTypeAsm(void);
-extern "C" uint32_t STDCALL GetSpecificCpuFeaturesAsm(uint32_t *pInfo);
-
 // NOTE on Frame Size C_ASSERT usage in this file
 // if the frame size changes then the stubs have to be revisited for correctness
 // kindly revist the logic and then update the constants so that the C_ASSERT will again fire
@@ -75,64 +72,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 }
 #endif // FEATURE_EH_FUNCLETS
-
-#ifndef DACCESS_COMPILE
-
-//---------------------------------------------------------------
-// Returns the type of CPU (the value of x of x86)
-// (Please note, that it returns 6 for P5-II)
-//---------------------------------------------------------------
-void GetSpecificCpuInfo(CORINFO_CPU * cpuInfo)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    static CORINFO_CPU val = { 0, 0, 0 };
-
-    if (val.dwCPUType)
-    {
-        *cpuInfo = val;
-        return;
-    }
-
-    CORINFO_CPU tempVal;
-    tempVal.dwCPUType = GetSpecificCpuTypeAsm();  // written in ASM & doesn't participate in contracts
-    _ASSERTE(tempVal.dwCPUType);
-
-#ifdef _DEBUG
-    /* Set Family+Model+Stepping string (eg., x690 for Banias, or xF30 for P4 Prescott)
-     * instead of Family only
-     */
-
-    const DWORD cpuDefault = 0xFFFFFFFF;
-    static ConfigDWORD cpuFamily;
-    DWORD configCpuFamily = cpuFamily.val(CLRConfig::INTERNAL_CPUFamily);
-    if (configCpuFamily != cpuDefault)
-    {
-        assert((configCpuFamily & 0xFFF) == configCpuFamily);
-        tempVal.dwCPUType = (tempVal.dwCPUType & 0xFFFF0000) | configCpuFamily;
-    }
-#endif
-
-    tempVal.dwFeatures = GetSpecificCpuFeaturesAsm(&tempVal.dwExtendedFeatures);  // written in ASM & doesn't participate in contracts
-
-#ifdef _DEBUG
-    /* Set the 32-bit feature mask
-     */
-
-    const DWORD cpuFeaturesDefault = 0xFFFFFFFF;
-    static ConfigDWORD cpuFeatures;
-    DWORD configCpuFeatures = cpuFeatures.val(CLRConfig::INTERNAL_CPUFeatures);
-    if (configCpuFeatures != cpuFeaturesDefault)
-    {
-        tempVal.dwFeatures = configCpuFeatures;
-    }
-#endif
-
-    val = *cpuInfo = tempVal;
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
 
 #ifndef FEATURE_EH_FUNCLETS
 //---------------------------------------------------------------------------------------
@@ -1084,7 +1023,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #ifndef TARGET_UNIX
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     // No CONTRACT
     STATIC_CONTRACT_NOTHROW;
@@ -1108,7 +1047,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall avx512StateSupport()
+extern "C" DWORD avx512StateSupport()
 {
     // No CONTRACT
     STATIC_CONTRACT_NOTHROW;
@@ -1133,29 +1072,7 @@ extern "C" DWORD __stdcall avx512StateSupport()
 
 #else // !TARGET_UNIX
 
-void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-
-void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \
@@ -1167,7 +1084,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
-extern "C" DWORD __stdcall avx512StateSupport()
+extern "C" DWORD avx512StateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \

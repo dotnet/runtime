@@ -270,8 +270,8 @@ namespace System.Net
         {
             string hostname = ExtractHostname(uriPrefix, true)!;
 
-            if (string.Equals(hostname, "*", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(hostname, "+", StringComparison.OrdinalIgnoreCase) ||
+            if (hostname == "*" ||
+                hostname == "+" ||
                 IPAddress.TryParse(hostname, out _))
             {
                 // for a wildcard, register the machine name.  If the caller doesn't have DNS permission

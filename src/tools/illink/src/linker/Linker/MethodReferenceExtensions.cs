@@ -42,7 +42,7 @@ namespace Mono.Linker
 			}
 
 			// Append parameters
-			sb.Append ("(");
+			sb.Append ('(');
 			if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned -- it's best to leave this as is for now
 				for (int i = 0; i < method.Parameters.Count - 1; i++)
@@ -51,7 +51,7 @@ namespace Mono.Linker
 #pragma warning restore RS0030 // Do not used banned APIs
 			}
 
-			sb.Append (")");
+			sb.Append (')');
 
 			// Insert generic parameters
 			if (method.HasGenericParameters) {

@@ -12,6 +12,8 @@
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <!-- these are imported in this project instead -->
+    <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and ('$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv'))">true</InstallChromeForTests>
 
@@ -19,6 +21,8 @@
     <IsBrowserWasmProject>false</IsBrowserWasmProject>
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\workloads-testing.targets" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
@@ -39,6 +43,11 @@
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''"
            Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
+
+    <PropertyGroup>
+      <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetDirectoryName($(SdkWithWorkloadForTestingPath)))</_SdkWithWorkloadForTestingDirName>
+      <_SdkWithWorkloadForTestingDirName>$([System.IO.Path]::GetFilename($(_SdkWithWorkloadForTestingDirName)))</_SdkWithWorkloadForTestingDirName>
+    </PropertyGroup>
 
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
@@ -65,6 +74,9 @@
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set SDK_DIR_NAME=$(_SdkWithWorkloadForTestingDirName)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WEBCIL=$(TestUsingWebcil)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WEBCIL=$(TestUsingWebcil)" />

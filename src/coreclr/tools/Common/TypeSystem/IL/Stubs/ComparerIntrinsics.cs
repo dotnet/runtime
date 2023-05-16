@@ -65,25 +65,7 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             var codeStream = emitter.NewCodeStream();
 
-            FieldDesc defaultField = owningType.GetKnownField("s_default");
-
-            TypeSystemContext  context = comparerType.Context;
-            TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc compareExchangeObject = context.SystemModule.
-                GetKnownType("System.Threading", "Interlocked").
-                    GetKnownMethod("CompareExchange",
-                        new MethodSignature(
-                            MethodSignatureFlags.Static,
-                            genericParameterCount: 0,
-                            returnType: objectType,
-                            parameters: new TypeDesc[] { objectType.MakeByRefType(), objectType, objectType }));
-
-            codeStream.Emit(ILOpcode.ldsflda, emitter.NewToken(defaultField));
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(comparerType.GetParameterlessConstructor()));
-            codeStream.Emit(ILOpcode.ldnull);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(compareExchangeObject));
-            codeStream.Emit(ILOpcode.pop);
-            codeStream.Emit(ILOpcode.ldsfld, emitter.NewToken(defaultField));
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(methodBeingGenerated);
@@ -93,7 +75,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static InstantiatedType GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 

@@ -1,26 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.Serialization;
+using System.IO;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeParsing;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Security;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
-
-using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -45,6 +38,8 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -73,29 +68,10 @@ namespace System.Reflection.Runtime.Assemblies
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
-            if (typeName == null)
-                return null;
-            if (typeName is AssemblyQualifiedTypeName)
-            {
-                if (throwOnError)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
-                else
-                    return null;
-            }
-
-            CoreAssemblyResolver coreAssemblyResolver = GetRuntimeAssemblyIfExists;
-            CoreTypeResolver coreTypeResolver =
-                delegate (Assembly containingAssemblyIfAny, string coreTypeName)
-                {
-                    if (containingAssemblyIfAny == null)
-                        return GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                    else
-                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                };
-            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-
-            return typeName.ResolveType(this, getTypeOptions);
+            return TypeNameParser.GetType(name,
+                throwOnError: throwOnError,
+                ignoreCase: ignoreCase,
+                topLevelAssembly: this);
         }
 
 #pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
@@ -129,9 +105,7 @@ namespace System.Reflection.Runtime.Assemblies
                 Exception exception = TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
                 if (exception == null)
                 {
-                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
-                    if (type == null)
-                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, throwOnError: true, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
                 }
 
                 Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
@@ -182,12 +156,12 @@ namespace System.Reflection.Runtime.Assemblies
         ///
         /// Returns null if the type does not exist. Throws for all other error cases.
         /// </summary>
-        internal RuntimeTypeInfo GetTypeCore(string fullName, bool ignoreCase)
+        internal RuntimeTypeInfo GetTypeCore(string fullName, bool throwOnError, bool ignoreCase)
         {
-            if (ignoreCase)
-                return GetTypeCoreCaseInsensitive(fullName);
-            else
-                return GetTypeCoreCaseSensitive(fullName);
+            RuntimeTypeInfo type = ignoreCase ? GetTypeCoreCaseInsensitive(fullName) : GetTypeCoreCaseSensitive(fullName);
+            if (type == null && throwOnError)
+                throw Helpers.CreateTypeLoadException(fullName, this.FullName);
+            return type;
         }
 
         // Types that derive from RuntimeAssembly must implement the following public surface area members

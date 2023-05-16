@@ -162,7 +162,7 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter != -1)
             {
                 ns = fullname.Substring(0, nsDelimiter);
@@ -236,7 +236,7 @@ namespace System
                     listType = MemberListType.CaseSensitive;
                 }
 
-                if (allowPrefixLookup && name.EndsWith("*", StringComparison.Ordinal))
+                if (allowPrefixLookup && name.EndsWith('*'))
                 {
                     // We set prefixLookup to true if name ends with a "*".
                     // We will also set listType to All so that all members are included in
@@ -1139,7 +1139,7 @@ namespace System
         private const BindingFlags GetMemberWithSameMetadataDefinitionAsBindingFlags =
             BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static MemberInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
+        private static MethodInfo? GetMethodWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo methodInfo)
         {
             ListBuilder<MethodInfo> methods = runtimeType.GetMethodCandidates(methodInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, -1, allowPrefixLookup: false);
 
@@ -1155,7 +1155,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
+        private static ConstructorInfo? GetConstructorWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo constructorInfo)
         {
             ListBuilder<ConstructorInfo> ctors = runtimeType.GetConstructorCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, CallingConventions.Any, null, allowPrefixLookup: false);
 
@@ -1171,7 +1171,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
+        private static PropertyInfo? GetPropertyWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo propertyInfo)
         {
             ListBuilder<PropertyInfo> properties = runtimeType.GetPropertyCandidates(propertyInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, null, allowPrefixLookup: false);
 
@@ -1187,7 +1187,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
+        private static FieldInfo? GetFieldWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo fieldInfo)
         {
             ListBuilder<FieldInfo> fields = runtimeType.GetFieldCandidates(fieldInfo.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1203,7 +1203,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
+        private static EventInfo? GetEventWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo eventInfo)
         {
             ListBuilder<EventInfo> events = runtimeType.GetEventCandidates(null, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1219,7 +1219,7 @@ namespace System
             return null;
         }
 
-        private static MemberInfo? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
+        private static Type? GetNestedTypeWithSameMetadataDefinitionAs(RuntimeType runtimeType, MemberInfo nestedType)
         {
             ListBuilder<Type> nestedTypes = runtimeType.GetNestedTypeCandidates(nestedType.Name, GetMemberWithSameMetadataDefinitionAsBindingFlags, allowPrefixLookup: false);
 
@@ -1744,7 +1744,7 @@ namespace System
             {
                 Type elementType = this.GetRootElementType();
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
-                    throw new NotSupportedException("NotSupported_ContainsStackPtr");
+                    throw new NotSupportedException(SR.NotSupported_ContainsStackPtr);
 
                 if (IsValueType)
                 {
@@ -1758,7 +1758,7 @@ namespace System
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
             if (IsAbstract)
             {
-                throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
+                throw new MissingMethodException(SR.Format(SR.Acc_CreateAbstEx, this));
             }
 
             unsafe
@@ -2004,7 +2004,7 @@ namespace System
         public override Type MakeByRefType()
         {
             if (IsByRef)
-                throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
+                throw new TypeLoadException(SR.Format(SR.CannotCreateByRefOfByRef, GetType()));
             Type? type = null;
             var base_type = this;
             make_byref_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
@@ -2017,7 +2017,7 @@ namespace System
         public override Type MakePointerType()
         {
             if (IsByRef)
-                throw new TypeLoadException($"Could not load type '{GetType()}' from assembly '{AssemblyQualifiedName}");
+                throw new TypeLoadException(SR.Format(SR.CannotCreatePointerOfByRef, GetType()));
             Type? type = null;
             var base_type = this;
             make_pointer_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));

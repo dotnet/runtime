@@ -20,6 +20,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -56,7 +58,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Collections_Generic_Comparer_get_Default,
     NI_System_Collections_Generic_EqualityComparer_get_Default,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,
-    NI_System_Numerics_BitOperations_PopCount,
+
     NI_System_GC_KeepAlive,
     NI_System_Threading_Thread_get_CurrentThread,
     NI_System_Threading_Thread_get_ManagedThreadId,
@@ -64,6 +66,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_GetEnumUnderlyingType,
     NI_System_Type_get_IsValueType,
     NI_System_Type_get_IsByRefLike,
+    NI_System_Type_get_TypeHandle,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
@@ -75,7 +78,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
     NI_System_Object_GetType,
-    NI_System_RuntimeTypeHandle_GetValueInternal,
+    NI_System_RuntimeTypeHandle_ToIntPtr,
+    NI_System_RuntimeType_get_TypeHandle,
     NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
@@ -102,6 +106,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
+    NI_System_SpanHelpers_SequenceEqual,
     NI_System_ReadOnlySpan_get_Item,
     NI_System_ReadOnlySpan_get_Length,
 
@@ -109,16 +114,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_MemoryExtensions_Equals,
     NI_System_MemoryExtensions_SequenceEqual,
     NI_System_MemoryExtensions_StartsWith,
-
-    // These are used by HWIntrinsics but are defined more generally
-    // to allow dead code optimization and handle the recursion case
-
-    NI_IsSupported_True,
-    NI_IsSupported_False,
-    NI_IsSupported_Dynamic,
-    NI_IsSupported_Type,
-    NI_Throw_PlatformNotSupportedException,
-    NI_Vector_GetCount,
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
@@ -159,6 +154,28 @@ enum NamedIntrinsic : unsigned short
     NI_SIMD_UpperSave,
 #endif // FEATURE_SIMD
 
+    //
+    // Special Import Intrinsics
+    //
+
+    NI_SPECIAL_IMPORT_START,
+
+    // These are used by HWIntrinsics but are defined more generally
+    // to allow dead code optimization and handle the recursion case
+
+    NI_IsSupported_True,
+    NI_IsSupported_False,
+    NI_IsSupported_Dynamic,
+    NI_IsSupported_Type,
+    NI_Throw_PlatformNotSupportedException,
+    NI_Vector_GetCount,
+
+    NI_SPECIAL_IMPORT_END,
+
+    //
+    // System.Runtime.CompilerServices.Unsafe Intrinsics
+    //
+
     NI_SRCS_UNSAFE_START,
 
     NI_SRCS_UNSAFE_Add,
@@ -167,6 +184,7 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_As,
     NI_SRCS_UNSAFE_AsPointer,
     NI_SRCS_UNSAFE_AsRef,
+    NI_SRCS_UNSAFE_BitCast,
     NI_SRCS_UNSAFE_ByteOffset,
     NI_SRCS_UNSAFE_Copy,
     NI_SRCS_UNSAFE_CopyBlock,
@@ -188,6 +206,22 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_WriteUnaligned,
 
     NI_SRCS_UNSAFE_END,
+
+    //
+    // Primitive Intrinsics
+    //
+
+    NI_PRIMITIVE_START,
+
+    NI_PRIMITIVE_Crc32C,
+    NI_PRIMITIVE_LeadingZeroCount,
+    NI_PRIMITIVE_Log2,
+    NI_PRIMITIVE_PopCount,
+    NI_PRIMITIVE_RotateLeft,
+    NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_TrailingZeroCount,
+
+    NI_PRIMITIVE_END,
 };
 
 #endif // _NAMEDINTRINSICLIST_H_

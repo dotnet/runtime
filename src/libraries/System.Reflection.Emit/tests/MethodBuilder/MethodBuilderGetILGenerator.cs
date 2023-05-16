@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.Runtime.Interop;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -80,6 +81,64 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             MethodBuilder method = type.DefineMethod(attributes.ToString(), attributes);
             Assert.NotNull(method.GetILGenerator());
+        }
+
+        [Fact]
+        public void LoadPointerTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type pointerType = type.MakePointerType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, pointerType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType*", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        public void LoadArrayTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type arrayType = type.MakeArrayType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, arrayType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType[]", createdMethod.Invoke(null, null));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/82257", TestRuntimes.Mono)]
+        public void LoadByRefTypeInILGeneratedMethod()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
+            Type byrefType = type.MakeByRefType();
+
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+            ILGenerator ilGenerator = method.GetILGenerator();
+
+            ilGenerator.Emit(OpCodes.Ldtoken, byrefType);
+            ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", BindingFlags.Static | BindingFlags.Public));
+            ilGenerator.Emit(OpCodes.Callvirt, typeof(Type).GetMethod("get_FullName"));
+            ilGenerator.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod("TestMethod");
+            Assert.Equal("TestType&", createdMethod.Invoke(null, null));
         }
     }
 }

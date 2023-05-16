@@ -34,6 +34,11 @@ public class AndroidAppBuilderTask : Task
     public ITaskItem[] EnvironmentVariables { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
+    /// Additional linker arguments that apply to the app being built
+    /// </summary>
+    public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Prefer FullAOT mode for Emulator over JIT
     /// </summary>
     public bool ForceAOT { get; set; }
@@ -42,6 +47,16 @@ public class AndroidAppBuilderTask : Task
     /// Indicates if we want to AOT all assemblies or not
     /// </summary>
     public bool ForceFullAOT { get; set; }
+
+    /// <summary>
+    /// Mode to control whether runtime is a self-contained library or not
+    /// </summary>
+    public bool IsLibraryMode { get; set; }
+
+    /// <summary>
+    /// Extra native dependencies to link into the app
+    /// </summary>
+    public string[] NativeDependencies { get; set; } = Array.Empty<string>();
 
     /// <summary>
     /// Static linked runtime
@@ -73,6 +88,8 @@ public class AndroidAppBuilderTask : Task
 
     public string? MinApiLevel { get; set; }
 
+    public string? TargetApiLevel { get; set; }
+
     public string? BuildApiLevel { get; set; }
 
     public string? BuildToolsVersion { get; set; }
@@ -97,8 +114,6 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        string abi = DetermineAbi();
-
         var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.AppDir = AppDir;
@@ -106,6 +121,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.AndroidSdk = AndroidSdk;
         apkBuilder.AndroidNdk = AndroidNdk;
         apkBuilder.MinApiLevel = MinApiLevel;
+        apkBuilder.TargetApiLevel = TargetApiLevel;
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
@@ -119,18 +135,11 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.RuntimeComponents = RuntimeComponents;
         apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
-        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
+        apkBuilder.IsLibraryMode = IsLibraryMode;
+        apkBuilder.NativeDependencies = NativeDependencies;
+        apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
+        (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
     }
-
-    private string DetermineAbi() =>
-        RuntimeIdentifier switch
-        {
-            "android-x86" => "x86",
-            "android-x64" => "x86_64",
-            "android-arm" => "armeabi-v7a",
-            "android-arm64" => "arm64-v8a",
-            _ => throw new ArgumentException($"{RuntimeIdentifier} is not supported for Android"),
-        };
 }

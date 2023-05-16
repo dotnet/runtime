@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class NCS
 {
     public int field;
@@ -27,7 +28,8 @@ public class NCS
         return Interlocked.CompareExchange(ref value, newData, oldData);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NCS ncs = new NCS();
         ncs.field = 99;

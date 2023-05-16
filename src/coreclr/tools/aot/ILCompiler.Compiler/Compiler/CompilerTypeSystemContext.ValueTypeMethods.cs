@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -13,6 +14,7 @@ namespace ILCompiler
     public partial class CompilerTypeSystemContext
     {
         private MethodDesc _objectEqualsMethod;
+        private MetadataType _iAsyncStateMachineType;
 
         private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
         {
@@ -33,7 +35,7 @@ namespace ILCompiler
         {
             TypeDesc valueTypeDefinition = valueType.GetTypeDefinition();
 
-            if (RequiresGetFieldHelperMethod((MetadataType)valueTypeDefinition))
+            if (RequiresValueTypeGetFieldHelperMethod((MetadataType)valueTypeDefinition))
             {
                 MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)valueTypeDefinition);
 
@@ -52,7 +54,30 @@ namespace ILCompiler
                 yield return method;
         }
 
-        private bool RequiresGetFieldHelperMethod(MetadataType valueType)
+        protected virtual IEnumerable<MethodDesc> GetAllMethodsForAttribute(TypeDesc attributeType, bool virtualOnly)
+        {
+            TypeDesc attributeTypeDefinition = attributeType.GetTypeDefinition();
+
+            if (RequiresAttributeGetFieldHelperMethod(attributeTypeDefinition))
+            {
+                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((DefType)attributeTypeDefinition);
+
+                if (attributeType != attributeTypeDefinition)
+                {
+                    yield return GetMethodForInstantiatedType(getFieldHelperMethod, (InstantiatedType)attributeType);
+                }
+                else
+                {
+                    yield return getFieldHelperMethod;
+                }
+            }
+
+            IEnumerable<MethodDesc> metadataMethods = virtualOnly ? attributeType.GetVirtualMethods() : attributeType.GetMethods();
+            foreach (MethodDesc method in metadataMethods)
+                yield return method;
+        }
+
+        private bool RequiresValueTypeGetFieldHelperMethod(MetadataType valueType)
         {
             _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
@@ -73,7 +98,32 @@ namespace ILCompiler
             if (valueType.IsWellKnownType(WellKnownType.Double) || valueType.IsWellKnownType(WellKnownType.Single))
                 return false;
 
+            // Heuristic: async state machines don't need equality/hashcode.
+            if (IsAsyncStateMachineType(valueType))
+                return false;
+
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
+        }
+
+        public bool IsAsyncStateMachineType(MetadataType type)
+        {
+            Debug.Assert(type.IsValueType);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
+                && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
+        }
+
+        private static bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
+        {
+            foreach (FieldDesc field in attributeTypeDef.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                return true;
+            }
+
+            return false;
         }
 
         private sealed class TypeState

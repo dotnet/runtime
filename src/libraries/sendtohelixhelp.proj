@@ -13,12 +13,14 @@
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
-    <BuildHelixWorkItemsDependsOn>BuildHelixCommand</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn>BuildHelixCommand;StageDependenciesForHelix</BuildHelixWorkItemsDependsOn>
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
+    <HelixDependenciesStagingPath>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging'))</HelixDependenciesStagingPath>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'browser'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -60,7 +62,7 @@
 
     <FailOnTestFailure Condition="'$(FailOnTestFailure)' == '' and '$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
 
-    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-net7+latest</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-latest</SdkForWorkloadTestingDirName>
     <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
@@ -70,10 +72,10 @@
     <HelixType>test/functional/cli/$(TestScope)/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <!-- XHarness telemetry not supported with custom WASM workloads yet -->
-    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser'">false</EnableXHarnessTelemetry>
+    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -93,13 +95,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <UseTestEnvFile Condition="'$(UseTestEnvFile)' == ''">true</UseTestEnvFile>
+
     <!-- Set the name of the scenario file. Note that this is only used in invocations where $(Scenario) is set
          (which is when this project is invoked to call the "CreateTestEnvFile" target).
     -->
     <TestEnvFileName></TestEnvFileName>
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' == 'windows'">SetStressModes_$(Scenario).cmd</TestEnvFileName>
-    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser'">SetStressModes_$(Scenario).sh</TestEnvFileName>
+    <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" />
+    <__HelixDependenciesToStageThatDontExist Remove="@(HelixDependenciesToStage->Exists())" />
+  </ItemGroup>
 
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
@@ -109,24 +118,25 @@
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
     <HelixPreCommand Include="call %__TestEnv%" />
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="set COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="set DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' != 'windows' ">
     <HelixPreCommand Include="export __TestEnv=$HELIX_CORRELATION_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="printenv | grep COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="printenv | grep DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
 
-    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
-    <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
+    <!-- set this to a writable location so the first time experience can write create sentinels -->
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_CLI_HOME=$HELIX_WORKITEM_ROOT/.dotnet" />
+    <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_CLI_HOME=%HELIX_WORKITEM_ROOT%\.dotnet" />
 
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="DOTNET_ROOT=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName)" />
     <!--<HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="DOTNET_ROOT=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)" />-->
@@ -162,6 +172,11 @@
     <HelixPreCommand Include="docker run --name grpc-server -d -p 50052:50052 -p 80:80 grpc-server:latest" />
     <HelixPostCommand Include="docker stop grpc-server" />
     <HelixPostCommand Include="docker rmi -f grpc-server:latest" />
+  </ItemGroup>
+
+  <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
+  <ItemGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true" />
   </ItemGroup>
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
@@ -293,5 +308,34 @@
 
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+  </Target>
+
+  <!--
+      Helix tasks will attempt to write a .payload file to the payload directory. But if the
+      directory is not writable, for example when it is a system installed dependency like
+        `WASI_SDK_PATH=/usr/local/wasi-sdk`
+      .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
+  -->
+  <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
+    <Error Condition="'%(__HelixDependenciesToStageThatDontExist.SourcePath)' == '' or !Exists(%(__HelixDependenciesToStageThatDontExist.SourcePath))"
+           Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
+
+    <ItemGroup>
+      <__HelixDependenciesToStageThatDontExist Name="%(FileName)" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Using %(__HelixDependenciesToStageThatDontExist.Name): %(__HelixDependenciesToStageThatDontExist.SourcePath)" />
+    <MakeDir Directories="%(__HelixDependenciesToStageThatDontExist.Identity)" />
+
+    <ItemGroup>
+      <_FilesToStage Remove="@(_FilesToStage)" />
+      <_FilesToStage Include="%(__HelixDependenciesToStageThatDontExist.SourcePath)\**\*"
+                     Exclude="%(__HelixDependenciesToStageThatDontExist.SourcePath)\.git\**\*"
+                     DirName="@(__HelixDependenciesToStageThatDontExist->'%(Name)')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_FilesToStage)"
+          DestinationFiles="@(_FilesToStage -> '$(HelixDependenciesStagingPath)\%(DirName)\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 </Project>

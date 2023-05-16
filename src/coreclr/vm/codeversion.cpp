@@ -1955,10 +1955,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
             return E_OUTOFMEMORY;
         }
         *ppMD = pMD;
-    }
 
-    if (!pMD->HasClassOrMethodInstantiation())
-    {
         // not generic, we're done for this method
         return S_OK;
     }
@@ -2102,7 +2099,7 @@ bool CodeVersionManager::IsMethodSupported(PTR_MethodDesc pMethodDesc)
         !pMethodDesc->GetLoaderAllocator()->IsCollectible() &&
 
         // EnC has its own way of versioning
-        !pMethodDesc->IsEnCMethod();
+        !pMethodDesc->InEnCEnabledModule();
 }
 
 //---------------------------------------------------------------------------------------

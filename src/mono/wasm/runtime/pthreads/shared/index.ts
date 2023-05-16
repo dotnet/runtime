@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
+import { Module } from "../../globals";
 import { MonoConfig } from "../../types";
 import { pthread_ptr } from "./types";
 
@@ -20,9 +20,14 @@ export const MainThread: PThreadInfo = {
 let browser_thread_id_lazy: pthread_ptr | undefined;
 export function getBrowserThreadID(): pthread_ptr {
     if (browser_thread_id_lazy === undefined) {
-        browser_thread_id_lazy = (<any>Module)["_emscripten_main_browser_thread_id"]() as pthread_ptr;
+        browser_thread_id_lazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthread_ptr;
     }
     return browser_thread_id_lazy;
+}
+
+const enum WorkerMonoCommandType {
+    channel_created = "channel_created",
+    preload = "preload",
 }
 
 /// Messages sent on the dedicated mono channel between a pthread and the browser thread
@@ -50,14 +55,6 @@ export interface MonoThreadMessageApplyMonoConfig extends MonoThreadMessage {
     config: string;
 }
 
-export function isMonoThreadMessageApplyMonoConfig(x: unknown): x is MonoThreadMessageApplyMonoConfig {
-    if (!isMonoThreadMessage(x)) {
-        return false;
-    }
-    const xmsg = x as MonoThreadMessageApplyMonoConfig;
-    return xmsg.type === "pthread" && xmsg.cmd === "apply_mono_config" && typeof (xmsg.config) === "string";
-}
-
 export function makeMonoThreadMessageApplyMonoConfig(config: MonoConfig): MonoThreadMessageApplyMonoConfig {
     return {
         type: "pthread",
@@ -75,15 +72,25 @@ export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono
 /// Messages sent from the main thread using Worker.postMessage or from the worker using DedicatedWorkerGlobalScope.postMessage
 /// should use this interface.  The message event is also used by emscripten internals (and possibly by 3rd party libraries targeting Emscripten).
 /// We should just use this to establish a dedicated MessagePort for Mono's uses.
-export interface MonoWorkerMessage {
-    [monoSymbol]: object;
+export interface MonoWorkerMessage<TPort> {
+    [monoSymbol]: {
+        mono_cmd: WorkerMonoCommandType;
+        port: TPort;
+    };
 }
 
 /// The message sent early during pthread creation to set up a dedicated MessagePort for Mono between the main thread and the pthread.
-export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage {
+export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessage<TPort> {
     [monoSymbol]: {
-        mono_cmd: "channel_created";
+        mono_cmd: WorkerMonoCommandType.channel_created;
         thread_id: pthread_ptr;
+        port: TPort;
+    };
+}
+
+export interface MonoWorkerMessagePreload<TPort> extends MonoWorkerMessage<TPort> {
+    [monoSymbol]: {
+        mono_cmd: WorkerMonoCommandType.preload;
         port: TPort;
     };
 }
@@ -91,21 +98,31 @@ export interface MonoWorkerMessageChannelCreated<TPort> extends MonoWorkerMessag
 export function makeChannelCreatedMonoMessage<TPort>(thread_id: pthread_ptr, port: TPort): MonoWorkerMessageChannelCreated<TPort> {
     return {
         [monoSymbol]: {
-            mono_cmd: "channel_created",
+            mono_cmd: WorkerMonoCommandType.channel_created,
             thread_id,
             port
         }
     };
 }
 
-export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage {
+export function isMonoWorkerMessage(message: unknown): message is MonoWorkerMessage<any> {
     return message !== undefined && typeof message === "object" && message !== null && monoSymbol in message;
 }
 
-export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessageChannelCreated<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
+export function isMonoWorkerMessageChannelCreated<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessageChannelCreated<TPort> {
     if (isMonoWorkerMessage(message)) {
         const monoMessage = message[monoSymbol];
-        if (monoMessage.mono_cmd === "channel_created") {
+        if (monoMessage.mono_cmd === WorkerMonoCommandType.channel_created) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPort>): message is MonoWorkerMessagePreload<TPort> {
+    if (isMonoWorkerMessage(message)) {
+        const monoMessage = message[monoSymbol];
+        if (monoMessage.mono_cmd === WorkerMonoCommandType.preload) {
             return true;
         }
     }

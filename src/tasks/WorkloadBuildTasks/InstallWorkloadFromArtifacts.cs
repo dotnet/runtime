@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -26,7 +27,10 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem[]    InstallTargets     { get; set; } = Array.Empty<ITaskItem>();
 
         [Required, NotNull]
-        public string?        VersionBand        { get; set; }
+        public string?        VersionBandForSdkManifestsDir        { get; set; }
+
+        [Required, NotNull]
+        public string?        VersionBandForManifestPackages       { get; set; }
 
         [Required, NotNull]
         public string?        LocalNuGetsPath    { get; set; }
@@ -66,6 +70,9 @@ namespace Microsoft.Workload.Build.Tasks
 
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
+
+                if (InstallTargets.Length == 0)
+                    throw new LogAsErrorException($"No install targets specified.");
 
                 InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
@@ -110,6 +117,8 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
+                    OverrideWebAssemblySdkPack(req.TargetPath, LocalNuGetsPath);
+
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
 
@@ -124,6 +133,26 @@ namespace Microsoft.Workload.Build.Tasks
             {
                 if (!string.IsNullOrEmpty(_tempDir) && Directory.Exists(_tempDir))
                     Directory.Delete(_tempDir, recursive: true);
+            }
+        }
+
+        private static void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
+        {
+            string nupkgName = "Microsoft.NET.Sdk.WebAssembly.Pack";
+            string? nupkg = Directory.EnumerateFiles(localNuGetsPath, $"{nupkgName}.*.nupkg").FirstOrDefault();
+            if (nupkg == null)
+                return;
+
+            string nupkgVersion = Path.GetFileNameWithoutExtension(nupkg).Substring(nupkgName.Length + 1);
+
+            string bundledVersions = Directory.EnumerateFiles(targetPath, @"Microsoft.NETCoreSdk.BundledVersions.props", SearchOption.AllDirectories).Single();
+            var document = XDocument.Load(bundledVersions);
+            if (document != null)
+            {
+                foreach (var element in document.Descendants("KnownWebAssemblySdkPack"))
+                    element.SetAttributeValue("WebAssemblySdkPackVersion", nupkgVersion);
+
+                document.Save(bundledVersions);
             }
         }
 
@@ -277,7 +306,7 @@ namespace Microsoft.Workload.Build.Tasks
             // Multiple directories for a manifest, differing only in case causes
             // workload install to fail due to duplicate manifests!
             // This is applicable only on case-sensitive filesystems
-            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBand);
+            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBandForSdkManifestsDir);
             if (!Directory.Exists(manifestVersionBandDir))
             {
                 Log.LogMessage(MessageImportance.Low, $"    Could not find {manifestVersionBandDir}. Creating it..");
@@ -286,7 +315,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
 
-            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBandForManifestPackages}",
                                           Version: version,
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");

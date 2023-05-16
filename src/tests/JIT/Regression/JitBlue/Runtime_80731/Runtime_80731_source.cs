@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 // copies for implicit byrefs and when forward substituting.
 class Runtime_80731
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int code = 100;
 

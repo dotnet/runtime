@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
     {
         private readonly XmlMapping _mapping;
 
-        // Suppressed for the linker by the assembly-level UnconditionalSuppressMessageAttribute
+        // Suppressed for ILLink by the assembly-level UnconditionalSuppressMessageAttribute
         // https://github.com/dotnet/linker/issues/2648
 #pragma warning disable IL2026
         internal static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
@@ -1646,7 +1646,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = mapping;
                                 break;

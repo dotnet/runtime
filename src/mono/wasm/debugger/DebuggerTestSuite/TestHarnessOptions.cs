@@ -14,6 +14,9 @@ namespace DebuggerTests
         public string PagePath { get; set; }
         public string NodeApp { get; set; }
         public string BrowserParms { get; set; }
+        public bool WebServerUseCors { get; set; }
+        public bool WebServerUseCrossOriginPolicy { get; set; }
         public Func<string, ILogger<TestHarnessProxy>, Task<string>> ExtractConnUrl { get; set; }
+        public string Locale { get; set; }
     }
 }

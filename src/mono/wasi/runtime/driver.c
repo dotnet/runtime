@@ -9,8 +9,6 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#define INVARIANT_GLOBALIZATION 1
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class.h>
@@ -35,7 +33,8 @@
 #ifdef GEN_PINVOKE
 #include "wasm_m2n_invoke.g.h"
 #endif
-#include "../../wasm/runtime/gc-common.h"
+#include "gc-common.h"
+#include "driver.h"
 
 
 #if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
@@ -63,6 +62,18 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+extern void mono_wasm_register_timezones_bundle();
+#ifdef WASM_SINGLE_FILE
+extern void mono_wasm_register_assemblies_bundle();
+#ifndef INVARIANT_GLOBALIZATION
+extern void mono_wasm_register_icu_bundle();
+#endif /* INVARIANT_GLOBALIZATION */
+extern const unsigned char* mono_wasm_get_bundled_file (const char *name, int* out_length);
+#endif /* WASM_SINGLE_FILE */
+
+extern const char* dotnet_wasi_getentrypointassemblyname();
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
@@ -81,7 +92,10 @@ static MonoDomain *root_domain;
 static void
 wasi_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	printf("[wasi_trace_logger] %s\n", message);
+	if (strcmp(log_level, "error") == 0)
+		fprintf(stderr, "[MONO] %s: %s\n", log_level, message);
+	else
+		printf("[MONO] %s: %s\n", log_level, message);
 	if (fatal) {
 		// make it trap so we could see the stack trace
 		// (*(int*)(void*)-1)++;
@@ -93,6 +107,10 @@ wasi_trace_logger (const char *log_domain, const char *log_level, const char *me
 typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
+
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
 
 typedef struct WasmAssembly_ WasmAssembly;
 
@@ -107,6 +125,7 @@ static int assembly_count;
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
+	/*printf("wasi: mono_wasm_add_assembly: %s size: %u\n", name, size);*/
 	int len = strlen (name);
 	if (!strcasecmp (".pdb", &name [len - 4])) {
 		char *new_name = strdup (name);
@@ -321,7 +340,46 @@ mono_wasm_register_bundled_satellite_assemblies (void)
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
+#ifndef INVARIANT_GLOBALIZATION
+void load_icu_data (void)
+{
+#ifdef WASM_SINGLE_FILE
+	mono_wasm_register_icu_bundle();
+
+	int length = -1;
+	const unsigned char* buffer = mono_wasm_get_bundled_file("icudt.dat", &length);
+	if (!buffer) {
+		printf("Could not load icudt.dat from the bundle");
+		assert(buffer);
+	}
+#else /* WASM_SINGLE_FILE */
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "./icudt.dat");
+
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
+
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
+#endif /* WASM_SINGLE_FILE */
+
+	assert(mono_wasi_load_icu_data(buffer));
+}
+#endif /* INVARIANT_GLOBALIZATION */
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -336,19 +394,11 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
-#else
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
-#endif
+	char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+	if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+		load_icu_data();
+#endif /* INVARIANT_GLOBALIZATION */
 
-#ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
-	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-	// output will be sent to the console.  Right now this is the only way to emit debug logging from
-	// corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
-#endif
 
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
@@ -393,6 +443,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+	mono_wasm_register_timezones_bundle();
+#ifdef WASM_SINGLE_FILE
+	mono_wasm_register_assemblies_bundle();
+#endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
@@ -542,7 +596,7 @@ mono_wasm_invoke_method_ref (MonoMethod *method, MonoObject **this_arg_in, void 
 }
 
 MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
+mono_wasi_assembly_get_entry_point (MonoAssembly *assembly)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -555,43 +609,6 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
-
-	/*
-	 * If the entry point looks like a compiler generated wrapper around
-	 * an async method in the form "<Name>" then try to look up the async methods
-	 * "<Name>$" and "Name" it could be wrapping.  We do this because the generated
-	 * sync wrapper will call task.GetAwaiter().GetResult() when we actually want
-	 * to yield to the host runtime.
-	 */
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */) {
-		const char *name = mono_method_get_name (method);
-		int name_length = strlen (name);
-
-		if ((*name != '<') || (name [name_length - 1] != '>'))
-			goto end;
-
-		MonoClass *klass = mono_method_get_class (method);
-		assert(klass);
-		char *async_name = malloc (name_length + 2);
-		snprintf (async_name, name_length + 2, "%s$", name);
-
-		// look for "<Name>$"
-		MonoMethodSignature *sig = mono_method_get_signature (method, image, mono_method_get_token (method));
-		MonoMethod *async_method = mono_class_get_method_from_name (klass, async_name, mono_signature_get_param_count (sig));
-		if (async_method != NULL) {
-			free (async_name);
-			method = async_method;
-			goto end;
-		}
-
-		// look for "Name" by trimming the first and last character of "<Name>"
-		async_name [name_length - 1] = '\0';
-		async_method = mono_class_get_method_from_name (klass, async_name + 1, mono_signature_get_param_count (sig));
-
-		free (async_name);
-		if (async_method != NULL)
-			method = async_method;
-	}
 
 	end:
 	MONO_EXIT_GC_UNSAFE;
@@ -698,26 +715,8 @@ MonoMethod* lookup_dotnet_method(const char* assembly_name, const char* namespac
 	return method;
 }
 
-int main() {
-	// Assume the runtime pack has been copied into the output directory as 'runtime'
-	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net8.0");
-	mono_wasm_load_runtime("", 0);
-
-	MonoAssembly* assembly = mono_wasm_assembly_load ("Wasi.Console.Sample");
-	MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);
-	MonoObject* out_exc;
-	MonoObject* out_res;
-	mono_wasm_invoke_method_ref (entry_method, NULL, NULL, &out_exc, &out_res);
-	if (out_exc)
-	{
-		mono_print_unhandled_exception(out_exc);
-		exit(1);
-	}
-	if(out_res)
-	{
-		int r= mono_unbox_int (out_res);
-		return r;
-	}
-	return 0;
+MonoArray*
+mono_wasm_string_array_new (int size)
+{
+	return mono_array_new (root_domain, mono_get_string_class (), size);
 }

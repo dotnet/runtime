@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 public class mytest {
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		int                   rValue = 100;
 		RegisteredWaitHandle  rwh    = null;
 		

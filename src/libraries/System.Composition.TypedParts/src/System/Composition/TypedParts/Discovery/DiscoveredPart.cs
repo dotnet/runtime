@@ -103,7 +103,7 @@ namespace System.Composition.TypedParts.Discovery
                     _constructor = GetConstructorInfoFromGenericType(_partType);
                 }
 
-                _constructor ??= _partType.DeclaredConstructors.FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
+                _constructor ??= _partType.DeclaredConstructors.FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Length != 0));
 
                 if (_constructor == null)
                 {

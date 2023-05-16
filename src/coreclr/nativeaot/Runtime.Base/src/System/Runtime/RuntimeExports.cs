@@ -30,6 +30,8 @@ namespace System.Runtime
                 !pEEType->IsInterface &&
                 !pEEType->IsArray &&
                 !pEEType->IsString &&
+                !pEEType->IsPointerType &&
+                !pEEType->IsFunctionPointerType &&
                 !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
@@ -106,7 +108,7 @@ namespace System.Runtime
 
             // Copy the unboxed value type data into the new object.
             // Perform any write barriers necessary for embedded reference fields.
-            if (pEEType->HasGCPointers)
+            if (pEEType->ContainsGCPointers)
             {
                 InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
             }
@@ -135,7 +137,7 @@ namespace System.Runtime
 
         private static unsafe bool UnboxAnyTypeCompare(MethodTable* pEEType, MethodTable* ptrUnboxToEEType)
         {
-            if (TypeCast.AreTypesEquivalent(pEEType, ptrUnboxToEEType))
+            if (pEEType == ptrUnboxToEEType)
                 return true;
 
             if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
@@ -171,7 +173,7 @@ namespace System.Runtime
 
                 if (ptrUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.GetMethodTable(), ptrUnboxToEEType->NullableType);
+                    isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
                 }
                 else
                 {
@@ -218,7 +220,7 @@ namespace System.Runtime
         [RuntimeExport("RhUnboxNullable")]
         public static unsafe void RhUnboxNullable(ref byte data, MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.GetMethodTable(), pUnboxToEEType->NullableType))
+            if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
             {
                 throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
@@ -234,9 +236,8 @@ namespace System.Runtime
                 Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
 
                 // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
-                InternalCalls.RhpInitMultibyte(
+                InternalCalls.RhpGcSafeZeroMemory(
                     ref data,
-                    0,
                     pUnboxToEEType->ValueTypeSize);
 
                 return;
@@ -263,7 +264,7 @@ namespace System.Runtime
 
             ref byte fields = ref obj.GetRawData();
 
-            if (pEEType->HasGCPointers)
+            if (pEEType->ContainsGCPointers)
             {
                 // Copy the boxed fields into the new location in a GC safe manner
                 InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
@@ -285,10 +286,11 @@ namespace System.Runtime
                 return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0), new UIntPtr(&pOutputBuffer));
         }
 
-        // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
+#pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
+#pragma warning restore SYSLIB1054
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.
@@ -392,19 +394,23 @@ namespace System.Runtime
                 case RuntimeHelperKind.IsInst:
                     if (pEEType->IsArray)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfArray;
+                    else if (pEEType->HasGenericVariance)
+                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOf;
                     else if (pEEType->IsInterface)
-                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfInterface;
-                    else if (pEEType->IsParameterizedType)
+                        return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfInterface;
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOf; // Array handled above; pointers and byrefs handled here
                     else
-                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.IsInstanceOfClass;
+                        return (IntPtr)(delegate*<MethodTable*, object?, object?>)&TypeCast.IsInstanceOfClass;
 
                 case RuntimeHelperKind.CastClass:
                     if (pEEType->IsArray)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastArray;
+                    else if (pEEType->HasGenericVariance)
+                        return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCast;
                     else if (pEEType->IsInterface)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastInterface;
-                    else if (pEEType->IsParameterizedType)
+                    else if (pEEType->IsParameterizedType || pEEType->IsFunctionPointerType)
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCast; // Array handled above; pointers and byrefs handled here
                     else
                         return (IntPtr)(delegate*<MethodTable*, object, object>)&TypeCast.CheckCastClass;

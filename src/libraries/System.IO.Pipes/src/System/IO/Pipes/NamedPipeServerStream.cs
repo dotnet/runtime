@@ -162,10 +162,10 @@ namespace System.IO.Pipes
         }
 
         public System.IAsyncResult BeginWaitForConnection(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WaitForConnectionAsync(), callback, state);
+            TaskToAsyncResult.Begin(WaitForConnectionAsync(), callback, state);
 
         public void EndWaitForConnection(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         // Server can only connect from Disconnected state
         private void CheckConnectOperationsServer()

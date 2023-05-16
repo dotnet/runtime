@@ -102,7 +102,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineEnum_NullName_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            AssertExtensions.Throws<ArgumentNullException>("fullname", () => module.DefineEnum(null, TypeAttributes.Public, typeof(object)));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineEnum(null, TypeAttributes.Public, typeof(object)));
         }
 
         [Theory]
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineEnum_EmptyName_ThrowsArgumentNullException(string name)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            AssertExtensions.Throws<ArgumentException>("fullname", () => module.DefineEnum(name, TypeAttributes.Public, typeof(object)));
+            AssertExtensions.Throws<ArgumentException>("name", () => module.DefineEnum(name, TypeAttributes.Public, typeof(object)));
         }
 
         [Theory]

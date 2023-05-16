@@ -958,7 +958,6 @@ void DECLSPEC_NORETURN ClassLoader::ThrowTypeLoadException(TypeKey *pKey,
 
 #endif
 
-
 TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
                                                     LoadTypesFlag fLoadTypes /*= LoadTypes*/,
                                                     ClassLoadLevel level /*=CLASS_LOADED*/,
@@ -2010,10 +2009,10 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
     // type in one of the modules governed by the loader.
     // The process of creating these types may be reentrant.  The ordering has
     // not yet been sorted out, and when we sort it out we should also modify the
-    // ordering for m_AvailableTypesLock in BaseDomain.
+    // ordering for m_AvailableTypesLock below.
     m_AvailableClassLock.Init(
                              CrstAvailableClass,
-                             CRST_REENTRANCY);
+                             CrstFlags(CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
 
     // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
@@ -2966,9 +2965,9 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR)
     {
         Module *pLoaderModule = ComputeLoaderModule(pKey);
+        PREFIX_ASSUME(pLoaderModule != NULL);
         pLoaderModule->GetLoaderAllocator()->EnsureInstantiation(NULL, Instantiation(pKey->GetRetAndArgTypes(), pKey->GetNumArgs() + 1));
 
-        PREFIX_ASSUME(pLoaderModule!=NULL);
         DWORD numArgs = pKey->GetNumArgs();
         BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(FnPtrTypeDesc)) + S_SIZE_T(sizeof(TypeHandle)) * S_SIZE_T(numArgs)));
 

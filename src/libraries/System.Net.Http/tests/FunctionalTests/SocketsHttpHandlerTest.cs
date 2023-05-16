@@ -33,6 +33,72 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
+        [OuterLoop("Relies on finalization")]
+        [Fact]
+        public async Task ReadAheadTaskOnScavenge_ExceptionsAreObserved()
+        {
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                if (e.Exception.InnerException?.Message == nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved))
+                {
+                    seenUnobservedExceptions = true;
+                }
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+            try
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await MakeARequestWithoutDisposingTheHandlerAsync();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    await Task.Delay(1000);
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            Assert.False(seenUnobservedExceptions);
+
+            static async Task MakeARequestWithoutDisposingTheHandlerAsync()
+            {
+                var cts = new CancellationTokenSource();
+                var requestCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var handler = new SocketsHttpHandler();
+                handler.ConnectCallback = async (_, _) =>
+                {
+                    cts.Cancel();
+                    await requestCompleted.Task;
+
+                    Task completedWhenFinalized = new SetOnFinalized().CompletedWhenFinalized.Task;
+
+                    return new DelegateDelegatingStream(Stream.Null)
+                    {
+                        ReadAsyncMemoryFunc = async (_, _) =>
+                        {
+                            await completedWhenFinalized.WaitAsync(TestHelper.PassingTestTimeout);
+
+                            throw new Exception(nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved));
+                        }
+                    };
+                };
+
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+
+                var client = new HttpClient(handler);
+
+                await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetStringAsync("http://foo", cts.Token));
+
+                requestCompleted.SetResult();
+            }
+        }
+
         [Fact]
         public async Task ExecutionContext_Suppressed_Success()
         {
@@ -91,10 +157,9 @@ namespace System.Net.Http.Functional.Tests
         [MethodImpl(MethodImplOptions.NoInlining)] // avoid JIT extending lifetime of the finalizable object
         private static (Task completedOnFinalized, Task getRequest) MakeHttpRequestWithTcsSetOnFinalizationInAsyncLocal(HttpClient client, Uri uri)
         {
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
             // Put something in ExecutionContext, start the HTTP request, then undo the EC change.
-            var al = new AsyncLocal<object>() { Value = new SetOnFinalized() { _completedWhenFinalized = tcs } };
+            var al = new AsyncLocal<SetOnFinalized>() { Value = new SetOnFinalized() };
+            TaskCompletionSource tcs = al.Value.CompletedWhenFinalized;
             Task t = client.GetStringAsync(uri);
             al.Value = null;
 
@@ -108,8 +173,9 @@ namespace System.Net.Http.Functional.Tests
 
         private sealed class SetOnFinalized
         {
-            internal TaskCompletionSource _completedWhenFinalized;
-            ~SetOnFinalized() => _completedWhenFinalized.SetResult();
+            public readonly TaskCompletionSource CompletedWhenFinalized = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            ~SetOnFinalized() => CompletedWhenFinalized.SetResult();
         }
     }
 

@@ -730,7 +730,7 @@ namespace System.Text
         {
             if (value is not null)
             {
-                Append(valueCount: value.Length, value: ref value.GetRawStringData());
+                Append(ref value.GetRawStringData(), value.Length);
             }
 
             return this;
@@ -1077,7 +1077,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => this;
+        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => this;
 
         /// <summary>Appends the specified interpolated string followed by the default line terminator to the end of the current StringBuilder object.</summary>
         /// <param name="handler">The interpolated string to append.</param>
@@ -1088,7 +1088,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => AppendLine();
+        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => AppendLine();
 
         #region AppendJoin
 
@@ -1439,7 +1439,7 @@ namespace System.Text
                     // This wasn't an escape, so it must be an opening brace.
                     if (brace != '{')
                     {
-                        ThrowHelper.ThrowFormatInvalidString();
+                        ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnexpectedClosingBrace);
                     }
 
                     // Proceed to parse the hole.
@@ -1462,7 +1462,7 @@ namespace System.Text
                 int index = ch - '0';
                 if ((uint)index >= 10u)
                 {
-                    ThrowHelper.ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                 }
 
                 // Common case is a single digit index followed by a closing brace.  If it's not a closing brace,
@@ -1509,7 +1509,7 @@ namespace System.Text
                         width = ch - '0';
                         if ((uint)width >= 10u)
                         {
-                            ThrowHelper.ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_ExpectedAsciiDigit);
                         }
                         ch = MoveNext(format, ref pos);
                         while (char.IsAsciiDigit(ch) && width < WidthLimit)
@@ -1532,7 +1532,7 @@ namespace System.Text
                         if (ch != ':')
                         {
                             // Unexpected character
-                            ThrowHelper.ThrowFormatInvalidString();
+                            ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                         }
 
                         // Search for the closing brace; everything in between is the format,
@@ -1551,7 +1551,7 @@ namespace System.Text
                             if (ch == '{')
                             {
                                 // Braces inside the argument hole are not supported
-                                ThrowHelper.ThrowFormatInvalidString();
+                                ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                             }
                         }
 
@@ -1568,7 +1568,7 @@ namespace System.Text
 
                 if ((uint)index >= (uint)args.Length)
                 {
-                    throw new FormatException(SR.Format_IndexOutOfRange);
+                    ThrowHelper.ThrowFormatIndexOutOfRange();
                 }
                 object? arg = args[index];
 
@@ -1652,7 +1652,7 @@ namespace System.Text
                 pos++;
                 if ((uint)pos >= (uint)format.Length)
                 {
-                    ThrowHelper.ThrowFormatInvalidString();
+                    ThrowHelper.ThrowFormatInvalidString(pos, ExceptionResource.Format_UnclosedFormatItem);
                 }
                 return format[pos];
             }
@@ -1934,8 +1934,7 @@ namespace System.Text
 
             newValue ??= string.Empty;
 
-            Span<int> replacements = stackalloc int[5]; // A list of replacement positions in a chunk to apply
-            int replacementsCount = 0;
+            var replacements = new ValueListBuilder<int>(stackalloc int[128]); // A list of replacement positions in a chunk to apply
 
             // Find the chunk, indexInChunk for the starting point
             StringBuilder chunk = FindChunkForIndex(startIndex);
@@ -1944,44 +1943,88 @@ namespace System.Text
             {
                 Debug.Assert(chunk != null, "chunk was null in replace");
 
-                // Look for a match in the chunk,indexInChunk reference
-                if (StartsWith(chunk, indexInChunk, count, oldValue))
+                // While the remaining search space is at least as large as the old value being replaced,
+                // find all occurrences of it contained entirely within the chunk. We stop searching
+                // once we're within oldValue.Length from the end of the chunk (or count limit), at which point
+                // we need to consider a value that bridges between two chunks.
+                ReadOnlySpan<char> remainingChunk = chunk.m_ChunkChars.AsSpan(indexInChunk, Math.Min(chunk.m_ChunkLength - indexInChunk, count));
+                while (oldValue.Length <= remainingChunk.Length)
                 {
-                    // Push it on the replacements array (with growth), we will do all replacements in a
-                    // given chunk in one operation below (see ReplaceAllInChunk) so we don't have to slide
-                    // many times.
-                    if (replacementsCount >= replacements.Length)
+                    // Find the next match.
+                    int foundPos = remainingChunk.IndexOf(oldValue);
+                    if (foundPos >= 0)
                     {
-                        int[] tmp = new int[replacements.Length * 3 / 2 + 4]; // Grow by ~1.5x, but more in the beginning
-                        replacements.CopyTo(tmp);
-                        replacements = tmp;
+                        // We found one.  Add it as a location for the replacement.
+                        indexInChunk += foundPos;
+                        replacements.Append(indexInChunk);
+
+                        // Move ahead to the next location.
+                        remainingChunk = remainingChunk.Slice(foundPos + oldValue.Length);
+                        indexInChunk += oldValue.Length;
+                        count -= foundPos + oldValue.Length;
+
+                        // If after accounting for moving past the match our count has
+                        // gone to 0, break out to stop searching.
+                        Debug.Assert(count >= 0, "count should never go negative");
+                        if (count == 0)
+                        {
+                            break;
+                        }
                     }
-                    replacements[replacementsCount++] = indexInChunk;
-                    indexInChunk += oldValue.Length;
-                    count -= oldValue.Length;
+                    else
+                    {
+                        // No match found. Reposition to one character beyond the last starting
+                        // location searched, which will be oldValue.Length - 1 from the end.
+                        // Then break out so that we can start the cross-chunk matching from that location.
+                        int move = remainingChunk.Length - (oldValue.Length - 1);
+                        indexInChunk += move;
+                        count -= move;
+                        break;
+                    }
                 }
-                else
+
+                Debug.Assert(oldValue.Length > Math.Min(count, chunk.m_ChunkLength - indexInChunk),
+                    $"oldValue.Length = {oldValue.Length}, chunk.m_ChunkLength - indexInChunk = {chunk.m_ChunkLength - indexInChunk}, count == {count}");
+
+                // Now do the more complicated cross-chunk matching.
+                while (indexInChunk < chunk.m_ChunkLength && count > 0)
                 {
-                    indexInChunk++;
-                    --count;
+                    if (StartsWith(chunk, indexInChunk, count, oldValue))
+                    {
+                        replacements.Append(indexInChunk);
+                        indexInChunk += oldValue.Length;
+                        count -= oldValue.Length;
+                    }
+                    else
+                    {
+                        indexInChunk++;
+                        --count;
+                    }
                 }
 
-                if (indexInChunk >= chunk.m_ChunkLength || count == 0) // Have we moved out of the current chunk?
+                // We've either fully explored the chunk or we've reached our count limit.
+                Debug.Assert(indexInChunk >= chunk.m_ChunkLength || count == 0,
+                    $"indexInChunk = {indexInChunk}, chunk.m_ChunkLength == {chunk.m_ChunkLength}, count == {count}");
+
+                // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards.
+                int index = indexInChunk + chunk.m_ChunkOffset;
+
+                // Apply any replacements we accumulated.
+                if (replacements.Length != 0)
                 {
-                    // Replacing mutates the blocks, so we need to convert to a logical index and back afterwards.
-                    int index = indexInChunk + chunk.m_ChunkOffset;
-
-                    // See if we accumulated any replacements, if so apply them.
-                    ReplaceAllInChunk(replacements.Slice(0, replacementsCount), chunk, oldValue.Length, newValue);
-                    // The replacement has affected the logical index.  Adjust it.
-                    index += ((newValue.Length - oldValue.Length) * replacementsCount);
-                    replacementsCount = 0;
-
-                    chunk = FindChunkForIndex(index);
-                    indexInChunk = index - chunk.m_ChunkOffset;
-                    Debug.Assert(chunk != null || count == 0, "Chunks ended prematurely!");
+                    // Perform all replacements, and adjust the logical index if the new and old values
+                    // have different lengths, such that the replacements would have impacted it.
+                    ReplaceAllInChunk(replacements.AsSpan(), chunk, oldValue.Length, newValue);
+                    index += (newValue.Length - oldValue.Length) * replacements.Length;
+                    replacements.Length = 0;
                 }
+
+                chunk = FindChunkForIndex(index);
+                indexInChunk = index - chunk.m_ChunkOffset;
+                Debug.Assert(chunk != null || count == 0, "Chunks ended prematurely!");
             }
+
+            replacements.Dispose();
 
             AssertInvariants();
             return this;
@@ -2064,7 +2107,7 @@ namespace System.Text
         /// <summary>Appends a specified number of chars starting from the specified reference.</summary>
         private void Append(ref char value, int valueCount)
         {
-            Debug.Assert(valueCount >= 0, $"Invalid length; should have been validated by caller.");
+            Debug.Assert(valueCount >= 0, "Invalid length; should have been validated by caller.");
             if (valueCount != 0)
             {
                 char[] chunkChars = m_ChunkChars;
@@ -2154,10 +2197,7 @@ namespace System.Text
         /// </remarks>
         private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, string value)
         {
-            if (replacements.IsEmpty)
-            {
-                return;
-            }
+            Debug.Assert(!replacements.IsEmpty);
 
             // calculate the total amount of extra space or space needed for all the replacements.
             long longDelta = (value.Length - removeCount) * (long)replacements.Length;

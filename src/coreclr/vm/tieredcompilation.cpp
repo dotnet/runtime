@@ -1097,6 +1097,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
                 _ASSERTE(!nativeCodeVersion.IsFinalTier());
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+                if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+                {
+                    // If we plan to only instrument hot code we have to make an exception
+                    // for cold methods with loops so if those self promote to OSR they need
+                    // some profile to optimize, so here we allow JIT to enable instrumentation
+                    // if current method has loops and is eligible for OSR.
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+                }
                 return flags;
             }
 
@@ -1133,6 +1141,14 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         case NativeCodeVersion::OptimizationTier0:
             if (g_pConfig->TieredCompilation_QuickJit())
             {
+                if (g_pConfig->TieredPGO() && g_pConfig->TieredPGO_InstrumentOnlyHotCode())
+                {
+                    // If we plan to only instrument hot code we have to make an exception
+                    // for cold methods with loops so if those self promote to OSR they need
+                    // some profile to optimize, so here we allow JIT to enable instrumentation
+                    // if current method has loops and is eligible for OSR.
+                    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS);
+                }
                 flags.Set(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
                 break;
             }

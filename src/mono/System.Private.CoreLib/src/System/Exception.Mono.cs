@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
 
 namespace System
@@ -68,7 +69,10 @@ namespace System
 
             if (_traceIPs != null)
             {
-                stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
+                Exception self = this;
+                MonoStackFrame[]? frames = null;
+                Diagnostics.StackTrace.GetTrace (ObjectHandleOnStack.Create (ref self), ObjectHandleOnStack.Create (ref frames), 0, true);
+                stackFrames = frames!;
                 if (stackFrames.Length > 0)
                     stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
@@ -114,7 +118,7 @@ namespace System
             return true; // mono runtime doesn't have immutable agile exceptions, always return true
         }
 
-        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static ListDictionaryInternal CreateDataContainer() => new ListDictionaryInternal();
 
         private static string? SerializationWatsonBuckets => null;
     }

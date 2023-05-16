@@ -1,0 +1,15 @@
+
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <!-- Currently only tracking DWARF info on Linux -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

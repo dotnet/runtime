@@ -7,8 +7,47 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Emit
 {
-    public sealed partial class AssemblyBuilder : Assembly
+    public abstract partial class AssemblyBuilder : Assembly
     {
+        protected AssemblyBuilder()
+        {
+        }
+
+        public ModuleBuilder DefineDynamicModule(string name)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineDynamicModuleCore(name);
+        }
+
+        protected abstract ModuleBuilder DefineDynamicModuleCore(string name);
+
+        public ModuleBuilder? GetDynamicModule(string name)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return GetDynamicModuleCore(name);
+        }
+
+        protected abstract ModuleBuilder? GetDynamicModuleCore(string name);
+
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
+
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
+        }
+
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);

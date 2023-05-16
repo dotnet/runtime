@@ -199,7 +199,7 @@ typedef void (*EventPipeSessionSynchronousCallback)(
 	/*ep_rt_thread_handle_t*/ void *event_thread,
 	uint32_t stack_frames_len,
 	uintptr_t *stack_frames,
-    void *additional_data);
+	void *additional_data);
 
 typedef bool (*EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
 

@@ -13,7 +13,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// A value that came from a method parameter - such as the result of a ldarg.
 	/// </summary>
-	partial record MethodParameterValue : IValueWithStaticType
+	internal partial record MethodParameterValue : IValueWithStaticType
 	{
 		public MethodParameterValue (TypeDefinition? staticType, ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
 		{

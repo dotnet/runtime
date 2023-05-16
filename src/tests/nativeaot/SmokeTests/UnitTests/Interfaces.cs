@@ -35,6 +35,7 @@ public class Interfaces
         if (TestIterfaceCallOptimization() == Fail)
             return Fail;
 
+        TestPublicAndNonpublicDifference.Run();
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
@@ -476,6 +477,46 @@ public class Interfaces
     }
 
     #endregion
+
+    class TestPublicAndNonpublicDifference
+    {
+        interface IFrobber
+        {
+            string Frob();
+        }
+        class ProtectedBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            protected virtual string Frob() => "Base.Frob";
+        }
+
+        class ProtectedDerived : ProtectedBase, IFrobber
+        {
+            protected override string Frob() => "Derived.Frob";
+        }
+
+        class PublicBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            public virtual string Frob() => "Base.Frob";
+        }
+
+        class PublicDerived : PublicBase, IFrobber
+        {
+            public override string Frob() => "Derived.Frob";
+        }
+
+        public static void Run()
+        {
+            IFrobber f1 = new PublicDerived();
+            if (f1.Frob() != "Derived.Frob")
+                throw new Exception();
+
+            IFrobber f2 = new ProtectedDerived();
+            if (f2.Frob() != "IFrobber.Frob")
+                throw new Exception();
+        }
+    }
 
     class TestDefaultInterfaceMethods
     {

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -82,10 +83,11 @@ namespace System
             }
 #pragma warning restore CA1822
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public byte* GetDigitsPointer()
             {
                 // This is safe to do since we are a ref struct
-                return (byte*)(Unsafe.AsPointer(ref Digits[0]));
+                return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits));
             }
 
             //

@@ -446,11 +446,8 @@ public:
 
     virtual
     void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved) = 0;
-};
 
-class IGCToCLR2 : public IGCToCLR {
-public:
-
+    // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 1
     virtual
     void LogErrorToHost(const char *message) = 0;
 };

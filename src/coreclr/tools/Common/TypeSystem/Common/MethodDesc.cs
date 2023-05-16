@@ -27,7 +27,8 @@ namespace Internal.TypeSystem
     {
         RequiredCustomModifier = 0,
         OptionalCustomModifier = 1,
-        ArrayShape = 2
+        ArrayShape = 2,
+        UnmanagedCallConv = 3,
     }
 
     public struct EmbeddedSignatureData
@@ -577,6 +578,14 @@ namespace Internal.TypeSystem
         /// Gets a value indicating that this method cannot be overridden.
         /// </summary>
         public virtual bool IsFinal
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool IsPublic
         {
             get
             {

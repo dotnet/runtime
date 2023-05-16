@@ -1,7 +1,7 @@
 # System.Drawing.Primitives
 This assembly exposes fundamental drawing APIs such as [`Point`](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.point) and [`Size`](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.size) which don't require access to native GDI+ libraries.
 
-Note that in contrast to `System.Drawing.Common`, `System.Drawing.Primitives` supports not just Windows, but all officially supported platforms.
+`System.Drawing.Primitives` supports not just Windows, but all officially supported platforms.
 
 Documentation can be found at https://learn.microsoft.com/en-us/dotnet/api/system.drawing.
 

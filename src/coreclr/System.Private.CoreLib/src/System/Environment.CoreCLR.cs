@@ -61,28 +61,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
-        private static string[]? s_commandLineArgs;
-
-        public static string[] GetCommandLineArgs()
-        {
-            // There are multiple entry points to a hosted app. The host could
-            // use ::ExecuteAssembly() or ::CreateDelegate option:
-            //
-            // ::ExecuteAssembly() -> In this particular case, the runtime invokes the main
-            // method based on the arguments set by the host, and we return those arguments
-            //
-            // ::CreateDelegate() -> In this particular case, the host is asked to create a
-            // delegate based on the appDomain, assembly and methodDesc passed to it.
-            // which the caller uses to invoke the method. In this particular case we do not have
-            // any information on what arguments would be passed to the delegate.
-            // So our best bet is to simply use the commandLine that was used to invoke the process.
-            // in case it is present.
-
-            return s_commandLineArgs != null ?
-                (string[])s_commandLineArgs.Clone() :
-                GetCommandLineArgsNative();
-        }
-
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
             string[] commandLineArgs = new string[argc + 1];

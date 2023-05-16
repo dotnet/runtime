@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.DataFlow
 {
-	public struct CapturedReferenceValue : IEquatable<CapturedReferenceValue>
+	public readonly struct CapturedReferenceValue : IEquatable<CapturedReferenceValue>
 	{
 		public readonly IOperation? Reference;
 
@@ -35,12 +35,18 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		}
 
 		public bool Equals (CapturedReferenceValue other) => Reference == other.Reference;
+
+		public override bool Equals (object obj)
+			=> obj is CapturedReferenceValue inst && Equals (inst);
+
+		public override int GetHashCode ()
+			=> Reference?.GetHashCode () ?? 0;
 	}
 
 
 	public struct CapturedReferenceLattice : ILattice<CapturedReferenceValue>
 	{
-		public CapturedReferenceValue Top => new CapturedReferenceValue ();
+		public CapturedReferenceValue Top => default;
 
 		public CapturedReferenceValue Meet (CapturedReferenceValue left, CapturedReferenceValue right)
 		{

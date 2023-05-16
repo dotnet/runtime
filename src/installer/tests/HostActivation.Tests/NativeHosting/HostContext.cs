@@ -99,8 +99,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string hostFxrPath;
             if (isSelfContained)
             {
-                expectedAppPath = sharedState.SelfContainedAppPath;
-                hostFxrPath = sharedState.SelfContainedHostFxrPath;
+                expectedAppPath = sharedState.SelfContainedApp.AppDll;
+                hostFxrPath = sharedState.SelfContainedApp.HostFxrDll;
             }
             else
             {
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             result.Should().Pass()
                 .And.InitializeContextForApp(expectedAppPath)
                 .And.ExecuteAssemblyMock(expectedAppPath, appArgs)
-                .And.HaveStdErrContaining($"Executing as a {(isSelfContained ? "self-contained" : "framework-dependent")} app");
+                .And.ExecuteSelfContained(isSelfContained);
 
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.App, SharedTestState.AppPropertyName, SharedTestState.AppPropertyValue);
             propertyValidation.ValidateActiveContext(result, newPropertyName);
@@ -192,8 +192,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 HostContextArg,
                 Scenario.Config,
                 CheckProperties.None,
-                sharedState.SelfContainedHostFxrPath,
-                sharedState.SelfContainedConfigPath
+                sharedState.SelfContainedApp.HostFxrDll,
+                sharedState.SelfContainedApp.RuntimeConfigJson
             };
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute();
@@ -322,8 +322,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 : testData.ExistingContext switch
                     {
                         ExistingContextType.FrameworkDependent => sharedState.AppPath,
-                        ExistingContextType.SelfContained_NoIncludedFrameworks => sharedState.SelfContainedAppPath,
-                        ExistingContextType.SelfContained_WithIncludedFrameworks => sharedState.SelfContainedWithIncludedFrameworksAppPath,
+                        ExistingContextType.SelfContained_NoIncludedFrameworks => sharedState.SelfContainedApp.AppDll,
+                        ExistingContextType.SelfContained_WithIncludedFrameworks => sharedState.SelfContainedApp_IncludedFrameworks.AppDll,
                         _ => throw new Exception($"Unexpected test data {nameof(testData.ExistingContext)}: {testData.ExistingContext}")
                     };
 
@@ -332,8 +332,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 : testData.ExistingContext switch
                     {
                         ExistingContextType.FrameworkDependent => sharedState.HostFxrPath,
-                        ExistingContextType.SelfContained_NoIncludedFrameworks => sharedState.SelfContainedHostFxrPath,
-                        ExistingContextType.SelfContained_WithIncludedFrameworks => sharedState.SelfContainedWithIncludedFrameworksHostFxrPath,
+                        ExistingContextType.SelfContained_NoIncludedFrameworks => sharedState.SelfContainedApp.HostFxrDll,
+                        ExistingContextType.SelfContained_WithIncludedFrameworks => sharedState.SelfContainedApp_IncludedFrameworks.HostFxrDll,
                         _ => throw new Exception($"Unexpected test data {nameof(testData.ExistingContext)}: {testData.ExistingContext}")
                     };
 
@@ -631,13 +631,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string RuntimeConfigPath { get; }
             public string SecondaryRuntimeConfigPath { get; }
 
-            public string SelfContainedAppPath { get; }
-            public string SelfContainedConfigPath { get; }
-            public string SelfContainedHostFxrPath { get; }
-
-            public string SelfContainedWithIncludedFrameworksAppPath { get; }
-            public string SelfContainedWithIncludedFrameworksConfigPath { get; }
-            public string SelfContainedWithIncludedFrameworksHostFxrPath { get; }
+            public TestApp SelfContainedApp { get; }
+            public TestApp SelfContainedApp_IncludedFrameworks { get; }
 
             public string AppPath_MultiProperty { get; }
             public string RuntimeConfigPath_MultiProperty { get; }
@@ -666,9 +661,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Build();
                 DotNetRoot = dotNet.BinPath;
 
-                HostFxrPath = Path.Combine(
-                    dotNet.GreatestVersionHostFxrPath,
-                    RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
+                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
 
                 string appDir = Path.Combine(BaseDirectory, "app");
                 Directory.CreateDirectory(appDir);
@@ -689,18 +682,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WithProperty(AppMultiPropertyName, AppMultiPropertyValue)
                     .Save();
 
-                CreateSelfContainedApp(dotNet, "SelfContained", out string selfContainedAppPath, out string selfContainedHostFxrPath, out string selfContainedConfigPath);
-                SelfContainedAppPath = selfContainedAppPath;
-                SelfContainedHostFxrPath = selfContainedHostFxrPath;
-                SelfContainedConfigPath = selfContainedConfigPath;
+                SelfContainedApp = CreateSelfContainedApp("SelfContained",
+                    b => b.WithRuntimeConfig(
+                        c => c.WithProperty(AppPropertyName, AppPropertyValue)));
 
-                CreateSelfContainedApp(dotNet, "SelfContainedWithIncludedFrameworks", out selfContainedAppPath, out selfContainedHostFxrPath, out selfContainedConfigPath);
-                SelfContainedWithIncludedFrameworksAppPath = selfContainedAppPath;
-                SelfContainedWithIncludedFrameworksHostFxrPath = selfContainedHostFxrPath;
-                SelfContainedWithIncludedFrameworksConfigPath = selfContainedConfigPath;
-                RuntimeConfig.FromFile(SelfContainedWithIncludedFrameworksConfigPath)
-                    .WithIncludedFramework(Constants.MicrosoftNETCoreApp, NetCoreAppVersion)
-                    .Save();
+                SelfContainedApp_IncludedFrameworks = CreateSelfContainedApp("SelfContainedWithIncludedFrameworks",
+                    b => b.WithRuntimeConfig(
+                        c => c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, NetCoreAppVersion)
+                            .WithProperty(AppPropertyName, AppPropertyValue)));
 
                 string configDir = Path.Combine(BaseDirectory, "config");
                 Directory.CreateDirectory(configDir);
@@ -726,24 +715,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Save();
             }
 
-            public void CreateSelfContainedApp(DotNetCli dotNet, string name, out string appPath, out string hostFxrPath, out string configPath)
+            public TestApp CreateSelfContainedApp(string name, Action<NetCoreAppBuilder> customizer)
             {
                 string selfContainedDir = Path.Combine(BaseDirectory, name);
-                Directory.CreateDirectory(selfContainedDir);
-                appPath = Path.Combine(selfContainedDir, name + ".dll");
-                File.WriteAllText(appPath, string.Empty);
-                var toCopy = Directory.GetFiles(dotNet.GreatestVersionSharedFxPath)
-                    .Concat(Directory.GetFiles(dotNet.GreatestVersionHostFxrPath));
-                foreach (string file in toCopy)
-                {
-                    File.Copy(file, Path.Combine(selfContainedDir, Path.GetFileName(file)));
-                }
 
-                hostFxrPath = Path.Combine(selfContainedDir, Path.GetFileName(dotNet.GreatestVersionHostFxrFilePath));
-                configPath = Path.Combine(selfContainedDir, name + ".runtimeconfig.json");
-                RuntimeConfig.FromFile(configPath)
-                    .WithProperty(AppPropertyName, AppPropertyValue)
-                    .Save();
+                TestApp app = new TestApp(selfContainedDir);
+                app.PopulateSelfContained(TestApp.MockedComponent.CoreClr, customizer);
+
+                return app;
             }
         }
     }

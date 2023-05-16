@@ -211,7 +211,7 @@
     <value>Can't have the same template with different casing</value>
   </data>
   <data name="MalformedFormatStringsMessage" xml:space="preserve">
-    <value>Can't have malformed format strings (like dangling {, etc)</value>
+    <value>Logging method '{0}' contains malformed format strings</value>
   </data>
   <data name="GeneratingForMax6ArgumentsMessage" xml:space="preserve">
     <value>Generating more than 6 arguments is not supported</value>
@@ -227,5 +227,8 @@
   </data>
   <data name="ShouldntReuseEventNamesTitle" xml:space="preserve">
     <value>Multiple logging methods should not use the same event name within a class</value>
+  </data>
+  <data name="MalformedFormatStringsTitle" xml:space="preserve">
+    <value>Logging method contains malformed format strings</value>
   </data>
 </root>

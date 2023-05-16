@@ -3,14 +3,16 @@
 //
 
 using System;
+using Xunit;
 public class A
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Main1();
         return 100;
     }
-    public static void Main1()
+    internal static void Main1()
     {
         bool b = false;
         while (b)

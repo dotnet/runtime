@@ -9,11 +9,11 @@ namespace System.IO.Strategies
     internal static partial class FileStreamHelpers
     {
 #pragma warning disable IDE0060
-        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
+        private static UnixFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             new UnixFileStreamStrategy(handle, access);
 #pragma warning restore IDE0060
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
+        private static UnixFileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize, UnixFileMode? unixCreateMode) =>
             new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize, unixCreateMode);
 
         internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)

@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldvirtftncalli'
+.assembly ASSEMBLY_NAME
 {
 }
 .class private auto ansi beforefieldinit A
@@ -127,7 +127,7 @@
 
 } // end of class B
 
-.class private auto ansi beforefieldinit Test_ldvirtftncalli
+.class public auto ansi beforefieldinit Test_ldvirtftncalli
        extends [mscorlib]System.Object
 {
   .field public static class B b1

@@ -4,6 +4,9 @@ parameters:
   isWasmOnlyBuild: false
   browser: 'chrome'
   shouldContinueOnError: false
+  runOnlyOnWasmOnlyPipelines: false
+  extraBuildArgs: ''
+  nameSuffix: ''
   platforms: []
 
 jobs:
@@ -21,17 +24,24 @@ jobs:
       # map dependencies variables to local variables
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
+      - name: runOnlyOnWasmPipelinesVar
+        value: ${{ parameters.runOnlyOnWasmOnlyPipelines }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.Microsoft_DotNet_HotReload_Utils_Generator_BuildTool'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true))
           ]
     jobParameters:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
+      ${{ if eq(parameters.nameSuffix, '') }}:
+        nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
+      ${{ else }}:
+        nameSuffix: ${{ parameters.nameSuffix }}
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }} ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
@@ -41,7 +51,9 @@ jobs:
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
-          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+          and(
+            eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']),
+            ne(variables['runOnlyOnWasmPipelinesVar'], 'true')))
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot

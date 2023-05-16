@@ -585,9 +585,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			public MatchQuality (int value)
 			{
-				if (value < 0) {
-					throw new ArgumentOutOfRangeException (nameof (value));
-				}
+				ArgumentOutOfRangeException.ThrowIfNegative (value);
 
 				_value = value;
 			}

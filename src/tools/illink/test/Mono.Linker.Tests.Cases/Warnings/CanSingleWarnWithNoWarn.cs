@@ -6,6 +6,7 @@ using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Warnings
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]
 	[SetupLinkerArgument ("--singlewarn")]

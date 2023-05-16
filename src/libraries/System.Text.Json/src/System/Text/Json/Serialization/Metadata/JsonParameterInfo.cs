@@ -11,108 +11,43 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal abstract class JsonParameterInfo
     {
-        private JsonTypeInfo? _jsonTypeInfo;
+        public JsonConverter EffectiveConverter => MatchingProperty.EffectiveConverter;
 
-        public JsonConverter ConverterBase { get; private set; } = null!;
+        // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the `default` for the `ParameterType`.
+        public object? DefaultValue { get; private protected init; }
 
-        private protected bool MatchingPropertyCanBeNull { get; private set; }
+        public bool IgnoreNullTokensOnRead { get; }
 
-        // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
-        public object? DefaultValue { get; private protected set; }
-
-        public bool IgnoreNullTokensOnRead { get; private set; }
-
-        // Options can be referenced here since all JsonPropertyInfos originate from a JsonTypeInfo that is cached on JsonSerializerOptions.
-        public JsonSerializerOptions? Options { get; set; } // initialized in Init method
+        public JsonSerializerOptions Options { get; }
 
         // The name of the parameter as UTF-8 bytes.
-        public byte[] NameAsUtf8Bytes { get; private set; } = null!;
+        public byte[] NameAsUtf8Bytes { get; }
 
-        public JsonNumberHandling? NumberHandling { get; private set; }
+        public JsonNumberHandling? NumberHandling { get; }
 
-        // Using a field to avoid copy semantics.
-        public JsonParameterInfoValues ClrInfo = null!;
+        public int Position { get; }
 
-        public JsonTypeInfo JsonTypeInfo
+        public JsonTypeInfo JsonTypeInfo => MatchingProperty.JsonTypeInfo;
+
+        public Type ParameterType { get; }
+
+        public bool ShouldDeserialize { get; }
+
+        public JsonPropertyInfo MatchingProperty { get; }
+
+        public JsonParameterInfo(JsonParameterInfoValues parameterInfoValues, JsonPropertyInfo matchingProperty)
         {
-            get
-            {
-                Debug.Assert(Options != null);
-                Debug.Assert(ShouldDeserialize);
-                return _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
-            }
-            set
-            {
-                // Used by JsonMetadataServices.
-                Debug.Assert(_jsonTypeInfo == null);
-                _jsonTypeInfo = value;
-            }
-        }
+            Debug.Assert(matchingProperty.IsConfigured);
 
-        public Type PropertyType { get; set; } = null!;
-
-        public bool ShouldDeserialize { get; private set; }
-
-        public JsonPropertyInfo MatchingProperty { get; private set; } = null!;
-
-        public virtual void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
-        {
             MatchingProperty = matchingProperty;
-            ClrInfo = parameterInfo;
-            Options = options;
-            ShouldDeserialize = true;
+            ShouldDeserialize = !matchingProperty.IsIgnored;
+            Options = matchingProperty.Options;
+            Position = parameterInfoValues.Position;
 
-            PropertyType = matchingProperty.PropertyType;
-            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            ConverterBase = matchingProperty.EffectiveConverter;
+            ParameterType = matchingProperty.PropertyType;
+            NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes;
             IgnoreNullTokensOnRead = matchingProperty.IgnoreNullTokensOnRead;
             NumberHandling = matchingProperty.EffectiveNumberHandling;
-            MatchingPropertyCanBeNull = matchingProperty.PropertyTypeCanBeNull;
-        }
-
-        /// <summary>
-        /// Create a parameter that is ignored at run time. It uses the same type (typeof(sbyte)) to help
-        /// prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        /// </summary>
-        public static JsonParameterInfo CreateIgnoredParameterPlaceholder(
-            JsonParameterInfoValues parameterInfo,
-            JsonPropertyInfo matchingProperty,
-            bool sourceGenMode)
-        {
-            JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
-            jsonParameterInfo.ClrInfo = parameterInfo;
-            jsonParameterInfo.PropertyType = matchingProperty.PropertyType;
-            jsonParameterInfo.NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-
-            // TODO: https://github.com/dotnet/runtime/issues/60082.
-            // Default value initialization for params mapping to ignored properties doesn't
-            // account for the default value of optional parameters. This should be fixed.
-
-            if (sourceGenMode)
-            {
-                // The <T> value in the matching JsonPropertyInfo<T> instance matches the parameter type.
-                jsonParameterInfo.DefaultValue = matchingProperty.DefaultValue;
-            }
-            else
-            {
-                // The <T> value in the created JsonPropertyInfo<T> instance (sbyte)
-                // doesn't match the parameter type, use reflection to get the default value.
-                Type parameterType = parameterInfo.ParameterType;
-
-                DefaultValueHolder holder;
-                if (matchingProperty.Options.TryGetTypeInfoCached(parameterType, out JsonTypeInfo? typeInfo))
-                {
-                    holder = typeInfo.DefaultValueHolder;
-                }
-                else
-                {
-                    holder = DefaultValueHolder.CreateHolder(parameterInfo.ParameterType);
-                }
-
-                jsonParameterInfo.DefaultValue = holder.DefaultValue;
-            }
-
-            return jsonParameterInfo;
         }
     }
 }

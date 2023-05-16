@@ -94,14 +94,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                // Runtime reflection stack needs to obtain the type handle of the field
-                // (but there's no type handles for function pointers)
-                TypeDesc fieldTypeToCheck = _field.FieldType;
-                while (fieldTypeToCheck.IsParameterizedType)
-                    fieldTypeToCheck = ((ParameterizedType)fieldTypeToCheck).ParameterType;
-
-                if (!fieldTypeToCheck.IsFunctionPointer)
-                    dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
+                dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
             }
 
             return dependencies;

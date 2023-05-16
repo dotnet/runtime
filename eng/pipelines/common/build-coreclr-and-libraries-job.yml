@@ -13,6 +13,7 @@ parameters:
   pool: ''
   platform: ''
   testBuildPlatforms: []
+  disableComponentGovernance: false
 
 jobs:
 - template: /eng/pipelines/coreclr/templates/build-job.yml
@@ -29,6 +30,7 @@ jobs:
     signBinaries: ${{ parameters.signBinaries }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
 - template: /eng/pipelines/libraries/build-job.yml
   parameters:
@@ -48,3 +50,4 @@ jobs:
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
     platform: ${{ parameters.platform }}
     testBuildPlatforms: ${{ parameters.testBuildPlatforms }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}

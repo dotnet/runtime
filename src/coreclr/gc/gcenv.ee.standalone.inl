@@ -9,7 +9,7 @@
 
 // The singular interface instance. All calls in GCToEEInterface
 // will be forwarded to this interface instance.
-extern IGCToCLR2* g_theGCToCLR;
+extern IGCToCLR* g_theGCToCLR;
 
 // GC version that the current runtime supports
 extern VersionInfo g_runtimeSupportedVersion;
@@ -316,7 +316,7 @@ inline void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStar
 
 inline void GCToEEInterface::LogErrorToHost(const char *message)
 {
-    if (g_runtimeSupportedVersion.MajorVersion >= GC_INTERFACE2_MAJOR_VERSION)
+    if (g_runtimeSupportedVersion.MajorVersion >= 1)
     {
         g_theGCToCLR->LogErrorToHost(message);
     }

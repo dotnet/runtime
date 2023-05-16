@@ -4,7 +4,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -56,6 +55,13 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\PolicyEnforcement.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ProtectionScenario.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
+    <!-- IP parser -->
+    <Compile Include="$(CommonPath)System\Net\IPv4AddressHelper.Common.cs"
+             Link="System\Net\IPv4AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
+             Link="System\Net\IPv6AddressHelper.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
+             Link="Common\System\Net\IPAddressParserStatics.cs" />
     <!-- Common sources -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -84,10 +90,10 @@
     <!-- Common -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs"
              Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TargetHostNameHelper.cs"
+             Link="Common\System\Net\Security\TargetHostNameHelper.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SafeCredentialReference.cs"
              Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
@@ -118,17 +124,17 @@
     <None Include="System\Net\Security\TlsCipherSuiteNameParser.ttinclude" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
+    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
+      <DependentUpon>SslConnectionInfo.Unix.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
+      <DependentUpon>SslConnectionInfo.Unix.tt</DependentUpon>
     </None>
   </ItemGroup>
   <ItemGroup Condition="'$(AllowTlsCipherSuiteGeneration)' == 'true'">
@@ -136,14 +142,14 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>TlsCipherSuite.cs</LastGenOutput>
     </None>
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.tt">
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TlsCipherSuiteData.Lookup.cs</LastGenOutput>
+      <LastGenOutput>SslConnectionInfo.Unix.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup Condition="'$(AllowTlsCipherSuiteGeneration)' != 'true'">
     <None Include="System\Net\Security\TlsCipherSuite.tt" />
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.tt" />
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.tt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
@@ -197,6 +203,18 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty_NO_NULLABLE.cs"
+                 Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty_NO_NULLABLE.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
+                 Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
@@ -269,8 +287,6 @@
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
-    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"

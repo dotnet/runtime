@@ -486,8 +486,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecancellation()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var b = new BatchBlock<int>(42, new GroupingDataflowBlockOptions {
-                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1
+                CancellationToken = cts.Token, MaxNumberOfGroups = 1
             });
 
             Assert.Equal(expected: 42, actual: b.BatchSize);
@@ -504,7 +507,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.NotNull(b.Completion);
             b.Complete(); // verify doesn't throw
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]
@@ -527,7 +530,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 else
                 {
                     cts.Cancel();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.Completion);
+                    await AssertExtensions.CanceledAsync(cts.Token, bb.Completion);
                 }
 
                 Assert.Equal(expected: 0, actual: bb.OutputCount);

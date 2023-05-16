@@ -919,10 +919,11 @@ namespace System.Collections.Immutable
             /// </summary>
             public void Reverse()
             {
+#if NETCOREAPP2_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+                Array.Reverse<T>(_elements, 0, _count);
+#else
                 // The non-generic Array.Reverse is not used because it does not perform
                 // well for non-primitive value types.
-                // If/when a generic Array.Reverse<T> becomes available, the below code
-                // can be deleted and replaced with a call to Array.Reverse<T>.
                 int i = 0;
                 int j = _count - 1;
                 T[] array = _elements;
@@ -934,6 +935,7 @@ namespace System.Collections.Immutable
                     i++;
                     j--;
                 }
+#endif
             }
 
             /// <summary>

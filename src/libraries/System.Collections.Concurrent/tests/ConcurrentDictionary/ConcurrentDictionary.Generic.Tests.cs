@@ -4,7 +4,11 @@
 using System.Collections.Tests;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Concurrent.Tests
 {
@@ -39,6 +43,100 @@ namespace System.Collections.Concurrent.Tests
         }
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NonRandomizedToRandomizedUpgrade_FunctionsCorrectly(bool ignoreCase)
+        {
+            List<string> strings = GenerateCollidingStrings(110); // higher than the collisions threshold
+
+            var cd = new ConcurrentDictionary<string, string>(ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+            for (int i = 0; i < strings.Count; i++)
+            {
+                string s = strings[i];
+
+                Assert.True(cd.TryAdd(s, s));
+                Assert.False(cd.TryAdd(s, s));
+
+                for (int j = 0; j < strings.Count; j++)
+                {
+                    Assert.Equal(j <= i, cd.ContainsKey(strings[j]));
+                }
+            }
+        }
+
+        private static List<string> GenerateCollidingStrings(int count)
+        {
+            static Func<string, int> GetHashCodeFunc(ConcurrentDictionary<string, string> cd)
+            {
+                // If the layout of ConcurrentDictionary changes, this will need to change as well.
+
+                FieldInfo tablesField = AssertNotNull(typeof(ConcurrentDictionary<string, string>).GetField("_tables", BindingFlags.Instance | BindingFlags.NonPublic));
+                Type tablesType = Type.GetType("System.Collections.Concurrent.ConcurrentDictionary`2+Tables, System.Collections.Concurrent", throwOnError: true);
+                object tables = AssertNotNull(tablesField.GetValue(cd));
+
+                FieldInfo comparerField = AssertNotNull(tablesType.GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public));
+                comparerField = AssertNotNull((FieldInfo)tables.GetType().GetMemberWithSameMetadataDefinitionAs(comparerField));
+                IEqualityComparer<string> comparer = AssertNotNull((IEqualityComparer<string>)comparerField.GetValue(tables));
+
+                return comparer.GetHashCode;
+
+                static T AssertNotNull<T>(T value, [CallerArgumentExpression(nameof(value))] string valueArg = null)
+                {
+                    Assert.True(value is not null, valueArg);
+                    return value;
+                }
+            }
+
+            Func<string, int> nonRandomizedOrdinal = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.Ordinal));
+            Func<string, int> nonRandomizedOrdinalIgnoreCase = GetHashCodeFunc(new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+
+            const int StartOfRange = 0xE020; // use the Unicode Private Use range to avoid accidentally creating strings that really do compare as equal OrdinalIgnoreCase
+            const int Stride = 0x40; // to ensure we don't accidentally reset the 0x20 bit of the seed, which is used to negate OrdinalIgnoreCase effects
+            int currentSeed = StartOfRange;
+
+            List<string> collidingStrings = new List<string>(count);
+            while (collidingStrings.Count < count)
+            {
+                Assert.True(currentSeed <= ushort.MaxValue,
+                    $"Couldn't create enough colliding strings? Created {collidingStrings.Count}, needed {count}.");
+
+                // Generates a possible string with a well-known non-randomized hash code:
+                // - string.GetNonRandomizedHashCode returns 0.
+                // - string.GetNonRandomizedHashCodeOrdinalIgnoreCase returns 0x24716ca0.
+                // Provide a different seed to produce a different string.
+                // Must check OrdinalIgnoreCase hash code to ensure correctness.
+                string candidate = string.Create(8, currentSeed, static (span, seed) =>
+                {
+                    Span<byte> asBytes = MemoryMarshal.AsBytes(span);
+
+                    uint hash1 = (5381 << 16) + 5381;
+                    uint hash2 = BitOperations.RotateLeft(hash1, 5) + hash1;
+
+                    MemoryMarshal.Write(asBytes, ref seed);
+                    MemoryMarshal.Write(asBytes.Slice(4), ref hash2); // set hash2 := 0 (for Ordinal)
+
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ (uint)seed;
+                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1);
+
+                    MemoryMarshal.Write(asBytes.Slice(8), ref hash1); // set hash1 := 0 (for Ordinal)
+                });
+
+                int ordinalHashCode = nonRandomizedOrdinal(candidate);
+                Assert.Equal(0, ordinalHashCode); // ensure has a zero hash code Ordinal
+
+                int ordinalIgnoreCaseHashCode = nonRandomizedOrdinalIgnoreCase(candidate);
+                if (ordinalIgnoreCaseHashCode == 0x24716ca0) // ensure has a zero hash code OrdinalIgnoreCase (might not have one)
+                {
+                    collidingStrings.Add(candidate); // success!
+                }
+
+                currentSeed += Stride;
+            }
+
+            return collidingStrings;
+        }
     }
 
     public class ConcurrentDictionary_Generic_Tests_ulong_ulong : ConcurrentDictionary_Generic_Tests<ulong, ulong>
@@ -91,6 +189,7 @@ namespace System.Collections.Concurrent.Tests
 
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => new List<ModifyEnumerable>();
 
+        protected override bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
         protected override bool IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified => false;
 
         protected override bool IDictionary_Generic_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;

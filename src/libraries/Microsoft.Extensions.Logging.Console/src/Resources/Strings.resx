@@ -129,4 +129,7 @@
   <data name="WarningMessageOnDrop" xml:space="preserve">
     <value>{0} message(s) dropped because of queue size limit. Increase the queue size or decrease logging verbosity to avoid this. You may change `ConsoleLoggerQueueFullMode` to stop dropping messages.</value>
   </data>
+  <data name="InvalidConfigurationData" xml:space="preserve">
+    <value>Failed to convert configuration value at '{0}' to type '{1}'.</value>
+  </data>
 </root>

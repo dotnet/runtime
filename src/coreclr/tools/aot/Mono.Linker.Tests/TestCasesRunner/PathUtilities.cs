@@ -20,14 +20,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #endif
 
 		public static string GetTestsSourceRootDirectory ([CallerFilePath] string? thisFile = null) =>
-			Path.GetFullPath ((string) AppContext.GetData ("Mono.Linker.Tests.NativeAotDir")!);
+			Path.GetFullPath((string)AppContext.GetData("Mono.Linker.Tests.LinkerTestDir")!);
 
 		public static string GetTestAssemblyPath (string assemblyName)
 		{
 			var artifactsBinDirectory = (string) AppContext.GetData ("Mono.Linker.Tests.ArtifactsBinDir")!;
-			var targetArch = (string) AppContext.GetData ("Mono.Linker.Tests.TargetArchitecture")!;
 			var configuration = (string) AppContext.GetData ("Mono.Linker.Tests.Configuration")!;
-			return Path.GetFullPath (Path.Combine (artifactsBinDirectory, assemblyName, targetArch, configuration, $"{assemblyName}.dll"));
+			return Path.GetFullPath(Path.Combine(artifactsBinDirectory, assemblyName, configuration, TFMDirectoryName, $"{assemblyName}.dll"));
 		}
 	}
 }

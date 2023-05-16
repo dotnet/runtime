@@ -167,7 +167,7 @@ namespace Tracing.Tests.Common
             return -1;
         }
 
-        private int Validate()
+        private int Validate(bool enableRundownProvider = true)
         {
             // FIXME: This is a bandaid fix for a deadlock in EventPipeEventSource caused by
             // the lazy caching in the Regex library.  The caching creates a ConcurrentDictionary
@@ -204,7 +204,7 @@ namespace Tracing.Tests.Common
             Func<int> optionalTraceValidationCallback = null;
             DiagnosticsClient client = new DiagnosticsClient(processId);
 #if DIAGNOSTICS_RUNTIME
-            if (OperatingSystem.IsAndroid())
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
                 client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
 #endif
             var readerTask = new Task(() =>
@@ -212,7 +212,7 @@ namespace Tracing.Tests.Common
                 Logger.logger.Log("Connecting to EventPipe...");
                 try
                 {
-                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders));
+                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), enableRundownProvider);
                 }
                 catch (DiagnosticsClientException ex)
                 {
@@ -344,7 +344,7 @@ namespace Tracing.Tests.Common
         // the process that created them, so we don't need to check on that platform.
         static public bool EnsureCleanEnvironment()
         {
-            if (!OperatingSystem.IsWindows())
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> getPidsAndSockets = () =>
                 {
@@ -392,13 +392,14 @@ namespace Tracing.Tests.Common
             Action eventGeneratingAction,
             List<EventPipeProvider> providers,
             int circularBufferMB=1024,
-            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
+            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
+            bool enableRundownProvider = true)
         {
             Logger.logger.Log("==TEST STARTING==");
             var test = new IpcTraceTest(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator);
             try
             {
-                var ret = test.Validate();
+                var ret = test.Validate(enableRundownProvider);
                 if (ret == 100)
                     Logger.logger.Log("==TEST FINISHED: PASSED!==");
                 else

@@ -210,7 +210,7 @@ public class WebcilConverter
     }
 #endif
 
-    private static void CopySections(Stream outStream, Stream inputStream, ImmutableArray<SectionHeader> peSections)
+    private static void CopySections(FileStream outStream, FileStream inputStream, ImmutableArray<SectionHeader> peSections)
     {
         // endianness: ok, we're just copying from one stream to another
         foreach (var peHeader in peSections)
@@ -223,12 +223,12 @@ public class WebcilConverter
     }
 
 #if NETCOREAPP2_1_OR_GREATER
-    private static void ReadExactly(Stream s, Span<byte> buffer)
+    private static void ReadExactly(FileStream s, Span<byte> buffer)
     {
         s.ReadExactly(buffer);
     }
 #else
-    private static void ReadExactly(Stream s, byte[] buffer)
+    private static void ReadExactly(FileStream s, byte[] buffer)
     {
         int offset = 0;
         while (offset < buffer.Length)

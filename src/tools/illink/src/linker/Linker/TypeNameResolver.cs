@@ -35,7 +35,7 @@ namespace Mono.Linker
 			if (string.IsNullOrEmpty (typeNameString))
 				return false;
 
-			TypeName parsedTypeName;
+			TypeName? parsedTypeName;
 			try {
 				parsedTypeName = TypeParser.ParseTypeName (typeNameString);
 			} catch (ArgumentException) {
@@ -89,7 +89,7 @@ namespace Mono.Linker
 			typeResolutionRecords = null;
 			return false;
 
-			bool TryResolveTypeName (AssemblyDefinition assemblyDefinition, TypeName typeName, [NotNullWhen (true)] out TypeReference? typeReference, List<TypeResolutionRecord> typeResolutionRecords)
+			bool TryResolveTypeName (AssemblyDefinition assemblyDefinition, TypeName? typeName, [NotNullWhen (true)] out TypeReference? typeReference, List<TypeResolutionRecord> typeResolutionRecords)
 			{
 				typeReference = null;
 				if (assemblyDefinition == null)
@@ -115,7 +115,7 @@ namespace Mono.Linker
 			return typeReference != null;
 		}
 
-		TypeReference? ResolveTypeName (AssemblyDefinition assembly, TypeName typeName, List<TypeResolutionRecord> typeResolutionRecords)
+		TypeReference? ResolveTypeName (AssemblyDefinition assembly, TypeName? typeName, List<TypeResolutionRecord> typeResolutionRecords)
 		{
 			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 				// In this case we ignore the assembly parameter since the type name has assembly in it

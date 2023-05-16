@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -117,6 +119,23 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
+        [Fact]
+        public static async Task SupportsBoxedRootLevelValues()
+        {
+            PersonJsonContext context = PersonJsonContext.Default;
+            object person = new Person("John", "Smith");
+            string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
+            // Sanity check -- context does not specify object metadata
+            Assert.Null(context.GetTypeInfo(typeof(object)));
+
+            string json = JsonSerializer.Serialize(person, context.Options);
+            Assert.Equal(expectedJson, json);
+
+            var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, person, context.Options);
+            Assert.Equal(expectedJson, stream.AsString());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
@@ -210,6 +229,24 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public static void ChainedContexts_ResolveJsonTypeInfo()
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo messageInfo = options.GetTypeInfo(typeof(JsonMessage));
+            Assert.IsAssignableFrom<JsonTypeInfo<JsonMessage>>(messageInfo);
+            Assert.Same(options, messageInfo.Options);
+
+            JsonTypeInfo personInfo = options.GetTypeInfo(typeof(Person));
+            Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
+            Assert.Same(options, personInfo.Options);
+
+            NotSupportedException exn = Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(MyStruct)));
+            Assert.Contains(typeof(NestedContext).FullName, exn.Message);
+            Assert.Contains(typeof(PersonJsonContext).FullName, exn.Message);
+        }
+
+        [Fact]
         public static void CombiningContexts_ResolveJsonTypeInfo_DifferentCasing()
         {
             IJsonTypeInfoResolver combined = JsonTypeInfoResolver.Combine(NestedContext.Default, PersonJsonContext.Default);
@@ -252,40 +289,232 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<JsonMessage>(expectedJson, options));
         }
 
-        [Fact]
-        public static void FastPathSerialization_CombinedContext_ThrowsInvalidOperationException()
+        [Theory]
+        [MemberData(nameof(GetFastPathCompatibleResolvers))]
+        [MemberData(nameof(GetFastPathIncompatibleResolvers))]
+        public static void FastPathSerialization_AppendedResolver_WorksAsExpected(IJsonTypeInfoResolver appendedResolver)
         {
-            // TODO change exception assertions once https://github.com/dotnet/runtime/issues/71933 is fixed.
+            // Resolvers appended after ours will never introduce metadata to the type graph,
+            // therefore the fast path should always be used regardless of what they are doing.
 
+            var fastPathContext = new ContextWithInstrumentedFastPath();
             var options = new JsonSerializerOptions
             {
-                TypeInfoResolver = JsonTypeInfoResolver.Combine(FastPathSerializationContext.Default, new DefaultJsonTypeInfoResolver())
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(fastPathContext, appendedResolver, new DefaultJsonTypeInfoResolver())
             };
 
-            JsonTypeInfo<JsonMessage> jsonMessageInfo = (JsonTypeInfo<JsonMessage>)options.GetTypeInfo(typeof(JsonMessage));
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
             Assert.NotNull(jsonMessageInfo.SerializeHandler);
 
-            var value = new JsonMessage { Message = "Hi" };
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, jsonMessageInfo));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, options));
+            var value = new PocoWithInteger { Value = 42 };
+            string expectedJson = """{"Value":42}""";
 
-            JsonTypeInfo<ClassWithJsonMessage> classInfo = (JsonTypeInfo<ClassWithJsonMessage>)options.GetTypeInfo(typeof(ClassWithJsonMessage));
+            string json = JsonSerializer.Serialize(value, jsonMessageInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(1, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(2, fastPathContext.FastPathInvocationCount);
+
+            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
             Assert.Null(classInfo.SerializeHandler);
 
-            var largerValue = new ClassWithJsonMessage { Message = value };
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, classInfo));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(largerValue, options));
+            var largerValue = new ContainingClass { Message = value };
+            expectedJson = $$"""{"Message":{{expectedJson}}}""";
+
+            json = JsonSerializer.Serialize(largerValue, classInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(3, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(largerValue, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(4, fastPathContext.FastPathInvocationCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetFastPathCompatibleResolvers))]
+        public static void FastPathSerialization_PrependedResolver_CompatibleResolvers_WorksAsExpected(IJsonTypeInfoResolver prependedResolver)
+        {
+            // We're prepending a resolver that generates metadata for the property of our type,
+            // but because the two sources use compatible configuration the fast path should still be used.
+
+            var fastPathContext = new ContextWithInstrumentedFastPath();
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
+            };
+
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new PocoWithInteger { Value = 42 };
+            string expectedJson = """{"Value":42}""";
+
+            string json = JsonSerializer.Serialize(value, jsonMessageInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(1, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(2, fastPathContext.FastPathInvocationCount);
+
+            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            Assert.Null(classInfo.SerializeHandler);
+
+            var largerValue = new ContainingClass { Message = value };
+            expectedJson = $$"""{"Message":{{expectedJson}}}""";
+
+            json = JsonSerializer.Serialize(largerValue, classInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(3, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(largerValue, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(4, fastPathContext.FastPathInvocationCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetFastPathIncompatibleResolvers))]
+        public static void FastPathSerialization_PrependedResolver_IncompatibleResolvers_FallsBackToMetadata(IJsonTypeInfoResolver prependedResolver)
+        {
+            // We're prepending a resolver that generates metadata for the property of our type,
+            // because the two sources use incompatible configuration the fast path should not be used.
+
+            var fastPathContext = new ContextWithInstrumentedFastPath();
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = JsonTypeInfoResolver.Combine(prependedResolver, fastPathContext, new DefaultJsonTypeInfoResolver())
+            };
+
+            JsonTypeInfo<PocoWithInteger> jsonMessageInfo = (JsonTypeInfo<PocoWithInteger>)options.GetTypeInfo(typeof(PocoWithInteger));
+            Assert.NotNull(jsonMessageInfo.SerializeHandler);
+
+            var value = new PocoWithInteger { Value = 42 };
+            string expectedJson = """{"Value":42}""";
+
+            string json = JsonSerializer.Serialize(value, jsonMessageInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(0, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(value, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(0, fastPathContext.FastPathInvocationCount);
+
+            JsonTypeInfo<ContainingClass> classInfo = (JsonTypeInfo<ContainingClass>)options.GetTypeInfo(typeof(ContainingClass));
+            Assert.Null(classInfo.SerializeHandler);
+
+            var largerValue = new ContainingClass { Message = value };
+            expectedJson = $$"""{"Message":{{expectedJson}}}""";
+
+            json = JsonSerializer.Serialize(largerValue, classInfo);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(0, fastPathContext.FastPathInvocationCount);
+
+            json = JsonSerializer.Serialize(largerValue, options);
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(0, fastPathContext.FastPathInvocationCount);
+        }
+
+        public static IEnumerable<object[]> GetFastPathCompatibleResolvers()
+        {
+            yield return new object[] { CompatibleWithInstrumentedFastPathContext.Default };
+            yield return new object[] { new CustomWrappingResolver<int> { Resolver = new DefaultJsonTypeInfoResolver() } };
+            yield return new object[] { new CustomWrappingResolver<int> { Resolver = CompatibleWithInstrumentedFastPathContext.Default } };
+            yield return new object[] { new CustomWrappingResolver<int> { Resolver = new ContextWithInstrumentedFastPath() } };
+        }
+
+        public static IEnumerable<object[]> GetFastPathIncompatibleResolvers()
+        {
+            yield return new object[] { NotCompatibleWithInstrumentedFastPathContext.Default };
+            yield return new object[] { new CustomWrappingResolver<int> { Resolver = new DefaultJsonTypeInfoResolver { Modifiers = { static jti => jti.PolymorphismOptions = null } } } };
+            yield return new object[] { new CustomWrappingResolver<int> { Resolver = NotCompatibleWithInstrumentedFastPathContext.Default } };
+        }
+
+        public class PocoWithInteger
+        {
+            public int Value { get; set; }
+        }
+
+        public class ContainingClass
+        {
+            public PocoWithInteger Message { get; set; }
+        }
+
+        public class ContextWithInstrumentedFastPath : JsonSerializerContext, IJsonTypeInfoResolver
+        {
+            public int FastPathInvocationCount { get; private set; }
+
+            public ContextWithInstrumentedFastPath() : base(null)
+            { }
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo? typeInfo = null;
+
+                if (type == typeof(int))
+                {
+                    typeInfo = JsonMetadataServices.CreateValueInfo<int>(options, JsonMetadataServices.Int32Converter);
+                }
+
+                if (type == typeof(PocoWithInteger))
+                {
+                    typeInfo = JsonMetadataServices.CreateObjectInfo<PocoWithInteger>(options,
+                        new JsonObjectInfoValues<PocoWithInteger>
+                        {
+                            PropertyMetadataInitializer = _ => new JsonPropertyInfo[1]
+                            {
+                                JsonMetadataServices.CreatePropertyInfo(options,
+                                    new JsonPropertyInfoValues<int>
+                                    {
+                                        IsProperty = true,
+                                        IsPublic = true,
+                                        DeclaringType = typeof(PocoWithInteger),
+                                        PropertyName = "Value",
+                                        Getter = obj => ((PocoWithInteger)obj).Value,
+                                        Setter = (obj, value) => ((PocoWithInteger)obj).Value = value,
+                                    })
+                            },
+
+                            SerializeHandler = (writer, value) =>
+                            {
+                                writer.WriteStartObject();
+                                writer.WriteNumber("Value", value.Value);
+                                writer.WriteEndObject();
+                                FastPathInvocationCount++;
+                            }
+                        });
+                }
+
+                if (typeInfo != null)
+                    typeInfo.OriginatingResolver = this;
+
+                return typeInfo;
+            }
+        }
+
+        [JsonSerializable(typeof(int))]
+        public partial class CompatibleWithInstrumentedFastPathContext : JsonSerializerContext
+        { }
+
+        [JsonSourceGenerationOptions(IncludeFields = true)]
+        [JsonSerializable(typeof(int))]
+        public partial class NotCompatibleWithInstrumentedFastPathContext : JsonSerializerContext
+        { }
+
+        public class CustomWrappingResolver<T> : IJsonTypeInfoResolver
+        {
+            public required IJsonTypeInfoResolver Resolver { get; init; }
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+                => type == typeof(T) ? Resolver.GetTypeInfo(type, options) : null;
         }
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
         [JsonSerializable(typeof(JsonMessage))]
         public partial class FastPathSerializationContext : JsonSerializerContext
         { }
-
-        public class ClassWithJsonMessage
-        {
-            public JsonMessage Message { get; set; }
-        }
 
         [Theory]
         [MemberData(nameof(GetCombiningContextsData))]
@@ -306,7 +535,25 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonSerializer.Deserialize<T>(json, options);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [Theory]
+        [MemberData(nameof(GetCombiningContextsData))]
+        public static void ChainedContexts_Serialization<T>(T value, string expectedJson)
+        {
+            var options = new JsonSerializerOptions { TypeInfoResolverChain = { NestedContext.Default, PersonJsonContext.Default } };
+
+            JsonTypeInfo<T> typeInfo = (JsonTypeInfo<T>)options.GetTypeInfo(typeof(T))!;
+
+            string json = JsonSerializer.Serialize(value, typeInfo);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual(expectedJson, json);
+
+            JsonSerializer.Deserialize<T>(json, typeInfo);
+            JsonSerializer.Deserialize<T>(json, options);
+        }
+
+        [Fact]
         public static void CombiningContextWithCustomResolver_ReplacePoco()
         {
             TestResolver customResolver = new((type, options) =>
@@ -420,7 +667,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void SupportsPropertiesWithCustomConverterFactory()
         {
-            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = Serialization.Tests.SampleEnum.MinZero };
+            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
             Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
         }

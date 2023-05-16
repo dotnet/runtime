@@ -17,6 +17,13 @@ namespace System.Tests
         }
 
         [Fact]
+        public static unsafe void IsLittleEndianReflection()
+        {
+            bool value = (bool)typeof(BitConverter).GetField("IsLittleEndian").GetValue(null);
+            Assert.Equal(BitConverter.IsLittleEndian, value);
+        }
+
+        [Fact]
         public static void ValueArgumentNull()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => BitConverter.ToBoolean(null, 0));

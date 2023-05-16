@@ -37,7 +37,7 @@
     <!-- Ignore analyzers that recommend APIs introduced in .NET Core when targeting frameworks that lack those APIs
          to avoid issues with multitargeting.
     -->
-    <NoWarn Condition="$(TargetFrameworks.Contains('net4')) or $(TargetFrameworks.Contains('netstandard'))">$(NoWarn);CA1510;CA1511;CA1512;CA1513</NoWarn>
+    <NoWarn Condition="$(TargetFrameworks.Contains('net4')) or $(TargetFrameworks.Contains('netstandard'))">$(NoWarn);CA1510;CA1511;CA1512;CA1513;CA1845;CA1846;CA1847</NoWarn>
 
     <!-- Microsoft.NET.Sdk enables some warnings as errors out of the box.
          We want to remove some items from this list so they don't fail the build.
@@ -77,22 +77,14 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)intellisense.targets" Condition="'$(IsSourceProject)' == 'true'" />
 
   <!-- Libraries-specific binplacing properties -->
   <PropertyGroup>
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' and ('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' and ('$(IsSourceProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
     <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
-    <GetBinPlaceItemsDependsOn Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">$(GetBinPlaceItemsDependsOn);AddDocumentationFileAsBinPlaceItemForExtensionsProjects</GetBinPlaceItemsDependsOn>
   </PropertyGroup>
-
-  <Target Name="AddDocumentationFileAsBinPlaceItemForExtensionsProjects"
-          Condition="Exists('$(DocumentationFile)')">
-    <ItemGroup>
-      <!-- Microsoft.Extensions are not yet using the doc-file package -->
-      <BinPlaceItem Include="$(DocumentationFile)" />
-    </ItemGroup>
-  </Target>
 
   <ItemGroup>
     <!-- Used by the runtime tests to prepare the CORE_ROOT layout. Don't use in libraries. -->

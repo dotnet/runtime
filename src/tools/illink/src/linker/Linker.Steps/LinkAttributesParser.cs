@@ -40,8 +40,8 @@ namespace Mono.Linker.Steps
 
 		(CustomAttribute[]? customAttributes, MessageOrigin[]? origins) ProcessAttributes (XPathNavigator nav, ICustomAttributeProvider provider)
 		{
-			var customAttributesBuilder = new ArrayBuilder<CustomAttribute> ();
-			var originsBuilder = new ArrayBuilder<MessageOrigin> ();
+			ArrayBuilder<CustomAttribute> customAttributesBuilder = default;
+			ArrayBuilder<MessageOrigin> originsBuilder = default;
 			foreach (XPathNavigator attributeNav in nav.SelectChildren ("attribute", string.Empty)) {
 				if (!ShouldProcessElement (attributeNav))
 					continue;
@@ -127,9 +127,9 @@ namespace Mono.Linker.Steps
 			//
 			// public sealed class RemoveAttributeInstancesAttribute : Attribute
 			// {
-			//		public RemoveAttributeInstancesAttribute () {}
-			//		public RemoveAttributeInstancesAttribute (object values) {} // For legacy uses
-			//		public RemoveAttributeInstancesAttribute (params object[] values) {}
+			//  public RemoveAttributeInstancesAttribute () {}
+			//  public RemoveAttributeInstancesAttribute (object values) {} // For legacy uses
+			//  public RemoveAttributeInstancesAttribute (params object[] values) {}
 			// }
 			//
 			const MethodAttributes ctorAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.Final;
@@ -225,7 +225,7 @@ namespace Mono.Linker.Steps
 
 		CustomAttributeArgument[] ReadCustomAttributeArguments (XPathNavigator nav, TypeDefinition attributeType)
 		{
-			var args = new ArrayBuilder<CustomAttributeArgument> ();
+			ArrayBuilder<CustomAttributeArgument> args = default;
 
 			foreach (XPathNavigator argumentNav in nav.SelectChildren ("argument", string.Empty)) {
 				CustomAttributeArgument? caa = ReadCustomAttributeArgument (argumentNav, attributeType);
@@ -247,7 +247,7 @@ namespace Mono.Linker.Steps
 			//
 			// Builds CustomAttributeArgument in the same way as it would be
 			// represented in the metadata if encoded there. This simplifies
-			// any custom attributes handling in linker by using same attributes
+			// any custom attributes handling in ILLink by using same attributes
 			// value extraction or mathing logic.
 			//
 			switch (typeref.MetadataType) {
@@ -306,11 +306,11 @@ namespace Mono.Linker.Steps
 				if (typeref is ArrayType arrayTypeRef) {
 					var elementType = arrayTypeRef.ElementType;
 					var arrayArgumentIterator = nav.SelectChildren ("argument", string.Empty);
-					ArrayBuilder<CustomAttributeArgument> elements = new ArrayBuilder<CustomAttributeArgument> ();
+					ArrayBuilder<CustomAttributeArgument> elements = default;
 					foreach (XPathNavigator elementNav in arrayArgumentIterator) {
 						if (ReadCustomAttributeArgument (elementNav, memberWithAttribute) is CustomAttributeArgument arg) {
 							// To match Cecil, elements of a list that are subclasses of the list type must be boxed in the base type
-							//	e.g. object[] { 73 } translates to Cecil.CAA { Type: object[] : Value: CAA{ Type: object, Value: CAA{ Type: int, Value: 73} } }
+							// e.g. object[] { 73 } translates to Cecil.CAA { Type: object[] : Value: CAA{ Type: object, Value: CAA{ Type: int, Value: 73} } }
 							if (arg.Type == elementType) {
 								elements.Add (arg);
 							}
@@ -543,25 +543,25 @@ namespace Mono.Linker.Steps
 			}
 			sb.Append (method.Name);
 			if (method.HasGenericParameters) {
-				sb.Append ("<");
+				sb.Append ('<');
 				for (int i = 0; i < method.GenericParameters.Count; i++) {
 					if (i > 0)
-						sb.Append (",");
+						sb.Append (',');
 
 					sb.Append (method.GenericParameters[i].Name);
 				}
-				sb.Append (">");
+				sb.Append ('>');
 			}
-			sb.Append ("(");
+			sb.Append ('(');
 			if (method.HasMetadataParameters ()) {
 				for (int i = 0; i < method.Parameters.Count; i++) {
 					if (i > 0)
-						sb.Append (",");
+						sb.Append (',');
 
 					sb.Append (method.Parameters[i].ParameterType.FullName);
 				}
 			}
-			sb.Append (")");
+			sb.Append (')');
 			return sb.ToString ();
 		}
 #pragma warning restore RS0030

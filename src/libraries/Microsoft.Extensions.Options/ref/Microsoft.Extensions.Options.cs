@@ -297,6 +297,16 @@ namespace Microsoft.Extensions.Options
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string failureMessage) { throw null; }
     }
+    public class ValidateOptionsResultBuilder
+    {
+        public ValidateOptionsResultBuilder() { }
+        public void AddError(string error, string? propertyName = null) { throw null; }
+        public void AddResult(System.ComponentModel.DataAnnotations.ValidationResult? result) { throw null; }
+        public void AddResults(System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult?>? results) { throw null; }
+        public void AddResult(ValidateOptionsResult result) { throw null; }
+        public ValidateOptionsResult Build() { throw null; }
+        public void Clear() { throw null; }
+    }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
         public ValidateOptions(string? name, System.Func<TOptions, bool> validation, string failureMessage) { }

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace GitHub_19910
 {
@@ -17,7 +18,8 @@ namespace GitHub_19910
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (Sse2.IsSupported)
             {

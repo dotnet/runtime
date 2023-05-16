@@ -171,6 +171,9 @@
   <data name="net_quic_timeout" xml:space="preserve">
     <value>Connection timed out waiting for a response from the peer.</value>
   </data>
+  <data name="net_quic_handshake_timeout" xml:space="preserve">
+    <value>Connection handshake was canceled due to the configured timeout of {0} seconds elapsing.</value>
+  </data>
   <data name="net_quic_ssl_option" xml:space="preserve">
     <value>'{0}' is not supported by System.Net.Quic.</value>
   </data>
@@ -220,7 +223,7 @@
     <value>Binding to socket failed, likely caused by a family mismatch between local and remote address.</value>
   </data>
   <data name="net_quic_auth" xml:space="preserve">
-    <value>Authentication failed. {0}</value>
+    <value>Authentication failed: {0}.</value>
   </data>
   <!-- Same as in System.Net.Security -->
   <data name="net_io_invalidnestedcall" xml:space="preserve">

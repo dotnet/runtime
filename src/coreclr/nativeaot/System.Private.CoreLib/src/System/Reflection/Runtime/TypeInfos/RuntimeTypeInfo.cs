@@ -238,6 +238,30 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
+        //
+        // Left unsealed so that RuntimeFunctionPointerInfo can override.
+        //
+        public override Type GetFunctionPointerReturnType()
+        {
+            throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        }
+
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override IEnumerable<Type> ImplementedInterfaces
@@ -275,7 +299,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         result.AddRange(baseType.GetInterfaces());
                     foreach (QTypeDefRefOrSpec directlyImplementedInterface in this.TypeRefDefOrSpecsForDirectlyImplementedInterfaces)
                     {
-                        Type ifc = directlyImplementedInterface.Resolve(typeContext);
+                        RuntimeTypeInfo ifc = directlyImplementedInterface.Resolve(typeContext);
                         if (result.Contains(ifc))
                             continue;
                         result.Add(ifc);
@@ -478,7 +502,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 // Desktop compatibility: Treat generic type definitions as a constructed generic type using the generic parameters as type arguments.
                 if (runtimeTypeArgument.IsGenericTypeDefinition)
-                    runtimeTypeArgument = runtimeTypeArguments[i] = runtimeTypeArgument.GetConstructedGenericType(runtimeTypeArgument.RuntimeGenericTypeParameters);
+                    runtimeTypeArgument = runtimeTypeArguments[i] = runtimeTypeArgument.GetConstructedGenericTypeNoConstraintCheck(runtimeTypeArgument.RuntimeGenericTypeParameters);
 
                 if (runtimeTypeArgument.IsByRefLike)
                     throw new TypeLoadException(SR.CannotUseByRefLikeTypeInInstantiation);
@@ -833,14 +857,8 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (baseType == valueType && this != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            foreach (Type primitiveType in ExecutionDomain.PrimitiveTypes)
-                            {
-                                if (this.Equals(primitiveType))
-                                {
-                                    classification |= TypeClassification.IsPrimitive;
-                                    break;
-                                }
-                            }
+                            if (ExecutionDomain.IsPrimitiveType(this))
+                                classification |= TypeClassification.IsPrimitive;
                         }
                     }
                     _lazyClassification = classification;

@@ -48,7 +48,8 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
 
             // DEFAULT value handler for IterationCount.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnManagedIntegerDerMaxEncodeSize = 6;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(IterationCount);
 
                 if (!tmp.EncodedValueEquals(DefaultIterationCount))

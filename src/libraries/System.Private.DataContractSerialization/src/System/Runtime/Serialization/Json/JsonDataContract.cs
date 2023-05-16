@@ -200,7 +200,7 @@ namespace System.Runtime.Serialization.Json
                             int newSize = (value < int.MaxValue / 2) ? value * 2 : int.MaxValue;
                             if (newSize <= value)
                             {
-                                Fx.Assert("DataContract cache overflow");
+                                Debug.Fail("DataContract cache overflow");
                                 throw new SerializationException(SR.DataContractCacheOverflow);
                             }
                             Array.Resize<JsonDataContract>(ref s_dataContractCache, newSize);
@@ -210,12 +210,9 @@ namespace System.Runtime.Serialization.Json
                         {
                             s_typeToIDCache.Add(new TypeHandleRef(typeHandle), id);
                         }
-                        catch (Exception ex)
+                        catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                         {
-                            if (Fx.IsFatal(ex))
-                                throw;
-
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
+                            throw new Exception(ex.Message, ex);
                         }
                     }
                     return id.Value;

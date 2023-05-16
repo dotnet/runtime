@@ -11,6 +11,14 @@
 #ifndef __MONO_MONO_CONTEXT_H__
 #define __MONO_MONO_CONTEXT_H__
 
+/* 
+ * Handle non-gnu libc versions with nothing in features.h 
+ * We have no idea what they're compatible with, so always fail.
+ */
+#ifndef __GLIBC_PREREQ
+# define __GLIBC_PREREQ(x,y) 0
+#endif
+
 #include "mono-compiler.h"
 #include "mono-sigcontext.h"
 #include "mono-machine.h"

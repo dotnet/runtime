@@ -701,7 +701,6 @@ mono_release_type_locks (MonoInternalThread *thread)
 	mono_type_initialization_unlock ();
 }
 
-static MonoImtTrampolineBuilder imt_trampoline_builder;
 static gboolean always_build_imt_trampolines;
 
 #if (MONO_IMT_SIZE > 32)
@@ -718,12 +717,6 @@ MonoRuntimeCallbacks*
 mono_get_runtime_callbacks (void)
 {
 	return &callbacks;
-}
-
-void
-mono_install_imt_trampoline_builder (MonoImtTrampolineBuilder func)
-{
-	imt_trampoline_builder = func;
 }
 
 void
@@ -773,15 +766,6 @@ mono_compile_method_checked (MonoMethod *method, MonoError *error)
 	g_assert (callbacks.compile_method);
 	res = callbacks.compile_method (method, error);
 	return res;
-}
-
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass)
-{
-	MONO_REQ_GC_NEUTRAL_MODE
-
-	g_assert (callbacks.create_delegate_trampoline);
-	return callbacks.create_delegate_trampoline (klass);
 }
 
 /**
@@ -874,62 +858,77 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				/* special/collectible static */
 				continue;
 
-			pos = field_offset / TARGET_SIZEOF_VOID_P;
-			pos += offset;
+			guint32 field_iter = 1;
+			guint32 field_instance_offset = field_offset;
+			// If struct has InlineArray attribute, iterate `length` times to set a bitmap
+			if (m_class_is_inlinearray (p))
+				field_iter = m_class_inlinearray_value (p);
 
-			type = mono_type_get_underlying_type (field->type);
-			switch (type->type) {
-			case MONO_TYPE_U:
-			case MONO_TYPE_I:
-			case MONO_TYPE_PTR:
-			case MONO_TYPE_FNPTR:
-				break;
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_ARRAY:
-				g_assert ((m_field_get_offset (field) % wordsize) == 0);
+			if (field_iter > 500)
+				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
 
-				g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
-				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
-				*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
-				break;
-			case MONO_TYPE_GENERICINST:
-				if (!mono_type_generic_inst_is_valuetype (type)) {
+			while (field_iter) {
+				pos = field_instance_offset / TARGET_SIZEOF_VOID_P;
+				pos += offset;
+
+				type = mono_type_get_underlying_type (field->type);
+
+				switch (type->type) {
+				case MONO_TYPE_U:
+				case MONO_TYPE_I:
+				case MONO_TYPE_PTR:
+				case MONO_TYPE_FNPTR:
+					break;
+				case MONO_TYPE_STRING:
+				case MONO_TYPE_SZARRAY:
+				case MONO_TYPE_CLASS:
+				case MONO_TYPE_OBJECT:
+				case MONO_TYPE_ARRAY:
 					g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
+					g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
 					bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
 					*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 					break;
-				} else {
-					/* fall through */
+				case MONO_TYPE_GENERICINST:
+					if (!mono_type_generic_inst_is_valuetype (type)) {
+						g_assert ((m_field_get_offset (field) % wordsize) == 0);
+
+						bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+						*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
+						break;
+					} else {
+						/* fall through */
+					}
+				case MONO_TYPE_TYPEDBYREF:
+				case MONO_TYPE_VALUETYPE: {
+					MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
+					if (m_class_has_references (fclass)) {
+						/* remove the object header */
+						compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
+					}
+					break;
 				}
-			case MONO_TYPE_TYPEDBYREF:
-			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
-				if (m_class_has_references (fclass)) {
-					/* remove the object header */
-					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+				case MONO_TYPE_R4:
+				case MONO_TYPE_R8:
+				case MONO_TYPE_BOOLEAN:
+				case MONO_TYPE_CHAR:
+					break;
+				default:
+					g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
+					break;
 				}
-				break;
-			}
-			case MONO_TYPE_I1:
-			case MONO_TYPE_U1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_U2:
-			case MONO_TYPE_I4:
-			case MONO_TYPE_U4:
-			case MONO_TYPE_I8:
-			case MONO_TYPE_U8:
-			case MONO_TYPE_R4:
-			case MONO_TYPE_R8:
-			case MONO_TYPE_BOOLEAN:
-			case MONO_TYPE_CHAR:
-				break;
-			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
-				break;
+
+				field_instance_offset += field_offset;
+				field_iter--;
 			}
 		}
 		if (static_fields)
@@ -1474,7 +1473,7 @@ initialize_imt_slot (MonoVTable *vtable, MonoImtBuilderEntry *imt_builder_entry,
 			/* Collision, build the trampoline */
 			GPtrArray *imt_ir = imt_sort_slot_entries (imt_builder_entry);
 			gpointer result;
-			result = imt_trampoline_builder (vtable,
+			result = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable,
 				(MonoIMTCheckItem**)imt_ir->pdata, imt_ir->len, fail_tramp);
 			for (guint i = 0; i < imt_ir->len; ++i)
 				g_free (g_ptr_array_index (imt_ir, i));
@@ -1823,8 +1822,8 @@ mono_method_add_generic_virtual_invocation (MonoVTable *vtable,
 
 			sorted = imt_sort_slot_entries (entries);
 
-			*vtable_slot = imt_trampoline_builder (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
-												   vtable_trampoline);
+			*vtable_slot = mono_get_runtime_callbacks ()->build_imt_trampoline (vtable, (MonoIMTCheckItem**)sorted->pdata, sorted->len,
+																				vtable_trampoline);
 
 			while (entries) {
 				MonoImtBuilderEntry *next = entries->next;

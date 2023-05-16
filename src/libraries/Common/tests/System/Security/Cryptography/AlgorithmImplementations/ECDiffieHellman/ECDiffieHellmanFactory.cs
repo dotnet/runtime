@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
         bool CanDeriveNewPublicKey { get; }
+        bool SupportsRawDerivation { get; }
     }
 
     public static partial class ECDiffieHellmanFactory
@@ -42,5 +43,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
 
         public static bool CanDeriveNewPublicKey => s_provider.CanDeriveNewPublicKey;
+
+        public static bool SupportsRawDerivation => s_provider.SupportsRawDerivation;
     }
 }

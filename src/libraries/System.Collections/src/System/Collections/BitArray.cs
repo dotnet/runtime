@@ -910,6 +910,66 @@ namespace System.Collections
             }
         }
 
+        /// <summary>
+        /// Determines whether all bits in the <see cref="BitArray"/> are set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
+        public bool HasAllSet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            const int AllSetBits = -1; // 0xFF_FF_FF_FF
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(AllSetBits) >= 0)
+            {
+                return false;
+            }
+
+            if (extraBits == 0)
+            {
+                return true;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            int mask = (1 << extraBits) - 1;
+            return (m_array[intCount] & mask) == mask;
+        }
+
+        /// <summary>
+        /// Determines whether any bit in the <see cref="BitArray"/> is set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
+        public bool HasAnySet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) >= 0)
+            {
+                return true;
+            }
+
+            if (extraBits == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            return (m_array[intCount] & (1 << extraBits) - 1) != 0;
+        }
+
         public int Count => m_length;
 
         public object SyncRoot => this;

@@ -17,7 +17,7 @@ namespace TLens
 			if (showSize) {
 				str.Append (" [size: ");
 				str.Append (method.GetEstimatedSize ());
-				str.Append ("]");
+				str.Append (']');
 			}
 
 			return str.ToString ();

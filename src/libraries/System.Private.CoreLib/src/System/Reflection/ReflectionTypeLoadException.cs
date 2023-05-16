@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -9,7 +10,7 @@ namespace System.Reflection
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class ReflectionTypeLoadException : SystemException, ISerializable
+    public sealed class ReflectionTypeLoadException : SystemException
     {
         public ReflectionTypeLoadException(Type?[]? classes, Exception?[]? exceptions) :
             this(classes, exceptions, null)
@@ -24,6 +25,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private ReflectionTypeLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -31,6 +33,8 @@ namespace System.Reflection
             LoaderExceptions = (Exception?[]?)info.GetValue("Exceptions", typeof(Exception[])) ?? Array.Empty<Exception?>();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

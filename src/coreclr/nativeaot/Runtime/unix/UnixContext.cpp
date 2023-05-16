@@ -13,7 +13,6 @@
 #include <libunwind.h>
 
 #include "UnixContext.h"
-#include "UnwindHelpers.h"
 
 // WebAssembly has a slightly different version of LibUnwind that doesn't define unw_get_save_loc
 #if defined(HOST_WASM)
@@ -183,7 +182,43 @@ int unw_get_save_loc(unw_cursor_t*, int, unw_save_loc_t*)
 
 #ifdef HOST_64BIT
 
-#if defined(HOST_ARM64)
+#if defined(HOST_ARM64) && defined(TARGET_FREEBSD)
+
+#define MCREG_X0(mc)   (mc.mc_gpregs.gp_x[0])
+#define MCREG_X1(mc)   (mc.mc_gpregs.gp_x[1])
+#define MCREG_X2(mc)   (mc.mc_gpregs.gp_x[2])
+#define MCREG_X3(mc)   (mc.mc_gpregs.gp_x[3])
+#define MCREG_X4(mc)   (mc.mc_gpregs.gp_x[4])
+#define MCREG_X5(mc)   (mc.mc_gpregs.gp_x[5])
+#define MCREG_X6(mc)   (mc.mc_gpregs.gp_x[6])
+#define MCREG_X7(mc)   (mc.mc_gpregs.gp_x[7])
+#define MCREG_X8(mc)   (mc.mc_gpregs.gp_x[8])
+#define MCREG_X9(mc)   (mc.mc_gpregs.gp_x[9])
+#define MCREG_X10(mc)  (mc.mc_gpregs.gp_x[10])
+#define MCREG_X11(mc)  (mc.mc_gpregs.gp_x[11])
+#define MCREG_X12(mc)  (mc.mc_gpregs.gp_x[12])
+#define MCREG_X13(mc)  (mc.mc_gpregs.gp_x[13])
+#define MCREG_X14(mc)  (mc.mc_gpregs.gp_x[14])
+#define MCREG_X15(mc)  (mc.mc_gpregs.gp_x[15])
+#define MCREG_X16(mc)  (mc.mc_gpregs.gp_x[16])
+#define MCREG_X17(mc)  (mc.mc_gpregs.gp_x[17])
+#define MCREG_X18(mc)  (mc.mc_gpregs.gp_x[18])
+#define MCREG_X19(mc)  (mc.mc_gpregs.gp_x[19])
+#define MCREG_X20(mc)  (mc.mc_gpregs.gp_x[20])
+#define MCREG_X21(mc)  (mc.mc_gpregs.gp_x[21])
+#define MCREG_X22(mc)  (mc.mc_gpregs.gp_x[22])
+#define MCREG_X23(mc)  (mc.mc_gpregs.gp_x[23])
+#define MCREG_X24(mc)  (mc.mc_gpregs.gp_x[24])
+#define MCREG_X25(mc)  (mc.mc_gpregs.gp_x[25])
+#define MCREG_X26(mc)  (mc.mc_gpregs.gp_x[26])
+#define MCREG_X27(mc)  (mc.mc_gpregs.gp_x[27])
+#define MCREG_X28(mc)  (mc.mc_gpregs.gp_x[28])
+#define MCREG_Lr(mc)   (mc.mc_gpregs.gp_lr)
+#define MCREG_Sp(mc)   (mc.mc_gpregs.gp_sp)
+#define MCREG_Pc(mc)   (mc.mc_gpregs.gp_elr)
+#define MCREG_Fp(mc)   (mc.mc_gpregs.gp_x[29])
+
+#elif defined(HOST_ARM64)
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -334,52 +369,6 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
 
 #undef ASSIGN_REG
 #undef ASSIGN_REG_PTR
-}
-
-// Returns the unw_proc_info_t for a given IP.
-bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
-{
-    int st;
-
-    unw_context_t unwContext;
-    unw_cursor_t cursor;
-
-    st = unw_getcontext(&unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-#ifdef HOST_AMD64
-    // We manually index into the unw_context_t's internals for now because there's
-    // no better way to modify it. This will go away in the future when we locate the
-    // LSDA and other information without initializing an unwind cursor.
-    unwContext.data[16] = ip;
-#elif HOST_ARM
-    ((uint32_t*)(unwContext.data))[15] = ip;
-#elif HOST_ARM64
-    unwContext.data[32] = ip;
-#elif HOST_WASM
-    ASSERT(false);
-#elif HOST_X86
-    ASSERT(false);
-#else
-    #error "GetUnwindProcInfo is not supported on this arch yet."
-#endif
-
-    st = unw_init_local(&cursor, &unwContext);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    st = unw_get_proc_info(&cursor, procInfo);
-    if (st < 0)
-    {
-        return false;
-    }
-
-    return true;
 }
 
 // Initialize unw_cursor_t and unw_context_t from REGDISPLAY
@@ -662,36 +651,6 @@ uint64_t GetPC(void* context)
 }
 
 #endif // HOST_AMD64
-
-// Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
-{
-    unw_proc_info_t procInfo;
-
-    if (!GetUnwindProcInfo((PCODE)controlPC, &procInfo))
-    {
-        return false;
-    }
-
-    assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
-
-#if defined(HOST_ARM)
-    // libunwind fills by reference not by value for ARM
-    *lsda = *((uintptr_t *)procInfo.lsda);
-#else
-    *lsda = procInfo.lsda;
-#endif
-    *startAddress = procInfo.start_ip;
-    *endAddress = procInfo.end_ip;
-
-    return true;
-}
-
-// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet)
-{
-    return UnwindHelpers::StepFrame(pRegisterSet);
-}
 
 #ifdef TARGET_ARM64
 

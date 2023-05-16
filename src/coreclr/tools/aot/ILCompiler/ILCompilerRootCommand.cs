@@ -34,6 +34,8 @@ namespace ILCompiler
             new(new[] { "--gdwarf-5" }, "Generate source-level debug information with dwarf version 5");
         public Option<bool> NativeLib { get; } =
             new(new[] { "--nativelib" }, "Compile as static or shared library");
+        public Option<bool> SplitExeInitialization { get; } =
+            new(new[] { "--splitinit" }, "Split initialization of an executable between the library entrypoint and a main entrypoint");
         public Option<string> ExportsFile { get; } =
             new(new[] { "--exportsfile" }, "File to write exported method definitions");
         public Option<string> DgmlLogFileName { get; } =
@@ -66,8 +68,6 @@ namespace ILCompiler
             new(new[] { "--mstat" }, "Generate an mstat file");
         public Option<string> MetadataLogFileName { get; } =
             new(new[] { "--metadatalog" }, "Generate a metadata log file");
-        public Option<bool> NoMetadataBlocking { get; } =
-            new(new[] { "--nometadatablocking" }, "Ignore metadata blocking for internal implementation details");
         public Option<bool> CompleteTypesMetadata { get; } =
             new(new[] { "--completetypemetadata" }, "Generate complete metadata for types");
         public Option<string> ReflectionData { get; } =
@@ -158,6 +158,8 @@ namespace ILCompiler
             new(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method");
         public Option<string> MakeReproPath { get; } =
             new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+        public Option<string[]> UnmanagedEntryPointsAssemblies { get; } =
+            new(new[] { "--generateunmanagedentrypoints" }, Array.Empty<string>, "Generate unmanaged entrypoints for a given assembly");
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -174,6 +176,7 @@ namespace ILCompiler
             AddOption(EnableDebugInfo);
             AddOption(UseDwarf5);
             AddOption(NativeLib);
+            AddOption(SplitExeInitialization);
             AddOption(ExportsFile);
             AddOption(DgmlLogFileName);
             AddOption(GenerateFullDgmlLog);
@@ -190,7 +193,6 @@ namespace ILCompiler
             AddOption(MapFileName);
             AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
-            AddOption(NoMetadataBlocking);
             AddOption(CompleteTypesMetadata);
             AddOption(ReflectionData);
             AddOption(ScanReflection);
@@ -229,6 +231,7 @@ namespace ILCompiler
             AddOption(SingleMethodName);
             AddOption(SingleMethodGenericArgs);
             AddOption(MakeReproPath);
+            AddOption(UnmanagedEntryPointsAssemblies);
 
             this.SetHandler(context =>
             {
@@ -306,7 +309,7 @@ namespace ILCompiler
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
-                string[] ValidOS = new string[] { "windows", "linux", "osx", "freebsd" };
+                string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 

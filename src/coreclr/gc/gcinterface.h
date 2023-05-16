@@ -4,18 +4,18 @@
 #ifndef _GC_INTERFACE_H_
 #define _GC_INTERFACE_H_
 
-// The major version of the GC/EE interface. Breaking changes to this interface
+// The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 6
+#define GC_INTERFACE_MAJOR_VERSION 5
 
-// The minor version of the GC/EE interface. Non-breaking changes are required
+// The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
-// mismatches can still interopate correctly, with some care.
+// mismatches can still interoperate correctly, with some care.
 #define GC_INTERFACE_MINOR_VERSION 1
 
-// The major version of the GC/EE interface. Breaking changes to this interface
+// The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE2_MAJOR_VERSION 6
+#define EE_INTERFACE_MAJOR_VERSION 1
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -472,7 +472,7 @@ typedef enum
      *
      * NOTE: HNDTYPE_WEAK_NATIVE_COM is no longer used in the VM starting .NET 8
      *       but we are keeping it here for backward compatibility purposes"
-     * 
+     *
      */
     HNDTYPE_WEAK_NATIVE_COM   = 9
 } HandleType;
@@ -565,10 +565,14 @@ enum class GCConfigurationType
 {
     Int64,
     StringUtf8,
-    Boolean 
+    Boolean
 };
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
+
+const int REFRESH_MEMORY_SUCCEED = 0;
+const int REFRESH_MEMORY_HARD_LIMIT_TOO_LOW = 1;
+const int REFRESH_MEMORY_HARD_LIMIT_INVALID = 2;
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -718,6 +722,7 @@ public:
 
     // Returns the generation in which obj is found. Also used by the VM
     // in some places, in particular syncblk code.
+    // Returns INT32_MAX if obj belongs to a non-GC heap.
     virtual unsigned WhichGeneration(Object* obj) PURE_VIRTUAL
 
     // Returns the number of GCs that have transpired in the given generation
@@ -973,6 +978,9 @@ public:
 
     // Updates given frozen segment
     virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) PURE_VIRTUAL
+
+    // Refresh the memory limit
+    virtual int RefreshMemoryLimit() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
@@ -984,7 +992,7 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
 
-// keep in sync with GC_ALLOC_FLAGS in GC.cs
+// keep in sync with GC_ALLOC_FLAGS in GC.CoreCLR.cs
 enum GC_ALLOC_FLAGS
 {
     GC_ALLOC_NO_FLAGS           = 0,
@@ -1061,11 +1069,17 @@ struct VersionInfo {
     const char* Name;
 };
 
-typedef void (*GC_VersionInfoFunction)(
+#ifdef TARGET_X86
+#define LOCALGC_CALLCONV __cdecl
+#else
+#define LOCALGC_CALLCONV
+#endif
+
+typedef void (LOCALGC_CALLCONV *GC_VersionInfoFunction)(
     /* Out */ VersionInfo*
 );
 
-typedef HRESULT (*GC_InitializeFunction)(
+typedef HRESULT (LOCALGC_CALLCONV *GC_InitializeFunction)(
     /* In  */ IGCToCLR*,
     /* Out */ IGCHeap**,
     /* Out */ IGCHandleManager**,

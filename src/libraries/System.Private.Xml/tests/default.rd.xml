@@ -1,0 +1,16 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Private.Xml">
+      <Type Name="System.SR">
+
+        <!--
+          This method is not actually reflected on by the tests, but its presence
+          tells the compiler not to optimize away the manifest resource that contains
+          resource strings. The tests do reflect on that one in the ExceptionVerifier class.   
+        -->
+        <Method Name="GetResourceString" Dynamic="Required All" />
+
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

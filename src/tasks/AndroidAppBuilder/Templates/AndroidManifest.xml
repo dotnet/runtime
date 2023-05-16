@@ -3,7 +3,7 @@
           package="%PackageName%"
           a:versionCode="1"
           a:versionName="1.0">
-  <uses-sdk a:minSdkVersion="%MinSdkLevel%" />
+  <uses-sdk a:minSdkVersion="%MinSdkLevel%" a:targetSdkVersion="%TargetSdkVersion%" />
   <uses-permission a:name="android.permission.INTERNET"/>
   <uses-permission a:name="android.permission.READ_EXTERNAL_STORAGE"/>
   <uses-permission a:name="android.permission.WRITE_EXTERNAL_STORAGE"/>

@@ -352,7 +352,7 @@ namespace System.Data.ProviderBase
         private readonly WaitCallback _poolCreateRequest;
 
         private int _waitCount;
-        private PoolWaitHandles _waitHandles;
+        private readonly PoolWaitHandles _waitHandles;
 
         private Exception? _resError;
         private volatile bool _errorOccurred;

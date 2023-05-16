@@ -25,7 +25,7 @@ parameters:
   enablePublishTestResults: false
   enablePublishUsingPipelines: false
   enableBuildRetry: false
-  disableComponentGovernance: false
+  disableComponentGovernance: ''
   componentGovernanceIgnoreDirectories: ''
   mergeTestResults: false
   testRunTitle: ''
@@ -101,7 +101,7 @@ jobs:
     # handle key-value variable syntax.
     # example:
     # - [key]: [value]
-    - ${{ if and(eq(variable.name, ''), eq(variable.group, '')) }}:
+    - ${{ if and(eq(variable.name, ''), eq(variable.group, ''), eq(variable.template, '')) }}:
       - ${{ each pair in variable }}:
         - name: ${{ pair.key }}
           value: ${{ pair.value }}
@@ -134,7 +134,7 @@ jobs:
   - ${{ if and(eq(parameters.runAsPublic, 'false'), eq(variables['System.TeamProject'], 'internal')) }}:
     - task: NuGetAuthenticate@0
 
-  - ${{ if or(eq(parameters.artifacts.download, 'true'), ne(parameters.artifacts.download, '')) }}:
+  - ${{ if and(ne(parameters.artifacts.download, 'false'), ne(parameters.artifacts.download, '')) }}:
     - task: DownloadPipelineArtifact@2
       inputs:
         buildType: current
@@ -155,11 +155,16 @@ jobs:
         uploadRichNavArtifacts: ${{ coalesce(parameters.richCodeNavigationUploadArtifacts, false) }}
       continueOnError: true
 
-  - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.disableComponentGovernance, 'true')) }}:
-      - task: ComponentGovernanceComponentDetection@0
-        continueOnError: true
-        inputs:
-          ignoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
+  - template: /eng/common/templates/steps/component-governance.yml
+    parameters:
+      ${{ if eq(parameters.disableComponentGovernance, '') }}:
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.runAsPublic, 'false'), or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/dotnet/'), startsWith(variables['Build.SourceBranch'], 'refs/heads/microsoft/'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))) }}:
+          disableComponentGovernance: false
+        ${{ else }}:
+          disableComponentGovernance: true
+      ${{ else }}:
+        disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
+      componentGovernanceIgnoreDirectories: ${{ parameters.componentGovernanceIgnoreDirectories }}
 
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
     - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -171,7 +176,7 @@ jobs:
           TeamName: $(_TeamName)
 
   - ${{ if ne(parameters.artifacts.publish, '') }}:
-    - ${{ if or(eq(parameters.artifacts.publish.artifacts, 'true'), ne(parameters.artifacts.publish.artifacts, '')) }}:
+    - ${{ if and(ne(parameters.artifacts.publish.artifacts, 'false'), ne(parameters.artifacts.publish.artifacts, '')) }}:
       - task: CopyFiles@2
         displayName: Gather binaries for publish to artifacts
         inputs:
@@ -192,7 +197,7 @@ jobs:
           ArtifactName: ${{ coalesce(parameters.artifacts.publish.artifacts.name , 'Artifacts_$(Agent.Os)_$(_BuildConfig)') }}
         continueOnError: true
         condition: always()
-    - ${{ if or(eq(parameters.artifacts.publish.logs, 'true'), ne(parameters.artifacts.publish.logs, '')) }}:
+    - ${{ if and(ne(parameters.artifacts.publish.logs, 'false'), ne(parameters.artifacts.publish.logs, '')) }}:
       - publish: artifacts/log
         artifact: ${{ coalesce(parameters.artifacts.publish.logs.name, 'Logs_Build_$(Agent.Os)_$(_BuildConfig)') }}
         displayName: Publish logs

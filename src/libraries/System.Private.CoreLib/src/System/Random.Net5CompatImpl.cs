@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -18,7 +19,7 @@ namespace System
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
             public Net5CompatSeedImpl(int seed) =>
-                _prng = new CompatPrng(seed);
+                _prng.EnsureInitialized(seed);
 
             public override double Sample() => _prng.Sample();
 
@@ -82,7 +83,17 @@ namespace System
 
             public override double NextDouble() => _prng.Sample();
 
-            public override float NextSingle() => (float)_prng.Sample();
+            public override float NextSingle()
+            {
+                while (true)
+                {
+                    float f = (float)_prng.Sample();
+                    if (f < 1.0f) // reject 1.0f, which is rare but possible due to rounding
+                    {
+                        return f;
+                    }
+                }
+            }
 
             public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
 
@@ -98,7 +109,9 @@ namespace System
             /// <summary>Reference to the <see cref="Random"/> containing this implementation instance.</summary>
             /// <remarks>Used to ensure that any calls to other virtual members are performed using the Random-derived instance, if one exists.</remarks>
             private readonly Random _parent;
-            /// <summary>Potentially lazily-initialized algorithm backing this instance.</summary>
+            /// <summary>Seed specified at construction time used to lazily initialize <see cref="_prng"/>.</summary>
+            private readonly int _seed;
+            /// <summary>Lazily-initialized algorithm backing this instance.</summary>
             private CompatPrng _prng; // mutable struct; do not make this readonly
 
             public Net5CompatDerivedImpl(Random parent) : this(parent, Shared.Next()) { }
@@ -106,17 +119,30 @@ namespace System
             public Net5CompatDerivedImpl(Random parent, int seed)
             {
                 _parent = parent;
-                _prng = new CompatPrng(seed);
+                _seed = seed;
             }
 
-            public override double Sample() => _prng.Sample();
+            public override double Sample()
+            {
+                _prng.EnsureInitialized(_seed);
+                return _prng.Sample();
+            }
 
-            public override int Next() => _prng.InternalSample();
+            public override int Next()
+            {
+                _prng.EnsureInitialized(_seed);
+                return _prng.InternalSample();
+            }
 
-            public override int Next(int maxValue) => (int)(_parent.Sample() * maxValue);
+            public override int Next(int maxValue)
+            {
+                _prng.EnsureInitialized(_seed);
+                return (int)(_parent.Sample() * maxValue);
+            }
 
             public override int Next(int minValue, int maxValue)
             {
+                _prng.EnsureInitialized(_seed);
                 long range = (long)maxValue - minValue;
                 return range <= int.MaxValue ?
                     (int)(_parent.Sample() * range) + minValue :
@@ -125,6 +151,7 @@ namespace System
 
             public override long NextInt64()
             {
+                _prng.EnsureInitialized(_seed);
                 while (true)
                 {
                     // Get top 63 bits to get a value in the range [0, long.MaxValue], but try again
@@ -146,6 +173,8 @@ namespace System
 
                 if (exclusiveRange > 1)
                 {
+                    _prng.EnsureInitialized(_seed);
+
                     // Narrow down to the smallest range [0, 2^bits] that contains maxValue - minValue
                     // Then repeatedly generate a value in that outer range until we get one within the inner range.
                     int bits = BitOperations.Log2Ceiling(exclusiveRange);
@@ -169,14 +198,34 @@ namespace System
                 (((ulong)(uint)_parent.Next(1 << 22)) << 22) |
                 (((ulong)(uint)_parent.Next(1 << 20)) << 44);
 
-            public override double NextDouble() => _parent.Sample();
+            public override double NextDouble()
+            {
+                _prng.EnsureInitialized(_seed);
+                return _parent.Sample();
+            }
 
-            public override float NextSingle() => (float)_parent.Sample();
+            public override float NextSingle()
+            {
+                _prng.EnsureInitialized(_seed);
+                while (true)
+                {
+                    float f = (float)_parent.Sample();
+                    if (f < 1.0f) // reject 1.0f, which is rare but possible due to rounding
+                    {
+                        return f;
+                    }
+                }
+            }
 
-            public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
+            public override void NextBytes(byte[] buffer)
+            {
+                _prng.EnsureInitialized(_seed);
+                _prng.NextBytes(buffer);
+            }
 
             public override void NextBytes(Span<byte> buffer)
             {
+                _prng.EnsureInitialized(_seed);
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     buffer[i] = (byte)_parent.Next();
@@ -191,13 +240,25 @@ namespace System
         /// </summary>
         private struct CompatPrng
         {
-            private int[] _seedArray;
+            private int[]? _seedArray;
             private int _inext;
             private int _inextp;
 
-            public CompatPrng(int seed)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [MemberNotNull(nameof(_seedArray))]
+            internal void EnsureInitialized(int seed)
             {
-                // Initialize seed array.
+                if (_seedArray is null)
+                {
+                    Initialize(seed);
+                }
+            }
+
+            [MemberNotNull(nameof(_seedArray))]
+            private void Initialize(int seed)
+            {
+                Debug.Assert(_seedArray is null);
+
                 int[] seedArray = new int[56];
 
                 int subtraction = (seed == int.MinValue) ? int.MaxValue : Math.Abs(seed);
@@ -261,6 +322,8 @@ namespace System
 
             internal int InternalSample()
             {
+                Debug.Assert(_seedArray is not null);
+
                 int locINext = _inext;
                 if (++locINext >= 56)
                 {

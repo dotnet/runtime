@@ -53,7 +53,7 @@ namespace System.Diagnostics
 
                 _traceState = ac.TraceState;
             }
-            else if (parent is string p && p != null)
+            else if (parent is string p)
             {
                 if (IdFormat != ActivityIdFormat.Hierarchical)
                 {

@@ -532,3 +532,152 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         ret
 
 NESTED_END RhpCallFilterFunclet, _TEXT
+
+
+#ifdef FEATURE_OBJCMARSHAL
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// void* FASTCALL RhpCallPropagateExceptionCallback(void* pCallbackContext, void* pCallback, REGDISPLAY* pRegDisplay,
+//                                    ExInfo* pExInfo, PInvokeTransitionFrame* pPreviousTransitionFrame)
+//
+// INPUT:  RDI:  callback context
+//         RSI:  callback
+//         RDX:  REGDISPLAY*
+//         RCX:  ExInfo*
+//         R8 :  pPreviousTransitionFrame
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+NESTED_ENTRY RhpCallPropagateExceptionCallback, _TEXT, NoHandler
+
+        // We could use a simpler prolog, as we don't have to be unwindable by StackFrameIterator::UnwindFuncletInvokeThunk()
+        FUNCLET_CALL_PROLOGUE 6, 1
+
+        locThread       = 0
+        locArg0         = 0x08
+        locArg1         = 0x10
+        locArg2         = 0x18
+        locArg3         = 0x20
+        locArg4         = 0x28
+
+        mov     [rsp + locArg0], rdi                                // save arguments for later
+        mov     [rsp + locArg1], rsi
+        mov     [rsp + locArg2], rdx
+        mov     [rsp + locArg3], rcx
+        mov     [rsp + locArg4], r8
+
+        mov     rbx, rdx
+        INLINE_GETTHREAD
+        mov     rdx, rbx
+
+        mov     [rsp + locThread], rax                              // save Thread* for later
+
+        // Clear the DoNotTriggerGc state before calling out to the propagation callback.
+   lock and     dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], ~TSF_DoNotTriggerGc
+
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     rbx, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     rbp, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     r12, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     r13, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     r14, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     r15, [rax]
+
+#if 0 // _DEBUG  // @TODO: temporarily removed because trashing RBP breaks the debugger
+        // trash the values at the old homes to make sure nobody uses them
+        mov     rcx, 0xbaaddeed
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     [rax], rcx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     [rax], rcx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     [rax], rcx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     [rax], rcx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     [rax], rcx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     [rax], rcx
+#endif
+
+#ifdef _DEBUG
+        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we
+        // have to spill all the preserved registers and then refill them after the call.
+
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     [rdi]                            , rbx
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     [rdi]                            , rbp
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     [rdi]                            , r12
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     [rdi]                            , r13
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     [rdi]                            , r14
+        mov     rdi, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     [rdi]                            , r15
+
+        mov     rdi, [rsp]                                          // rdi <- Thread*
+        mov     rsi, [rsp + locArg3]                                // rsi <- current ExInfo *
+        mov     rdx, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdx  <- resume SP value
+        call    C_FUNC(RhpValidateExInfoPop)
+
+        mov     rdx, [rsp + locArg2]          // rdx <- dispatch context
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     rbx, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     rbp, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     r12, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     r13, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     r14, [rax]
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     r15, [rax]
+
+#endif
+        mov     rsi, [rsp + locThread]                              // rsi <- Thread*
+
+        // We must unhijack the thread at this point because the section of stack where the hijack is applied
+        // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
+        INLINE_THREAD_UNHIJACK rsi, rdi, rcx                        // Thread in rsi, trashes rdi and rcx
+
+        mov     rdi, [rsp + locArg3]                                // rdi <- current ExInfo *
+        mov     rdx, [rdx + OFFSETOF__REGDISPLAY__SP]               // rdx <- resume SP value
+        xor     ecx, ecx                                            // rcx <- 0
+
+LOCAL_LABEL(Propagate_ExInfoLoop):
+        mov     rdi, [rdi + OFFSETOF__ExInfo__m_pPrevExInfo]        // rdi <- next ExInfo
+        cmp     rdi, rcx
+        je      LOCAL_LABEL(Propagate_ExInfoLoopDone)                         // we're done if it's null
+        cmp     rdi, rdx
+        jl      LOCAL_LABEL(Propagate_ExInfoLoop)                             // keep looping if it's lower than the new SP
+
+LOCAL_LABEL(Propagate_ExInfoLoopDone):
+        mov     [rsi + OFFSETOF__Thread__m_pExInfoStackHead], rdi   // store the new head on the Thread
+
+        // Switch to preemptive mode.
+        mov     r8, [rsp + locArg4]
+        mov     [rsi + OFFSETOF__Thread__m_pTransitionFrame], r8
+
+        // reset RSP and RDI and jump to the propagation callback
+        mov     rdi, [rsp + locArg0]                                // rdi <- callback context
+        mov     rax, [rsp + locArg1]                                // rax <- callback
+        mov     rsp, rdx                                            // reset the SP
+        // Don't restore the stack pointer to exact same context. Leave the
+        // return IP on the stack to let the unwinder work if the callback throws
+        // an exception as opposed to failing fast.
+        sub     rsp, 8
+        jmp     rax
+
+NESTED_END RhpCallPropagateExceptionCallback, _TEXT
+
+#endif // FEATURE_OBJCMARSHAL

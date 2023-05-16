@@ -69,10 +69,10 @@ namespace System.Threading
         // After how many yields, check the timeout
         private const int TIMEOUT_CHECK_FREQUENCY = 10;
 
-        // Thr thread tracking disabled mask
+        // The thread tracking disabled mask
         private const int LOCK_ID_DISABLE_MASK = unchecked((int)0x80000000);        // 1000 0000 0000 0000 0000 0000 0000 0000
 
-        // the lock is held by some thread, but we don't know which
+        // The lock is held by some thread, but we don't know which
         private const int LOCK_ANONYMOUS_OWNED = 0x1;                               // 0000 0000 0000 0000 0000 0000 0000 0001
 
         // Waiters mask if the thread tracking is disabled

@@ -31,17 +31,20 @@ unsigned BasicBlock::s_nMaxTrees;
 #endif // DEBUG
 
 #ifdef DEBUG
-flowList* ShuffleHelper(unsigned hash, flowList* res)
+FlowEdge* ShuffleHelper(unsigned hash, FlowEdge* res)
 {
-    flowList* head = res;
-    for (flowList *prev = nullptr; res != nullptr; prev = res, res = res->flNext)
+    FlowEdge* head = res;
+    for (FlowEdge *prev = nullptr; res != nullptr; prev = res, res = res->getNextPredEdge())
     {
-        unsigned blkHash = (hash ^ (res->getBlock()->bbNum << 16) ^ res->getBlock()->bbNum);
+        unsigned blkHash = (hash ^ (res->getSourceBlock()->bbNum << 16) ^ res->getSourceBlock()->bbNum);
         if (((blkHash % 1879) & 1) && prev != nullptr)
         {
             // Swap res with head.
-            prev->flNext = head;
-            std::swap(head->flNext, res->flNext);
+            prev->setNextPredEdge(head);
+            FlowEdge* const resNext  = res->getNextPredEdge();
+            FlowEdge* const headNext = head->getNextPredEdge();
+            head->setNextPredEdge(resNext);
+            res->setNextPredEdge(headNext);
             std::swap(head, res);
         }
     }
@@ -147,10 +150,10 @@ BasicBlock* EHSuccessorIterPosition::Current(Compiler* comp, BasicBlock* block)
     return m_curTry->ExFlowBlock();
 }
 
-flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
+FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 {
-    BlockToFlowListMap* ehPreds = GetBlockToEHPreds();
-    flowList*           res;
+    BlockToFlowEdgeMap* ehPreds = GetBlockToEHPreds();
+    FlowEdge*           res;
     if (ehPreds->Lookup(blk, &res))
     {
         return res;
@@ -165,11 +168,11 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         BasicBlock* tryStart = ehblk->ebdTryBeg;
         for (BasicBlock* const tryStartPredBlock : tryStart->PredBlocks())
         {
-            res = new (this, CMK_FlowList) flowList(tryStartPredBlock, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(tryStartPredBlock, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(flowList);
+            genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
         }
 
@@ -185,11 +188,11 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
         {
             if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {
-                res = new (this, CMK_FlowList) flowList(bb, res);
+                res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
 
 #if MEASURE_BLOCK_SIZE
                 genFlowNodeCnt += 1;
-                genFlowNodeSize += sizeof(flowList);
+                genFlowNodeSize += sizeof(FlowEdge);
 #endif // MEASURE_BLOCK_SIZE
             }
         }
@@ -201,7 +204,6 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
             res = ShuffleHelper(hash, res);
         }
 #endif // DEBUG
-
         ehPreds->Set(blk, res);
     }
     return res;
@@ -260,7 +262,7 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     // Count number or entries.
     //
     int count = 0;
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         count++;
     }
@@ -276,37 +278,37 @@ void BasicBlock::reorderPredList(Compiler* compiler)
     //
     if (compiler->fgPredListSortVector == nullptr)
     {
-        CompAllocator allocator        = compiler->getAllocator(CMK_FlowList);
-        compiler->fgPredListSortVector = new (allocator) jitstd::vector<flowList*>(allocator);
+        CompAllocator allocator        = compiler->getAllocator(CMK_FlowEdge);
+        compiler->fgPredListSortVector = new (allocator) jitstd::vector<FlowEdge*>(allocator);
     }
 
-    jitstd::vector<flowList*>* const sortVector = compiler->fgPredListSortVector;
+    jitstd::vector<FlowEdge*>* const sortVector = compiler->fgPredListSortVector;
     sortVector->clear();
 
     // Fill in the vector from the list.
     //
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         sortVector->push_back(pred);
     }
 
     // Sort by increasing bbNum
     //
-    struct flowListBBNumCmp
+    struct FlowEdgeBBNumCmp
     {
-        bool operator()(const flowList* f1, const flowList* f2)
+        bool operator()(const FlowEdge* f1, const FlowEdge* f2)
         {
-            return f1->getBlock()->bbNum < f2->getBlock()->bbNum;
+            return f1->getSourceBlock()->bbNum < f2->getSourceBlock()->bbNum;
         }
     };
 
-    jitstd::sort(sortVector->begin(), sortVector->end(), flowListBBNumCmp());
+    jitstd::sort(sortVector->begin(), sortVector->end(), FlowEdgeBBNumCmp());
 
     // Rethread the list.
     //
-    flowList* last = nullptr;
+    FlowEdge* last = nullptr;
 
-    for (flowList* current : *sortVector)
+    for (FlowEdge* current : *sortVector)
     {
         if (last == nullptr)
         {
@@ -314,17 +316,21 @@ void BasicBlock::reorderPredList(Compiler* compiler)
         }
         else
         {
-            last->flNext = current;
+            last->setNextPredEdge(current);
         }
 
         last = current;
     }
 
-    last->flNext = nullptr;
+    last->setNextPredEdge(nullptr);
 
-    // Note this lastPred is only used transiently.
+    // Note bbLastPred is only used transiently, during
+    // initial pred list construction.
     //
-    bbLastPred = last;
+    if (!compiler->fgPredsComputed)
+    {
+        bbLastPred = last;
+    }
 }
 
 #ifdef DEBUG
@@ -362,17 +368,9 @@ void BasicBlock::dspBlockILRange() const
 //
 void BasicBlock::dspFlags()
 {
-    if (bbFlags & BBF_VISITED)
-    {
-        printf("v ");
-    }
     if (bbFlags & BBF_MARKED)
     {
         printf("m ");
-    }
-    if (bbFlags & BBF_CHANGED)
-    {
-        printf("! ");
     }
     if (bbFlags & BBF_REMOVED)
     {
@@ -527,57 +525,28 @@ void BasicBlock::dspFlags()
 unsigned BasicBlock::dspPreds()
 {
     unsigned count = 0;
-    for (flowList* const pred : PredEdges())
+    for (FlowEdge* const pred : PredEdges())
     {
         if (count != 0)
         {
             printf(",");
             count += 1;
         }
-        printf(FMT_BB, pred->getBlock()->bbNum);
+        printf(FMT_BB, pred->getSourceBlock()->bbNum);
         count += 4;
 
         // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->getBlock()->bbNum);
+        unsigned digits = CountDigits(pred->getSourceBlock()->bbNum);
         if (digits > 2)
         {
             count += digits - 2;
         }
 
         // Does this predecessor have an interesting dup count? If so, display it.
-        if (pred->flDupCount > 1)
+        if (pred->getDupCount() > 1)
         {
-            printf("(%u)", pred->flDupCount);
-            count += 2 + CountDigits(pred->flDupCount);
-        }
-    }
-    return count;
-}
-
-/*****************************************************************************
- *
- *  Display the bbCheapPreds basic block list (the block predecessors).
- *  Returns the number of characters printed.
- */
-
-unsigned BasicBlock::dspCheapPreds()
-{
-    unsigned count = 0;
-    for (BasicBlockList* pred = bbCheapPreds; pred != nullptr; pred = pred->next)
-    {
-        if (count != 0)
-        {
-            printf(",");
-            count += 1;
-        }
-        printf(FMT_BB, pred->block->bbNum);
-        count += 4;
-
-        // Account for %02u only handling 2 digits, but we can display more than that.
-        unsigned digits = CountDigits(pred->block->bbNum);
-        if (digits > 2)
-        {
-            count += digits - 2;
+            printf("(%u)", pred->getDupCount());
+            count += 2 + CountDigits(pred->getDupCount());
         }
     }
     return count;
@@ -602,7 +571,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -638,6 +607,10 @@ void BasicBlock::dspJumpKind()
     {
         case BBJ_EHFINALLYRET:
             printf(" (finret)");
+            break;
+
+        case BBJ_EHFAULTRET:
+            printf(" (falret)");
             break;
 
         case BBJ_EHFILTERRET:
@@ -731,14 +704,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     if (showPreds)
     {
         printf(", preds={");
-        if (compiler->fgCheapPredsValid)
-        {
-            dspCheapPreds();
-        }
-        else
-        {
-            dspPreds();
-        }
+        dspPreds();
         printf("} succs={");
         dspSuccs(compiler);
         printf("}");
@@ -906,13 +872,15 @@ GenTree* BasicBlock::lastNode() const
 
 BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 {
-    if ((bbPreds == nullptr) || (bbPreds->flNext != nullptr) || (this == compiler->fgFirstBB))
+    assert(compiler->fgPredsComputed);
+
+    if ((bbPreds == nullptr) || (bbPreds->getNextPredEdge() != nullptr) || (this == compiler->fgFirstBB))
     {
         return nullptr;
     }
     else
     {
-        return bbPreds->getBlock();
+        return bbPreds->getSourceBlock();
     }
 }
 
@@ -1059,6 +1027,7 @@ bool BasicBlock::bbFallsThrough() const
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
         case BBJ_EHCATCHRET:
         case BBJ_RETURN:
@@ -1096,6 +1065,7 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             return 0;
 
@@ -1183,23 +1153,17 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
             return 0;
 
         case BBJ_EHFINALLYRET:
-        {
-            // The first block of the handler is labelled with the catch type.
-            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
             {
-                return comp->fgNSuccsOfFinallyRet(this);
-            }
-            else
-            {
-                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                // A FAULT block has no successors.
                 return 0;
             }
-        }
+            return comp->fgNSuccsOfFinallyRet(this);
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1467,16 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-    ++fgBBNumMax;
-
-    if (compIsForInlining())
-    {
-        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
-    }
-    else
-    {
-        block->bbNum = fgBBNumMax;
-    }
+    block->bbNum = ++fgBBNumMax;
 
     if (compRationalIRForm)
     {
@@ -1543,6 +1498,9 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     static_assert_no_msg(BasicBlock::MAX_LOOP_NUM < BasicBlock::NOT_IN_LOOP);
 
     block->bbNatLoopNum = BasicBlock::NOT_IN_LOOP;
+
+    block->bbPreorderNum  = 0;
+    block->bbPostorderNum = 0;
 
     return block;
 }
@@ -1650,16 +1608,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = false;
-    if (bbJumpKind == BBJ_EHFILTERRET)
-    {
-        returnVal = true;
-    }
-
-    if (bbJumpKind == BBJ_EHFINALLYRET)
-    {
-        returnVal = true;
-    }
+    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)
@@ -1712,4 +1661,102 @@ void BasicBlock::unmarkLoopAlign(Compiler* compiler DEBUG_ARG(const char* reason
         bbFlags &= ~BBF_LOOP_ALIGN;
         JITDUMP("Unmarking LOOP_ALIGN from " FMT_BB ". Reason= %s.\n", bbNum, reason);
     }
+}
+
+//------------------------------------------------------------------------
+// getCalledCount: get the value used to normalized weights for this method
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
+//   otherwise it returns the number of times that profile data says the method was called.
+
+// static
+weight_t BasicBlock::getCalledCount(Compiler* comp)
+{
+    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
+    weight_t calledCount = comp->fgCalledCount;
+
+    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
+    // so return a reasonable value to use until we set it.
+    //
+    if (calledCount == 0)
+    {
+        if (comp->fgIsUsingProfileWeights())
+        {
+            // When we use profile data block counts we have exact counts,
+            // not multiples of BB_UNITY_WEIGHT (100)
+            calledCount = 1;
+        }
+        else
+        {
+            calledCount = comp->fgFirstBB->bbWeight;
+
+            if (calledCount == 0)
+            {
+                calledCount = BB_UNITY_WEIGHT;
+            }
+        }
+    }
+    return calledCount;
+}
+
+//------------------------------------------------------------------------
+// getBBWeight: get the normalized weight of this block
+//
+// Arguments:
+//    compiler - Compiler instance
+//
+// Notes:
+//    with profie data: number of expected executions of this block, given
+//    one call to the method
+//
+weight_t BasicBlock::getBBWeight(Compiler* comp)
+{
+    if (this->bbWeight == BB_ZERO_WEIGHT)
+    {
+        return BB_ZERO_WEIGHT;
+    }
+    else
+    {
+        weight_t calledCount = getCalledCount(comp);
+
+        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        //
+        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+
+        return fullResult;
+    }
+}
+
+//------------------------------------------------------------------------
+// bbStackDepthOnEntry: return depth of IL stack at block entry
+//
+unsigned BasicBlock::bbStackDepthOnEntry() const
+{
+    return (bbEntryState ? bbEntryState->esStackDepth : 0);
+}
+
+//------------------------------------------------------------------------
+// bbSetStack: update IL stack for block entry
+//
+// Arguments;
+//   stack - new stack for block
+//
+void BasicBlock::bbSetStack(StackEntry* stack)
+{
+    assert(bbEntryState);
+    assert(stack);
+    bbEntryState->esStack = stack;
+}
+
+//------------------------------------------------------------------------
+// bbStackOnEntry: fetch IL stack for block entry
+//
+StackEntry* BasicBlock::bbStackOnEntry() const
+{
+    assert(bbEntryState);
+    return bbEntryState->esStack;
 }

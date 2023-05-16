@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization.Metadata
                 throw new InvalidOperationException(SR.Format(SR.FieldCannotBeVirtual, nameof(propertyInfo.IsProperty), nameof(propertyInfo.IsVirtual)));
             }
 
-            return new JsonPropertyInfo<T>(propertyInfo, options);
+            return CreatePropertyInfoCore(propertyInfo, options);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(objectInfo));
             }
 
-            return new SourceGenJsonTypeInfo<T>(options, objectInfo);
+            return CreateCore(options, objectInfo);
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowArgumentNullException(nameof(converter));
             }
 
-            JsonTypeInfo<T> info = new SourceGenJsonTypeInfo<T>(converter, options);
+            JsonTypeInfo<T> info = CreateCore<T>(converter, options);
             return info;
         }
     }

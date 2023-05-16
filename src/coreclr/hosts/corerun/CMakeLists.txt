@@ -19,6 +19,7 @@ add_executable_clr(corerun
 
 if(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun
+        PRIVATE
         advapi32.lib
         oleaut32.lib
         uuid.lib
@@ -27,13 +28,13 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_VCRT_LIB}
     )
 else(CLR_CMAKE_HOST_WIN32)
-    target_link_libraries(corerun ${CMAKE_DL_LIBS})
+    target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
     # Required to expose symbols for global symbol discovery
-    target_link_libraries(corerun -rdynamic)
+    target_link_libraries(corerun PRIVATE -rdynamic)
 
     # Android implements pthread natively
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        target_link_libraries(corerun pthread)
+        target_link_libraries(corerun PRIVATE pthread)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 

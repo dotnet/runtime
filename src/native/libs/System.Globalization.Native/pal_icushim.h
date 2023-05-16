@@ -13,6 +13,4 @@ PALEXPORT int32_t GlobalizationNative_GetICUVersion(void);
 
 PALEXPORT int32_t GlobalizationNative_LoadICUData(const char* path);
 
-PALEXPORT const char* GlobalizationNative_GetICUDTName(const char* culture);
-
 #endif

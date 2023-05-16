@@ -22,6 +22,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
@@ -35,6 +37,7 @@
     <Compile Include="..\Common\JsonKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
     <Compile Include="..\Common\JsonSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseLowerNamingPolicy.cs" />
@@ -43,17 +46,24 @@
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
+    <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
-    <Compile Include="ClassType.cs" />
-    <Compile Include="CollectionType.cs" />
     <Compile Include="JsonConstants.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.cs" />
     <Compile Include="JsonSourceGenerator.Emitter.ExceptionMessages.cs" />
     <Compile Include="JsonSourceGenerator.Parser.cs" />
-    <Compile Include="ObjectConstructionStrategy.cs" />
-    <Compile Include="ParameterGenerationSpec.cs" />
-    <Compile Include="PropertyGenerationSpec.cs" />
-    <Compile Include="PropertyInitializerGenerationSpec.cs" />
+    <Compile Include="Model\ClassType.cs" />
+    <Compile Include="Model\CollectionType.cs" />
+    <Compile Include="Model\ContextGenerationSpec.cs" />
+    <Compile Include="Model\ImmutableEquatableArray.cs" />
+    <Compile Include="Model\JsonPrimitiveTypeKind.cs" />
+    <Compile Include="Model\ObjectConstructionStrategy.cs" />
+    <Compile Include="Model\ParameterGenerationSpec.cs" />
+    <Compile Include="Model\PropertyGenerationSpec.cs" />
+    <Compile Include="Model\PropertyInitializerGenerationSpec.cs" />
+    <Compile Include="Model\SourceGenerationSpec.cs" />
+    <Compile Include="Model\TypeGenerationSpec.cs" />
+    <Compile Include="Model\TypeRef.cs" />
     <Compile Include="Reflection\AssemblyWrapper.cs" />
     <Compile Include="Reflection\TypeExtensions.cs" />
     <Compile Include="Reflection\FieldInfoWrapper.cs" />
@@ -67,8 +77,5 @@
     <Compile Include="Reflection\ReflectionExtensions.cs" />
     <Compile Include="Reflection\RoslynExtensions.cs" />
     <Compile Include="Reflection\TypeWrapper.cs" />
-    <Compile Include="ContextGenerationSpec.cs" />
-    <Compile Include="SourceGenerationSpec.cs" />
-    <Compile Include="TypeGenerationSpec.cs" />
   </ItemGroup>
 </Project>

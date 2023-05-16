@@ -434,44 +434,41 @@ namespace System.Text.Json.Serialization.Tests
         public static void ClassWithUnsupportedArray()
         {
             Exception ex = Assert.Throws<NotSupportedException>(() =>
-                JsonSerializer.Deserialize<ClassWithInvalidArray>(@"{""UnsupportedArray"":[]}"));
+                JsonSerializer.Deserialize<ClassWithInvalidArray>(@"{""UnsupportedArray"":[[]]}"));
 
             // The exception contains the type.
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
 
-            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithInvalidArray()));
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithInvalidArray { UnsupportedArray = new int[,] { } }));
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
-            Assert.DoesNotContain("Path: ", ex.Message);
         }
 
         [Fact]
         public static void ClassWithUnsupportedArrayInProperty()
         {
             Exception ex = Assert.Throws<NotSupportedException>(() =>
-                JsonSerializer.Deserialize<ClassWithPropertyToClassWithInvalidArray>(@"{""Inner"":{""UnsupportedArray"":[]}}"));
+                JsonSerializer.Deserialize<ClassWithPropertyToClassWithInvalidArray>(@"{""Inner"":{""UnsupportedArray"":[[]]}}"));
 
             // The exception contains the type and Path.
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
-            Assert.Contains("Path: $.Inner | LineNumber: 0 | BytePositionInLine: 10.", ex.Message);
+            Assert.Contains("Path: $.Inner.UnsupportedArray | LineNumber: 0 | BytePositionInLine: 30.", ex.Message);
 
             ex = Assert.Throws<NotSupportedException>(() =>
-                JsonSerializer.Serialize(new ClassWithPropertyToClassWithInvalidArray()));
+                JsonSerializer.Serialize(new ClassWithPropertyToClassWithInvalidArray { Inner = new() { UnsupportedArray = new int[,] { } } }));
 
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
-            Assert.Contains(typeof(ClassWithInvalidArray).ToString(), ex.Message);
-            Assert.Contains("Path: $.Inner.", ex.Message);
+            Assert.Contains("Path: $.Inner.UnsupportedArray", ex.Message);
 
             // The original exception contains the type.
             Assert.NotNull(ex.InnerException);
             Assert.Contains(typeof(int[,]).ToString(), ex.InnerException.Message);
-            Assert.DoesNotContain("Path: ", ex.InnerException.Message);
         }
 
         [Fact]
         public static void ClassWithUnsupportedDictionary()
         {
             Exception ex = Assert.Throws<NotSupportedException>(() =>
-                JsonSerializer.Deserialize<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{}}"));
+                JsonSerializer.Deserialize<ClassWithInvalidDictionary>(@"{""UnsupportedDictionary"":{""key"":{}}}"));
 
             Assert.Contains("System.Int32[,]", ex.Message);
 
@@ -487,7 +484,7 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(obj);
             Assert.Equal(@"{""UnsupportedDictionary"":null}", json);
 
-            obj.UnsupportedDictionary = new Dictionary<string, int[,]>();
+            obj.UnsupportedDictionary = new Dictionary<string, int[,]> { ["key"] = new int[,] { } };
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj));
 
             // The exception contains the type and Path.
@@ -497,7 +494,6 @@ namespace System.Text.Json.Serialization.Tests
             // The original exception contains the type.
             Assert.NotNull(ex.InnerException);
             Assert.Contains(typeof(int[,]).ToString(), ex.InnerException.Message);
-            Assert.DoesNotContain("Path: ", ex.InnerException.Message);
         }
 
         [Fact]
@@ -507,9 +503,7 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Deserialize<int[,]>(@"[]"));
 
             Assert.Contains(typeof(int[,]).ToString(), ex.Message);
-
-            // Root-level Types (not from a property) do not include the Path.
-            Assert.DoesNotContain("Path: $", ex.Message);
+            Assert.Contains("Path: $", ex.Message);
         }
 
         [Theory]

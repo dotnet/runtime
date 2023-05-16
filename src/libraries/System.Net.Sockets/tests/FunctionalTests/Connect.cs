@@ -195,6 +195,28 @@ namespace System.Net.Sockets.Tests
                 }
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
+
+        [OuterLoop("Connection failure takes long on Windows.")]
+        [Fact]
+        public async Task Connect_WithoutListener_ThrowSocketExceptionWithAppropriateInfo()
+        {
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+                return socket;
+            });
+            Socket a = portBlocker.MainSocket;
+            using Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(b, a.LocalEndPoint));
+            Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
+
+            if (UsesSync)
+            {
+                Assert.Contains(a.LocalEndPoint.ToString(), ex.Message);
+            }
+        }
     }
 
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
@@ -215,29 +237,6 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
         public ConnectTask(ITestOutputHelper output) : base(output) {}
-
-        [OuterLoop]
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79820", TestPlatforms.Linux | TestPlatforms.Android)]
-        public static void Connect_ThrowSocketException_Success()
-        {
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                int anonymousPort = socket.BindToAnonymousPort(IPAddress.Loopback);
-                IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, anonymousPort);
-                Assert.ThrowsAsync<SocketException>(() => socket.ConnectAsync(ep));
-                try
-                {
-                    socket.Connect(ep);
-                    Assert.Fail("Socket Connect should throw SocketException in this case.");
-                }
-                catch (SocketException ex)
-                {
-                    Assert.Contains(Marshal.GetPInvokeErrorMessage(ex.NativeErrorCode), ex.Message);
-                    Assert.Contains(ep.ToString(), ex.Message);
-                }
-            }
-        }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>

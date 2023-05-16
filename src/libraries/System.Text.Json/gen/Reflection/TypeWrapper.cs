@@ -19,9 +19,9 @@ namespace System.Text.Json.Reflection
 
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 
-        private INamedTypeSymbol? _namedTypeSymbol;
+        private readonly INamedTypeSymbol? _namedTypeSymbol;
 
-        private IArrayTypeSymbol? _arrayTypeSymbol;
+        private readonly IArrayTypeSymbol? _arrayTypeSymbol;
 
         private Type? _elementType;
 
@@ -32,6 +32,8 @@ namespace System.Text.Json.Reflection
             _namedTypeSymbol = _typeSymbol as INamedTypeSymbol;
             _arrayTypeSymbol = _typeSymbol as IArrayTypeSymbol;
         }
+
+        public ITypeSymbol Symbol => _typeSymbol;
 
         public override Assembly Assembly => new AssemblyWrapper(_typeSymbol.ContainingAssembly, _metadataLoadContext);
 
@@ -132,7 +134,8 @@ namespace System.Text.Json.Reflection
                     }
                     else if (IsArray)
                     {
-                        sb.Append(GetElementType().FullName + "[]");
+                        int rank = GetArrayRank();
+                        sb.Append(GetElementType().FullName + FormatArrayTypeNameSuffix(rank));
                     }
                     else
                     {
@@ -209,9 +212,12 @@ namespace System.Text.Json.Reflection
                 }
 
                 Type elementType = GetElementType();
-                return elementType.Name + "[]";
+                int rank = GetArrayRank();
+                return elementType.Name + FormatArrayTypeNameSuffix(rank);
             }
         }
+
+        internal static string FormatArrayTypeNameSuffix(int rank) => rank == 1 ? "[]" : $"[{new string(',', rank - 1)}]";
 
         public string SimpleName => _typeSymbol.Name;
 

@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Threading;
+using Xunit;
 
 public struct Struct
 {
@@ -15,7 +16,8 @@ public class Program
     [ThreadStatic]
     private static Struct TSStruct;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if(TSStruct.a != 0 || TSStruct.b != 0)
             return 101;

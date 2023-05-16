@@ -12,12 +12,10 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		{
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentNullException (nameof (assemblyFileName));
-			if (type == null)
-				throw new ArgumentNullException (nameof (type));
+			ArgumentNullException.ThrowIfNull (type);
 			if (string.IsNullOrEmpty (memberName))
 				throw new ArgumentNullException (nameof (memberName));
-			if (opCodes == null)
-				throw new ArgumentNullException (nameof (opCodes));
+			ArgumentNullException.ThrowIfNull (opCodes);
 		}
 
 		public ExpectedInstructionSequenceOnMemberInAssemblyAttribute (string assemblyFileName, string typeName, string memberName, string[] opCodes)
@@ -28,8 +26,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 				throw new ArgumentNullException (nameof (typeName));
 			if (string.IsNullOrEmpty (memberName))
 				throw new ArgumentNullException (nameof (memberName));
-			if (opCodes == null)
-				throw new ArgumentNullException (nameof (opCodes));
+			ArgumentNullException.ThrowIfNull (opCodes);
 		}
 	}
 }

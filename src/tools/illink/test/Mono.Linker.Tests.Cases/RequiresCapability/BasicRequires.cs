@@ -33,11 +33,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestRequiresFromNameOf ();
 			OnEventMethod.Test ();
 			RequiresOnGenerics.Test ();
+			AssemblyFilesOnly.Test ();
+			DynamicCodeOnly.Test ();
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageOnly--.")]
-		[ExpectedWarning ("IL3002", "Message for --RequiresWithMessageOnly--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Message for --RequiresWithMessageOnly--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3002", "Message for --RequiresWithMessageOnly--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Message for --RequiresWithMessageOnly--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestRequiresWithMessageOnlyOnMethod ()
 		{
 			RequiresWithMessageOnly ();
@@ -51,8 +53,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl")]
-		[ExpectedWarning ("IL3002", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3002", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Message for --RequiresWithMessageAndUrl--.", "https://helpurl", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestRequiresWithMessageAndUrlOnMethod ()
 		{
 			RequiresWithMessageAndUrl ();
@@ -66,8 +68,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "Message for --ConstructorRequires--.")]
-		[ExpectedWarning ("IL3002", "Message for --ConstructorRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Message for --ConstructorRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3002", "Message for --ConstructorRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Message for --ConstructorRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestRequiresOnConstructor ()
 		{
 			new ConstructorRequires ();
@@ -85,10 +87,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[ExpectedWarning ("IL2026", "Message for --getter PropertyRequires--.")]
 		[ExpectedWarning ("IL2026", "Message for --setter PropertyRequires--.")]
-		[ExpectedWarning ("IL3002", "Message for --getter PropertyRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3002", "Message for --setter PropertyRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Message for --getter PropertyRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Message for --setter PropertyRequires--.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL3002", "Message for --getter PropertyRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "Message for --setter PropertyRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Message for --getter PropertyRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Message for --setter PropertyRequires--.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestRequiresOnPropertyGetterAndSetter ()
 		{
 			_ = PropertyRequires;
@@ -107,32 +109,32 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			set { }
 		}
 
-		[RequiresUnreferencedCode ("Linker adds a trailing period to this message")]
-		[RequiresAssemblyFiles ("Linker adds a trailing period to this message")]
-		[RequiresDynamicCode ("Linker adds a trailing period to this message")]
+		[RequiresUnreferencedCode ("Adds a trailing period to this message")]
+		[RequiresAssemblyFiles ("Adds a trailing period to this message")]
+		[RequiresDynamicCode ("Adds a trailing period to this message")]
 		static void WarningMessageWithoutEndingPeriod ()
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "Linker adds a trailing period to this message.")]
-		[ExpectedWarning ("IL3002", "Linker adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Linker adds a trailing period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[ExpectedWarning ("IL2026", "Adds a trailing period to this message.")]
+		[ExpectedWarning ("IL3002", "Adds a trailing period to this message.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Adds a trailing period to this message.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestThatTrailingPeriodIsAddedToMessage ()
 		{
 			WarningMessageWithoutEndingPeriod ();
 		}
 
-		[RequiresUnreferencedCode ("Linker does not add a period to this message.")]
-		[RequiresAssemblyFiles ("Linker does not add a period to this message.")]
-		[RequiresDynamicCode ("Linker does not add a period to this message.")]
+		[RequiresUnreferencedCode ("Does not add a period to this message.")]
+		[RequiresAssemblyFiles ("Does not add a period to this message.")]
+		[RequiresDynamicCode ("Does not add a period to this message.")]
 		static void WarningMessageEndsWithPeriod ()
 		{
 		}
 
-		[LogDoesNotContain ("Linker does not add a period to this message..")]
-		[ExpectedWarning ("IL2026", "Linker does not add a period to this message.")]
-		[ExpectedWarning ("IL3002", "Linker does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-		[ExpectedWarning ("IL3050", "Linker does not add a period to this message.", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+		[LogDoesNotContain ("Does not add a period to this message..")]
+		[ExpectedWarning ("IL2026", "Does not add a period to this message.")]
+		[ExpectedWarning ("IL3002", "Does not add a period to this message.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3050", "Does not add a period to this message.", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 		static void TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ()
 		{
 			WarningMessageEndsWithPeriod ();
@@ -145,8 +147,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class OnEventMethod
 		{
-			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
@@ -155,8 +157,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				remove { }
 			}
 
-			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = Tool.Trimmer)]
 			static event EventHandler EventToTestAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 				[RequiresAssemblyFiles ("Message for --EventToTestAdd.add--")]
@@ -166,11 +168,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
-			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL3002", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--EventToTestRemove.remove--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--")]
-			[ExpectedWarning ("IL3002", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
-			[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Analyzer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL3002", "--EventToTestAdd.add--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--EventToTestAdd.add--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void Test ()
 			{
 				EventToTestRemove -= (sender, e) => { };
@@ -188,10 +190,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static void GenericTypeWithStaticMethodWhichRequires () { }
 			}
 
-			// NativeAot is missing ldftn detection: https://github.com/dotnet/runtime/issues/68786
-			[ExpectedWarning ("IL2026", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Trimmer | ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL2026", "--GenericTypeWithStaticMethodWhichRequires--")]
+			[ExpectedWarning ("IL3002", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--GenericTypeWithStaticMethodWhichRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static void GenericTypeWithStaticMethodViaLdftn ()
 			{
 				var _ = new Action (GenericWithStaticMethod<TestType>.GenericTypeWithStaticMethodWhichRequires);
@@ -206,6 +207,54 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				GenericTypeWithStaticMethodViaLdftn ();
 				MakeNew2<TestType> ();
+			}
+		}
+
+		class AssemblyFilesOnly
+		{
+			[RequiresAssemblyFiles ("--Requires--")]
+			static void Requires () { }
+
+			[RequiresAssemblyFiles ("--PropertyRequires--")]
+			static int PropertyRequires { get; set; }
+
+			[ExpectedWarning ("IL3002", "--PropertyRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--PropertyRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestProperty ()
+			{
+				var a = PropertyRequires;
+				PropertyRequires = 0;
+			}
+
+			[RequiresAssemblyFiles ("--EventRequires--")]
+			static event EventHandler EventRequires;
+
+			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--EventRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestEvent ()
+			{
+				EventRequires += (object sender, EventArgs e) => throw new NotImplementedException ();
+				EventRequires -= (object sender, EventArgs e) => throw new NotImplementedException ();
+			}
+
+			[ExpectedWarning("IL3002", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			public static void Test()
+			{
+				Requires ();
+				TestProperty ();
+				TestEvent ();
+			}
+		}
+
+		class DynamicCodeOnly
+		{
+			[RequiresDynamicCode ("--Requires--")]
+			static void Requires () { }
+
+			[ExpectedWarning ("IL3050", "--Requires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			public static void Test ()
+			{
+				Requires ();
 			}
 		}
 	}

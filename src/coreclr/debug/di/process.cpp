@@ -414,11 +414,11 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-            size_t pathLen = wcslen(mutableFilePath);
+            size_t pathLen = u16_strlen(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
             const WCHAR *niexe = W(".ni.exe");
-            const size_t dllLen = wcslen(nidll);  // used for ni.exe as well
+            const size_t dllLen = u16_strlen(nidll);  // used for ni.exe as well
 
             if (pathLen > dllLen && _wcsicmp(mutableFilePath+pathLen-dllLen, nidll) == 0)
             {
@@ -1001,7 +1001,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     // On Debug builds, we'll ASSERT by default whenever the target appears to be corrupt or
     // otherwise inconsistent (both in DAC and DBI).  But we also need the ability to
     // explicitly test corrupt targets.
-    // Tests should set COMPlus_DbgIgnoreInconsistentTarget=1 to suppress these asserts
+    // Tests should set DOTNET_DbgIgnoreInconsistentTarget=1 to suppress these asserts
     // Note that this controls two things:
     //     1) DAC behavior - see code:IDacDbiInterface::DacSetTargetConsistencyChecks
     //     2) RS-only consistency asserts - see code:CordbProcess::TargetConsistencyCheck
@@ -6438,7 +6438,7 @@ HRESULT CordbProcess::GetThreadContext(DWORD threadID, ULONG32 contextSize, BYTE
 
     DT_CONTEXT * pContext;
 
-    if (contextSize != sizeof(DT_CONTEXT))
+    if (contextSize < sizeof(DT_CONTEXT))
     {
         LOG((LF_CORDB, LL_INFO10000, "CP::GTC: thread=0x%x, context size is invalid.\n", threadID));
         return E_INVALIDARG;
@@ -9617,9 +9617,9 @@ void Ls_Rs_StringBuffer::CopyLSDataToRS(ICorDebugDataTarget * pTarget)
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
     }
 
-    // Now we know it's safe to call wcslen. The buffer is local, so we know the pages are there.
+    // Now we know it's safe to call u16_strlen. The buffer is local, so we know the pages are there.
     // And we know there's a null capping the max length of the string.
-    SIZE_T dwActualLenWithNull = wcslen(pString) + 1;
+    SIZE_T dwActualLenWithNull = u16_strlen(pString) + 1;
     if (dwActualLenWithNull != dwExpectedLenWithNull)
     {
         ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
@@ -11179,10 +11179,10 @@ void CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         ThrowHR(HRESULT_FROM_GetLastError());
     }
 
-    CONTEXT context = { 0 };
+    DT_CONTEXT context = { 0 };
     context.ContextFlags = CONTEXT_FULL;
 
-    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(CONTEXT), reinterpret_cast<BYTE*> (&context));
+    HRESULT hr = GetDataTarget()->GetThreadContext(dwThreadId, CONTEXT_FULL, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&context));
     IfFailThrow(hr);
 
     TADDR lsContextAddr = (TADDR)context.Rcx;

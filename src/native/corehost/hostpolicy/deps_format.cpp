@@ -39,12 +39,71 @@ namespace
 
         return path;
     }
+
+    void populate_rid_fallback_graph(const json_parser_t::value_t& json, deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
+    {
+        const auto& json_object = json.GetObject();
+        if (json_object.HasMember(_X("runtimes")))
+        {
+            for (const auto& rid : json[_X("runtimes")].GetObject())
+            {
+                auto& vec = rid_fallback_graph[rid.name.GetString()];
+                const auto& fallback_array = rid.value.GetArray();
+                vec.reserve(fallback_array.Size());
+                for (const auto& fallback : fallback_array)
+                {
+                    vec.push_back(fallback.GetString());
+                }
+            }
+        }
+
+        if (trace::is_enabled())
+        {
+            trace::verbose(_X("The rid fallback graph is: {"));
+            for (const auto& rid : rid_fallback_graph)
+            {
+                trace::verbose(_X("%s => ["), rid.first.c_str());
+                for (const auto& fallback : rid.second)
+                {
+                    trace::verbose(_X("%s, "), fallback.c_str());
+                }
+                trace::verbose(_X("]"));
+            }
+            trace::verbose(_X("}"));
+        }
+    }
+
+    bool deps_file_exists(pal::string_t& deps_path)
+    {
+        if (bundle::info_t::config_t::probe(deps_path) || pal::realpath(&deps_path, /*skip_error_logging*/ true))
+            return true;
+
+        trace::verbose(_X("Dependencies manifest does not exist at [%s]"), deps_path.c_str());
+        return false;
+    }
+}
+
+deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(const pal::string_t& deps_path)
+{
+    rid_fallback_graph_t rid_fallback_graph;
+    trace::verbose(_X("Getting RID fallback graph for deps file... %s"), deps_path.c_str());
+
+    pal::string_t deps_path_local = deps_path;
+    if (!deps_file_exists(deps_path_local))
+        return rid_fallback_graph;
+
+    json_parser_t json;
+    if (!json.parse_file(deps_path_local))
+        return rid_fallback_graph;
+
+    populate_rid_fallback_graph(json.document(), rid_fallback_graph);
+    return rid_fallback_graph;
 }
 
 void deps_json_t::reconcile_libraries_with_targets(
     const pal::string_t& deps_path,
     const json_parser_t::value_t& json,
-    const std::function<bool(const pal::string_t&)>& library_exists_fn,
+    const std::function<bool(const pal::string_t&)>& library_has_assets_fn,
     const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn)
 {
     pal::string_t deps_file = get_filename(deps_path);
@@ -54,9 +113,9 @@ void deps_json_t::reconcile_libraries_with_targets(
         trace::info(_X("Reconciling library %s"), library.name.GetString());
 
         pal::string_t lib_name{library.name.GetString()};
-        if (!library_exists_fn(lib_name))
+        if (!library_has_assets_fn(lib_name))
         {
-            trace::info(_X("Library %s does not exist"), library.name.GetString());
+            trace::info(_X("  No assets for library %s"), library.name.GetString());
             continue;
         }
 
@@ -66,11 +125,21 @@ void deps_json_t::reconcile_libraries_with_targets(
         pal::string_t library_path = get_optional_path(library.value, _X("path"));
         pal::string_t library_hash_path = get_optional_path(library.value, _X("hashPath"));
         pal::string_t runtime_store_manifest_list = get_optional_path(library.value, _X("runtimeStoreManifestName"));
+        pal::string_t library_type = to_lower(library.value[_X("type")].GetString());
 
+        size_t pos = lib_name.find(_X("/"));
+        pal::string_t library_name = lib_name.substr(0, pos);
+        pal::string_t library_version = lib_name.substr(pos + 1);
+
+        trace::info(_X("  %s: %s, version: %s"), library_type.c_str(), library_name.c_str(), library_version.c_str());
         for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             bool rid_specific = false;
             const vec_asset_t& assets = get_assets_fn(lib_name, i, &rid_specific);
+            if (assets.empty())
+                continue;
+
+            trace::info(_X("  Adding %s assets"), deps_entry_t::s_known_asset_types[i]);
             m_deps_entries[i].reserve(assets.size());
             for (const auto& asset : assets)
             {
@@ -81,10 +150,9 @@ void deps_json_t::reconcile_libraries_with_targets(
                 }
 
                 deps_entry_t entry;
-                size_t pos = lib_name.find(_X("/"));
-                entry.library_name = lib_name.substr(0, pos);
-                entry.library_version = lib_name.substr(pos + 1);
-                entry.library_type = to_lower(library.value[_X("type")].GetString());
+                entry.library_name = library_name;
+                entry.library_version = library_version;
+                entry.library_type = library_type;
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
@@ -98,13 +166,9 @@ void deps_json_t::reconcile_libraries_with_targets(
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("Parsed %s deps entry %zu for asset name: %s from %s: %s, library version: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
-                        deps_entry_t::s_known_asset_types[i],
-                        m_deps_entries[i].size() - 1,
+                    trace::info(_X("    Entry %zu for asset name: %s, relpath: %s, assemblyVersion %s, fileVersion %s"),
+                        m_deps_entries[i].size(),
                         entry.asset.name.c_str(),
-                        entry.library_type.c_str(),
-                        entry.library_name.c_str(),
-                        entry.library_version.c_str(),
                         entry.asset.relative_path.c_str(),
                         entry.asset.assembly_version.as_str().c_str(),
                         entry.asset.file_version.as_str().c_str());
@@ -144,9 +208,13 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
 
     for (auto& package : portable_assets->libs)
     {
+        trace::verbose(_X("Filtering RID assets for %s"), package.first.c_str());
         for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::asset_types::count; asset_type_index++)
         {
             auto& rid_assets = package.second[asset_type_index].rid_assets;
+            if (rid_assets.empty())
+                continue;
+
             pal::string_t matched_rid = rid_assets.count(host_rid) ? host_rid : _X("");
             if (matched_rid.empty())
             {
@@ -170,20 +238,17 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
 
             if (matched_rid.empty())
             {
+                trace::verbose(_X("  No matching %s assets for package %s"), deps_entry_t::s_known_asset_types[asset_type_index], package.first.c_str());
                 rid_assets.clear();
+                continue;
             }
 
+            trace::verbose(_X("  Matched RID %s for %s assets"), matched_rid.c_str(), deps_entry_t::s_known_asset_types[asset_type_index]);
             for (auto iter = rid_assets.begin(); iter != rid_assets.end(); /* */)
             {
                 if (iter->first != matched_rid)
                 {
-                    trace::verbose(
-                        _X("Chose %s, so removing rid (%s) specific assets for package %s and asset type %s"),
-                        matched_rid.c_str(),
-                        iter->first.c_str(),
-                        package.first.c_str(),
-                        deps_entry_t::s_known_asset_types[asset_type_index]);
-
+                    trace::verbose(_X("    Removing %s assets"),iter->first.c_str(), package.first.c_str());
                     iter = rid_assets.erase(iter);
                 }
                 else
@@ -205,6 +270,8 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
         {
             continue;
         }
+
+        trace::info(_X("Processing runtimeTargets for package %s"), package.name.GetString());
 
         for (const auto& file : runtimeTargets->value.GetObject())
         {
@@ -238,13 +305,12 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
+                    trace::info(_X("  %s asset: %s rid=%s assemblyVersion=%s fileVersion=%s"),
                         deps_entry_t::s_known_asset_types[asset_type_index],
                         asset.relative_path.c_str(),
                         rid,
                         asset.assembly_version.as_str().c_str(),
-                        asset.file_version.as_str().c_str(),
-                        package.name.GetString());
+                        asset.file_version.as_str().c_str());
                 }
 
                 assets.libs[package.name.GetString()][asset_type_index].rid_assets[rid].push_back(asset);
@@ -260,6 +326,8 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
     deps_assets_t& assets = *p_assets;
     for (const auto& package : json[_X("targets")][target_name.c_str()].GetObject())
     {
+        trace::info(_X("Processing package %s"), package.name.GetString());
+
         const auto& asset_types = package.value.GetObject();
         for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
@@ -269,6 +337,7 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
                 continue;
             }
 
+            trace::info(_X("  Adding %s assets"), deps_entry_t::s_known_asset_types[i]);
             const auto& files = iter->value.GetObject();
             vec_asset_t& asset_files = assets.libs[package.name.GetString()][i];
             asset_files.reserve(files.MemberCount());
@@ -293,12 +362,10 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
 
                 if (trace::is_enabled())
                 {
-                    trace::info(_X("Adding %s asset %s assemblyVersion=%s fileVersion=%s from %s"),
-                        deps_entry_t::s_known_asset_types[i],
+                    trace::info(_X("    %s assemblyVersion=%s fileVersion=%s"),
                         asset.relative_path.c_str(),
                         asset.assembly_version.as_str().c_str(),
-                        asset.file_version.as_str().c_str(),
-                        package.name.GetString());
+                        asset.file_version.as_str().c_str());
                 }
 
                 asset_files.push_back(std::move(asset));
@@ -359,36 +426,7 @@ void deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
     };
 
     reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
-
-    const auto& json_object = json.GetObject();
-    if (json_object.HasMember(_X("runtimes")))
-    {
-        for (const auto& rid : json[_X("runtimes")].GetObject())
-        {
-            auto& vec = m_rid_fallback_graph[rid.name.GetString()];
-            const auto& fallback_array = rid.value.GetArray();
-            vec.reserve(fallback_array.Size());
-            for (const auto& fallback : fallback_array)
-            {
-                vec.push_back(fallback.GetString());
-            }
-        }
-    }
-
-    if (trace::is_enabled())
-    {
-        trace::verbose(_X("The rid fallback graph is: {"));
-        for (const auto& rid : m_rid_fallback_graph)
-        {
-            trace::verbose(_X("%s => ["), rid.first.c_str());
-            for (const auto& fallback : rid.second)
-            {
-                trace::verbose(_X("%s, "), fallback.c_str());
-            }
-            trace::verbose(_X("]"));
-        }
-        trace::verbose(_X("}"));
-    }
+    populate_rid_fallback_graph(json, m_rid_fallback_graph);
 }
 
 bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
@@ -421,17 +459,16 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
 {
     m_deps_file = deps_path;
-    m_file_exists = bundle::info_t::config_t::probe(deps_path) || pal::realpath(&m_deps_file, true);
+    m_file_exists = deps_file_exists(m_deps_file);
 
-    json_parser_t json;
     if (!m_file_exists)
     {
-        // If file doesn't exist, then assume parsed.
-        trace::verbose(_X("Could not locate the dependencies manifest file [%s]. Some libraries may fail to resolve."), deps_path.c_str());
+        // Not existing is valid
         m_valid = true;
         return;
     }
 
+    json_parser_t json;
     if (!json.parse_file(m_deps_file))
         return;
 

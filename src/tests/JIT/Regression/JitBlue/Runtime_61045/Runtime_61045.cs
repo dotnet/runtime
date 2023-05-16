@@ -13,11 +13,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_61045
 {
     public static byte[] s_1;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

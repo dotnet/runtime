@@ -21,6 +21,30 @@ dotnet_diagnostic.BCL0015.severity = none
 # BCL0020: Invalid SR.Format call
 dotnet_diagnostic.BCL0020.severity = none
 
+# SYSLIB1045: Convert to 'GeneratedRegexAttribute'.
+dotnet_diagnostic.SYSLIB1045.severity = none
+
+# SYSLIB1054: Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+dotnet_diagnostic.SYSLIB1054.severity = none
+
+# SYSLIB1055: Invalid 'CustomMarshallerAttribute' usage
+dotnet_diagnostic.SYSLIB1055.severity = error
+
+# SYSLIB1056:Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1056.severity = error
+
+# SYSLIB1057: Marshaller type does not have the required shape
+dotnet_diagnostic.SYSLIB1057.severity = error
+
+# SYSLIB1058: Invalid 'NativeMarshallingAttribute' usage
+dotnet_diagnostic.SYSLIB1058.severity = error
+
+# SYSLIB1060: Specified marshaller type is invalid
+dotnet_diagnostic.SYSLIB1060.severity = error
+
+# SYSLIB1061: Marshaller type has incompatible method signatures
+dotnet_diagnostic.SYSLIB1061.severity = error
+
 # CA1000: Do not declare static members on generic types
 dotnet_diagnostic.CA1000.severity = none
 
@@ -438,6 +462,12 @@ dotnet_diagnostic.CA1857.severity = none
 # CA1858: Use 'StartsWith' instead of 'IndexOf'
 dotnet_diagnostic.CA1858.severity = none
 
+# CA1859: Use concrete types when possible for improved performance
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1860: Avoid using 'Enumerable.Any()' extension method
+dotnet_diagnostic.CA1860.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -480,8 +510,11 @@ dotnet_diagnostic.CA2018.severity = none
 # CA2019: Improper 'ThreadStatic' field initialization
 dotnet_diagnostic.CA2019.severity = none
 
-# CA2020: Prevent behavioral changes
+# CA2020: Prevent behavioral change
 dotnet_diagnostic.CA2020.severity = none
+
+# CA2021: Do not call Enumerable.Cast<T> or Enumerable.OfType<T> with incompatible types
+dotnet_diagnostic.CA2021.severity = none
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -732,7 +765,7 @@ dotnet_diagnostic.CA3061.severity = none
 # CA3075: Insecure DTD processing in XML
 dotnet_diagnostic.CA3075.severity = none
 
-# CA3076: Insecure XSLT script processing.
+# CA3076: Insecure XSLT script processing
 dotnet_diagnostic.CA3076.severity = none
 
 # CA3077: Insecure Processing in API Design, XmlDocument and XmlTextReader
@@ -1619,6 +1652,15 @@ dotnet_diagnostic.IDE0241.severity = silent
 
 # IDE0250: Make struct readonly
 dotnet_diagnostic.IDE0250.severity = silent
+
+# IDE0260: Use pattern matching
+dotnet_diagnostic.IDE0260.severity = silent
+
+# IDE0270: Use coalesce expression
+dotnet_diagnostic.IDE0270.severity = silent
+
+# IDE0280: Use 'nameof'
+dotnet_diagnostic.IDE0280.severity = silent
 
 # IDE1005: Delegate invocation can be simplified.
 dotnet_diagnostic.IDE1005.severity = silent

@@ -64,7 +64,7 @@ namespace Internal.Reflection.Execution
             return null;
         }
 
-        private static unsafe Stream ReadResourceFromBlob(ResourceInfo resourceInfo)
+        private static unsafe UnmanagedMemoryStream ReadResourceFromBlob(ResourceInfo resourceInfo)
         {
             byte* pBlob;
             uint cbBlob;

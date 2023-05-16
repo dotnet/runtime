@@ -109,7 +109,7 @@ namespace ILLink.RoslynAnalyzer
 			switch (symbol) {
 			case IFieldSymbol fieldSymbol:
 				sb.Append (fieldSymbol.ContainingSymbol.ToDisplayString (ILLinkTypeDisplayFormat));
-				sb.Append (".");
+				sb.Append ('.');
 				sb.Append (fieldSymbol.MetadataName);
 				break;
 
@@ -131,7 +131,7 @@ namespace ILLink.RoslynAnalyzer
 					// don't include the containing type's name. This matches the behavior of
 					// CSharpErrorMessageFormat.
 					sb.Append (methodSymbol.ContainingType.ToDisplayString (ILLinkTypeDisplayFormat));
-					sb.Append (".");
+					sb.Append ('.');
 				}
 				// Format parameter types with only type names.
 				sb.Append (methodSymbol.ToDisplayString (ILLinkMemberDisplayFormat));

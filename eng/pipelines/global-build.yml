@@ -12,7 +12,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
     - '**.md'
@@ -91,7 +90,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             testGroup: innerloop
             nameSuffix: Runtime_Release
@@ -112,7 +111,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             testGroup: innerloop
             nameSuffix: RuntimeFlavor_Mono
@@ -152,7 +151,7 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
           platforms:
-          - linux_x64
+          - linux_x64_dev_innerloop
           jobParameters:
             nameSuffix: Libraries_AllConfigurations
             buildArgs: -subset libs -allconfigurations
@@ -176,3 +175,5 @@ extends:
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95
+            condition:
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)

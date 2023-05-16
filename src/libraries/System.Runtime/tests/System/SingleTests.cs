@@ -863,28 +863,7 @@ namespace System.Tests
 
                     try
                     {
-                        char[] actual;
-                        int charsWritten;
-
-                        // Just right
-                        actual = new char[localExpected.Length];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual));
-
-                        // Longer than needed
-                        actual = new char[localExpected.Length + 1];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                        // Too short
-                        if (localExpected.Length > 0)
-                        {
-                            actual = new char[localExpected.Length - 1];
-                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(0, charsWritten);
-                        }
+                        NumberFormatTestHelper.TryFormatNumberTest(localI, localFormat, localProvider, localExpected, formatCasingMatchesOutput: false);
                     }
                     catch (Exception exc)
                     {
@@ -1529,6 +1508,44 @@ namespace System.Tests
         {
             AssertExtensions.Equal(-expectedResult, float.TanPi(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, float.TanPi(+value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity,    float.NegativeInfinity,    0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NegativeInfinity,    float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.NegativeInfinity,    float.PositiveInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NegativeInfinity,    0.0f,                      0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NegativeInfinity,    1.0f,                      0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NaN,                 float.NegativeInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 float.PositiveInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 0.0f,                      0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 1.0f,                      0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.NegativeInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.PositiveInfinity,    0.5f,    float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity,    0.0f,                      0.5f,    float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity,    1.0f,                      0.5f,    float.PositiveInfinity)]
+        [InlineData(1.0f,                      3.0f,                      0.0f,    1.0f)]
+        [InlineData(1.0f,                      3.0f,                      0.5f,    2.0f)]
+        [InlineData(1.0f,                      3.0f,                      1.0f,    3.0f)]
+        [InlineData(1.0f,                      3.0f,                      2.0f,    5.0f)]
+        [InlineData(2.0f,                      4.0f,                      0.0f,    2.0f)]
+        [InlineData(2.0f,                      4.0f,                      0.5f,    3.0f)]
+        [InlineData(2.0f,                      4.0f,                      1.0f,    4.0f)]
+        [InlineData(2.0f,                      4.0f,                      2.0f,    6.0f)]
+        [InlineData(3.0f,                      1.0f,                      0.0f,    3.0f)]
+        [InlineData(3.0f,                      1.0f,                      0.5f,    2.0f)]
+        [InlineData(3.0f,                      1.0f,                      1.0f,    1.0f)]
+        [InlineData(3.0f,                      1.0f,                      2.0f,   -1.0f)]
+        [InlineData(4.0f,                      2.0f,                      0.0f,    4.0f)]
+        [InlineData(4.0f,                      2.0f,                      0.5f,    3.0f)]
+        [InlineData(4.0f,                      2.0f,                      1.0f,    2.0f)]
+        [InlineData(4.0f,                      2.0f,                      2.0f,    0.0f)]
+        public static void LerpTest(float value1, float value2, float amount, float expectedResult)
+        {
+            AssertExtensions.Equal(+expectedResult, float.Lerp(+value1, +value2, amount), 0);
+            AssertExtensions.Equal((expectedResult == 0.0f) ? expectedResult : -expectedResult, float.Lerp(-value1, -value2, amount), 0);
         }
     }
 }

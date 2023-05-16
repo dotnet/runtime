@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Xunit;
 
 public class Runtime_39823
 {
@@ -23,7 +24,8 @@ public class Runtime_39823
     }
 
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         try
         {

@@ -139,11 +139,11 @@ namespace System.DirectoryServices.AccountManagement
                 // to build a list of ldap attributes for each object type.
                 if (null != ldapAttribute)
                 {
-                    if (propertyNameToLdapAttr.ContainsKey(propertyName))
+                    if (propertyNameToLdapAttr.TryGetValue(propertyName, out string[] ldapAttributes))
                     {
-                        string[] props = new string[propertyNameToLdapAttr[propertyName].Length + 1];
-                        propertyNameToLdapAttr[propertyName].CopyTo(props, 0);
-                        props[propertyNameToLdapAttr[propertyName].Length] = ldapAttribute;
+                        string[] props = new string[ldapAttributes.Length + 1];
+                        ldapAttributes.CopyTo(props, 0);
+                        props[ldapAttributes.Length] = ldapAttribute;
                         propertyNameToLdapAttr[propertyName] = props;
                     }
                     else
@@ -1530,9 +1530,9 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        private string GetGroupDnFromGroupID(byte[] userSid, int primaryGroupId)
+        private unsafe string GetGroupDnFromGroupID(byte[] userSid, int primaryGroupId)
         {
-            IntPtr pGroupSid = IntPtr.Zero;
+            void* pGroupSid = null;
             byte[] groupSid = null;
 
             // This function is based on the technique in KB article 297951.
@@ -1554,14 +1554,14 @@ namespace System.DirectoryServices.AccountManagement
                         if (Interop.Advapi32.ConvertStringSidToSid(sddlSid, out pGroupSid) != Interop.BOOL.FALSE)
                         {
                             // Now we convert the native SID to a byte[] SID
-                            groupSid = Utils.ConvertNativeSidToByteArray(pGroupSid);
+                            groupSid = Utils.ConvertNativeSidToByteArray((IntPtr)pGroupSid);
                         }
                     }
                 }
             }
             finally
             {
-                if (pGroupSid != IntPtr.Zero)
+                if (pGroupSid is not null)
                     Interop.Kernel32.LocalFree(pGroupSid);
             }
 

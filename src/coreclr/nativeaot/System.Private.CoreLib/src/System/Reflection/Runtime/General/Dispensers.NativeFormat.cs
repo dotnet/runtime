@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 yield return GetCustomAttributeData(reader, customAttributeHandle);
         }
 
-        private static CustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
+        private static NativeFormatCustomAttributeData GetCustomAttributeData(MetadataReader reader, CustomAttributeHandle customAttributeHandle)
         {
             return new NativeFormatCustomAttributeData(reader, customAttributeHandle);
         }

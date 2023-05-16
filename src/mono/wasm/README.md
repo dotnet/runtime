@@ -133,13 +133,13 @@ The wrapper script used to actually run these tests, accepts:
 
 Exceptions thrown after the runtime starts get symbolicating from js itself. Exceptions before that, like asserts containing native traces get symbolicated by xharness using `src/mono/wasm/symbolicator`.
 
-If you need to symbolicate some traces manually, then you need the corresponding `dotnet.js.symbols` file. Then:
+If you need to symbolicate some traces manually, then you need the corresponding `dotnet.native.js.symbols` file. Then:
 
 ```console
-src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.js.symbols /path/to/file/with/traces
+src/mono/wasm/symbolicator$ dotnet run /path/to/dotnet.native.js.symbols /path/to/file/with/traces
 ```
 
-When not relinking, or not building with AOT, you can find `dotnet.js.symbols` in the runtime pack.
+When not relinking, or not building with AOT, you can find `dotnet.native.js.symbols` in the runtime pack.
 
 ## Debugger tests on macOS
 
@@ -194,7 +194,6 @@ Example use of the `wasmconsole` template:
 > dotnet publish
 > cd bin/Debug/net7.0/browser-wasm/AppBundle
 > node main.mjs
-mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
 Hello World!
 Args:
 ```
@@ -217,7 +216,7 @@ Bumping Emscripten version involves these steps:
 * bump docker images in https://github.com/dotnet/icu, update emscripten files in eng/patches/
 * update version number in docs
 * update `Microsoft.NET.Runtime.Emscripten.<emscripten version>.Node.win-x64` package name, version and sha hash in https://github.com/dotnet/runtime/blob/main/eng/Version.Details.xml and in https://github.com/dotnet/runtime/blob/main/eng/Versions.props. the sha is the commit hash in https://github.com/dotnet/emsdk and the package version can be found at https://dev.azure.com/dnceng/public/_packaging?_a=feed&feed=dotnet6
-* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/WorkloadManifest.json.in
+* update packages in the workload manifest https://github.com/dotnet/runtime/blob/main/src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Current.Manifest/WorkloadManifest.json.in
 
 ## Upgrading NPM packages
 
@@ -313,6 +312,8 @@ npm update --lockfile-version=1
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+* `runtime-wasm-dbgtests` runs all the debugger test jobs
 
 ## Rolling build (twice a day):
 

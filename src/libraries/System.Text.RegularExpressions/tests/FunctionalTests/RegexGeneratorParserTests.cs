@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions.Tests
                     [GeneratedRegex(""ab"")]
                     private static partial Regex InvalidLangVersion();
                 }
-            ", langVersion: version);
+            ", langVersion: version, compile: true);
 
             Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
         }

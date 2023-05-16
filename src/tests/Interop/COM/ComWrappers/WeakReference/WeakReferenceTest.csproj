@@ -4,6 +4,8 @@
     <!-- Registers global instances of ComWrappers -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Temporarily disabled due to https://github.com/dotnet/runtime/issues/81362 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WeakReferenceTest.cs" />

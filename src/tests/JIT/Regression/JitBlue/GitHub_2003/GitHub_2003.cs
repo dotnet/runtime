@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_2003
 {
@@ -45,7 +46,8 @@ public class GitHub_2003
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byteArray = new byte[100];
         myByteArray = new MyByte[100];

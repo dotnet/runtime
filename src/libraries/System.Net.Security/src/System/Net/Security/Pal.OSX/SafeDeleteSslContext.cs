@@ -19,7 +19,7 @@ namespace System.Net
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
-        private SafeSslHandle _sslContext;
+        private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
@@ -369,9 +369,9 @@ namespace System.Net
         {
             Debug.Assert(sslContext != null, "sslContext != null");
 
-            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
+            IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
 
-            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
+            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
                 X509Certificate2 intermediateCert = context.IntermediateCertificates[i];
 
@@ -389,7 +389,7 @@ namespace System.Net
                 ptrs[i + 1] = intermediateCert.Handle;
             }
 
-            ptrs[0] = context!.Certificate!.Handle;
+            ptrs[0] = context!.TargetCertificate.Handle;
 
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
         }

@@ -55,7 +55,7 @@ namespace Microsoft.Interop
             if (implicitThis)
             {
                 ImmutableArray<TypePositionInfo>.Builder newArgTypes = ImmutableArray.CreateBuilder<TypePositionInfo>(argTypes.Length + 1);
-                newArgTypes.Add(new TypePositionInfo(SpecialTypeInfo.IntPtr, NoMarshallingInfo.Instance)
+                newArgTypes.Add(new TypePositionInfo(new PointerTypeInfo("void*", "void*", false), NoMarshallingInfo.Instance)
                 {
                     InstanceIdentifier = NativeThisParameterIdentifier,
                     NativeIndex = 0
@@ -101,7 +101,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>
             {
-                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey<<containingTypeName>>();
+                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider)this).GetVirtualMethodTableInfoForKey(typeof(<containingTypeName>));
                 ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -121,12 +121,9 @@ namespace Microsoft.Interop
                                     CastExpression(
                                         ParseTypeName(TypeNames.IUnmanagedVirtualMethodTableProvider),
                                         ThisExpression())),
-                                GenericName(
-                                    Identifier("GetVirtualMethodTableInfoForKey"),
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(containingTypeName)))))
+                                IdentifierName("GetVirtualMethodTableInfoForKey") ))
                         .WithArgumentList(
-                            ArgumentList())))
+                            ArgumentList(SeparatedList(new[]{ Argument(TypeOfExpression(containingTypeName)) })))))
             };
 
             GeneratedStatements statements = GeneratedStatements.Create(
@@ -188,6 +185,19 @@ namespace Microsoft.Interop
             }
 
             tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
+
+            // Keep the this object alive across the native call, similar to how we handle marshalling managed delegates.
+            // We do this right after the NotifyForSuccessfulInvoke phase as that phase is where the delegate objects are kept alive.
+            // If we ever move the "this" object handling out of this type, we'll move the handling to be emitted in that phase.
+            // GC.KeepAlive(this);
+            tryStatements.Add(
+                ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            ParseTypeName(TypeNames.System_GC),
+                            IdentifierName("KeepAlive")),
+                        ArgumentList(SingletonSeparatedList(Argument(ThisExpression()))))));
+
             tryStatements.AddRange(statements.Unmarshal);
 
             List<StatementSyntax> allStatements = setupStatements;
@@ -222,13 +232,13 @@ namespace Microsoft.Interop
             return Block(allStatements);
         }
 
-        private ExpressionSyntax CreateFunctionPointerExpression(
+        private ParenthesizedExpressionSyntax CreateFunctionPointerExpression(
             ExpressionSyntax untypedFunctionPointerExpression,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv)
         {
             List<FunctionPointerParameterSyntax> functionPointerParameters = new();
             var (paramList, retType, _) = _marshallers.GenerateTargetMethodSignatureData(_context);
-            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(p.Type)));
+            functionPointerParameters.AddRange(paramList.Parameters.Select(p => FunctionPointerParameter(attributeLists: default, p.Modifiers, p.Type)));
             functionPointerParameters.Add(FunctionPointerParameter(retType));
 
             // ((delegate* unmanaged<...>)<untypedFunctionPointerExpression>)

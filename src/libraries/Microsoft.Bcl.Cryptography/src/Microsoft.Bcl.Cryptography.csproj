@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>true</IsPackable>
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.
+
+Commonly Used Types:
+System.Security.Cryptography.SP800108HmacCounterKdf</PackageDescription>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsPartialFacadeAssembly>
+    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeBCryptAlgorithmHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptAlgPseudoHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptCloseAlgorithmProvider.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.CreateCryptographicException.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.NTSTATUS.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoThrowHelper.Windows.cs"
+             Link="Common\System\Security\Cryptography\CryptoThrowHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs"
+             Link="Common\Internal\Windows\Kernel32\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptOpenAlgorithmProvider.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptGenerateSymmetricKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptGenerateSymmetricKey.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptDestroyKey.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.Blobs.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.Blobs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.BCryptKeyDerivation.cs"
+             Link="Common\Interop\Windows\BCrypt\Interop.BCryptKeyDerivation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs"
+             Link="Common\System\Security\Cryptography\CryptoPool.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdf.cs"
+             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs"
+             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs"
+             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs"
+             Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
+             Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
+
+    <Compile Include="System\Security\Cryptography\HashAlgorithmNames.cs" />
+    <Compile Include="System\Security\Cryptography\NetStandardShims.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdf.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationCng.cs" />
+    <Compile Include="System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+</Project>

@@ -1,3 +1,4 @@
+#pragma warning disable
 //
 // Options.cs
 //

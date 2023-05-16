@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_70898
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem(default) ? 101 : 100;
     }
@@ -20,7 +22,7 @@ public unsafe class Runtime_70898
         return (byte)x.Index == 1;
     }
 
-    public static void Use<T>(T* arg) where T : unmanaged { }
+    internal static void Use<T>(T* arg) where T : unmanaged { }
 
     struct StructWithIndex
     {

@@ -174,9 +174,6 @@
   <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
     <value>The process cannot access the file because it is being used by another process.</value>
   </data>
-  <data name="IO_StreamDisposed" xml:space="preserve">
-    <value>Cannot access a disposed stream.</value>
-  </data>
   <data name="IO_StreamNotEmpty" xml:space="preserve">
     <value>The stream is not empty.</value>
   </data>
@@ -266,5 +263,11 @@
   </data>
   <data name="TarSizeFieldTooLargeForEntryFormat" xml:space="preserve">
     <value>The value of the size field for the current entry of format '{0}' is greater than the format allows.</value>
+  </data>
+  <data name="TarExtAttrDisallowedKeyChar" xml:space="preserve">
+    <value>The extended attribute key '{0}' contains a disallowed '{1}' character.</value>
+  </data>
+  <data name="TarExtAttrDisallowedValueChar" xml:space="preserve">
+    <value>The value of the extended attribute key '{0}' contains a disallowed '{1}' character.</value>
   </data>
 </root>

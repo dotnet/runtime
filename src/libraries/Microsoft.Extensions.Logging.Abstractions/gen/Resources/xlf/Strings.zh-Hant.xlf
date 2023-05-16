@@ -68,8 +68,13 @@
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="translated">不能有格式錯誤的格式字串 (例如懸空 {, 等等)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">記錄方法 '{0}' 包含格式錯誤的格式字串</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">記錄方法包含格式錯誤的格式字串</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">

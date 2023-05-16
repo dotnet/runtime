@@ -164,7 +164,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // Create a new consumption task and try to set it as current as long as there's still no other task
                 var newConsumer = new Task(
-                    state => ((SpscTargetCore<TInput>)state!).ProcessMessagesLoopCore(),
+                    static state => ((SpscTargetCore<TInput>)state!).ProcessMessagesLoopCore(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(isReplica));
                 if (Interlocked.CompareExchange(ref _activeConsumer, newConsumer, null) == null)
                 {
@@ -309,7 +309,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // by the producer and consumer, a producer calling Fault and the
             // processing task processing the user delegate which might throw.
 #pragma warning disable 0420
-            lock (LazyInitializer.EnsureInitialized(ref _exceptions, () => new List<Exception>()))
+            lock (LazyInitializer.EnsureInitialized(ref _exceptions, static () => new List<Exception>()))
 #pragma warning restore 0420
             {
                 _exceptions.Add(exception);
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Gets the lazily-initialized completion source.</summary>
         private TaskCompletionSource<VoidResult> CompletionSource
         {
-            get { return LazyInitializer.EnsureInitialized(ref _completionTask, () => new TaskCompletionSource<VoidResult>()); }
+            get { return LazyInitializer.EnsureInitialized(ref _completionTask, static () => new TaskCompletionSource<VoidResult>()); }
         }
 
         /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

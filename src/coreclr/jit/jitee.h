@@ -21,26 +21,20 @@ public:
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
-
         JIT_FLAG_PINVOKE_RESTORE_ESP     = 8, // Restore ESP after returning from inlined PInvoke
-        JIT_FLAG_TARGET_P4               = 9,
-        JIT_FLAG_USE_FCOMI               = 10, // Generated code may use fcomi(p) instruction
-        JIT_FLAG_USE_CMOV                = 11, // Generated code may use cmov instruction
-
     #else // !defined(TARGET_X86)
-
         JIT_FLAG_UNUSED2                 = 8,
+    #endif // !defined(TARGET_X86)
+
         JIT_FLAG_UNUSED3                 = 9,
         JIT_FLAG_UNUSED4                 = 10,
         JIT_FLAG_UNUSED5                 = 11,
         JIT_FLAG_UNUSED6                 = 12,
 
-    #endif // !defined(TARGET_X86)
-
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
         JIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
-        JIT_FLAG_UNUSED8                 = 15,
+        JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 15, // JIT is allowed to use *_MAYBEFROZEN allocators
         JIT_FLAG_UNUSED9                 = 16,
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -54,7 +48,7 @@ public:
         JIT_FLAG_PROF_ENTERLEAVE         = 20, // Instrument prologues/epilogues
         JIT_FLAG_UNUSED11                = 21,
         JIT_FLAG_PROF_NO_PINVOKE_INLINE  = 22, // Disables PInvoke inlining
-        JIT_FLAG_SKIP_VERIFICATION       = 23, // (lazy) skip verification - determined without doing a full resolve. See comment below
+        JIT_FLAG_UNUSED12                = 23,
         JIT_FLAG_PREJIT                  = 24, // jit or prejit is the execution engine.
         JIT_FLAG_RELOC                   = 25, // Generate relocatable code
         JIT_FLAG_IMPORT_ONLY             = 26, // Only import the function
@@ -63,7 +57,7 @@ public:
         JIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         JIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
-        JIT_FLAG_UNUSED12                = 32,
+        JIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         JIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         JIT_FLAG_UNUSED13                = 34,
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
@@ -178,26 +172,21 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND, JIT_FLAG_MCJIT_BACKGROUND);
 
 #if defined(TARGET_X86)
-
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PINVOKE_RESTORE_ESP, JIT_FLAG_PINVOKE_RESTORE_ESP);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TARGET_P4, JIT_FLAG_TARGET_P4);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_FCOMI, JIT_FLAG_USE_FCOMI);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_CMOV, JIT_FLAG_USE_CMOV);
-
 #endif
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED, JIT_FLAG_FROZEN_ALLOC_ALLOWED);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE, JIT_FLAG_PROF_NO_PINVOKE_INLINE);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION, JIT_FLAG_SKIP_VERIFICATION);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PREJIT, JIT_FLAG_PREJIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELOC, JIT_FLAG_RELOC);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY, JIT_FLAG_IMPORT_ONLY);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, JIT_FLAG_IL_STUB);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT, JIT_FLAG_PROCSPLIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR, JIT_FLAG_BBINSTR);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS, JIT_FLAG_BBINSTR_IF_LOOPS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBOPT, JIT_FLAG_BBOPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FRAMED, JIT_FLAG_FRAMED);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM, JIT_FLAG_PUBLISH_SECRET_PARAM);
@@ -208,17 +197,13 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER1, JIT_FLAG_TIER1);
 
 #if defined(TARGET_ARM)
-
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
-
 #endif // TARGET_ARM
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
 
 #if defined(TARGET_ARM)
-
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
-
 #endif // TARGET_ARM
 
 #undef FLAGS_EQUAL

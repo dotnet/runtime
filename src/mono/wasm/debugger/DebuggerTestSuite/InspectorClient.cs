@@ -18,8 +18,10 @@ namespace DebuggerTests
     internal class InspectorClient : DevToolsClient
     {
         protected Dictionary<MessageId, TaskCompletionSource<Result>> pending_cmds = new Dictionary<MessageId, TaskCompletionSource<Result>>();
-        protected Func<string, JObject, CancellationToken, Task> onEvent;
+        protected Func<string, string, JObject, CancellationToken, Task> onEvent;
         protected int next_cmd_id;
+
+        public SessionId CurrentSessionId { get; set; } = SessionId.Null;
 
         public InspectorClient(ILogger logger) : base(logger) { }
 
@@ -34,7 +36,7 @@ namespace DebuggerTests
             var res = JObject.Parse(msg);
 
             if (res["id"] == null)
-                return onEvent(res["method"].Value<string>(), res["params"] as JObject, token);
+                return onEvent(res["sessionId"]?.Value<string>(), res["method"].Value<string>(), res["params"] as JObject, token);
 
             var id = res.ToObject<MessageId>();
             if (!pending_cmds.Remove(id, out var item))
@@ -51,7 +53,7 @@ namespace DebuggerTests
 
         public virtual async Task Connect(
             Uri uri,
-            Func<string, JObject, CancellationToken, Task> onEvent,
+            Func<string, string, JObject, CancellationToken, Task> onEvent,
             CancellationTokenSource cts)
         {
             this.onEvent = onEvent;
@@ -75,11 +77,11 @@ namespace DebuggerTests
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)
-            => SendCommand(new SessionId(null), method, args, token);
+            => SendCommand(CurrentSessionId, method, args, token);
 
         public virtual Task<Result> SendCommand(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
-            int id = ++next_cmd_id;
+            int id = Interlocked.Increment(ref next_cmd_id);
             if (args == null)
                 args = new JObject();
 
@@ -90,6 +92,8 @@ namespace DebuggerTests
                 @params = args
             });
 
+            if (sessionId != SessionId.Null)
+                o.Add("sessionId", sessionId.sessionId);
             var tcs = new TaskCompletionSource<Result>();
             pending_cmds[new MessageId(sessionId.sessionId, id)] = tcs;
 

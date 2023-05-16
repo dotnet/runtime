@@ -69,14 +69,18 @@ set_property(TARGET superpmi-shim-collector APPEND_STRING PROPERTY LINK_DEPENDS 
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-collector
+        PRIVATE
         utilcodestaticnohost
         mscorrc
         coreclrpal
         palrt
+        coreclrminipal
     )
 else()
     target_link_libraries(superpmi-shim-collector
+        PRIVATE
         advapi32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )

@@ -4,7 +4,7 @@
 using System.ComponentModel.DataAnnotations;
 using Xunit;
 
-namespace System.ComponentModel.Annotations.Tests.System.ComponentModel.DataAnnotations
+namespace System.ComponentModel.Annotations.Tests
 {
     public sealed partial class RegularExpressionAttributeTests
     {

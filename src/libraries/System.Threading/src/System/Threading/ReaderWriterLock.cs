@@ -1134,6 +1134,7 @@ namespace System.Threading
                 HResult = errorHResult;
             }
 
+            [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             public ReaderWriterLockApplicationException(SerializationInfo info, StreamingContext context)
                 : base(info, context)
             {
@@ -1256,20 +1257,10 @@ namespace System.Threading
                 Debug.Assert(lockID != 0);
 
                 ThreadLocalLockEntry? headEntry = t_lockEntryHead;
-                if (headEntry != null)
+                if (headEntry != null && headEntry._lockID == lockID)
                 {
-                    if (headEntry._lockID == lockID)
-                    {
-                        VerifyNoNonemptyEntryInListAfter(lockID, headEntry);
-                        return headEntry;
-                    }
-
-                    if (headEntry.IsFree)
-                    {
-                        VerifyNoNonemptyEntryInListAfter(lockID, headEntry);
-                        headEntry._lockID = lockID;
-                        return headEntry;
-                    }
+                    VerifyNoNonemptyEntryInListAfter(lockID, headEntry);
+                    return headEntry;
                 }
 
                 return GetOrCreateCurrentSlow(lockID, headEntry);

@@ -348,7 +348,7 @@ namespace System.Reflection.Emit
             if (!InExceptionBlock)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             if (exceptionType != null && exceptionType.IsUserType)
-                throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
                 if (exceptionType != null)
@@ -446,7 +446,7 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
-                throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             LocalBuilder res = new LocalBuilder(localType, this);
             res.is_pinned = pinned;
 
@@ -797,7 +797,7 @@ namespace System.Reflection.Emit
             {
                 if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 {
-                    throw new InvalidOperationException("Method is not VarArgs method and optional types were passed");
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
                 }
 
                 int token = token_gen.GetToken(methodInfo, optionalParameterTypes);
@@ -901,7 +901,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor, nameof(excType));
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }
@@ -917,7 +917,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < num_fixups; ++i)
             {
                 if (labels![fixups![i].label_idx].addr < 0)
-                    throw new ArgumentException(string.Format("Label #{0} is not marked in method `{1}'", fixups[i].label_idx + 1, mb.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_LabelUnmarked, fixups[i].label_idx + 1, mb.Name));
                 // Diff is the offset from the end of the jump instruction to the address of the label
                 int diff = labels[fixups[i].label_idx].addr - (fixups[i].pos + fixups[i].offset);
                 if (fixups[i].offset == 1)

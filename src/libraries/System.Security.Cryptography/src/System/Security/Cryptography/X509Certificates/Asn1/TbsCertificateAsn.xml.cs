@@ -54,7 +54,8 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             // DEFAULT value handler for Version.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnManagedIntegerDerMaxEncodeSize = 6;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);
                 tmp.WriteInteger(Version);
 
                 if (!tmp.EncodedValueEquals(DefaultVersion))

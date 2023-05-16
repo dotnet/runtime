@@ -227,14 +227,14 @@ namespace System.Text.Json.Reflection
         {
             Debug.Assert(genericTypeDef.IsGenericType);
             string fullName = genericTypeDef.FullName!;
-            int length = fullName.IndexOf("`") + 2;
+            int length = fullName.IndexOf('`') + 2;
             return fullName.Substring(0, length);
         }
 
-        public static bool IsVirtual(this PropertyInfo? propertyInfo)
+        public static bool IsVirtual(this MemberInfo memberInfo)
         {
-            Debug.Assert(propertyInfo != null);
-            return propertyInfo != null && (propertyInfo.GetMethod?.IsVirtual == true || propertyInfo.SetMethod?.IsVirtual == true);
+            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
+            return memberInfo is PropertyInfo p && (p.GetMethod?.IsVirtual == true || p.SetMethod?.IsVirtual == true);
         }
 
         public static bool IsKeyValuePair(this Type type, Type? keyValuePairType = null)
@@ -319,13 +319,33 @@ namespace System.Text.Json.Reflection
 
         public static object? GetDefaultValue(this ParameterInfo parameterInfo)
         {
+            Type parameterType = parameterInfo.ParameterType;
             object? defaultValue = parameterInfo.DefaultValue;
 
-            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
-            if (defaultValue == DBNull.Value && parameterInfo.ParameterType != typeof(DBNull))
+            if (defaultValue is null)
             {
                 return null;
             }
+
+            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
+            if (defaultValue == DBNull.Value && parameterType != typeof(DBNull))
+            {
+                return null;
+            }
+
+#if !BUILDING_SOURCE_GENERATOR
+            // Default values of enums or nullable enums are represented using the underlying type and need to be cast explicitly
+            // cf. https://github.com/dotnet/runtime/issues/68647
+            if (parameterType.IsEnum)
+            {
+                return Enum.ToObject(parameterType, defaultValue);
+            }
+
+            if (Nullable.GetUnderlyingType(parameterType) is Type underlyingType && underlyingType.IsEnum)
+            {
+                return Enum.ToObject(underlyingType, defaultValue);
+            }
+#endif
 
             return defaultValue;
         }

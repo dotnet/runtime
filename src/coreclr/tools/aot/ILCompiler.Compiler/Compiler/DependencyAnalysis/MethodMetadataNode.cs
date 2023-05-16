@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 
 using Internal.TypeSystem;
 
@@ -48,9 +50,25 @@ namespace ILCompiler.DependencyAnalysis
                 TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
             }
 
+            if (sig.HasEmbeddedSignatureData)
+            {
+                foreach (var sigData in sig.GetEmbeddedSignatureData())
+                    if (sigData.type != null)
+                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a method signature");
+            }
+
             if (_method is EcmaMethod ecmaMethod)
             {
                 DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, ecmaMethod);
+
+                // On a reflectable method, perform generic data flow for the return type and all the parameter types
+                // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), _method.Signature.ReturnType, _method);
+
+                foreach (TypeDesc parameterType in _method.Signature)
+                {
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), parameterType, _method);
+                }
             }
 
             return dependencies;

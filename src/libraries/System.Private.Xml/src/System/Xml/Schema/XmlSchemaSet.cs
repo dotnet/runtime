@@ -218,7 +218,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? targetNamespace, string schemaUri)
         {
-            if (schemaUri == null || schemaUri.Length == 0)
+            if (string.IsNullOrEmpty(schemaUri))
             {
                 throw new ArgumentNullException(nameof(schemaUri));
             }

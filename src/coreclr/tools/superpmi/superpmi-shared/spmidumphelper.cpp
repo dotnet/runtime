@@ -56,8 +56,8 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
     const Agnostic_CORINFO_RUNTIME_LOOKUP& lookup)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u tff-%u so-%u { ", lookup.signature, lookup.helper,
-              lookup.indirections, lookup.testForNull, lookup.testForFixup, lookup.sizeOffset);
+    sprintf_s(buffer, MAX_BUFFER_SIZE, " sig-%016llX hlp-%u ind-%u tfn-%u so-%u { ", lookup.signature, lookup.helper,
+              lookup.indirections, lookup.testForNull, lookup.sizeOffset);
     std::string resultDump(buffer);
     for (int i = 0; i < CORINFO_MAXINDIRECTIONS; i++)
     {
@@ -239,30 +239,24 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     // x86 only
     //
     AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-    AddFlagNumeric(TARGET_P4, 9);
-    AddFlagNumeric(USE_FCOMI, 10);
-    AddFlagNumeric(USE_CMOV, 11);
 
     AddFlag(OSR);
     AddFlag(ALT_JIT);
-
-    AddFlagNumeric(FEATURE_SIMD, 17);
+    AddFlag(FROZEN_ALLOC_ALLOWED);
 
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
 
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    AddFlag(SKIP_VERIFICATION);
     AddFlag(PREJIT);
     AddFlag(RELOC);
-    AddFlag(IMPORT_ONLY);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-
+    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
 
     AddFlag(SAMPLING_JIT_BACKGROUND);

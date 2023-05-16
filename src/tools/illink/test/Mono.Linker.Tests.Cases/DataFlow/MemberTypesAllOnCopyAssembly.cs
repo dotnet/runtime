@@ -65,7 +65,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType")]
 	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType", new string[] { "PrivateMethod()" })]
 
-	[KeptMember (".ctor()")]
+	// https://github.com/dotnet/runtime/issues/78752
+	[KeptMember (".ctor()", By = Tool.Trimmer)]
 	public class MemberTypesAllOnCopyAssembly
 	{
 		public static void Main ()

@@ -22,7 +22,7 @@ class RhConfig
 
 #define CONFIG_INI_NOT_AVAIL (void*)0x1  //signal for ini file failed to load
 #define CONFIG_KEY_MAXLEN 50             //arbitrary max length of config keys increase if needed
-#define CONFIG_VAL_MAXLEN 8              //32 bit uint in hex
+#define CONFIG_VAL_MAXLEN 16              //64 bit uint in hex
 
 private:
     struct ConfigPair
@@ -42,14 +42,14 @@ private:
 
 public:
 
-    bool ReadConfigValue(_In_z_ const TCHAR* wszName, uint32_t* pValue, bool decimal = false);
+    bool ReadConfigValue(_In_z_ const TCHAR* wszName, uint64_t* pValue, bool decimal = false);
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
-    uint32_t Get##_name()                                 \
+    uint64_t Get##_name()                                 \
     {                                                   \
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
-        uint32_t uiValue;                               \
+        uint64_t uiValue;                               \
         m_uiConfigValues[RCV_##_name] = ReadConfigValue(_T(#_name), &uiValue) ? uiValue : defaultVal; \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return m_uiConfigValues[RCV_##_name];           \
@@ -111,7 +111,7 @@ private:
 
 
     uint32_t  m_uiConfigValuesRead;
-    uint32_t  m_uiConfigValues[RCV_Count];
+    uint64_t  m_uiConfigValues[RCV_Count];
 };
 
 extern RhConfig * g_pRhConfig;

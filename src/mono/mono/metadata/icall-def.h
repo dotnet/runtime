@@ -113,9 +113,6 @@ NOHANDLES(ICALL(RTCLASS_1, "GetTypeFromClass", ves_icall_Mono_RuntimeClassHandle
 ICALL_TYPE(RTPTRARRAY, "Mono.RuntimeGPtrArrayHandle", RTPTRARRAY_1)
 NOHANDLES(ICALL(RTPTRARRAY_1, "GPtrArrayFree", ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree))
 
-ICALL_TYPE(RTMARSHAL, "Mono.RuntimeMarshal", RTMARSHAL_1)
-NOHANDLES(ICALL(RTMARSHAL_1, "FreeAssemblyName", ves_icall_Mono_RuntimeMarshal_FreeAssemblyName))
-
 ICALL_TYPE(SAFESTRMARSHAL, "Mono.SafeStringMarshal", SAFESTRMARSHAL_1)
 NOHANDLES(ICALL(SAFESTRMARSHAL_1, "GFree", ves_icall_Mono_SafeStringMarshal_GFree))
 NOHANDLES(ICALL(SAFESTRMARSHAL_2, "StringToUtf8_icall", ves_icall_Mono_SafeStringMarshal_StringToUtf8))
@@ -155,6 +152,12 @@ ICALL_TYPE(DEBUGR, "System.Diagnostics.Debugger", DEBUGR_1)
 NOHANDLES(ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_Debugger_IsAttached_internal))
 NOHANDLES(ICALL(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsLogging))
 NOHANDLES(ICALL(DEBUGR_3, "Log_icall", ves_icall_System_Diagnostics_Debugger_Log))
+
+ICALL_TYPE(STACKFRAME, "System.Diagnostics.StackFrame", STACKFRAME_1)
+NOHANDLES(ICALL(STACKFRAME_1, "GetFrameInfo", ves_icall_System_Diagnostics_StackFrame_GetFrameInfo))
+
+ICALL_TYPE(STACKTRACE, "System.Diagnostics.StackTrace", STACKTRACE_1)
+NOHANDLES(ICALL(STACKTRACE_1, "GetTrace", ves_icall_System_Diagnostics_StackTrace_GetTrace))
 
 ICALL_TYPE(EVENTPIPE, "System.Diagnostics.Tracing.EventPipeInternal", EVENTPIPE_1)
 HANDLES(EVENTPIPE_1, "CreateProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_CreateProvider, gconstpointer, 3, (MonoString, gpointer, gpointer))
@@ -200,7 +203,8 @@ NOHANDLES(ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCo
 NOHANDLES(ICALL(ENV_15a, "get_TickCount64", ves_icall_System_Environment_get_TickCount64))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
-ICALL_TYPE(GC, "System.GC", GC_13)
+ICALL_TYPE(GC, "System.GC", GC_4a)
+NOHANDLES(ICALL(GC_4a, "AddPressure", ves_icall_System_GC_AddPressure))
 HANDLES(GC_13, "AllocPinnedArray", ves_icall_System_GC_AllocPinnedArray, MonoArray, 2, (MonoReflectionType, gint32))
 NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))
 NOHANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
@@ -209,7 +213,7 @@ NOHANDLES(ICALL(GC_0b, "GetMaxGeneration", ves_icall_System_GC_GetMaxGeneration)
 HANDLES(GC_11, "GetTotalAllocatedBytes", ves_icall_System_GC_GetTotalAllocatedBytes, guint64, 1, (MonoBoolean))
 NOHANDLES(ICALL(GC_1, "GetTotalMemory", ves_icall_System_GC_GetTotalMemory))
 NOHANDLES(ICALL(GC_2, "InternalCollect", ves_icall_System_GC_InternalCollect))
-NOHANDLES(ICALL(GC_4a, "RecordPressure", ves_icall_System_GC_RecordPressure))
+NOHANDLES(ICALL(GC_5, "RemovePressure", ves_icall_System_GC_RemovePressure))
 NOHANDLES(ICALL(GC_6, "WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers))
 NOHANDLES(ICALL(GC_12, "_GetGCMemoryInfo", ves_icall_System_GC_GetGCMemoryInfo))
 HANDLES(GC_6b, "_ReRegisterForFinalize", ves_icall_System_GC_ReRegisterForFinalize, void, 1, (MonoObject))
@@ -286,17 +290,14 @@ HANDLES(ASSEM_4, "GetExecutingAssembly", ves_icall_System_Reflection_Assembly_Ge
 HANDLES(ASSEM_6, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType, MonoReflectionType, 5, (MonoReflectionAssembly, MonoReflectionModule, MonoString, MonoBoolean, MonoBoolean))
 HANDLES(ASSEM_7, "InternalLoad", ves_icall_System_Reflection_Assembly_InternalLoad, MonoReflectionAssembly, 3, (MonoString, MonoStackCrawlMark_ptr, gpointer))
 
-ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_0)
-NOHANDLES(ICALL(ASSEMN_0, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
+ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
+NOHANDLES(ICALL(ASSEMN_1, "FreeAssemblyName", ves_icall_System_Reflection_AssemblyName_FreeAssemblyName))
+NOHANDLES(ICALL(ASSEMN_2, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
 
 ICALL_TYPE(MCATTR, "System.Reflection.CustomAttribute", MCATTR_1)
 HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))
 HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, MonoBoolean))
 HANDLES(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal, MonoBoolean, 2, (MonoObject, MonoReflectionType))
-
-ICALL_TYPE(ASSEMB, "System.Reflection.Emit.AssemblyBuilder", ASSEMB_1)
-HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
-HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
 
 #ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
@@ -306,10 +307,14 @@ HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray
 ICALL_TYPE(DYNM, "System.Reflection.Emit.DynamicMethod", DYNM_1)
 HANDLES(DYNM_1, "create_dynamic_method", ves_icall_DynamicMethod_create_dynamic_method, void, 4, (MonoReflectionDynamicMethod, MonoString, guint32, guint32))
 
-ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
+ICALL_TYPE(ASSEMB, "System.Reflection.Emit.RuntimeAssemblyBuilder", ASSEMB_1)
+HANDLES(ASSEMB_1, "UpdateNativeCustomAttributes", ves_icall_AssemblyBuilder_UpdateNativeCustomAttributes, void, 1, (MonoReflectionAssemblyBuilder))
+HANDLES(ASSEMB_2, "basic_init", ves_icall_AssemblyBuilder_basic_init, void, 1, (MonoReflectionAssemblyBuilder))
+
+ICALL_TYPE(ENUMB, "System.Reflection.Emit.RuntimeEnumBuilder", ENUMB_1)
 HANDLES(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type, void, 2, (MonoReflectionType, MonoReflectionType))
 
-ICALL_TYPE(MODULEB, "System.Reflection.Emit.ModuleBuilder", MODULEB_10)
+ICALL_TYPE(MODULEB, "System.Reflection.Emit.RuntimeModuleBuilder", MODULEB_10)
 HANDLES(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken, MonoObject, 2, (MonoReflectionModuleBuilder, guint32))
 HANDLES(MODULEB_8, "RegisterToken", ves_icall_ModuleBuilder_RegisterToken, void, 3, (MonoReflectionModuleBuilder, MonoObject, guint32))
 HANDLES(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init, void, 1, (MonoReflectionModuleBuilder))
@@ -318,12 +323,12 @@ HANDLES(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken, gint32, 3, (Mon
 HANDLES(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex, guint32, 2, (MonoReflectionModuleBuilder, MonoString))
 HANDLES(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type, void, 2, (MonoReflectionModuleBuilder, MonoReflectionType))
 
+ICALL_TYPE(TYPEB, "System.Reflection.Emit.RuntimeTypeBuilder", TYPEB_1)
+HANDLES(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class, MonoReflectionType, 1, (MonoReflectionTypeBuilder))
+
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 HANDLES(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_field, MonoArray, 1, (MonoReflectionSigHelper))
 HANDLES(SIGH_2, "get_signature_local", ves_icall_SignatureHelper_get_signature_local, MonoArray, 1, (MonoReflectionSigHelper))
-
-ICALL_TYPE(TYPEB, "System.Reflection.Emit.TypeBuilder", TYPEB_1)
-HANDLES(TYPEB_1, "create_runtime_class", ves_icall_TypeBuilder_create_runtime_class, MonoReflectionType, 1, (MonoReflectionTypeBuilder))
 
 ICALL_TYPE(FIELDI, "System.Reflection.FieldInfo", FILEDI_1)
 HANDLES(FILEDI_1, "get_marshal_info", ves_icall_System_Reflection_FieldInfo_get_marshal_info, MonoReflectionMarshalAsAttribute, 1, (MonoReflectionField))
@@ -562,19 +567,28 @@ NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlo
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
+/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
+ICALL_TYPE(LIFOASYNCSEM, "System.Threading.LowLevelLifoAsyncWaitSemaphore", LIFOASYNCSEM_1)
+NOHANDLES(ICALL(LIFOASYNCSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
+NOHANDLES(ICALL(LIFOASYNCSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal))
+NOHANDLES(ICALL(LIFOASYNCSEM_3, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal))
+NOHANDLES(ICALL(LIFOASYNCSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
+#endif
+
+
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
 NOHANDLES(ICALL(LIFOSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
 NOHANDLES(ICALL(LIFOSEM_3, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
 NOHANDLES(ICALL(LIFOSEM_4, "TimedWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal))
 
+
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_0)
 HANDLES(MONIT_0, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter, void, 1, (MonoObject))
-HANDLES(MONIT_1, "Exit", mono_monitor_exit_icall, void, 1, (MonoObject))
+HANDLES(MONIT_1, "InternalExit", mono_monitor_exit_icall, void, 1, (MonoObject))
 HANDLES(MONIT_2, "Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse, void, 1, (MonoObject))
 HANDLES(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all, void, 1, (MonoObject))
-HANDLES(MONIT_4, "Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner, MonoBoolean, 1, (MonoObject))
-HANDLES(MONIT_5, "Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised, MonoBoolean, 1, (MonoObject))
 HANDLES(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait, MonoBoolean, 3, (MonoObject, guint32, MonoBoolean))
 NOHANDLES(ICALL(MONIT_8, "get_LockContentionCount", ves_icall_System_Threading_Monitor_Monitor_LockContentionCount))
 HANDLES(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var, void, 4, (MonoObject, guint32, MonoBoolean, MonoBoolean_ref))
@@ -593,6 +607,14 @@ HANDLES(THREAD_9, "SetPriority", ves_icall_System_Threading_Thread_SetPriority, 
 HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
 HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 2, (MonoThreadObject, gint32))
 NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
+
+/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
+ICALL_TYPE(WEBWORKERLOOP, "System.Threading.WebWorkerEventLoop", WEBWORKERLOOP_1)
+NOHANDLES(ICALL(WEBWORKERLOOP_1, "HasUnsettledInteropPromisesNative", ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative))
+NOHANDLES(ICALL(WEBWORKERLOOP_2, "KeepalivePopInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal))
+NOHANDLES(ICALL(WEBWORKERLOOP_3, "KeepalivePushInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal))
+#endif
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))

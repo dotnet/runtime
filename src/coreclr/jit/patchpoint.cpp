@@ -147,8 +147,12 @@ private:
         // Update flow and flags
         block->bbJumpKind = BBJ_COND;
         block->bbJumpDest = remainderBlock;
-        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
         block->bbFlags |= BBF_INTERNAL;
+
+        helperBlock->bbFlags |= BBF_BACKWARD_JUMP;
+
+        compiler->fgAddRefPred(helperBlock, block);
+        compiler->fgAddRefPred(remainderBlock, helperBlock);
 
         // Update weights
         remainderBlock->inheritWeight(block);
@@ -161,7 +165,7 @@ private:
         GenTree* ppCounterAfter  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
         GenTree* one             = compiler->gtNewIconNode(1, TYP_INT);
         GenTree* ppCounterSub    = compiler->gtNewOperNode(GT_SUB, TYP_INT, ppCounterBefore, one);
-        GenTree* ppCounterAsg    = compiler->gtNewOperNode(GT_ASG, TYP_INT, ppCounterAfter, ppCounterSub);
+        GenTree* ppCounterAsg    = compiler->gtNewAssignNode(ppCounterAfter, ppCounterSub);
 
         compiler->fgNewStmtAtEnd(block, ppCounterAsg);
 
@@ -198,7 +202,7 @@ private:
 
         GenTree* initialCounterNode = compiler->gtNewIconNode(initialCounterValue, TYP_INT);
         GenTree* ppCounterRef       = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree* ppCounterAsg       = compiler->gtNewOperNode(GT_ASG, TYP_INT, ppCounterRef, initialCounterNode);
+        GenTree* ppCounterAsg       = compiler->gtNewAssignNode(ppCounterRef, initialCounterNode);
 
         compiler->fgNewStmtNearEnd(block, ppCounterAsg);
     }
