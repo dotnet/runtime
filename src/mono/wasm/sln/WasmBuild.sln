@@ -23,6 +23,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmSymbolicator", "..\symb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdateReferencedAssembly", "..\debugger\tests\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj", "{75477B6F-DC8E-4002-88B8-017C992C568E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MarshalingPInvokeScanner", "..\..\..\tasks\MarshalingPInvokeScanner\MarshalingPInvokeScanner.csproj", "{3B91A002-4048-41D7-BE19-E29FDFE518C4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,10 @@ Global
 		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B91A002-4048-41D7-BE19-E29FDFE518C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B91A002-4048-41D7-BE19-E29FDFE518C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B91A002-4048-41D7-BE19-E29FDFE518C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B91A002-4048-41D7-BE19-E29FDFE518C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

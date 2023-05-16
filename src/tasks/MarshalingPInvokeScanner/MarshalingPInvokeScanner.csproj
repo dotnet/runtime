@@ -27,6 +27,10 @@
           AfterTargets="Build"
           DependsOnTargets="Publish" />
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage">
+     <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks" />
+    </ItemGroup>
+  </Target>
 
 </Project>

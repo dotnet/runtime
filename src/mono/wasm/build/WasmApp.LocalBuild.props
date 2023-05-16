@@ -51,6 +51,7 @@
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoTargetsTasks'))</MonoTargetsTasksDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmAppBuilder'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmBuildTasks'))</WasmBuildTasksDir>
+    <MarshalingPInvokeScannerDir>$([MSBuild]::NormalizeDirectory('$(BuildBaseDir)', 'MarshalingPInvokeScanner'))</MarshalingPInvokeScannerDir>
 
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
     <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
