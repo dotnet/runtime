@@ -135,7 +135,7 @@
 
     <!-- by default, don't package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">false</WasmEnableWebcil>
-    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <!--<WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>-->
   </PropertyGroup>
 
   <ItemGroup>

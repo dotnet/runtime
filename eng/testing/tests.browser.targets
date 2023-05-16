@@ -15,7 +15,7 @@
       - For regular library tests, it will use the symbols file from the runtime pack.
       - for AOT library tests, we use WasmNativeStrip=false, so we already have symbols
     -->
-    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">false</WasmNativeStrip>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == '' and '$(RunAOTCompilation)' == 'true'">false</WasmNativeStrip>
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
 
     <_WasmMainJSFileName Condition="'$(WasmMainJSPath)' != ''">$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>

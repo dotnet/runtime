@@ -156,6 +156,13 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="_SetWasmNativeStripDefault" AfterTargets="_SetWasmBuildNativeDefaults" Condition="'$(WasmNativeStrip)' == ''">
+    <PropertyGroup>
+      <WasmNativeStrip Condition="'$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">false</WasmNativeStrip>
+      <WasmNativeStrip Condition="'$(WasmBuildNative)' != 'true'">true</WasmNativeStrip>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="_WasmBuildNativeCore" DependsOnTargets="$(_WasmBuildNativeCoreDependsOn)"  Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_PrepareForWasmBuildNative">

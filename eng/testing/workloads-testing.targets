@@ -200,4 +200,14 @@
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
   </Target>
+
+  <Target Name="UpdateWasmWorkloadInArtifacts">
+    <ItemGroup>
+      <_WasmBuildFile Include="$(MonoProjectRoot)wasm\build\WasmApp.props" />
+      <_WasmBuildFile Include="$(MonoProjectRoot)wasm\build\WasmApp.targets" />
+      <_WasmBuildFile Include="$(MonoProjectRoot)wasm\build\WasmApp.Native.targets" />
+    </ItemGroup>
+
+    <!--<Copy SourceFiles="@(_WasmBuildFile)" DestinationFolder="$(_SdkWithWorkloadToInstall)\packs\-->
+  </Target>
 </Project>

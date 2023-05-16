@@ -90,6 +90,17 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
+        [MemberData(nameof(DefaultsTestData), parameters: false)]
+        public void WasmNativeStripDefaultWithBuild(string config, string extraProperties, bool aot, bool buildValue, bool publishValue)
+        {
+            string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot, dotnetWasmFromRuntimePack: !publishValue, publish: false);
+
+            // for build
+            Assert.Contains($"** WasmBuildNative: '{buildValue.ToString().ToLower()}', WasmBuildingForNestedPublish: ''", output);
+            Assert.Contains("Stopping the build", output);
+        }
+
+        [Theory]
         /* always relink */
         [InlineData("Release", "",   /*build*/ true, /*publish*/ true)]
         [InlineData("Debug",   "",   /*build*/ true, /*publish*/ true)]
