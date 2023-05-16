@@ -18,11 +18,11 @@ namespace System.IO
             }
 
             // Start by locking, creating relevant file handles, and reading out file status info.
-            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
+            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus fileStatus);
             UnixFileMode filePermissions = SafeFileHandle.GetFileMode(fileStatus);
 
             // Read FileStatus of destination file to determine how to continue
-            int destError = Interop.Sys.Stat(destFullPath, out var destStat);
+            int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
 
             // Interpret the error from stat
             if (destError != 0)
