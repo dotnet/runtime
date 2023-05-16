@@ -83,6 +83,8 @@ namespace Wasm.Build.Tests
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 if (UseWebcil)
                     Console.WriteLine($"=============== Using webcil-in-wasm ===============");
+                else
+                    Console.WriteLine($"=============== Webcil disabled ===============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -343,9 +345,9 @@ namespace Wasm.Build.Tests
                 extraProperties += $"\n<EmccVerbose>{s_isWindows}</EmccVerbose>\n";
             }
 
-            if (UseWebcil)
+            if (!UseWebcil)
             {
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>\n";
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>\n";
             }
 
             extraItems += "<WasmExtraFilesToDeploy Include='index.html' />";
@@ -508,8 +510,8 @@ namespace Wasm.Build.Tests
             extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
             if (runAnalyzers)
                 extraProperties += "<RunAnalyzers>true</RunAnalyzers>";
-            if (UseWebcil)
-                extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
+            if (!UseWebcil)
+                extraProperties += "<WasmEnableWebcil>false</WasmEnableWebcil>";
 
             // TODO: Can be removed after updated templates propagate in.
             string extraItems = string.Empty;
@@ -533,8 +535,8 @@ namespace Wasm.Build.Tests
                     .EnsureSuccessful();
 
             string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            if (UseWebcil)
-                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>true</WasmEnableWebcil>");
+            if (!UseWebcil)
+                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
             return projectFile;
         }
 
@@ -595,7 +597,7 @@ namespace Wasm.Build.Tests
                 label, // same as the command name
                 $"-bl:{logPath}",
                 $"-p:Configuration={config}",
-                UseWebcil ? "-p:WasmEnableWebcil=true" : string.Empty,
+                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
                 "-p:BlazorEnableCompression=false",
                 "-nr:false",
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
