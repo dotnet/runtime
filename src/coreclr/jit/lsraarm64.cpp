@@ -1779,7 +1779,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
         if (rmwNode != nullptr)
         {
             // Check all the newly created Refpositions for delay free
-            RefPositionIterator iter       = refPositionMark;
+            RefPositionIterator iter = refPositionMark;
             INDEBUG(int refPositionsIterated = 0);
 
             for (iter++; iter != refPositions.end(); iter++)
