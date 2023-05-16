@@ -297,12 +297,12 @@ namespace System.Diagnostics.Metrics
                             double refreshInterval;
                             lock (_aggregationManager)
                             {
-                                validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager._collectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
+                                validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager.CollectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
                             }
 
                             int maxHistograms, maxTimeSeries;
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager._maxHistograms, out maxHistograms) ? validShared : false;
-                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager._maxTimeSeries, out maxTimeSeries) ? validShared : false;
+                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager.MaxHistograms, out maxHistograms) ? validShared : false;
+                            validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager.MaxTimeSeries, out maxTimeSeries) ? validShared : false;
 
                             if (command.Command != EventCommand.Disable)
                             {
@@ -329,7 +329,7 @@ namespace System.Diagnostics.Metrics
                                         lock (_aggregationManager)
                                         {
                                             // Use sharedIdentifier to identify the session that is not configured correctly (since the sessionId is just SHARED)
-                                            Parent.MultipleSessionsConfiguredIncorrectlyError(sharedIdentifier!, _aggregationManager._maxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager._maxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager._collectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
+                                            Parent.MultipleSessionsConfiguredIncorrectlyError(sharedIdentifier!, _aggregationManager.MaxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager.MaxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager.CollectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
                                         }
                                     }
 

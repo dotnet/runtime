@@ -21,19 +21,17 @@ namespace System.Diagnostics.Metrics
         // these fields are modified after construction and accessed on multiple threads, use lock(this) to ensure the data
         // is synchronized
         private readonly List<Predicate<Instrument>> _instrumentConfigFuncs = new();
-        public TimeSpan _collectionPeriod;
+        public TimeSpan CollectionPeriod { get; private set; }
 
+        public readonly int MaxTimeSeries;
+        public readonly int MaxHistograms;
+        private List<Instrument> _instrumentList = new();
         private readonly ConcurrentDictionary<Instrument, InstrumentState> _instrumentStates = new();
         private readonly CancellationTokenSource _cts = new();
         private Thread? _collectThread;
         private readonly MeterListener _listener;
         private int _currentTimeSeries;
         private int _currentHistograms;
-
-        private List<Instrument> _instrumentList = new();
-
-        public readonly int _maxTimeSeries;
-        public readonly int _maxHistograms;
         private readonly Action<Instrument, LabeledAggregationStatistics> _collectMeasurement;
         private readonly Action<DateTime, DateTime> _beginCollection;
         private readonly Action<DateTime, DateTime> _endCollection;
@@ -61,8 +59,8 @@ namespace System.Diagnostics.Metrics
             Action histogramLimitReached,
             Action<Exception> observableInstrumentCallbackError)
         {
-            _maxTimeSeries = maxTimeSeries;
-            _maxHistograms = maxHistograms;
+            MaxTimeSeries = maxTimeSeries;
+            MaxHistograms = maxHistograms;
             _collectMeasurement = collectMeasurement;
             _beginCollection = beginCollection;
             _endCollection = endCollection;
@@ -130,7 +128,7 @@ namespace System.Diagnostics.Metrics
             Debug.Assert(collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
             lock (this)
             {
-                _collectionPeriod = collectionPeriod;
+                CollectionPeriod = collectionPeriod;
             }
             return this;
         }
@@ -139,7 +137,7 @@ namespace System.Diagnostics.Metrics
         {
             // if already started or already stopped we can't be started again
             Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
-            Debug.Assert(_collectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
+            Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);
 
             // This explicitly uses a Thread and not a Task so that metrics still work
             // even when an app is experiencing thread-pool starvation. Although we
@@ -162,11 +160,11 @@ namespace System.Diagnostics.Metrics
             {
                 foreach (Instrument instrument in publishedInstruments)
                 {
-                    _listener.InstrumentPublished?.Invoke(instrument, _listener); // will have duplicates - might not want that behavior
+                    _listener.InstrumentPublished?.Invoke(instrument, _listener);
                 }
             }
 
-            _initialInstrumentEnumerationComplete(); // not sure we want this
+            _initialInstrumentEnumerationComplete();
         }
 
         private void CollectWorker(CancellationToken cancelToken)
@@ -176,7 +174,7 @@ namespace System.Diagnostics.Metrics
                 double collectionIntervalSecs = -1;
                 lock (this)
                 {
-                    collectionIntervalSecs = _collectionPeriod.TotalSeconds;
+                    collectionIntervalSecs = CollectionPeriod.TotalSeconds;
                 }
                 Debug.Assert(collectionIntervalSecs >= MinCollectionTimeSecs);
 
@@ -361,12 +359,12 @@ namespace System.Diagnostics.Metrics
 
         private bool CheckTimeSeriesAllowed()
         {
-            if (_currentTimeSeries < _maxTimeSeries)
+            if (_currentTimeSeries < MaxTimeSeries)
             {
                 _currentTimeSeries++;
                 return true;
             }
-            else if (_currentTimeSeries == _maxTimeSeries)
+            else if (_currentTimeSeries == MaxTimeSeries)
             {
                 _currentTimeSeries++;
                 _timeSeriesLimitReached();
@@ -380,12 +378,12 @@ namespace System.Diagnostics.Metrics
 
         private bool CheckHistogramAllowed()
         {
-            if (_currentHistograms < _maxHistograms)
+            if (_currentHistograms < MaxHistograms)
             {
                 _currentHistograms++;
                 return true;
             }
-            else if (_currentHistograms == _maxHistograms)
+            else if (_currentHistograms == MaxHistograms)
             {
                 _currentHistograms++;
                 _histogramLimitReached();
