@@ -358,6 +358,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #endif // !TARGET_AMD64
 
                     case TYP_ULONG:
+#ifdef TARGET_AMD64
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                            return nullptr;
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
                         unreached();

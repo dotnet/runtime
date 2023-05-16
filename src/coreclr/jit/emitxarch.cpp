@@ -18157,13 +18157,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvtsi2sd64:
         case INS_cvtsi2ss64:
         case INS_vcvtsd2usi:
-        case INS_vcvttsd2usi:
         case INS_vcvtusi2sd32:
-        case INS_vcvtusi2sd64:
         case INS_vcvtusi2ss32:
         case INS_vcvtusi2ss64:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+
+        case INS_vcvttsd2usi:
+            result.insLatency += PERFSCORE_LATENCY_6C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case INS_vcvtusi2sd64:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
             break;
 
         case INS_cvttss2si:
