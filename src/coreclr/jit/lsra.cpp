@@ -8102,7 +8102,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
-    LclVarDsc* terminatorNodeLclVarDsc = nullptr;
+    LclVarDsc* terminatorNodeLclVarDsc  = nullptr;
+    LclVarDsc* terminatorNodeLclVarDsc2 = nullptr;
     // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP/JTEST instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
@@ -8181,7 +8182,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 else if (op->IsLocal())
                 {
                     GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
-                    terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                    terminatorNodeLclVarDsc2 = &compiler->lvaTable[lcl->GetLclNum()];
                 }
             }
         }
@@ -8264,6 +8265,11 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if ((terminatorNodeLclVarDsc != nullptr) &&
                 (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            {
+                sameToReg = REG_NA;
+            }
+            else if ((terminatorNodeLclVarDsc2 != nullptr) &&
+                     (terminatorNodeLclVarDsc2->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }
