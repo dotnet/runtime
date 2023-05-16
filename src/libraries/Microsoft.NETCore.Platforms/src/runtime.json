@@ -423,6 +423,53 @@
         "alpine.3.16-x86"
       ]
     },
+    "alpine.3.18": {
+      "#import": [
+        "alpine.3.17"
+      ]
+    },
+    "alpine.3.18-arm": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-arm"
+      ]
+    },
+    "alpine.3.18-arm64": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-arm64"
+      ]
+    },
+    "alpine.3.18-armv6": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-armv6"
+      ]
+    },
+    "alpine.3.18-ppc64le": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-ppc64le"
+      ]
+    },
+    "alpine.3.18-s390x": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-s390x"
+      ]
+    },
+    "alpine.3.18-x64": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-x64"
+      ]
+    },
+    "alpine.3.18-x86": {
+      "#import": [
+        "alpine.3.18",
+        "alpine.3.17-x86"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
