@@ -300,7 +300,7 @@ while [[ $# > 0 ]]; do
           os="haiku" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos, solaris and haiku."
+          echo "Try 'build.sh --help' for values supported by '--os'."
           exit 1
           ;;
       esac
