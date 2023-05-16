@@ -1257,12 +1257,22 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void InitializeWithArgumentList()
+        public void InitializeWithArgumentList_Add()
         {
             ProcessStartInfo psi = new ProcessStartInfo("filename");
             psi.ArgumentList.Add("arg1");
             psi.ArgumentList.Add("arg2");
 
+            Assert.Equal(2, psi.ArgumentList.Count);
+            Assert.Equal("arg1", psi.ArgumentList[0]);
+            Assert.Equal("arg2", psi.ArgumentList[1]);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList_Enumerable()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("filename", new[] { "arg1", "arg2" });
+            
             Assert.Equal(2, psi.ArgumentList.Count);
             Assert.Equal("arg1", psi.ArgumentList[0]);
             Assert.Equal("arg2", psi.ArgumentList[1]);

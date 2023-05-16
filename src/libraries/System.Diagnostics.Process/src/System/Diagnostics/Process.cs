@@ -1330,13 +1330,7 @@ namespace System.Diagnostics
             ArgumentNullException.ThrowIfNull(fileName);
             ArgumentNullException.ThrowIfNull(arguments);
 
-            var startInfo = new ProcessStartInfo(fileName);
-            foreach (string argument in arguments)
-            {
-                startInfo.ArgumentList.Add(argument);
-            }
-
-            return Start(startInfo)!;
+            return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
         /// <devdoc>
