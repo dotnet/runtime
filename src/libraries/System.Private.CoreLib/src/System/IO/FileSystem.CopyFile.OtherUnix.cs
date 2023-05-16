@@ -9,10 +9,26 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Open src and dest file handles.
-            // ! because OpenCopyFileDstHandle doesn't return null when openNewFile is true
+            // Open the src file handle.
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var srcFileStatus);
-            using SafeFileHandle dst = OpenCopyFileDstHandle(destFullPath, overwrite, SafeFileHandle.GetFileMode(srcFileStatus), true)!;
+
+            // Open the dst file handle.
+            // Note: the code in FileSystem.CopyFile.OSX.cs needs to be kept in sync with this section.
+            using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
+                FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                CreateOpenException);
+
+            // Exception handler for SafeFileHandle.Open failing.
+            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+            {
+                // If the destination path points to a directory, we throw to match Windows behaviour.
+                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+                {
+                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                }
+
+                return null; // Let SafeFileHandle create the exception for this error.
+            }
 
             // Copy the file in a way that works on all Unix Operating Systems.
             // Note: the fallback code in FileSystem.CopyFile.OSX.cs needs to be kept in sync with this.

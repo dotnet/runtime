@@ -66,8 +66,17 @@ namespace System.IO
             {
                 // Delete the destination. This should fail on directories. And update the mode.
                 // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
-                using SafeFileHandle? dstHandle = OpenCopyFileDstHandle(destFullPath, true, filePermissions, false);
-                File.Delete(destFullPath);
+                SafeFileHandle? dstHandle = null;
+                try
+                {
+                    using SafeFileHandle? dstHandle = SafeFileHandle.Open(destFullPath, FileMode.Open, FileAccess.ReadWrite,
+                        FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions);
+                    File.Delete(destFullPath);
+                }
+                catch (FileNotFoundException)
+                {
+                    // We don't want to throw if it's just the file not existing, since we're trying to delete it.
+                }
             }
 
             // Try clonefile:
@@ -90,8 +99,22 @@ namespace System.IO
             tryFallback:
             {
                 // Open the dst handle
-                // ! because OpenCopyFileDstHandle doesn't return null when openNewFile is true
-                using SafeFileHandle dst = OpenCopyFileDstHandle(destFullPath, overwrite, filePermissions, openNewFile: true)!;
+                // Note: this code needs to be kept in sync with the code in FileSystem.CopyFile.OtherUnix.cs.
+                using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
+                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                    CreateOpenException);
+
+                // Exception handler for SafeFileHandle.Open failing.
+                static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+                {
+                    // If the destination path points to a directory, we throw to match Windows behaviour.
+                    if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+                    {
+                        return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                    }
+
+                    return null; // Let SafeFileHandle create the exception for this error.
+                }
 
                 // Copy the file using the standard unix implementation.
                 // Note: this code needs to be kept in sync with the code in FileSystem.CopyFile.OtherUnix.cs.

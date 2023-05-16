@@ -28,40 +28,6 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, UnixFileMode filePermissions, bool openNewFile)
-        {
-            // This function opens the 'dst' file handle for 'CopyFile', it is
-            // split out since the logic on OSX-like OSes is a bit different.
-            // 'openNewFile' = false is used when we want to try to find the file only.
-            if (!openNewFile)
-            {
-                try
-                {
-                    return SafeFileHandle.Open(destFullPath, FileMode.Open,
-                                                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
-                                                    CreateOpenException);
-                }
-                catch (FileNotFoundException)
-                {
-                    return null;
-                }
-            }
-            return SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
-                                            CreateOpenException);
-
-            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
-            {
-                // If the destination path points to a directory, we throw to match Windows behaviour.
-                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
-                {
-                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
-                }
-
-                return null; // Let SafeFileHandle create the exception for this error.
-            }
-        }
-
         // CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
         // The implementations on OSX-like Operating Systems attempts to clone the file first.
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
