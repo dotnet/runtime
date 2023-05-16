@@ -3680,16 +3680,16 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
             {
                 PTR_SyncBlock pBlock = ste->m_SyncBlock;
                 pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
-#ifd    ef FEATURE_COMINTEROP
+#ifdef FEATURE_COMINTEROP
                 if (pBlock->m_pInteropInfo)
                 {
                     pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->DacGetRawRCW() != 0) ? SYNCBLOCKDATA_COMFLAGS_RCW : 0;
                     pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetCCW() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CCW : 0;
-#ifd    ef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                     pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetComClassFactory() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CF : 0;
-#end    if // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 }
-#end    if // FEATURE_COMINTEROP
+#endif // FEATURE_COMINTEROP
 
                 pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
                 pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
