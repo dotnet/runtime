@@ -22,7 +22,7 @@ export async function loadBootConfig(config: MonoConfigInternal, module: DotnetM
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions || {});
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
     setupModuleForBlazor(module);
 }
@@ -31,12 +31,11 @@ let resourcesLoaded = 0;
 let totalResources = 0;
 
 const behaviorByName = (name: string): AssetBehaviours | "other" => {
-    return name === "dotnet.timezones.blat" ? "vfs"
-        : name === "dotnet.native.wasm" ? "dotnetwasm"
-            : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
-                : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
-                    : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
-                        : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
+    return name === "dotnet.native.wasm" ? "dotnetwasm"
+        : (name.startsWith("dotnet.native.worker") && name.endsWith(".js")) ? "js-module-threads"
+            : (name.startsWith("dotnet.native") && name.endsWith(".js")) ? "js-module-native"
+                : (name.startsWith("dotnet.runtime") && name.endsWith(".js")) ? "js-module-runtime"
+                    : (name.startsWith("dotnet") && name.endsWith(".js")) ? "js-module-dotnet"
                             : (name.startsWith("dotnet") && name.endsWith(".symbols")) ? "symbols"
                                 : name.startsWith("icudt") ? "icu"
                                     : "other";
@@ -46,7 +45,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "assembly": "assembly",
     "pdb": "pdb",
     "icu": "globalization",
-    "vfs": "globalization",
+    "vfs": "configuration",
     "dotnetwasm": "dotnetwasm",
 };
 
@@ -74,7 +73,7 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         return undefined;
     };
 
-    module.downloadResource = downloadResource;
+    loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
     module.disableDotnet6Compatibility = false;
 }
 
@@ -162,6 +161,17 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             behavior,
         };
         assets.push(asset);
+    }
+    
+    for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
+        const config = resourceLoader.bootConfig.config[i];
+        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+            assets.push({
+                name: config,
+                resolvedUrl: config,
+                behavior: "vfs",
+            });
+        }
     }
 
     for (const virtualPath in resources.vfs) {

@@ -10445,7 +10445,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10464,7 +10464,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10754,12 +10754,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // Indirections off of addresses for boxed statics represent bases for
-                    // the address of the static itself. Here we will use "nullptr" for the
-                    // field sequence and assume the actual static field will be appended to
-                    // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
+                        // VN is assigned inside fgValueNumberConstLoad
+                    }
+                    else if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        // Indirections off of addresses for boxed statics represent bases for
+                        // the address of the static itself. Here we will use "nullptr" for the
+                        // field sequence and assume the actual static field will be appended to
+                        // it later, as part of numbering the method table pointer offset addition.
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
                         ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);

@@ -264,24 +264,50 @@ namespace Tracing.Tests
             WriteLine("\n");
         }
 
+        private static bool ConsoleForegroundColorNotSupported =>
+            OperatingSystem.IsAndroid() ||
+            OperatingSystem.IsIOS() ||
+            OperatingSystem.IsTvOS() ||
+            OperatingSystem.IsBrowser() ||
+            OperatingSystem.IsWasi();
+
+        private ConsoleColor ConsoleForegroundColor
+        {
+            get
+            {
+                if (ConsoleForegroundColorNotSupported)
+                    return (ConsoleColor)(-1);
+                
+                return Console.ForegroundColor;
+            }
+            set
+            {
+                if (ConsoleForegroundColorNotSupported)
+                    return;
+                
+                Console.ForegroundColor = value;
+            }
+        }
+        
         private void Write(object? o = null, ConsoleColor? consoleColor = null)
         {
-            ConsoleColor foregroundColor = Console.ForegroundColor;
+            ConsoleColor foregroundColor = ConsoleForegroundColor;
 
             if (o is KeyValuePair<int, (string, string)> e)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                ConsoleForegroundColor = ConsoleColor.Cyan;
+                
                 Console.Write(name);
 
-                Console.ForegroundColor = (e.Value != defaultEventSourceNameName) ? ConsoleColor.Green : ConsoleColor.Red;
+                ConsoleForegroundColor = (e.Value != defaultEventSourceNameName) ? ConsoleColor.Green : ConsoleColor.Red;
             }
             else if (consoleColor != null)
             {
-                Console.ForegroundColor = (ConsoleColor)consoleColor;
+                ConsoleForegroundColor = (ConsoleColor)consoleColor;
             }
             Console.Write(o);
 
-            Console.ForegroundColor = foregroundColor;
+            ConsoleForegroundColor = foregroundColor;
         }
         private void WriteLine(object? o = null, ConsoleColor? consoleColor = null)
         {

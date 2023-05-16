@@ -29,6 +29,15 @@ export const enum MintOpArgType {
 	MintOpPair4
 }
 
+export const enum JiterpSpecialOpcode {
+    CNE_UN_R4 = 0xFFFF + 0,
+    CGE_UN_R4 = 0xFFFF + 1,
+    CLE_UN_R4 = 0xFFFF + 2,
+    CNE_UN_R8 = 0xFFFF + 3,
+    CGE_UN_R8 = 0xFFFF + 4,
+    CLE_UN_R8 = 0xFFFF + 5,
+}
+
 export const enum OpcodeInfoType {
     Name = 0,
     Length,

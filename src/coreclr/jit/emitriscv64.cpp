@@ -3137,7 +3137,18 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfffff000;
             }
-            printf("jalr         %s, %d(%s)\n", rd, offset, rs1);
+            printf("jalr         %s, %d(%s)", rd, offset, rs1);
+            CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
+            // Target for ret call is unclear, e.g.:
+            //   jalr zero, 0(ra)
+            // So, skip it
+            if (handle != 0)
+            {
+                const char* methodName = emitComp->eeGetMethodFullName(handle);
+                printf("\t\t// %s", methodName);
+            }
+
+            printf("\n");
             return;
         }
         case 0x6f:
@@ -3149,7 +3160,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfff00000;
             }
-            printf("jal          %s, %d\n", rd, offset);
+            printf("jal          %s, %d", rd, offset);
+            CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
+            if (handle != 0)
+            {
+                const char* methodName = emitComp->eeGetMethodFullName(handle);
+                printf("\t\t// %s", methodName);
+            }
+
+            printf("\n");
             return;
         }
         case 0x0f:

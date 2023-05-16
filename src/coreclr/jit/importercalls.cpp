@@ -2221,10 +2221,10 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     unsigned             spanTempNum = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
     lvaSetStruct(spanTempNum, spanHnd, false);
 
-    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, 0);
+    GenTreeLclFld* pointerField    = gtNewLclFldNode(spanTempNum, TYP_BYREF, OFFSETOF__CORINFO_Span__reference);
     GenTree*       pointerFieldAsg = gtNewAssignNode(pointerField, pointerValue);
 
-    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, TARGET_POINTER_SIZE);
+    GenTreeLclFld* lengthField    = gtNewLclFldNode(spanTempNum, TYP_INT, OFFSETOF__CORINFO_Span__length);
     GenTree*       lengthFieldAsg = gtNewAssignNode(lengthField, lengthValue);
 
     // Now append a few statements the initialize the span
