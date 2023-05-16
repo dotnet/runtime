@@ -15776,9 +15776,54 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
 
     ssize_t disp8Compression = 1;
 
+    if ((tt & INS_TT_MEM128) != 0)
+    {
+        // These instructions can be one of two tuple types, so we need to find the right one
+
+        instruction ins    = id->idIns();
+        insFormat   insFmt = id->idInsFmt();
+
+        if ((tt & INS_TT_FULL) != 0)
+        {
+            assert(tt == (INS_TT_FULL | INS_TT_MEM128));
+            assert((ins == INS_pslld) || (ins == INS_psrad) || (ins == INS_psrld) || (ins == INS_psllq) ||
+                   (ins == INS_vpsraq) || (ins == INS_psrlq));
+        }
+        else
+        {
+            assert(tt == (INS_TT_FULL_MEM | INS_TT_MEM128));
+            assert((ins == INS_psllw) || (ins == INS_psraw) || (ins == INS_psrlw));
+        }
+
+        switch (insFmt)
+        {
+            case IF_RWR_RRD_ARD:
+            case IF_RWR_RRD_MRD:
+            case IF_RWR_RRD_SRD:
+            {
+                tt = static_cast<insTupleType>(tt & INS_TT_MEM128);
+                break;
+            }
+
+            case IF_RWR_ARD_CNS:
+            case IF_RWR_MRD_CNS:
+            case IF_RWR_SRD_CNS:
+            {
+                tt = static_cast<insTupleType>(tt & ~INS_TT_MEM128);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
     switch (tt)
     {
         case INS_TT_FULL:
+        {
             assert(inputSize == 4 || inputSize == 8);
             if (HasEmbeddedBroadcast(id))
             {
@@ -15791,7 +15836,10 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
                 disp8Compression = vectorLength;
             }
             break;
+        }
+
         case INS_TT_HALF:
+        {
             assert(inputSize == 4);
             if (HasEmbeddedBroadcast(id))
             {
@@ -15804,57 +15852,92 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
                 disp8Compression = vectorLength / 2;
             }
             break;
+        }
+
         case INS_TT_FULL_MEM:
+        {
             // N = vector length in bytes
             disp8Compression = vectorLength;
             break;
+        }
+
         case INS_TT_TUPLE1_SCALAR:
         {
             disp8Compression = inputSize;
             break;
         }
+
         case INS_TT_TUPLE1_FIXED:
+        {
             // N = input size in bytes, 32bit and 64bit only
             assert(inputSize == 4 || inputSize == 8);
             disp8Compression = inputSize;
             break;
+        }
+
         case INS_TT_TUPLE2:
+        {
             // N = input size in bytes * 2, 32bit and 64bit for 256 bit and 512 bit only
             assert((inputSize == 4) || (inputSize == 8 && vectorLength >= 32));
             disp8Compression = inputSize * 2;
             break;
+        }
+
         case INS_TT_TUPLE4:
+        {
             // N = input size in bytes * 4, 32bit for 256 bit and 512 bit, 64bit for 512 bit
             assert((inputSize == 4 && vectorLength >= 32) || (inputSize == 8 && vectorLength >= 64));
             disp8Compression = inputSize * 4;
             break;
+        }
+
         case INS_TT_TUPLE8:
+        {
             // N = input size in bytes * 8, 32bit for 512 only
             assert((inputSize == 4 && vectorLength >= 64));
             disp8Compression = inputSize * 8;
             break;
+        }
+
         case INS_TT_HALF_MEM:
+        {
             // N = vector length in bytes / 2
             disp8Compression = vectorLength / 2;
             break;
+        }
+
         case INS_TT_QUARTER_MEM:
+        {
             // N = vector length in bytes / 4
             disp8Compression = vectorLength / 4;
             break;
+        }
+
         case INS_TT_EIGHTH_MEM:
+        {
             // N = vector length in bytes / 8
             disp8Compression = vectorLength / 8;
             break;
+        }
+
         case INS_TT_MEM128:
+        {
             // N = 16
             disp8Compression = 16;
             break;
+        }
+
         case INS_TT_MOVDDUP:
+        {
             // N = vector length in bytes / 2
             disp8Compression = (vectorLength == 16) ? (vectorLength / 2) : vectorLength;
             break;
+        }
+
         default:
+        {
             unreached();
+        }
     }
 
     // If we can evenly divide dsp by the disp8Compression, we can attempt to use it in a disp8 byte form
