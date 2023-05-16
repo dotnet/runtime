@@ -7,20 +7,14 @@ namespace System.IO
     {
         public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            var (fileLength, _, _, _, src, dst) = StartCopyFile(sourceFullPath, destFullPath, overwrite);
+            // Open src and dest file handles.
+            // ! because OpenCopyFileDstHandle doesn't return null when openNewFile is true
+            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var srcFileStatus);
+            using SafeFileHandle dst = OpenCopyFileDstHandle(destFullPath, overwrite, SafeFileHandle.GetFileMode(srcFileStatus), true)!;
 
-            try
-            {
-                // Copy the file using the standard unix implementation
-                // dst! because dst is not null if StartCopyFile's openDst is true (which is the default value)
-                StandardCopyFile(src, dst!, fileLength);
-            }
-            finally
-            {
-                // Dipose relevant file handles
-                src.Dispose();
-                dst?.Dispose();
-            }
+            // Copy the file in a way that works on all Unix Operating Systems.
+            // Note: the fallback code in FileSystem.CopyFile.OSX.cs needs to be kept in sync with this.
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
         }
     }
 }

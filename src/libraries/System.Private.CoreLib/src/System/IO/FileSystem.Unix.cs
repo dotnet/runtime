@@ -28,33 +28,6 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        private static (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) StartCopyFile(string sourceFullPath, string destFullPath, bool overwrite, bool openDst = true)
-        {
-            // The return value has SafeFileHandles, which are expected to be Disposed by the caller (unless this method throws) once the copy is complete.
-            // Begins 'CopyFile' by locking and creating the relevant file handles.
-            // If 'openDst' is false, it doesn't open the destination file handle, nor check anything to do with it (used in macOS implementation).
-
-            (long fileLength, UnixFileMode filePermissions, long fileDev, long fileIno, SafeFileHandle src, SafeFileHandle? dst) startedCopyFile = default;
-            try
-            {
-                startedCopyFile.src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var fileStatus);
-                startedCopyFile.fileLength = fileStatus.Size;
-                startedCopyFile.filePermissions = SafeFileHandle.GetFileMode(fileStatus);
-                startedCopyFile.fileDev = fileStatus.Dev;
-                startedCopyFile.fileIno = fileStatus.Ino;
-                if (openDst) startedCopyFile.dst = OpenCopyFileDstHandle(destFullPath, overwrite, startedCopyFile.filePermissions, true);
-            }
-            catch
-            {
-                startedCopyFile.src?.Dispose();
-                startedCopyFile.dst?.Dispose();
-                throw;
-            }
-
-            // Return the collection of information we have gotten back.
-            return startedCopyFile;
-        }
-
         private static SafeFileHandle? OpenCopyFileDstHandle(string destFullPath, bool overwrite, UnixFileMode filePermissions, bool openNewFile)
         {
             // This function opens the 'dst' file handle for 'CopyFile', it is
@@ -87,14 +60,6 @@ namespace System.IO
 
                 return null; // Let SafeFileHandle create the exception for this error.
             }
-        }
-
-        private static void StandardCopyFile(SafeFileHandle src, SafeFileHandle dst, long fileLength)
-        {
-            // Copy the file in a way that works on all Unix Operating Systems.
-            // The 'src', 'dst', and 'fileLength' parameters should take the output from 'StartCopyFile'.
-            // 'src' and 'dst' should be disposed by the caller.
-            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileLength));
         }
 
         // CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
