@@ -204,7 +204,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- In .NET 7, TrimmerDefaultAction is deprecated. TrimMode can be used for the supported configurations. -->
     <Warning Condition="'$(TrimmerDefaultAction)' != ''"
-             Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and will be ignored. Use TrimMode instead." />
+             Text="Property 'TrimmerDefaultAction' is deprecated in .NET 7 and higher and will be ignored. Use TrimMode instead." />
 
     <PropertyGroup Condition="'@(_ILLinkSuppressions->Count())' != '0'">
       <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --link-attributes "@(_ILLinkSuppressions->'%(Identity)', '" --link-attributes "')"</_ExtraTrimmerArgs>
