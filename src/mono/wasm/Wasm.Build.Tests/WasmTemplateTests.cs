@@ -367,12 +367,10 @@ namespace Wasm.Build.Tests
             UpdateProgramCS();
             UpdateConsoleMainJs();
 
-            if (!aot)
-                UpdateMainJsEnvironmentVariables(("MONO_LOG_MASK", "asm"), ("MONO_LOG_LEVEL", "debug"));
             if (aot)
             {
                 // FIXME: pass envvars via the environment, once that is supported
-                UpdateMainJsEnvironmentVariables(("MONO_LOG_MASK", "aot,asm"), ("MONO_LOG_LEVEL", "debug"));
+                UpdateMainJsEnvironmentVariables(("MONO_LOG_MASK", "aot"), ("MONO_LOG_LEVEL", "debug"));
                 AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
             }
             else if (relinking)

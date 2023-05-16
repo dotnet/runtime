@@ -128,18 +128,10 @@ public class IcuShardingTests : BuildTestBase
                     continue;
                 }}
             }}
-            catch(CultureNotFoundException cnfe)
+            catch(CultureNotFoundException cnfe) when (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier.""))
             {{
-		    if (ctorShouldFail && cnfe.Message.Contains($""{{testLocale.Code}} is an invalid culture identifier."")) {{
-			Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
-			continue;
-		    }} else {{
-			if (ctorShouldFail)
-			    Console.WriteLine($""{{testLocale.Code}}: Failed with the wrong message: {{cnfe.Message}}"");
-			else
-			    Console.WriteLine($""{{testLocale.Code}}: Should not have failed, but did."");
-			throw;
-		    }}
+                Console.WriteLine($""{{testLocale.Code}}: Success. .ctor failed as expected."");
+                continue;
             }}
 
             string expectedSundayName = (expectMissing && !onlyPredefinedCultures)
