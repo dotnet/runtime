@@ -121,6 +121,9 @@ namespace Wasm.Build.Tests
         // Explicitly setting WasmNativeStrip=false
         [InlineData("Debug", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
         [InlineData("Release", "<WasmNativeStrip>false</WasmNativeStrip>", true, false)]
+        // with aot
+        [InlineData("Debug", "<RunAOTCompilation>true</RunAOTCompilation>", true, false)]
+        [InlineData("Release", "<RunAOTCompilation>true</RunAOTCompilation>", true, true)]
         public void WasmNativeStripDefaultWithPublish(string config, string extraProperties, bool expectedWasmBuildNative, bool expectedWasmNativeStrip)
         {
             string output = CheckWasmNativeDefaultValue("native_strip_defaults", config, extraProperties, aot: false, dotnetWasmFromRuntimePack: !expectedWasmBuildNative, publish: true);
