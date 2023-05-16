@@ -17,6 +17,8 @@ using Xunit;
 using System.Diagnostics;
 
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
+using Newtonsoft.Json.Bson;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -131,6 +133,51 @@ namespace ComInterfaceGenerator.Unit.Tests
                 .WithLocation(0)
                 .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+        [Fact]
+
+        public async Task ValidateAttributesAreCopiedToShadowingMethods()
+        {
+            var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("EA4319EA-AE9A-4261-B42D-BB027AD81F5F")]
+                    partial interface IFoo
+                    {
+                        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("message")]
+                        void Bar();
+                    }
+
+                    [GeneratedComInterface]
+                    [Guid("8A501001-02CA-490A-AA23-0ECC646F07A3")]
+                    partial interface IDerivedIface : IFoo
+                    {
+                    }
+                }
+            """;
+
+            var test = new VerifyCompilationTest(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                Assert.True(comp.GetTypeByMetadataName("Test.IFoo")
+                    ?.GetMembers()
+                    .Where(m => m.Kind == SymbolKind.Method && m.Name == "Bar")
+                    .SingleOrDefault()
+                    ?.GetAttributes()
+                    .Any(att => att.AttributeClass?.Name == nameof(RequiresUnreferencedCodeAttribute)));
+            }
         }
     }
 }
