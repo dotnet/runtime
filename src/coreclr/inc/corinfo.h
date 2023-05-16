@@ -1955,6 +1955,10 @@ struct CORINFO_VarArgInfo
 
 #define OFFSETOF__CORINFO_NullableOfT__hasValue           0
 
+#define OFFSETOF__CORINFO_Span__reference                 0
+#define OFFSETOF__CORINFO_Span__length                    TARGET_POINTER_SIZE
+
+
 /* data to optimize delegate construction */
 struct DelegateCtorArgs
 {
