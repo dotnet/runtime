@@ -10389,20 +10389,20 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
         return false;
     }
 
-    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp funcApp;
-    size_t    offset = 0;
+    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp      funcApp;
+    target_ssize_t offset = 0;
     while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
     {
         if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
         {
-            offset += vnStore->CoercedConstantValue<ssize_t>(funcApp.m_args[0]);
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
             treeVN = funcApp.m_args[1];
         }
         else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
                  (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
         {
-            offset += vnStore->CoercedConstantValue<ssize_t>(funcApp.m_args[1]);
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
             treeVN = funcApp.m_args[0];
         }
         else
@@ -10414,7 +10414,7 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
     if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = offset;
+        *byteOffset = (ssize_t)offset;
         return true;
     }
     return false;
