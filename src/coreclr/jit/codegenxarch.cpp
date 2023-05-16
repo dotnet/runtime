@@ -1010,10 +1010,11 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
+
+#ifdef DEBUG
         unsigned lclNum1 = (unsigned)-1;
         unsigned lclNum2 = (unsigned)-2;
 
-#ifdef DEBUG
         GenTree* op1Skip = op1->gtSkipReloadOrCopy();
         GenTree* op2Skip = op2->gtSkipReloadOrCopy();
 
@@ -1025,8 +1026,10 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         {
             lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
         }
+
+        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
 #endif
-        noway_assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
+
         dst = op2;
         src = op1;
     }
