@@ -2486,7 +2486,7 @@ namespace System.Xml.Serialization
             ilg.Brtrue(labelEndIf);
 
             // constructorInfo.Invoke(null);
-            MethodInfo constructorInvoke = typeof(ConstructorInfo).GetMethod("Invoke", s_objectArrayType)!;
+            MethodInfo constructorInvoke = typeof(ConstructorInfo).GetMethod("Invoke", new Type[] { typeof(object[]) })!;
             ilg.Ldloc(constructorInfo);
             ilg.Load(null);
             ilg.Call(constructorInvoke);

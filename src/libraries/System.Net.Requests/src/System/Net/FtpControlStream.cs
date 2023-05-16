@@ -1028,24 +1028,21 @@ namespace System.Net
         /// </summary>
         private static int GetPortV4(string responseString)
         {
-            Span<Range> parts = stackalloc Range[responseString.Length];
-            ReadOnlySpan<char> responseSpan = responseString;
-
-            int count = responseSpan.SplitAny(parts, s_spaceCommaBrackets, StringSplitOptions.RemoveEmptyEntries);
+            string[] parsedList = responseString.Split(s_spaceCommaBrackets);
 
             // We need at least the status code and the port
-            if (count <= 7)
+            if (parsedList.Length <= 7)
             {
                 throw new FormatException(SR.Format(SR.net_ftp_response_invalid_format, responseString));
             }
 
-            int index = count - 1;
+            int index = parsedList.Length - 1;
             // skip the last non-number token (e.g. terminating '.')
-            if (!char.IsNumber(responseSpan[parts[index]][0]))
+            if (!char.IsNumber(parsedList[index][0]))
                 index--;
 
-            int port = byte.Parse(responseSpan[parts[index--]], NumberFormatInfo.InvariantInfo);
-            port |= (byte.Parse(responseSpan[parts[index--]], NumberFormatInfo.InvariantInfo) << 8);
+            int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
+            port |= (Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo) << 8);
 
             return port;
         }
