@@ -252,7 +252,6 @@ find_webcil_in_wasm (const uint8_t *ptr, const uint8_t *boundp, const uint8_t **
 	visitor.section_visitor = &webcil_in_wasm_section_visitor;
 	if (!mono_wasm_module_visit(ptr, boundp, &visitor, &user_data))
 		return FALSE;
-	
 	*webcil_payload_start = user_data.data_segment_1_start;
 	return TRUE;
 }
