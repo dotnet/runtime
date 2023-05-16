@@ -14,12 +14,7 @@ namespace System.IO
             // Fail fast for blatantly copying onto self
             if (sourceFullPath == destFullPath)
             {
-                if (overwrite)
-                {
-                    throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
-                }
-
-                throw new IOException(SR.Format(SR.IO_FileExists_Name, destFullPath));
+                throw new IOException(SR.Format(overwrite ? SR.IO_SharingViolation_File : SR.IO_FileExists_Name, destFullPath));
             }
 
             // Start by locking, creating relevant file handles, and reading out file status info.
