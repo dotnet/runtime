@@ -18,8 +18,6 @@
 
 #include "library-builder.h"
 
-#if defined(BUNDLED_RESOURCES)
-extern void mono_register_resources_bundle (void);
 %EXTERN_RUNTIMECONFIG_SYMBOLS%
 
 static void

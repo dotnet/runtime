@@ -294,7 +294,7 @@ public class LibraryBuilderTask : AppBuilderTask
         {
             string dataSymbol = "NULL";
             string dataLenSymbol = "0";
-            StringBuilder externRuntimeConfigSymbols = new ();
+            StringBuilder externRuntimeConfigSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
             if (BundledRuntimeConfig?.ItemSpec != null)
             {
                 dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
