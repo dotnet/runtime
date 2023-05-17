@@ -1068,8 +1068,7 @@ namespace System.Xml.Serialization
         {
             if (value is string && ((string)value).Length == 0)
             {
-                string str = (string)o;
-                return str == null || str.Length == 0;
+                return string.IsNullOrEmpty((string)o);
             }
             else
             {

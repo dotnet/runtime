@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_external_root } from "./roots";
-import { MonoString, MonoStringRef } from "./types";
+import { MonoString, MonoStringRef } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import { conv_string_root, js_string_to_mono_string_root, string_decoder } from "./strings";
 import { setU16_unchecked } from "./memory";
 
-export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
-    try{
-        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
+export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number): void {
+    try {
+        const input = string_decoder.decode(<any>src, <any>(src + 2 * srcLength));
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
@@ -30,7 +30,7 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
         const cultureName = conv_string_root(cultureRoot);
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
-        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
+        const input = string_decoder.decode(<any>src, <any>(src + 2 * srcLength));
         let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
         if (result.length > destLength)
             result = input;
@@ -181,7 +181,7 @@ export function compare_strings(string1: string, string2: string, locale: string
             return string1.localeCompare(string2, locale, { sensitivity: "base" }); // a ≠ b, a = á, a = A
         case 13:
             // 13: IgnoreKanaType | IgnoreCase | IgnoreSymbols
-            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true });  // a ≠ b, a ≠ á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true }); // a ≠ b, a ≠ á, a = A
         case 14:
             // 14: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace
             return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true });// a ≠ b, a = á, a ≠ A

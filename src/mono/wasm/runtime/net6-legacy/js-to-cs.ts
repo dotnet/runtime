@@ -9,14 +9,13 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "../strings";
-import { MonoObject, is_nullish, MonoClass, MonoArray, MonoMethod, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types";
+import { MonoObject, is_nullish, MonoClass, MonoArray, MonoObjectNull, JSHandle, MonoObjectRef, JSHandleNull, JSHandleDisposed, WasmRoot } from "../types/internal";
 import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
 import { legacyHelpers, wasm_type_symbol } from "./globals";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {
     switch (true) {
         case js_obj === null:
@@ -37,7 +36,6 @@ export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any,
 /**
  * @deprecated Not GC or thread safe. For blazor use only
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj(js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
@@ -51,7 +49,6 @@ export function js_to_mono_obj(js_obj: any): MonoObject {
 /**
  * @deprecated Not GC or thread safe
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: any): MonoObject {
     const temp = mono_wasm_new_root<MonoObject>();
     try {
@@ -62,7 +59,6 @@ export function _js_to_mono_obj_unsafe(should_add_in_flight: boolean, js_obj: an
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_to_mono_obj_root(js_obj: any, result: WasmRoot<MonoObject>, should_add_in_flight: boolean): void {
     if (is_nullish(result))
         throw new Error("Expected (value, WasmRoot, boolean)");
@@ -157,7 +153,6 @@ function js_typedarray_to_heap(typedArray: TypedArray) {
     return heapBytes;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoArray>): void {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
@@ -181,7 +176,6 @@ export function js_typed_array_to_array_root(js_obj: any, result: WasmRoot<MonoA
 /**
  * @deprecated Not GC or thread safe
  */
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function js_typed_array_to_array(js_obj: any): MonoArray {
     const temp = mono_wasm_new_root<MonoArray>();
     try {
@@ -192,8 +186,7 @@ export function js_typed_array_to_array(js_obj: any): MonoArray {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/explicit-module-boundary-types
-export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number): number {
+export function js_to_mono_enum(js_obj: any): number {
     if (typeof (js_obj) !== "number")
         throw new Error(`Expected numeric value for enum argument, got '${js_obj}'`);
 

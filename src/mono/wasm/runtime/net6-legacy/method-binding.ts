@@ -8,7 +8,7 @@ import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root, conv_string_root } from "../strings";
-import { MonoMethod, MonoObject, MonoType, MonoClass, mono_assert, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types";
+import { MonoMethod, MonoObject, MonoType, MonoClass, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types/internal";
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
@@ -40,7 +40,6 @@ export function _get_class_name(classPtr: MonoClass): string {
     return cwraps.mono_wasm_get_type_name(cwraps.mono_wasm_class_get_type(classPtr));
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
     let result = null;
     let closureArgumentList: any[] | null = null;

@@ -22,8 +22,8 @@ const terserConfig = {
     compress: {
         defaults: true,
         passes: 2,
-        drop_debugger: false,// we invoke debugger
-        drop_console: false,// we log to console
+        drop_debugger: false, // we invoke debugger
+        drop_console: false, // we log to console
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
@@ -31,16 +31,11 @@ const terserConfig = {
         keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message_with_data|mono_wasm_fire_debugger_agent_message_with_data_to_pause|mono_wasm_set_timeout_exec)/,
         keep_classnames: /(ManagedObject|ManagedError|Span|ArraySegment|WasmRootBuffer|SessionOptionsBuilder)/,
     },
-    format: {
-        wrap_iife: true
-    }
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
 const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
-const format = "iife";
-const name = "__dotnet_runtime";
 const inlineAssert = [
     {
         pattern: /mono_assert\(([^,]*), *"([^"]*)"\);/gm,
@@ -50,10 +45,24 @@ const inlineAssert = [
     {
         pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
         replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
-    }, {
-        pattern: /^\s*mono_assert/gm,
-        failure: "previous regexp didn't inline all mono_assert statements"
-    }];
+    }
+];
+const checkAssert =
+{
+    pattern: /^\s*mono_assert/gm,
+    failure: "previous regexp didn't inline all mono_assert statements"
+};
+const checkNoLoader =
+{
+    pattern: /_loaderModuleLoaded/gm,
+    failure: "module should not contain loaderModuleLoaded member. This is probably duplicated code in the output caused by a dependency outside on the loader module."
+};
+const checkNoRuntime =
+{
+    pattern: /_runtimeModuleLoaded/gm,
+    failure: "module should not contain runtimeModuleLoaded member. This is probably duplicated code in the output caused by a dependency on the runtime module."
+};
+
 
 let gitHash;
 try {
@@ -64,9 +73,9 @@ try {
 }
 
 function consts(dict) {
-    /// implement rollup-plugin-const in terms of @rollup/plugin-virtual
-    /// It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
-    /// and the virtual module always exports a single default binding (the const value).
+    // implement rollup-plugin-const in terms of @rollup/plugin-virtual
+    // It's basically the same thing except "consts" names all its modules with a "consts:" prefix,
+    // and the virtual module always exports a single default binding (the const value).
 
     let newDict = {};
     for (const k in dict) {
@@ -85,29 +94,26 @@ const typescriptConfigOptions = {
     include: ["**/*.ts", "../../../../artifacts/bin/native/generated/**/*.ts"]
 };
 
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const outputCodePlugins = [consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash, WasmEnableLegacyJsInterop }), typescript(typescriptConfigOptions)];
+const externalDependencies = ["module"];
 
-const externalDependencies = [
-];
-
-const iffeConfig = {
+const loaderConfig = {
     treeshake: !isDebug,
-    input: "exports.ts",
+    input: "./loader/index.ts",
     output: [
         {
-            file: nativeBinDir + "/src/es6/runtime.es6.iffe.js",
-            name,
+            format: "es",
+            file: nativeBinDir + "/dotnet.js",
             banner,
-            format,
             plugins,
         }
     ],
     external: externalDependencies,
-    plugins: outputCodePlugins,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const typesConfig = {
-    input: "./export-types.ts",
+    input: "./types/export-types.ts",
     output: [
         {
             format: "es",
@@ -118,6 +124,21 @@ const typesConfig = {
     ],
     external: externalDependencies,
     plugins: [dts()],
+};
+const runtimeConfig = {
+    treeshake: !isDebug,
+    input: "exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.runtime.js",
+            banner,
+            plugins,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
+    onwarn: onwarn
 };
 const legacyConfig = {
     input: "./net6-legacy/export-types.ts",
@@ -189,7 +210,8 @@ function makeWorkerConfig(workerName, workerInputSourcePath) {
 const workerConfigs = findWebWorkerInputs("./workers").map((workerInput) => makeWorkerConfig(workerInput.workerName, workerInput.path));
 
 const allConfigs = [
-    iffeConfig,
+    loaderConfig,
+    runtimeConfig,
     typesConfig,
     legacyConfig,
 ].concat(workerConfigs)
@@ -254,11 +276,45 @@ function checkFileExists(file) {
         .catch(() => false);
 }
 
+function regexCheck(checks = []) {
+    const filter = createFilter("**/*.ts");
+
+    return {
+        name: "regexCheck",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        },
+
+        transform(code, id) {
+            if (!filter(id)) return null;
+            return executeCheck(this, code, id);
+        }
+    };
+
+    function executeCheck(self, code, id) {
+        // self.warn("executeCheck" + id);
+        for (const rep of checks) {
+            const { pattern, failure } = rep;
+            const match = pattern.test(code);
+            if (match) {
+                self.error(failure + " " + id);
+                return null;
+            }
+        }
+
+        return null;
+    }
+}
+
+
 function regexReplace(replacements = []) {
     const filter = createFilter("**/*.ts");
 
     return {
-        name: "replace",
+        name: "regexReplace",
 
         renderChunk(code, chunk) {
             const id = chunk.fileName;
@@ -272,21 +328,12 @@ function regexReplace(replacements = []) {
         }
     };
 
-    function executeReplacement(self, code, id) {
+    function executeReplacement(_, code) {
         // TODO use MagicString for sourcemap support
         let fixed = code;
         for (const rep of replacements) {
-            const { pattern, replacement, failure } = rep;
-            if (failure) {
-                const match = pattern.test(fixed);
-                if (match) {
-                    self.error(failure + " " + id, pattern.lastIndex);
-                    return null;
-                }
-            }
-            else {
-                fixed = fixed.replace(pattern, replacement);
-            }
+            const { pattern, replacement } = rep;
+            fixed = fixed.replace(pattern, replacement);
         }
 
         if (fixed == code) {

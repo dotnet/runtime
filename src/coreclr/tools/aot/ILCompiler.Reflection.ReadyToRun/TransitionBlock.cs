@@ -15,18 +15,20 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public static TransitionBlock FromReader(ReadyToRunReader reader)
         {
-            switch (reader.Architecture)
+            switch (reader.Machine)
             {
-                case Architecture.X86:
+                case Machine.I386:
                     return X86TransitionBlock.Instance;
 
-                case Architecture.X64:
+                case Machine.Amd64:
                     return reader.OperatingSystem == OperatingSystem.Windows ? X64WindowsTransitionBlock.Instance : X64UnixTransitionBlock.Instance;
 
-                case Architecture.Arm:
+                case Machine.Arm:
+                case Machine.Thumb:
+                case Machine.ArmThumb2:
                     return ArmTransitionBlock.Instance;
 
-                case Architecture.Arm64:
+                case Machine.Arm64:
                     return Arm64TransitionBlock.Instance;
 
                 default:

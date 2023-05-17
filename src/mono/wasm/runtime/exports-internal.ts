@@ -23,7 +23,7 @@ export function export_internal(): any {
         mono_wasm_profiler_init_aot: cwraps.mono_wasm_profiler_init_aot,
         mono_wasm_profiler_init_browser: cwraps.mono_wasm_profiler_init_browser,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
-        mono_intern_string,// MarshalTests.cs
+        mono_intern_string, // MarshalTests.cs
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
         logging: undefined,
@@ -87,7 +87,6 @@ export function export_internal(): any {
     };
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,

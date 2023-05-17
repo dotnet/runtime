@@ -2,6 +2,26 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="es" original="../Strings.resx">
     <body>
+      <trans-unit id="AnalysisFailedDescription">
+        <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
+        <target state="translated">Se ha producido un error en el análisis necesario para generar código para esta interfaz o método debido a un patrón de código inesperado. Si está usando sintaxis nueva o no convencional, considere la posibilidad de usar otra sintaxis.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedInterfaceMessage">
+        <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
+        <target state="translated">Error en el análisis de la interfaz "{0}". ComInterfaceGenerator no generará código para esta interfaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedMethodMessage">
+        <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
+        <target state="translated">Error en el análisis del método "{0}". ComInterfaceGenerator no generará código para este método.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedTitle">
+        <source>Analysis for generation has failed.</source>
+        <target state="translated">Error en el análisis de generación.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
         <target state="translated">Los P/Invoke de un generador de código fuente omitirán cualquier configuración que no esté admitida.</target>
@@ -93,8 +113,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">Las interfaces atribuidas con 'GeneratedComInterfaceAttribute' deben ser parciales y deben especificar un GUID con 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="needs-review-translation">Las interfaces atribuidas con 'GeneratedComInterfaceAttribute' deben ser parciales y deben especificar un GUID con 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">

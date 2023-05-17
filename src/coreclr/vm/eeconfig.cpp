@@ -388,7 +388,7 @@ HRESULT EEConfig::sync()
                 if (WszGetModuleFileName(NULL, wszFileName) != 0)
                 {
                     // just keep the name
-                    LPCWSTR pwszName = wcsrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
+                    LPCWSTR pwszName = u16_strrchr(wszFileName, DIRECTORY_SEPARATOR_CHAR_W);
                     pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
 
                     if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)
@@ -629,7 +629,7 @@ HRESULT EEConfig::sync()
         if( str )
         {
             errno = 0;
-            iStartupDelayMS = wcstoul(str, &end, 10);
+            iStartupDelayMS = u16_strtoul(str, &end, 10);
             if (errno == ERANGE || end == str)
                 iStartupDelayMS = 0;
         }

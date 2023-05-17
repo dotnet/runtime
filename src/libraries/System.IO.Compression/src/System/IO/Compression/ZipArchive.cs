@@ -391,10 +391,7 @@ namespace System.IO.Compression
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
-            ArgumentNullException.ThrowIfNull(entryName);
-
-            if (string.IsNullOrEmpty(entryName))
-                throw new ArgumentException(SR.CannotBeEmpty, nameof(entryName));
+            ArgumentException.ThrowIfNullOrEmpty(entryName);
 
             if (_mode == ZipArchiveMode.Read)
                 throw new NotSupportedException(SR.CreateInReadMode);
