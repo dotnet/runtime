@@ -1722,6 +1722,8 @@ MINI_OP(OP_ARM64_SQXTUN2, "arm64_sqxtun2", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_SELECT_SCALAR, "arm64_select_scalar", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_SELECT_QUAD, "arm64_select_quad", XREG, XREG, IREG)
+/* Take a word elem of sreg1 identified by inst_c0 and broadcast it to all elements of dreg */
+MINI_OP(OP_ARM64_BROADCAST_ELEM, "arm64_broadcast_elem", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_FCVTN, "arm64_fcvtn", XREG, XREG, NONE)
 MINI_OP(OP_ARM64_FCVTN2, "arm64_fcvtn2", XREG, XREG, XREG)

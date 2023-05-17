@@ -545,6 +545,11 @@ PALAPI
 PAL_PerfJitDump_Start(const char* path);
 
 PALIMPORT
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted();
+
+PALIMPORT
 int
 PALAPI
 // Log a method to the jitdump file.

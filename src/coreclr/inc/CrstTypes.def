@@ -402,7 +402,7 @@ End
 
 // Used to synchronize all rejit information stored in a given AppDomain.
 Crst CodeVersioning
-    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs
+    AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController FuncPtrStubs PerfMap
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex MethodDescBackpatchInfoTracker
                 ReadyToRunEntryPointToMethodDescMap ClassInit AppDomainCache TypeIDMap FusionAppCtx COMWrapperCache InteropData
 End
@@ -580,4 +580,8 @@ End
 
 Crst StaticBoxInit
     AcquiredBefore LoaderHeap FrozenObjectHeap AssemblyLoader
+End
+
+Crst PerfMap
+    AcquiredAfter CodeVersioning AssemblyList
 End

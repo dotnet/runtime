@@ -214,6 +214,9 @@ elseif(CLR_CMAKE_HOST_SUNOS)
 elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
   add_linker_flag("-Wl,-bind_at_load")
+elseif(CLR_CMAKE_HOST_HAIKU)
+  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  add_linker_flag("-Wl,--no-undefined")
 endif()
 
 #------------------------------------
@@ -332,6 +335,8 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected NetBSD amd64")
   elseif(CLR_CMAKE_HOST_SUNOS)
     message("Detected SunOS amd64")
+  elseif(CLR_CMAKE_HOST_HAIKU)
+    message("Detected Haiku x86_64")
   endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -531,7 +536,7 @@ if (CLR_CMAKE_HOST_UNIX)
 
   # We mark the function which needs exporting with DLLEXPORT
   add_compile_options(-fvisibility=hidden)
-  
+
   # Separate functions so linker can remove them.
   add_compile_options(-ffunction-sections)
 
@@ -610,6 +615,8 @@ if(CLR_CMAKE_TARGET_UNIX)
     if(CLR_CMAKE_TARGET_OS_ILLUMOS)
       add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ILLUMOS>)
     endif()
+  elseif(CLR_CMAKE_TARGET_HAIKU)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_HAIKU>)
   endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
