@@ -14,14 +14,9 @@ import { ICUDataMode } from "../../types/blazor";
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const environment = getApplicationEnvironmentFromConfig(config);
-    const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, environment);
+    const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
     await initializeBootConfig(bootConfigResult, module, config.startupOptions);
-}
-
-export function getApplicationEnvironmentFromConfig(config: MonoConfigInternal): string | undefined {
-    return config.applicationEnvironment ?? config.startupOptions?.environment;
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
