@@ -204,7 +204,7 @@ JavaScript part of the .NET runtime for WebAssembly is composed of several ES6 m
 
 #### dotnet.js
 
-`dotnet.js` is entry point ("loader") containing public API for interacting with .NET runtime. This is the file that you import into your JavaScript code. This file don't change during app development.
+`dotnet.js` is entry point ("loader") containing public API for interacting with .NET runtime. This is the file that you import into your JavaScript code. This file don't change during app development. Adding fingerprint on this file can be turned on by setting msbuild property `WasmFingerprintDotnetJs=true`.
 
 #### dotnet.native.js
 
