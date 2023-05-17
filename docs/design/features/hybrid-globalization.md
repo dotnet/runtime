@@ -198,3 +198,118 @@ Web API does not expose locale-sensitive endsWith/startsWith function. As a work
 
 - `IgnoreSymbols`
 Only comparisons that do not skip character types are allowed. E.g. `IgnoreSymbols` skips symbol-chars in comparison/indexing. All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
+
+
+### OSX
+
+For OSX platforms we are using native apis instead of ICU data.
+
+**String comparison**
+
+Affected public APIs:
+- CompareInfo.Compare,
+- String.Compare,
+- String.Equals.
+
+The number of `CompareOptions` and `NSStringCompareOptions` combinations are limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for NSStringCompareOptions](https://developer.apple.com/documentation/foundation/nsstringcompareoptions).
+
+- `IgnoreSymbols` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+
+- `IgnoreKanaType` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+
+- `StringSort` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
+
+- `None`:
+
+`CompareOptions.None` is mapped to `NSStringCompareOptions.NSLiteralSearch`
+
+There are some behaviour changes
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|   `\u3042` あ   |   `\u30A1` ァ   |   None  |             1            |    -1   |     hiragana and katakana characters are ordered differently compared to ICU    |
+|   `\u304D\u3083` きゃ  |   `\u30AD\u30E3` キャ |     None     |             1            |    -1   | hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u304D\u3083` きゃ  |   `\u30AD\u3083` キゃ  |     None     |             1           |    -1   |  hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C` ばびﾌﾞﾍﾞぼ  |   `\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E` バビぶベﾎﾞ  |     None     |   1  |  -1  | hiragana and katakana characters are ordered differently compared to ICU   |
+|   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
+|   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
+
+
+- `IgnoreCase`:
+
+`CompareOptions.IgnoreCase` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch`
+
+There are some behaviour changes
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|   `\u20A9` ₩  |   `\uFFE6` ￦  |     IgnoreCase     |   0  |  -1  |    |
+|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreCase     |   0  |  1  |    |
+|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   0  |  1  |    |
+
+- `IgnoreNoneSpace`:
+
+`CompareOptions.IgnoreNoneSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch`
+
+There are some behaviour changes
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreNoneSpace     |   0  |  1  |    |
+|   `\u306F` は |   `\u3070` ば  |     IgnoreNoneSpace     |   -1  |  0  |   |
+|   `\u306F` は |   `\u3071` ぱ  |     IgnoreNoneSpace     |   -1  |  0  |    |
+|   `\u30CF` ハ |   `\u30D0` バ  |     IgnoreNoneSpace     |   -1  |  0  |   |
+|   `\u30CF` ハ |   `\u30D1` パ  |     IgnoreNoneSpace     |   -1  |  0  |   |
+
+
+- List of all `CompareOptions` combinations always throwing `PlatformNotSupportedException`:
+
+`IgnoreSymbols`,
+
+`IgnoreSymbols | IgnoreCase`,
+
+`IgnoreSymbols | IgnoreNonSpace`,
+
+`IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
+
+`IgnoreKanaType`,
+
+`IgnoreKanaType | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreNonSpace`,
+
+`IgnoreKanaType | IgnoreNonSpace | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreSymbols`,
+
+`IgnoreKanaType | IgnoreCase | IgnoreSymbols`,
+
+`IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace`,
+
+`IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
+
+`IgnoreWidth | IgnoreSymbols`,
+
+`IgnoreWidth | IgnoreSymbols | IgnoreCase`,
+
+`IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`,
+
+`IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreWidth`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreNonSpace`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreNonSpace | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreSymbols`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`,
+
+`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
+
+`StringSort`
