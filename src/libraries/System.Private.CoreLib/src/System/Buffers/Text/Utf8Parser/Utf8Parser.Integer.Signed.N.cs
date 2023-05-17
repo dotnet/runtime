@@ -430,7 +430,7 @@ namespace System.Buffers.Text
                 if (!ParserHelpers.IsDigit(c))
                     goto Done;
 
-                if (((ulong)answer) > Int128.MaxValue / 10)
+                if (((UInt128)answer) > Int128.MaxValue / 10)
                     goto FalseExit;
 
                 answer = answer * 10 + c - '0';
