@@ -223,7 +223,7 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 `CompareOptions.None` is mapped to `NSStringCompareOptions.NSLiteralSearch`
 
-There are some behaviour changes
+There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
@@ -239,7 +239,7 @@ There are some behaviour changes
 
 `CompareOptions.IgnoreCase` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch`
 
-There are some behaviour changes
+There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
@@ -251,7 +251,7 @@ There are some behaviour changes
 
 `CompareOptions.IgnoreNoneSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch`
 
-There are some behaviour changes
+There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
