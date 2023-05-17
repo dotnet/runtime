@@ -1048,12 +1048,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/profiler/**/*">
-            <Issue>CoreCLR test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/**/*">
-            <Issue>CoreCLR test</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/201</Issue>
         </ExcludeList>
