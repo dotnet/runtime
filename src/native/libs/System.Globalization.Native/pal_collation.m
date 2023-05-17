@@ -16,37 +16,34 @@ typedef enum
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
     IgnoreWidth = 16,
+    StringSort = 536870912,
     
 } CompareOptions;
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
-    NSStringCompareOptions options = 0;
-    if (comparisonOptions == None)
-       options = NSLiteralSearch;
-
-    else if (comparisonOptions == IgnoreCase)
-        options = NSCaseInsensitiveSearch;
-
-    else if (comparisonOptions == IgnoreNonSpace)
-        options = NSDiacriticInsensitiveSearch;
-
-    else if (comparisonOptions == (IgnoreNonSpace | IgnoreCase))
-        options = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
-
-    else if (comparisonOptions == IgnoreWidth)
-        options = NSWidthInsensitiveSearch;
-
-    else if (comparisonOptions == (IgnoreWidth | IgnoreCase))
-        options = NSWidthInsensitiveSearch | NSCaseInsensitiveSearch;
-
-    else if (comparisonOptions == (IgnoreWidth | IgnoreNonSpace))
-        options = NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch;
-
-    else if (comparisonOptions == (IgnoreWidth | IgnoreNonSpace | IgnoreCase))
-        options = NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSCaseInsensitiveSearch;
-
-    return options;
+    switch(comparisonOptions)
+    {
+        case None:
+        case StringSort:
+            return NSLiteralSearch;
+        case IgnoreCase:
+            return NSCaseInsensitiveSearch;
+        case IgnoreNonSpace:
+            return NSDiacriticInsensitiveSearch;
+        case (IgnoreNonSpace | IgnoreCase):
+            return NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+        case IgnoreWidth:
+            return NSWidthInsensitiveSearch;
+        case (IgnoreWidth | IgnoreCase):
+            return NSWidthInsensitiveSearch | NSCaseInsensitiveSearch;
+        case (IgnoreWidth | IgnoreNonSpace):
+            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch;
+        case (IgnoreWidth | IgnoreNonSpace | IgnoreCase):
+            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSCaseInsensitiveSearch;
+        default:
+            return 0;
+    }
 }
 
 #endif

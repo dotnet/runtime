@@ -217,8 +217,6 @@ The number of `CompareOptions` and `NSStringCompareOptions` combinations are lim
 
 - `IgnoreKanaType` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
 
-- `StringSort` is not supported because there is no equivalent in native api. Throws `PlatformNotSupportedException`.
-
 - `None`:
 
 `CompareOptions.None` is mapped to `NSStringCompareOptions.NSLiteralSearch`
@@ -234,6 +232,7 @@ There are some behaviour changes. Below are examples of such cases.
 |   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
 |   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
 
+- `StringSort` shares the same logic as None.
 
 - `IgnoreCase`:
 
@@ -311,5 +310,3 @@ There are some behaviour changes. Below are examples of such cases.
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`,
 
 `IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
-
-`StringSort`

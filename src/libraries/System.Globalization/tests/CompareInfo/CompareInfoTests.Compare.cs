@@ -201,12 +201,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, -1 };
             yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, 0 };
 
-            // In HybridGlobalization on OSX IgnoreSymbols and StringSort are not supported
+            // In HybridGlobalization on OSX IgnoreSymbols is not supported
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
                 yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.IgnoreSymbols, 0 };
-                yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.StringSort, -1 };
             }
+            yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.StringSort, -1 };
 
             yield return new object[] { s_invariantCompare, null, "Tests", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Test's", null, CompareOptions.None, 1 };
