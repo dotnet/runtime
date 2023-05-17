@@ -1,9 +1,6 @@
 parameters:
   archType: ''
   buildConfig: ''
-  # compilerName specifies the compiler to use to do the builds. This can either be 'gcc' or left
-  # unset to use the default (clang on Linux/Mac, Visual C++ on Windows).
-  compilerName: ''
   condition: true
   container: ''
   crossBuild: false
@@ -42,10 +39,7 @@ jobs:
     pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
-    ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
+    ${{ if ne(parameters.testGroup, 'clrTools') }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
         parameters.runtimeVariant,
         parameters.osGroup,
@@ -83,11 +77,6 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_ToolsUnitTests'
-    - ${{ if eq(parameters.compilerName, 'gcc') }}:
-      - name: compilerArg
-        value: '-gcc'
-      - name: publishLogsArtifactPrefix
-        value: 'BuildLogs_CoreCLR_GCC'
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -228,11 +217,6 @@ jobs:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
-    # Build libs.native, host.native and mono with gcc
-    - ${{ if eq(parameters.compilerName, 'gcc') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) libs.native+host.native+mono $(compilerArg) $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
-        displayName: Build libs.native+host.native+mono
-
     # Sign and add entitlements to these MacOS binaries
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'osx') }}:
@@ -262,8 +246,8 @@ jobs:
           isOfficialBuild: ${{ parameters.signBinaries }}
           timeoutInMinutes: 30
 
-    # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
+    # clrTools unitests do not publish the build artifacts
+    - ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
@@ -275,7 +259,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'linux'), ne(parameters.archType, 'x86'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
           parameters:
             archType: ${{ parameters.archType }}
@@ -296,7 +280,7 @@ jobs:
             isOfficialBuild: ${{ parameters.signBinaries }}
             hostArchType: x86
 
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
+    - ${{ if and(ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml

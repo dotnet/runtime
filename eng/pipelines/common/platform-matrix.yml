@@ -353,7 +353,6 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        compilerName: gcc
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Mono LLVMAot test build
