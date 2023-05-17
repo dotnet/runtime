@@ -231,5 +231,11 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(384, HMACSHA3_384.HashSizeInBits);
             Assert.Equal(48, HMACSHA3_384.HashSizeInBytes);
         }
+
+        [Fact]
+        public void HmacSha3_384_IsSupported_AgreesWithPlatformVersion()
+        {
+            Assert.Equal(PlatformDetection.SupportsSha3, HMACSHA3_384.IsSupported);
+        }
     }
 }

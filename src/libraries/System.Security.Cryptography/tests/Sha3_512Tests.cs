@@ -123,6 +123,12 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(64, SHA3_512.HashSizeInBytes);
         }
 
+        [Fact]
+        public void SHA3_512_IsSupported_AgreesWithPlatformVersion()
+        {
+            Assert.Equal(PlatformDetection.SupportsSha3, SHA3_512.IsSupported);
+        }
+
         private static IEnumerable<(string Msg, string MD)> Fips202Kats
         {
             get
