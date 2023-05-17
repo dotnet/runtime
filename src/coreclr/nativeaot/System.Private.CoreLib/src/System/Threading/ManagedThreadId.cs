@@ -155,7 +155,7 @@ namespace System.Threading
                 int childSize = ChildSize;
                 if (id < childSize)
                 {
-                    left = left!.RecycleId(id);
+                    left = left.RecycleId(id);
                 }
                 else
                 {
@@ -167,7 +167,7 @@ namespace System.Threading
                     }
                     else
                     {
-                        right = right!.RecycleId(id - BitsPerNode);
+                        right = right.RecycleId(id - BitsPerNode);
                     }
                 }
                 return new ImmutableIdDispenser(left, right, _used - 1, _size, bitmap);
@@ -185,7 +185,7 @@ namespace System.Threading
         // when a Thread object cannot be created yet. We also store it in the Thread.CurrentThread object,
         // because that object may have longer lifetime than the OS thread.
         [ThreadStatic]
-        private static ManagedThreadId? t_currentThreadId;
+        private static ManagedThreadId t_currentThreadId;
         [ThreadStatic]
         private static int t_currentManagedThreadId;
 
@@ -238,7 +238,7 @@ namespace System.Threading
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
             for (;;)
             {
-                var updatedIdDispenser = s_idDispenser!.RecycleId(id);
+                var updatedIdDispenser = s_idDispenser.RecycleId(id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
                 if (object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;
@@ -265,7 +265,7 @@ namespace System.Threading
             if (t_currentManagedThreadId == IdNone)
                 MakeForCurrentThread();
 
-            return t_currentThreadId!;
+            return t_currentThreadId;
         }
 
         private static int MakeForCurrentThread()
