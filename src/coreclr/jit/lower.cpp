@@ -4107,9 +4107,9 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 {
     assert(ret->OperGet() == GT_RETURN);
 
-    JITDUMP("lowering GT_RETURN\n");
+    JITDUMP("Lowering RETURN\n");
     DISPNODE(ret);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     GenTree* retVal = ret->gtGetOp1();
     // There are two kinds of retyping:
@@ -4436,10 +4436,16 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     assert(ret->OperIs(GT_RETURN));
     assert(varTypeIsStruct(ret));
 
-    GenTree*  retVal           = ret->gtGetOp1();
     var_types nativeReturnType = comp->info.compRetNativeType;
     // Note: small types are returned as INT.
     ret->ChangeType(genActualType(nativeReturnType));
+
+    if (comp->opts.OptimizationEnabled())
+    {
+        TryStoreForwardStructReturn(ret);
+    }
+
+    GenTree* retVal = ret->gtGetOp1();
 
     switch (retVal->OperGet())
     {
@@ -4509,6 +4515,87 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             }
             break;
     }
+}
+
+//----------------------------------------------------------------------------------------------
+// TryStoreForwardStructReturn: See if we can store forward a primitive store to a struct return.
+//
+// Arguments:
+//   ret - The return node.
+//
+// Remarks:
+//   Struct returns may be immediately preceded by IR that writes a primitive
+//   field into the struct. Particularly physical promotion produces this
+//   pattern. This optimization gets rid of the store when possible.
+//
+//   Before:
+//     t21 =    CNS_INT   int    0 $41
+//           ┌──▌  t21    int
+//           ▌  STORE_LCL_FLD ushort V01 tmp1         d:1[+0] $VN.Void
+//      t6 =    LCL_VAR   struct<System.Half, 2> V01 tmp1         u:1 (last use) $c0
+//           ┌──▌  t6     struct
+//           ▌  RETURN    struct $VN.Void
+//
+//   After:
+//     t21 =    CNS_INT   int    0 $41
+//           ┌──▌  t21    int
+//           ▌  RETURN    int    $VN.Void
+//
+void Lowering::TryStoreForwardStructReturn(GenTreeUnOp* ret)
+{
+    GenTree* retVal = ret->gtGetOp1();
+    if (!retVal->OperIsLocalRead())
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* retLcl = retVal->AsLclVarCommon();
+
+    GenTree* prev = retVal->gtPrev;
+    while ((prev != nullptr) && prev->OperIs(GT_IL_OFFSET))
+    {
+        prev = prev->gtPrev;
+    }
+
+    if ((prev == nullptr) || !prev->OperIsLocalStore())
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* store = prev->AsLclVarCommon();
+
+    if (store->GetLclNum() != retLcl->GetLclNum())
+    {
+        return;
+    }
+
+    if (store->GetLclOffs() != retLcl->GetLclOffs())
+    {
+        return;
+    }
+
+    // Note: No normalization concerns for primitives here since we don't
+    // guarantee any normalization for struct returns.
+    if (genActualType(store) != genActualType(comp->info.compRetNativeType))
+    {
+        return;
+    }
+
+    if (genTypeSize(store) < genTypeSize(comp->info.compRetNativeType))
+    {
+        return;
+    }
+
+    JITDUMP("Store-forwarding struct with preceding primitive store. Before:\n");
+    DISPTREERANGE(BlockRange(), ret);
+
+    ret->gtOp1 = store->Data();
+    store->Data()->ClearContained();
+    BlockRange().Remove(store);
+    BlockRange().Remove(retLcl);
+
+    JITDUMP("\nAfter:\n");
+    DISPTREERANGE(BlockRange(), ret);
 }
 
 //----------------------------------------------------------------------------------------------
