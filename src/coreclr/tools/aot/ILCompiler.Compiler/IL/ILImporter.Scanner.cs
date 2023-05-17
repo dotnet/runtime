@@ -946,10 +946,8 @@ namespace Internal.IL
                 }
                 _dependencies.Add(reference, "ldtoken");
             }
-            else if (obj is MethodDesc)
+            else if (obj is MethodDesc method)
             {
-                var method = (MethodDesc)obj;
-
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
 
                 if (method.IsRuntimeDeterminedExactMethod)
