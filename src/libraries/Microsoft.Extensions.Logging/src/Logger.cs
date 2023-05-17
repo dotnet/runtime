@@ -65,8 +65,8 @@ namespace Microsoft.Extensions.Logging
             {
                 metadata = ((ILoggerStateWithMetadata<TState>)state).Metadata;
             }
-            ScopePipeline<TState> pipeline = GetScopePipeline<TState>(metadata, this)!;
-            if (!pipeline.IsEnabled)
+            ScopePipeline<TState>? pipeline = GetScopePipeline<TState>(metadata, this);
+            if (pipeline is null || !pipeline.IsEnabled)
             {
                 return null;
             }
@@ -141,18 +141,21 @@ namespace Microsoft.Extensions.Logging
         {
             Loggers = Array.Empty<LoggerInformation>();
             Processor = NullLogProcessor.Instance;
+            FilterOptions = new LoggerFilterOptions();
         }
 
-        public VersionedLoggerState(LoggerInformation[] loggers, ILogEntryProcessor processor)
+        public VersionedLoggerState(LoggerInformation[] loggers, ILogEntryProcessor processor, LoggerFilterOptions filterOptions)
         {
             Loggers = loggers;
             Processor = processor;
+            FilterOptions = filterOptions;
             _isUpToDate = true;
         }
 
         private bool _isUpToDate;
         public LoggerInformation[] Loggers { get; }
         public ILogEntryProcessor Processor { get; }
+        public LoggerFilterOptions FilterOptions { get; }
         public Dictionary<PipelineKey, Pipeline> Pipelines { get; } = new Dictionary<PipelineKey, Pipeline>();
 
         public LogEntryPipeline<TState>? GetLoggingPipeline<TState>(ILogMetadata<TState>? metadata, object? userState)
@@ -183,6 +186,11 @@ namespace Microsoft.Extensions.Logging
             // The default versioned state should never be used to create pipelines, it is a shared singleton
             // that exists just to satisfy nullability checks
             Debug.Assert(this != Default);
+
+            if (!FilterOptions.CaptureScopes)
+            {
+                return null;
+            }
 
             Pipeline? pipeline;
             PipelineKey key = new PipelineKey(isLoggingPipeline: false, (metadata == null) ? typeof(TState) : metadata, terminalProcessor: null, userState: userState);

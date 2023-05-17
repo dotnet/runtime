@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Test
     public class ProcessorTests
     {
         [Fact]
-        public void AddConsole_BuilderExtensionAddsSingleSetOfServicesWhenCalledTwice()
+        public void LogInformation_InvokesProcessor()
         {
             List<string> logMessages = new List<string>();
 
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        public void sdfsdfsdf()
+        public void DefinedLog_InvokesProcessor()
         {
             var sink = new TestSink();
             var provider = new TestLoggerProvider(sink, isEnabled: true);
@@ -44,12 +44,12 @@ namespace Microsoft.Extensions.Logging.Test
             var loggerFactory = serviceCollection.BuildServiceProvider().GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("Test");
 
-            var sdf = LoggerMessage.Define<string, int>(
+            var definedLog = LoggerMessage.Define<string, int>(
                 LogLevel.Information,
                 new EventId(1, "Test"),
                 "Hello {Name}. You are {Age} years old.");
 
-            sdf(logger, "John Doe", 10, null);
+            definedLog(logger, "John Doe", 10, null);
 
             Assert.Collection(logMessages, m => Assert.Equal("Hello John Doe. You are 10 years old.", m));
         }
