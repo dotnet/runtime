@@ -1258,36 +1258,25 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         public void InitializeWithArgumentList_Add()
-        {
+        {   
             ProcessStartInfo psi = new ProcessStartInfo("filename");
-            psi.ArgumentList.Add("arg1");
-            psi.ArgumentList.Add("arg2");
-            psi.ArgumentList.Add(" arg3");
-            psi.ArgumentList.Add("arg4 ");
-            psi.ArgumentList.Add("arg 5");
-            psi.ArgumentList.Add($"arg{Environment.NewLine}6");
 
-            Assert.Equal(6, psi.ArgumentList.Count);
-            Assert.Equal("arg1", psi.ArgumentList[0]);
-            Assert.Equal("arg2", psi.ArgumentList[1]);
-            Assert.Equal(" arg3", psi.ArgumentList[2]);
-            Assert.Equal("arg4 ", psi.ArgumentList[3]);
-            Assert.Equal("arg 5", psi.ArgumentList[4]);
-            Assert.Equal($"arg{Environment.NewLine}6", psi.ArgumentList[5]);
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            foreach (string arg in args)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+
+            Assert.Equal(args, psi.ArgumentList);
         }
 
         [Fact]
         public void InitializeWithArgumentList_Enumerable()
         {
-            ProcessStartInfo psi = new ProcessStartInfo("filename", new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" });
-            
-            Assert.Equal(6, psi.ArgumentList.Count);
-            Assert.Equal("arg1", psi.ArgumentList[0]);
-            Assert.Equal("arg2", psi.ArgumentList[1]);
-            Assert.Equal(" arg3", psi.ArgumentList[2]);
-            Assert.Equal("arg4 ", psi.ArgumentList[3]);
-            Assert.Equal("arg 5", psi.ArgumentList[4]);
-            Assert.Equal($"arg{Environment.NewLine}6", psi.ArgumentList[5]);
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+
+            Assert.Equal(args, psi.ArgumentList);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
