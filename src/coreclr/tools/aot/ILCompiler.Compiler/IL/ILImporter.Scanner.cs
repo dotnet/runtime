@@ -898,7 +898,7 @@ namespace Internal.IL
         {
             object obj = _methodIL.GetObject(token);
 
-            if (obj is TypeDesc)
+            if (obj is TypeDesc type)
             {
                 // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
@@ -931,8 +931,6 @@ namespace Internal.IL
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
-
-                var type = (TypeDesc)obj;
 
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
