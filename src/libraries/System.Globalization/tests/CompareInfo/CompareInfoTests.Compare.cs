@@ -125,7 +125,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF41\uFF42\uFF23D\uFF25", CompareOptions.None, 1 };
             yield return new object[] { s_invariantCompare, "\u6FA4", "\u6CA2", CompareOptions.None, 1 };
 
-
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnOSX ? 1 : s_expectedHiraganaToKatakanaCompare };
@@ -173,9 +172,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "'", "\uFF07", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\"", "\uFF02", CompareOptions.None, -1 };
 
-            // Hungarian            
-            yield return new object[] { s_invariantCompare, "dzsdzs", "ddzs", CompareOptions.None, 1 };
-            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.Ordinal, 1 };
+            // Hungarian
+            yield return new object[] { s_hungarianCompare, "dzsdzs", "ddzs", CompareOptions.Ordinal, 1 };         
+            yield return new object[] { s_invariantCompare, "dzsdzs", "ddzs", CompareOptions.None, 1 };            
             yield return new object[] { s_invariantCompare, "dzsdzs", "ddzs", CompareOptions.Ordinal, 1 };
 
             // Turkish
@@ -194,13 +193,13 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "i", "\u0130", CompareOptions.IgnoreCase, -1 };
 
             yield return new object[] { s_invariantCompare, "\u00C0", "A\u0300", CompareOptions.None, PlatformDetection.IsHybridGlobalizationOnOSX ? 1 : 0 };
-            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.None, 1 };
-            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.IgnoreCase, 0 };
-            
             yield return new object[] { s_invariantCompare, "\u00C0", "A\u0300", CompareOptions.Ordinal, 1 };
+            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.None, 1 };
+            yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.IgnoreCase, 0 };            
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.Ordinal, 1 };
             yield return new object[] { s_invariantCompare, "\u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, 1 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, -1 };
+            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, 0 };
 
             // In HybridGlobalization on OSX IgnoreSymbols and StringSort are not supported
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
@@ -208,8 +207,6 @@ namespace System.Globalization.Tests
                 yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.IgnoreSymbols, 0 };
                 yield return new object[] { s_invariantCompare, "Test's", "Tests", CompareOptions.StringSort, -1 };
             }
-
-            yield return new object[] { s_invariantCompare, "FooBA\u0300R", "FooB\u00C0R", supportedIgnoreNonSpaceOption, 0 };
 
             yield return new object[] { s_invariantCompare, null, "Tests", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Test's", null, CompareOptions.None, 1 };
@@ -223,13 +220,11 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "", CompareOptions.None, 0 };
 
             yield return new object[] { s_invariantCompare, new string('a', 5555), new string('a', 5555), CompareOptions.None, 0 };
-
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreCaseIgnoreNonSpaceOptions, 0 };
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreNonSpaceOption, -1 };
 
-            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };
+            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, PlatformDetection.IsHybridGlobalizationOnBrowser ? 1 : 0 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnOSX ? 0 : -1 };
-
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
 
@@ -269,6 +264,7 @@ namespace System.Globalization.Tests
 
             // in HybridGlobalization on Browser IgnoreKanaType is supported only for "ja"
             var kanaComparison = PlatformDetection.IsHybridGlobalizationOnBrowser ? s_japaneseCompare : s_invariantCompare;
+
             // In HybridGlobalization mode on OSX IgnoreKanaType is not supported
             if (!PlatformDetection.IsHybridGlobalizationOnOSX)
             {
@@ -277,6 +273,7 @@ namespace System.Globalization.Tests
             }
 
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnOSX ? 0 : s_expectedHiraganaToKatakanaCompare };
+
             // Japanese [semi-]voiced sound mark
             yield return new object[] { s_invariantCompare, "\u306F", "\u3070", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u306F", "\u3071", CompareOptions.IgnoreCase, -1 };
@@ -284,7 +281,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u30CF", "\u30D0", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u30CF", "\u30D1", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u30D0", "\u30D1", CompareOptions.IgnoreCase, -1 };
-
             yield return new object[] { s_invariantCompare, "\u306F", "\u3070", supportedIgnoreNonSpaceOption, PlatformDetection.IsHybridGlobalizationOnOSX ? -1 : 0 };
             yield return new object[] { s_invariantCompare, "\u306F", "\u3071", supportedIgnoreNonSpaceOption, PlatformDetection.IsHybridGlobalizationOnOSX ? -1 : 0 };
             yield return new object[] { s_invariantCompare, "\u3070", "\u3071", supportedIgnoreNonSpaceOption, 0 };
@@ -321,6 +317,7 @@ namespace System.Globalization.Tests
             //
             // Ordinal comparisons with ignore casing.
             //
+            
             yield return new object[] { s_invariantCompare, "abcd", "abcd", CompareOptions.OrdinalIgnoreCase, 0};
             yield return new object[] { s_invariantCompare, "abcd", "ABCD", CompareOptions.OrdinalIgnoreCase, 0};
             yield return new object[] { s_invariantCompare, "Hello\u00F6", "HELLO\u00D6", CompareOptions.OrdinalIgnoreCase, 0};
@@ -365,8 +362,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "Hello", 2, 3, "Hemlo", 2, 3, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Hello", 2, 2, "elmo", 1, 2, CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "Hello", 1, 0, "Goodbye", 1, 0, CompareOptions.None, 0 };
-            yield return new object[] { s_invariantCompare, "Hello", 5, 0, "Goodbye", 0, 0, CompareOptions.None, 0 };
-            
+            yield return new object[] { s_invariantCompare, "Hello", 5, 0, "Goodbye", 0, 0, CompareOptions.None, 0 };            
 
             yield return new object[] { s_invariantCompare, "Hello", 1, 2, "hElLo", 1, 2, CompareOptions.OrdinalIgnoreCase, 0 };
             yield return new object[] { s_invariantCompare, "Hello", 1, 2, "heLLo", 1, 3, CompareOptions.OrdinalIgnoreCase, -1 };
