@@ -200,7 +200,7 @@ Args:
 
 ## ES6 modules
 
-JavaScript part of the .NET runtime for WebAssembly is composed of several ES6 modules
+JavaScript part of the .NET runtime for WebAssembly is composed of several ES6 modules.
 
 #### dotnet.js
 
