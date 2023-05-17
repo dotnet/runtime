@@ -420,8 +420,10 @@ namespace System.Diagnostics.Metrics.Tests
                 udc.Add(40);
 
                 // some alternate listener attempts to listen in the middle
-                using MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "ADifferentMeter");
-                listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "ADifferentMeter"))
+                {
+                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                }
 
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
@@ -435,6 +437,38 @@ namespace System.Diagnostics.Metrics.Tests
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        //[OuterLoop("Slow and has lots of console spew")]
+        public void EventSourceRejectsNewSharedListenerWithDifferentMaxHistogramAndMaxTimeSeriesDoesntDisable()
+        {
+            using Meter meter = new Meter("TestMeter7");
+            Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 10, 10, "TestMeter7"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                c.Add(12);
+
+                // some alternate listener attempts to listen in the middle
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, 11, 11, "ADifferentMeter"))
+                {
+                    listener2.WaitForMultipleSessionsConfiguredIncorrectlyError(s_waitForEventTimeout);
+                }
+
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                c.Add(19);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"), ("19", "36"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

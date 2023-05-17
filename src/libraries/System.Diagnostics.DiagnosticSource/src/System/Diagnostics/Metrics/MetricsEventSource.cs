@@ -45,7 +45,7 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
-        public const string SharedSessionPrefix = "SHARED";
+        private const string SharedSessionId = "SHARED";
 
         public static class Keywords
         {
@@ -229,6 +229,8 @@ namespace System.Diagnostics.Metrics
         {
             private AggregationManager? _aggregationManager;
             private string _sessionId = "";
+            private HashSet<string> _sharedSessionIds = new HashSet<string>();
+            private int _sharedSessionRefCount;
 
             public CommandHandler(MetricsEventSource parent)
             {
@@ -240,9 +242,10 @@ namespace System.Diagnostics.Metrics
             public bool IsSharedSession(string commandSessionId)
             {
                 // commandSessionId may be null if it's the disable command
-                return _sessionId.StartsWith(SharedSessionPrefix) && (string.IsNullOrEmpty(commandSessionId) || commandSessionId.StartsWith(SharedSessionPrefix));
+                return _sessionId == SharedSessionId && (string.IsNullOrEmpty(commandSessionId) || commandSessionId == SharedSessionId);
             }
 
+            // ADD REF COUNTING USING SHAREDSESSIONID - IF REF COUNT IS 0, THEN DISABLE
             public void OnEventCommand(EventCommandEventArgs command)
             {
                 try
@@ -268,11 +271,40 @@ namespace System.Diagnostics.Metrics
                         || command.Command == EventCommand.Enable)
                         && _aggregationManager != null)
                     {
+
+                        if (command.Command == EventCommand.Update
+                            || command.Command == EventCommand.Enable)
+                        {
+                            string uniqueIdentifier = commandSessionId;
+
+                            // Could be unsafe if SharedIdentifier protocol isn't followed
+                            if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                            {
+                                uniqueIdentifier = sharedIdentifier!;
+                            }
+
+                            if (!_sharedSessionIds.Contains(uniqueIdentifier))
+                            {
+                                _sharedSessionIds.Add(uniqueIdentifier);
+                                _sharedSessionRefCount += 1;
+                            }
+                        }
+
                         if (IsSharedSession(commandSessionId))
                         {
-                            bool validShared = true;
+                            if (command.Command == EventCommand.Disable)
+                            {
+                                if (Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
+                                {
+                                    _aggregationManager.Dispose();
+                                    _aggregationManager = null;
+                                    _sessionId = "";
+                                    _sharedSessionIds.Clear();
+                                }
+                                return;
+                            }
 
-                            // add the new providers, assuming maxhistograms, maxtimeseries, and refreshinterval are the same
+                            bool validShared = true;
 
                             Func<string, double> parseDouble = (string s) =>
                             {
@@ -300,6 +332,7 @@ namespace System.Diagnostics.Metrics
                                 validShared = ParseArgs(command.Arguments!, parseDouble, "RefreshInterval", _aggregationManager.CollectionPeriod.TotalSeconds, out refreshInterval) ? validShared : false;
                             }
 
+                            // Refactor this to share with code down below
                             int maxHistograms, maxTimeSeries;
                             validShared = ParseArgs(command.Arguments!, parseInt, "MaxHistograms", _aggregationManager.MaxHistograms, out maxHistograms) ? validShared : false;
                             validShared = ParseArgs(command.Arguments!, parseInt, "MaxTimeSeries", _aggregationManager.MaxTimeSeries, out maxTimeSeries) ? validShared : false;
@@ -453,6 +486,21 @@ namespace System.Diagnostics.Metrics
                         }
 
                         _aggregationManager.Start();
+
+                        // Copied from above, push to method
+                        string uniqueIdentifier = commandSessionId;
+
+                        // Could be unsafe if SharedIdentifier protocol isn't followed
+                        if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                        {
+                            uniqueIdentifier = sharedIdentifier!;
+                        }
+
+                        if (!_sharedSessionIds.Contains(uniqueIdentifier))
+                        {
+                            _sharedSessionIds.Add(uniqueIdentifier);
+                            _sharedSessionRefCount += 1;
+                        }
                     }
                 }
                 catch (Exception e) when (LogError(e))
@@ -469,7 +517,7 @@ namespace System.Diagnostics.Metrics
                     return EqualityComparer<T>.Default.Equals(conversion(argumentString), currentValue);
                 }
 
-                Parent.Message($"Invalid {argumentName} provided. Using existing value {currentValue}");
+                Parent.Message($"Invalid {argumentName} provided. Using existing shared value {currentValue}"); // do we want to make this assumption - basically, if there's any ambiguity or an invalid parameter is provided, we set the value to be the SHARED one (instead of failing). More flexible, but do we want that?
 
                 parsedValue = currentValue;
                 return true;

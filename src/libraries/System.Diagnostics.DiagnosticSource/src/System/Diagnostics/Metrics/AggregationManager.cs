@@ -77,16 +77,13 @@ namespace System.Diagnostics.Metrics
             {
                 InstrumentPublished = (instrument, listener) =>
                 {
-                    if (!_instrumentList.Contains(instrument))
+                    _instrumentPublished(instrument);
+                    InstrumentState? state = GetInstrumentState(instrument);
+                    if (state != null)
                     {
-                        _instrumentPublished(instrument);
-                        InstrumentState? state = GetInstrumentState(instrument);
-                        if (state != null)
-                        {
-                            _instrumentList.Add(instrument);
-                            _beginInstrumentMeasurements(instrument);
-                            listener.EnableMeasurementEvents(instrument, state);
-                        }
+                        _instrumentList.Add(instrument);
+                        _beginInstrumentMeasurements(instrument);
+                        listener.EnableMeasurementEvents(instrument, state);
                     }
                 },
                 MeasurementsCompleted = (instrument, cookie) =>
@@ -160,11 +157,14 @@ namespace System.Diagnostics.Metrics
             {
                 foreach (Instrument instrument in publishedInstruments)
                 {
-                    _listener.InstrumentPublished?.Invoke(instrument, _listener);
+                    if (!_instrumentList.Contains(instrument))
+                    {
+                        _listener.InstrumentPublished?.Invoke(instrument, _listener);
+                    }
                 }
             }
 
-            _initialInstrumentEnumerationComplete();
+            _initialInstrumentEnumerationComplete(); // Do we want this on update?
         }
 
         private void CollectWorker(CancellationToken cancelToken)
