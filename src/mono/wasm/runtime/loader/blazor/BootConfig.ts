@@ -11,7 +11,7 @@ export class BootConfigResult {
     private constructor(public bootConfig: BootJsonData, public applicationEnvironment: string) {
     }
 
-    static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment?: string): BootConfigResult {
+    static fromFetchResponse(bootConfigResponse: Response, bootConfig: BootJsonData, environment: string | undefined): BootConfigResult {
         const applicationEnvironment = environment || (loaderHelpers.getApplicationEnvironment && loaderHelpers.getApplicationEnvironment(bootConfigResponse)) || "Production";
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
         bootConfig.aspnetCoreBrowserTools = bootConfigResponse.headers.get("ASPNETCORE-BROWSER-TOOLS");
