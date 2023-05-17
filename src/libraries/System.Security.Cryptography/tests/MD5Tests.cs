@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Sha512_HashSizes()
+        public void MD5_HashSizes()
         {
             Assert.Equal(128, MD5.HashSizeInBits);
             Assert.Equal(16, MD5.HashSizeInBytes);

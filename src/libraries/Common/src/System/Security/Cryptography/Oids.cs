@@ -94,7 +94,6 @@ namespace System.Security.Cryptography
         internal const string ECDsaWithSha3_384 = "2.16.840.1.101.3.4.3.11";
         internal const string ECDsaWithSha3_512 = "2.16.840.1.101.3.4.3.12";
 
-
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";
 

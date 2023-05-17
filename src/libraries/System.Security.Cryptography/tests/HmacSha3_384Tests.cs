@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Tests
 
         private static readonly byte[][] s_testKeys = new byte[][]
         {
-            // From: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/HMAC_SHA3-256.pdf
+            // From: https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/HMAC_SHA3-384.pdf
             null,
             ByteUtils.HexToByteArray(
                 "000102030405060708090a0b0c0d0e0f1011121314151617" +
