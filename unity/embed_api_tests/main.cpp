@@ -1754,12 +1754,8 @@ TEST(mono_custom_attrs_has_attr_can_check_assembly_attribute)
     MonoClass *klassTestAttribute = GetClassHelper(kTestDLLNameSpace, "TestAttribute");
     MonoClass *klassAnotherTestAttribute = GetClassHelper(kTestDLLNameSpace, "AnotherTestAttribute");
 
-    GET_AND_CHECK(customAttrInfo, mono_custom_attrs_from_assembly(g_assembly));
-
-    CHECK(mono_custom_attrs_has_attr(customAttrInfo, klassTestAttribute));
-    CHECK(!mono_custom_attrs_has_attr(customAttrInfo, klassAnotherTestAttribute));
-
-    mono_custom_attrs_free(customAttrInfo);
+    CHECK(mono_unity_assembly_has_attribute(g_assembly, klassTestAttribute));
+    CHECK(!mono_unity_assembly_has_attribute(g_assembly, klassAnotherTestAttribute));
 }
 
 #define kHelloString "Hello"

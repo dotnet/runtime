@@ -325,6 +325,9 @@ DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_class, (MonoClass * klass))
 DO_API(MonoCustomAttrInfo*, mono_custom_attrs_from_assembly, (MonoAssembly * assembly))
 DO_API(MonoArray*, mono_reflection_get_custom_attrs_by_type, (MonoObject * object, MonoClass * klass))
 DO_API(void, mono_custom_attrs_free, (MonoCustomAttrInfo * attr))
+DO_API(gboolean, mono_unity_class_has_attribute, (MonoClass* klass, MonoClass* attr_klass))
+DO_API(gboolean, mono_unity_assembly_has_attribute, (MonoAssembly* assembly, MonoClass* attr_klass))
+DO_API(gboolean, mono_unity_method_has_attribute, (MonoMethod* method, MonoClass* attr_klass))
 
 DO_API(void, mono_unity_set_data_dir, (const char * dir));
 DO_API(MonoClass*, mono_custom_attrs_get_attrs, (MonoCustomAttrInfo * ainfo, void** iterator))

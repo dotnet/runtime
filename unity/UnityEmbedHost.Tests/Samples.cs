@@ -3,6 +3,19 @@
 
 namespace UnityEmbedHost.Tests;
 
+[Obsolete]
+class Bacon
+{
+    [Obsolete]
+    public static void Fry()
+    {
+    }
+
+    public static void Smoke()
+    {
+    }
+}
+
 class Mammal : Animal, IMammal
 {
     public int EyeCount = 2;
