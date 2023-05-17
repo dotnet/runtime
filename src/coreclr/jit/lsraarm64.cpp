@@ -67,6 +67,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
+    assert(consecutiveRegsInUseThisLocation == RBM_NONE);
 
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
@@ -75,7 +76,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
-    regMaskTP busyConsecutiveRegMask = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+    consecutiveRegsInUseThisLocation = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
 
     while (consecutiveRefPosition != nullptr)
     {
@@ -95,7 +96,7 @@ void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNu
                 // RefTypeUpperVectorRestore positions of corresponding variables for which (another criteria)
                 // we are trying to find consecutive registers.
 
-                consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
+                consecutiveRefPosition->registerAssignment &= ~consecutiveRegsInUseThisLocation;
             }
             consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
         }
@@ -416,6 +417,15 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
+
+#ifdef DEBUG
+    if (getStressLimitRegs() != LSRA_LIMIT_NONE)
+    {
+        // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
+        freeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
+                           RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30);
+    }
+#endif
 
     *busyCandidates = RBM_NONE;
     regMaskTP    overallResult;
@@ -928,6 +938,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_TEST:
         case GT_CCMP:
         case GT_JCMP:
+        case GT_JTEST:
             srcCount = BuildCmp(tree);
             break;
 
@@ -1071,7 +1082,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -1164,44 +1174,10 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_ARR_ELEM:
-            // These must have been lowered to GT_ARR_INDEX
+            // These must have been lowered
             noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
             srcCount = 0;
             assert(dstCount == 0);
-            break;
-
-        case GT_ARR_INDEX:
-        {
-            srcCount = 2;
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            setInternalRegsDelayFree = true;
-
-            // For GT_ARR_INDEX, the lifetime of the arrObj must be extended because it is actually used multiple
-            // times while the result is being computed.
-            RefPosition* arrObjUse = BuildUse(tree->AsArrIndex()->ArrObj());
-            setDelayFree(arrObjUse);
-            BuildUse(tree->AsArrIndex()->IndexExpr());
-            buildInternalRegisterUses();
-            BuildDef(tree);
-        }
-        break;
-
-        case GT_ARR_OFFSET:
-            // This consumes the offset, if any, the arrObj and the effective index,
-            // and produces the flattened offset for this dimension.
-            srcCount = 2;
-            if (!tree->AsArrOffs()->gtOffset->isContained())
-            {
-                BuildUse(tree->AsArrOffs()->gtOffset);
-                srcCount++;
-            }
-            BuildUse(tree->AsArrOffs()->gtIndex);
-            BuildUse(tree->AsArrOffs()->gtArrObj);
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
             break;
 
         case GT_LEA:
@@ -1802,6 +1778,48 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
 
     return srcCount;
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// isLiveAtConsecutiveRegistersLoc: Check if the refPosition is live at the location
+//    where consecutive registers are needed. This is used during JitStressRegs to
+//    not constrain the register requirements for such refpositions, because a lot
+//    of registers will be busy. For RefTypeUse, it will just see if the nodeLocation
+//    matches with the tracking `consecutiveRegistersLocation`. For Def, it will check
+//    the underlying `GenTree*` to see if the tree that produced it had consecutive
+//    registers requirement.
+//
+//
+// Arguments:
+//    consecutiveRegistersLocation - The most recent location where consecutive
+//     registers were needed.
+//
+// Returns: If the refposition is live at same location which has the requirement of
+//    consecutive registers.
+//
+bool RefPosition::isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation)
+{
+    if (needsConsecutive)
+    {
+        return true;
+    }
+
+    if (refType == RefTypeDef)
+    {
+        if (treeNode->OperIsHWIntrinsic())
+        {
+            const HWIntrinsic intrin(treeNode->AsHWIntrinsic());
+            return HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id);
+        }
+    }
+    else if ((refType == RefTypeUse) || (refType == RefTypeUpperVectorRestore))
+    {
+        return consecutiveRegistersLocation == nodeLocation;
+    }
+    return false;
+}
+#endif
+
 #endif
 
 #endif // TARGET_ARM64

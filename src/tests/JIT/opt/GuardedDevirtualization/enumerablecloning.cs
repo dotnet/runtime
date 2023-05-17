@@ -10,8 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
-class CloningForIEnumerable
+public class CloningForIEnumerable
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(IEnumerable<int> e)
@@ -24,7 +25,8 @@ class CloningForIEnumerable
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         List<int> list = new List<int> { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 

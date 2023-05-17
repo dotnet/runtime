@@ -5,69 +5,6 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
-interface BootJsonData {
-    readonly entryAssembly: string;
-    readonly resources: ResourceGroups;
-    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
-    readonly debugBuild: boolean;
-    readonly linkerEnabled: boolean;
-    readonly cacheBootResources: boolean;
-    readonly config: string[];
-    readonly icuDataMode: ICUDataMode;
-    readonly startupMemoryCache: boolean | undefined;
-    readonly runtimeOptions: string[] | undefined;
-    modifiableAssemblies: string | null;
-    aspnetCoreBrowserTools: string | null;
-}
-type BootJsonDataExtension = {
-    [extensionName: string]: ResourceList;
-};
-interface ResourceGroups {
-    readonly assembly: ResourceList;
-    readonly lazyAssembly: ResourceList;
-    readonly pdb?: ResourceList;
-    readonly runtime: ResourceList;
-    readonly satelliteResources?: {
-        [cultureName: string]: ResourceList;
-    };
-    readonly libraryInitializers?: ResourceList;
-    readonly extensions?: BootJsonDataExtension;
-    readonly runtimeAssets: ExtendedResourceList;
-}
-type ResourceList = {
-    [name: string]: string;
-};
-type ExtendedResourceList = {
-    [name: string]: {
-        hash: string;
-        behavior: string;
-    };
-};
-declare enum ICUDataMode {
-    Sharded = 0,
-    All = 1,
-    Invariant = 2,
-    Custom = 3
-}
-
-interface DotnetHostBuilder {
-    withConfig(config: MonoConfig): DotnetHostBuilder;
-    withConfigSrc(configSrc: string): DotnetHostBuilder;
-    withApplicationArguments(...args: string[]): DotnetHostBuilder;
-    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
-    withEnvironmentVariables(variables: {
-        [i: string]: string;
-    }): DotnetHostBuilder;
-    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
-    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
-    withDebugging(level: number): DotnetHostBuilder;
-    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
-    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
-    create(): Promise<RuntimeAPI>;
-    run(): Promise<number>;
-}
-
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
 }
@@ -121,6 +58,22 @@ type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: W
 type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
+interface DotnetHostBuilder {
+    withConfig(config: MonoConfig): DotnetHostBuilder;
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withApplicationArguments(...args: string[]): DotnetHostBuilder;
+    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
+    withEnvironmentVariables(variables: {
+        [i: string]: string;
+    }): DotnetHostBuilder;
+    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
+    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
+    withDebugging(level: number): DotnetHostBuilder;
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    create(): Promise<RuntimeAPI>;
+    run(): Promise<number>;
+}
 type MonoConfig = {
     /**
      * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
@@ -186,6 +139,10 @@ type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string;
+    /**
+     * query string to be used for asset loading
+     */
+    assetUniqueQuery?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -226,7 +183,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
@@ -297,8 +254,7 @@ type ModuleAPI = {
     dotnet: DotnetHostBuilder;
     exit: (code: number, reason?: any) => void;
 };
-declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
-type CreateDotnetRuntimeType = typeof createDotnetRuntime;
+type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
 
 interface IDisposable {
     dispose(): void;
@@ -324,11 +280,59 @@ interface IMemoryView extends IDisposable {
     get byteLength(): number;
 }
 
+declare function mono_exit(exit_code: number, reason?: any): void;
+
+declare const dotnet: DotnetHostBuilder;
+declare const exit: typeof mono_exit;
+
+interface BootJsonData {
+    readonly entryAssembly: string;
+    readonly resources: ResourceGroups;
+    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
+    readonly debugBuild: boolean;
+    readonly linkerEnabled: boolean;
+    readonly cacheBootResources: boolean;
+    readonly config: string[];
+    readonly icuDataMode: ICUDataMode;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
+    modifiableAssemblies: string | null;
+    aspnetCoreBrowserTools: string | null;
+}
+type BootJsonDataExtension = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly assembly: ResourceList;
+    readonly lazyAssembly: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly extensions?: BootJsonDataExtension;
+    readonly runtimeAssets: ExtendedResourceList;
+}
+type ResourceList = {
+    [name: string]: string;
+};
+type ExtendedResourceList = {
+    [name: string]: {
+        hash: string;
+        behavior: string;
+    };
+};
+declare enum ICUDataMode {
+    Sharded = 0,
+    All = 1,
+    Invariant = 2,
+    Custom = 3
+}
+
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
-
-declare const dotnet: ModuleAPI["dotnet"];
-declare const exit: ModuleAPI["exit"];
+declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

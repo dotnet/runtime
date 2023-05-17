@@ -33,11 +33,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        AssertBlazorBootJson(config, isPublish: false, isNet7AndBelow: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        AssertBlazorBootJson(config, isPublish: true, isNet7AndBelow: false);
     }
 
     [Theory]
@@ -197,9 +197,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
-            <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
-            <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
+        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{ razorClassLibraryFileName }"" />
         ");
 
         _projectDir = wasmProjectDir;
@@ -222,7 +223,7 @@ public class BuildPublishTests : BuildTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.Contains(razorClassLibraryFileName, lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]

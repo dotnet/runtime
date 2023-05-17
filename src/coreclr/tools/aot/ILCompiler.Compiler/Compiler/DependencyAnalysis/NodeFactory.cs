@@ -24,6 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         private CompilationModuleGroup _compilationModuleGroup;
         private VTableSliceProvider _vtableSliceProvider;
         private DictionaryLayoutProvider _dictionaryLayoutProvider;
+        private InlinedThreadStatics _inlinedThreadStatics;
         protected readonly ImportedNodeProvider _importedNodeProvider;
         private bool _markingComplete;
 
@@ -36,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy lazyGenericsPolicy,
             VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider,
+            InlinedThreadStatics inlinedThreadStatics,
             ImportedNodeProvider importedNodeProvider,
             PreinitializationManager preinitializationManager)
         {
@@ -44,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
             _dictionaryLayoutProvider = dictionaryLayoutProvider;
+            _inlinedThreadStatics = inlinedThreadStatics;
             NameMangler = nameMangler;
             InteropStubManager = interoptStubManager;
             CreateNodeCaches();
@@ -207,8 +210,21 @@ namespace ILCompiler.DependencyAnalysis
 
             _threadStatics = new NodeCache<MetadataType, ISymbolDefinitionNode>(CreateThreadStaticsNode);
 
+            TypeThreadStaticIndexNode inlinedThreadStatiscIndexNode = null;
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                _inlinedThreadStatiscNode = new ThreadStaticsNode(_inlinedThreadStatics, this);
+                inlinedThreadStatiscIndexNode = new TypeThreadStaticIndexNode(_inlinedThreadStatiscNode);
+            }
+
             _typeThreadStaticIndices = new NodeCache<MetadataType, TypeThreadStaticIndexNode>(type =>
             {
+                if (inlinedThreadStatiscIndexNode != null &&
+                _inlinedThreadStatics.GetOffsets().ContainsKey(type))
+                {
+                    return inlinedThreadStatiscIndexNode;
+                }
+
                 return new TypeThreadStaticIndexNode(type);
             });
 
@@ -391,14 +407,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new EmbeddedTrimmingDescriptorNode(module);
             });
 
-            _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
-            {
-                return DispatchMapTable.NewNodeWithSymbol(InterfaceDispatchMap(type));
-            });
-
-            _genericCompositions = new NodeCache<GenericCompositionDetails, GenericCompositionNode>((GenericCompositionDetails details) =>
+            _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
                 return new GenericCompositionNode(details);
+            });
+
+            _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
+            {
+                return new GenericVarianceNode(details);
             });
 
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
@@ -646,6 +662,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MetadataType, ISymbolDefinitionNode> _threadStatics;
+        private ThreadStaticsNode _inlinedThreadStatiscNode;
 
         public ISymbolDefinitionNode TypeThreadStaticsSymbol(MetadataType type)
         {
@@ -754,18 +771,18 @@ namespace ILCompiler.DependencyAnalysis
             return _interfaceDispatchMaps.GetOrAdd(type);
         }
 
-        private NodeCache<TypeDesc, EmbeddedObjectNode> _interfaceDispatchMapIndirectionNodes;
+        private NodeCache<Instantiation, GenericCompositionNode> _genericCompositions;
 
-        public EmbeddedObjectNode InterfaceDispatchMapIndirection(TypeDesc type)
-        {
-            return _interfaceDispatchMapIndirectionNodes.GetOrAdd(type);
-        }
-
-        private NodeCache<GenericCompositionDetails, GenericCompositionNode> _genericCompositions;
-
-        internal ISymbolNode GenericComposition(GenericCompositionDetails details)
+        internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
+
+        internal ISymbolNode GenericVariance(GenericVarianceDetails details)
+        {
+            return _genericVariances.GetOrAdd(details);
         }
 
         private NodeCache<string, ExternSymbolNode> _externSymbols;
@@ -842,6 +859,17 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode StringAllocator(MethodDesc stringConstructor)
         {
             return _stringAllocators.GetOrAdd(stringConstructor);
+        }
+
+        public uint ThreadStaticBaseOffset(MetadataType type)
+        {
+            if (_inlinedThreadStatics.IsComputed() &&
+                _inlinedThreadStatics.GetOffsets().TryGetValue(type, out var offset))
+            {
+                return (uint)offset;
+            }
+
+            return 0;
         }
 
         private sealed class MethodEntrypointHashtable : LockFreeReaderHashtable<MethodDesc, IMethodNode>
@@ -1236,11 +1264,6 @@ namespace ILCompiler.DependencyAnalysis
             "__EagerCctorEnd",
             null);
 
-        public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
-            "__DispatchMapTableStart",
-            "__DispatchMapTableEnd",
-            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
-
         public ArrayOfFrozenObjectsNode FrozenSegmentRegion = new ArrayOfFrozenObjectsNode();
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
@@ -1264,16 +1287,19 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ThreadStaticsRegion, "ThreadStaticsRegion is always generated");
             graph.AddRoot(EagerCctorTable, "EagerCctorTable is always generated");
             graph.AddRoot(TypeManagerIndirection, "TypeManagerIndirection is always generated");
-            graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
             graph.AddRoot(ModuleInitializerList, "Module initializer list is always generated");
+
+            if (_inlinedThreadStatics.IsComputed())
+            {
+                graph.AddRoot(_inlinedThreadStatiscNode, "Inlined threadstatics are used if present");
+            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.EagerCctor, EagerCctorTable, EagerCctorTable.StartSymbol, EagerCctorTable.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.TypeManagerIndirection, TypeManagerIndirection, TypeManagerIndirection);
-            ReadyToRunHeader.Add(ReadyToRunSectionType.InterfaceDispatchTable, DispatchMapTable, DispatchMapTable.StartSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.FrozenObjectRegion, FrozenSegmentRegion, FrozenSegmentRegion, FrozenSegmentRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ModuleInitializerList, ModuleInitializerList, ModuleInitializerList, ModuleInitializerList.EndSymbol);
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NumberOfStripesToUseInStress>16</NumberOfStripesToUseInStress>
+    <NumberOfStripesToUseInStress>2</NumberOfStripesToUseInStress>
 
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
@@ -10,9 +10,6 @@
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' AND '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' == 'true'">true</CLRTestTargetUnsupported>
-
-    <!-- We have a lot of tests here so run them in outerloop by default to avoid timeouts -->
-    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
 
   <ItemGroup>

@@ -41,35 +41,35 @@ typedef enum {
 
 /* SIMD opcodes, grouped by signature */
 
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 } MintSIMDOpsPP;
 #undef INTERP_SIMD_INTRINSIC_P_P
-#define INTERP_SIMD_INTRINSIC_P_P(a,b)
+#define INTERP_SIMD_INTRINSIC_P_P(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 	INTERP_SIMD_INTRINSIC_P_PP_LAST
 } MintSIMDOpsPPP;
 #undef INTERP_SIMD_INTRINSIC_P_PP
-#define INTERP_SIMD_INTRINSIC_P_PP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PP(a,b,c)
 
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b) a,
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c) a,
 typedef enum {
 #include "interp-simd-intrins.def"
 	INTERP_SIMD_INTRINSIC_P_PPP_LAST
 } MintSIMDOpsPPPP;
 #undef INTERP_SIMD_INTRINSIC_P_PPP
-#define INTERP_SIMD_INTRINSIC_P_PPP(a,b)
+#define INTERP_SIMD_INTRINSIC_P_PPP(a,b,c)
 
 #if NO_UNALIGNED_ACCESS
 #  if G_BYTE_ORDER == G_LITTLE_ENDIAN

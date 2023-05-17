@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // An example where OSR must preserve original method addreses for locals
 
-class LiveLocalAddress
+public class LiveLocalAddress
 {
-    public static unsafe int Main()        
+    [Fact]
+    public static unsafe int TestEntryPoint()        
     {
         long result = 0;
         int a = 0;

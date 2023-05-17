@@ -24,8 +24,8 @@ namespace IntelHardwareIntrinsicTest._Avx512F
                 using (TestTable_2Input<double> doubleTable = new TestTable_2Input<double>(new double[8] { 1, -5, 100, 0, 1, -5, 100, 0 }, new double[8] { 22, -1, -50, 0, 22, -1, -50, 0 }, new double[8]))
                 {
 
-                    var vf1 = Unsafe.Read<Vector256<float>>(floatTable.inArray1Ptr);
-                    var vf2 = Unsafe.Read<Vector256<float>>(floatTable.inArray2Ptr);
+                    var vf1 = Unsafe.Read<Vector512<float>>(floatTable.inArray1Ptr);
+                    var vf2 = Unsafe.Read<Vector512<float>>(floatTable.inArray2Ptr);
                     var vf3 = Avx512F.UnpackLow(vf1, vf2);
                     Unsafe.Write(floatTable.outArrayPtr, vf3);
 
@@ -48,8 +48,8 @@ namespace IntelHardwareIntrinsicTest._Avx512F
                         testResult = Fail;
                     }
 
-                    var vd1 = Unsafe.Read<Vector256<double>>(doubleTable.inArray1Ptr);
-                    var vd2 = Unsafe.Read<Vector256<double>>(doubleTable.inArray2Ptr);
+                    var vd1 = Unsafe.Read<Vector512<double>>(doubleTable.inArray1Ptr);
+                    var vd2 = Unsafe.Read<Vector512<double>>(doubleTable.inArray2Ptr);
                     var vd3 = Avx512F.UnpackLow(vd1, vd2);
                     Unsafe.Write(doubleTable.outArrayPtr, vd3);
 

@@ -5,7 +5,7 @@
 .assembly extern System.Console { auto }
 .assembly extern mscorlib { auto }
 
-.assembly 'tailcall_boxunbox' { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_tailcall_boxunbox
 {

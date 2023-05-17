@@ -118,7 +118,7 @@ namespace Internal.IL
                 // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
                 // Otherwise follow the rules from ECMA-335 I.8.9.5.
                 if (!_isFallbackBodyCompilation &&
-                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
+                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType || owningType.IsInterface))
                 {
                     // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
@@ -308,7 +308,10 @@ namespace Internal.IL
                     {
                         // RyuJIT is going to call the "MdArray" creation helper even if this is an SzArray,
                         // hence the IsArray check above. Note that the MdArray helper can handle SzArrays.
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
+                        if (((ArrayType)owningType).Rank == 1)
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArrRare), reason);
+                        else
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
                         return;
                     }
                     else
@@ -1045,7 +1048,10 @@ namespace Internal.IL
                     // magic fields the compiler synthetized, the data blob might bring more dependencies
                     // and we need to scan those.
                     _dependencies.Add(_compilation.GetFieldRvaData(field), reason);
-                    // TODO: lazy cctor dependency
+                    // RVA static fields in generic types not implemented
+                    Debug.Assert(!field.OwningType.HasInstantiation);
+                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                        _dependencies.Add(_factory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType), "Cctor context");
                     return;
                 }
 

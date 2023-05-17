@@ -535,15 +535,17 @@ enum memory_type
 static const char * const str_bgc_state[] =
 {
     "not_in_process",
+    "bgc_initialized",
+    "reset_ww",
     "mark_handles",
     "mark_stack",
     "revisit_soh",
-    "revisit_loh",
+    "revisit_uoh",
     "overflow_soh",
-    "overflow_loh",
+    "overflow_uoh",
     "final_marking",
     "sweep_soh",
-    "sweep_loh",
+    "sweep_uoh",
     "plan_phase"
 };
 #endif // defined(TRACE_GC) && defined(BACKGROUND_GC)
@@ -1587,12 +1589,12 @@ private:
     PER_HEAP_ISOLATED_METHOD void set_region_gen_num (heap_segment* region, int gen_num);
     PER_HEAP_ISOLATED_METHOD int get_region_plan_gen_num (uint8_t* obj);
     PER_HEAP_ISOLATED_METHOD bool is_region_demoted (uint8_t* obj);
-    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num, bool replace_p = false);
     PER_HEAP_METHOD void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1613,7 +1615,7 @@ private:
     PER_HEAP_METHOD bool decide_on_compaction_space();
     PER_HEAP_METHOD bool try_get_new_free_region();
     PER_HEAP_METHOD bool init_table_for_region (int gen_number, heap_segment* region);
-    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
+    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p, int* num_returned_regions);
     PER_HEAP_METHOD void thread_final_regions (bool compact_p);
     PER_HEAP_METHOD void thread_start_region (generation* gen, heap_segment* region);
     PER_HEAP_METHOD heap_segment* get_new_region (int gen_number, size_t size = 0);
@@ -2978,6 +2980,13 @@ private:
     PER_HEAP_ISOLATED_METHOD size_t get_total_committed_size();
     PER_HEAP_ISOLATED_METHOD size_t get_total_fragmentation();
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_fragmentation (int gen_number);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD int get_total_new_gen0_regions_in_plns ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_prr ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_threading ();
+#endif //USE_REGIONS
+
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD void get_memory_info (uint32_t* memory_load,
@@ -3405,12 +3414,22 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-// This is the number of regions we would free up if we sweep.
-// It's used in the decision for compaction so we calculate it in plan.
+    // This is the number of regions we would free up if we sweep.
+    // It's used in the decision for compaction so we calculate it in plan.
     PER_HEAP_FIELD_SINGLE_GC int num_regions_freed_in_sweep;
 
     PER_HEAP_FIELD_SINGLE_GC int sip_maxgen_regions_per_gen[max_generation + 1];
     PER_HEAP_FIELD_SINGLE_GC heap_segment* reserved_free_regions_sip[max_generation];
+
+    // Used to keep track of the total regions in each condemned generation. For SIP regions we need
+    // to know if we've made all regions in a condemned gen into a max_generation region; if so we
+    // would want to revert our decision so we leave at least one region in that generation. Otherwise
+    // this is used in dprintf's.
+    PER_HEAP_FIELD_SINGLE_GC int regions_per_gen[max_generation + 1];
+
+    // Used to keep track of how many regions we have planned to see if any generation
+    // doens't have a region yet and act accordingly.
+    PER_HEAP_FIELD_SINGLE_GC int planned_regions_per_gen[max_generation + 1];
 
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
@@ -3795,8 +3814,12 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-    // Used in a single GC.
-    PER_HEAP_FIELD_DIAG_ONLY int regions_per_gen[max_generation + 1];
+    // Used to keep track of the new regions we get in process_last_np_surv_region (plns)
+    PER_HEAP_FIELD_DIAG_ONLY int new_gen0_regions_in_plns;
+    // Used to keep track of the new regions we get in process_remaining_regions (prr)
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_prr;
+    // Used to keep track of the new regions we get in thread_final_regions
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_threading;
 
 #ifdef STRESS_REGIONS
     // TODO: could consider dynamically grow this.

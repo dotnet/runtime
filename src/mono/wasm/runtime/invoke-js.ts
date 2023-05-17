@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, MarshalerType, get_signature_type, imported_js_function_symbol } from "./marshal";
+import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol } from "./marshal";
 import { setI32_unchecked } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
-import { mono_assert, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle } from "./types";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { IMPORTS, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./logging";
@@ -256,7 +256,7 @@ export function mono_wasm_set_module_imports(module_name: string, moduleImports:
 function mono_wasm_lookup_function(function_name: string, js_module_name: string): Function {
     mono_assert(function_name && typeof function_name === "string", "function_name must be string");
 
-    let scope: any = IMPORTS;
+    let scope: any = {};
     const parts = function_name.split(".");
     if (js_module_name) {
         scope = importedModules.get(js_module_name);
@@ -287,25 +287,21 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     return fn.bind(scope);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function set_property(self: any, name: string, value: any): void {
     mono_assert(self, "Null reference");
     self[name] = value;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function get_property(self: any, name: string): any {
     mono_assert(self, "Null reference");
     return self[name];
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function has_property(self: any, name: string): boolean {
     mono_assert(self, "Null reference");
     return name in self;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function get_typeof_property(self: any, name: string): string {
     mono_assert(self, "Null reference");
     return typeof self[name];
@@ -341,8 +337,6 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     });
 }
 
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     let res = "unknown exception";
     if (ex) {
@@ -365,7 +359,6 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     return res;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
     js_string_to_mono_string_root(res, <any>result);

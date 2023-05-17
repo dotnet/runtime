@@ -128,9 +128,15 @@ namespace ILCompiler.DependencyAnalysis
                         case FieldTableFlags.GCStatic:
                         case FieldTableFlags.NonGCStatic:
                             {
+                                uint fieldOffset = (uint)field.Offset.AsInt;
+                                if (field.IsThreadStatic && field.OwningType is MetadataType mt)
+                                {
+                                    fieldOffset += factory.ThreadStaticBaseOffset(mt);
+                                }
+
                                 if (field.OwningType.HasInstantiation)
                                 {
-                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(fieldOffset));
                                 }
                                 else
                                 {
@@ -138,22 +144,28 @@ namespace ILCompiler.DependencyAnalysis
 
                                     ISymbolNode staticsNode;
                                     if (field.IsThreadStatic)
+                                    {
                                         staticsNode = factory.TypeThreadStaticIndex(metadataType);
+                                    }
                                     else if (field.HasGCStaticBase)
+                                    {
                                         staticsNode = factory.TypeGCStaticsSymbol(metadataType);
+                                    }
                                     else
+                                    {
                                         staticsNode = factory.TypeNonGCStaticsSymbol(metadataType);
+                                    }
 
                                     if (!field.IsThreadStatic && !field.HasGCStaticBase)
                                     {
-                                        uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
+                                        uint index = _externalReferences.GetIndex(staticsNode, (int)fieldOffset);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
                                     }
                                     else
                                     {
                                         uint index = _externalReferences.GetIndex(staticsNode);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
-                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
+                                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(fieldOffset));
                                     }
                                 }
                             }

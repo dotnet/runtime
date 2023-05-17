@@ -14,12 +14,6 @@ namespace System.Buffers.Text
         public const byte Space = (byte)' ';
         public const byte Hyphen = (byte)'-';
 
-        // Invariant formatting uses groups of 3 for each number group separated by commas.
-        //   ex. 1,234,567,890
-        public const int GroupSize = 3;
-
-        public static readonly TimeSpan NullUtcOffset = TimeSpan.MinValue;  // Utc offsets must range from -14:00 to 14:00 so this is never a valid offset.
-
         public const int DateTimeMaxUtcOffsetHours = 14; // The UTC offset portion of a TimeSpan or DateTime can be no more than 14 hours and no less than -14 hours.
 
         public const int DateTimeNumFractionDigits = 7;  // TimeSpan and DateTime formats allow exactly up to many digits for specifying the fraction after the seconds.

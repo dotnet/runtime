@@ -33,6 +33,8 @@ namespace System.Text.Json.Reflection
             _arrayTypeSymbol = _typeSymbol as IArrayTypeSymbol;
         }
 
+        public ITypeSymbol Symbol => _typeSymbol;
+
         public override Assembly Assembly => new AssemblyWrapper(_typeSymbol.ContainingAssembly, _metadataLoadContext);
 
         private string? _assemblyQualifiedName;

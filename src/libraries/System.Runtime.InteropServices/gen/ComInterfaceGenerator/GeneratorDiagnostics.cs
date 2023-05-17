@@ -23,6 +23,7 @@ namespace Microsoft.Interop
             public const string MethodNotDeclaredInAttributedInterface = Prefix + "1091";
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
+            public const string AnalysisFailed = Prefix + "1094";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -187,7 +188,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
-        public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypesAttribute =
+        public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypes =
             new DiagnosticDescriptor(
                 Ids.MultipleComInterfaceBaseTypes,
                 GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesTitle)),
@@ -196,6 +197,26 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.MultipleComInterfaceBaseTypesDescription)));
+
+        public static readonly DiagnosticDescriptor CannotAnalyzeMethodPattern =
+            new DiagnosticDescriptor(
+                Ids.AnalysisFailed,
+                GetResourceString(nameof(SR.AnalysisFailedTitle)),
+                GetResourceString(nameof(SR.AnalysisFailedMethodMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.AnalysisFailedDescription)));
+
+        public static readonly DiagnosticDescriptor CannotAnalyzeInterfacePattern =
+            new DiagnosticDescriptor(
+                Ids.AnalysisFailed,
+                GetResourceString(nameof(SR.AnalysisFailedTitle)),
+                GetResourceString(nameof(SR.AnalysisFailedInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.AnalysisFailedDescription)));
 
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 

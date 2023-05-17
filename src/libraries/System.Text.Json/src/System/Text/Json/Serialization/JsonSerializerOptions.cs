@@ -61,6 +61,7 @@ namespace System.Text.Json
         private ConverterList? _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
+        private JsonObjectCreationHandling _preferredObjectCreationHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
         private JsonUnmappedMemberHandling _unmappedMemberHandling;
 
@@ -111,6 +112,7 @@ namespace System.Text.Json
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
+            _preferredObjectCreationHandling = options._preferredObjectCreationHandling;
             _unknownTypeHandling = options._unknownTypeHandling;
             _unmappedMemberHandling = options._unmappedMemberHandling;
 
@@ -395,6 +397,33 @@ namespace System.Text.Json
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _numberHandling = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies preferred object creation handling for properties when deserializing JSON.
+        /// When set to <see cref="JsonObjectCreationHandling.Populate"/> all properties which
+        /// are capable of reusing the existing instance will be populated.
+        /// </summary>
+        /// <remarks>
+        /// Only property type is taken into consideration. For example if property is of type
+        /// <see cref="IEnumerable{T}"/> but it is assigned <see cref="List{T}"/> it will not be populated
+        /// because <see cref="IEnumerable{T}"/> is not capable of populating.
+        /// Additionally value types require a setter to be populated.
+        /// </remarks>
+        public JsonObjectCreationHandling PreferredObjectCreationHandling
+        {
+            get => _preferredObjectCreationHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (!JsonSerializer.IsValidCreationHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _preferredObjectCreationHandling = value;
             }
         }
 
