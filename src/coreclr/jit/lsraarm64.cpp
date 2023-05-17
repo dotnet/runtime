@@ -1780,7 +1780,6 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
         {
             // Check all the newly created Refpositions for delay free
             RefPositionIterator iter = refPositionMark;
-            INDEBUG(int refPositionsIterated = 0);
 
             for (iter++; iter != refPositions.end(); iter++)
             {
@@ -1791,11 +1790,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
                 {
                     setDelayFree(refPositionAdded);
                 }
-
-                INDEBUG(refPositionsIterated++);
             }
-
-            assert(refPositionsIterated == refPositionsAdded);
         }
 
         srcCount += refPositionsAdded;
