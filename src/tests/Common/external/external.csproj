@@ -56,15 +56,9 @@
     <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
     <PackageToInclude Include="Newtonsoft.Json.Bson"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.Analyzers"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.Compilers"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.CSharp"/>
-    <PackageToInclude Include="Microsoft.CodeAnalysis.VisualBasic"/>
     <PackageToInclude Include="CommandLineParser"/>
     <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
 
-    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
     <PackageReference Include="CommandLineParser" Version="2.1.1-beta" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
