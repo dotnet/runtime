@@ -9,17 +9,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-
 using System.Diagnostics;
 
-
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
-using Microsoft.Interop;
+using Newtonsoft.Json.Bson;
+using System.Diagnostics.CodeAnalysis;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -133,6 +132,51 @@ namespace ComInterfaceGenerator.Unit.Tests
             DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
                 .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        [Fact]
+        public async Task ValidateInterfaceWithoutGuidWarns()
+        {
+            var source = $$"""
+
+                [System.Runtime.InteropServices.Marshalling.GeneratedComInterface]
+                partial interface {|#0:IFoo|}
+                {
+                    void Method();
+                }
+
+            """;
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceMissingGuidAttribute)
+                .WithLocation(0).WithArguments("IFoo");
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        [Fact]
+        public async Task VerifyGenericInterfaceCreatesDiagnostic()
+        {
+            var source = $$"""
+
+                namespace Tests
+                {
+                    public interface IFoo1<T>
+                    {
+                        void Method();
+                    }
+
+                    [System.Runtime.InteropServices.Marshalling.GeneratedComInterface]
+                    [System.Runtime.InteropServices.Guid("36722BA8-A03B-406E-AFE6-27AA2F7AC032")]
+                    partial interface {|#0:IFoo2|}<T>
+                    {
+                        void Method();
+                    }
+                }
+                """;
+
+            DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported)
+                .WithLocation(0).WithArguments("IFoo2");
+
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
     }

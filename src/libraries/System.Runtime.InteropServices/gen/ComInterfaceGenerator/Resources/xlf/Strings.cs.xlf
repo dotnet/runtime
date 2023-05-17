@@ -113,8 +113,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">Rozhraní s atributem GeneratedComInterfaceAttribute musí být částečná a musí určovat identifikátor GUID s atributem System.Runtime.InteropServices.GuidAttribute.</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="needs-review-translation">Rozhraní s atributem GeneratedComInterfaceAttribute musí být částečná a musí určovat identifikátor GUID s atributem System.Runtime.InteropServices.GuidAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">

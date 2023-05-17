@@ -113,8 +113,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">屬性為 'GeneratedComInterfaceAttribute' 的介面必須是部分介面，而且必須指定具有 'System.Runtime.InteropServices.GuidAttribute' 的 GUID。</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="needs-review-translation">屬性為 'GeneratedComInterfaceAttribute' 的介面必須是部分介面，而且必須指定具有 'System.Runtime.InteropServices.GuidAttribute' 的 GUID。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">

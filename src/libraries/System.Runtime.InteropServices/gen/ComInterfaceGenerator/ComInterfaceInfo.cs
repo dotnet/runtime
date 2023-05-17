@@ -28,10 +28,15 @@ namespace Microsoft.Interop
             // and is not marked static or sealed
             if (syntax.TypeParameterList is not null)
             {
-                return (null, Diagnostic.Create(
-                    GeneratorDiagnostics.InvalidAttributedMethodSignature,
-                    syntax.Identifier.GetLocation(),
-                    symbol.Name));
+                // Verify the interface has no generic types or defined implementation
+                // and is not marked static or sealed
+                if (syntax.TypeParameterList is not null)
+                {
+                    return (null, Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidAttributedInterfaceGenericNotSupported,
+                        syntax.Identifier.GetLocation(),
+                        symbol.Name));
+                }
             }
 
             // Verify that the types the method is declared in are marked partial.

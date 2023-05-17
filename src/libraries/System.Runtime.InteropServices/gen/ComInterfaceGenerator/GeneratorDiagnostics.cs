@@ -188,6 +188,16 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
 
+        public static readonly DiagnosticDescriptor InvalidAttributedInterfaceGenericNotSupported =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+                GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageDescription)));
+
         public static readonly DiagnosticDescriptor MultipleComInterfaceBaseTypes =
             new DiagnosticDescriptor(
                 Ids.MultipleComInterfaceBaseTypes,
