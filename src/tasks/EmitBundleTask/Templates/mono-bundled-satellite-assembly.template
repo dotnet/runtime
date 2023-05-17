@@ -3,6 +3,6 @@ const MonoBundledSatelliteAssemblyResource %ResourceName% = {
                   .id = "%ResourceID%" },
     .satellite_assembly = { .name = "%RegisteredFilename%",
                             .culture = "%Culture%",
-                            .data = %ResourceName%_data,
+                            .data = %ResourceDataSymbol%_data,
                             .size = %Len% }
 };

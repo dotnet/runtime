@@ -61,124 +61,111 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     {
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
         // produces one group per file-content. We only want to emit one copy of each file-content, and one symbol for it.
-        var filesToBundleByDestinationFileName = FilesToBundle.GroupBy(f => f.GetMetadata("DestinationFile")).ToList();
+        var remainingDestinationFilesToBundle = FilesToBundle.GroupBy(f => f.GetMetadata("DestinationFile")).ToArray();
 
-        // We're handling the incrementalism within this task, because it needs to be based on file content hashes
-        // and not on timetamps. The output filenames contain a content hash, so if any such file already exists on
-        // disk with that name, we know it must be up-to-date.
-        var remainingDestinationFilesToBundle = filesToBundleByDestinationFileName.Where(g => !File.Exists(g.Key)).ToArray();
-
-        // If you're only touching the leaf project, we don't really need to tell you that.
-        // But if there's more work to do it's valuable to show progress.
-        var verbose = remainingDestinationFilesToBundle.Length > 1;
         var verboseCount = 0;
 
-        List<ITaskItem> bundledResources = new(remainingDestinationFilesToBundle.Length);
         // Generate source file(s) containing each resource's byte data and size
-        if (remainingDestinationFilesToBundle.Length > 0)
+        if (string.IsNullOrEmpty(CombinedResourceSource))
         {
-            if (string.IsNullOrEmpty(CombinedResourceSource))
+            int allowedParallelism = Math.Max(Math.Min(remainingDestinationFilesToBundle.Length, Environment.ProcessorCount), 1);
+            if (BuildEngine is IBuildEngine9 be9)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
+
+            Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
             {
-                int allowedParallelism = Math.Max(Math.Min(remainingDestinationFilesToBundle.Length, Environment.ProcessorCount), 1);
-                if (BuildEngine is IBuildEngine9 be9)
-                    allowedParallelism = be9.RequestCores(allowedParallelism);
-                Parallel.For(0, remainingDestinationFilesToBundle.Length, new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism, CancellationToken = BuildTaskCancelled.Token }, (i, state) =>
+                var group = remainingDestinationFilesToBundle[i];
+
+                // Since the object filenames include a content hash, we can pick an arbitrary ITaskItem from each group,
+                // since we know each group's ITaskItems all contain the same binary data
+                var contentSourceFile = group.First();
+
+                var outputFile = group.Key;
+                var inputFile = contentSourceFile.ItemSpec;
+
+                var registeredName = contentSourceFile.GetMetadata("RegisteredName");
+                if(string.IsNullOrEmpty(registeredName))
                 {
-                    var group = remainingDestinationFilesToBundle[i];
+                    registeredName = Path.GetFileName(inputFile);
+                }
+                var count = Interlocked.Increment(ref verboseCount);
+                Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
 
-                    // Since the object filenames include a content hash, we can pick an arbitrary ITaskItem from each group,
-                    // since we know each group's ITaskItems all contain the same binary data
-                    var contentSourceFile = group.First();
-
-                    var outputFile = group.Key;
-                    var inputFile = contentSourceFile.ItemSpec;
-
-                    if (verbose)
-                    {
-                        var registeredName = contentSourceFile.GetMetadata("RegisteredName");
-                        if(string.IsNullOrEmpty(registeredName))
-                        {
-                            registeredName = Path.GetFileName(inputFile);
-                        }
-                        var count = Interlocked.Increment(ref verboseCount);
-                        Log.LogMessage(MessageImportance.Low, "{0}/{1} Bundling {2} ...", count, remainingDestinationFilesToBundle.Length, registeredName);
-                    }
-
-                    Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, outputFile);
-                    var symbolName = ToSafeSymbolName(group.Key);
-                    if (!Emit(outputFile, (codeStream) => {
-                        using var inputStream = File.OpenRead(inputFile);
-                        using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
-                        BundleFileToCSource(symbolName, true, inputStream, outputUtf8Writer);
-                    }))
-                    {
-                        state.Stop();
-                    }
-
-                    contentSourceFile.SetMetadata("DataSymbol", $"{symbolName}_data");
-                    contentSourceFile.SetMetadata("DataLenSymbol", $"{symbolName}_data_len");
-                    contentSourceFile.SetMetadata("DataLenSymbolValue", symbolDataLen[symbolName].ToString());
-                    bundledResources.Add(contentSourceFile);
-                });
-            }
-            else
-            {
-                Emit(Path.Combine(OutputDirectory, CombinedResourceSource), (codeStream) => {
+                Log.LogMessage(MessageImportance.Low, "Bundling {0} into {1}", inputFile, outputFile);
+                var symbolName = ToSafeSymbolName(outputFile);
+                if (!Emit(outputFile, (codeStream) => {
+                    using var inputStream = File.OpenRead(inputFile);
                     using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
-                    bool shouldAddHeader = true;
-                    foreach (var destinationFileGroup in remainingDestinationFilesToBundle)
-                    {
-                        ITaskItem destinationFile = destinationFileGroup.First();
-                        var symbolName = ToSafeSymbolName(destinationFileGroup.Key);
-                        using var inputStream = File.OpenRead(destinationFile.ItemSpec);
-                        Console.WriteLine($"destinationFile: {destinationFile.ItemSpec}");
-                        BundleFileToCSource(symbolName, shouldAddHeader, inputStream, outputUtf8Writer);
-                        shouldAddHeader = false;
-
-                        destinationFile.SetMetadata("DataSymbol", $"{symbolName}_data");
-                        destinationFile.SetMetadata("DataLenSymbol", $"{symbolName}_data_len");
-                        destinationFile.SetMetadata("DataLenSymbolValue", symbolDataLen[symbolName].ToString());
-                        bundledResources.Add(destinationFile);
-                    }
-                });
-            }
+                    BundleFileToCSource(symbolName, true, inputStream, outputUtf8Writer);
+                }))
+                {
+                    state.Stop();
+                }
+            });
+        }
+        else
+        {
+            Emit(Path.Combine(OutputDirectory, CombinedResourceSource), (codeStream) => {
+                using var outputUtf8Writer = new StreamWriter(codeStream, Utf8NoBom);
+                bool shouldAddHeader = true;
+                foreach (var destinationFileGroup in remainingDestinationFilesToBundle)
+                {
+                    ITaskItem destinationFile = destinationFileGroup.First();
+                    var symbolName = ToSafeSymbolName(destinationFileGroup.Key);
+                    using var inputStream = File.OpenRead(destinationFile.ItemSpec);
+                    BundleFileToCSource(symbolName, shouldAddHeader, inputStream, outputUtf8Writer);
+                    shouldAddHeader = false;
+                }
+            });
         }
 
-        var resourceSymbols = new StringBuilder();
-        var filesToBundleByRegisteredName = FilesToBundle.GroupBy(file => {
-            var registeredName = file.GetMetadata("RegisteredName");
-            if(string.IsNullOrEmpty(registeredName))
-            {
-                registeredName = Path.GetFileName(file.ItemSpec);
-            }
-            return registeredName;
-        }).ToList();
-
-        var files = filesToBundleByRegisteredName.Select(group => {
-            var registeredFile = group.First();
-            var outputFile = registeredFile.GetMetadata("DestinationFile");
-            var registeredFilename = group.Key;
-            var resourceName = ToSafeSymbolName(outputFile);
-            string culture = registeredFile.GetMetadata("Culture");
-            string? resourceSymbolName = null;
-            resourceSymbols.AppendLine($"extern uint8_t {resourceName}_data[];");
-            resourceSymbols.AppendLine($"extern const uint32_t {resourceName}_data_len;");
-            resourceSymbols.AppendLine($"#define {resourceName}_data_len_val {symbolDataLen[resourceName]}");
-            if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
-                resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
-            return (registeredFilename, resourceName, culture, resourceSymbolName);
-        }).ToList();
-
-        Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
-
+        List<ITaskItem> bundledResources = new(FilesToBundle.Length);
+        foreach (ITaskItem file in FilesToBundle)
+        {
+            ITaskItem bundledResource = file;
+            string resourceDataSymbol = ToSafeSymbolName(bundledResource.GetMetadata("DestinationFile"));
+            bundledResource.SetMetadata("DataSymbol", $"{resourceDataSymbol}_data");
+            bundledResource.SetMetadata("DataLenSymbol", $"{resourceDataSymbol}_data_len");
+            bundledResource.SetMetadata("DataLenSymbolValue", symbolDataLen[resourceDataSymbol].ToString());
+            bundledResources.Add(bundledResource);
+        }
         BundledResources = bundledResources.ToArray();
 
-        if (!string.IsNullOrEmpty(BundleFile)) {
+        if (!string.IsNullOrEmpty(BundleFile))
+        {
+            var filesToBundleByRegisteredName = FilesToBundle.GroupBy(file => {
+                var registeredName = file.GetMetadata("RegisteredName");
+                if(string.IsNullOrEmpty(registeredName))
+                {
+                    registeredName = Path.GetFileName(file.ItemSpec);
+                }
+                return registeredName;
+            }).ToList();
+
+            string resourceSymbols = GatherUniqueExportedResourceDataSymbols(remainingDestinationFilesToBundle);
+
+            var files = filesToBundleByRegisteredName.Select(group => {
+                ITaskItem registeredFile = group.First();
+                var registeredFilename = group.Key;
+                var resourceName = ToSafeSymbolName(registeredFilename, false);
+                // Different timezone resources may have the same contents, use registered name to differentiate preallocated resources
+                var resourceDataSymbol = ToSafeSymbolName(registeredFile.GetMetadata("DestinationFile"));
+
+                string culture = registeredFile.GetMetadata("Culture");
+                string? resourceSymbolName = null;
+                if (File.Exists(registeredFile.GetMetadata("SymbolFile")))
+                    resourceSymbolName = ToSafeSymbolName(registeredFile.GetMetadata("SymbolFile"));
+
+                return (registeredFilename, resourceName, resourceDataSymbol, culture, resourceSymbolName);
+            }).ToList();
+
+            Log.LogMessage(MessageImportance.Low, $"Bundling {files.Count} files for {BundleRegistrationFunctionName}");
+
             // Generate source file to preallocate resources and register bundled resources
             Emit(Path.Combine(OutputDirectory, BundleFile), (outputStream) =>
             {
                 using var outputUtf8Writer = new StreamWriter(outputStream, Utf8NoBom);
-                GenerateBundledResourcePreallocationAndRegistration(resourceSymbols.ToString(), BundleRegistrationFunctionName, files, outputUtf8Writer);
+                GenerateBundledResourcePreallocationAndRegistration(resourceSymbols, BundleRegistrationFunctionName, files, outputUtf8Writer);
             });
         }
 
@@ -224,7 +211,25 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     private static Dictionary<string, int> symbolDataLen = new();
 
-    private static void GenerateBundledResourcePreallocationAndRegistration(string resourceSymbols, string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
+    private static string GatherUniqueExportedResourceDataSymbols(IEnumerable<IGrouping<string, ITaskItem>> uniqueDestinationFiles)
+    {
+        StringBuilder resourceSymbols = new ();
+        HashSet<string> resourcesAdded = new (); // Different Timezone resources may have the same contents
+        foreach (var uniqueDestinationFile in uniqueDestinationFiles)
+        {
+            string resourceDataSymbol = ToSafeSymbolName(uniqueDestinationFile.Key);
+            if (!resourcesAdded.Contains(resourceDataSymbol))
+            {
+                resourceSymbols.AppendLine($"extern uint8_t {resourceDataSymbol}_data[];");
+                resourceSymbols.AppendLine($"extern const uint32_t {resourceDataSymbol}_data_len;");
+                resourceSymbols.AppendLine($"#define {resourceDataSymbol}_data_len_val {symbolDataLen[resourceDataSymbol]}");
+                resourcesAdded.Add(resourceDataSymbol);
+            }
+        }
+        return resourceSymbols.ToString();
+    }
+
+    private static void GenerateBundledResourcePreallocationAndRegistration(string resourceSymbols, string bundleRegistrationFunctionName, ICollection<(string registeredFilename, string resourceName, string resourceDataSymbol, string culture, string? resourceSymbolName)> files, StreamWriter outputUtf8Writer)
     {
         List<string> preallocatedSource = new ();
 
@@ -276,9 +281,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             }
 
             preallocatedSource.Add(preloadedStruct.Replace("%ResourceName%", tuple.resourceName)
+                                         .Replace("%ResourceDataSymbol%", tuple.resourceDataSymbol)
                                          .Replace("%ResourceID%", resourceId)
                                          .Replace("%RegisteredFilename%", tuple.registeredFilename)
-                                         .Replace("%Len%", $"{tuple.resourceName}_data_len_val"));
+                                         .Replace("%Len%", $"{tuple.resourceDataSymbol}_data_len_val"));
         }
 
         var addPreallocatedResources = new StringBuilder();
@@ -303,7 +309,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
                                 .Replace("%AddPreallocatedResources%", addPreallocatedResources.ToString()));
     }
 
-    private static void BundleFileToCSource(string symbolName, bool shouldAddHeader, FileStream inputStream, StreamWriter outputUtf8Writer)
+    private void BundleFileToCSource(string symbolName, bool shouldAddHeader, FileStream inputStream, StreamWriter outputUtf8Writer)
     {
         // Emits a C source file in the same format as "xxd --include". Example:
         //
@@ -343,21 +349,28 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         outputUtf8Writer.Flush();
         outputUtf8Writer.BaseStream.Flush();
 
-        symbolDataLen.Add(symbolName, generatedArrayLength);
+        lock (symbolDataLen)
+        {
+            if (!symbolDataLen.TryAdd(symbolName, generatedArrayLength) && symbolDataLen[symbolName] != generatedArrayLength)
+                Log.LogMessage(MessageImportance.High, $"There are duplicate resources with the same output symbol '{symbolName}' but have differing content sizes '{symbolDataLen[symbolName]}' != '{generatedArrayLength}'.");
+        }
     }
 
-    private static string ToSafeSymbolName(string destinationFileName)
+    private static string ToSafeSymbolName(string destinationFileName, bool filenameOnly = true)
     {
         // Since destinationFileName includes a content hash, we can safely strip off the directory name
         // as the filename is always unique enough. This avoid disclosing information about the build
         // file structure in the resulting symbols.
-        var filename = Path.GetFileName(destinationFileName);
+        var filename = destinationFileName;
+        if (filenameOnly)
+            filename = Path.GetFileName(destinationFileName);
 
         // Equivalent to the logic from "xxd --include"
         var sb = new StringBuilder();
         foreach (var c in filename)
         {
-            sb.Append(IsAlphanumeric(c) ? c : '_');
+            sb.Append(IsAlphanumeric(c) ? c :
+                      (c == '+') ? "plus" : '_'); // To help differentiate timezones differing by a symbol (i.e. GMT+0 GMT-0)
         }
 
         return sb.ToString();
