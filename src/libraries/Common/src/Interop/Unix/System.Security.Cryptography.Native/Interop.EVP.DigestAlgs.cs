@@ -14,9 +14,12 @@ internal static partial class Interop
         private static volatile IntPtr s_evpSha256;
         private static volatile IntPtr s_evpSha384;
         private static volatile IntPtr s_evpSha512;
-        private static volatile IntPtr s_evpSha3_256 = -1;
-        private static volatile IntPtr s_evpSha3_384 = -1;
-        private static volatile IntPtr s_evpSha3_512 = -1;
+        private static volatile IntPtr s_evpSha3_256;
+        private static volatile IntPtr s_evpSha3_384;
+        private static volatile IntPtr s_evpSha3_512;
+        private static volatile bool s_evpSha3_256Cached;
+        private static volatile bool s_evpSha3_384Cached;
+        private static volatile bool s_evpSha3_512Cached;
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpMd5();
@@ -51,20 +54,45 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_256();
 
-        private static IntPtr EvpSha3_256() =>
-            s_evpSha3_256 != -1 ? s_evpSha3_256 : (s_evpSha3_256 = CryptoNative_EvpSha3_256());
+        private static IntPtr EvpSha3_256()
+        {
+            if (!s_evpSha3_256Cached)
+            {
+                s_evpSha3_256 = CryptoNative_EvpSha3_256();
+                s_evpSha3_256Cached = true;
+            }
+
+            return s_evpSha3_256;
+        }
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_384();
 
-        private static IntPtr EvpSha3_384() =>
-            s_evpSha3_384 != -1 ? s_evpSha3_384 : (s_evpSha3_384 = CryptoNative_EvpSha3_384());
+        private static IntPtr EvpSha3_384()
+        {
+            if (!s_evpSha3_384Cached)
+            {
+                s_evpSha3_384 = CryptoNative_EvpSha3_384();
+                s_evpSha3_384Cached = true;
+            }
+
+            return s_evpSha3_384;
+        }
 
         [LibraryImport(Libraries.CryptoNative)]
         private static partial IntPtr CryptoNative_EvpSha3_512();
 
-        private static IntPtr EvpSha3_512() =>
-            s_evpSha3_512 != -1 ? s_evpSha3_512 : (s_evpSha3_512 = CryptoNative_EvpSha3_512());
+        private static IntPtr EvpSha3_512()
+        {
+            if (!s_evpSha3_512Cached)
+            {
+                s_evpSha3_512 = CryptoNative_EvpSha3_512();
+                s_evpSha3_512Cached = true;
+            }
+
+            return s_evpSha3_512;
+        }
+
 
         internal static IntPtr HashAlgorithmToEvp(string hashAlgorithmId)
         {
