@@ -77,7 +77,7 @@ jobs:
             - (Mariner.2.0.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
             - (openSUSE.15.2.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-            - (Centos.7.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix
+            - (Centos.9.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix
             - RedHat.7.Amd64.Open
             - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64
             - Ubuntu.1804.Amd64.Open

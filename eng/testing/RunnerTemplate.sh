@@ -166,7 +166,7 @@ echo ===========================================================================
 pushd $EXECUTION_DIR
 [[RunCommands]]
 test_exitcode=$?
-if [[ -f testResults.xml ]]; then
+if [[ -s testResults.xml ]]; then
   has_test_results=1;
 fi;
 popd
