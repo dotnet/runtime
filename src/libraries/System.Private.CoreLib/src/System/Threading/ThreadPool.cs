@@ -197,11 +197,11 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                return WindowsThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+                return WindowsThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
             }
             else
             {
-                return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+                return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
             }
         }
     }
