@@ -3742,9 +3742,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
 				td->last_ins->info.call_info->call_offset = new_param_offset;
 				if (params_stack_size) {
-					InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_CALL_ALIGN_STACK);
+					InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_MOV_STACK_UNOPT);
 					align_ins->data [0] = param_offset;
-					align_ins->data [1] = params_stack_size;
+					align_ins->data [1] = MINT_STACK_SLOT_SIZE;
+					align_ins->data [2] = params_stack_size;
 				}
 				if (calli) {
 					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
@@ -8398,11 +8399,12 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		int num_vars = mono_interp_oplen [opcode] - 1;
 		for (int i = 0; i < num_vars; i++)
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->data [i]));
-	} else if (opcode == MINT_CALL_ALIGN_STACK) {
+	} else if (opcode == MINT_MOV_STACK_UNOPT) {
 		g_assert (!td->optimized);
 		// ins->data [0] represents the stack offset of the call args (within the execution stack)
 		*ip++ = GINT_TO_UINT16 (td->param_area_offset + ins->data [0]);
 		*ip++ = GINT_TO_UINT16 (ins->data [1]);
+		*ip++ = GINT_TO_UINT16 (ins->data [2]);
 	} else {
 		if (mono_interp_op_dregs [opcode])
 			*ip++ = GINT_TO_UINT16 (get_local_offset (td, ins->dreg));

@@ -3987,13 +3987,13 @@ main_loop:
 			ip = frame->imethod->code;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALL_ALIGN_STACK) {
-			int call_offset = ip [1];
-			int aligned_call_offset = call_offset + MINT_STACK_SLOT_SIZE;
-			int params_stack_size = ip [2];
+		MINT_IN_CASE(MINT_MOV_STACK_UNOPT) {
+			int src_offset = ip [1];
+			int dst_offset = src_offset + (gint16)ip [2];
+			int size = ip [3];
 
-			memmove (locals + aligned_call_offset, locals + call_offset, params_stack_size);
-			ip += 3;
+			memmove (locals + dst_offset, locals + src_offset, size);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
