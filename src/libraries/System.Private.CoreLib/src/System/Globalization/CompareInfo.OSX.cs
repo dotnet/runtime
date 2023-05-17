@@ -16,7 +16,8 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
-            string cultureName = m_name;
+
+            AssertComparisonSupported(options);
 
             // GetReference may return nullptr if the input span is defaulted. The native layer handles
             // this appropriately; no workaround is needed on the managed side.
@@ -24,15 +25,28 @@ namespace System.Globalization
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                result = Interop.Globalization.CompareStringNative(cultureName, pString1, string1.Length, pString2, string2.Length, options);
+                result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, string1.Length, pString2, string2.Length, options);
             }
 
             if (result == -2)
             {
-                throw new ArgumentException("Passed compare options are not supported");
+                throw new PlatformNotSupportedException(GetPNSE(options));
             }
 
             return result;
         }
+
+        private static void AssertComparisonSupported(CompareOptions options)
+        {
+            if (CompareOptionsNotSupported(options))
+                throw new PlatformNotSupportedException(GetPNSE(options));
+        }
+
+        private static bool CompareOptionsNotSupported(CompareOptions options) =>
+            (options & CompareOptions.IgnoreSymbols) == CompareOptions.IgnoreSymbols ||
+            (options & CompareOptions.IgnoreKanaType) == CompareOptions.IgnoreKanaType;
+
+        private static string GetPNSE(CompareOptions options) =>
+            SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
     }
 }
