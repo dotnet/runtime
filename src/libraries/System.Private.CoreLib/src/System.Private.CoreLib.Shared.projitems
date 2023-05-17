@@ -2530,7 +2530,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\PackedSimd.PlatformNotSupported.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true' or '$(TargetsWindows)' == 'true'" >
+  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CompleteWaitThreadPoolWorkItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Portable.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Portable.cs" Condition="'$(FeatureCoreCLR)' != 'true'" />
