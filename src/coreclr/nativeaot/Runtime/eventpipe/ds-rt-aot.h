@@ -266,10 +266,6 @@ ds_rt_transport_get_default_name (
 {
     STATIC_CONTRACT_NOTHROW;
     
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: PAL_GetTransportName is defined in coreclr\pal\inc\pal.h
-    // TODO: CoreCLR has dependency on PAL_GetTransportName (defined in coreclr\pal\inc\pal.h) and mono one looks simpler
-    // Copying ds_rt_mono_transport_get_default_name here to unblock testing
 #ifdef TARGET_UNIX
 
 	EP_ASSERT (name != NULL);
@@ -291,7 +287,8 @@ ds_rt_transport_get_default_name (
 	// also try to use 0 as the value.
 	if (!ipc_get_process_id_disambiguation_key (id, &disambiguation_key))
 		EP_ASSERT (disambiguation_key == 0);
-		// Get a temp file location
+	
+    // Get a temp file location
     format_result = ep_rt_temp_path_get (format_buffer, name_len);
     if (format_result == 0) {
         DS_LOG_ERROR_0 ("ep_rt_temp_path_get failed");
@@ -302,7 +299,7 @@ ds_rt_transport_get_default_name (
 
 	format_result = snprintf(name, name_len, "%s%s-%d-%llu-%s", format_buffer, prefix, id, (unsigned long long)disambiguation_key, suffix);
 	if (format_result <= 0 || format_result > name_len) {
-		DS_LOG_ERROR_0 ("name buffer to small");
+		DS_LOG_ERROR_0 ("name buffer too small");
 		ep_raise_error ();
 	}
 
