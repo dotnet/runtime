@@ -358,13 +358,9 @@ namespace System.Buffers.Text
                 uint destIndex = 0;
 
                 // only decode input if it is a multiple of 4
-                if (bufferLength != ((bufferLength >> 2) * 4))
+                if (bufferLength % 4 != 0)
                 {
                     goto InvalidExit;
-                }
-                if (bufferLength == 0)
-                {
-                    goto DoneExit;
                 }
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
@@ -387,8 +383,8 @@ namespace System.Buffers.Text
                 uint t2 = bufferBytes[bufferLength - 2];
                 uint t3 = bufferBytes[bufferLength - 1];
 
-                int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
-                int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
+                int i0 = Unsafe.Add(ref decodingMap, t0);
+                int i1 = Unsafe.Add(ref decodingMap, t1);
 
                 i0 <<= 18;
                 i1 <<= 12;
@@ -397,8 +393,8 @@ namespace System.Buffers.Text
 
                 if (t3 != EncodingPad)
                 {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-                    int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
+                    int i2 = Unsafe.Add(ref decodingMap, t2);
+                    int i3 = Unsafe.Add(ref decodingMap, t3);
 
                     i2 <<= 6;
 
@@ -415,7 +411,7 @@ namespace System.Buffers.Text
                 }
                 else if (t2 != EncodingPad)
                 {
-                    int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
+                    int i2 = Unsafe.Add(ref decodingMap, t2);
 
                     i2 <<= 6;
 
@@ -441,7 +437,6 @@ namespace System.Buffers.Text
                     destIndex += 1;
                 }
 
-            DoneExit:
                 bytesWritten = (int)destIndex;
                 return OperationStatus.Done;
 
@@ -949,10 +944,10 @@ namespace System.Buffers.Text
             uint t2 = encodedBytes[2];
             uint t3 = encodedBytes[3];
 
-            int i0 = Unsafe.Add(ref decodingMap, (IntPtr)t0);
-            int i1 = Unsafe.Add(ref decodingMap, (IntPtr)t1);
-            int i2 = Unsafe.Add(ref decodingMap, (IntPtr)t2);
-            int i3 = Unsafe.Add(ref decodingMap, (IntPtr)t3);
+            int i0 = Unsafe.Add(ref decodingMap, t0);
+            int i1 = Unsafe.Add(ref decodingMap, t1);
+            int i2 = Unsafe.Add(ref decodingMap, t2);
+            int i3 = Unsafe.Add(ref decodingMap, t3);
 
             i0 <<= 18;
             i1 <<= 12;
