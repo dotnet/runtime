@@ -59,7 +59,7 @@ namespace System.Threading
 
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            // This construction is duplicated in PreAllocatedOverlapped.cs
+            // This construction is duplicated in PreAllocatedOverlapped.Windows.cs
             // It has to either be duplicated or remove the 'readonly' part of _overlappedPortableCore
             ArgumentNullException.ThrowIfNull(callback);
 
