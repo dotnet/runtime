@@ -147,8 +147,14 @@ namespace System.Buffers.Text.Tests
             if (typeof(T) == typeof(long))
                 return Utf8Formatter.TryFormat((long)(object)value, buffer, out bytesWritten, format);
 
+            if (typeof(T) == typeof(Int128))
+                return Utf8Formatter.TryFormat((Int128)(object)value, buffer, out bytesWritten, format);
+
             if (typeof(T) == typeof(ulong))
                 return Utf8Formatter.TryFormat((ulong)(object)value, buffer, out bytesWritten, format);
+
+            if (typeof(T) == typeof(UInt128))
+                return Utf8Formatter.TryFormat((UInt128)(object)value, buffer, out bytesWritten, format);
 
             if (typeof(T) == typeof(decimal))
                 return Utf8Formatter.TryFormat((decimal)(object)value, buffer, out bytesWritten, format);
@@ -172,60 +178,6 @@ namespace System.Buffers.Text.Tests
                 return Utf8Formatter.TryFormat((TimeSpan)(object)value, buffer, out bytesWritten, format);
 
             throw new Exception("No formatter for type " + typeof(T));
-        }
-
-        private static bool TryFormatUtf8(object value, Span<byte> buffer, out int bytesWritten, StandardFormat format = default)
-        {
-            Type t = value.GetType();
-            if (t == typeof(bool))
-                return Utf8Formatter.TryFormat((bool)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(byte))
-                return Utf8Formatter.TryFormat((byte)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(sbyte))
-                return Utf8Formatter.TryFormat((sbyte)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(short))
-                return Utf8Formatter.TryFormat((short)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(ushort))
-                return Utf8Formatter.TryFormat((ushort)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(int))
-                return Utf8Formatter.TryFormat((int)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(uint))
-                return Utf8Formatter.TryFormat((uint)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(long))
-                return Utf8Formatter.TryFormat((long)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(ulong))
-                return Utf8Formatter.TryFormat((ulong)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(decimal))
-                return Utf8Formatter.TryFormat((decimal)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(double))
-                return Utf8Formatter.TryFormat((double)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(float))
-                return Utf8Formatter.TryFormat((float)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(Guid))
-                return Utf8Formatter.TryFormat((Guid)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(DateTime))
-                return Utf8Formatter.TryFormat((DateTime)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(DateTimeOffset))
-                return Utf8Formatter.TryFormat((DateTimeOffset)value, buffer, out bytesWritten, format);
-
-            if (t == typeof(TimeSpan))
-                return Utf8Formatter.TryFormat((TimeSpan)value, buffer, out bytesWritten, format);
-
-            throw new Exception("No formatter for type " + t);
         }
     }
 }
