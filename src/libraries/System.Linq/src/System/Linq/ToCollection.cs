@@ -51,8 +51,18 @@ namespace System.Linq
         /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
-        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? comparer) where TKey : notnull =>
-            new(source, comparer);
+        /// <remarks>
+        /// If <paramref name="comparer"/> is null, the default equality comparer <see cref="EqualityComparer{TKey}.Default"/> is used to compare keys.
+        /// </remarks>
+        public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? comparer) where TKey : notnull
+        {
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            return new(source, comparer);
+        }
 
         /// <summary>
         /// Creates a <see cref="Dictionary{TKey,TValue}"/> from an <see cref="IEnumerable{T}"/> according to the default comparer for the key type.
@@ -76,6 +86,9 @@ namespace System.Linq
         /// <returns>A <see cref="Dictionary{TKey,TValue}"/> that contains keys and values from <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is a null reference.</exception>
         /// <exception cref="ArgumentException"><paramref name="source"/> contains one or more duplicate keys.</exception>
+        /// <remarks>
+        /// If <paramref name="comparer"/> is null, the default equality comparer <see cref="EqualityComparer{TKey}.Default"/> is used to compare keys.
+        /// </remarks>
         public static Dictionary<TKey, TValue> ToDictionary<TKey, TValue>(this IEnumerable<(TKey Key, TValue Value)> source, IEqualityComparer<TKey>? comparer) where TKey : notnull =>
             source.ToDictionary(vt => vt.Key, vt => vt.Value, comparer);
 
