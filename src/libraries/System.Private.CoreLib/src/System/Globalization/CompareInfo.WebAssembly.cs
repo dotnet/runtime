@@ -106,10 +106,6 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            // no need to look in an empty target, source was checked earlier
-            if (source.Length == 0)
-                return fromBeginning ? 0 : source.Length;
-
             int idx;
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
