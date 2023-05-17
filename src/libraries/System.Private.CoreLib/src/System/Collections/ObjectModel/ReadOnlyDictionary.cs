@@ -13,7 +13,7 @@ namespace System.Collections.ObjectModel
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ReadOnlyDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue> where TKey : notnull
     {
-        internal readonly IDictionary<TKey, TValue> m_dictionary; // Do not rename (binary serialization)
+        private readonly IDictionary<TKey, TValue> m_dictionary; // Do not rename (binary serialization)
 
         [NonSerialized]
         private KeyCollection? _keys;
