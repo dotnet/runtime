@@ -49,38 +49,36 @@ internal static partial class Interop
             {
                 var key = (hashAlgorithmId, flags);
 
-                while (true)
+                if (s_supported.TryGetValue(key, out bool supported))
                 {
-                    if (s_supported.TryGetValue(key, out bool supported))
-                    {
-                        return supported;
-                    }
-
-                    NTSTATUS status = BCryptOpenAlgorithmProvider(
-                        out SafeBCryptAlgorithmHandle handle,
-                        key.hashAlgorithmId,
-                        null,
-                        key.flags);
-
-                    bool isSupported = status == NTSTATUS.STATUS_SUCCESS;
-
-                    if (s_supported.TryAdd(key, isSupported) && isSupported)
-                    {
-                        // It's a valid algorithm. Let's prime the handle cache while we are here. Presumably it's
-                        // going to get used if we're asking if it's supported.
-                        int hashSize = BCryptGetDWordProperty(handle, BCryptPropertyStrings.BCRYPT_HASH_LENGTH);
-                        Debug.Assert(hashSize > 0);
-
-                        if (s_handles.TryAdd(key, (handle, hashSize)))
-                        {
-                            // If we added it to the cache, don't dispose of it.
-                            continue;
-                        }
-                    }
-
-                    // Either the algorithm isn't supported or we don't need it for priming the cache, so Dispose.
-                    handle.Dispose();
+                    return supported;
                 }
+
+                NTSTATUS status = BCryptOpenAlgorithmProvider(
+                    out SafeBCryptAlgorithmHandle handle,
+                    key.hashAlgorithmId,
+                    null,
+                    key.flags);
+
+                bool isSupported = status == NTSTATUS.STATUS_SUCCESS;
+
+                if (s_supported.TryAdd(key, isSupported) && isSupported)
+                {
+                    // It's a valid algorithm. Let's prime the handle cache while we are here. Presumably it's
+                    // going to get used if we're asking if it's supported.
+                    int hashSize = BCryptGetDWordProperty(handle, BCryptPropertyStrings.BCRYPT_HASH_LENGTH);
+                    Debug.Assert(hashSize > 0);
+
+                    if (s_handles.TryAdd(key, (handle, hashSize)))
+                    {
+                        // If we added the handle to the cache, don't dispose of it and return our answer.
+                        return isSupported;
+                    }
+                }
+
+                // Either the algorithm isn't supported or we don't need it for priming the cache, so Dispose.
+                handle.Dispose();
+                return isSupported;
             }
         }
     }
