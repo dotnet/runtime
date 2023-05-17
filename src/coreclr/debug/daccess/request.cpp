@@ -3668,6 +3668,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
     ZeroMemory(pSyncBlockData,sizeof(DacpSyncBlockData));
     pSyncBlockData->SyncBlockCount = (SyncBlockCache::s_pSyncBlockCache->m_FreeSyncTableIndex) - 1;
     pSyncBlockData->bFree = TRUE;
+
     if (pSyncBlockData->SyncBlockCount > 0 && SBNumber <= pSyncBlockData->SyncBlockCount)
     {
         PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable)+(sizeof(SyncTableEntry) * SBNumber));
@@ -3679,7 +3680,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
             if (ste->m_SyncBlock != NULL)
             {
-                PTR_SyncBlock pBlock = ste->m_SyncBlock;
+                SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
                 pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
 #ifdef FEATURE_COMINTEROP
                 if (pBlock->m_pInteropInfo)
