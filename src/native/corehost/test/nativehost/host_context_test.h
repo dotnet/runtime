@@ -103,4 +103,8 @@ namespace host_context_test
         int argc,
         const pal::char_t *argv[],
         pal::stringstream_t &test_output);
+    bool get_runtime_delegate(
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *config_path,
+        pal::stringstream_t &test_output);
 }

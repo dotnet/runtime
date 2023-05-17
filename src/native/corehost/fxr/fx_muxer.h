@@ -35,6 +35,9 @@ public:
         host_context_t *context,
         coreclr_delegate_type delegate_type,
         void** delegate);
+    static int get_runtime_delegate_active(
+        coreclr_delegate_type delegate_type,
+        void** delegate);
     static const host_context_t* get_active_host_context();
     static int close_host_context(host_context_t *context);
 private:

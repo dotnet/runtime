@@ -688,15 +688,22 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
 
     *delegate = nullptr;
 
-    host_context_t *context = host_context_t::from_handle(host_context_handle);
-    if (context == nullptr)
-        return StatusCode::InvalidArgFailure;
-
     coreclr_delegate_type delegate_type = hostfxr_delegate_to_coreclr_delegate(type);
     if (delegate_type == coreclr_delegate_type::invalid)
         return StatusCode::InvalidArgFailure;
 
-    return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
+    if (host_context_handle == nullptr)
+    {
+        return fx_muxer_t::get_runtime_delegate_active(delegate_type, delegate);
+    }
+    else
+    {
+        host_context_t *context = host_context_t::from_handle(host_context_handle);
+        if (context == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        return fx_muxer_t::get_runtime_delegate(context, delegate_type, delegate);
+    }
 }
 
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
