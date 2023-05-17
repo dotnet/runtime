@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
-namespace System.Text.Json.Reflection
+namespace System.Text.Json.SourceGeneration
 {
     internal static class RoslynExtensions
     {

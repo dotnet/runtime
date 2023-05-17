@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Reflection;
 using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration

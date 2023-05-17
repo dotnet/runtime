@@ -9,7 +9,7 @@ using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
-namespace System.Text.Json.Reflection
+namespace System.Text.Json.SourceGeneration
 {
     internal sealed class KnownTypeSymbols(Compilation compilation)
     {
