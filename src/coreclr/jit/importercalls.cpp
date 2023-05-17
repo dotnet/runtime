@@ -2540,11 +2540,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
+    bool betterToExpand = false;
+
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
-    bool betterToExpand = false;
-
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
@@ -2626,6 +2626,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             default:
                 break;
         }
+    }
 
     GenTree* retNode = nullptr;
 
