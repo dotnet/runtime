@@ -55,10 +55,10 @@ namespace System.Diagnostics
             _arguments = arguments;
         }
 
-        /// <devdoc>
-        ///     Specifies the name of the application that is to be started, as well as a set
-        ///     of command line arguments to pass to the application.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the name of the application that is to be started, as well as a set
+        /// of command line arguments to pass to the application.
+        /// </summary>
         public ProcessStartInfo(string fileName, IEnumerable<string> arguments)
         {
             _fileName = fileName;
