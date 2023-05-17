@@ -24,9 +24,7 @@ namespace System.Threading
 #endif
 
 
-        private static bool EnsureConfigInitializedCore() {
-            throw new NotImplementedException();
-        }
+        private static bool EnsureConfigInitializedCore() => true;
 
 #pragma warning disable IDE0060
         internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => false;
