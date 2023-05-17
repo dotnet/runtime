@@ -2606,27 +2606,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
     }
 
-    // Intrinsics that we should make every effort to expand for NativeAOT.
-    // If the intrinsic cannot possibly be expanded, it's fine, but
-    // if it can be, it should expand.
-    switch (ni)
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        // CreateSpan must be expanded for NativeAOT
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            betterToExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-            break;
+        // Intrinsics that we should make every effort to expand for NativeAOT.
+        // If the intrinsic cannot possibly be expanded, it's fine, but
+        // if it can be, it should expand.
+        switch (ni)
+        {
+            // CreateSpan must be expanded for NativeAOT
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
+            case NI_System_EETypePtr_EETypePtrOf:
+                betterToExpand = true;
+                break;
 
-        case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_Activator_AllocatorOf:
-        case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_EETypePtr_EETypePtrOf:
-            betterToExpand = true;
-            break;
-
-        default:
-            break;
-    }
+            default:
+                break;
+        }
 
     GenTree* retNode = nullptr;
 
