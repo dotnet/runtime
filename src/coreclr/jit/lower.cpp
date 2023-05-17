@@ -2047,7 +2047,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* zeroCns   = comp->gtNewZeroConNode(actualLoadType);
                     result             = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
 
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     // Special case for AVX512: we can use ternary logic instruction to perform
                     // "lXor | (l2Indir ^ r2Indir)" in a single instruction.
                     if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
