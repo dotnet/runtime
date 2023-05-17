@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -34,37 +35,46 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOf(ref char searchSpace, char value, int length) =>
             IndexOf<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value, int length) =>
             IndexOf<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAny(ref char searchSpace, char value0, char value1, int length) =>
             IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, int length) =>
             IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAny(ref char searchSpace, char value0, char value1, char value2, int length) =>
             IndexOfAny<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExcept(ref char searchSpace, char value0, char value1, char value2, int length) =>
             IndexOfAny<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, (short)value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
             IndexOfAnyInRange<SpanHelpers.DontNegate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static int IndexOfAnyExceptInRange(ref char searchSpace, char lowInclusive, char rangeInclusive, int length) =>
             IndexOfAnyInRange<SpanHelpers.Negate<short>>(ref Unsafe.As<char, short>(ref searchSpace), (short)lowInclusive, (short)rangeInclusive, length);
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         public static bool Contains(ref short searchSpace, short value, int length)
         {
             Debug.Assert(CanUsePackedIndexOf(value));
@@ -104,7 +114,9 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
                 if (Avx2.IsSupported && length > Vector256<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue = Vector256.Create((byte)value);
 
@@ -157,7 +169,16 @@ namespace System
                 {
                     Vector128<byte> packedValue = Vector128.Create((byte)value);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer, but in this case, it is only used in combination
+                                                                         // with the check above of Avx2.IsSupported && length > Vector256<short>.Count which makes the logic
+                                                                         // in this if statement dead code when Avx2.IsSupported. Presumably this negated IsSupported check is to assist the JIT in
+                                                                         // not generating dead code.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // This is paired with the check above, and since these if statements are contained in 1 function, the code
+                                                                                   // may take a dependence on the JIT compiler producing a consistent value for the result of a call to IsSupported
+                                                                                   // This logic MUST NOT be extracted to a helper function
                     if (!Avx2.IsSupported && length > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
                     {
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -207,6 +228,7 @@ namespace System
             return false;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOf<TNegator>(ref short searchSpace, short value, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -241,7 +263,9 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
                 if (Avx2.IsSupported && length > Vector256<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue = Vector256.Create((byte)value);
 
@@ -296,7 +320,16 @@ namespace System
                 {
                     Vector128<byte> packedValue = Vector128.Create((byte)value);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer, but in this case, it is only used in combination
+                                                                         // with the check above of Avx2.IsSupported && length > Vector256<short>.Count which makes the logic
+                                                                         // in this if statement dead code when Avx2.IsSupported. Presumably this negated IsSupported check is to assist the JIT in
+                                                                         // not generating dead code.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // This is paired with the check above, and since these if statements are contained in 1 function, the code
+                                                                                   // may take a dependence on the JIT compiler producing a consistent value for the result of a call to IsSupported
+                                                                                   // This logic MUST NOT be extracted to a helper function
                     if (!Avx2.IsSupported && length > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
                     {
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -348,6 +381,7 @@ namespace System
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -389,7 +423,9 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
                 if (Avx2.IsSupported && length > Vector256<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue0 = Vector256.Create((byte)value0);
                     Vector256<byte> packedValue1 = Vector256.Create((byte)value1);
@@ -446,7 +482,16 @@ namespace System
                     Vector128<byte> packedValue0 = Vector128.Create((byte)value0);
                     Vector128<byte> packedValue1 = Vector128.Create((byte)value1);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer, but in this case, it is only used in combination
+                                                                         // with the check above of Avx2.IsSupported && length > Vector256<short>.Count which makes the logic
+                                                                         // in this if statement dead code when Avx2.IsSupported. Presumably this negated IsSupported check is to assist the JIT in
+                                                                         // not generating dead code.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // This is paired with the check above, and since these if statements are contained in 1 function, the code
+                                                                                   // may take a dependence on the JIT compiler producing a consistent value for the result of a call to IsSupported
+                                                                                   // This logic MUST NOT be extracted to a helper function
                     if (!Avx2.IsSupported && length > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
                     {
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -498,6 +543,7 @@ namespace System
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAny<TNegator>(ref short searchSpace, short value0, short value1, short value2, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -540,7 +586,9 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
                 if (Avx2.IsSupported && length > Vector256<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> packedValue0 = Vector256.Create((byte)value0);
                     Vector256<byte> packedValue1 = Vector256.Create((byte)value1);
@@ -599,7 +647,16 @@ namespace System
                     Vector128<byte> packedValue1 = Vector128.Create((byte)value1);
                     Vector128<byte> packedValue2 = Vector128.Create((byte)value2);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer, but in this case, it is only used in combination
+                                                                         // with the check above of Avx2.IsSupported && length > Vector256<short>.Count which makes the logic
+                                                                         // in this if statement dead code when Avx2.IsSupported. Presumably this negated IsSupported check is to assist the JIT in
+                                                                         // not generating dead code.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // This is paired with the check above, and since these if statements are contained in 1 function, the code
+                                                                                   // may take a dependence on the JIT compiler producing a consistent value for the result of a call to IsSupported
+                                                                                   // This logic MUST NOT be extracted to a helper function
                     if (!Avx2.IsSupported && length > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
                     {
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -651,6 +708,7 @@ namespace System
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static int IndexOfAnyInRange<TNegator>(ref short searchSpace, short lowInclusive, short rangeInclusive, int length)
             where TNegator : struct, SpanHelpers.INegator<short>
         {
@@ -675,7 +733,9 @@ namespace System
             {
                 ref short currentSearchSpace = ref searchSpace;
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else condition for this if statement is identical in semantics to Avx2 specific code
                 if (Avx2.IsSupported && length > Vector256<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
                 {
                     Vector256<byte> lowVector = Vector256.Create((byte)lowInclusive);
                     Vector256<byte> rangeVector = Vector256.Create((byte)rangeInclusive);
@@ -732,7 +792,16 @@ namespace System
                     Vector128<byte> lowVector = Vector128.Create((byte)lowInclusive);
                     Vector128<byte> rangeVector = Vector128.Create((byte)rangeInclusive);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibConditionParsing // A negated IsSupported condition isn't parseable by the intrinsics analyzer, but in this case, it is only used in combination
+                                                                         // with the check above of Avx2.IsSupported && length > Vector256<short>.Count which makes the logic
+                                                                         // in this if statement dead code when Avx2.IsSupported. Presumably this negated IsSupported check is to assist the JIT in
+                                                                         // not generating dead code.
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // This is paired with the check above, and since these if statements are contained in 1 function, the code
+                                                                                   // may take a dependence on the JIT compiler producing a consistent value for the result of a call to IsSupported
+                                                                                   // This logic MUST NOT be extracted to a helper function
                     if (!Avx2.IsSupported && length > 2 * Vector128<short>.Count)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibConditionParsing
                     {
                         // Process the input in chunks of 16 characters (2 * Vector128<short>).
                         // If the input length is a multiple of 16, don't consume the last 16 characters in this loop.
@@ -785,6 +854,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
             Debug.Assert(Avx2.IsSupported);
@@ -796,6 +866,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
             Debug.Assert(Sse2.IsSupported);
@@ -825,6 +896,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
@@ -847,6 +919,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
@@ -861,6 +934,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);

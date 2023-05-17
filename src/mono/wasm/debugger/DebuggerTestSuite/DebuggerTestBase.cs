@@ -24,6 +24,8 @@ namespace DebuggerTests
     DebuggerTestFirefox
 #endif
     {
+        public const string WebcilInWasmExtension = ".wasm";
+
         public DebuggerTests(ITestOutputHelper testOutput, string locale = "en-US", string driver = "debugger-driver.html")
                 : base(testOutput, locale, driver)
         {}

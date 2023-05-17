@@ -17,6 +17,22 @@ using Microsoft.Diagnostics.Tracing.Session;
 
 namespace DependencyLogViewer
 {
+	public class BoxDisplay
+    {
+        public Node node;
+        public List<string> reason;
+
+        public BoxDisplay(Node node, List<string> reason)
+        {
+            this.node = node;
+            this.reason = reason;
+        }
+
+        public override string ToString()
+        {
+            return $"Index: {node.Index}, Name: {node.Name}, {reason.Count} Reason(s): {string.Join(", ", reason.ToArray())}";
+        }
+    }
     public class Node
     {
         public readonly int Index;

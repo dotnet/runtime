@@ -20,6 +20,8 @@ module.exports = {
         "node_modules/**/*.*",
         "bin/**/*.*",
         "es6/*.js",
+        "jiterpreter-opcodes.ts",
+        "jiterpreter-tables.ts",
     ],
     "rules": {
         "@typescript-eslint/no-explicit-any": "off",
@@ -34,7 +36,10 @@ module.exports = {
                 "ignoredNodes": ["VariableDeclaration[declarations.length=0]"] // fixes https://github.com/microsoft/vscode-eslint/issues/1149
             }
         ],
-        "linebreak-style": "off",
+        "no-multi-spaces": ["error"],
+        "arrow-spacing": ["error"],
+        "block-spacing": ["error"],
+        "comma-spacing": ["error"],
         "quotes": [
             "error",
             "double"

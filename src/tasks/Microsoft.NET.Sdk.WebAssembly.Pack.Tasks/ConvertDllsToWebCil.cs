@@ -62,7 +62,11 @@ public class ConvertDllsToWebCil : Task
                 var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: filePath, outputPath: tmpWebcil, logger: Log);
                 webcilWriter.ConvertToWebcil();
 
-                var finalWebcil = Path.Combine(OutputPath, Path.GetFileNameWithoutExtension(filePath) + ".webcil");
+                string candicatePath = Path.Combine(OutputPath, candidate.GetMetadata("Culture"));
+                if (!Directory.Exists(candicatePath))
+                    Directory.CreateDirectory(candicatePath);
+
+                var finalWebcil = Path.Combine(candicatePath, Path.GetFileNameWithoutExtension(filePath) + Utils.WebcilInWasmExtension);
                 if (Utils.CopyIfDifferent(tmpWebcil, finalWebcil, useHash: true))
                     Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
                 else
@@ -71,10 +75,16 @@ public class ConvertDllsToWebCil : Task
                 _fileWrites.Add(finalWebcil);
 
                 var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
-                webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), ".webcil"));
-                webcilItem.SetMetadata("AssetTraitName", "WasmResource");
-                webcilItem.SetMetadata("AssetTraitValue", "runtime");
+                webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));
                 webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
+
+                if (webcilItem.GetMetadata("AssetTraitName") == "Culture")
+                {
+                    string relatedAsset = webcilItem.GetMetadata("RelatedAsset");
+                    relatedAsset = Path.ChangeExtension(relatedAsset, Utils.WebcilInWasmExtension);
+                    webcilItem.SetMetadata("RelatedAsset", relatedAsset);
+                    Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
+                }
 
                 webCilCandidates.Add(webcilItem);
             }

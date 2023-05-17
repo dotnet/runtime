@@ -16,6 +16,15 @@ handle_arguments() {
             __ShiftArgs=1
             ;;
 
+        icudir|-icudir)
+            __icuDir="$2"
+            __ShiftArgs=1
+            ;;
+
+        usepthreads|-usepthreads)
+            __usePThreads=1
+            ;;
+
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
@@ -38,6 +47,8 @@ __SkipConfigure=0
 __StaticLibLink=0
 __UnprocessedBuildArgs=
 __VerboseBuild=false
+__icuDir=""
+__usePThreads=0
 
 source "$__RepoRootDir"/eng/native/build-commons.sh
 
@@ -65,7 +76,7 @@ elif [[ "$__TargetOS" == wasi ]]; then
     export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
     export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
-    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake"
+    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake $__CMakeArgs"
 elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true
@@ -140,6 +151,11 @@ elif [[ "$__TargetOS" == tvos ]]; then
         exit 1
     fi
 fi
+
+if [[ -n "$__icuDir" ]]; then
+    __CMakeArgs="-DCMAKE_ICU_DIR=\"$__icuDir\" $__CMakeArgs"
+fi
+__CMakeArgs="-DCMAKE_USE_PTHREADS=$__usePThreads $__CMakeArgs"
 
 # Set the remaining variables based upon the determined build configuration
 __outConfig="${__outConfig:-"$__TargetOS-$__TargetArch-$__BuildType"}"

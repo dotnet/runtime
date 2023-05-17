@@ -97,7 +97,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         // Header
         private OperatingSystem _operatingSystem;
         private Machine _machine;
-        private Architecture _architecture;
         private int _pointerSize;
         private bool _composite;
         private ulong _imageBase;
@@ -189,18 +188,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _operatingSystem;
-            }
-        }
-
-        /// <summary>
-        /// Targeting processor architecture of the R2R executable
-        /// </summary>
-        public Architecture Architecture
-        {
-            get
-            {
-                EnsureHeader();
-                return _architecture;
             }
         }
 
@@ -637,36 +624,21 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_machine)
             {
                 case Machine.I386:
-                    _architecture = Architecture.X86;
+                case Machine.Arm:
+                case Machine.Thumb:
+                case Machine.ArmThumb2:
                     _pointerSize = 4;
                     break;
 
                 case Machine.Amd64:
-                    _architecture = Architecture.X64;
-                    _pointerSize = 8;
-                    break;
-
-                case Machine.Arm:
-                case Machine.Thumb:
-                case Machine.ArmThumb2:
-                    _architecture = Architecture.Arm;
-                    _pointerSize = 4;
-                    break;
-
                 case Machine.Arm64:
-                    _architecture = Architecture.Arm64;
-                    _pointerSize = 8;
-                    break;
-
-                case (Machine)0x6264: /* LoongArch64 */
-                    _architecture = (Architecture)6; /* LoongArch64 */
+                case Machine.LoongArch64:
                     _pointerSize = 8;
                     break;
 
                 default:
                     throw new NotImplementedException(Machine.ToString());
             }
-
 
             _imageBase = CompositeReader.PEHeaders.PEHeader.ImageBase;
 

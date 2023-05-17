@@ -694,7 +694,7 @@ STRINGREF StringObject::NewString(const WCHAR *pwsz)
     else
     {
 
-        DWORD nch = (DWORD)wcslen(pwsz);
+        DWORD nch = (DWORD)u16_strlen(pwsz);
         if (nch==0) {
             return GetEmptyString();
         }

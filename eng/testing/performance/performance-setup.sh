@@ -139,6 +139,18 @@ while (($# > 0)); do
       wasmaot=true
       shift 1
       ;;
+    --nopgo)
+      nopgo=true
+      shift 1
+      ;;
+    --dynamicpgo)
+      dynamicpgo=true
+      shift 1
+      ;;
+    --fullpgo)
+      fullpgo=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -213,6 +225,9 @@ while (($# > 0)); do
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
+      echo "  --nopgo                        Set for No PGO runs"
+      echo "  --dynamicpgo                   Set for dynamic PGO runs"
+      echo "  --fullpgo                      Set for Full PGO runs"
       echo ""
       exit 1
       ;;
@@ -318,6 +333,17 @@ if [[ "$iosmono" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
+if [[ "$nopgo" == "true" ]]; then
+    configurations="$configurations PGOType=nopgo"
+fi
+if [[ "$dynamicpgo" == "true" ]]; then
+    configurations="$configurations PGOType=dynamicpgo"
+fi
+if [[ "$fullpgo" == "true" ]]; then
+    configurations="$configurations PGOType=fullpgo"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
+fi
+
 cleaned_branch_name="main"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
@@ -378,6 +404,16 @@ fi
 
 if [[ -n "$dotnet_versions" ]]; then
     setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
+fi
+
+if [[ "$nopgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --no-pgo"
+fi
+if [[ "$dynamicpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --dynamic-pgo"
+fi
+if [[ "$fullpgo" == "true" ]]; then
+    setup_arguments="$setup_arguments --full-pgo"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

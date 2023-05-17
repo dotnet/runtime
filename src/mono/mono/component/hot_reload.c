@@ -2305,10 +2305,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 		case MONO_TABLE_PROPERTY: {
 			/* allow updates to existing properties. */
-			if (!is_addition)
-				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
-			else {
+			if (is_addition) {
 				g_assert (add_property_propertymap != 0);
 
 				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_PROPERTYMAP], mono_metadata_token_index (add_property_propertymap) - 1, MONO_PROPERTY_MAP_PARENT);
@@ -2362,10 +2359,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 		}
 		case MONO_TABLE_EVENT: {
-			if (!is_addition)
-				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
-			else {
+			if (is_addition) {
 				g_assert (add_event_eventmap != 0);
 
 				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_EVENTMAP], mono_metadata_token_index (add_event_eventmap) - 1, MONO_EVENT_MAP_PARENT);
@@ -2869,6 +2863,7 @@ add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClas
 	GSList *members = klass_info->added_members;
 	klass_info->added_members = g_slist_prepend_mem_manager (m_class_get_mem_manager (klass), members, GUINT_TO_POINTER (member_token));
 	add_member_parent (base_info, m_class_get_type_token (klass), member_token);
+	klass_info->generation = delta_info->generation;
 }
 
 
@@ -3025,6 +3020,7 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoProperty *
 hot_reload_get_property (MonoClass *klass, uint32_t property_token)
 {
+	g_assert (m_class_get_class_kind (klass) != MONO_CLASS_GINST);
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (property_token) == MONO_TABLE_PROPERTY);
 	GSList *added_props = info->added_props;
@@ -3040,6 +3036,7 @@ hot_reload_get_property (MonoClass *klass, uint32_t property_token)
 static MonoEvent *
 hot_reload_get_event (MonoClass *klass, uint32_t event_token)
 {
+	g_assert (m_class_get_class_kind (klass) != MONO_CLASS_GINST);
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (event_token) == MONO_TABLE_EVENT);
 	GSList *added_events = info->added_events;
@@ -3108,6 +3105,8 @@ add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, 
 
 	parent_info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_props, prop);
 
+	parent_info->generation = generation;
+
 	return prop;
 	
 }
@@ -3133,6 +3132,8 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 	evt->token = event_token;
 
 	parent_info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_events, evt);
+
+	parent_info->generation = generation;
 
 	return evt;
 	
@@ -3167,7 +3168,6 @@ add_semantic_method_to_existing_property (MonoImage *image_base, BaselineInfo *b
 
 
 	g_assert (dest != NULL);
-	g_assert (*dest == NULL);
 
 	MonoMethod *method = mono_get_method_checked (image_base, method_token, klass, NULL, error);
 	mono_error_assert_ok (error);
@@ -3207,7 +3207,6 @@ add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base
 	}
 
 	g_assert (dest != NULL);
-	g_assert (*dest == NULL);
 
 	MonoMethod *method = mono_get_method_checked (image_base, method_token, klass, NULL, error);
 	mono_error_assert_ok (error);

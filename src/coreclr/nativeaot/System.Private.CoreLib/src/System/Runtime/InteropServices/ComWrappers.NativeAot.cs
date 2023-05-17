@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices
             {
                 if (_comWrappers != null)
                 {
-                    _comWrappers.RemoveRCWFromCache(_externalComObject);
+                    _comWrappers.RemoveRCWFromCache(_externalComObject, _proxyHandle);
                     _comWrappers = null;
                 }
 
@@ -706,11 +706,35 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.Unwrap))
             {
-                var comInterfaceDispatch = TryGetComInterfaceDispatch(externalComObject);
+                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(externalComObject);
                 if (comInterfaceDispatch != null)
                 {
-                    retValue = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                    return true;
+                    // If we found a managed object wrapper in this ComWrappers instance
+                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                    //
+                    // A managed object can have multiple managed object wrappers, with a max of one per context.
+                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                    // managed object wrappers for A created with C1 and C2 respectively.
+                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                    if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                    {
+                        // The unwrapped object has a CCW in this context. Get the IUnknown for the externalComObject
+                        // so we can see if it's the CCW for the unwrapped object in this context.
+                        Guid iid = IID_IUnknown;
+                        int hr = Marshal.QueryInterface(externalComObject, ref iid, out IntPtr externalIUnknown);
+                        Debug.Assert(hr == 0); // An external COM object that came from a ComWrappers instance
+                                               // will always be well-formed.
+                        if (unwrappedWrapperInThisContext.ComIp == externalIUnknown)
+                        {
+                            Marshal.Release(externalIUnknown);
+                            retValue = unwrapped;
+                            return true;
+                        }
+                        Marshal.Release(externalIUnknown);
+                    }
                 }
             }
 
@@ -720,8 +744,18 @@ namespace System.Runtime.InteropServices
                 {
                     if (_rcwCache.TryGetValue(externalComObject, out GCHandle handle))
                     {
-                        retValue = handle.Target;
-                        return true;
+                        object? cachedWrapper = handle.Target;
+                        if (cachedWrapper is not null)
+                        {
+                            retValue = cachedWrapper;
+                            return true;
+                        }
+                        else
+                        {
+                            // The GCHandle has been clear out but the NativeObjectWrapper
+                            // finalizer has not yet run to remove the entry from _rcwCache
+                            _rcwCache.Remove(externalComObject);
+                        }
                     }
 
                     if (wrapperMaybe is not null)
@@ -765,9 +799,21 @@ namespace System.Runtime.InteropServices
 
             using (LockHolder.Hold(_lock))
             {
+                object? cachedWrapper = null;
                 if (_rcwCache.TryGetValue(externalComObject, out var existingHandle))
                 {
-                    retValue = existingHandle.Target;
+                    cachedWrapper = existingHandle.Target;
+                    if (cachedWrapper is null)
+                    {
+                        // The GCHandle has been clear out but the NativeObjectWrapper
+                        // finalizer has not yet run to remove the entry from _rcwCache
+                        _rcwCache.Remove(externalComObject);
+                    }
+                }
+
+                if (cachedWrapper is not null)
+                {
+                    retValue = cachedWrapper;
                 }
                 else
                 {
@@ -788,11 +834,17 @@ namespace System.Runtime.InteropServices
         }
 #pragma warning restore IDE0060
 
-        private void RemoveRCWFromCache(IntPtr comPointer)
+        private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
             using (LockHolder.Hold(_lock))
             {
-                _rcwCache.Remove(comPointer);
+                // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
+                // in the time between the GC cleared the contents of the GC handle but before the
+                // NativeObjectWrapper finializer ran.
+                if (_rcwCache.TryGetValue(comPointer, out GCHandle cachedValue) && expectedValue.Equals(cachedValue))
+                {
+                    _rcwCache.Remove(comPointer);
+                }
             }
         }
 

@@ -334,7 +334,7 @@ public:
 
     void*   GetInstanceAddress(OBJECTREF o);
 
-        // Get the address of a field within object 'o'
+    // Get the address of a field within object 'o'
     PTR_VOID   GetAddress(PTR_VOID o);
 
     PTR_VOID GetAddressNoThrowNoGC(PTR_VOID o);

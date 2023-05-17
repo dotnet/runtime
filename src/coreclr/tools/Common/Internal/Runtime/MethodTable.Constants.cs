@@ -17,14 +17,9 @@ namespace Internal.Runtime
         EETypeKindMask = 0x00030000,
 
         /// <summary>
-        /// This flag is set when m_RelatedType is in a different module.  In that case, _pRelatedType
-        /// actually points to an IAT slot in this module, which then points to the desired MethodTable in the
-        /// other module.  In other words, there is an extra indirection through m_RelatedType to get to
-        /// the related type in the other module.  When this flag is set, it is expected that you use the
-        /// "_ppXxxxViaIAT" member of the RelatedTypeUnion for the particular related type you're
-        /// accessing.
+        /// Type has an associated dispatch map.
         /// </summary>
-        RelatedTypeViaIATFlag = 0x00040000,
+        HasDispatchMap = 0x00040000,
 
         /// <summary>
         /// This type was dynamically allocated at runtime.
@@ -42,9 +37,9 @@ namespace Internal.Runtime
         HasPointersFlag = 0x00200000,
 
         /// <summary>
-        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// This MethodTable has sealed vtable entries
         /// </summary>
-        IDynamicInterfaceCastableFlag = 0x00400000,
+        HasSealedVTableEntriesFlag = 0x00400000,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
@@ -69,11 +64,6 @@ namespace Internal.Runtime
         ElementTypeShift = 26,
 
         /// <summary>
-        /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
-        /// </summary>
-        ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag,
-
-        /// <summary>
         /// The _usComponentSize is a number (not holding FlagsEx).
         /// </summary>
         HasComponentSizeFlag = 0x80000000,
@@ -89,6 +79,11 @@ namespace Internal.Runtime
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,
         IsTrackedReferenceWithFinalizerFlag = 0x0004,
+
+        /// <summary>
+        /// This type implements IDynamicInterfaceCastable to allow dynamic resolution of interface casts.
+        /// </summary>
+        IDynamicInterfaceCastableFlag = 0x0008,
     }
 
     internal enum EETypeKind : uint
@@ -148,10 +143,7 @@ namespace Internal.Runtime
         /// </summary>
         IsHFAFlag = 0x00000100,
 
-        /// <summary>
-        /// This MethodTable has sealed vtable entries
-        /// </summary>
-        HasSealedVTableEntriesFlag = 0x00000200,
+        // Unused = 0x00000200,
 
         /// <summary>
         /// This dynamically created types has gc statics
@@ -170,10 +162,7 @@ namespace Internal.Runtime
 
         // UNUSED = 0x00002000,
 
-        /// <summary>
-        /// This MethodTable is an abstract class (but not an interface).
-        /// </summary>
-        IsAbstractClassFlag = 0x00004000,
+        // UNUSED = 0x00004000,
 
         /// <summary>
         /// This MethodTable is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
@@ -183,9 +172,9 @@ namespace Internal.Runtime
 
     internal enum EETypeField
     {
-        ETF_InterfaceMap,
         ETF_TypeManagerIndirection,
         ETF_WritableData,
+        ETF_DispatchMap,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
@@ -244,11 +233,6 @@ namespace Internal.Runtime
         /// Extra <c>MethodTable</c> flags not commonly used such as HasClassConstructor
         /// </summary>
         RareFlags,
-
-        /// <summary>
-        /// Index of the dispatch map pointer in the DispatchMap table
-        /// </summary>
-        DispatchMap,
 
         /// <summary>
         /// Padding added to a value type when allocated on the GC heap
