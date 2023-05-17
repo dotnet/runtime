@@ -53,9 +53,11 @@ namespace ComInterfaceGenerator.Tests
             //iface.SetName("updated");
             //Assert.Equal("updated", iface.GetName());
 
-            var iUnknownStrategyProperty = typeof(ComObject).GetProperties().Single(p => p.Name == "IUnknownStrategy");
+            var iUnknownStrategyProperty = typeof(ComObject).GetProperty("IUnknownStrategy", BindingFlags.NonPublic | BindingFlags.Instance);
 
-            var qiCallCountObj = iUnknownStrategyProperty.GetValue(obj);
+            Assert.NotNull(iUnknownStrategyProperty);
+
+            var qiCallCountObj = iUnknownStrategyProperty!.GetValue(obj);
             var countQi = (SingleQIComWrapper.CountQI)qiCallCountObj;
             Assert.Equal(1, countQi.QiCallCount);
         }
