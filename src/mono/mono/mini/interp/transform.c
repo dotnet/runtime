@@ -3577,12 +3577,37 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
 	guint32 params_stack_size = get_stack_size (td->sp, num_args);
-	// Used only by unoptimized code
-	int param_offset;
-	if (num_args)
-		param_offset = td->sp [0].offset;
-	else
-		param_offset = get_tos_offset (td);
+
+	int call_offset = -1;
+
+	if (!td->optimized && op == -1) {
+		int param_offset;
+		if (num_args)
+			param_offset = td->sp [0].offset;
+		else
+			param_offset = get_tos_offset (td);
+
+		if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
+			call_offset = param_offset;
+		} else if (params_stack_size) {
+			int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
+			call_offset = new_param_offset;
+
+			// Mov all params to the new_param_offset
+			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+			td->last_ins->data [0] = param_offset;
+			td->last_ins->data [1] = MINT_STACK_SLOT_SIZE;
+			td->last_ins->data [2] = params_stack_size;
+
+			if (calli) {
+				// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
+				int offset = new_param_offset - param_offset;
+				td->locals [fp_sreg].stack_offset += offset;
+			}
+		} else {
+			call_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
+		}
+	}
 
 	int *call_args = create_call_args (td, num_args);
 
@@ -3736,24 +3761,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (td->last_ins->flags & INTERP_INST_FLAG_CALL) {
 		td->last_ins->info.call_info->call_args = call_args;
 		if (!td->optimized) {
-			if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
-				td->last_ins->info.call_info->call_offset = param_offset;
-			} else {
-				int new_param_offset = ALIGN_TO (param_offset, MINT_STACK_ALIGNMENT);
-				td->last_ins->info.call_info->call_offset = new_param_offset;
-				if (params_stack_size) {
-					InterpInst *align_ins = interp_insert_ins_bb (td, td->cbb, interp_prev_ins (td->last_ins), MINT_MOV_STACK_UNOPT);
-					align_ins->data [0] = param_offset;
-					align_ins->data [1] = MINT_STACK_SLOT_SIZE;
-					align_ins->data [2] = params_stack_size;
-				}
-				if (calli) {
-					// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
-					int offset = new_param_offset - param_offset;
-					td->locals [fp_sreg].stack_offset += offset;
-				}
-			}
+			g_assert (call_offset != -1);
+			td->last_ins->info.call_info->call_offset = call_offset;
 		}
+	} else if (!td->optimized) {
+		g_assert (call_offset == -1);
 	}
 
 	return TRUE;
