@@ -81,6 +81,8 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
+        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? loaderHelpers.config.startupOptions?.environment ?? "Production";
+
         if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
             // If we have custom loadBootResource
             await loadBootConfig(loaderHelpers.config, module);
@@ -91,7 +93,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
-                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData), module);
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;
