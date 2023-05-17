@@ -3577,6 +3577,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	interp_emit_arg_conv (td, csignature);
 
+	int param_end_offset = 0;
+	if (!td->optimized && op == -1)
+		param_end_offset = get_tos_offset (td);
+
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
 	guint32 params_stack_size = get_stack_size (td, td->sp, num_args);
@@ -3588,7 +3592,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (num_args)
 			param_offset = td->sp [0].offset;
 		else
-			param_offset = get_tos_offset (td);
+			param_offset = param_end_offset = get_tos_offset (td);
 
 		if ((param_offset % MINT_STACK_ALIGNMENT) == 0) {
 			call_offset = param_offset;
@@ -3600,7 +3604,28 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
 			td->last_ins->data [0] = param_offset;
 			td->last_ins->data [1] = MINT_STACK_SLOT_SIZE;
-			td->last_ins->data [2] = params_stack_size;
+			td->last_ins->data [2] = param_end_offset - param_offset;
+
+			// If we have any simd arguments, we broke their alignment. We need to find the first simd arg and realign it
+			// together with the following params. First argument can't be simd type otherwise we would have been aligned
+			// already.
+			for (int i = 1; i < num_args; i++) {
+				if (td->locals [td->sp [i].local].flags & INTERP_LOCAL_FLAG_SIMD) {
+					gint16 offset_amount;
+					// If the simd struct comes immediately after the previous argument we do upper align
+					// otherwise we should lower align to preserve call convention
+					if ((td->sp [i - 1].offset + td->sp [i - 1].size) == td->sp [i].offset)
+						offset_amount = (gint16)MINT_STACK_SLOT_SIZE;
+					else
+						offset_amount = -(gint16)MINT_STACK_SLOT_SIZE;
+
+					interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+					// After previous alignment, this arg will be offset by MINT_STACK_SLOT_SIZE
+					td->last_ins->data [0] = td->sp [i].offset + MINT_STACK_SLOT_SIZE;
+					td->last_ins->data [1] = offset_amount;
+					td->last_ins->data [2] = get_stack_size (td, td->sp + i, num_args - i);
+				}
+			}
 
 			if (calli) {
 				// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
