@@ -343,7 +343,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+libs+clr.toolstests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs+clr.toolstests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             condition: >-
