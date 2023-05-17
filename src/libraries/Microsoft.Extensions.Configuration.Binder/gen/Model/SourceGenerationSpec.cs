@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record SourceGenerationSpec(
-        Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> RootConfigTypes,
+        Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> ConfigTypes,
         BinderMethodSpecifier MethodsToGen,
         HashSet<ParsableFromStringSpec> PrimitivesForHelperGen,
         ImmutableSortedSet<string> TypeNamespaces)

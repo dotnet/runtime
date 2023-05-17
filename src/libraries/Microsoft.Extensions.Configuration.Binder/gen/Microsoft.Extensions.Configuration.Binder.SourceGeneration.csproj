@@ -33,7 +33,7 @@
     <Compile Include="Model\BinderMethodSpecifier.cs" />
     <Compile Include="Model\CollectionSpec.cs" />
     <Compile Include="Model\ConfigurationSectionSpec.cs" />
-    <Compile Include="Model\ConstructionStrategy.cs" />
+    <Compile Include="Model\InitializationStrategy.cs" />
     <Compile Include="Model\NullableSpec.cs" />
     <Compile Include="Model\ObjectSpec.cs" />
     <Compile Include="Model\ParameterSpec.cs" />

@@ -42,6 +42,8 @@ namespace Microsoft.Extensions
             Assert.Equal("Dummy", result.Nested.MyProp);
         }
 
+        // Add test for type with parameterless ctor + init-only properties.
+
         [Fact]
         public void EnumBindCaseInsensitiveNotThrows()
         {
@@ -920,8 +922,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
-        public void ExceptionWhenTryingToBindClassWherePropertiesDoMatchConstructorParameters()
+        [Fact]
+        public void ExceptionWhenTryingToBindClassWherePropertiesDoNotMatchConstructorParameters()
         {
             var input = new Dictionary<string, string>
             {
@@ -941,7 +943,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
         {
             var input = new Dictionary<string, string>
@@ -961,7 +963,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
         {
             var input = new Dictionary<string, string>
@@ -1003,7 +1005,7 @@ namespace Microsoft.Extensions
             Assert.Equal(42, testOptions.ClassWhereParametersHaveDefaultValueProperty.Age);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void FieldsNotSupported_ExceptionBindingToConstructorWithParameterMatchingAField()
         {
             var input = new Dictionary<string, string>
@@ -1025,7 +1027,7 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void BindsToRecordPrimaryConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
@@ -1139,7 +1141,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has multiple public parameterized constructors, then throw
         // an exception.
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors()
         {
             var dic = new Dictionary<string, string>
@@ -1153,7 +1155,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithMultipleParameterizedConstructors");
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, typeof(ImmutableClassWithMultipleParameterizedConstructors));
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterizedConstructors>());
 
@@ -1162,7 +1164,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructor, then throw
         // that constructor has an 'in' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1176,7 +1178,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "string1");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithInParameter), "string1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithInParameter>());
 
@@ -1185,7 +1187,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // that constructor has a 'ref' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1199,7 +1201,7 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "int1");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithRefParameter), "int1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithRefParameter>());
 
@@ -1208,7 +1210,7 @@ namespace Microsoft.Extensions
 
         // If the immutable type has a parameterized constructors, then throw
         // if the constructor has an 'out' parameter
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter()
         {
             var dic = new Dictionary<string, string>
@@ -1222,14 +1224,14 @@ namespace Microsoft.Extensions
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Tests.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "int2");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, typeof(ImmutableClassWithOneParameterizedConstructorButWithOutParameter), "int2");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithOutParameter>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]// Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindMutableStruct_UnmatchedConstructorsAreIgnored()
         {
             var dic = new Dictionary<string, string>
@@ -1325,6 +1327,23 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void CanBindClassWithPrimaryCtor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithPrimaryCtor>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
         public void CanBindRecordStructOptions()
         {
             var dic = new Dictionary<string, string>
@@ -1364,7 +1383,7 @@ namespace Microsoft.Extensions
             Assert.Equal(24, options.Nested2.ValueB);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Ensure parameterized ctor support exception messages & param-property match validation are in sync.
+        [Fact]
         public void CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor()
         {
             var dic = new Dictionary<string, string>

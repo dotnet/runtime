@@ -27,14 +27,19 @@
         <target state="translated">Verze jazyka musí být alespoň C# 11</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="new">Cannot create instance of type '{0}' because it is missing a public instance constructor.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
         <target state="translated">Multidimenzionální pole se nepodporují: {0}“.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Podporují se pouze objekty s veřejnými konstruktory bez parametrů: „{0}“.</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="new">Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
