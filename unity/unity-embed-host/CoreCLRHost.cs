@@ -176,6 +176,13 @@ static unsafe partial class CoreCLRHost
         [NativeCallbackType("MonoMethod*")] IntPtr method,
         [NativeCallbackType("MonoClass*")] IntPtr refclass) =>
         MethodInfo.GetMethodFromHandle(method.MethodHandleFromHandleIntPtr(), RuntimeTypeHandle.FromIntPtr(refclass)).ToNativeRepresentation();
+    
+    [return: NativeCallbackType("void*")]
+    public static IntPtr unity_method_get_function_pointer([NativeCallbackType("MonoMethod*")] IntPtr method)
+    {
+        var handle = method.MethodHandleFromHandleIntPtr();
+        return handle.GetFunctionPointer();
+    }
 
     [return: NativeCallbackType("MonoReflectionField*")]
     public static IntPtr field_get_object(
