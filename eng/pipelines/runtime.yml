@@ -336,13 +336,16 @@ extends:
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - linux_x64
           jobParameters:
-            testGroup: clrTools
             timeoutInMinutes: 120
+            nameSuffix: CLR_Tools_Tests
+            buildArgs: -s clr.aot+libs+clr.toolstests -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
