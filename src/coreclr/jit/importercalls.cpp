@@ -2540,25 +2540,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    switch (ni)
-    {
-        // CreateSpan must be expanded for NativeAOT
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-            break;
-
-        case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_Activator_AllocatorOf:
-        case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_EETypePtr_EETypePtrOf:
-            mustExpand = true;
-            break;
-
-        default:
-            break;
-    }
-
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
     // in this case unlike mustExpand.
@@ -2623,6 +2604,28 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
                 break;
         }
+    }
+
+    // Intrinsics that we should make every effort to expand for NativeAOT.
+    // If the intrinsic cannot possibly be expanded, it's fine, but
+    // if it can be, it should expand.
+    switch (ni)
+    {
+        // CreateSpan must be expanded for NativeAOT
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            betterToExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+            break;
+
+        case NI_Internal_Runtime_MethodTable_Of:
+        case NI_System_Activator_AllocatorOf:
+        case NI_System_Activator_DefaultConstructorOf:
+        case NI_System_EETypePtr_EETypePtrOf:
+            betterToExpand = true;
+            break;
+
+        default:
+            break;
     }
 
     GenTree* retNode = nullptr;

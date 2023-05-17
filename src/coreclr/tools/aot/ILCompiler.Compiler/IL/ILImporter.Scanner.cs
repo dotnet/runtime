@@ -334,12 +334,6 @@ namespace Internal.IL
 
             if (method.IsIntrinsic)
             {
-                if (IsRuntimeHelpersInitializeArrayOrCreateSpan(method))
-                {
-                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.ldtoken)
-                        return;
-                }
-
                 if (IsActivatorDefaultConstructorOf(method))
                 {
                     if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
@@ -975,22 +969,6 @@ namespace Internal.IL
 
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
 
-                // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
-                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
-                if (nextBasicBlock == null)
-                {
-                    if ((ILOpcode)_ilBytes[_currentOffset] == ILOpcode.call)
-                    {
-                        int methodToken = ReadILTokenAt(_currentOffset + 1);
-                        var method = (MethodDesc)_methodIL.GetObject(methodToken);
-                        if (IsRuntimeHelpersInitializeArrayOrCreateSpan(method))
-                        {
-                            // Codegen expands this and doesn't do the normal ldtoken.
-                            return;
-                        }
-                    }
-                }
-
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
                     _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.FieldHandle, field), "ldtoken");
@@ -1314,24 +1292,6 @@ namespace Internal.IL
         private static void ReportInvalidInstruction(ILOpcode opcode)
         {
             ThrowHelper.ThrowInvalidProgramException();
-        }
-
-        private static bool IsRuntimeHelpersInitializeArrayOrCreateSpan(MethodDesc method)
-        {
-            if (method.IsIntrinsic)
-            {
-                string name = method.Name;
-                if (name == "InitializeArray" || name == "CreateSpan")
-                {
-                    MetadataType owningType = method.OwningType as MetadataType;
-                    if (owningType != null)
-                    {
-                        return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
-                    }
-                }
-            }
-
-            return false;
         }
 
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)
