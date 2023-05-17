@@ -696,5 +696,58 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
+
+        [Fact]
+        public void VariousGenericSerializableTypesAreSupported()
+        {
+            string source = """
+                using System;
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(Dictionary<string, string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyClass.NestedGenericClass<string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedClass))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedGenericClass<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public class NestedGenericClass<T>
+                        {
+                        }
+                    }
+
+                    public class MyGenericClass<T1>
+                    {
+                        public class NestedClass
+                        {
+                        }
+                        public class NestedGenericClass<T2>
+                        {
+                        }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Make sure compilation was successful.
+            Assert.Empty(result.Diagnostics.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+            Assert.Empty(result.NewCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
+
+            Assert.Equal(5, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::System.Collections.Generic.Dictionary<string, string>");
+            result.AssertContainsType("global::HelloWorld.MyClass.NestedGenericClass<string>");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedClass");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedGenericClass<int>");
+            result.AssertContainsType("string");
+        }
     }
 }
