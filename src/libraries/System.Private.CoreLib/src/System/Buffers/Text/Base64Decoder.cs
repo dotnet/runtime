@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -35,66 +34,18 @@ namespace System.Buffers.Text
         /// - InvalidData - if the input contains bytes outside of the expected base64 range, or if it contains invalid/more than two padding characters,
         ///   or if the input is incomplete (i.e. not a multiple of 4) and <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// </returns>
-        public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
+            DecodeFromUtf8(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+
+        private static unsafe OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
         {
-            OperationStatus status = OperationStatus.Done;
-            bytesConsumed = 0;
-            bytesWritten = 0;
-
-            while (!utf8.IsEmpty)
+            if (utf8.IsEmpty)
             {
-                status = DecodeFromUtf8Core(utf8, bytes, out int localConsumed, out int localWritten, isFinalBlock);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
-
-                if (status is not OperationStatus.InvalidData)
-                {
-                    break;
-                }
-
-                utf8 = utf8.Slice(localConsumed);
-                bytes = bytes.Slice(localWritten);
-
-                if (utf8.IsEmpty)
-                {
-                    break;
-                }
-
-                localConsumed = IndexOfAnyExceptWhiteSpace(utf8);
-                if (localConsumed < 0)
-                {
-                    // The remainder of the input is all whitespace. Mark it all as having been consumed,
-                    // and mark the operation as being done.
-                    bytesConsumed += utf8.Length;
-                    status = OperationStatus.Done;
-                    break;
-                }
-
-                if (localConsumed == 0)
-                {
-                    // Non-whitespace was found at the beginning of the input. Since it wasn't consumed
-                    // by the previous call to DecodeFromUtf8Core, it must be part of a Base64 sequence
-                    // that was interrupted by whitespace or something else considered invalid.
-                    // Fall back to block-wise decoding. This is very slow, but it's also very non-standard
-                    // formatting of the input; whitespace is typically only found between blocks, such as
-                    // when Convert.ToBase64String inserts a line break every 76 output characters.
-                    return DecodeWithWhiteSpaceBlockwise(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
-                }
-
-                // Skip over the starting whitespace and continue.
-                bytesConsumed += localConsumed;
-                utf8 = utf8.Slice(localConsumed);
+                bytesConsumed = 0;
+                bytesWritten = 0;
+                return OperationStatus.Done;
             }
 
-            return status;
-        }
-
-        /// <summary>
-        /// Core logic for decoding UTF-8 encoded text in base 64 into binary data.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe OperationStatus DecodeFromUtf8Core(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
-        {
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(utf8))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
@@ -301,7 +252,59 @@ namespace System.Buffers.Text
             InvalidDataExit:
                 bytesConsumed = (int)(src - srcBytes);
                 bytesWritten = (int)(dest - destBytes);
-                return OperationStatus.InvalidData;
+                return ignoreWhiteSpace ?
+                    InvalidDataFallback(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock) :
+                    OperationStatus.InvalidData;
+            }
+
+            static OperationStatus InvalidDataFallback(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
+            {
+                utf8 = utf8.Slice(bytesConsumed);
+                bytes = bytes.Slice(bytesWritten);
+
+                OperationStatus status;
+                do
+                {
+                    int localConsumed = IndexOfAnyExceptWhiteSpace(utf8);
+                    if (localConsumed < 0)
+                    {
+                        // The remainder of the input is all whitespace. Mark it all as having been consumed,
+                        // and mark the operation as being done.
+                        bytesConsumed += utf8.Length;
+                        status = OperationStatus.Done;
+                        break;
+                    }
+
+                    if (localConsumed == 0)
+                    {
+                        // Non-whitespace was found at the beginning of the input. Since it wasn't consumed
+                        // by the previous call to DecodeFromUtf8, it must be part of a Base64 sequence
+                        // that was interrupted by whitespace or something else considered invalid.
+                        // Fall back to block-wise decoding. This is very slow, but it's also very non-standard
+                        // formatting of the input; whitespace is typically only found between blocks, such as
+                        // when Convert.ToBase64String inserts a line break every 76 output characters.
+                        return DecodeWithWhiteSpaceBlockwise(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                    }
+
+                    // Skip over the starting whitespace and continue.
+                    bytesConsumed += localConsumed;
+                    utf8 = utf8.Slice(localConsumed);
+
+                    // Try again after consumed whitespace
+                    status = DecodeFromUtf8(utf8, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
+                    bytesConsumed += localConsumed;
+                    bytesWritten += localWritten;
+                    if (status is not OperationStatus.InvalidData)
+                    {
+                        break;
+                    }
+
+                    utf8 = utf8.Slice(localConsumed);
+                    bytes = bytes.Slice(localWritten);
+                }
+                while (!utf8.IsEmpty);
+
+                return status;
             }
         }
 
@@ -337,127 +340,21 @@ namespace System.Buffers.Text
         /// It does not return NeedMoreData since this method tramples the data in the buffer and
         /// hence can only be called once with all the data in the buffer.
         /// </returns>
-        public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten)
-        {
-            OperationStatus status = DecodeFromUtf8InPlaceCore(buffer, out bytesWritten, out uint sourceIndex);
-            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData, "These are the only statuses the method is coded to return.");
+        public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten) =>
+            DecodeFromUtf8InPlace(buffer, out bytesWritten, ignoreWhiteSpace: true);
 
-            if (status != OperationStatus.Done)
+        private static unsafe OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten, bool ignoreWhiteSpace)
+        {
+            if (buffer.IsEmpty)
             {
-                // The input may have whitespace, attempt to decode while ignoring whitespace.
-                status = DecodeWithWhiteSpaceFromUtf8InPlace(buffer, ref bytesWritten, (int)sourceIndex);
+                bytesWritten = 0;
+                return OperationStatus.Done;
             }
 
-            return status;
-        }
-
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
-        {
-            const int BlockSize = 4;
-            Span<byte> buffer = stackalloc byte[BlockSize];
-            OperationStatus status = OperationStatus.Done;
-
-            while (!utf8.IsEmpty)
-            {
-                int encodedIdx = 0;
-                int bufferIdx = 0;
-                int skipped = 0;
-
-                for (; encodedIdx < utf8.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
-                {
-                    if (IsWhiteSpace(utf8[encodedIdx]))
-                    {
-                        skipped++;
-                    }
-                    else
-                    {
-                        buffer[bufferIdx] = utf8[encodedIdx];
-                        bufferIdx++;
-                    }
-                }
-
-                utf8 = utf8.Slice(encodedIdx);
-                bytesConsumed += skipped;
-
-                if (bufferIdx == 0)
-                {
-                    continue;
-                }
-
-                bool hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
-                bool localIsFinalBlock = !hasAnotherBlock;
-
-                // If this block contains padding and there's another block, then only whitespace may follow for being valid.
-                if (hasAnotherBlock)
-                {
-                    int paddingCount = GetPaddingCount(ref buffer[^1]);
-                    if (paddingCount > 0)
-                    {
-                        hasAnotherBlock = false;
-                        localIsFinalBlock = true;
-                    }
-                }
-
-                if (localIsFinalBlock && !isFinalBlock)
-                {
-                    localIsFinalBlock = false;
-                }
-
-                status = DecodeFromUtf8Core(buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
-
-                if (status != OperationStatus.Done)
-                {
-                    return status;
-                }
-
-                // The remaining data must all be whitespace in order to be valid.
-                if (!hasAnotherBlock)
-                {
-                    for (int i = 0; i < utf8.Length; ++i)
-                    {
-                        if (!IsWhiteSpace(utf8[i]))
-                        {
-                            // Revert previous dest increment, since an invalid state followed.
-                            bytesConsumed -= localConsumed;
-                            bytesWritten -= localWritten;
-
-                            return OperationStatus.InvalidData;
-                        }
-
-                        bytesConsumed++;
-                    }
-
-                    break;
-                }
-
-                bytes = bytes.Slice(localWritten);
-            }
-
-            return status;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetPaddingCount(ref byte ptrToLastElement)
-        {
-            int padding = 0;
-
-            if (ptrToLastElement == EncodingPad) padding++;
-            if (Unsafe.Subtract(ref ptrToLastElement, 1) == EncodingPad) padding++;
-
-            return padding;
-        }
-
-        /// <summary>
-        /// Core logic for decoding UTF-8 encoded text in base 64 into binary data in place.
-        /// </summary>
-        private static unsafe OperationStatus DecodeFromUtf8InPlaceCore(Span<byte> buffer, out int bytesWritten, out uint sourceIndex)
-        {
             fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
             {
-                int bufferLength = buffer.Length;
-                sourceIndex = 0;
+                uint bufferLength = (uint)buffer.Length;
+                uint sourceIndex = 0;
                 uint destIndex = 0;
 
                 // only decode input if it is a multiple of 4
@@ -550,11 +447,111 @@ namespace System.Buffers.Text
 
             InvalidExit:
                 bytesWritten = (int)destIndex;
-                return OperationStatus.InvalidData;
+                return ignoreWhiteSpace ?
+                    DecodeWithWhiteSpaceFromUtf8InPlace(buffer, ref bytesWritten, sourceIndex) : // The input may have whitespace, attempt to decode while ignoring whitespace.
+                    OperationStatus.InvalidData;
             }
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, int sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        {
+            const int BlockSize = 4;
+            Span<byte> buffer = stackalloc byte[BlockSize];
+            OperationStatus status = OperationStatus.Done;
+
+            while (!utf8.IsEmpty)
+            {
+                int encodedIdx = 0;
+                int bufferIdx = 0;
+                int skipped = 0;
+
+                for (; encodedIdx < utf8.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
+                {
+                    if (IsWhiteSpace(utf8[encodedIdx]))
+                    {
+                        skipped++;
+                    }
+                    else
+                    {
+                        buffer[bufferIdx] = utf8[encodedIdx];
+                        bufferIdx++;
+                    }
+                }
+
+                utf8 = utf8.Slice(encodedIdx);
+                bytesConsumed += skipped;
+
+                if (bufferIdx == 0)
+                {
+                    continue;
+                }
+
+                bool hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
+                bool localIsFinalBlock = !hasAnotherBlock;
+
+                // If this block contains padding and there's another block, then only whitespace may follow for being valid.
+                if (hasAnotherBlock)
+                {
+                    int paddingCount = GetPaddingCount(ref buffer[^1]);
+                    if (paddingCount > 0)
+                    {
+                        hasAnotherBlock = false;
+                        localIsFinalBlock = true;
+                    }
+                }
+
+                if (localIsFinalBlock && !isFinalBlock)
+                {
+                    localIsFinalBlock = false;
+                }
+
+                status = DecodeFromUtf8(buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
+                bytesConsumed += localConsumed;
+                bytesWritten += localWritten;
+
+                if (status != OperationStatus.Done)
+                {
+                    return status;
+                }
+
+                // The remaining data must all be whitespace in order to be valid.
+                if (!hasAnotherBlock)
+                {
+                    for (int i = 0; i < utf8.Length; ++i)
+                    {
+                        if (!IsWhiteSpace(utf8[i]))
+                        {
+                            // Revert previous dest increment, since an invalid state followed.
+                            bytesConsumed -= localConsumed;
+                            bytesWritten -= localWritten;
+
+                            return OperationStatus.InvalidData;
+                        }
+
+                        bytesConsumed++;
+                    }
+
+                    break;
+                }
+
+                bytes = bytes.Slice(localWritten);
+            }
+
+            return status;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int GetPaddingCount(ref byte ptrToLastElement)
+        {
+            int padding = 0;
+
+            if (ptrToLastElement == EncodingPad) padding++;
+            if (Unsafe.Subtract(ref ptrToLastElement, 1) == EncodingPad) padding++;
+
+            return padding;
+        }
+
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace(Span<byte> utf8, ref int destIndex, uint sourceIndex)
         {
             const int BlockSize = 4;
             Span<byte> buffer = stackalloc byte[BlockSize];
@@ -564,20 +561,20 @@ namespace System.Buffers.Text
             bool hasPaddingBeenProcessed = false;
             int localBytesWritten = 0;
 
-            while ((uint)sourceIndex < (uint)utf8.Length)
+            while (sourceIndex < (uint)utf8.Length)
             {
                 int bufferIdx = 0;
 
                 while (bufferIdx < BlockSize)
                 {
-                    if ((uint)sourceIndex >= (uint)utf8.Length) // TODO https://github.com/dotnet/runtime/issues/83349: move into the while condition once fixed
+                    if (sourceIndex >= (uint)utf8.Length) // TODO https://github.com/dotnet/runtime/issues/83349: move into the while condition once fixed
                     {
                         break;
                     }
 
-                    if (!IsWhiteSpace(utf8[sourceIndex]))
+                    if (!IsWhiteSpace(utf8[(int)sourceIndex]))
                     {
-                        buffer[bufferIdx] = utf8[sourceIndex];
+                        buffer[bufferIdx] = utf8[(int)sourceIndex];
                         bufferIdx++;
                     }
 
@@ -604,7 +601,7 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                status = DecodeFromUtf8InPlaceCore(buffer, out localBytesWritten, out _);
+                status = DecodeFromUtf8InPlace(buffer, out localBytesWritten, ignoreWhiteSpace: false);
                 localDestIndex += localBytesWritten;
                 hasPaddingBeenProcessed = localBytesWritten < 3;
 
