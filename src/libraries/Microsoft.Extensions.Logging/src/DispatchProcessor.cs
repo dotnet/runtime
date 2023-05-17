@@ -222,31 +222,51 @@ namespace Microsoft.Extensions.Logging
 
         private sealed class DynamicDispatchScopeToLoggers<TState> : ScopeHandler<TState> where TState : notnull
         {
-            private DispatchProcessor _processor;
+            private readonly ScopeLogger[] _scopeLoggers;
+            private readonly DispatchProcessor _processor;
 
             public DynamicDispatchScopeToLoggers(DispatchProcessor processor)
             {
+                List<ScopeLogger> scopeLoggers = new List<ScopeLogger>();
+
+                foreach (LoggerInformation loggerInformation in processor._loggers)
+                {
+                    if (!loggerInformation.ExternalScope && loggerInformation.IsEnabled(LogLevel.Critical))
+                    {
+                        scopeLoggers.Add(new ScopeLogger(logger: loggerInformation.Logger, externalScopeProvider: null));
+                    }
+                }
+                if (processor._externalScopeProvider is { } scopeProvider)
+                {
+                    scopeLoggers.Add(new ScopeLogger(logger: null, externalScopeProvider: scopeProvider));
+                }
+
+                _scopeLoggers = scopeLoggers.ToArray();
                 _processor = processor;
             }
 
             public override IDisposable? HandleBeginScope(ref TState state)
             {
-                LoggerInformation[] loggers = _processor._loggers;
+                ScopeLogger[] loggers = _scopeLoggers;
 
+                if (loggers.Length == 0)
+                {
+                    return null;
+                }
                 if (loggers.Length == 1)
                 {
-                    return CreateScope(loggers[0].Logger, ref state);
+                    return loggers[0].CreateScope(state);
                 }
 
                 var scope = new Scope(loggers.Length);
                 List<Exception>? exceptions = null;
                 for (int i = 0; i < loggers.Length; i++)
                 {
-                    ref readonly LoggerInformation loggerInfo = ref loggers[i];
+                    ref readonly ScopeLogger loggerInfo = ref loggers[i];
 
                     try
                     {
-                        scope.SetDisposable(i, CreateScope(loggerInfo.Logger, ref state));
+                        scope.SetDisposable(i, loggerInfo.CreateScope(state));
                     }
                     catch (Exception ex)
                     {
@@ -254,17 +274,19 @@ namespace Microsoft.Extensions.Logging
                         exceptions.Add(ex);
                     }
                 }
+
+                if (exceptions != null && exceptions.Count > 0)
+                {
+                    ThrowLoggingError(exceptions);
+                }
+
                 return scope;
             }
 
-            private IDisposable? CreateScope(ILogger logger, ref TState state)
+            private static void ThrowLoggingError(List<Exception> exceptions)
             {
-                if (_processor._externalScopeProvider is { } provider)
-                {
-                    return provider.Push(state);
-                }
-
-                return logger.BeginScope<TState>(state);
+                throw new AggregateException(
+                    message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
             }
 
 
