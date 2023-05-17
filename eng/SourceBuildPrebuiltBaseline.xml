@@ -2,21 +2,17 @@
 <UsageData>
   <IgnorePatterns>
     <UsagePattern IdentityGlob="Microsoft.SourceBuild.Intermediate.*" />
+    
     <!-- Allowed and pinned to major version due to https://github.com/dotnet/source-build/issues/3228 -->
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Crossgen2.linux-x64/*8.*" />
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Runtime.linux-x64/*8.*" />
     <UsagePattern IdentityGlob="*Microsoft.DotNet.ILCompiler/*8.*" />
     
+    <!-- Will be removed once https://github.com/NuGet/Home/issues/11059 is resolved -->
+    <UsagePattern IdentityGlob="Nuget.*/*" />
+
+    <!-- Analyzers cannot be SBRPed + an older release version is being used, meaning there is no intermediate for it
+         In full source build, this version is overridden by previous repo outputs or come from previously source-built artifacts. -->
     <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
   </IgnorePatterns>
-  <Usages>
-    <!-- Should be removed as part of https://github.com/dotnet/runtime/issues/82298 -->
-    <Usage Id="Microsoft.NETFramework.ReferenceAssemblies*" Version="1.0.3" />
-
-    <!-- Temporary exclusion while an issue with SharedFrameworks is investigated -->
-    <Usage Id="Microsoft.DotNet.Arcade.Sdk" Version="8.0.0-beta.23259.5" />
-    <Usage Id="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="8.0.0-beta.23259.5" />
-    <Usage Id="Microsoft.DotNet.SharedFramework.Sdk" Version="8.0.0-beta.23259.5" />
-    <Usage Id="Microsoft.DotNet.SourceBuild.Tasks" Version="8.0.0-beta.23259.5" />
-  </Usages>
 </UsageData>
