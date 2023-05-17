@@ -108,13 +108,17 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
+            // no need to look in an empty target, source was checked earlier
+            if (source.Length == 0)
+                return fromBeginning ? 0 : source.Length;
+
             string exceptionMessage;
             int idx;
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
                 idx = (options & CompareOptions.IgnoreCase) != 0 ?
-                    IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning, out exceptionMessage) :
-                    IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning, out exceptionMessage);
+                    IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning) :
+                    IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
             }
             else
             {

@@ -54,10 +54,7 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
         const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2 * str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compare_strings(string1, string2, locale, casePicker);
-        if (result == -2)
-            throw new Error(`Invalid comparison option. Option=${casePicker}`);
-        return result;
+        return compare_strings(string1, string2, locale, casePicker);
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);
@@ -92,8 +89,6 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
-        if (result == -2)
-            throw new Error(`Invalid comparison option. Option=${casePicker}`);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -122,8 +117,6 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
-        if (result == -2)
-            throw new Error(`Invalid comparison option. Option=${casePicker}`);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -173,6 +166,7 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         let nextIndex = 0;
         while (!stop)
         {
+            // we need to restart the iterator in this outer loop because we have shifted it in the inner loop
             const iteratorSrc = segmenter.segment(source.slice(i, source.length))[Symbol.iterator]();
             let srcNext = iteratorSrc.next();
 
@@ -320,6 +314,6 @@ export function compare_strings(string1: string, string2: string, locale: string
             // 29: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase
             // 30: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace
             // 31: IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase
-            return -2;
+            throw new Error(`Invalid comparison option. Option=${casePicker}`);
     }
 }

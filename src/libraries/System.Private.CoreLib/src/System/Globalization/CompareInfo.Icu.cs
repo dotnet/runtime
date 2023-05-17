@@ -66,9 +66,9 @@ namespace System.Globalization
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
             {
                 if ((options & CompareOptions.IgnoreCase) != 0)
-                    return IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning, out _);
+                    return IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning);
                 else
-                    return IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning, out _);
+                    return IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
             }
             else
             {
@@ -91,13 +91,12 @@ namespace System.Globalization
         /// as the JIT wouldn't be able to optimize the ignoreCase path away.
         /// </summary>
         /// <returns></returns>
-        private unsafe int IndexOfOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning, out string exceptionMessage)
+        private unsafe int IndexOfOrdinalIgnoreCaseHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!target.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
-            exceptionMessage = "";
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
             fixed (char* bp = &MemoryMarshal.GetReference(target))
@@ -188,7 +187,14 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
-                    return Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                {
+                    int result = Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                    if (!string.IsNullOrEmpty(exceptionMessage))
+                    {
+                        throw new Exception(exceptionMessage);
+                    }
+                    return result;
+                }
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
@@ -197,13 +203,12 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int IndexOfOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning, out string exceptionMessage)
+        private unsafe int IndexOfOrdinalHelper(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
             Debug.Assert(!target.IsEmpty);
             Debug.Assert(_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options));
-            exceptionMessage = "";
 
             fixed (char* ap = &MemoryMarshal.GetReference(source))
             fixed (char* bp = &MemoryMarshal.GetReference(target))
@@ -283,7 +288,7 @@ namespace System.Globalization
             InteropCall:
 #if TARGET_BROWSER
                 if (GlobalizationMode.Hybrid)
-                    return Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                    return Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
 #endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
