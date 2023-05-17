@@ -27,12 +27,9 @@ namespace System.IO
             // Interpret the error from stat
             if (destError != 0)
             {
-                // Some error, let's see what it is:
-                Interop.Error error = Interop.Sys.GetLastError();
-
-                // Destination not existing is expected, so if this is the case we try clonefile,
-                // otherwise we got some other error that the fallback code can deal with.
-                if (error == Interop.Error.ENOENT)
+                // stat failed. If the destination doesn't exist (which is the expected
+                // cause), try clonefile; otherwise, fall back to a normal copy.
+                if (Interop.Sys.GetLastError() == Interop.Error.ENOENT)
                 {
                     goto tryCloneFile;
                 }
@@ -86,7 +83,8 @@ namespace System.IO
                     return;
                 }
 
-                // Throw if the file already exists and we're not overwriting
+                // Clonefile fails if the destination exists (which we try to avoid), so throw if error is
+                // the destination exists and we're not overwriting, otherwise we will go to fallback path.
                 if (Interop.Sys.GetLastError() == Interop.Error.EEXIST && !overwrite)
                 {
                     throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EEXIST));
