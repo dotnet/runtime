@@ -72,7 +72,7 @@ int32_t GlobalizationNative_CompareStringNative(const char* localeName, int32_t 
     NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions);
     
     // in case mapping is not found
-    if(options == 0)
+    if (options == 0)
         return -2;
         
     return [firstString compare:secondString
