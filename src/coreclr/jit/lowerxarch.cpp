@@ -3321,7 +3321,10 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
                 BlockRange().Remove(addrMode);
                 BlockRange().Remove(op2);
 
-                newOffset += static_cast<int32_t>(op2->AsIntCon()->IconValue() * elemSize);
+                int32_t addOffset = (static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count);
+                addOffset *= static_cast<int32_t>(elemSize);
+
+                newOffset += addOffset;
             }
             else if (newIndex == nullptr)
             {
@@ -3366,7 +3369,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             newBase   = addr;
             newIndex  = nullptr;
             newScale  = 0;
-            newOffset = static_cast<int32_t>(op2->AsIntCon()->IconValue() * elemSize);
+            newOffset = (static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count);
+            newOffset *= static_cast<int32_t>(elemSize);
         }
         else
         {
