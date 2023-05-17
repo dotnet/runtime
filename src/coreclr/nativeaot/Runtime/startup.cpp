@@ -487,11 +487,9 @@ static void __cdecl OnProcessExit()
     g_threadPerformingShutdown = currentThread;
 #endif
 
-#if defined(_WIN32) || defined(TARGET_UNIX)
 #ifdef FEATURE_PERFTRACING
     EventPipeAdapter_Shutdown();
     DiagnosticServerAdapter_Shutdown();
-#endif
 #endif
 }
 
@@ -530,9 +528,7 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
-#if defined(_WIN32) || defined(TARGET_UNIX)
     atexit(&OnProcessExit);
-#endif    
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
