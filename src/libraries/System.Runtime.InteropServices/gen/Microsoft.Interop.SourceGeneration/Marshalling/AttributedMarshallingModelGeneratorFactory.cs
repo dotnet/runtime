@@ -246,7 +246,7 @@ namespace Microsoft.Interop
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
-                    if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+                    if (context.Direction == MarshalDirection.ManagedToUnmanaged || !context.AdditionalTemporaryStateLivesAcrossStages)
                         marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
                     else if (info.RefKind == RefKind.Ref)
                         marshallingStrategy = new StatelessByRefFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
