@@ -2543,8 +2543,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     bool betterToExpand = false;
 
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
-    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
-    // in this case unlike mustExpand.
+    // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
@@ -2613,7 +2612,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // if it can be, it should expand.
         switch (ni)
         {
-            // CreateSpan must be expanded for NativeAOT
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             case NI_Internal_Runtime_MethodTable_Of:
