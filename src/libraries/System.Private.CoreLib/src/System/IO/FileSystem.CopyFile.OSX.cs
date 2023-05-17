@@ -58,7 +58,7 @@ namespace System.IO
 
             // Try deleting destination:
             {
-                // Delete the destination. This should fail on directories. And update the mode.
+                // Delete the destination. This should fail on directories.
                 // Get a lock to the dest file to ensure we don't copy onto it when it's locked by something else, and then delete it.
                 try
                 {
