@@ -1060,10 +1060,79 @@
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/eventcounter/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/gh53564/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/incrementingeventcounter/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/incrementingpollingcounter/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/pollingcounter/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/regression-25709/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventcounter/regression-46938/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventactivityidcontrol/**">
             <Issue>EventPipe</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/bigevent/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/config/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/enabledisable/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/gcdump/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processenvironment/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverse/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/reverseouter/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+            <Issue>EventPipe</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/**">
             <Issue>EventPipe</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/*">
