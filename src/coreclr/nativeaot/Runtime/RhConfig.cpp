@@ -3,45 +3,30 @@
 #include "common.h"
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
-#include "daccess.h"
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
-#include "rhassert.h"
-#include "slist.h"
-#include "gcrhinterface.h"
-#include "varint.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
 #include "holder.h"
-#include "Crst.h"
-#include "event.h"
-#include "threadstore.h"
-#include "RuntimeInstance.h"
-#include "shash.h"
 #include "RhConfig.h"
 
 #include <string.h>
 
-bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bool decimal)
+bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
 {
-    TCHAR wszBuffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
-    const uint32_t cchBuffer = sizeof(wszBuffer) / sizeof(wszBuffer[0]);
+    char buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
+    const uint32_t cchBuffer = ARRAY_SIZE(buffer);
 
     uint32_t cchResult = 0;
 
-#ifdef FEATURE_ENVIRONMENT_VARIABLE_CONFIG
-    TCHAR wszVariableName[64] = _T("DOTNET_");
-    assert(_tcslen(wszVariableName) + _tcslen(wszName) < sizeof(wszVariableName) / sizeof(wszVariableName[0]));
-    _tcscat(wszVariableName, wszName);
-    cchResult = PalGetEnvironmentVariable(wszVariableName, wszBuffer, cchBuffer);
-#endif // FEATURE_ENVIRONMENT_VARIABLE_CONFIG
+    char variableName[64] = "DOTNET_";
+    assert(strlen(variableName) + strlen(name) < ARRAY_SIZE(variableName));
+    strcat(variableName, name);
+    cchResult = PalGetEnvironmentVariableA(variableName, buffer, cchBuffer);
 
 #ifdef FEATURE_EMBEDDED_CONFIG
     // if the config key wasn't found in the ini file
     if ((cchResult == 0) || (cchResult >= cchBuffer))
-        cchResult = GetEmbeddedVariable(wszName, wszBuffer, cchBuffer);
+        cchResult = GetEmbeddedVariable(name, buffer, cchBuffer);
 #endif // FEATURE_EMBEDDED_CONFIG
 
     if ((cchResult == 0) || (cchResult >= cchBuffer))
@@ -51,14 +36,14 @@ bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bo
 
     for (uint32_t i = 0; i < cchResult; i++)
     {
-        TCHAR ch = wszBuffer[i];
+        char ch = buffer[i];
 
         if (decimal)
         {
             uiResult *= 10;
 
-            if ((ch >= _T('0')) && (ch <= _T('9')))
-                uiResult += ch - _T('0');
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
             else
                 return false; // parse error
         }
@@ -66,12 +51,12 @@ bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bo
         {
             uiResult *= 16;
 
-            if ((ch >= _T('0')) && (ch <= _T('9')))
-                uiResult += ch - _T('0');
-            else if ((ch >= _T('a')) && (ch <= _T('f')))
-                uiResult += (ch - _T('a')) + 10;
-            else if ((ch >= _T('A')) && (ch <= _T('F')))
-                uiResult += (ch - _T('A')) + 10;
+            if ((ch >= '0') && (ch <= '9'))
+                uiResult += ch - '0';
+            else if ((ch >= 'a') && (ch <= 'f'))
+                uiResult += (ch - 'a') + 10;
+            else if ((ch >= 'A') && (ch <= 'F'))
+                uiResult += (ch - 'A') + 10;
             else
                 return false; // parse error
         }
@@ -82,7 +67,7 @@ bool RhConfig::ReadConfigValue(_In_z_ const TCHAR *wszName, uint64_t* pValue, bo
 }
 
 #ifdef FEATURE_EMBEDDED_CONFIG
-uint32_t RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer)
+uint32_t RhConfig::GetEmbeddedVariable(_In_z_ const char* configName, _Out_writes_all_(cchOutputBuffer) char* outputBuffer, _In_ uint32_t cchOutputBuffer)
 {
     //the buffer needs to be big enough to read the value buffer + null terminator
     if (cchOutputBuffer < CONFIG_VAL_MAXLEN + 1)
@@ -106,12 +91,12 @@ uint32_t RhConfig::GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writ
 }
 #endif // FEATURE_EMBEDDED_CONFIG
 
-uint32_t RhConfig::GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer)
+uint32_t RhConfig::GetConfigVariable(_In_z_ const char* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) char* outputBuffer, _In_ uint32_t cchOutputBuffer)
 {
     //find the first name which matches (case insensitive to be compat with environment variable counterpart)
     for (int iSettings = 0; iSettings < RCV_Count; iSettings++)
     {
-        if (_tcsicmp(configName, configPairs[iSettings].Key) == 0)
+        if (_stricmp(configName, configPairs[iSettings].Key) == 0)
         {
             bool nullTerm = FALSE;
 

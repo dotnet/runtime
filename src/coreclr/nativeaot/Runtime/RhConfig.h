@@ -15,7 +15,6 @@
 #ifndef DACCESS_COMPILE
 
 #define FEATURE_EMBEDDED_CONFIG
-#define FEATURE_ENVIRONMENT_VARIABLE_CONFIG
 
 class RhConfig
 {
@@ -28,8 +27,8 @@ private:
     struct ConfigPair
     {
     public:
-        TCHAR Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
-        TCHAR Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
+        char Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
+        char Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
     };
 
 #ifdef FEATURE_EMBEDDED_CONFIG
@@ -42,7 +41,7 @@ private:
 
 public:
 
-    bool ReadConfigValue(_In_z_ const TCHAR* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     uint64_t Get##_name()                                 \
@@ -50,7 +49,7 @@ public:
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
         uint64_t uiValue;                               \
-        m_uiConfigValues[RCV_##_name] = ReadConfigValue(_T(#_name), &uiValue) ? uiValue : defaultVal; \
+        m_uiConfigValues[RCV_##_name] = ReadConfigValue(#_name, &uiValue) ? uiValue : defaultVal; \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return m_uiConfigValues[RCV_##_name];           \
     }
@@ -99,16 +98,10 @@ private:
 #ifdef FEATURE_EMBEDDED_CONFIG
     void ReadEmbeddedSettings();
 
-    uint32_t GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
+    uint32_t GetEmbeddedVariable(_In_z_ const char* configName, _Out_writes_all_(cchOutputBuffer) char* outputBuffer, _In_ uint32_t cchOutputBuffer);
 #endif // FEATURE_EMBEDDED_CONFIG
 
-    uint32_t GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
-
-    static bool priv_isspace(char c)
-    {
-        return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
-    }
-
+    uint32_t GetConfigVariable(_In_z_ const char* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) char* outputBuffer, _In_ uint32_t cchOutputBuffer);
 
     uint32_t  m_uiConfigValuesRead;
     uint64_t  m_uiConfigValues[RCV_Count];
