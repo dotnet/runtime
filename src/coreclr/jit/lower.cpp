@@ -2047,6 +2047,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* zeroCns   = comp->gtNewZeroConNode(actualLoadType);
                     result             = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
 
+#ifdef FEATURE_SIMD
                     // Special case for AVX512: we can use ternary logic instruction to perform
                     // "lXor | (l2Indir ^ r2Indir)" in a single instruction.
                     if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
@@ -2062,6 +2063,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                         rXor   = control;
                         result = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
                     }
+#endif
 
                     BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
                     BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
