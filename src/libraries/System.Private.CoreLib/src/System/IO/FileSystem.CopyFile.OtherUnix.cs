@@ -13,7 +13,6 @@ namespace System.IO
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out var srcFileStatus);
 
             // Open the dst file handle.
-            // Note: the code in FileSystem.CopyFile.OSX.cs needs to be kept in sync with this section.
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                 FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
                 CreateOpenException);
@@ -31,7 +30,6 @@ namespace System.IO
             }
 
             // Copy the file in a way that works on all Unix Operating Systems.
-            // Note: the fallback code in FileSystem.CopyFile.OSX.cs needs to be kept in sync with this.
             Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
         }
     }

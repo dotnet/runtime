@@ -97,7 +97,6 @@ namespace System.IO
             tryFallback:
             {
                 // Open the dst handle
-                // Note: this code needs to be kept in sync with the code in FileSystem.CopyFile.OtherUnix.cs.
                 using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
                     FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
                     CreateOpenException);
@@ -115,7 +114,6 @@ namespace System.IO
                 }
 
                 // Copy the file using the standard unix implementation.
-                // Note: this code needs to be kept in sync with the code in FileSystem.CopyFile.OtherUnix.cs.
                 Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileStatus.Size));
             }
         }
