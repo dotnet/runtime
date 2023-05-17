@@ -599,8 +599,24 @@ export function generateWasmBody(
                 append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
                 // stash it, we'll be using it multiple times
                 builder.local("math_lhs32", WasmOpcode.tee_local);
+
+                /*
+                const constantIndex = get_known_constant_value(getArgU16(ip, 3));
+                if (typeof (constantIndex) === "number")
+                    console.log(`getchr in ${builder.functions[0].name} with constant index ${constantIndex}`);
+                */
+
                 // str
-                append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+                const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+                if (builder.options.zeroPageOptimization && cwraps.mono_wasm_is_zero_page_reserved()) {
+                    // load string ptr and stash it
+                    // if the string ptr is null, the length check will fail and we will bail out,
+                    //  so the null check is not necessary
+                    append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
+                    builder.local(ptrLocal, WasmOpcode.tee_local);
+                } else
+                    append_ldloc_cknull(builder, getArgU16(ip, 2), ip, true);
+
                 // get string length
                 builder.appendU8(WasmOpcode.i32_load);
                 builder.appendMemarg(getMemberOffset(JiterpMember.StringLength), 2);
@@ -625,7 +641,7 @@ export function generateWasmBody(
                 builder.local("math_lhs32");
                 builder.i32_const(2);
                 builder.appendU8(WasmOpcode.i32_mul);
-                builder.local("cknull_ptr");
+                builder.local(ptrLocal);
                 builder.appendU8(WasmOpcode.i32_add);
                 // Load char
                 builder.appendU8(WasmOpcode.i32_load16_u);
@@ -1872,8 +1888,10 @@ function emit_fieldop(
             append_ldloca(builder, localOffset, sizeBytes);
             // src
             builder.local("cknull_ptr");
-            builder.i32_const(fieldOffset);
-            builder.appendU8(WasmOpcode.i32_add);
+            if (fieldOffset !== 0) {
+                builder.i32_const(fieldOffset);
+                builder.appendU8(WasmOpcode.i32_add);
+            }
             append_memmove_dest_src(builder, sizeBytes);
             return true;
         }
@@ -1881,8 +1899,10 @@ function emit_fieldop(
             const klass = get_imethod_data(frame, getArgU16(ip, 4));
             // dest = (char*)o + ip [3]
             builder.local("cknull_ptr");
-            builder.i32_const(fieldOffset);
-            builder.appendU8(WasmOpcode.i32_add);
+            if (fieldOffset !== 0) {
+                builder.i32_const(fieldOffset);
+                builder.appendU8(WasmOpcode.i32_add);
+            }
             // src = locals + ip [2]
             append_ldloca(builder, localOffset, 0);
             builder.ptr_const(klass);
@@ -1893,8 +1913,10 @@ function emit_fieldop(
             const sizeBytes = getArgU16(ip, 4);
             // dest
             builder.local("cknull_ptr");
-            builder.i32_const(fieldOffset);
-            builder.appendU8(WasmOpcode.i32_add);
+            if (fieldOffset !== 0) {
+                builder.i32_const(fieldOffset);
+                builder.appendU8(WasmOpcode.i32_add);
+            }
             // src
             append_ldloca(builder, localOffset, 0);
             append_memmove_dest_src(builder, sizeBytes);
@@ -1906,8 +1928,10 @@ function emit_fieldop(
             builder.local("pLocals");
             // cknull_ptr isn't always initialized here
             append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
-            builder.i32_const(fieldOffset);
-            builder.appendU8(WasmOpcode.i32_add);
+            if (fieldOffset !== 0) {
+                builder.i32_const(fieldOffset);
+                builder.appendU8(WasmOpcode.i32_add);
+            }
             append_stloc_tail(builder, localOffset, setter);
             return true;
 
@@ -2813,18 +2837,34 @@ function append_getelema1(
 ) {
     builder.block();
 
+    /*
+    const constantIndex = get_known_constant_value(indexOffset);
+    if (typeof (constantIndex) === "number")
+        console.log(`getelema1 in ${builder.functions[0].name} with constant index ${constantIndex}`);
+    */
+
     // load index for check
     append_ldloc(builder, indexOffset, WasmOpcode.i32_load);
     // stash it since we need it twice
     builder.local("math_lhs32", WasmOpcode.tee_local);
-    // array null check
-    append_ldloc_cknull(builder, objectOffset, ip, true);
+
+    const ptrLocal = builder.options.zeroPageOptimization ? "math_rhs32" : "cknull_ptr";
+    if (builder.options.zeroPageOptimization && cwraps.mono_wasm_is_zero_page_reserved()) {
+        // load array ptr and stash it
+        // if the array ptr is null, the length check will fail and we will bail out
+        append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
+        builder.local(ptrLocal, WasmOpcode.tee_local);
+    } else
+        // array null check
+        append_ldloc_cknull(builder, objectOffset, ip, true);
+
     // load array length
     builder.appendU8(WasmOpcode.i32_load);
     builder.appendMemarg(getMemberOffset(JiterpMember.ArrayLength), 2);
     // check index < array.length, unsigned. if index is negative it will be interpreted as
     //  a massive value which is naturally going to be bigger than array.length. interp.c
     //  exploits this property so we can too
+    // for a null array pointer array.length will also be zero thanks to the zero page optimization
     builder.appendU8(WasmOpcode.i32_lt_u);
     // bailout unless (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
@@ -2833,7 +2873,7 @@ function append_getelema1(
     builder.endBlock();
 
     // We did a null check and bounds check so we can now compute the actual address
-    builder.local("cknull_ptr");
+    builder.local(ptrLocal);
     builder.i32_const(getMemberOffset(JiterpMember.ArrayData));
     builder.appendU8(WasmOpcode.i32_add);
 
@@ -2859,6 +2899,7 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
         case MintOpcode.MINT_LDLEN: {
             builder.local("pLocals");
             // array null check
+            // note: zero page optimization is not valid here since we want to throw on null
             append_ldloc_cknull(builder, objectOffset, ip, true);
             // load array length
             builder.appendU8(WasmOpcode.i32_load);
