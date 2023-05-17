@@ -22,6 +22,11 @@ namespace Tracing.Tests
     {
         private static int Main()
         {
+            // Access ArrayPool.Shared.Rent() before the test to avoid the deadlock reported
+            // in https://github.com/dotnet/runtime/issues/86233
+            byte[] localBuffer = ArrayPool<byte>.Shared.Rent(10);
+            Console.WriteLine($"buffer length={localBuffer.Lenth}");
+
             // Create deaf listener
             Listener.Level = EventLevel.Critical;
             Listener.EnableKeywords = EventKeywords.None;
