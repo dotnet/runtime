@@ -295,7 +295,10 @@ namespace Microsoft.Extensions.Configuration
                 }
                 else
                 {
-                    BindAsCollectionValue(type, bindingPoint, config, options);
+                    if (!TryBindAsCollectionValue(type, bindingPoint, config, options))
+                    {
+                        bindingPoint.SetValue(CreateInstance(type, config, options));
+                    }
                 }
             }
         }
@@ -537,10 +540,7 @@ namespace Microsoft.Extensions.Configuration
                         bindingPoint: valueBindingPoint,
                         config: child,
                         options: options);
-                    if (valueBindingPoint.HasNewValue)
-                    {
-                        indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
-                    }
+                    indexerProperty.SetValue(dictionary, valueBindingPoint.Value, new object[] { key });
                 }
                 catch (Exception ex)
                 {
@@ -720,7 +720,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        private static void BindAsCollectionValue(
+        private static bool TryBindAsCollectionValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
             BindingPoint bindingPoint,
             IConfiguration config,
@@ -737,7 +737,7 @@ namespace Microsoft.Extensions.Configuration
                     }
 
                     // for getter-only collection properties that we can't add to, nothing more we can do
-                    return;
+                    return true;
                 }
 
                 // -----------------------------------------------------------------------------------------------------------------------------
@@ -752,7 +752,7 @@ namespace Microsoft.Extensions.Configuration
                 // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsASetInterface(type))
                 {
-                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
+                    if (bindingPoint.IsValueCanBeUpdated)
                     {
                         object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
                         if (!bindingPoint.IsReadOnly && newValue != null)
@@ -761,7 +761,7 @@ namespace Microsoft.Extensions.Configuration
                         }
                     }
 
-                    return;
+                    return true;
                 }
 
                 // -----------------------------------------------------------------------------------------------------------------------------
@@ -776,7 +776,7 @@ namespace Microsoft.Extensions.Configuration
                 // -----------------------------------------------------------------------------------------------------------------------------
                 if (TypeIsADictionaryInterface(type))
                 {
-                    if (!bindingPoint.IsReadOnly || bindingPoint.Value is not null)
+                    if (bindingPoint.IsValueCanBeUpdated)
                     {
                         object? newValue = BindDictionaryInterface(bindingPoint.Value, type, config, options);
                         if (!bindingPoint.IsReadOnly && newValue != null)
@@ -785,18 +785,11 @@ namespace Microsoft.Extensions.Configuration
                         }
                     }
 
-                    return;
+                    return true;
                 }
 
-                // If we don't have an instance, try to create one
-                if (bindingPoint.Value is null)
+                if (bindingPoint.IsValueCanBeSet)
                 {
-                    // if the binding point doesn't let us set a new instance, there's nothing more we can do
-                    if (bindingPoint.IsReadOnly)
-                    {
-                        return;
-                    }
-
                     Type? interfaceGenericType = type.IsInterface && type.IsConstructedGenericType ? type.GetGenericTypeDefinition() : null;
 
                     if (interfaceGenericType is not null &&
@@ -834,6 +827,12 @@ namespace Microsoft.Extensions.Configuration
                         BindProperties(bindingPoint.Value, config, options);
                     }
                 }
+
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 

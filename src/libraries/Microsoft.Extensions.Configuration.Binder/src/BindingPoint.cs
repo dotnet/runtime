@@ -27,6 +27,24 @@ namespace Microsoft.Extensions.Configuration
 
         public bool IsReadOnly { get; }
 
+        public bool IsValueCanBeSet
+        {
+            get
+            {
+                return Value is null
+                    && !IsReadOnly;
+            }
+        }
+
+        public bool IsValueCanBeUpdated
+        {
+            get
+            {
+                return Value is not null
+                    || !IsReadOnly;
+            }
+        }
+
         public bool HasNewValue
         {
             get

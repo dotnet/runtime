@@ -1626,6 +1626,51 @@ namespace Microsoft.Extensions
         }
 
         [Fact]
+        public void EnsureSuccessfullyBind()
+        {
+            var json = @"{
+                ""queueConfig"": {
+                    ""namespaces"": [
+                        {
+                            ""namespace"": ""devnortheurope"",
+                            ""queues"": {
+                                ""q1"": {
+                                    ""dequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q2"": {
+                                    ""dequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                }
+                            }
+                        },
+                        {
+                            ""namespace"": ""devnortheurope2"",
+                            ""queues"": {
+                                ""q3"": {
+                                    ""dequeueOnlyMarkedDate"": ""2022-01-20T12:49:03.395150-08:00""
+                                },
+                                ""q4"": {
+                                }
+                            }
+                        }
+                    ]
+                }
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+
+            DistributedQueueConfig options = new DistributedQueueConfig();
+            configuration.GetSection("queueConfig").Bind(options);
+
+            Assert.NotNull(options);
+            Assert.Equal(2, options.Namespaces.Count);
+            Assert.Equal(2, options.Namespaces.First().Queues.Count);
+            Assert.Equal(2, options.Namespaces.Skip(1).First().Queues.Count);
+            Assert.NotNull(options.Namespaces.Skip(1).First().Queues.Last().Value);
+        }
+
+        [Fact]
         public void RecursiveTypeGraphs_DirectRef()
         {
             var data = @"{
