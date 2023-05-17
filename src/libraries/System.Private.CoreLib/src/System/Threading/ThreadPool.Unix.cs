@@ -74,7 +74,8 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state!, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
+            Thread.ThrowIfNoThreadStart();
+            return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
         }
 
         [CLSCompliant(false)]
