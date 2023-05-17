@@ -23,8 +23,6 @@ namespace System.IO
 
             // Read FileStatus of destination file to determine how to continue
             int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
-
-            // Interpret the error from stat
             if (destError != 0)
             {
                 // stat failed. If the destination doesn't exist (which is the expected
