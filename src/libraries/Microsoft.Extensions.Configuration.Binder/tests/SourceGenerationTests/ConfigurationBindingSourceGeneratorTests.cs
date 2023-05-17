@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 {
 #if NETCOREAPP
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    public class ConfingurationBindingSourceGeneratorTests
+    public class ConfigurationBindingSourceGeneratorTests
     {
         private const string BindCallSampleCode = @"
 using System.Collections.Generic;
