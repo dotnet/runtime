@@ -281,11 +281,14 @@ realloc_stack (TransformData *td)
 }
 
 static int
-get_stack_size (StackInfo *sp, int count)
+get_stack_size (TransformData *td, StackInfo *sp, int count)
 {
 	int result = 0;
-	for (int i = 0; i < count; i++)
+	for (int i = 0; i < count; i++) {
 		result += sp [i].size;
+		if (td->locals [sp [i].local].flags & INTERP_LOCAL_FLAG_SIMD)
+			result = ALIGN_TO (result, MINT_SIMD_ALIGNMENT);
+	}
 	return result;
 }
 
@@ -3468,7 +3471,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 			int num_args = csignature->param_count + !!csignature->hasthis;
 			td->sp -= num_args;
-			guint32 params_stack_size = get_stack_size (td->sp, num_args);
+			guint32 params_stack_size = get_stack_size (td, td->sp, num_args);
 
 			if (is_virtual) {
 				interp_add_ins (td, MINT_CKNULL);
@@ -3576,7 +3579,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	int num_args = csignature->param_count + !!csignature->hasthis;
 	td->sp -= num_args;
-	guint32 params_stack_size = get_stack_size (td->sp, num_args);
+	guint32 params_stack_size = get_stack_size (td, td->sp, num_args);
 
 	int call_offset = -1;
 
