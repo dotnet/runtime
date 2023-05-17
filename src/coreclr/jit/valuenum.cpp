@@ -10493,18 +10493,18 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
                 // so make sure we report the constant as class handle
                 if ((size == TARGET_POINTER_SIZE) && (byteOffset == 0))
                 {
+                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                    // It's done to match the current crossgen/ILC behavior.
+                    CORINFO_CLASS_HANDLE rawHandle = NULL;
+                    memcpy(&rawHandle, buffer, TARGET_POINTER_SIZE);
+
                     void* pEmbedClsHnd;
-                    void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
+                    void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(rawHandle, &pEmbedClsHnd);
                     if (pEmbedClsHnd == nullptr)
                     {
                         // getObjectContent doesn't support reading handles for AOT (NativeAOT) yet
-
-                        // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
-                        // value holding 32bit handle with upper half zeroed (hence, "= NULL").
-                        // It's done to match the current crossgen/ILC behavior.
-                        ssize_t embedClsHnd = NULL;
-                        memcpy(&embedClsHnd, buffer, TARGET_POINTER_SIZE);
-                        tree->gtVNPair.SetBoth(vnStore->VNForHandle(embedClsHnd, GTF_ICON_CLASS_HDL));
+                        tree->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL));
                         return true;
                     }
                 }
