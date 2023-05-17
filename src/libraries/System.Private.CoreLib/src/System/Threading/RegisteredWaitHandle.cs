@@ -87,9 +87,14 @@ namespace System.Threading
         /// <summary>
         /// The <see cref="SafeWaitHandle"/> that was registered.
         /// </summary>
-        internal SafeWaitHandle? Handle
+        internal SafeWaitHandle Handle
         {
-            get => _waitHandle;
+            // get => _waitHandle;
+            get
+            {
+                Debug.Assert(_waitHandle != null);
+                return _waitHandle;
+            }
         }
 
         /// <summary>

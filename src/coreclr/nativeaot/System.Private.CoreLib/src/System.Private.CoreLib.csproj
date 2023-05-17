@@ -26,8 +26,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <FeaturePortableThreadPool Condition="'$(FeaturePortableThreadPool)' == ''">false</FeaturePortableThreadPool>
-    <FeaturePortableThreadPool Condition="'$(TargetsUnix)' == 'true'">true</FeaturePortableThreadPool>
+    <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
   </PropertyGroup>
   <PropertyGroup>
     <FeaturePortableTimer Condition="'$(FeaturePortableTimer)' == ''">false</FeaturePortableTimer>

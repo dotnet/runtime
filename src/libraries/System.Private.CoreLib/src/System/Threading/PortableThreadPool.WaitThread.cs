@@ -347,7 +347,7 @@ namespace System.Threading
                         _numUserWaits = numUserWaits - 1;
                         _pendingRemoves[i] = null;
 
-                        waitHandleToRemove.Handle!.DangerousRelease();
+                        waitHandleToRemove.Handle.DangerousRelease();
                     }
                     _numPendingRemoves = 0;
 
@@ -401,7 +401,7 @@ namespace System.Threading
                 }
 
                 bool success = false;
-                handle.Handle!.DangerousAddRef(ref success);
+                handle.Handle.DangerousAddRef(ref success);
                 Debug.Assert(success);
 
                 _registeredWaits[_numUserWaits] = handle;
