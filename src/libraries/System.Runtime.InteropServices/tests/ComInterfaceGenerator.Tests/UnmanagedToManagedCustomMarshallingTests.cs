@@ -2,20 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 using System.Threading;
-using ComInterfaceGenerator.Tests;
+using System.Threading.Tasks;
+using SharedTypes;
 using Xunit;
+using static ComInterfaceGenerator.Tests.UnmanagedToManagedCustomMarshallingTests;
 
 namespace ComInterfaceGenerator.Tests
 {
     internal unsafe partial class NativeExportsNE
     {
-        internal partial class ImplicitThis
+        internal partial class UnmanagedToManagedCustomMarshalling
         {
-            [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<INativeObject>>]
+            [UnmanagedObjectUnwrapper<VTableGCHandlePair<INativeObject>>]
             internal partial interface INativeObject : IUnmanagedInterfaceType
             {
 
@@ -33,11 +38,12 @@ namespace ComInterfaceGenerator.Tests
                 }
 
                 [VirtualMethodIndex(0, ImplicitThisParameter = true)]
-                int GetData();
+                [return: MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))]
+                IntWrapper GetData();
                 [VirtualMethodIndex(1, ImplicitThisParameter = true)]
-                void SetData(int x);
+                void SetData([MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] IntWrapper x);
                 [VirtualMethodIndex(2, ImplicitThisParameter = true)]
-                void ExchangeData(ref int x);
+                void ExchangeData([MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] ref IntWrapper data);
             }
 
             [NativeMarshalling(typeof(NativeObjectMarshaller))]
@@ -79,25 +85,13 @@ namespace ComInterfaceGenerator.Tests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_native_object_data")]
             public static partial int GetNativeObjectData(void* obj);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "exchange_native_object_data")]
+            public static partial int ExchangeNativeObjectData(void* obj, ref int x);
         }
     }
-
-    public class ImplicitThisTests
+    public class UnmanagedToManagedCustomMarshallingTests
     {
-        [Fact]
-        public void ValidateImplicitThisFunctionCallsSucceed()
-        {
-            const int value = 42;
-
-            using NativeExportsNE.ImplicitThis.NativeObject obj = NativeExportsNE.ImplicitThis.NewNativeObject();
-
-            NativeExportsNE.ImplicitThis.INativeObject nativeObjInterface = obj;
-
-            nativeObjInterface.SetData(value);
-
-            Assert.Equal(value, nativeObjInterface.GetData());
-        }
-
         [Fact]
         public unsafe void ValidateImplicitThisUnmanagedToManagedFunctionCallsSucceed()
         {
@@ -106,15 +100,22 @@ namespace ComInterfaceGenerator.Tests
 
             ManagedObjectImplementation impl = new ManagedObjectImplementation(startingValue);
 
-            void* wrapper = VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Allocate(impl);
+            void* wrapper = VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Allocate(impl);
 
             try
             {
-                Assert.Equal(startingValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-                NativeExportsNE.ImplicitThis.SetNativeObjectData(wrapper, newValue);
-                Assert.Equal(newValue, NativeExportsNE.ImplicitThis.GetNativeObjectData(wrapper));
-                // Verify that we actually updated the managed instance.
-                Assert.Equal(newValue, impl.GetData());
+                int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.GetNativeObjectData(wrapper);
+
+                Assert.Equal(freeCalls, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
+
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SetNativeObjectData(wrapper, newValue);
+                Assert.Equal(freeCalls, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
+
+                int finalValue = 10;
+
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.ExchangeNativeObjectData(wrapper, ref finalValue);
+                Assert.Equal(freeCalls + 1, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
             finally
             {
@@ -122,18 +123,41 @@ namespace ComInterfaceGenerator.Tests
             }
         }
 
-        sealed class ManagedObjectImplementation : NativeExportsNE.ImplicitThis.INativeObject
+        sealed class ManagedObjectImplementation : NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject
         {
-            private int _data;
+            private IntWrapper _data;
 
             public ManagedObjectImplementation(int value)
             {
-                _data = value;
+                _data = new() { i = value };
             }
 
-            public void ExchangeData(ref int x) => x = Interlocked.Exchange(ref _data, x);
-            public int GetData() => _data;
-            public void SetData(int x) => _data = x;
+            public void ExchangeData(ref IntWrapper x) => x = Interlocked.Exchange(ref _data, x);
+            public IntWrapper GetData() => _data;
+            public void SetData(IntWrapper x) => _data = x;
+        }
+
+
+        [CustomMarshaller(typeof(IntWrapper), MarshalMode.Default, typeof(IntWrapperMarshallerToIntWithFreeCounts))]
+        public static unsafe class IntWrapperMarshallerToIntWithFreeCounts
+        {
+            [ThreadStatic]
+            public static int NumCallsToFree = 0;
+
+            public static int ConvertToUnmanaged(IntWrapper managed)
+            {
+                return managed.i;
+            }
+
+            public static IntWrapper ConvertToManaged(int unmanaged)
+            {
+                return new IntWrapper { i = unmanaged };
+            }
+
+            public static void Free(int unmanaged)
+            {
+                NumCallsToFree++;
+            }
         }
     }
 }

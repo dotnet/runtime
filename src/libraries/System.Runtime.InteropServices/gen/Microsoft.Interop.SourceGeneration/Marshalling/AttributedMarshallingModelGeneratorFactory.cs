@@ -245,7 +245,12 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax, isLinearCollectionMarshalling: false);
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
-                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                {
+                    if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+                        marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                    else if (info.RefKind == RefKind.Ref)
+                        marshallingStrategy = new StatelessByRefFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                }
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);

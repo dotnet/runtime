@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NativeExports
@@ -48,6 +49,7 @@ namespace NativeExports
             {
                 public delegate* unmanaged<NativeObjectInterface*, int> getData;
                 public delegate* unmanaged<NativeObjectInterface*, int, void> setData;
+                public delegate* unmanaged<NativeObjectInterface*, int*, void> exchangeData;
             }
 
             public readonly VirtualFunctionTable* VTable;
@@ -66,12 +68,14 @@ namespace NativeExports
                 // The order of functions here should match NativeObjectInterface.VirtualFunctionTable's members.
                 public delegate* unmanaged<NativeObject*, int> getData;
                 public delegate* unmanaged<NativeObject*, int, void> setData;
+                public delegate* unmanaged<NativeObject*, int*, void> exchangeData;
             }
             static NativeObject()
             {
                 VTablePointer = (VirtualFunctionTable*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NativeObject), sizeof(VirtualFunctionTable));
                 VTablePointer->getData = &GetData;
                 VTablePointer->setData = &SetData;
+                VTablePointer->exchangeData = &ExchangeData;
             }
 
             private static readonly VirtualFunctionTable* VTablePointer;
@@ -94,6 +98,14 @@ namespace NativeExports
             private static void SetData(NativeObject* obj, int value)
             {
                 obj->Data = value;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void ExchangeData(NativeObject* obj, int* value)
+            {
+                var temp = obj->Data;
+                obj->Data = *value;
+                *value = temp;
             }
         }
 
@@ -126,6 +138,13 @@ namespace NativeExports
         public static int GetNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj)
         {
             return obj->VTable->getData(obj);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "exchange_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void ExchangeNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* x)
+        {
+            obj->VTable->exchangeData(obj, x);
         }
     }
 }

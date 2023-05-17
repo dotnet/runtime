@@ -295,6 +295,93 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
     }
 
+    internal sealed class StatelessByRefFreeMarshalling : ICustomTypeMarshallingStrategy
+    {
+        private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
+        private readonly TypeSyntax _marshallerType;
+
+        public StatelessByRefFreeMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType)
+        {
+            _innerMarshaller = innerMarshaller;
+            _marshallerType = marshallerType;
+        }
+
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            {
+                yield return statement;
+            }
+            // if (<freeUnmanaged>)
+            //     <marshallerType>.Free(<original>);
+            yield return IfStatement(
+                IdentifierName(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
+                ExpressionStatement(
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            _marshallerType,
+                            IdentifierName(ShapeMemberNames.Free)),
+                        ArgumentList(SingletonSeparatedList(
+                            Argument(IdentifierName(context.GetAdditionalIdentifier(info, "original"))))))));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateSetupStatements(info, context))
+            {
+                yield return statement;
+            }
+
+            // bool <freeUnmanaged> = false;
+            yield return LocalDeclarationStatement(
+                VariableDeclaration(
+                    PredefinedType(Token(SyntaxKind.BoolKeyword)),
+                    SingletonSeparatedList(
+                        VariableDeclarator(
+                            Identifier(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
+                            null,
+                            EqualsValueClause(
+                                LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
+
+            // <nativeType> <original> = <nativeIdentifier>;
+            yield return LocalDeclarationStatement(
+                VariableDeclaration(
+                    AsNativeType(info).Syntax,
+                    SingletonSeparatedList(
+                        VariableDeclarator(
+                            Identifier(context.GetAdditionalIdentifier(info, "original")),
+                            null,
+                            EqualsValueClause(
+                                IdentifierName(context.GetIdentifiers(info).native))))));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context))
+            {
+                yield return statement;
+            }
+
+            // Now that we've captured the new value to pass to the caller, we need to make sure that we free the old one.
+
+            // <freeUnmanaged> = true;
+            yield return ExpressionStatement(
+                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+    }
+
     /// <summary>
     /// Marshaller type that enables allocating space for marshalling a linear collection using a marshaller that implements the LinearCollection marshalling spec.
     /// </summary>
