@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+System.Diagnostics.Debug.Fail("Fail");
 bool success = RunTest(BasicThreading.Run);
 success &= RunTest(Delegates.Run);
 success &= RunTest(Generics.Run);
