@@ -2047,6 +2047,22 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* zeroCns   = comp->gtNewZeroConNode(actualLoadType);
                     result             = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
 
+                    // Special case for AVX512: we can use ternary logic instruction to perform
+                    // "(l2Indir | r2Indir) ^ lXor" in a single instruction.
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
+                        resultOr->TypeIs(TYP_SIMD32, TYP_SIMD64))
+                    {
+                        // Create a mask representing "(A | B)) ^ C" expression.
+                        GenTree*    control  = comp->gtNewIconNode(static_cast<uint8_t>((0xF0 | 0xCC) ^ 0xAA));
+                        CorInfoType baseType = resultOr->AsHWIntrinsic()->GetSimdBaseJitType();
+                        resultOr = comp->gtNewSimdTernaryLogicNode(loadType, l2Indir, r2Indir, lXor, control, baseType,
+                                                                   genTypeSize(loadType));
+
+                        // Change exising nodes so we can re-using exising path for node insertion
+                        rXor   = control;
+                        result = newBinaryOp(comp, GT_EQ, TYP_INT, resultOr, zeroCns);
+                    }
+
                     BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
                     BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
                     BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
