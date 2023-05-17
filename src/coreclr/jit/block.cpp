@@ -982,11 +982,6 @@ bool BasicBlock::isValid() const
 Statement* BasicBlock::FirstNonPhiDef() const
 {
     Statement* stmt = firstStmt();
-    if (stmt == nullptr)
-    {
-        return nullptr;
-    }
-
     while ((stmt != nullptr) && stmt->IsPhiDefnStmt())
     {
         stmt = stmt->GetNextStmt();
