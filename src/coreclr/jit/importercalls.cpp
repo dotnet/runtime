@@ -5464,7 +5464,7 @@ void Compiler::impCheckForPInvokeCall(
                 }
 
                 // Respect noinline flag ([MethodImpl(MethodImplOptions.NoInlining)] in C#)
-                if ((mflags & CORINFO_FLG_DONT_INLINE) == 0)
+                if ((mflags & CORINFO_FLG_DONT_INLINE) != 0)
                 {
                     return;
                 }
