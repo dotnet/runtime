@@ -3443,6 +3443,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
                     }
                 }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
+                }
                 else if (pFieldStart[0].GetSize() == 8)
                 {
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
@@ -3533,6 +3538,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
                 }
                 else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                 {
@@ -7103,7 +7113,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             szName = GetFullyQualifiedNameForClassNestedAwareW(this);
             if (szName == NULL)
                 return;
-            cchName = wcslen(szName);
+            cchName = u16_strlen(szName);
 
             // Enlarge buffer for class name.
             cbCur = cchName * sizeof(WCHAR);

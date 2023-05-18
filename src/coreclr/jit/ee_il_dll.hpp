@@ -44,12 +44,6 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     info.compCompHnd->getFieldInfo(pResolvedToken, info.compMethodHnd, accessFlags, pResult);
 }
 
-FORCEINLINE
-uint32_t Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
-{
-    return info.compCompHnd->getThreadLocalFieldInfo(field);
-}
-
 /*****************************************************************************
  *
  *          VOS info, method sigs, etc

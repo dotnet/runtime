@@ -282,6 +282,7 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
     regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
     regNumber reg2 = offs < 0 ? tmpReg : reg3;
     assert(reg2 != REG_NA && reg2 != codeGen->rsGetRsvdReg());
+    assert(reg1 != codeGen->rsGetRsvdReg());
 
     // regNumber reg2 = reg3;
     offs = offs < 0 ? -offs - 8 : offs;
@@ -365,7 +366,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             break;
 
         default:
-            NYI_RISCV64("illegal ins within emitIns_S_R!");
+            NYI_RISCV64("illegal ins within emitIns_R_S!");
             return;
 
     } // end switch (ins)
@@ -502,7 +503,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
             assert(isGeneralRegisterOrR0(reg));
             assert(imm >= -1048576 && imm < 1048576);
 
-            code != reg << 7;
+            code |= reg << 7;
             code |= ((imm >> 12) & 0xff) << 12;
             code |= ((imm >> 11) & 0x1) << 20;
             code |= ((imm >> 1) & 0x3ff) << 21;
@@ -540,13 +541,27 @@ void emitter::emitIns_Mov(
     if (!canSkip || (dstReg != srcReg))
     {
         if ((EA_4BYTE == attr) && (INS_mov == ins))
+        {
+            assert(isGeneralRegisterOrR0(srcReg));
+            assert(isGeneralRegisterOrR0(dstReg));
             emitIns_R_R_I(INS_addiw, attr, dstReg, srcReg, 0);
+        }
         else if (INS_fsgnj_s == ins || INS_fsgnj_d == ins)
+        {
+            assert(isFloatReg(srcReg));
+            assert(isFloatReg(dstReg));
             emitIns_R_R_R(ins, attr, dstReg, srcReg, srcReg);
+        }
         else if (genIsValidFloatReg(srcReg) || genIsValidFloatReg(dstReg))
+        {
             emitIns_R_R(ins, attr, dstReg, srcReg);
+        }
         else
+        {
+            assert(isGeneralRegisterOrR0(srcReg));
+            assert(isGeneralRegisterOrR0(dstReg));
             emitIns_R_R_I(INS_addi, attr, dstReg, srcReg, 0);
+        }
     }
 }
 
@@ -2446,9 +2461,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             else
                             {
                                 assert((-0x100000 <= imm) && (imm < 0x100000));
-                                assert((INS_bne & 0xefff) == INS_beq);
+                                assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
 
-                                code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                                code = emitInsCode(ins) ^ 0x1000;
                                 code |= (code_t)reg1 << 15; /* rj */
                                 code |= (code_t)reg2 << 20; /* rd */
                                 code |= 0x8 << 7;
@@ -2468,10 +2483,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         else if ((INS_blt <= ins) && (ins <= INS_bgeu))
                         {
                             assert((-0x100000 <= imm) && (imm < 0x100000));
-                            assert((INS_bge & 0xefff) == INS_blt);
-                            assert((INS_bgeu & 0xefff) == INS_bltu);
+                            assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
+                            assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
 
-                            code = emitInsCode((instruction)((int)ins ^ 0x1000));
+                            code = emitInsCode(ins) ^ 0x1000;
                             code |= (code_t)reg1 << 15; /* rj */
                             code |= (code_t)reg2 << 20; /* rd */
                             code |= 0x8 << 7;
@@ -3136,7 +3151,18 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfffff000;
             }
-            printf("jalr         %s, %d(%s)\n", rd, offset, rs1);
+            printf("jalr         %s, %d(%s)", rd, offset, rs1);
+            CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
+            // Target for ret call is unclear, e.g.:
+            //   jalr zero, 0(ra)
+            // So, skip it
+            if (handle != 0)
+            {
+                const char* methodName = emitComp->eeGetMethodFullName(handle);
+                printf("\t\t// %s", methodName);
+            }
+
+            printf("\n");
             return;
         }
         case 0x6f:
@@ -3148,7 +3174,15 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 offset |= 0xfff00000;
             }
-            printf("jal          %s, %d\n", rd, offset);
+            printf("jal          %s, %d", rd, offset);
+            CORINFO_METHOD_HANDLE handle = (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie;
+            if (handle != 0)
+            {
+                const char* methodName = emitComp->eeGetMethodFullName(handle);
+                printf("\t\t// %s", methodName);
+            }
+
+            printf("\n");
             return;
         }
         case 0x0f:
@@ -3370,7 +3404,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     }
                     return;
                 case 0x21:            // FCVT.D.S
-                    if (opcode4 == 1) // FCVT.D.S
+                    if (opcode3 == 0) // FCVT.D.S
                     {
                         printf("fcvt.d.s     %s, %s\n", fd, fs1);
                     }

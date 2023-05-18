@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
@@ -105,8 +106,8 @@ namespace System.Buffers
                 (short)ch,
                 values.Length);
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
             Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace);
@@ -126,8 +127,8 @@ namespace System.Buffers
             return resultLower & resultUpper;
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
@@ -145,6 +146,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse2))]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);
@@ -165,6 +168,11 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> IsCharBitSet(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, Vector128<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
@@ -354,6 +362,8 @@ namespace System.Buffers
             return -1;
         }
 
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(Sse41))]
         private static int IndexOfAnyVectorized(ref uint charMap, ref char searchSpace, int searchSpaceLength, ReadOnlySpan<char> values)
         {
             Debug.Assert(Sse41.IsSupported || AdvSimd.Arm64.IsSupported);
@@ -365,7 +375,9 @@ namespace System.Buffers
             Vector128<byte> charMapLower = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap));
             Vector128<byte> charMapUpper = Vector128.LoadUnsafe(ref Unsafe.As<uint, byte>(ref charMap), (nuint)Vector128<byte>.Count);
 
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // In this case, we have an else clause which has the same semantic meaning whether or not Avx2 is considered supported or unsupported
             if (Avx2.IsSupported && searchSpaceLength >= 32)
+#pragma warning restore IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
             {
                 Vector256<byte> charMapLower256 = Vector256.Create(charMapLower, charMapLower);
                 Vector256<byte> charMapUpper256 = Vector256.Create(charMapUpper, charMapUpper);

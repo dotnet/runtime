@@ -20,6 +20,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -252,7 +253,8 @@ namespace BenchmarksGame
             return string.Concat(n.ToString(), "\t", fragment);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             bool ok = Bench(helpers, true);

@@ -3589,8 +3589,8 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods), TRUE },
-	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
-	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods) },
+	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods), TRUE },
+	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods), TRUE },
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
@@ -3976,8 +3976,24 @@ emit_arm64_intrinsics (
 			MonoClass *quad_klass = mono_class_from_mono_type_internal (fsig->params [2]);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
-			MonoInst *quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
-			quad->data.op [1].klass = quad_klass;
+
+			MonoInst *quad;
+			if (!COMPILE_LLVM (cfg)) {
+				if (mono_class_value_size (arg_klass, NULL) != 16 || mono_class_value_size (quad_klass, NULL) != 16)
+					return NULL;
+				// FIXME: The c# api has ConstantExpected(Max = (byte)(15)), but the hw only supports
+				// selecting one of the 4 32 bit words
+				if (args [3]->opcode != OP_ICONST || args [3]->inst_c0 < 0 || args [3]->inst_c0 > 3) {
+					// FIXME: Throw the right exception ?
+					mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
+					return NULL;
+				}
+				quad = emit_simd_ins (cfg, klass, OP_ARM64_BROADCAST_ELEM, args [2]->dreg, -1);
+				quad->inst_c0 = args [3]->inst_c0;
+			} else {
+				quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
+				quad->data.op [1].klass = quad_klass;
+			}
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, OP_XOP_OVR_X_X_X_X, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = quad->dreg;
 			ret->inst_c0 = iid;
@@ -5088,6 +5104,10 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
 	{SN_ConvertNarrowingSignedSaturate},
 	{SN_ConvertNarrowingUnsignedSaturate},
+	{SN_ConvertToDoubleLower, OP_CVTDQ2PD, 0, OP_WASM_SIMD_CONV_U4_TO_R8_LOW, 0, OP_CVTPS2PD},
+	{SN_ConvertToInt32Saturate},
+	{SN_ConvertToSingle, OP_CVT_SI_FP, 0, OP_CVT_UI_FP, 0, OP_WASM_SIMD_CONV_R8_TO_R4},
+	{SN_ConvertToUnsignedInt32Saturate},
 	{SN_Divide},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
@@ -5110,6 +5130,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
 	{SN_ShiftRightLogical, OP_SIMD_USHR},
 	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
+	{SN_SignExtendWideningLower, OP_WASM_SIMD_SEXT_LOWER},
+	{SN_SignExtendWideningUpper, OP_WASM_SIMD_SEXT_UPPER},
 	{SN_Splat},
 	{SN_Sqrt},
 	{SN_Subtract},
@@ -5117,6 +5139,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
 	{SN_Truncate, OP_XOP_OVR_X_X, INTRINS_SIMD_TRUNC},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
+	{SN_ZeroExtendWideningLower, OP_WASM_SIMD_ZEXT_LOWER},
+	{SN_ZeroExtendWideningUpper, OP_WASM_SIMD_ZEXT_UPPER},
 	{SN_get_IsSupported},
 };
 
@@ -5376,6 +5400,38 @@ emit_wasm_supported_intrinsics (
 						break;
 
 				return NULL;
+			}
+			case SN_ConvertToInt32Saturate: {
+				switch (arg0_type) {
+					case MONO_TYPE_R4:
+						op = OP_CVT_FP_SI;
+						break;
+					case MONO_TYPE_R8:
+						op = OP_WASM_SIMD_CONV_R8_TO_I4_ZERO;
+						c0 = INTRINS_WASM_CONV_R8_TO_I4;
+						break;
+					default:
+						return NULL;
+				}
+
+				// continue with default emit
+				break;
+			}
+			case SN_ConvertToUnsignedInt32Saturate: {
+				switch (arg0_type) {
+					case MONO_TYPE_R4:
+						op = OP_CVT_FP_UI;
+						break;
+					case MONO_TYPE_R8:
+						op = OP_WASM_SIMD_CONV_R8_TO_I4_ZERO;
+						c0 = INTRINS_WASM_CONV_R8_TO_U4;
+						break;
+					default:
+						return NULL;
+				}
+
+				// continue with default emit
+				break;
 			}
 			case SN_ExtractLane: {
 				op = type_to_xextract_op (arg0_type);

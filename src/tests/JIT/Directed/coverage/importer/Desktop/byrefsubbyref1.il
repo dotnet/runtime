@@ -12,7 +12,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly byrefsubbyref1 { }
+.assembly ASSEMBLY_NAME { }
 .class public a extends [mscorlib]System.Object
 {
 .field static class ctest S_1

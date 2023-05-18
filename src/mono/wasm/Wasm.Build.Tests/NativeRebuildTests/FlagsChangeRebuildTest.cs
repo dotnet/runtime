@@ -36,7 +36,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
             var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
-                pathsDict.UpdateTo(unchanged: false, "dotnet.wasm", "dotnet.js");
+                pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
             var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 

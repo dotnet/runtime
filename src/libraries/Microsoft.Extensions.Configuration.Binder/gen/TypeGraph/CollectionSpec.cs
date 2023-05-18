@@ -19,14 +19,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public bool IsInterface { get; }
 
-        public CollectionSpec? ConcreteType { get; init; }
-    }
+        public CollectionSpec? ConcreteType { get; set; }
 
-    internal sealed record ArraySpec : CollectionSpec
-    {
-        public ArraySpec(ITypeSymbol type) : base(type) { }
+        public CollectionSpec? PopulationCastType { get; set; }
 
-        public override TypeSpecKind SpecKind => TypeSpecKind.Array;
+        public required CollectionPopulationStrategy PopulationStrategy { get; init; }
+
+        public required string? ToEnumerableMethodCall { get; init; }
     }
 
     internal sealed record EnumerableSpec : CollectionSpec
@@ -43,5 +42,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public override TypeSpecKind SpecKind => TypeSpecKind.Dictionary;
 
         public required ParsableFromStringTypeSpec KeyType { get; init; }
+    }
+
+    internal enum CollectionPopulationStrategy
+    {
+        Unknown,
+        Array,
+        Add,
+        Cast_Then_Add,
     }
 }

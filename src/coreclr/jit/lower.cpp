@@ -534,15 +534,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-        case GT_ARR_ELEM:
-            noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
-            return LowerArrElem(node->AsArrElem());
-
-        case GT_ARR_OFFSET:
-            noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
-            ContainCheckArrOffset(node->AsArrOffs());
-            break;
-
+        case GT_ARR_ELEM: // Lowered by fgMorphArrayOps()
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             // Lowered by fgSimpleLowering()
@@ -2116,6 +2108,13 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
     assert(!call->IsExpRuntimeLookup());
+
+    // Also, always expand static cctor helper for NativeAOT, see
+    // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
+    if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && comp->IsStaticHelperEligibleForExpansion(call))
+    {
+        assert(call->gtInitClsHnd == nullptr);
+    }
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
@@ -6247,6 +6246,22 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
+        // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
+        // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
+        // the original object from a byref constant for optimizations.
+        if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
+            (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
+            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+            // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
+            // will be lowered as the original handle with offset in a reloc.
+            BlockRange().Remove(op1);
+            BlockRange().Remove(op2);
+            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+        }
+
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
         {
@@ -7016,154 +7031,6 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #endif // FEATURE_SIMD
 }
 
-//------------------------------------------------------------------------
-// LowerArrElem: Lower a GT_ARR_ELEM node
-//
-// Arguments:
-//    node - the GT_ARR_ELEM node to lower.
-//
-// Return Value:
-//    The next node to lower.
-//
-// Assumptions:
-//    pTree points to a pointer to a GT_ARR_ELEM node.
-//
-// Notes:
-//    This performs the following lowering.  We start with a node of the form:
-//          /--*  <arrObj> ref
-//          +--*  <index0> int
-//          +--*  <index1> int
-//       /--*  ARR_ELEM[,] byref
-//
-//    First, we create temps for arrObj if it is not already a lclVar, and for any of the index
-//    expressions that have side-effects.
-//    We then transform the tree into:
-//
-//                         <offset is null - no accumulated offset for the first index>
-//                   /--*  <arrObj>
-//                   +--*  <index0>
-//                /--*  ARR_INDEX[i, ]
-//                +--*  <arrObj>
-//             /--|  ARR_OFFSET[i, ]
-//             |  +--*  <arrObj>
-//             |  +--*  <index1>
-//             +--*  ARR_INDEX[*,j]
-//             +--*  <arrObj>
-//          /--|  ARR_OFFSET[*,j]
-//          +--*  lclVar NewTemp
-//       /--*  lea (scale = element size, offset = offset of first element)
-//
-//    1. The new stmtExpr may be omitted if the <arrObj> is a lclVar.
-//    2. The new stmtExpr may be embedded if the <arrObj> is not the first tree in linear order for
-//    the statement containing the original ARR_ELEM.
-//    3. Note that the arrMDOffs is the INDEX of the lea, but is evaluated before the BASE (which is the second
-//    reference to NewTemp), because that provides more accurate lifetimes.
-//    4. There may be 1, 2 or 3 dimensions, with 1, 2 or 3 ARR_INDEX nodes, respectively.
-//
-GenTree* Lowering::LowerArrElem(GenTreeArrElem* arrElem)
-{
-    const unsigned char rank = arrElem->gtArrRank;
-
-    JITDUMP("Lowering ArrElem\n");
-    JITDUMP("============\n");
-    DISPTREERANGE(BlockRange(), arrElem);
-    JITDUMP("\n");
-
-    assert(arrElem->gtArrObj->TypeGet() == TYP_REF);
-
-    // We need to have the array object in a lclVar.
-    if (!arrElem->gtArrObj->IsLocal())
-    {
-        LIR::Use arrObjUse(BlockRange(), &arrElem->gtArrObj, arrElem);
-        ReplaceWithLclVar(arrObjUse);
-    }
-
-    GenTree* arrObjNode = arrElem->gtArrObj;
-    assert(arrObjNode->IsLocal());
-
-    GenTree* insertionPoint = arrElem;
-
-    // The first ArrOffs node will have 0 for the offset of the previous dimension.
-    GenTree* prevArrOffs = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
-    BlockRange().InsertBefore(insertionPoint, prevArrOffs);
-    GenTree* nextToLower = prevArrOffs;
-
-    for (unsigned char dim = 0; dim < rank; dim++)
-    {
-        GenTree* indexNode = arrElem->gtArrInds[dim];
-
-        // Use the original arrObjNode on the 0th ArrIndex node, and clone it for subsequent ones.
-        GenTree* idxArrObjNode;
-        if (dim == 0)
-        {
-            idxArrObjNode = arrObjNode;
-        }
-        else
-        {
-            idxArrObjNode = comp->gtClone(arrObjNode);
-            BlockRange().InsertBefore(insertionPoint, idxArrObjNode);
-        }
-
-        // Next comes the GT_ARR_INDEX node.
-        GenTreeArrIndex* arrMDIdx =
-            new (comp, GT_ARR_INDEX) GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank);
-        arrMDIdx->gtFlags |= ((idxArrObjNode->gtFlags | indexNode->gtFlags) & GTF_ALL_EFFECT);
-        BlockRange().InsertBefore(insertionPoint, arrMDIdx);
-
-        GenTree* offsArrObjNode = comp->gtClone(arrObjNode);
-        BlockRange().InsertBefore(insertionPoint, offsArrObjNode);
-
-        GenTreeArrOffs* arrOffs =
-            new (comp, GT_ARR_OFFSET) GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank);
-        arrOffs->gtFlags |= ((prevArrOffs->gtFlags | arrMDIdx->gtFlags | offsArrObjNode->gtFlags) & GTF_ALL_EFFECT);
-        BlockRange().InsertBefore(insertionPoint, arrOffs);
-
-        prevArrOffs = arrOffs;
-    }
-
-    // Generate the LEA and make it reverse evaluation, because we want to evaluate the index expression before the
-    // base.
-    unsigned scale  = arrElem->gtArrElemSize;
-    unsigned offset = comp->eeGetMDArrayDataOffset(arrElem->gtArrRank);
-
-    GenTree* leaIndexNode = prevArrOffs;
-    if (!jitIsScaleIndexMul(scale))
-    {
-        // We do the address arithmetic in TYP_I_IMPL, though note that the lower bounds and lengths in memory are
-        // TYP_INT
-        GenTree* scaleNode = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, scale);
-        GenTree* mulNode   = new (comp, GT_MUL) GenTreeOp(GT_MUL, TYP_I_IMPL, leaIndexNode, scaleNode);
-        BlockRange().InsertBefore(insertionPoint, scaleNode, mulNode);
-        leaIndexNode = mulNode;
-        scale        = 1;
-    }
-
-    GenTree* leaBase = comp->gtClone(arrObjNode);
-    BlockRange().InsertBefore(insertionPoint, leaBase);
-
-    GenTree* leaNode = new (comp, GT_LEA) GenTreeAddrMode(arrElem->TypeGet(), leaBase, leaIndexNode, scale, offset);
-
-    BlockRange().InsertBefore(insertionPoint, leaNode);
-
-    LIR::Use arrElemUse;
-    if (BlockRange().TryGetUse(arrElem, &arrElemUse))
-    {
-        arrElemUse.ReplaceWith(leaNode);
-    }
-    else
-    {
-        leaNode->SetUnusedValue();
-    }
-
-    BlockRange().Remove(arrElem);
-
-    JITDUMP("Results of lowering ArrElem:\n");
-    DISPTREERANGE(BlockRange(), leaNode);
-    JITDUMP("\n\n");
-
-    return nextToLower;
-}
-
 PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
@@ -7711,9 +7578,6 @@ void Lowering::ContainCheckNode(GenTree* node)
         case GT_BITCAST:
             ContainCheckBitCast(node);
             break;
-        case GT_ARR_OFFSET:
-            ContainCheckArrOffset(node->AsArrOffs());
-            break;
         case GT_LCLHEAP:
             ContainCheckLclHeap(node->AsOp());
             break;
@@ -7768,22 +7632,6 @@ void Lowering::ContainCheckReturnTrap(GenTreeOp* node)
         MakeSrcContained(node, node->gtOp1);
     }
 #endif // TARGET_XARCH
-}
-
-//------------------------------------------------------------------------
-// ContainCheckArrOffset: determine whether the source of an ARR_OFFSET should be contained.
-//
-// Arguments:
-//    node - pointer to the GT_ARR_OFFSET node
-//
-void Lowering::ContainCheckArrOffset(GenTreeArrOffs* node)
-{
-    assert(node->OperIs(GT_ARR_OFFSET));
-    // we don't want to generate code for this
-    if (node->gtOffset->IsIntegralConst(0))
-    {
-        MakeSrcContained(node, node->gtOffset);
-    }
 }
 
 //------------------------------------------------------------------------

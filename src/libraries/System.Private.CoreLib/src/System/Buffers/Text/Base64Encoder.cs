@@ -226,8 +226,8 @@ namespace System.Buffers.Text
             }
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
         private static unsafe void Avx2Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             // If we have AVX2 support, pick off 24 bytes at a time for as long as we can.
@@ -398,6 +398,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static unsafe void Vector128Encode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             // If we have SSSE3 support, pick off 12 bytes at a time for as long as we can.
@@ -585,10 +587,10 @@ namespace System.Buffers.Text
             }
         }
 
-        private const uint EncodingPad = '='; // '=', for padding
+        internal const uint EncodingPad = '='; // '=', for padding
 
         private const int MaximumEncodeLength = (int.MaxValue / 4) * 3; // 1610612733
 
-        private static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
+        internal static ReadOnlySpan<byte> EncodingMap => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"u8;
     }
 }
