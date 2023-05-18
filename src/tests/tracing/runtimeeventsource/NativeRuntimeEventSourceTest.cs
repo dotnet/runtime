@@ -40,10 +40,12 @@ namespace Tracing.Tests
 
                     using (Listener listener = new())
                     {
+                        CancellationTokenSource cts = new();
+
                         // Trigger the allocator task.
                         Task.Run(() =>
                         {
-                            while (true)
+                            while (!cts.IsCancellationRequested)
                             {
                                 for (int i = 0; i < 1000; i++)
                                 {
@@ -74,6 +76,8 @@ namespace Tracing.Tests
                                 break;
                             }
                         }
+
+                        cts.Cancel();
 
                         Assert2.True("listener.EventCount > 0", listener.EventCount > 0);
 
