@@ -16,6 +16,8 @@ using Microsoft.Build.Utilities;
 
 internal static class Utils
 {
+    public static string WebcilInWasmExtension = ".wasm";
+
     private static readonly object s_SyncObj = new object();
 
     public static string GetEmbeddedResource(string file)

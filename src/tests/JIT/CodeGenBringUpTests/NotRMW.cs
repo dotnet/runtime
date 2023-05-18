@@ -5,15 +5,17 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_NotRMW
 {
     const int Pass = 100;
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void NotRMW(ref int x) { x = ~x; }
+    internal static void NotRMW(ref int x) { x = ~x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = -1;
         NotRMW(ref x);

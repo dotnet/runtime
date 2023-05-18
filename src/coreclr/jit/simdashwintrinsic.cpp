@@ -575,30 +575,44 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_GetElement:
         case NI_VectorT256_GetElement:
         {
+            op2 = impStackTop(0).val;
+
             switch (simdBaseType)
             {
-                // Using software fallback if simdBaseType is not supported by hardware
                 case TYP_BYTE:
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    bool useToScalar = op2->IsIntegralConst(0);
+
+#if defined(TARGET_X86)
+                    useToScalar &= !varTypeIsLong(simdBaseType);
+#endif // TARGET_X86
+
+                    if (!useToScalar && !compExactlyDependsOn(InstructionSet_SSE41))
                     {
+                        // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
                     }
                     break;
+                }
 
                 case TYP_DOUBLE:
                 case TYP_FLOAT:
                 case TYP_SHORT:
                 case TYP_USHORT:
+                {
                     // short/ushort/float/double is supported by SSE2
                     break;
+                }
 
                 default:
+                {
                     unreached();
+                }
             }
             break;
         }
@@ -638,19 +652,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // Integral types require SSSE3.HorizontalAdd
                 return nullptr;
             }
-            break;
-        }
-
-        case NI_VectorT128_ToScalar:
-        case NI_VectorT256_ToScalar:
-        {
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to decompose this operation
-                return nullptr;
-            }
-#endif // TARGET_X86
             break;
         }
 
@@ -1157,6 +1158,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_ToScalar:
                 {
+#if defined(TARGET_X86)
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        op2 = gtNewIconNode(0);
+                        return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_X86
+
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
                 }
 
@@ -1205,6 +1214,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT256_ToScalar:
                 {
+#if defined(TARGET_X86)
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        op2 = gtNewIconNode(0);
+                        return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_X86
+
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector256_ToScalar, simdBaseJitType, simdSize);
                 }
 #elif defined(TARGET_ARM64)

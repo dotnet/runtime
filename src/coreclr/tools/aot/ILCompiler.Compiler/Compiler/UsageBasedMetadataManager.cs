@@ -494,7 +494,17 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            if (!IsReflectionBlocked(field))
+            if (!IsReflectionBlocked(field)
+                // Scanning will report many field ldtokens due to InitializeArray/CreateSpan.
+                // We don't consider those reflection because codegen is going to intrinsically
+                // expand them if the pattern match holds. Scanner doesn't replicate the
+                // exact rules that codegen will follow - it will report it all as LDTOKEN
+                // and this can potentially reflection-root things that don't need rooting.
+                // If LDTOKEN with an RVA static field ever becomes an actual user scenario
+                // (outside InitializeArray/CreateSpan) we need to remove this condition, but
+                // we should also replicate the codegen expansion rules in the scanner
+                // so that it doesn't become an unnecessary size regression for the common patterns.
+                && !field.HasRva)
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");

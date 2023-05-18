@@ -1276,14 +1276,20 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector256_ToScalar:
         case NI_Vector512_ToScalar:
         {
-            assert(varTypeIsFloating(baseType));
-
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
+                if (varTypeIsIntegral(baseType))
+                {
+                    // We just want to emit a standard read from memory
+                    ins  = ins_Move_Extend(baseType, false);
+                    attr = emitTypeSize(baseType);
+                }
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
             }
             else
             {
+                assert(varTypeIsFloating(baseType));
+
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
                 emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
             }

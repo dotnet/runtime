@@ -606,11 +606,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 switch (type.SpecKind)
                 {
-                    case TypeSpecKind.Array:
-                        {
-                            EmitBindCoreImplForArray((ArraySpec)type);
-                        }
-                        break;
                     case TypeSpecKind.Enumerable:
                         {
                             EmitBindCoreImplForEnumerable((EnumerableSpec)type);
@@ -643,11 +638,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private void EmitBindCoreImplForArray(ArraySpec type)
+            private void EmitBindCoreImplForEnumerable(EnumerableSpec type)
+            {
+                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
+
+                if (type.PopulationStrategy is CollectionPopulationStrategy.Array)
+                {
+                    EmitPopulationImplForArray(type);
+                }
+                else
+                {
+                    EmitPopulationImplForEnumerableWithAdd(type);
+                }
+            }
+
+            private void EmitPopulationImplForArray(EnumerableSpec type)
             {
                 EnumerableSpec concreteType = (EnumerableSpec)type.ConcreteType;
-
-                EmitCheckForNullArgument_WithBlankLine_IfRequired(isValueType: false);
 
                 // Create, bind, and add elements to temp list.
                 string tempVarName = GetIncrementalVarName(Identifier.temp);
@@ -661,15 +668,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void EmitBindCoreImplForEnumerable(EnumerableSpec type)
+            private void EmitPopulationImplForEnumerableWithAdd(EnumerableSpec type)
             {
-                EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
-
                 TypeSpec elementType = type.ElementType;
+
+                EmitCollectionCastIfRequired(type, out string objIdentifier);
 
                 _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
 
-                string addStatement = $"{Identifier.obj}.{Identifier.Add}({Identifier.element})";
+                string addExpression = $"{objIdentifier}.{Identifier.Add}({Identifier.element})";
 
                 if (elementType.SpecKind is TypeSpecKind.ParsableFromString)
                 {
@@ -678,19 +685,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         string tempVarName = GetIncrementalVarName(Identifier.stringValue);
                         _writer.WriteBlockStart($"if ({Expression.sectionValue} is string {tempVarName})");
-                        _writer.WriteLine($"{Identifier.obj}.{Identifier.Add}({tempVarName});");
+                        _writer.WriteLine($"{objIdentifier}.{Identifier.Add}({tempVarName});");
                         _writer.WriteBlockEnd();
                     }
                     else
                     {
                         EmitVarDeclaration(elementType, Identifier.element);
-                        EmitBindLogicFromString(stringParsableType, Identifier.element, Expression.sectionValue, Expression.sectionPath, () => _writer.WriteLine($"{addStatement};"));
+                        EmitBindLogicFromString(stringParsableType, Identifier.element, Expression.sectionValue, Expression.sectionPath, () => _writer.WriteLine($"{addExpression};"));
                     }
                 }
                 else
                 {
                     EmitBindCoreCall(elementType, Identifier.element, Identifier.section, InitializationKind.Declaration);
-                    _writer.WriteLine($"{addStatement};");
+                    _writer.WriteLine($"{addExpression};");
                 }
 
                 _writer.WriteBlockEnd();
@@ -700,11 +707,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 EmitCheckForNullArgument_WithBlankLine_IfRequired(type.IsValueType);
 
+                EmitCollectionCastIfRequired(type, out string objIdentifier);
+
                 _writer.WriteBlockStart($"foreach ({Identifier.IConfigurationSection} {Identifier.section} in {Identifier.configuration}.{Identifier.GetChildren}())");
 
-                // Parse key
                 ParsableFromStringTypeSpec keyType = type.KeyType;
+                TypeSpec elementType = type.ElementType;
 
+                // Parse key
                 if (keyType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                 {
                     _writer.WriteLine($"{keyType.MinimalDisplayString} {Identifier.key} = {Expression.sectionKey};");
@@ -723,8 +733,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void Emit_BindAndAddLogic_ForElement()
                 {
-                    TypeSpec elementType = type.ElementType;
-
                     if (elementType.SpecKind == TypeSpecKind.ParsableFromString)
                     {
                         ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
@@ -732,7 +740,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             string tempVarName = GetIncrementalVarName(Identifier.stringValue);
                             _writer.WriteBlockStart($"if ({Expression.sectionValue} is string {tempVarName})");
-                            _writer.WriteLine($"{Identifier.obj}[{Identifier.key}] = {tempVarName};");
+                            _writer.WriteLine($"{objIdentifier}[{Identifier.key}] = {tempVarName};");
                             _writer.WriteBlockEnd();
                         }
                         else
@@ -743,25 +751,50 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 Identifier.element,
                                 Expression.sectionValue,
                                 Expression.sectionPath,
-                                () => _writer.WriteLine($"{Identifier.obj}[{Identifier.key}] = {Identifier.element};"));
+                                () => _writer.WriteLine($"{objIdentifier}[{Identifier.key}] = {Identifier.element};"));
                         }
                     }
                     else // For complex types:
                     {
+                        bool isValueType = elementType.IsValueType;
+                        string expressionForElementIsNotNull = $"{Identifier.element} is not null";
                         string elementTypeDisplayString = elementType.MinimalDisplayString + (elementType.IsValueType ? string.Empty : "?");
 
-                        // If key already exists, bind to value to existing element instance if not null (for ref types).
-                        string conditionToUseExistingElement = $"{Identifier.obj}.{Identifier.TryGetValue}({Identifier.key}, out {elementTypeDisplayString} {Identifier.element})";
-                        if (!elementType.IsValueType)
+                        string expressionForElementExists = $"{objIdentifier}.{Identifier.TryGetValue}({Identifier.key}, out {elementTypeDisplayString} {Identifier.element})";
+                        string conditionToUseExistingElement = expressionForElementExists;
+
+                        // If key already exists, bind to existing element instance if not null (for ref types).
+                        if (!isValueType)
                         {
-                            conditionToUseExistingElement += $" && {Identifier.element} is not null";
+                            conditionToUseExistingElement += $" && {expressionForElementIsNotNull}";
                         }
+
                         _writer.WriteBlockStart($"if (!({conditionToUseExistingElement}))");
                         EmitObjectInit(elementType, Identifier.element, InitializationKind.SimpleAssignment);
                         _writer.WriteBlockEnd();
 
+                        if (elementType is CollectionSpec
+                            {
+                                ConstructionStrategy: ConstructionStrategy.ParameterizedConstructor or ConstructionStrategy.ToEnumerableMethod
+                            } collectionSpec)
+                        {
+                            // This is a read-only collection. If the element exists and is not null,
+                            // we need to copy its contents into a new instance & then append/bind to that.
+
+                            string initExpression = collectionSpec.ConstructionStrategy is ConstructionStrategy.ParameterizedConstructor
+                                ? $"new {collectionSpec.ConcreteType.MinimalDisplayString}({Identifier.element})"
+                                : $"{Identifier.element}.{collectionSpec.ToEnumerableMethodCall!}";
+
+                            _writer.WriteBlock($$"""
+                                else
+                                {
+                                    {{Identifier.element}} = {{initExpression}};
+                                }
+                                """);
+                        }
+
                         EmitBindCoreCall(elementType, $"{Identifier.element}!", Identifier.section, InitializationKind.None);
-                        _writer.WriteLine($"{Identifier.obj}[{Identifier.key}] = {Identifier.element};");
+                        _writer.WriteLine($"{objIdentifier}[{Identifier.key}] = {Identifier.element};");
                     }
                 }
 
@@ -788,9 +821,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     _writer.WriteBlockStart($@"case ""{property.ConfigurationKeyName}"":");
 
-                    TypeSpec propertyType = property.Type;
+                    if (property.ShouldBind())
+                    {
+                        EmitBindCoreImplForProperty(property, property.Type!, parentType: type);
+                    }
 
-                    EmitBindCoreImplForProperty(property, propertyType, parentType: type);
                     _writer.WriteBlockEnd();
                     _writer.WriteLine("break;");
                 }
@@ -870,10 +905,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     default:
                         {
-                            EmitBindCoreCallForProperty(
-                                property,
-                                propertyType,
-                                expressionForPropertyAccess);
+                            EmitBindCoreCallForProperty(property, propertyType, expressionForPropertyAccess);
                         }
                         break;
                 }
@@ -1034,24 +1066,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                string displayString = GetTypeDisplayString(type);
+                string expressionForInit;
+                CollectionSpec? collectionType = type as CollectionSpec;
 
-                string expressionForInit = null;
-                if (type is ArraySpec)
+                string displayString;
+                if (collectionType is not null)
                 {
-                    expressionForInit = $"new {_arrayBracketsRegex.Replace(displayString, "[0]", 1)}";
+                    if (collectionType is EnumerableSpec { PopulationStrategy: CollectionPopulationStrategy.Array })
+                    {
+                        displayString = GetTypeDisplayString(type);
+                        expressionForInit = $"new {_arrayBracketsRegex.Replace(displayString, "[0]", 1)}";
+                    }
+                    else
+                    {
+                        displayString = GetTypeDisplayString(collectionType.ConcreteType ?? collectionType);
+                        expressionForInit = $"new {displayString}()";
+                    }
                 }
-                else if (type.ConstructionStrategy != ConstructionStrategy.ParameterlessConstructor)
+                else if (type.ConstructionStrategy is ConstructionStrategy.ParameterlessConstructor)
+                {
+                    displayString = GetTypeDisplayString(type);
+                    expressionForInit = $"new {displayString}()";
+                }
+                else
                 {
                     return;
                 }
-                else if (type is CollectionSpec { ConcreteType: { } concreteType })
-                {
-                    displayString = GetTypeDisplayString(concreteType);
-                }
-
-                // Not an array.
-                expressionForInit ??= $"new {displayString}()";
 
                 if (initKind == InitializationKind.Declaration)
                 {
@@ -1060,11 +1100,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind == InitializationKind.AssignmentWithNullCheck)
                 {
-                    _writer.WriteLine($"{expressionForMemberAccess} ??= {expressionForInit};");
+                    ConstructionStrategy? collectionConstructionStratey = collectionType?.ConstructionStrategy;
+                    if (collectionConstructionStratey is ConstructionStrategy.ParameterizedConstructor)
+                    {
+                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : new {displayString}({expressionForMemberAccess});");
+                    }
+                    else if (collectionConstructionStratey is ConstructionStrategy.ToEnumerableMethod)
+                    {
+                        _writer.WriteLine($"{expressionForMemberAccess} = {expressionForMemberAccess} is null ? {expressionForInit} : {expressionForMemberAccess}.{collectionType.ToEnumerableMethodCall!};");
+                    }
+                    else
+                    {
+                        _writer.WriteLine($"{expressionForMemberAccess} ??= {expressionForInit};");
+                    }
                 }
                 else
                 {
                     EmitAssignment(expressionForMemberAccess, expressionForInit);
+                }
+            }
+
+            private void EmitCollectionCastIfRequired(CollectionSpec type, out string objIdentifier)
+            {
+                objIdentifier = Identifier.obj;
+                if (type.PopulationStrategy is CollectionPopulationStrategy.Cast_Then_Add)
+                {
+                    objIdentifier = Identifier.temp;
+                    _writer.WriteBlock($$"""
+                        if ({{Identifier.obj}} is not {{type.PopulationCastType!.MinimalDisplayString}} {{objIdentifier}})
+                        {
+                            return;
+                        }
+                        """);
+                    _writer.WriteBlankLine();
                 }
             }
 

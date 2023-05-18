@@ -374,7 +374,6 @@ set( JIT_HEADERS
   targetarm.h
   targetarm64.h
   tinyarray.h
-  titypes.h
   treelifeupdater.h
   typelist.h
   unwind.h

@@ -242,10 +242,6 @@ public:
         VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
         {
         }
-        ~VNMap()
-        {
-            ~VNMap<fromType, keyfuncs>::JitHashTable();
-        }
 
         bool Set(fromType k, ValueNum val)
         {
@@ -858,8 +854,11 @@ public:
     // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
-    // Returns true iff the VN represents a (non-handle) constant.
+    // Returns true iff the VN represents a constant.
     bool IsVNConstant(ValueNum vn);
+
+    // Returns true iff the VN represents a (non-handle) constant.
+    bool IsVNConstantNonHandle(ValueNum vn);
 
     // Returns true iff the VN represents an integer constant.
     bool IsVNInt32Constant(ValueNum vn);
