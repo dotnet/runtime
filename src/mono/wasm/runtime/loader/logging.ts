@@ -3,15 +3,15 @@
 
 /* eslint-disable no-console */
 import { loaderHelpers } from "./globals";
-
+const prefix = "MONO_WASM: ";
 export function mono_log_debug(msg: string, ...data: any) {
     if (loaderHelpers.diagnosticTracing) {
-        console.debug("MONO_WASM: " + msg, ...data);
+        console.debug(prefix + msg, ...data);
     }
 }
 
 export function mono_log_info(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info(prefix + msg, ...data);
 }
 
 export function mono_log_info_no_prefix(msg: string, ...data: any) {
@@ -19,11 +19,11 @@ export function mono_log_info_no_prefix(msg: string, ...data: any) {
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
-    console.warn("MONO_WASM: " + msg, ...data);
+    console.warn(prefix + msg, ...data);
 }
 
 export function mono_log_error(msg: string, ...data: any) {
-    console.error(msg, ...data);
+    console.error(prefix + msg, ...data);
 }
 export let consoleWebSocket: WebSocket;
 

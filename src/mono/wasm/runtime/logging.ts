@@ -5,22 +5,23 @@
 import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
+const prefix = "MONO_WASM: ";
 export function mono_log_debug(msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug("MONO_WASM: " + msg, ...data);
+        console.debug(prefix + msg, ...data);
     }
 }
 
 export function mono_log_info(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info(prefix + msg, ...data);
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
-    console.warn("MONO_WASM: " + msg, ...data);
+    console.warn(prefix + msg, ...data);
 }
 
 export function mono_log_error(msg: string, ...data: any) {
-    console.error("MONO_WASM: " + msg, ...data);
+    console.error(prefix + msg, ...data);
 }
 
 export const wasm_func_map = new Map<number, string>();
