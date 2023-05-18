@@ -28,9 +28,40 @@ namespace System.IO
             UnixFileMode.OtherWrite |
             UnixFileMode.OtherExecute;
 
-        // CopyFile is defined in either FileSystem.CopyFile.OSX.cs or FileSystem.CopyFile.OtherUnix.cs
-        // The implementations on OSX-like Operating Systems attempts to clone the file first.
-        public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite);
+        // TryCloneFile is defined in either FileSystem.TryCloneFile.OSX.cs or FileSystem.TryCloneFile.OtherUnix.cs.
+        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite);
+
+        public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        {
+            // Open the src file handle.
+            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus srcFileStatus);
+
+            // Try to clone the file first.
+            if (TryCloneFile(sourceFullPath, in srcFileStatus, destFullPath, overwrite))
+            {
+                return;
+            }
+
+            // Open the dst file handle.
+            using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
+                FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                CreateOpenException);
+
+            // Exception handler for SafeFileHandle.Open failing.
+            static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
+            {
+                // If the destination path points to a directory, we throw to match Windows behaviour.
+                if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
+                {
+                    return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
+                }
+
+                return null; // Let SafeFileHandle create the exception for this error.
+            }
+
+            // Copy the file.
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
+        }
 
 #pragma warning disable IDE0060
         public static void Encrypt(string path)

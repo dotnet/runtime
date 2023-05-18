@@ -9,18 +9,10 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-        public static partial void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
+        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
         {
-            // Fail fast for blatantly copying onto self
-            if (sourceFullPath == destFullPath)
-            {
-                if (!File.Exists(sourceFullPath)) throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFullPath), sourceFullPath);
-                throw new IOException(SR.Format(overwrite ? SR.IO_SharingViolation_File : SR.IO_FileExists_Name, destFullPath));
-            }
-
-            // Start by locking, creating relevant file handles, and reading out file status info.
-            using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus fileStatus);
-            UnixFileMode filePermissions = SafeFileHandle.GetFileMode(fileStatus);
+            // Get the file permissions.
+            UnixFileMode filePermissions = SafeFileHandle.GetFileMode(srcStat);
 
             // Read FileStatus of destination file to determine how to continue
             int destError = Interop.Sys.Stat(destFullPath, out Interop.Sys.FileStatus destStat);
@@ -34,7 +26,7 @@ namespace System.IO
                 }
                 else
                 {
-                    goto tryFallback;
+                    return false;
                 }
             }
             else
@@ -45,12 +37,12 @@ namespace System.IO
                     // Throw an error if we're not overriding
                     throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EEXIST));
                 }
-                if (fileStatus.Dev != destStat.Dev)
+                if (srcStat.Dev != destStat.Dev)
                 {
                     // On different device
-                    goto tryFallback;
+                    return false;
                 }
-                if (fileStatus.Ino == destStat.Ino)
+                if (srcStat.Ino == destStat.Ino)
                 {
                     // Copying onto itself
                     throw new IOException(SR.Format(SR.IO_SharingViolation_File, destFullPath));
@@ -79,7 +71,7 @@ namespace System.IO
                 if (Interop.@libc.clonefile(sourceFullPath, destFullPath, Interop.@libc.CLONE_ACL) == 0)
                 {
                     // Success
-                    return;
+                    return true;
                 }
 
                 // Clonefile fails if the destination exists (which we try to avoid), so throw if error is
@@ -90,29 +82,8 @@ namespace System.IO
                 }
             }
 
-            // Try fallback:
-            tryFallback:
-            {
-                // Open the dst handle
-                using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: filePermissions,
-                    CreateOpenException);
-
-                // Exception handler for SafeFileHandle.Open failing.
-                static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
-                {
-                    // If the destination path points to a directory, we throw to match Windows behaviour.
-                    if (error.Error == Interop.Error.EEXIST && DirectoryExists(path))
-                    {
-                        return new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, path));
-                    }
-
-                    return null; // Let SafeFileHandle create the exception for this error.
-                }
-
-                // Copy the file using the standard unix implementation.
-                Interop.CheckIo(Interop.Sys.CopyFile(src, dst, fileStatus.Size));
-            }
+            // Otherwise we want to go the the fallback
+            return false;
         }
     }
 }
