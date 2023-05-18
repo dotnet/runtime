@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
   </ItemGroup>
 
 </Project>

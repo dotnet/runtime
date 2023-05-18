@@ -1,9 +1,0 @@
-<Project>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
-
-  <ItemGroup>
-    <!-- Exclude runtime assets. HostModel uses OOB packages and the test just wants what is in the framework -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" ExcludeAssets="runtime" />
-  </ItemGroup>
-
-</Project>
