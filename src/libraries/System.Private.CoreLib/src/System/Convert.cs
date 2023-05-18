@@ -2960,6 +2960,32 @@ namespace System
             return result;
         }
 
+        public static bool TryFromHexString(string source, Span<byte> destination, out int bytesWritten)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return TryFromHexString(source.AsSpan(), destination, out bytesWritten);
+        }
+
+        public static bool TryFromHexString(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
+        {
+            bytesWritten = 0;
+            var length = source.Length;
+            if (length == 0 || length % 2 != 0)
+                return false;
+
+            var twicedLength = length * 2;
+
+            if (destination.Length < twicedLength)
+                return false;
+
+            if (!HexConverter.TryDecodeFromUtf16(source, destination))
+                return false;
+
+            bytesWritten = twicedLength;
+            return true;
+        }
+
         /// <summary>
         /// Converts an array of 8-bit unsigned integers to its equivalent string representation that is encoded with uppercase hex characters.
         /// </summary>
@@ -3010,6 +3036,24 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, int.MaxValue / 2, nameof(bytes));
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Upper);
+        }
+
+        public static bool TryToHexString(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+            var length = source.Length;
+
+            if (length == 0 || length > int.MaxValue / 2)
+                return false;
+
+            int twicedLength = length * 2;
+
+            if (destination.Length < twicedLength)
+                return false;
+
+            HexConverter.EncodeToUtf16(source, destination);
+            charsWritten = twicedLength;
+            return true;
         }
     }  // class Convert
 }  // namespace
