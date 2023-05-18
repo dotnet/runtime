@@ -367,20 +367,21 @@ namespace System.Diagnostics.Metrics
                                 Parent.MultipleSessionsNotSupportedError(_sessionId);
                                 return;
                             }
-                            else if (command.Command == EventCommand.Disable)
+                            else if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
                                 _sessionId = "";
                                 _sharedSessionIds.Clear();
-                                Parent.Message($"Previous session with id {_sessionId} is stopped");
-                                return;
+                                Parent.Message($"Previous session with id {_sessionId} is stopped"); return;
                             }
                         }
                     }
                     if ((command.Command == EventCommand.Update || command.Command == EventCommand.Enable) &&
                         command.Arguments != null)
                     {
+                        IncrementRefCount(commandSessionId, command);
+
                         _sessionId = commandSessionId;
 
                         double defaultIntervalSecs = 1;
@@ -469,11 +470,6 @@ namespace System.Diagnostics.Metrics
                         }
 
                         _aggregationManager.Start();
-
-                        if (IsSharedSession(commandSessionId))
-                        {
-                            IncrementRefCount(commandSessionId, command);
-                        }
                     }
                 }
                 catch (Exception e) when (LogError(e))
