@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="unbox_r.il" />
     <Compile Include="unbox.il" />
   </ItemGroup>
 </Project>

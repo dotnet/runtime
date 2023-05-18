@@ -16,7 +16,6 @@ namespace Internal.Reflection.Core.Execution
     // This class polymorphically implements the MethodBase.Invoke() api and its close cousins. MethodInvokers are designed to be built once and cached
     // for maximum Invoke() throughput.
     //
-    [ReflectionBlocked]
     public abstract class MethodInvoker
     {
         protected MethodInvoker() { }
@@ -41,16 +40,8 @@ namespace Internal.Reflection.Core.Execution
             if (thisObject == null)
                 throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
-            if (RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
-                return;
-
-            if (RuntimeAugments.IsInterface(declaringTypeHandle))
-            {
-                if (RuntimeAugments.IsInstanceOfInterface(thisObject, declaringTypeHandle))
-                    return;
-            }
-
-            throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+            if (!RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
+                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
         }
     }
 }

@@ -4,7 +4,7 @@
 import { Module } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
-import { MonoArray, MonoObjectRef, MonoObject } from "../types";
+import { MonoArray, MonoObjectRef, MonoObject } from "../types/internal";
 import { Int32Ptr, TypedArray } from "../types/emscripten";
 import { js_to_mono_obj_root } from "./js-to-cs";
 
@@ -55,7 +55,7 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
         case 14:
             newTypedArray = new Float64Array(end - begin);
             break;
-        case 15:  // This is a special case because the typed array is also byte[]
+        case 15: // This is a special case because the typed array is also byte[]
             newTypedArray = new Uint8ClampedArray(end - begin);
             break;
         default:

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // int
 public struct MyStructInt1
@@ -335,7 +336,8 @@ public class BringUpTest_StructReturn
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // int
         MyStructInt1 sI1 = returnMyStructInt1(100);

@@ -60,6 +60,12 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
 DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
+#if HOST_BROWSER
+DEFINE_BOOL(interp_simd_v128, "interp-simd-v128", FALSE, "Enable interpreter Vector128 support")
+#else
+DEFINE_BOOL(interp_simd_v128, "interp-simd-v128", TRUE, "Enable interpreter Vector128 support")
+#endif
+DEFINE_BOOL(interp_simd_packedsimd, "interp-simd-packedsimd", FALSE, "Enable interpreter WASM PackedSimd support")
 
 #if HOST_BROWSER
 
@@ -110,6 +116,8 @@ DEFINE_BOOL(jiterpreter_use_constants, "jiterpreter-use-constants", FALSE, "Use 
 DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-checks", TRUE, "Attempt to eliminate redundant null checks in traces")
 // enables performing backward branches without exiting traces
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
+// Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
+DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
@@ -145,7 +153,7 @@ DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-e
 DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 #endif // HOST_BROWSER
 
-#ifdef HOST_WASM
+#ifdef TARGET_WASM
 DEFINE_BOOL_READONLY(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", TRUE, "Use a mrgctx for all gshared methods")
 #else
 DEFINE_BOOL(experimental_gshared_mrgctx, "experimental-gshared-mrgctx", FALSE, "Use a mrgctx for all gshared methods")

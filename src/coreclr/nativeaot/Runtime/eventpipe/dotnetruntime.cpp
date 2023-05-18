@@ -9,10 +9,6 @@
 #include "eventpipeadapter.h"
 #include "gcheaputilities.h"
 
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
-
 #ifndef _INC_WINDOWS
     typedef void* LPVOID;
     typedef uint32_t UINT;
@@ -1893,7 +1889,7 @@ void EventPipeEtwCallbackDotNETRuntime(
 
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
 
-// @TODO 
+// @TODO
 int const EVENT_CONTROL_CODE_ENABLE_PROVIDER=1;
 int const EVENT_CONTROL_CODE_DISABLE_PROVIDER=0;
 

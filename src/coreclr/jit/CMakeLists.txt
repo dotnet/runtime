@@ -159,6 +159,7 @@ set( JIT_SOURCES
   patchpoint.cpp
   phase.cpp
   promotion.cpp
+  promotiondecomposition.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
@@ -373,7 +374,6 @@ set( JIT_HEADERS
   targetarm.h
   targetarm64.h
   tinyarray.h
-  titypes.h
   treelifeupdater.h
   typelist.h
   unwind.h
@@ -532,6 +532,7 @@ if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc
        coreclrpal
+       coreclrminipal
     )
 else()
     list(APPEND JIT_LINK_LIBRARIES
@@ -548,6 +549,7 @@ else()
        bcrypt.lib
        crypt32.lib
        RuntimeObject.lib
+       coreclrminipal
     )
 endif(CLR_CMAKE_HOST_UNIX)
 

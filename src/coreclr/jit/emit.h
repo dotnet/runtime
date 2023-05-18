@@ -607,6 +607,7 @@ protected:
         unsigned          idNum;
         size_t            idSize;        // size of the instruction descriptor
         unsigned          idVarRefOffs;  // IL offset for LclVar reference
+        unsigned          idVarRefOffs2; // IL offset for 2nd LclVar reference (in case this is a pair)
         size_t            idMemCookie;   // compile time handle (check idFlags)
         GenTreeFlags      idFlags;       // for determining type of handle in idMemCookie
         bool              idFinallyCall; // Branch instruction is a call to finally
@@ -1327,6 +1328,19 @@ protected:
         {
             IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
             return (isInfo & (IS_AM_RW | IS_AM_WR)) != 0;
+        }
+
+        bool idHasMem() const
+        {
+            return idHasMemGen() || idHasMemStk() || idHasMemAdr();
+        }
+        bool idHasMemRead() const
+        {
+            return idHasMemGenRead() || idHasMemStkRead() || idHasMemAdrRead();
+        }
+        bool idHasMemWrite() const
+        {
+            return idHasMemGenWrite() || idHasMemStkWrite() || idHasMemAdrWrite();
         }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
