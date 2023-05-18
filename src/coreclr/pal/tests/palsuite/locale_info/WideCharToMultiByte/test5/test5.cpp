@@ -141,7 +141,7 @@ PALTEST(locale_info_WideCharToMultiByte_test5_paltest_widechartomultibyte_test5,
         
         if (strcmp(utf8Buffer, utf8Strings[i]) != 0)
         {
-            printf("WideCharToMultiByte string %d: the resulting string doesn't match the expected one!\n", i);
+            Fail("WideCharToMultiByte string %d: the resulting string doesn't match the expected one!\n", i);
         }
         
         free(utf8Buffer);

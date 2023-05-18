@@ -34,7 +34,6 @@ Revision History:
 #include <errno.h>
 
 #include <debugmacrosext.h>
-#include <minipal/utf8converter.h>
 
 using namespace CorUnix;
 
@@ -228,7 +227,7 @@ MultiByteToWideChar(
         OUT LPWSTR lpWideCharStr,
         IN int cchWideChar)
 {
-    long retval = 0;
+    INT retval =0;
 
     PERF_ENTRY(MultiByteToWideChar);
     ENTRY("MultiByteToWideChar(CodePage=%u, dwFlags=%#x, lpMultiByteStr=%p (%s),"
@@ -254,51 +253,16 @@ MultiByteToWideChar(
         goto EXIT;
     }
 
-    // Use g_utf8_to_utf16_custom_alloc_optional on all systems, since it replaces
+    // Use UTF8ToUnicode on all systems, since it replaces
     // invalid characters and Core Foundation doesn't do that.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        int inputLength = (int)strlen(lpMultiByteStr);
-        bool allowNulls = (cbMultiByte > 0 && lpMultiByteStr[cbMultiByte - 1] != '\0');
-        bool subtractOne = cbMultiByte == cchWideChar || allowNulls;
         if (cbMultiByte <= -1)
         {
-            cbMultiByte = inputLength + 1;
+        cbMultiByte = strlen(lpMultiByteStr) + 1;
         }
 
-        size_t allocSize = 0;
-        struct cookie { LPWSTR str; size_t* allocSize; int* count; };
-        cookie callbackCookie = { .str = lpWideCharStr,  .allocSize = &allocSize, .count = &cchWideChar };
-
-        long itemsWritten;
-        GError *gerror = NULL;
-        lpWideCharStr = (LPWSTR)g_utf8_to_utf16_custom_alloc_optional(lpMultiByteStr, cbMultiByte, &retval, &itemsWritten, allowNulls,
-            !(dwFlags & MB_ERR_INVALID_CHARS), cbMultiByte > inputLength,
-            [](size_t req_size, void* custom_alloc_data)
-            {
-                cookie* callbackCookie = (cookie*)(custom_alloc_data);
-                *(callbackCookie->allocSize) = (req_size / sizeof (gunichar2));
-                int count = *(callbackCookie->count);
-                return (void*)(callbackCookie->str && !(count && *(callbackCookie->allocSize) - 1 > (size_t)count) ? callbackCookie->str : NULL);
-            }, &callbackCookie, &gerror);
-
-        if (gerror && (lpWideCharStr || (cchWideChar && allocSize > (size_t)cchWideChar)))
-        {
-            retval = 0;
-            ERROR ("The error is %d %s\n", gerror->code, gerror->message);
-            switch (gerror->code)
-            {
-                case G_CONVERT_ERROR_ILLEGAL_SEQUENCE: SetLastError(ERROR_NO_UNICODE_TRANSLATION); break;
-                case G_CONVERT_ERROR_NO_MEMORY: SetLastError(ERROR_INSUFFICIENT_BUFFER); break;
-                default: SetLastError(ERROR_INVALID_PARAMETER); break;
-            }
-            free(gerror);
-            goto EXIT;
-        }
-
-        retval = allocSize;
-        if (retval > 1 && subtractOne) retval -= 1;
-
+        retval = UTF8ToUnicode(lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar, dwFlags);
         goto EXIT;
     }
 
@@ -310,7 +274,7 @@ EXIT:
 
     LOGEXIT("MultiByteToWideChar returns %d.\n",retval);
     PERF_EXIT(MultiByteToWideChar);
-    return (int)retval;
+    return retval;
 }
 
 
@@ -333,7 +297,7 @@ WideCharToMultiByte(
         IN LPCSTR lpDefaultChar,
         OUT LPBOOL lpUsedDefaultChar)
 {
-    long retval = 0;
+    INT retval =0;
     char defaultChar = '?';
     BOOL usedDefaultChar = FALSE;
 
@@ -374,50 +338,15 @@ WideCharToMultiByte(
         defaultChar = *lpDefaultChar;
     }
 
-    // Use g_utf16_to_utf8_custom_alloc_with_nulls on all systems because we use
-    // g_utf8_to_utf16 in MultiByteToWideChar() on all systems.
+    // Use UnicodeToUTF8 on all systems because we use
+    // UTF8ToUnicode in MultiByteToWideChar() on all systems.
     if (CodePage == CP_UTF8 || CodePage == CP_ACP)
     {
-        int inputLength = (int)PAL_wcslen(lpWideCharStr);
-        bool allowNulls = (cchWideChar > 0 && lpWideCharStr[cchWideChar - 1] != '\0');
-        bool subtractOne = cchWideChar == cbMultiByte || allowNulls;
         if (cchWideChar == -1)
         {
-            cchWideChar = inputLength + 1;
+            cchWideChar = PAL_wcslen(lpWideCharStr) + 1;
         }
-
-        size_t allocSize = 0;
-        struct cookie { LPSTR str; size_t* allocSize; int* count; };
-        cookie callbackCookie = { .str = lpMultiByteStr,  .allocSize = &allocSize, .count = &cbMultiByte };
-
-        long itemsWritten;
-        GError *gerror = NULL;
-        lpMultiByteStr = g_utf16_to_utf8_custom_alloc_with_nulls((unsigned short*)lpWideCharStr, cchWideChar, &retval, &itemsWritten, allowNulls, cchWideChar > inputLength,
-            [](size_t req_size, void* custom_alloc_data)
-            {
-                cookie* callbackCookie = (cookie*)(custom_alloc_data);
-                *(callbackCookie->allocSize) = req_size;
-                int count = (size_t)*(callbackCookie->count);
-                return (void*)(callbackCookie->str && !(count && *(callbackCookie->allocSize) - 1 > (size_t)count) ? callbackCookie->str : NULL);
-            }, &callbackCookie, &gerror);
-
-        if (gerror && (lpMultiByteStr || (cbMultiByte && allocSize > (size_t)cbMultiByte)))
-        {
-            retval = 0;
-            ERROR ("The error is %d %s\n", gerror->code, gerror->message);
-            switch (gerror->code)
-            {
-                case G_CONVERT_ERROR_ILLEGAL_SEQUENCE: SetLastError(ERROR_NO_UNICODE_TRANSLATION); break;
-                case G_CONVERT_ERROR_NO_MEMORY: SetLastError(ERROR_INSUFFICIENT_BUFFER); break;
-                default: SetLastError(ERROR_INVALID_PARAMETER); break;
-            }
-            free(gerror);
-            goto EXIT;
-        }
-
-        retval = allocSize;
-        if (retval > 1  && subtractOne) retval -= 1;
-
+        retval = UnicodeToUTF8(lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte);
         goto EXIT;
     }
 
@@ -445,7 +374,7 @@ EXIT:
 
     LOGEXIT("WideCharToMultiByte returns INT %d\n", retval);
     PERF_EXIT(WideCharToMultiByte);
-    return (int)retval;
+    return retval;
 }
 
 extern char * g_szCoreCLRPath;

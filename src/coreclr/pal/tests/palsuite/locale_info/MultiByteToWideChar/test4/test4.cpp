@@ -217,7 +217,7 @@ PALTEST(locale_info_MultiByteToWideChar_test4_paltest_multibytetowidechar_test4,
         
         if (wcscmp(wideBuffer, unicodeStrings[i]) != 0)
         {
-            printf("MultiByteToWideChar string %d: the resulting string doesn't match the expected one!\n", i);
+            Fail("MultiByteToWideChar string %d: the resulting string doesn't match the expected one!\n", i);
         }
         
         free(wideBuffer);
