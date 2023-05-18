@@ -15,6 +15,7 @@ namespace System.Security.Claims
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ClaimsPrincipalDebugProxy))]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -592,6 +593,44 @@ namespace System.Security.Claims
             }
 
             return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
+        }
+
+        private sealed class ClaimsPrincipalDebugProxy
+        {
+            private readonly ClaimsPrincipal _principal;
+
+            public ClaimsPrincipalDebugProxy(ClaimsPrincipal principal)
+            {
+                _principal = principal;
+            }
+
+            public IEnumerable<Claim> Claims
+            {
+                get
+                {
+                    List<Claim> claims = new List<Claim>();
+                    foreach (var c in _principal.Claims)
+                    {
+                        claims.Add(c);
+                    }
+                    return claims;
+                }
+            }
+
+            public IEnumerable<ClaimsIdentity> Identities
+            {
+                get
+                {
+                    List<ClaimsIdentity> identities = new List<ClaimsIdentity>();
+                    foreach (var i in _principal.Identities)
+                    {
+                        identities.Add(i);
+                    }
+                    return identities;
+                }
+            }
+
+            public IIdentity? Identity => _principal.Identity;
         }
     }
 }

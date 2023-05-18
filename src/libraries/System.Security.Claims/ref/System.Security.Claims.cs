@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics;
-
 namespace System.Security.Claims
 {
     public partial class Claim
@@ -33,7 +31,6 @@ namespace System.Security.Claims
         public virtual void WriteTo(System.IO.BinaryWriter writer) { }
         protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[]? userData) { }
     }
-    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public partial class ClaimsIdentity : System.Security.Principal.IIdentity
     {
         public const string DefaultIssuer = "LOCAL AUTHORITY";
@@ -82,7 +79,6 @@ namespace System.Security.Claims
         public virtual void WriteTo(System.IO.BinaryWriter writer) { }
         protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[]? userData) { }
     }
-    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public partial class ClaimsPrincipal : System.Security.Principal.IPrincipal
     {
         public ClaimsPrincipal() { }
