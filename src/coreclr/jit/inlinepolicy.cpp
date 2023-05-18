@@ -502,11 +502,25 @@ bool DefaultPolicy::BudgetCheck() const
         //
         assert(m_IsForceInlineKnown);
         assert(m_CallsiteDepth > 0);
-        const bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth <= strategy->GetMaxForceInlineDepth());
+        bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth <= strategy->GetMaxForceInlineDepth());
+
+        if (!allowOverBudget && (m_CodeSize <= (InlineStrategy::ALWAYS_INLINE_SIZE / 2)))
+        {
+            // We don't want to give up on various getters/setters if we're running out of budget
+            JITDUMP("Allowing over-budget for small methods\n")
+            allowOverBudget = true;
+        }
+
+        if (!allowOverBudget && m_IsNoReturnKnown && m_IsNoReturn)
+        {
+            // We're not going to inline no-return calls anyway
+            JITDUMP("Allowing over-budget for known no-returns\n")
+            allowOverBudget = true;
+        }
 
         if (allowOverBudget)
         {
-            JITDUMP("Allowing over-budget top-level forceinline\n");
+            JITDUMP("Allowing over-budget top-level forceinline\n")
         }
         else
         {
