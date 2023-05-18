@@ -31,7 +31,7 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
 export async function mono_run_main(main_assembly_name: string, args: string[]): Promise<number> {
     mono_wasm_set_main_args(main_assembly_name, args);
     if (runtimeHelpers.waitForDebugger == -1) {
-        mono_log_info("MONO_WASM: waiting for debugger...");
+        mono_log_info("waiting for debugger...");
         await mono_wasm_wait_for_debugger();
     }
     const method = find_entry_point(main_assembly_name);

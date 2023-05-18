@@ -370,7 +370,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        mono_log_error(`MONO_WASM: interp_entry code generation failed: ${exc}`);
+        mono_log_error(`interp_entry code generation failed: ${exc}`);
         recordFailure();
     } finally {
         const finished = _now();
@@ -408,7 +408,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
             mono_log_info(`${j}\t${s}`);
             mono_log_info("// end blob //");
         } else if (rejected && !threw) {
-            mono_log_error("MONO_WASM: failed to generate trampoline for unknown reason");
+            mono_log_error("failed to generate trampoline for unknown reason");
         }
 
         jitQueue.length = 0;

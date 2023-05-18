@@ -243,7 +243,7 @@ function getIsWasmEhSupported(): boolean {
         doJitCallModule = new WebAssembly.Module(bytes);
         wasmEhSupported = true;
     } catch (exc) {
-        mono_log_info("MONO_WASM: Disabling WASM EH support due to JIT failure", exc);
+        mono_log_info("Disabling WASM EH support due to JIT failure", exc);
         wasmEhSupported = false;
     }
 
@@ -290,7 +290,7 @@ export function mono_jiterp_do_jit_call_indirect(
             cwraps.mono_jiterp_update_jit_call_dispatcher(result);
             failed = false;
         } catch (exc) {
-            mono_log_error("MONO_WASM: failed to compile do_jit_call handler", exc);
+            mono_log_error("failed to compile do_jit_call handler", exc);
             failed = true;
         }
         // If wasm EH support was detected, a native wasm implementation of the dispatcher was already registered.
@@ -479,7 +479,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         rejected = false;
         // console.error(`${traceName} failed: ${exc} ${exc.stack}`);
         // HACK: exc.stack is enormous garbage in v8 console
-        mono_log_error(`MONO_WASM: jit_call code generation failed: ${exc}`);
+        mono_log_error(`jit_call code generation failed: ${exc}`);
         recordFailure();
     } finally {
         const finished = _now();
@@ -528,7 +528,7 @@ export function mono_interp_flush_jitcall_queue(): void {
             mono_log_info(`${j}\t${s}`);
             mono_log_info("// end blob //");
         } else if (rejected && !threw) {
-            mono_log_error("MONO_WASM: failed to generate trampoline for unknown reason");
+            mono_log_error("failed to generate trampoline for unknown reason");
         }
 
         jitQueue.length = 0;

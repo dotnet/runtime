@@ -84,7 +84,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     private attachToRuntimeController = createPromiseController<void>().promise_control;
 
     start(): void {
-        mono_log_info(`MONO_WASM: starting diagnostic server with url: ${this.websocketUrl}`);
+        mono_log_info(`starting diagnostic server with url: ${this.websocketUrl}`);
         this.startRequestedController.resolve();
     }
     stop(): void {
@@ -101,7 +101,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         await this.startRequestedController.promise;
         await this.attachToRuntimeController.promise; // can't start tracing until we've attached to the runtime
         while (!this.stopRequested) {
-            mono_log_debug("MONO_WASM: diagnostic server: advertising and waiting for client");
+            mono_log_debug("diagnostic server: advertising and waiting for client");
             const p1: Promise<"first" | "second"> = this.advertiseAndWaitForClient().then(() => "first");
             const p2: Promise<"first" | "second"> = this.stopRequestedController.promise.then(() => "second");
             const result = await Promise.race([p1, p2]);
@@ -109,7 +109,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
                 case "first":
                     break;
                 case "second":
-                    mono_log_debug("MONO_WASM: stop requested");
+                    mono_log_debug("stop requested");
                     break;
                 default:
                     assertNever(result);
@@ -133,12 +133,12 @@ class DiagnosticServerImpl implements DiagnosticServer {
     async advertiseAndWaitForClient(): Promise<void> {
         try {
             const connNum = this.openCount++;
-            mono_log_debug("MONO_WASM: opening websocket and sending ADVR_V1", connNum);
+            mono_log_debug("opening websocket and sending ADVR_V1", connNum);
             const ws = await this.openSocket();
             const p = addOneShotProtocolCommandEventListener(createProtocolSocket(ws));
             this.sendAdvertise(ws);
             const message = await p;
-            mono_log_debug("MONO_WASM: received advertising response: ", message, connNum);
+            mono_log_debug("received advertising response: ", message, connNum);
             queueMicrotask(() => this.parseAndDispatchMessage(ws, connNum, message));
         } finally {
             // if there were errors, resume the runtime anyway
@@ -150,7 +150,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         try {
             const cmd = this.parseCommand(message, connNum);
             if (cmd === null) {
-                mono_log_error("MONO_WASM: unexpected message from client", message, connNum);
+                mono_log_error("unexpected message from client", message, connNum);
                 return;
             } else if (isEventPipeCommand(cmd)) {
                 await this.dispatchEventPipeCommand(ws, cmd);
@@ -177,13 +177,13 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     parseCommand(message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
-        mono_log_debug("MONO_WASM: parsing byte command: ", message.data, connNum);
+        mono_log_debug("parsing byte command: ", message.data, connNum);
         const result = parseProtocolCommand(message.data);
-        mono_log_debug("MONO_WASM: parsed byte command: ", result, connNum);
+        mono_log_debug("parsed byte command: ", result, connNum);
         if (result.success) {
             return result.result;
         } else {
-            mono_log_warn("MONO_WASM: failed to parse command: ", result.error, connNum);
+            mono_log_warn("failed to parse command: ", result.error, connNum);
             return null;
         }
     }
@@ -208,7 +208,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
                 this.attachToRuntime();
                 break;
             default:
-                mono_log_warn("MONO_WASM: Unknown control command: ", <any>cmd);
+                mono_log_warn("Unknown control command: ", <any>cmd);
                 break;
         }
     }
@@ -220,7 +220,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         } else if (isEventPipeCommandStopTracing(cmd)) {
             await this.stopEventPipe(ws, cmd.sessionID);
         } else {
-            mono_log_warn("MONO_WASM: unknown EventPipe command: ", cmd);
+            mono_log_warn("unknown EventPipe command: ", cmd);
         }
     }
 
@@ -230,7 +230,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     }
 
     async stopEventPipe(ws: WebSocket | MockRemoteSocket, sessionID: EventPipeSessionIDImpl): Promise<void> {
-        mono_log_debug("MONO_WASM: stopEventPipe", sessionID);
+        mono_log_debug("stopEventPipe", sessionID);
         cwraps.mono_wasm_event_pipe_session_disable(sessionID);
         // we might send OK before the session is actually stopped since the websocket is async
         // but the client end should be robust to that.
@@ -246,7 +246,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         sessionIDbuf[3] = (session.sessionID >> 24) & 0xFF;
         // sessionIDbuf[4..7] is 0 because all our session IDs are 32-bit
         this.postClientReplyOK(ws, sessionIDbuf);
-        mono_log_debug("MONO_WASM: created session, now streaming: ", session);
+        mono_log_debug("created session, now streaming: ", session);
         cwraps.mono_wasm_event_pipe_session_start_streaming(session.sessionID);
     }
 
@@ -255,7 +255,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
         if (isProcessCommandResumeRuntime(cmd)) {
             this.processResumeRuntime(ws);
         } else {
-            mono_log_warn("MONO_WASM: unknown Process command", cmd);
+            mono_log_warn("unknown Process command", cmd);
         }
     }
 
@@ -266,7 +266,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     resumeRuntime(): void {
         if (!this.runtimeResumed) {
-            mono_log_debug("MONO_WASM: resuming runtime startup");
+            mono_log_debug("resuming runtime startup");
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
             this.runtimeResumed = true;
         }

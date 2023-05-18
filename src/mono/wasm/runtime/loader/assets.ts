@@ -71,7 +71,7 @@ export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInterna
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    mono_log_debug("MONO_WASM: mono_download_assets");
+    mono_log_debug("mono_download_assets");
     loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
     try {
@@ -181,7 +181,7 @@ export async function mono_download_assets(): Promise<void> {
         Promise.all(promises_of_asset_instantiation).then(() => {
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
         }).catch(e => {
-            loaderHelpers.err("MONO_WASM: Error in mono_download_assets: " + e);
+            loaderHelpers.err("Error in mono_download_assets: " + e);
             loaderHelpers.abort_startup(e, true);
         });
         // OPTIMIZATION explained:
@@ -189,7 +189,7 @@ export async function mono_download_assets(): Promise<void> {
         // spreading in time
         // rather than to block all downloads after onRuntimeInitialized or block onRuntimeInitialized after all downloads are done. That would create allocation burst.
     } catch (e: any) {
-        loaderHelpers.err("MONO_WASM: Error in mono_download_assets: " + e);
+        loaderHelpers.err("Error in mono_download_assets: " + e);
         throw e;
     }
 }
@@ -245,7 +245,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     try {
         ++parallel_count;
         if (parallel_count == loaderHelpers.maxParallelDownloads) {
-            mono_log_debug("MONO_WASM: Throttling further parallel downloads");
+            mono_log_debug("Throttling further parallel downloads");
             throttlingPromise = createPromiseController<void>();
         }
 
@@ -264,7 +264,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     finally {
         --parallel_count;
         if (throttlingPromise && parallel_count == loaderHelpers.maxParallelDownloads - 1) {
-            mono_log_debug("MONO_WASM: Resuming more parallel downloads");
+            mono_log_debug("Resuming more parallel downloads");
             const old_throttling = throttlingPromise;
             throttlingPromise = undefined;
             old_throttling.promise_control.resolve();
@@ -306,9 +306,9 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
         if (asset.name === attemptUrl) {
-            mono_log_debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
+            mono_log_debug(`Attempting to download '${attemptUrl}'`);
         } else {
-            mono_log_debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
+            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             asset.resolvedUrl = attemptUrl;
@@ -335,11 +335,11 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
     const isOkToFail = asset.isOptional || (asset.name.match(/\.pdb$/) && loaderHelpers.config.ignorePdbLoadErrors);
     mono_assert(response, () => `Response undefined ${asset.name}`);
     if (!isOkToFail) {
-        const err: any = new Error(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        const err: any = new Error(`download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }

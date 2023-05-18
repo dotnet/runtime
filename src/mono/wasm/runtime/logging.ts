@@ -7,20 +7,20 @@ import { CharPtr, VoidPtr } from "./types/emscripten";
 
 export function mono_log_debug(msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug("MONO_WASM: " + msg, ...data);
+        console.debug("" + msg, ...data);
     }
 }
 
 export function mono_log_info(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info("" + msg, ...data);
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
-    console.warn("MONO_WASM: " + msg, ...data);
+    console.warn("" + msg, ...data);
 }
 
 export function mono_log_error(msg: string, ...data: any) {
-    console.error("MONO_WASM: " + msg, ...data);
+    console.error("" + msg, ...data);
 }
 
 export const wasm_func_map = new Map<number, string>();
@@ -73,7 +73,7 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
+        console.debug(`failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -136,5 +136,5 @@ export function parseSymbolMapFile(text: string) {
         wasm_func_map.set(Number(parts[0]), parts[1]);
     });
 
-    mono_log_debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }

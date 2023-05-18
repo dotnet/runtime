@@ -25,12 +25,12 @@ let workerMonoConfigReceived = false;
 // called when the main thread sends us the mono config
 function onMonoConfigReceived(config: MonoConfigInternal): void {
     if (workerMonoConfigReceived) {
-        mono_log_debug("MONO_WASM: mono config already received");
+        mono_log_debug("mono config already received");
         return;
     }
 
     deep_merge_config(loaderHelpers.config, config);
-    mono_log_debug("MONO_WASM: mono config received");
+    mono_log_debug("mono config received");
     workerMonoConfigReceived = true;
     loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
 

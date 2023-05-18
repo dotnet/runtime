@@ -29,8 +29,8 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     }
 
     if (BuildConfiguration === "Debug") {
-        mono_log_info(`MONO_WASM: starting script ${loaderHelpers.scriptUrl}`);
-        mono_log_info(`MONO_WASM: starting in ${loaderHelpers.scriptDirectory}`);
+        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
+        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
     // prefer fetch_like over global fetch for assets

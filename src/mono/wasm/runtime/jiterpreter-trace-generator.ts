@@ -522,7 +522,7 @@ export function generateWasmBody(
                 const offset = getArgU16(ip, 2),
                     flag = isAddressTaken(builder, offset);
                 if (!flag)
-                    mono_log_error(`MONO_WASM: ${traceName}: Expected local ${offset} to have address taken flag`);
+                    mono_log_error(`${traceName}: Expected local ${offset} to have address taken flag`);
                 append_ldloca(builder, offset);
                 append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
                 break;
@@ -3013,7 +3013,7 @@ function getIsWasmSimdSupported(): boolean {
         new WebAssembly.Module(bytes);
         wasmSimdSupported = true;
     } catch (exc) {
-        mono_log_info("MONO_WASM: Disabling WASM SIMD support due to JIT failure", exc);
+        mono_log_info("Disabling WASM SIMD support due to JIT failure", exc);
         wasmSimdSupported = false;
     }
 
@@ -3127,7 +3127,7 @@ function emit_simd(
             return true;
         }
         default:
-            mono_log_info(`MONO_WASM: jiterpreter emit_simd failed for ${opname}`);
+            mono_log_info(`jiterpreter emit_simd failed for ${opname}`);
             return false;
     }
 }

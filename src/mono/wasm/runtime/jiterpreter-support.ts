@@ -1654,7 +1654,7 @@ export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
 export function recordFailure(): void {
     counters.failures++;
     if (counters.failures >= maxFailures) {
-        mono_log_info(`MONO_WASM: Disabling jiterpreter after ${counters.failures} failures`);
+        mono_log_info(`Disabling jiterpreter after ${counters.failures} failures`);
         applyOptions(<any>{
             enableTraces: false,
             enableInterpEntry: false,

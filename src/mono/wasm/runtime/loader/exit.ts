@@ -5,7 +5,7 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL
 import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
 
 export function abort_startup(reason: any, should_exit: boolean): void {
-    mono_log_debug("MONO_WASM: abort_startup");
+    mono_log_debug("abort_startup");
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);

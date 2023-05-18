@@ -6,20 +6,20 @@ import { loaderHelpers } from "./globals";
 
 export function mono_log_debug(msg: string, ...data: any) {
     if (loaderHelpers.diagnosticTracing) {
-        console.debug("MONO_WASM: " + msg, ...data);
+        console.debug("" + msg, ...data);
     }
 }
 
 export function mono_log_info(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info("" + msg, ...data);
 }
 
 export function mono_log_info_no_prefix(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info("" + msg, ...data);
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
-    console.warn("MONO_WASM: " + msg, ...data);
+    console.warn("" + msg, ...data);
 }
 
 export function mono_log_error(msg: string, ...data: any) {

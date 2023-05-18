@@ -309,7 +309,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
-        mono_log_warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -342,7 +342,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
-        mono_log_warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -356,7 +356,7 @@ function _maybe_produce_signature_warning(converter: Converter) {
     if (converter.has_warned_about_signature)
         return;
 
-    mono_log_warn("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
+    mono_log_warn("Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
     converter.has_warned_about_signature = true;
 }
 

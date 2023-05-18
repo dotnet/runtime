@@ -54,7 +54,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
         }
     };
     if (commands_received.has(id))
-        mono_log_warn(`MONO_WASM: Adding an id (${id}) that already exists in commands_received`);
+        mono_log_warn(`Adding an id (${id}) that already exists in commands_received`);
     commands_received.set(id, buffer_obj);
 }
 
@@ -350,7 +350,7 @@ export function mono_wasm_debugger_log(level: number, message_ptr: CharPtr): voi
 
     if (BuildConfiguration === "Debug") {
         // eslint-disable-next-line no-console
-        console.debug(`MONO_WASM: Debugger.Debug: ${message}`);
+        console.debug(`Debugger.Debug: ${message}`);
     }
 }
 

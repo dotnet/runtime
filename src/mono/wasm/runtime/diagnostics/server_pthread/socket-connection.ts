@@ -39,7 +39,7 @@ export class EventPipeSocketConnection {
     }
 
     close(): void {
-        mono_log_debug("MONO_WASM: EventPipe session stream closing websocket");
+        mono_log_debug("EventPipe session stream closing websocket");
         switch (this._state) {
             case ListenerState.Error:
                 return;
@@ -69,7 +69,7 @@ export class EventPipeSocketConnection {
         switch (this._state) {
             case ListenerState.Sending:
                 /* unexpected message */
-                mono_log_warn("MONO_WASM: EventPipe session stream received unexpected message from websocket", event);
+                mono_log_warn("EventPipe session stream received unexpected message from websocket", event);
                 // TODO notify runtime that the connection had an error
                 this._state = ListenerState.Error;
                 break;
@@ -100,7 +100,7 @@ export class EventPipeSocketConnection {
     }
 
     private _onError(event: Event) {
-        mono_log_debug("MONO_WASM: EventPipe session stream websocket error", event);
+        mono_log_debug("EventPipe session stream websocket error", event);
         this._state = ListenerState.Error;
         this.stream.close();
         // TODO: notify runtime that connection had an error

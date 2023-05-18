@@ -287,7 +287,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
 
     // If the argument count for the wasm function doesn't match the signature, fall back to cwrap
     if (fce && argTypes && (fce.length !== argTypes.length)) {
-        mono_log_error(`MONO_WASM: argument count mismatch for cwrap ${name}`);
+        mono_log_error(`argument count mismatch for cwrap ${name}`);
         fce = undefined;
     }
 
@@ -300,7 +300,7 @@ function cwrap(name: string, returnType: string | null, argTypes: string[] | und
         if (throwOnError)
             throw new Error(msg);
         else
-            mono_log_error("MONO_WASM: " + msg);
+            mono_log_error("" + msg);
     }
     return fce;
 }

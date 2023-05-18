@@ -825,7 +825,7 @@ function generate_wasm(
         counters.bytesGenerated += buffer.length;
 
         if (buffer.length >= maxModuleSize) {
-            mono_log_warn(`MONO_WASM: Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
+            mono_log_warn(`Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
 
@@ -866,7 +866,7 @@ function generate_wasm(
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        mono_log_error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
+        mono_log_error(`${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {

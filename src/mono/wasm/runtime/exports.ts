@@ -77,7 +77,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-                mono_log_warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
+                mono_log_warn("Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
                 return mono_bind_static_method(fqn, signature);
             };
         }
@@ -93,7 +93,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
                     if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
-                        mono_log_warn(`MONO_WASM: global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        mono_log_warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
                         value = provider();
                     }
                     return value;
