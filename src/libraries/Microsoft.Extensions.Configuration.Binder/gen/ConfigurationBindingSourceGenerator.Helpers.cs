@@ -11,7 +11,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         internal sealed class Helpers
         {
             public static DiagnosticDescriptor TypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.TypeNotSupported));
-            public static DiagnosticDescriptor AbstractOrInterfaceNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.AbstractOrInterfaceNotSupported));
             public static DiagnosticDescriptor NeedPublicParameterlessConstructor { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.NeedPublicParameterlessConstructor));
             public static DiagnosticDescriptor CollectionNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.CollectionNotSupported));
             public static DiagnosticDescriptor DictionaryKeyNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.DictionaryKeyNotSupported));

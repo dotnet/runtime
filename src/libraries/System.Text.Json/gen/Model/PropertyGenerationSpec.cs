@@ -23,7 +23,7 @@ namespace System.Text.Json.SourceGeneration
     /// When adding new members to the type, please ensure that these properties
     /// are satisfied otherwise we risk breaking incremental caching in the source generator!
     /// </remarks>
-    [DebuggerDisplay("Name={Name}, Type={TypeMetadata}")]
+    [DebuggerDisplay("Name={MemberName}, Type={PropertyType.Name}")]
     public sealed record PropertyGenerationSpec
     {
         /// <summary>
@@ -92,10 +92,6 @@ namespace System.Text.Json.SourceGeneration
         /// setter that can be referenced in generated source code.
         /// </summary>
         public required bool CanUseSetter { get; init; }
-
-        public required bool GetterIsVirtual { get; init; }
-
-        public required bool SetterIsVirtual { get; init; }
 
         /// <summary>
         /// The <see cref="JsonIgnoreCondition"/> for the property.

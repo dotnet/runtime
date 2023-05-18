@@ -8,6 +8,11 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        private void JsInit(string interopCultureName)
+        {
+            _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
+        }
+
         private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -40,16 +45,15 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertComparisonSupported(options, cultureName);
 
-            string exceptionMessage;
             int cmpResult;
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                cmpResult = Interop.JsGlobalization.CompareString(out exceptionMessage, cultureName, pString1, string1.Length, pString2, string2.Length, options);
-            }
+                cmpResult = Interop.JsGlobalization.CompareString(out string exceptionMessage, cultureName, pString1, string1.Length, pString2, string2.Length, options);
 
-            if (!string.IsNullOrEmpty(exceptionMessage))
-                throw new Exception(exceptionMessage);
+                if (!string.IsNullOrEmpty(exceptionMessage))
+                    throw new Exception(exceptionMessage);
+            }
 
             return cmpResult;
         }
@@ -61,16 +65,16 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            string exceptionMessage;
             bool result;
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
-                result = Interop.JsGlobalization.StartsWith(out exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options);
+                result = Interop.JsGlobalization.StartsWith(out string exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options);
+
+                if (!string.IsNullOrEmpty(exceptionMessage))
+                    throw new Exception(exceptionMessage);
             }
 
-            if (!string.IsNullOrEmpty(exceptionMessage))
-                throw new Exception(exceptionMessage);
 
             return result;
         }
@@ -82,18 +86,46 @@ namespace System.Globalization
             string cultureName = m_name;
             AssertIndexingSupported(options, cultureName);
 
-            string exceptionMessage;
             bool result;
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pPrefix = &MemoryMarshal.GetReference(prefix))
             {
-                result = Interop.JsGlobalization.EndsWith(out exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options);
+                result = Interop.JsGlobalization.EndsWith(out string exceptionMessage, cultureName, pSource, source.Length, pPrefix, prefix.Length, options);
+
+                if (!string.IsNullOrEmpty(exceptionMessage))
+                    throw new Exception(exceptionMessage);
             }
 
-            if (!string.IsNullOrEmpty(exceptionMessage))
-                throw new Exception(exceptionMessage);
-
             return result;
+        }
+
+        private unsafe int JsIndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning)
+        {
+            AssertHybridOnWasm(options);
+            Debug.Assert(!target.IsEmpty);
+            string cultureName = m_name;
+            AssertIndexingSupported(options, cultureName);
+
+            int idx;
+            if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options))
+            {
+                idx = (options & CompareOptions.IgnoreCase) != 0 ?
+                    IndexOfOrdinalIgnoreCaseHelper(source, target, options, matchLengthPtr, fromBeginning) :
+                    IndexOfOrdinalHelper(source, target, options, matchLengthPtr, fromBeginning);
+            }
+            else
+            {
+                fixed (char* pSource = &MemoryMarshal.GetReference(source))
+                fixed (char* pTarget = &MemoryMarshal.GetReference(target))
+                {
+                    idx = Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
+
+                    if (!string.IsNullOrEmpty(exceptionMessage))
+                        throw new Exception(exceptionMessage);
+                }
+            }
+
+            return idx;
         }
 
         private static bool IndexingOptionsNotSupported(CompareOptions options) =>

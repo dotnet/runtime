@@ -49,6 +49,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        public required bool IsValueTuple { get; init; }
+
         public required JsonNumberHandling? NumberHandling { get; init; }
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
         public required JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; init; }
@@ -85,6 +87,6 @@ namespace System.Text.Json.SourceGeneration
         public required bool HasPropertyFactoryConverters { get; init; }
         public required bool HasTypeFactoryConverter { get; init; }
 
-        public required string? ImmutableCollectionBuilderName { get; init; }
+        public required string? ImmutableCollectionFactoryMethod { get; init; }
     }
 }

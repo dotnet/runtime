@@ -258,6 +258,20 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
     return 0xffff;
 }
 
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+    return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+    return DS_IPC_E_NOTSUPPORTED;
+}
+
 /*
 * DiagnosticServer.
 */

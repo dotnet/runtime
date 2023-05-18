@@ -1010,7 +1010,26 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
-        noway_assert(GenTree::OperIsCommutative(oper));
+
+#ifdef DEBUG
+        unsigned lclNum1 = (unsigned)-1;
+        unsigned lclNum2 = (unsigned)-2;
+
+        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+
+        if (op1Skip->OperIsLocalRead())
+        {
+            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
+        }
+        if (op2Skip->OperIsLocalRead())
+        {
+            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
+        }
+
+        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
+#endif
+
         dst = op2;
         src = op1;
     }
@@ -5405,6 +5424,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                     switch (intrinsicId)
                     {
+                        case NI_Vector128_ToScalar:
+                        case NI_Vector256_ToScalar:
+                        case NI_Vector512_ToScalar:
                         case NI_SSE2_ConvertToInt32:
                         case NI_SSE2_ConvertToUInt32:
                         case NI_SSE2_X64_ConvertToInt64:

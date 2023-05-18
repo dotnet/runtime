@@ -3817,7 +3817,6 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void       impPushNullObjRefOnStack();
     StackEntry impPopStack();
     void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
@@ -4309,7 +4308,6 @@ private:
     BYTE impSpillCliqueGetMember(SpillCliqueDir predOrSucc, BasicBlock* blk);
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
-    void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
@@ -8589,11 +8587,6 @@ private:
         return false;
     }
 
-    bool isSIMDClass(typeInfo* pTypeInfo)
-    {
-        return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-    }
-
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8607,23 +8600,9 @@ private:
         return false;
     }
 
-    bool isHWSIMDClass(typeInfo* pTypeInfo)
-    {
-#ifdef FEATURE_HW_INTRINSICS
-        return pTypeInfo->IsStruct() && isHWSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-#else
-        return false;
-#endif
-    }
-
     bool isSIMDorHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
-    }
-
-    bool isSIMDorHWSIMDClass(typeInfo* pTypeInfo)
-    {
-        return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
 
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
@@ -10476,7 +10455,6 @@ public:
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    bool verIsByRefLike(const typeInfo& ti);
 
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,

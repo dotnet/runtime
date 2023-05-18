@@ -217,7 +217,6 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
     }
 
     const js_handle = get_arg_js_handle(arg);
-    // console.log("_marshal_task_to_js A" + js_handle);
     if (js_handle == JSHandleNull) {
         // this is already resolved void
         return new Promise((resolve) => resolve(undefined));
@@ -229,7 +228,6 @@ export function marshal_task_to_js(arg: JSMarshalerArgument, _?: MarshalerType, 
 
     const orig_resolve = promise_control.resolve;
     promise_control.resolve = (argInner: JSMarshalerArgument) => {
-        // console.log("_marshal_task_to_js R" + js_handle);
         const type = get_arg_type(argInner);
         if (type === MarshalerType.None) {
             orig_resolve(null);

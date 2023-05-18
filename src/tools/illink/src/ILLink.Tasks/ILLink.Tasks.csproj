@@ -28,7 +28,6 @@
     <!-- Note: 'build/Microsoft.NET.ILLink.targets' should not match the package name, because we don't want the targets
          to be imported by nuget. The SDK will import them in the right order. -->
     <None Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)" />
-    <None Include="build/6.0_suppressions.xml" Pack="true" PackagePath="build/" />
     <None Include="..\ILLink.RoslynAnalyzer\Microsoft.NET.ILLink.Analyzers.props" Pack="true" PackagePath="build/" />
   </ItemGroup>
 

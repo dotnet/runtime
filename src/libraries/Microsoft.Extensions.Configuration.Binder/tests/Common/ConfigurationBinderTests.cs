@@ -941,8 +941,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void ExceptionWhenTryingToBindToConstructorWithMissingConfig()
         {
             var input = new Dictionary<string, string>
             {
@@ -961,8 +961,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void ExceptionWhenTryingToBindConfigToClassWhereNoMatchingParameterIsFoundInConstructor()
         {
             var input = new Dictionary<string, string>
             {
@@ -982,8 +982,8 @@ namespace Microsoft.Extensions
                 exception.Message);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
-        public void BindsToClassConstructorParametersWithDefaultValues() // Need support for parameterized ctors.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need support for parameterized ctors.
+        public void BindsToClassConstructorParametersWithDefaultValues()
         {
             var input = new Dictionary<string, string>
             {
@@ -1520,7 +1520,7 @@ namespace Microsoft.Extensions
             Assert.True(bound.NullableNestedStruct.Value.DeeplyNested.Boolean);
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need property selection in sync with reflection.
         public void CanBindVirtualProperties()
         {
             ConfigurationBuilder configurationBuilder = new();
@@ -1592,7 +1592,7 @@ namespace Microsoft.Extensions
 #endif
         }
 
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))] // Need collection support.
+        [Fact]
         public void EnsureCallingThePropertySetter()
         {
             var json = @"{
@@ -1616,7 +1616,13 @@ namespace Microsoft.Extensions
             Assert.Equal(2, options.ParsedBlacklist.Count); // should be initialized when calling the options.Blacklist setter.
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
-            Assert.Equal(2, options.OtherCode); // doesn't exist in configuration. the setter sets default value '2'
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // Setter not called if there's no matching configuration value.
+            Assert.Equal(0, options.OtherCode);
+#else
+            // doesn't exist in configuration. the setter sets default value '2'
+            Assert.Equal(2, options.OtherCode);
+#endif
         }
 
         [Fact]

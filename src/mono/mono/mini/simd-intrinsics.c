@@ -3589,8 +3589,8 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "AdvSimd", MONO_CPU_ARM64_NEON, advsimd_methods, sizeof (advsimd_methods) },
 	{ "Aes", MONO_CPU_ARM64_CRYPTO, crypto_aes_methods, sizeof (crypto_aes_methods) },
 	{ "ArmBase", MONO_CPU_ARM64_BASE, armbase_methods, sizeof (armbase_methods), TRUE },
-	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods) },
-	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods) },
+	{ "Crc32", MONO_CPU_ARM64_CRC, crc32_methods, sizeof (crc32_methods), TRUE },
+	{ "Dp", MONO_CPU_ARM64_DP, dp_methods, sizeof (dp_methods), TRUE },
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
@@ -3976,8 +3976,24 @@ emit_arm64_intrinsics (
 			MonoClass *quad_klass = mono_class_from_mono_type_internal (fsig->params [2]);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UDOT : INTRINS_AARCH64_ADV_SIMD_SDOT;
-			MonoInst *quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
-			quad->data.op [1].klass = quad_klass;
+
+			MonoInst *quad;
+			if (!COMPILE_LLVM (cfg)) {
+				if (mono_class_value_size (arg_klass, NULL) != 16 || mono_class_value_size (quad_klass, NULL) != 16)
+					return NULL;
+				// FIXME: The c# api has ConstantExpected(Max = (byte)(15)), but the hw only supports
+				// selecting one of the 4 32 bit words
+				if (args [3]->opcode != OP_ICONST || args [3]->inst_c0 < 0 || args [3]->inst_c0 > 3) {
+					// FIXME: Throw the right exception ?
+					mono_emit_jit_icall (cfg, mono_throw_platform_not_supported, NULL);
+					return NULL;
+				}
+				quad = emit_simd_ins (cfg, klass, OP_ARM64_BROADCAST_ELEM, args [2]->dreg, -1);
+				quad->inst_c0 = args [3]->inst_c0;
+			} else {
+				quad = emit_simd_ins (cfg, arg_klass, OP_ARM64_SELECT_QUAD, args [2]->dreg, args [3]->dreg);
+				quad->data.op [1].klass = quad_klass;
+			}
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, OP_XOP_OVR_X_X_X_X, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = quad->dreg;
 			ret->inst_c0 = iid;
