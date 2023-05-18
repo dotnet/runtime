@@ -246,67 +246,23 @@ There are some behaviour changes. Below are examples of such cases.
 |   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreCase     |   0  |  1  |    |
 |   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   0  |  1  |    |
 
-- `IgnoreNoneSpace`:
+- `IgnoreNonSpace`:
 
-`CompareOptions.IgnoreNoneSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch`
+`CompareOptions.IgnoreNonSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch`
 
 There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
-|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreNoneSpace     |   0  |  1  |    |
-|   `\u306F` は |   `\u3070` ば  |     IgnoreNoneSpace     |   -1  |  0  |   |
-|   `\u306F` は |   `\u3071` ぱ  |     IgnoreNoneSpace     |   -1  |  0  |    |
-|   `\u30CF` ハ |   `\u30D0` バ  |     IgnoreNoneSpace     |   -1  |  0  |   |
-|   `\u30CF` ハ |   `\u30D1` パ  |     IgnoreNoneSpace     |   -1  |  0  |   |
+|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreNonSpace     |   0  |  1  |    |
+|   `\u306F` は |   `\u3070` ば  |     IgnoreNonSpace     |   -1  |  0  |   |
+|   `\u306F` は |   `\u3071` ぱ  |     IgnoreNonSpace     |   -1  |  0  |    |
+|   `\u30CF` ハ |   `\u30D0` バ  |     IgnoreNonSpace     |   -1  |  0  |   |
+|   `\u30CF` ハ |   `\u30D1` パ  |     IgnoreNonSpace     |   -1  |  0  |   |
 
 
-- List of all `CompareOptions` combinations always throwing `PlatformNotSupportedException`:
+- All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
 
 `IgnoreSymbols`,
 
-`IgnoreSymbols | IgnoreCase`,
-
-`IgnoreSymbols | IgnoreNonSpace`,
-
-`IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
-
 `IgnoreKanaType`,
-
-`IgnoreKanaType | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreNonSpace`,
-
-`IgnoreKanaType | IgnoreNonSpace | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreSymbols`,
-
-`IgnoreKanaType | IgnoreCase | IgnoreSymbols`,
-
-`IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace`,
-
-`IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
-
-`IgnoreWidth | IgnoreSymbols`,
-
-`IgnoreWidth | IgnoreSymbols | IgnoreCase`,
-
-`IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`,
-
-`IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreWidth`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreNonSpace`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreNonSpace | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreSymbols`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreCase`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace`,
-
-`IgnoreKanaType | IgnoreWidth | IgnoreSymbols | IgnoreNonSpace | IgnoreCase`,

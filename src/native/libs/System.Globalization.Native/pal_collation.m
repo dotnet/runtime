@@ -15,17 +15,17 @@ typedef enum
     None = 0,
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
-    IgnoreWidth = 16,
-    StringSort = 536870912,
-    
+    IgnoreWidth = 16,    
 } CompareOptions;
+
+#define CompareOptionsMask 0x1f
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
+    comparisonOptions &= CompareOptionsMask;
     switch(comparisonOptions)
     {
         case None:
-        case StringSort:
             return NSLiteralSearch;
         case IgnoreCase:
             return NSCaseInsensitiveSearch;
