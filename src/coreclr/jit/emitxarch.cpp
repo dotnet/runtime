@@ -1273,19 +1273,15 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
 // AddEvexPrefix: set Evex.b bit if EvexbContext is set in instruction descritor.
 //
 // Arguments:
-//    id -- instruction descriptor
 //    code -- opcode bits.
 //
 // Return Value:
 //    encoded code with Evex.b set if needed.
 //
-emitter::code_t emitter::AddEvexbBitIfNeeded(const instrDesc* id, code_t code)
+emitter::code_t emitter::AddEvexbBit(code_t code)
 {
-    if (id->idIsEvexbContext())
-    {
-        hasEvexPrefix(code);
-        code |= EVEX_B_BIT;
-    }
+    assert(hasEvexPrefix(code));
+    code |= EVEX_B_BIT;
     return code;
 }
 
@@ -8177,6 +8173,7 @@ void emitter::emitIns_SIMD_R_R_A(
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A(ins, attr, targetReg, indir);
     }
@@ -8208,6 +8205,7 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
     }
@@ -8270,6 +8268,7 @@ void emitter::emitIns_SIMD_R_R_S(
     }
     else
     {
+        assert(instOptions == INS_OPTS_NONE);
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S(ins, attr, targetReg, varx, offs);
     }
@@ -16710,7 +16709,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             else
             {
                 code    = AddSimdPrefixIfNeeded(id, code, size);
-                code    = AddEvexbBitIfNeeded(id, code);
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
@@ -16954,7 +16952,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEvexbBitIfNeeded(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -17197,7 +17194,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEvexbBitIfNeeded(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 

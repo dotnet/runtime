@@ -294,7 +294,7 @@ bool hasEvexPrefix(code_t code)
     return (code & EVEX_PREFIX_MASK) == EVEX_PREFIX_CODE;
 }
 code_t AddEvexPrefix(instruction ins, code_t code, emitAttr attr);
-code_t AddEvexbBitIfNeeded(const instrDesc* id, code_t code);
+code_t AddEvexbBit(code_t code);
 
 //------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix if required.
@@ -315,6 +315,10 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
     if (TakesEvexPrefix(id))
     {
         code = AddEvexPrefix(ins, code, size);
+        if (id->idIsEvexbContext())
+        {
+            code = AddEvexbBit(code);
+        }
     }
     else if (TakesVexPrefix(ins))
     {

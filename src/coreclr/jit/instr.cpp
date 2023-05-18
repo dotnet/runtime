@@ -810,7 +810,9 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(hwintrinsic->isContained());
                     assert(hwintrinsic->OperIsMemoryLoad());
                     assert(hwintrinsic->GetOperandCount() == 1);
+                    assert(varTypeIsFloating(simdBaseType));
                     GenTree* broadcastScalar = hwintrinsic->Op(1);
+                    assert(broadcastScalar->isContained());
                     if (broadcastScalar->OperIs(GT_LCL_ADDR))
                     {
                         addr = hwintrinsic->Op(1);
@@ -1185,6 +1187,10 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 {
+    if(!GetEmitter()->UseEvexEncoding())
+    {   
+        return false;
+    }
     // need to check if the datatype is EB compatible, say 32-, 64-bit.
     insFlags flags                    = instInfo[ins];
     bool     IsEmbBroadcastCompatible = (flags & INS_Flags_EmbeddedBroadcastSupported) != 0;
