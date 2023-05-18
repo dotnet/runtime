@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Logging.Test
                 return new TestScopeHandler<TState>(nextHandler, _handleLogEntryCallback);
             }
 
-            public bool IsEnabled(LogLevel logLevel) => true;
+            public bool IsEnabled(LogLevel logLevel) => _nextProcessor.IsEnabled(logLevel);
         }
 
         private sealed class TestLogEntryHandler<TState, TEnrichmentProperties> : LogEntryHandler<TState, TEnrichmentProperties>
