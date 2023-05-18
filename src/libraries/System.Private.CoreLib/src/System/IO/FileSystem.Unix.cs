@@ -43,10 +43,11 @@ namespace System.IO
                 return;
             }
 
-            // Open the dst file handle.
+            // Open the dst file handle, and copy the file.
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: filePermissions,
-                CreateOpenException);
+                                            FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, filePermissions,
+                                            CreateOpenException);
+            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
 
             // Exception handler for SafeFileHandle.Open failing.
             static Exception? CreateOpenException(Interop.ErrorInfo error, Interop.Sys.OpenFlags flags, string path)
@@ -59,9 +60,6 @@ namespace System.IO
 
                 return null; // Let SafeFileHandle create the exception for this error.
             }
-
-            // Copy the file.
-            Interop.CheckIo(Interop.Sys.CopyFile(src, dst, srcFileStatus.Size));
         }
 
 #pragma warning disable IDE0060
