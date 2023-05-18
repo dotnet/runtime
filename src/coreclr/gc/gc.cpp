@@ -24609,7 +24609,7 @@ void gc_heap::recommission_heap()
 
     freeable_uoh_segment                = nullptr;
 
-    memset (gen2_alloc_list, 0, sizeof(gen2_alloc_list[0])*(NUM_GEN2_ALIST - 1));
+    memset ((void *)gen2_alloc_list, 0, sizeof(gen2_alloc_list));
 
 #ifdef BACKGROUND_GC
     // keep these fields
@@ -24635,8 +24635,8 @@ void gc_heap::recommission_heap()
 
     gen0_bricks_cleared                 = FALSE;
 
-    memset (loh_alloc_list, 0, sizeof(loh_alloc_list));
-    memset (poh_alloc_list, 0, sizeof(poh_alloc_list));
+    memset ((void *)loh_alloc_list, 0, sizeof(loh_alloc_list));
+    memset ((void *)poh_alloc_list, 0, sizeof(poh_alloc_list));
 
     alloc_allocated                     = 0;
     ephemeral_heap_segment              = nullptr;
@@ -24788,7 +24788,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
 
     // if we want to increase the number of heaps, we have to make sure we can give
     // each heap a region for each generation. If we cannot do that, we have to give up
-    size_t region_count_in_gen[total_generation_count];
+    ptrdiff_t region_count_in_gen[total_generation_count];
     for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
     {
         region_count_in_gen[gen_idx] = 0;
