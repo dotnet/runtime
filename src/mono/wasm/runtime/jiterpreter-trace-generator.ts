@@ -3245,6 +3245,40 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
                 builder.appendU8(WasmOpcode.i32_eqz);
             append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
             return true;
+        case SimdIntrinsic3.V128_I2_SHUFFLE: {
+            builder.local("pLocals");
+            // Load vec
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            // Load indices (in chars)
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            // Load a zero vector (narrow takes two vectors)
+            builder.i52_const(0);
+            builder.appendSimd(WasmSimdOpcode.i64x2_splat);
+            // i16{lane0 ... lane7} -> i8{lane0 ... lane7, 0 ...}
+            builder.appendSimd(WasmSimdOpcode.i8x16_narrow_i16x8_u);
+            // i8{0, 1, 2, 3 ...} -> i8{0, 0, 1, 1, 2, 2, 3, 3 ...}
+            builder.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < 8; i++) {
+                builder.appendU8(i);
+                builder.appendU8(i);
+            }
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+            // multiply indices by 2 to scale from char indices to byte indices
+            builder.i32_const(1);
+            builder.appendSimd(WasmSimdOpcode.i8x16_shl);
+            // now add 1 to the secondary lane of each char
+            builder.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < 8; i++) {
+                builder.appendU8(0);
+                builder.appendU8(1);
+            }
+            // we can do a bitwise or since we know we previously multiplied all the lanes by 2
+            builder.appendSimd(WasmSimdOpcode.v128_or);
+            // we now have two vectors on the stack, the values and the byte indices
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+            append_simd_store(builder, ip);
+            return true;
+        }
         default:
             return false;
     }
