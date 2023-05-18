@@ -200,6 +200,19 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- RISC-V 64 All OS -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'riscv64' or '$(AltJitArch)' == 'riscv64') and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/lclfldrem_cs_ro/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84834#issuecomment-1544102618</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/oldtests/lclfldrem_cs_do/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84834#issuecomment-1544102618</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/HugeField2/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84834#issuecomment-1544102618</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- Arm64 All OS -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm64' or '$(AltJitArch)' == 'arm64') and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
