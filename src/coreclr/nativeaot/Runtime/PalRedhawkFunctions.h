@@ -79,12 +79,21 @@ inline HANDLE PalGetCurrentThread()
     return GetCurrentThread();
 }
 
+#ifdef UNICODE
+_Success_(return != 0 && return < nSize)
+extern "C" uint32_t __stdcall GetEnvironmentVariableW(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize);
+inline uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
+{
+    return GetEnvironmentVariableW(lpName, lpBuffer, nSize);
+}
+#else
 _Success_(return != 0 && return < nSize)
 extern "C" uint32_t __stdcall GetEnvironmentVariableA(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize);
-inline uint32_t PalGetEnvironmentVariableA(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize)
+inline uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize)
 {
     return GetEnvironmentVariableA(lpName, lpBuffer, nSize);
 }
+#endif
 
 extern "C" void * __stdcall GetProcAddress(HANDLE, const char *);
 inline void * PalGetProcAddress(HANDLE arg1, const char * arg2)
