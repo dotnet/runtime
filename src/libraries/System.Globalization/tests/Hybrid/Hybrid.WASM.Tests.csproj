@@ -6,11 +6,13 @@
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="..\System\Globalization\TextInfoTests.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.Compare.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.cs" />
-    <Compile Include="..\CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
+    <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
   </ItemGroup>
 </Project>

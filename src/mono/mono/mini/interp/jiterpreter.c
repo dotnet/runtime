@@ -1169,6 +1169,7 @@ mono_jiterp_trace_transfer (
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS 10
 #define JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT 11
 #define JITERP_MEMBER_CLAUSE_DATA_OFFSETS 12
+#define JITERP_MEMBER_PARAMS_COUNT 13
 
 // we use these helpers at JIT time to figure out where to do memory loads and stores
 EMSCRIPTEN_KEEPALIVE size_t
@@ -1196,6 +1197,8 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:
 			return offsetof (JiterpEntryDataHeader, rmethod);
+		case JITERP_MEMBER_PARAMS_COUNT:
+			return offsetof (JiterpEntryDataHeader, params_count);
 		case JITERP_MEMBER_SPAN_LENGTH:
 			return offsetof (MonoSpanOfVoid, _length);
 		case JITERP_MEMBER_SPAN_DATA:

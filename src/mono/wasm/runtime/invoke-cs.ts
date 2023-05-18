@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
@@ -11,12 +11,13 @@ import {
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types";
+import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
+import { mono_log_debug } from "./logging";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
@@ -29,9 +30,7 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         const js_fqn = conv_string_root(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
-        if (runtimeHelpers.diagnosticTracing) {
-            console.debug(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
-        }
+        mono_log_debug(`Binding [JSExport] ${js_fqn}`);
 
         const { assembly, namespace, classname, methodname } = parseFQN(js_fqn);
 
@@ -300,7 +299,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 }
             }
         } else {
-            mono_assert(!MonoWasmThreads, "JSExport is not supported with assemblies generated with Net7 SDK and multi-threading");
+            mono_assert(!MonoWasmThreads, () => `JSExport with multi-threading enabled is not supported with assembly ${assembly} as it was generated with the .NET 7 SDK`);
             // this needs to stay here for compatibility with assemblies generated in Net7
             // it doesn't have the __GeneratedInitializer class
             cwraps.mono_wasm_runtime_run_module_cctor(asm);

@@ -671,18 +671,11 @@ namespace System
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
 
-            // kept outside of the small arrays hot path to have inlining without big size growth
-            return AllocateNewUninitializedArray(length, pinned);
+            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+            if (pinned)
+                flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
-            // remove the local function when https://github.com/dotnet/runtime/issues/5973 is implemented
-            static T[] AllocateNewUninitializedArray(int length, bool pinned)
-            {
-                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-                if (pinned)
-                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
-
-                return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
-            }
+            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
         }
 
         /// <summary>

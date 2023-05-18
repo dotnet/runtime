@@ -13,32 +13,32 @@ namespace System.Globalization
     {
         // Characters which require special handling are those in [0x00, 0x1F] and [0x7F, 0xFFFF] except \t\v\f
         // Matches HighCharTable below.
-        private static readonly IndexOfAnyValues<char> s_nonSpecialAsciiChars =
-            IndexOfAnyValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+        private static readonly SearchValues<char> s_nonSpecialAsciiChars =
+            SearchValues.Create("\t\v\f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
         private void IcuInitSortHandle(string interopCultureName)
         {
+            _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
+            if (!GlobalizationMode.Invariant)
+                 _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
+        }
+
+        private bool GetIsAsciiEqualityOrdinal(string interopCultureName)
+        {
             if (GlobalizationMode.Invariant)
-            {
-                _isAsciiEqualityOrdinal = true;
-            }
-            else
-            {
-                Debug.Assert(!GlobalizationMode.UseNls);
-                Debug.Assert(interopCultureName != null);
+                return true;
+            Debug.Assert(!GlobalizationMode.UseNls);
+            Debug.Assert(interopCultureName != null);
 
-                // Inline the following condition to avoid potential implementation cycles within globalization
-                //
-                // _isAsciiEqualityOrdinal = _sortName == "" || _sortName == "en" || _sortName.StartsWith("en-", StringComparison.Ordinal);
-                //
-                _isAsciiEqualityOrdinal = _sortName.Length == 0 ||
-                    (_sortName.Length >= 2 && _sortName[0] == 'e' && _sortName[1] == 'n' && (_sortName.Length == 2 || _sortName[2] == '-'));
-
-                _sortHandle = SortHandleCache.GetCachedSortHandle(interopCultureName);
-            }
+            // Inline the following condition to avoid potential implementation cycles within globalization
+            //
+            // _isAsciiEqualityOrdinal = _sortName == "" || _sortName == "en" || _sortName.StartsWith("en-", StringComparison.Ordinal);
+            //
+            return _sortName.Length == 0 ||
+                (_sortName.Length >= 2 && _sortName[0] == 'e' && _sortName[1] == 'n' && (_sortName.Length == 2 || _sortName[2] == '-'));
         }
 
         private unsafe int IcuCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
@@ -185,6 +185,17 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    int result = Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+                    if (!string.IsNullOrEmpty(exceptionMessage))
+                    {
+                        throw new Exception(exceptionMessage);
+                    }
+                    return result;
+                }
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else
@@ -275,6 +286,10 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                    return Interop.JsGlobalization.IndexOf(out string exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
+#endif
                 if (fromBeginning)
                     return Interop.Globalization.IndexOf(_sortHandle, b, target.Length, a, source.Length, options, matchLengthPtr);
                 else

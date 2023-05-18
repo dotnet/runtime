@@ -97,9 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(oid);
             ArgumentNullException.ThrowIfNull(value);
-
-            if (string.IsNullOrEmpty(oid.Value))
-                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
+            ArgumentException.ThrowIfNullOrEmpty(oid.Value);
 
             UniversalTagNumber tag = GetAndValidateTagNumber(stringEncodingType);
             EncodeComponent(oid.Value, value, tag);

@@ -163,7 +163,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.cs" />
@@ -172,6 +171,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />

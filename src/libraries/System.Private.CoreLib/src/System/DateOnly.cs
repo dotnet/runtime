@@ -739,7 +739,7 @@ namespace System
         /// <returns>A string representation of value of the current DateOnly object as specified by format and provider.</returns>
         public string ToString([StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] string? format, IFormatProvider? provider)
         {
-            if (format == null || format.Length == 0)
+            if (string.IsNullOrEmpty(format))
             {
                 format = "d";
             }

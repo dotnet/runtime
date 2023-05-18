@@ -1027,10 +1027,7 @@ namespace System.Net.Http.Headers
 
         private HeaderDescriptor GetHeaderDescriptor(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {

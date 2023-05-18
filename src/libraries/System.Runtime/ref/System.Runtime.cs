@@ -292,6 +292,7 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
+        public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {
@@ -7284,15 +7285,15 @@ namespace System.Buffers
     {
         System.Memory<T> Memory { get; }
     }
-    public class IndexOfAnyValues<T> where T : System.IEquatable<T>?
+    public class SearchValues<T> where T : System.IEquatable<T>?
     {
-        internal IndexOfAnyValues() { }
+        internal SearchValues() { }
         public bool Contains(T value) { throw null; }
     }
-    public static class IndexOfAnyValues
+    public static class SearchValues
     {
-        public static System.Buffers.IndexOfAnyValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
-        public static System.Buffers.IndexOfAnyValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
     }
     public partial interface IPinnable
     {
@@ -7342,6 +7343,10 @@ namespace System.Buffers.Text
         public static System.Buffers.OperationStatus EncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten) { throw null; }
         public static int GetMaxDecodedFromUtf8Length(int length) { throw null; }
         public static int GetMaxEncodedToUtf8Length(int length) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64Text) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64Text, out int decodedLength) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<byte> base64TextUtf8) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) { throw null; }
     }
 }
 namespace System.CodeDom.Compiler
@@ -13492,6 +13497,63 @@ namespace System.Runtime.InteropServices.Marshalling
             public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
         }
     }
+
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedRef,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedRef))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder),
+    System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut,
+    typeof(System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<>.ManagedToUnmanagedOut))]
+    public static class SafeHandleMarshaller<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : SafeHandle
+    {
+        public struct ManagedToUnmanagedIn
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedRef
+        {
+            private int _dummyPrimitive;
+            private T _handle;
+
+            public ManagedToUnmanagedRef() { }
+
+            public void FromManaged(T handle) { }
+
+            public nint ToUnmanaged() { throw null; }
+
+            public void FromUnmanaged(nint value) { }
+
+            public void OnInvoked() { }
+
+            public T ToManagedFinally() { throw null; }
+
+            public void Free() { }
+        }
+
+        public struct ManagedToUnmanagedOut
+        {
+            private int _dummyPrimitive;
+            private T _newHandle;
+            public ManagedToUnmanagedOut() { }
+
+            public void FromUnmanaged(nint value) { }
+
+            public T ToManaged() { throw null; }
+
+            public void Free() { }
+        }
+    }
+
     [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Span<>),
         System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
@@ -14194,8 +14256,8 @@ namespace System.Text
     {
         internal CompositeFormat() { }
         public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
         public string Format { get { throw null; } }
+        public int MinimumArgumentCount { get { throw null; } }
     }
     public abstract partial class Decoder
     {

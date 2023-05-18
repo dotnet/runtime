@@ -38,123 +38,6 @@ For AOT compilation, the situation is far more complex. This is due to the follo
 2. If AOT code is generated, it should be used unless there is an overriding reason to avoid using it.
 3. It must be exceedingly difficult to misuse the AOT compilation tool to violate principle 1.
 
-There are 2 different implementations of AOT compilation under development at this time. The crossgen1 model (which is currently supported on all platforms and architectures), and the crossgen2 model, which is under active development. Any developer wishing to use hardware intrinsics in the runtime or libraries should be aware of the restrictions imposed by the crossgen1 model. Crossgen2, which we expect will replace crossgen1 at some point in the future, has strictly fewer restrictions.
-
-## Crossgen1 model of hardware intrinsic usage
-
-###Code written in System.Private.CoreLib.dll
-#### Crossgen implementation rules
-- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`)
-- Code which uses Sse and Sse2 platform hardware intrinsics is always generated as it would be at jit time.
-- Code which uses Sse3, Ssse3, Sse41, Sse42, Popcnt, Pclmulqdq, and Lzcnt instruction sets will be generated, but the associated IsSupported check will be a runtime check. See `FilterNamedIntrinsicMethodAttribs` for details on how this is done.
-- Code which uses other instruction sets will be generated as if the processor does not support that instruction set. (For instance, a usage of Avx2.IsSupported in CoreLib will generate native code where it unconditionally returns false, and then if and when tiered compilation occurs, the function may be rejitted and have code where the property returns true.)
-- Non-platform intrinsics which require more hardware support than the minimum supported hardware capability will not take advantage of that capability. In particular the code generated for `Vector2/3/4.Dot`, and `Math.Round`, and `MathF.Round`. See `FilterNamedIntrinsicMethodAttribs` for details. MethodImplOptions.AggressiveOptimization may be used to disable precompilation compilation of this sub-par code.
-
-#### Characteristics which result from rules
-The rules here provide the following characteristics.
-- Some platform specific hardware intrinsics can be used in CoreLib without encountering a startup time penalty
-- Some uses of platform specific hardware intrinsics will force the compiler to be unable to AOT compile the code. However, if care is taken to only use intrinsics from the Sse, Sse2, Sse3, Ssse3, Sse41, Sse42, Popcnt, Pclmulqdq, or Lzcnt instruction sets, then the code may be AOT compiled. Preventing AOT compilation may cause a startup time penalty for important scenarios.
-- Use of `Vector<T>` causes runtime jit and startup time concerns because it is never precompiled. Current analysis indicates this is acceptable, but it is a perennial concern for applications with tight startup time requirements.
-- AOT generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly).
-
-#### Code review rules for code written in System.Private.CoreLib.dll
-- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to the associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, and MUST NOT be in a wrapper function unless it is one of the intrinsics that are enabled by default for crossgen compilation of System.Private.CoreLib (See list above in the implementation rules section).
-- Within a single function that uses platform intrinsics, it must behave identically regardless of whether IsSupported returns true or not. This rule is required as code inside of an IsSupported check that calls a helper function cannot assume that the helper function will itself see its use of the same IsSupported check return true. This is due to the impact of tiered compilation on code execution within the process.
-- Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen.
-
-ACCEPTABLE Code
-```csharp
-using System.Runtime.Intrinsics.X86;
-
-public class BitOperations
-{
-    public static int PopCount(uint value)
-    {
-        if (Avx2.IsSupported)
-        {
-            Some series of Avx2 instructions that performs the popcount operation.
-        }
-        else
-            return FallbackPath(input);
-    }
-
-    private static int FallbackPath(uint)
-    {
-        const uint c1 = 0x_55555555u;
-        const uint c2 = 0x_33333333u;
-        const uint c3 = 0x_0F0F0F0Fu;
-        const uint c4 = 0x_01010101u;
-
-        value -= (value >> 1) & c1;
-        value = (value & c2) + ((value >> 2) & c2);
-        value = (((value + (value >> 4)) & c3) * c4) >> 24;
-
-        return (int)value;
-    }
-}
-```
-
-UNACCEPTABLE code
-```csharp
-using System.Runtime.Intrinsics.X86;
-
-public class BitOperations
-{
-    public static int PopCount(uint value)
-    {
-        if (Avx2.IsSupported)
-            return UseAvx2(value);
-        else
-            return FallbackPath(input);
-    }
-
-    private static int FallbackPath(uint)
-    {
-        const uint c1 = 0x_55555555u;
-        const uint c2 = 0x_33333333u;
-        const uint c3 = 0x_0F0F0F0Fu;
-        const uint c4 = 0x_01010101u;
-
-        value -= (value >> 1) & c1;
-        value = (value & c2) + ((value >> 2) & c2);
-        value = (((value + (value >> 4)) & c3) * c4) >> 24;
-
-        return (int)value;
-    }
-
-    private static int UseAvx2(uint value)
-    {
-        // THIS IS A BUG!!!!!
-        Some series of Avx2 instructions that performs the popcount operation.
-        The bug here is triggered by the presence of tiered compilation and R2R. The R2R version
-        of this method may be compiled as if the Avx2 feature is not available, and is not reliably rejitted
-        at the same time as the PopCount function.
-
-        As a special note, on the x86 and x64 platforms, this generally unsafe pattern may be used
-        with the Sse, Sse2, Sse3, Sssse3, Ssse41 and Sse42 instruction sets as those instruction sets
-        are treated specially by both crossgen1 and crossgen2 when compiling System.Private.CoreLib.dll.
-    }
-}
-```
-
-### Code written in other assemblies (both first and third party)
-
-#### Crossgen implementation rules
-- Any code which uses an intrinsic from the `System.Runtime.Intrinsics.Arm` or `System.Runtime.Intrinsics.X86` namespace will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`)
-- Any code which uses `Vector<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_SIMD_NGEN_DISALLOWED`)
-- Any code which uses `Vector64<T>`, `Vector128<T>`, `Vector256<T>`, or `Vector512<T>` will not be compiled AOT. (See code which throws a TypeLoadException using `IDS_EE_HWINTRINSIC_NGEN_DISALLOWED`)
-- Non-platform intrinsics which require more hardware support than the minimum supported hardware capability will not take advantage of that capability. In particular the code generated for Vector2/3/4 is sub-optimal. MethodImplOptions.AggressiveOptimization may be used to disable compilation of this sub-par code.
-
-#### Characteristics which result from rules
-The rules here provide the following characteristics.
-- Use of platform specific hardware intrinsics causes runtime jit and startup time concerns.
-- Use of `Vector<T>` causes runtime jit and startup time concerns
-- AOT generated code which could take advantage of more advanced hardware support experiences a performance penalty until rejitted. (If a customer chooses to disable tiered compilation, then customer code may always run slowly).
-
-#### Code review rules for use of platform intrinsics
-- Any use of a platform intrinsic in the codebase SHOULD be wrapped with a call to the associated IsSupported property. This wrapping may be done within the same function that uses the hardware intrinsic, but this is not required as long as the programmer can control all entrypoints to a function that uses the hardware intrinsic.
-- If an application developer is highly concerned about startup performance, developers should avoid use of all platform specific hardware intrinsics on startup paths.
-
 ## Crossgen2 model of hardware intrinsic usage
 There are 2 sets of instruction sets known to the compiler.
 - The baseline instruction set which defaults to (Sse, Sse2), but may be adjusted via compiler option.
@@ -178,8 +61,100 @@ Code will be compiled using the optimistic instruction set to drive compilation,
 -  If an application developer is highly concerned about startup performance, developers should avoid use intrinsics beyond Sse42, or should use Crossgen with an updated baseline instruction set support.
 
 ### Crossgen2 adjustment to rules for System.Private.CoreLib.dll
-Since System.Private.CoreLib.dll is known to be code reviewed with the code review rules as written above for crossgen1 with System.Private.CoreLib.dll, it is possible to relax rule "Code which attempts to use instruction sets outside of the optimistic set will generate code that will not be used on machines with support for the instruction set." What this will do is allow the generation of non-optimal code for these situations, but through the magic of code review, the generated logic will still work correctly.
+Since System.Private.CoreLib.dll is known to be code reviewed with the code review rules as written below with System.Private.CoreLib.dll, it is possible to relax rule "Code which attempts to use instruction sets outside of the optimistic set will generate code that will not be used on machines with support for the instruction set." What this will do is allow the generation of non-optimal code for these situations, but through the magic of code review and analyzers, the generated logic will still work correctly.
 
+#### Code review and analyzer rules for code written in System.Private.CoreLib.dll
+- Any use of a platform intrinsic in the codebase MUST be wrapped with a call to an associated IsSupported property. This wrapping MUST be done within the same function that uses the hardware intrinsic, OR the function which uses the platform intrinsic must have the `CompExactlyDependsOn` attribute used to indicate that this function will unconditionally call platform intrinsics of from some type.
+- Within a single function that uses platform intrinsics, unless marked with the `CompExactlyDependsOn` attribute it must behave identically regardless of whether IsSupported returns true or not. This allows the R2R compiler to compile with a lower set of intrinsics support, and yet expect that the behavior of the function will remain unchanged in the presence of tiered compilation.
+- Excessive use of intrinsics may cause startup performance problems due to additional jitting, or may not achieve desired performance characteristics due to suboptimal codegen. To fix this, we may, in the future, change the compilation rules to compile the methods marked with`CompExactlyDependsOn` with the appropriate platform intrinsics enabled.
+
+Correct use of the `IsSupported` properties and `CompExactlyDependsOn` attribute is checked by an analyzer during build of `System.Private.CoreLib`. This analyzer requires that all usage of `IsSupported` properties conform to a few specific patterns. These patterns are supported via either if statements or the ternary operator.
+
+The supported conditional checks are
+
+1. Simple if statement checking IsSupported flag surrounding usage
+```
+if (PlatformIntrinsicType.IsSupported)
+{
+    PlatformIntrinsicType.IntrinsicMethod();
+}
+```
+
+2. If statement check checking a platform intrinsic type which implies
+that the intrinsic used is supported.
+
+```
+if (Avx2.X64.IsSupported)
+{
+    Avx2.IntrinsicMethod();
+}
+```
+
+3. Nested if statement where there is an outer condition which is an
+OR'd together series of IsSupported checks for mutually exclusive
+conditions and where the inner check is an else clause where some checks
+are excluded from applying.
+
+```
+if (Avx2.IsSupported || ArmBase.IsSupported)
+{
+    if (Avx2.IsSupported)
+    {
+        // Do something
+    }
+    else
+    {
+        ArmBase.IntrinsicMethod();
+    }
+}
+```
+
+4. Within a method marked with `CompExactlyDependsOn` for a less advanced attribute, there may be a use of an explicit IsSupported check for a more advanced cpu feature. If so, the behavior of the overall function must remain the same regardless of whether or not the CPU feature is enabled. The analyzer will detect this usage as a warning, so that any use of IsSupported in a helper method is examined to verify that that use follows the rule of preserving exactly equivalent behavior.
+
+```
+[CompExactlyDependsOn(typeof(Sse41))]
+int DoSomethingHelper()
+{
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough // The else clause is semantically equivalent
+    if (Avx2.IsSupported)
+#pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
+    {
+        Avx2.IntrinsicThatDoesTheSameThingAsSse41IntrinsicAndSse41.Intrinsic2();
+    }
+    else
+    {
+        Sse41.Intrinsic();
+        Sse41.Intrinsic2();
+    }
+}
+```
+
+- NOTE: If the helper needs to be used AND behave differently with different instruction sets enabled, correct logic requires spreading the `CompExactlyDependsOn` attribute to all callers such that no caller could be compiled expecting the wrong behavior. See the `Vector128.ShuffleUnsafe` method, and various uses.
+
+
+The behavior of the `CompExactlyDependsOn` is that 1 or more attributes may be applied to a given method. If any of the types specified via the attribute will not have an invariant result for its associated `IsSupported` property at runtime, then the method will not be compiled or inlined into another function during R2R compilation. If no type so described will have a true result for the `IsSupported` method, then the method will not be compiled or inlined into another function during R2R compilation.
+
+5. In addition to directly using the IsSupported properties to enable/disable support for intrinsics, simple static properties written in the following style may be used to reduce code duplication.
+
+```
+static bool IsVectorizationSupported => Avx2.IsSupported || PackedSimd.IsSupported
+
+public void SomePublicApi()
+{
+    if (IsVectorizationSupported)
+        SomeVectorizationHelper();
+    else
+    {
+        // Non-Vectorized implementation
+    }
+}
+
+[CompExactlyDependsOn(typeof(Avx2))]
+[CompExactlyDependsOn(typeof(PackedSimd))]
+private void SomeVectorizationHelper()
+{
+}
+```
 
 # Mechanisms in the JIT to generate correct code to handle varied instruction set support
 
@@ -194,7 +169,5 @@ While the above api exists, it is not expected that general purpose code within 
 |`compExactlyDependsOn(isa)`| Use when making a decision to use or not use an instruction set when the decision will affect the semantics of the generated code. Should never be used in an assert. | Return whether or not an instruction set is supported. Calls notifyInstructionSetUsage with the result of that computation.
 |`compOpportunisticallyDependsOn(isa)`| Use when making an opportunistic decision to use or not use an instruction set. Use when the instruction set usage is a "nice to have optimization opportunity", but do not use when a false result may change the semantics of the program. Should never be used in an assert. | Return whether or not an instruction set is supported. Calls notifyInstructionSetUsage if the instruction set is supported.
 |`compIsaSupportedDebugOnly(isa)` | Use to assert whether or not an instruction set is supported | Return whether or not an instruction set is supported. Does not report anything. Only available in debug builds.
-|`getSIMDVectorType()`| Use to get the TYP of a the `Vector<T>` type. | Determine the TYP of the `Vector<T>` type. If on the architecture the TYP may vary depending on whatever rules, this function will make sufficient use of the `notifyInstructionSetUsage` api to ensure that the TYP is consistent between compile time and runtime.
-|`getSIMDVectorRegisterByteLength()` | Use to get the size of a `Vector<T>` value. | Determine the size of the `Vector<T>` type. If on the architecture the size may vary depending on whatever rules, this function will make sufficient use of the `notifyInstructionSetUsage` api to ensure that the size is consistent between compile time and runtime.
+|`getSIMDVectorRegisterByteLength()` | Use to get the size of a `Vector<T>` value. | Determine the size of the `Vector<T>` type. If on the architecture the size may vary depending on whatever rules. Use `compExactlyDependsOn` to perform the queries so that the size is consistent between compile time and runtime.
 |`maxSIMDStructBytes()`| Get the maximum number of bytes that might be used in a SIMD type during this compilation. | Query the set of instruction sets supported, and determine the largest simd type supported. Use `compOpportunisticallyDependsOn` to perform the queries so that the maximum size needed is the only one recorded.
-|`largestEnregisterableStructSize()`| Get the maximum number of bytes that might be represented by a single register in this compilation. Use only as an optimization to avoid calling `impNormStructType` or `getBaseTypeAndSizeOfSIMDType`. | Query the set of instruction sets supported, and determine the largest simd type supported in this compilation, report that size.

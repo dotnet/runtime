@@ -325,7 +325,7 @@ namespace Mono.Linker.Tests.Extensions
 			if (p._elements.Length != _elements.Length)
 				return false;
 
-			for (var i = 0; i != _elements.Length; i++)
+			for (var i = 0; i < _elements.Length; i++)
 				if (!string.Equals (p._elements[i], _elements[i], PathStringComparison))
 					return false;
 
