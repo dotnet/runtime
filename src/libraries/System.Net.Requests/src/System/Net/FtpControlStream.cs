@@ -890,7 +890,7 @@ namespace System.Net
             DateTime dateTime = _lastModified;
             Span<Range> parts = stackalloc Range[4];
             ReadOnlySpan<char> strSpan = str;
-            int count = strSpan.SplitAny(parts, " .", StringSplitOptions.RemoveEmptyEntries);
+            int count = strSpan.SplitAny(parts, " .");
             if (count < 2)
             {
                 return dateTime;
@@ -936,23 +936,20 @@ namespace System.Net
             //
             // Not sure what we are doing here but I guess the logic is IIS centric
             //
-            ReadOnlySpan<char> strSpan = str;
-            int start = strSpan.IndexOf("for ", StringComparison.Ordinal);
+            int start = str.IndexOf("for ", StringComparison.Ordinal);
             if (start == -1)
                 return;
             start += 4;
-            int end = strSpan.LastIndexOf('(');
+            int end = str.LastIndexOf('(');
             if (end == -1)
                 end = str.Length;
             if (end <= start)
                 return;
 
-            var filename = strSpan.Slice(start, end - start);
-            filename = filename.TrimEnd(s_whitespaceDot);
+            string filename = str.AsSpan(start, end - start).TrimEnd(s_whitespaceDot).ToString();
             // Do minimal escaping that we need to get a valid Uri
             // when combined with the baseUri
-            string escapedFilename = filename.ToString();
-            escapedFilename = escapedFilename.Replace("%", "%25");
+            string escapedFilename = filename.Replace("%", "%25");
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
@@ -967,14 +964,14 @@ namespace System.Net
             Uri? newUri;
             if (!Uri.TryCreate(baseUri, escapedFilename, out newUri))
             {
-                throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename.ToString()));
+                throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename));
             }
             else
             {
                 if (!baseUri.IsBaseOf(newUri) ||
                      baseUri.Segments.Length != newUri.Segments.Length - 1)
                 {
-                    throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename.ToString()));
+                    throw new FormatException(SR.Format(SR.net_ftp_invalid_response_filename, filename));
                 }
                 else
                 {
@@ -1038,7 +1035,7 @@ namespace System.Net
 
             int index = parsedList.Length - 1;
             // skip the last non-number token (e.g. terminating '.')
-            if (!char.IsNumber(parsedList[index][0]))
+            if (!char.IsNumber(parsedList[index], 0))
                 index--;
 
             int port = Convert.ToByte(parsedList[index--], NumberFormatInfo.InvariantInfo);
