@@ -5,7 +5,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal enum ConstructionStrategy
     {
-        NotApplicable = 0,
+        None = 0,
         ParameterlessConstructor = 1,
+        ParameterizedConstructor = 2,
+        ToEnumerableMethod = 3,
     }
 }

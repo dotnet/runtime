@@ -287,25 +287,21 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
     return fn.bind(scope);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function set_property(self: any, name: string, value: any): void {
     mono_assert(self, "Null reference");
     self[name] = value;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function get_property(self: any, name: string): any {
     mono_assert(self, "Null reference");
     return self[name];
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function has_property(self: any, name: string): boolean {
     mono_assert(self, "Null reference");
     return name in self;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function get_typeof_property(self: any, name: string): string {
     mono_assert(self, "Null reference");
     return typeof self[name];
@@ -341,8 +337,6 @@ export function dynamic_import(module_name: string, module_url: string): Promise
     });
 }
 
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     let res = "unknown exception";
     if (ex) {
@@ -365,7 +359,6 @@ function _wrap_error_flag(is_exception: Int32Ptr | null, ex: any): string {
     return res;
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function wrap_error_root(is_exception: Int32Ptr | null, ex: any, result: WasmRoot<MonoObject>): void {
     const res = _wrap_error_flag(is_exception, ex);
     js_string_to_mono_string_root(res, <any>result);

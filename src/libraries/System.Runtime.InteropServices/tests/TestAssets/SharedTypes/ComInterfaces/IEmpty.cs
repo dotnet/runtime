@@ -5,14 +5,12 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-namespace ComInterfaceGenerator.Tests
+namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("2c3f9903-b586-46b1-881b-adfce9af47b1")]
-    public partial interface IComInterface1
+    [Guid(_guid)]
+    internal partial interface IEmpty
     {
-        int GetData();
-        void SetData(int n);
+        public const string _guid = "95D19F50-F2D8-4E61-884B-0A9162EA4646";
     }
 }

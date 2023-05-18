@@ -9,11 +9,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record KnownTypeSymbols
     {
-        public INamedTypeSymbol GenericIList { get; }
-        public INamedTypeSymbol ICollection { get; }
-        public INamedTypeSymbol IEnumerable { get; }
         public INamedTypeSymbol String { get; }
-
         public INamedTypeSymbol? CultureInfo { get; }
         public INamedTypeSymbol? DateOnly { get; }
         public INamedTypeSymbol? DateTimeOffset { get; }
@@ -26,17 +22,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public INamedTypeSymbol? Uri { get; }
         public INamedTypeSymbol? Version { get; }
 
-        public INamedTypeSymbol? Action { get; }
         public INamedTypeSymbol? ActionOfBinderOptions { get; }
-        public INamedTypeSymbol? BinderOptions { get; }
         public INamedTypeSymbol? ConfigurationKeyNameAttribute { get; }
+
+        public INamedTypeSymbol GenericIList_Unbound { get; }
+        public INamedTypeSymbol GenericICollection_Unbound { get; }
+        public INamedTypeSymbol GenericICollection { get; }
+        public INamedTypeSymbol GenericIEnumerable_Unbound { get; }
+        public INamedTypeSymbol IEnumerable { get; }
         public INamedTypeSymbol? Dictionary { get; }
+        public INamedTypeSymbol? GenericIDictionary_Unbound { get; }
         public INamedTypeSymbol? GenericIDictionary { get; }
         public INamedTypeSymbol? HashSet { get; }
         public INamedTypeSymbol? IConfiguration { get; }
         public INamedTypeSymbol? IConfigurationSection { get; }
         public INamedTypeSymbol? IDictionary { get; }
+        public INamedTypeSymbol? IReadOnlyCollection_Unbound { get; }
+        public INamedTypeSymbol? IReadOnlyDictionary_Unbound { get; }
+        public INamedTypeSymbol? IReadOnlyList_Unbound { get; }
+        public INamedTypeSymbol? IReadOnlySet_Unbound { get; }
         public INamedTypeSymbol? IServiceCollection { get; }
+        public INamedTypeSymbol? ISet_Unbound { get; }
         public INamedTypeSymbol? ISet { get; }
         public INamedTypeSymbol? List { get; }
 
@@ -56,29 +62,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Version = compilation.GetBestTypeByMetadataName(TypeFullName.Version);
 
             // Used to verify input configuation binding API calls.
-            Action = compilation.GetBestTypeByMetadataName(TypeFullName.Action);
-            BinderOptions = compilation.GetBestTypeByMetadataName(TypeFullName.BinderOptions);
-            ActionOfBinderOptions = Action?.Construct(BinderOptions);
+            INamedTypeSymbol? binderOptions = compilation.GetBestTypeByMetadataName(TypeFullName.BinderOptions);
+            ActionOfBinderOptions = binderOptions is null ? null : compilation.GetBestTypeByMetadataName(TypeFullName.Action)?.Construct(binderOptions);
 
             ConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName(TypeFullName.ConfigurationKeyNameAttribute);
             IConfiguration = compilation.GetBestTypeByMetadataName(TypeFullName.IConfiguration);
             IConfigurationSection = compilation.GetBestTypeByMetadataName(TypeFullName.IConfigurationSection);
             IServiceCollection = compilation.GetBestTypeByMetadataName(TypeFullName.IServiceCollection);
 
-            // Collections.
+            // Used to test what kind of collection a type is.
             IEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
             IDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.IDictionary);
 
-            // Used for type equivalency checks for unbounded generics.
-            ICollection = compilation.GetSpecialType(SpecialType.System_Collections_Generic_ICollection_T).ConstructUnboundGenericType();
-            GenericIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.GenericIDictionary)?.ConstructUnboundGenericType();
-            GenericIList = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
-            ISet = compilation.GetBestTypeByMetadataName(TypeFullName.ISet)?.ConstructUnboundGenericType();
-
-            // Used to construct concrete types at runtime; cannot also be constructed.
+            // Used to construct concrete type symbols for generic types, given their type parameters.
+            // These concrete types are used to generating instantiation and casting logic in the emitted binding code.
             Dictionary = compilation.GetBestTypeByMetadataName(TypeFullName.Dictionary);
+            GenericICollection = compilation.GetSpecialType(SpecialType.System_Collections_Generic_ICollection_T);
+            GenericIDictionary = compilation.GetBestTypeByMetadataName(TypeFullName.GenericIDictionary);
             HashSet = compilation.GetBestTypeByMetadataName(TypeFullName.HashSet);
             List = compilation.GetBestTypeByMetadataName(TypeFullName.List);
+            ISet = compilation.GetBestTypeByMetadataName(TypeFullName.ISet);
+
+            // Used for type equivalency checks for unbound generics. The parameters of the types
+            // retured by the Roslyn Get*Type* APIs are not unbound, so we construct unbound
+            // generics to equal those corresponding to generic types in the input type graphs.
+            GenericICollection_Unbound = GenericICollection?.ConstructUnboundGenericType();
+            GenericIDictionary_Unbound = GenericIDictionary?.ConstructUnboundGenericType();
+            GenericIEnumerable_Unbound = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T).ConstructUnboundGenericType();
+            GenericIList_Unbound = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IList_T).ConstructUnboundGenericType();
+            IReadOnlyDictionary_Unbound = compilation.GetBestTypeByMetadataName(TypeFullName.IReadOnlyDictionary)?.ConstructUnboundGenericType();
+            IReadOnlyCollection_Unbound = compilation.GetBestTypeByMetadataName(TypeFullName.IReadOnlyCollection)?.ConstructUnboundGenericType();
+            IReadOnlyList_Unbound = compilation.GetBestTypeByMetadataName(TypeFullName.IReadOnlyList)?.ConstructUnboundGenericType();
+            IReadOnlySet_Unbound = compilation.GetBestTypeByMetadataName(TypeFullName.IReadOnlySet)?.ConstructUnboundGenericType();
+            ISet_Unbound = ISet?.ConstructUnboundGenericType();
         }
 
         private static class TypeFullName
@@ -98,6 +114,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string IConfigurationSection = "Microsoft.Extensions.Configuration.IConfigurationSection";
             public const string IDictionary = "System.Collections.Generic.IDictionary";
             public const string Int128 = "System.Int128";
+            public const string IReadOnlyCollection = "System.Collections.Generic.IReadOnlyCollection`1";
+            public const string IReadOnlyDictionary = "System.Collections.Generic.IReadOnlyDictionary`2";
+            public const string IReadOnlyList = "System.Collections.Generic.IReadOnlyList`1";
+            public const string IReadOnlySet = "System.Collections.Generic.IReadOnlySet`1";
             public const string ISet = "System.Collections.Generic.ISet`1";
             public const string IServiceCollection = "Microsoft.Extensions.DependencyInjection.IServiceCollection";
             public const string List = "System.Collections.Generic.List`1";

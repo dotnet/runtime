@@ -723,6 +723,10 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 
         // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
         case GT_MUL:
+#ifdef TARGET_X86
+        case GT_SUB_HI:
+        case GT_LSH_HI:
+#endif
         {
             if (varTypeIsFloating(tree->TypeGet()))
             {

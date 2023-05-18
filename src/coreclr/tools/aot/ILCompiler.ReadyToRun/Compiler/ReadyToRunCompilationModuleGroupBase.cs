@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using Debug = System.Diagnostics.Debug;
 using Internal.ReadyToRunConstants;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -30,6 +31,7 @@ namespace ILCompiler
         public IEnumerable<ModuleDesc> CrossModuleInlineable;
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
+        public InstructionSetSupport InstructionSetSupport;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -64,9 +66,11 @@ namespace ILCompiler
         private ConcurrentDictionary<EcmaMethod, bool> _tokenTranslationFreeNonVersionable = new ConcurrentDictionary<EcmaMethod, bool>();
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
+        private InstructionSetSupport _instructionSetSupport;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
+            _instructionSetSupport = config.InstructionSetSupport;
             _compilationModuleSet = new HashSet<EcmaModule>(config.CompilationModuleSet);
             _isCompositeBuildMode = config.IsCompositeBuildMode;
             _isInputBubble = config.IsInputBubble;
@@ -409,6 +413,11 @@ namespace ILCompiler
             bool canInline = (VersionsWithMethodBody(callerMethod) || CrossModuleInlineable(callerMethod)) &&
                 (VersionsWithMethodBody(calleeMethod) || CrossModuleInlineable(calleeMethod) || IsNonVersionableWithILTokensThatDoNotNeedTranslation(calleeMethod));
 
+            if (canInline)
+            {
+                if (CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(_instructionSetSupport, calleeMethod))
+                    canInline = false;
+            }
             return canInline;
         }
 

@@ -181,7 +181,7 @@ export function compare_strings(string1: string, string2: string, locale: string
             return string1.localeCompare(string2, locale, { sensitivity: "base" }); // a ≠ b, a = á, a = A
         case 13:
             // 13: IgnoreKanaType | IgnoreCase | IgnoreSymbols
-            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true });  // a ≠ b, a ≠ á, a = A
+            return string1.localeCompare(string2, locale, { sensitivity: "accent", ignorePunctuation: true }); // a ≠ b, a ≠ á, a = A
         case 14:
             // 14: IgnoreKanaType | IgnoreSymbols | IgnoreNonSpace
             return string1.localeCompare(string2, locale, { sensitivity: "case", ignorePunctuation: true });// a ≠ b, a = á, a ≠ A

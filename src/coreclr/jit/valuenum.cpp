@@ -5796,6 +5796,11 @@ bool ValueNumStore::IsVNConstant(ValueNum vn)
     }
 }
 
+bool ValueNumStore::IsVNConstantNonHandle(ValueNum vn)
+{
+    return IsVNConstant(vn) && !IsVNHandle(vn);
+}
+
 bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 {
     if (!IsVNConstant(vn))
@@ -7123,6 +7128,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 #endif // TARGET_XARCH
+
+            case NI_Vector128_ToScalar:
+#ifdef TARGET_ARM64
+            case NI_Vector64_ToScalar:
+#else
+            case NI_Vector256_ToScalar:
+            case NI_Vector512_ToScalar:
+#endif
+            {
+                return EvaluateSimdGetElement(this, type, baseType, arg0VN, 0);
+            }
 
             default:
                 break;
@@ -10379,38 +10395,37 @@ static bool GetObjectHandleAndOffset(ValueNumStore*         vnStore,
                                      ssize_t*               byteOffset,
                                      CORINFO_OBJECT_HANDLE* pObj)
 {
-
     if (!tree->gtVNPair.BothEqual())
     {
         return false;
     }
 
-    ValueNum  treeVN = tree->gtVNPair.GetLiberal();
-    VNFuncApp funcApp;
-    if (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
+    ValueNum       treeVN = tree->gtVNPair.GetLiberal();
+    VNFuncApp      funcApp;
+    target_ssize_t offset = 0;
+    while (vnStore->GetVNFunc(treeVN, &funcApp) && (funcApp.m_func == (VNFunc)GT_ADD))
     {
-        // [objHandle + offset]
-        if (vnStore->IsVNObjHandle(funcApp.m_args[0]) && vnStore->IsVNConstant(funcApp.m_args[1]))
+        if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]) && (vnStore->TypeOfVN(funcApp.m_args[0]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[0]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[1]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[0]);
+            treeVN = funcApp.m_args[1];
         }
-
-        // [offset + objHandle]
-        // TODO: Introduce a general helper to accumulate offsets for
-        // shapes such as (((X + CNS1) + CNS2) + CNS3) etc.
-        if (vnStore->IsVNObjHandle(funcApp.m_args[1]) && vnStore->IsVNConstant(funcApp.m_args[0]))
+        else if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]) &&
+                 (vnStore->TypeOfVN(funcApp.m_args[1]) == TYP_I_IMPL))
         {
-            *pObj       = vnStore->ConstantObjHandle(funcApp.m_args[1]);
-            *byteOffset = vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]);
-            return true;
+            offset += vnStore->ConstantValue<target_ssize_t>(funcApp.m_args[1]);
+            treeVN = funcApp.m_args[0];
+        }
+        else
+        {
+            return false;
         }
     }
-    else if (vnStore->IsVNObjHandle(treeVN))
+
+    if (vnStore->IsVNObjHandle(treeVN))
     {
         *pObj       = vnStore->ConstantObjHandle(treeVN);
-        *byteOffset = 0;
+        *byteOffset = offset;
         return true;
     }
     return false;
@@ -10445,7 +10460,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
-    if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree) || tree->TypeIs(TYP_REF)) &&
+    if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         GetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
         CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
@@ -10464,7 +10479,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
             }
         }
     }
-    else if ((varTypeIsSIMD(tree) || varTypeIsIntegral(tree) || varTypeIsFloating(tree)) &&
+    else if (!tree->TypeIs(TYP_REF, TYP_BYREF, TYP_STRUCT) &&
              GetObjectHandleAndOffset(vnStore, tree->gtGetOp1(), &byteOffset, &obj))
     {
         // See if we can fold IND(ADD(FrozenObj, CNS)) to a constant
@@ -10754,12 +10769,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!returnsTypeHandle)
                 {
-                    // Indirections off of addresses for boxed statics represent bases for
-                    // the address of the static itself. Here we will use "nullptr" for the
-                    // field sequence and assume the actual static field will be appended to
-                    // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    // TYP_REF check to improve TP since we mostly target invariant loads of
+                    // frozen objects here
+                    if (addr->TypeIs(TYP_REF) && fgValueNumberConstLoad(tree->AsIndir()))
                     {
+                        // VN is assigned inside fgValueNumberConstLoad
+                    }
+                    else if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        // Indirections off of addresses for boxed statics represent bases for
+                        // the address of the static itself. Here we will use "nullptr" for the
+                        // field sequence and assume the actual static field will be appended to
+                        // it later, as part of numbering the method table pointer offset addition.
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
                         ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
