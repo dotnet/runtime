@@ -242,10 +242,6 @@ public:
         VNMap(CompAllocator alloc) : JitHashTable<fromType, keyfuncs, ValueNum>(alloc)
         {
         }
-        ~VNMap()
-        {
-            ~VNMap<fromType, keyfuncs>::JitHashTable();
-        }
 
         bool Set(fromType k, ValueNum val)
         {
