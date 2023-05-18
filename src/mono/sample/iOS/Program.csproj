@@ -109,6 +109,7 @@
         EnableAppSandbox="$(EnableAppSandbox)"
         DiagnosticPorts="$(DiagnosticPorts)"
         StripSymbolTable="$(StripDebugSymbols)"
+        ExcludeFromAppDir="$(_iOSLikeDedupAssembly)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
