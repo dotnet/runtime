@@ -4751,6 +4751,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 
     if (op2 == nullptr)
     {
+        srcReg2 = srcReg1;
         emit->emitIns_R_R_COND(ins, attr, targetReg, srcReg1, JumpKindToInsCond(prevDesc.jumpKind1));
     }
     else
@@ -4758,8 +4759,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         srcReg2 = (op2->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2));
         emit->emitIns_R_R_R_COND(ins, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.jumpKind1));
     }
-
-    srcReg2 = (op2 == nullptr) ? srcReg1 : srcReg2;
 
     // Some floating point comparision conditions require an additional condition check.
     // These checks are emitted as a subsequent check using GT_AND or GT_OR nodes.
