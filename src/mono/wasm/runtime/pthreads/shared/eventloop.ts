@@ -14,6 +14,6 @@ export function settleUnsettledPromise() {
 
 /// Called from the C# threadpool worker loop to find out if there are any
 /// unsettled JS promises that need to keep the worker alive
-export function monoWasmEventLoopHasUnsettledInteropPromises(): boolean {
+export function mono_wasm_eventloop_has_unsettled_interop_promises(): boolean {
     return perThreadUnsettledPromiseCount > 0;
 }
