@@ -1430,8 +1430,7 @@ void EEJitManager::SetCpuInfo()
             uint32_t Model            : 4;
             uint32_t FamilyId         : 4;
             uint32_t ProcessorType    : 2;
-            uint32_t IsAuthenticAmd   : 1; // Unused bits in the CPUID result
-            uint32_t IsGenuineIntel   : 1; // Unused bits in the CPUID result
+            uint32_t Reserved1        : 2; // Unused bits in the CPUID result
             uint32_t ExtendedModelId  : 4;
             uint32_t ExtendedFamilyId : 8;
             uint32_t Reserved         : 4; // Unused bits in the CPUID result
@@ -1452,22 +1451,14 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
     _ASSERTE(maxCpuId >= 1);
 
-    if (cpuidInfo[CPUID_EBX] == 0x756E6547)                     // Genu
-    {
-        xarchCpuInfo.IsGenuineIntel = (cpuidInfo[CPUID_EDX] == 0x49656E69)   // ineI
-                                   && (cpuidInfo[CPUID_ECX] == 0x6C65746E);  // ntel
-    }
-    else if (cpuidInfo[CPUID_EBX] == 0x68747541)                // Auth
-    {
-        xarchCpuInfo.IsAuthenticAmd = (cpuidInfo[CPUID_EDX] == 0x69746E65)   // enti
-                                   && (cpuidInfo[CPUID_ECX] == 0x444D4163);  // cAMD
-    }
+    bool isGenuineIntel = (cpuidInfo[CPUID_EBX] == 0x756E6547) && // Genu
+                          (cpuidInfo[CPUID_EDX] == 0x49656E69) && // ineI
+                          (cpuidInfo[CPUID_ECX] == 0x6C65746E);   // ntel
 
     __cpuid(cpuidInfo, 0x00000001);
     _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 15)) != 0);                                                    // CMOV
 
-    // Set the rest of the CPU info bits, masking off the info already set
-    xarchCpuInfo.Value |= (cpuidInfo[CPUID_EAX] & ~(0x3 << 14));
+    xarchCpuInfo.Value = cpuidInfo[CPUID_EAX];
 
 #if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
     // Linux may still support no SSE/SSE2 for 32-bit
@@ -1944,7 +1935,7 @@ void EEJitManager::SetCpuInfo()
     CPUCompileFlags.EnsureValidInstructionSetSupport();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if (xarchCpuInfo.IsGenuineIntel)
+    if (isGenuineIntel)
     {
         // Some architectures can experience frequency throttling when executing
         // executing 512-bit width instructions. To account for this we set the
