@@ -1423,7 +1423,22 @@ void EEJitManager::SetCpuInfo()
     //      LZCNT - ECX bit 5
     // synchronously updating VM and JIT.
 
-    XarchCpuInfo xarchCpuInfo = {};
+    union XarchCpuInfo
+    {
+        struct {
+            uint32_t SteppingId       : 4;
+            uint32_t Model            : 4;
+            uint32_t FamilyId         : 4;
+            uint32_t ProcessorType    : 2;
+            uint32_t IsAuthenticAmd   : 1; // Unused bits in the CPUID result
+            uint32_t IsGenuineIntel   : 1; // Unused bits in the CPUID result
+            uint32_t ExtendedModelId  : 4;
+            uint32_t ExtendedFamilyId : 8;
+            uint32_t Reserved         : 4; // Unused bits in the CPUID result
+        };
+
+        uint32_t Value;
+    } xarchCpuInfo;
 
     int cpuidInfo[4];
 
@@ -1449,8 +1464,10 @@ void EEJitManager::SetCpuInfo()
     }
 
     __cpuid(cpuidInfo, 0x00000001);
-
     _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 15)) != 0);                                                    // CMOV
+
+    // Set the rest of the CPU info bits, masking off the info already set
+    xarchCpuInfo.Value |= (cpuidInfo[CPUID_EAX] & ~(0x3 << 14));
 
 #if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
     // Linux may still support no SSE/SSE2 for 32-bit
@@ -1926,8 +1943,6 @@ void EEJitManager::SetCpuInfo()
     CPUCompileFlags.Set64BitInstructionSetVariants();
     CPUCompileFlags.EnsureValidInstructionSetSupport();
 
-    m_CPUCompileFlags = CPUCompileFlags;
-
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (xarchCpuInfo.IsGenuineIntel)
     {
@@ -1962,6 +1977,8 @@ void EEJitManager::SetCpuInfo()
         }
     }
 #endif // TARGET_X86 || TARGET_AMD64
+
+    m_CPUCompileFlags = CPUCompileFlags;
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.
