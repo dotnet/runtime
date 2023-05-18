@@ -41,24 +41,24 @@ namespace System.Threading
         public SafeHandle Handle => _handle;
 
         public static unsafe ThreadPoolBoundHandle BindHandle(SafeHandle handle) =>
-            ThreadPool.UseWindowsThreadPool ? BindHandleCore(handle) : BindHandlePortableCore(handle);
+            ThreadPool.UseWindowsThreadPool ? BindHandleWindowsThreadPool(handle) : BindHandlePortableCore(handle);
 
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
             ThreadPool.UseWindowsThreadPool ?
-            AllocateNativeOverlappedCore(callback, state, pinData) :
+            AllocateNativeOverlappedWindowsThreadPool(callback, state, pinData) :
             AllocateNativeOverlappedPortableCore(callback, state, pinData);
 
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
             ThreadPool.UseWindowsThreadPool ?
-            UnsafeAllocateNativeOverlappedCore(callback, state, pinData) :
+            UnsafeAllocateNativeOverlappedWindowsThreadPool(callback, state, pinData) :
             UnsafeAllocateNativeOverlappedPortableCore(callback, state, pinData);
 
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) =>
             ThreadPool.UseWindowsThreadPool ?
-            AllocateNativeOverlappedCore(preAllocated) :
+            AllocateNativeOverlappedWindowsThreadPool(preAllocated) :
             AllocateNativeOverlappedPortableCore(preAllocated);
 
         [CLSCompliant(false)]
@@ -66,7 +66,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                FreeNativeOverlappedCore(overlapped);
+                FreeNativeOverlappedWindowsThreadPool(overlapped);
             }
             else
             {
@@ -77,14 +77,14 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) =>
             ThreadPool.UseWindowsThreadPool ?
-            GetNativeOverlappedStateCore(overlapped) :
+            GetNativeOverlappedStateWindowsThreadPool(overlapped) :
             GetNativeOverlappedStatePortableCore(overlapped);
 
         public void Dispose()
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                DisposeCore();
+                DisposeWindowsThreadPool();
             }
             else
             {
@@ -96,7 +96,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                FinalizeCore();
+                FinalizeWindowsThreadPool();
             }
         }
 
@@ -104,7 +104,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                IDeferredDisposableOnFinalReleaseCore(disposed);
+                IDeferredDisposableOnFinalReleaseWindowsThreadPool(disposed);
             }
         }
     }

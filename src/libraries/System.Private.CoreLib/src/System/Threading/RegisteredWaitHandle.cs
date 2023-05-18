@@ -151,13 +151,13 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        public bool Unregister(WaitHandle waitObject) => ThreadPool.UseWindowsThreadPool ? UnregisterCore(waitObject) : UnregisterPortableCore(waitObject);
+        public bool Unregister(WaitHandle waitObject) => ThreadPool.UseWindowsThreadPool ? UnregisterWindowsThreadPool(waitObject) : UnregisterPortableCore(waitObject);
 
         internal void PerformCallback(bool timedOut)
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                PerformCallbackCore(timedOut);
+                PerformCallbackWindowsThreadPool(timedOut);
             }
             else
             {

@@ -15,7 +15,7 @@ namespace System.Threading
     //
     public sealed partial class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
-        private static unsafe ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
+        private static unsafe ThreadPoolBoundHandle BindHandleWindowsThreadPool(SafeHandle handle)
         {
             ArgumentNullException.ThrowIfNull(handle);
 
@@ -38,13 +38,13 @@ namespace System.Threading
             return new ThreadPoolBoundHandle(handle, threadPoolHandle);
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: true);
+        private unsafe NativeOverlapped* AllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlappedWindowsThreadPool(callback, state, pinData, flowExecutionContext: true);
 
-        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: false);
+        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlappedWindowsThreadPool(callback, state, pinData, flowExecutionContext: false);
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        private unsafe NativeOverlapped* AllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
 
@@ -65,7 +65,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(PreAllocatedOverlapped preAllocated)
+        private unsafe NativeOverlapped* AllocateNativeOverlappedWindowsThreadPool(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
 
@@ -76,7 +76,7 @@ namespace System.Threading
                 addedRefToThis = AddRef();
                 addedRefToPreAllocated = preAllocated.AddRef();
 
-                Win32ThreadPoolNativeOverlapped.OverlappedData data = preAllocated._overlappedCore->Data;
+                Win32ThreadPoolNativeOverlapped.OverlappedData data = preAllocated._overlappedWindowsThreadPool->Data;
                 if (data._boundHandle != null)
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
@@ -84,7 +84,7 @@ namespace System.Threading
 
                 Interop.Kernel32.StartThreadpoolIo(_threadPoolHandle!);
 
-                return Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlappedCore);
+                return Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(preAllocated._overlappedWindowsThreadPool);
             }
             catch
             {
@@ -96,7 +96,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe void FreeNativeOverlappedCore(NativeOverlapped* overlapped)
+        private unsafe void FreeNativeOverlappedWindowsThreadPool(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
 
@@ -118,7 +118,7 @@ namespace System.Threading
                 Win32ThreadPoolNativeOverlapped.Free(threadPoolOverlapped);
         }
 
-        private static unsafe object? GetNativeOverlappedStateCore(NativeOverlapped* overlapped)
+        private static unsafe object? GetNativeOverlappedStateWindowsThreadPool(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
 
@@ -173,13 +173,13 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        private void DisposeCore()
+        private void DisposeWindowsThreadPool()
         {
             _lifetime.Dispose(this);
             GC.SuppressFinalize(this);
         }
 
-        private void FinalizeCore()
+        private void FinalizeWindowsThreadPool()
         {
             //
             // During shutdown, don't automatically clean up, because this instance may still be
@@ -189,7 +189,7 @@ namespace System.Threading
                 Dispose();
         }
 
-        private void IDeferredDisposableOnFinalReleaseCore(bool disposed)
+        private void IDeferredDisposableOnFinalReleaseWindowsThreadPool(bool disposed)
         {
             if (disposed)
                 _threadPoolHandle!.Dispose();

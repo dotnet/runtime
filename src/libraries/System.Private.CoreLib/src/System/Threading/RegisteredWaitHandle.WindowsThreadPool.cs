@@ -28,7 +28,7 @@ namespace System.Threading
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
-            registeredWaitHandle.PerformCallbackCore(timedOut);
+            registeredWaitHandle.PerformCallbackWindowsThreadPool(timedOut);
             ThreadPool.IncrementCompletedWorkItemCount();
 #if NATIVEAOT
             wrapper.Exit();
@@ -36,7 +36,7 @@ namespace System.Threading
         }
 #pragma warning restore IDE0060
 
-        private void PerformCallbackCore(bool timedOut)
+        private void PerformCallbackWindowsThreadPool(bool timedOut)
         {
             // New logic might be wrong here, not sure yet
             // If another thread is running Unregister, no need to restart the timer or clean up
@@ -76,7 +76,7 @@ namespace System.Threading
             Interop.Kernel32.SetThreadpoolWait(_tpWait, _waitHandle!.DangerousGetHandle(), (IntPtr)pTimeout);
         }
 
-        private bool UnregisterCore(WaitHandle waitObject)
+        private bool UnregisterWindowsThreadPool(WaitHandle waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
             lock(_lock!)

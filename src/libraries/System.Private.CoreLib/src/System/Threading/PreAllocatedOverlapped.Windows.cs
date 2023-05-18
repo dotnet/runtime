@@ -90,7 +90,7 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
-            ThreadPool.UseWindowsThreadPool ? UnsafeCreateCore(callback, state, pinData) : UnsafeCreatePortableCore(callback, state, pinData);
+            ThreadPool.UseWindowsThreadPool ? UnsafeCreateWindowsThreadPool(callback, state, pinData) : UnsafeCreatePortableCore(callback, state, pinData);
 
         private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
@@ -98,7 +98,7 @@ namespace System.Threading
             {
                 ArgumentNullException.ThrowIfNull(callback);
 
-                _overlappedCore = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
+                _overlappedWindowsThreadPool = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
             }
             else
             {
@@ -110,13 +110,13 @@ namespace System.Threading
             }
         }
 
-        internal bool AddRef() => ThreadPool.UseWindowsThreadPool ? AddRefCore() : AddRefPortableCore();
+        internal bool AddRef() => ThreadPool.UseWindowsThreadPool ? AddRefWindowsThreadPool() : AddRefPortableCore();
 
         internal void Release()
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                ReleaseCore();
+                ReleaseWindowsThreadPool();
             }
             else
             {
@@ -127,7 +127,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                DisposeCore();
+                DisposeWindowsThreadPool();
             }
             else
             {
@@ -144,7 +144,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                IDeferredDisposableOnFinalReleaseCore(disposed);
+                IDeferredDisposableOnFinalReleaseWindowsThreadPool(disposed);
             }
             else
             {
