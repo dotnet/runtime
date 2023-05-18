@@ -5,6 +5,7 @@ import type { AssetEntryInternal, PromiseAndController } from "../types/internal
 import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
+import { mono_log_debug } from "./logging";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -70,7 +71,7 @@ export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInterna
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
+    mono_log_debug("MONO_WASM: mono_download_assets");
     loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
     try {
@@ -244,8 +245,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     try {
         ++parallel_count;
         if (parallel_count == loaderHelpers.maxParallelDownloads) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Throttling further parallel downloads");
+            mono_log_debug("MONO_WASM: Throttling further parallel downloads");
             throttlingPromise = createPromiseController<void>();
         }
 
@@ -264,8 +264,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     finally {
         --parallel_count;
         if (throttlingPromise && parallel_count == loaderHelpers.maxParallelDownloads - 1) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Resuming more parallel downloads");
+            mono_log_debug("MONO_WASM: Resuming more parallel downloads");
             const old_throttling = throttlingPromise;
             throttlingPromise = undefined;
             old_throttling.promise_control.resolve();
@@ -307,11 +306,9 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
         if (asset.name === attemptUrl) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
+            mono_log_debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
         } else {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
+            mono_log_debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             asset.resolvedUrl = attemptUrl;

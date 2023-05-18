@@ -37,6 +37,7 @@ module.exports = {
             }
         ],
         "no-multi-spaces": ["error"],
+        "no-console": ["error"],
         "arrow-spacing": ["error"],
         "block-spacing": ["error"],
         "comma-spacing": ["error"],

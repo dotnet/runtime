@@ -1,8 +1,27 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/* eslint-disable no-console */
 import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { CharPtr, VoidPtr } from "./types/emscripten";
+
+export function mono_log_debug(msg: string, ...data: any) {
+    if (runtimeHelpers.diagnosticTracing) {
+        console.debug(msg, ...data);
+    }
+}
+
+export function mono_log_info(msg: string, ...data: any) {
+    console.info(msg, ...data);
+}
+
+export function mono_log_warn(msg: string, ...data: any) {
+    console.warn(msg, ...data);
+}
+
+export function mono_log_error(msg: string, ...data: any) {
+    console.error(msg, ...data);
+}
 
 export const wasm_func_map = new Map<number, string>();
 const regexes: any[] = [];
@@ -117,5 +136,5 @@ export function parseSymbolMapFile(text: string) {
         wasm_func_map.set(Number(parts[0]), parts[1]);
     });
 
-    if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+    mono_log_debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
 }
