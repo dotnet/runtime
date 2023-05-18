@@ -2534,30 +2534,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    switch (ni)
-    {
-        // CreateSpan must be expanded for NativeAOT
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-            break;
-
-        case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_Activator_AllocatorOf:
-        case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_EETypePtr_EETypePtrOf:
-            mustExpand = true;
-            break;
-
-        default:
-            break;
-    }
-
-    // Allow some lighweight intrinsics in Tier0 which can improve throughput
-    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
-    // in this case unlike mustExpand.
     bool betterToExpand = false;
 
+    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
@@ -2615,6 +2595,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
                 // Same for these
                 betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
+                break;
+        }
+    }
+
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Intrinsics that we should make every effort to expand for NativeAOT.
+        // If the intrinsic cannot possibly be expanded, it's fine, but
+        // if it can be, it should expand.
+        switch (ni)
+        {
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
+            case NI_System_EETypePtr_EETypePtrOf:
+                betterToExpand = true;
+                break;
+
+            default:
                 break;
         }
     }
