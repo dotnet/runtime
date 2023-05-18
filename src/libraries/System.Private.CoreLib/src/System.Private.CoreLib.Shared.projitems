@@ -2558,7 +2558,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.cs" Condition="'$(TargetsWindows)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Portable.Core.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.cs" Condition="'$(TargetsWindows)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.Core.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphoreBase.cs" />
