@@ -9,10 +9,11 @@
     <TestsOutputName>ha</TestsOutputName>
     <UsesTestAssets>true</UsesTestAssets>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
-    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+    <!-- Exclude runtime assets. HostModel uses OOB packages and the test just wants what is in the framework -->
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <ItemGroup>
