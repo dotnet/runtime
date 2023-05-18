@@ -52,6 +52,7 @@ The first pass scans sequentially through the interpreter opcodes for a method, 
 * A call out to a helper that implements the opcode, written in C
 * A call out to a libc function that implements the opcode
 * A "bailout" which returns control to the interpreter at the opcode's location in order to execute it
+
 During this first pass the compiler also records control flow information, keeping track of branches and branch targets in its "CFG" which will be used later to construct the WASM structures necessary for loops and other control flow.
 During compilation a running estimate is maintained of the trace's size, because web browsers impose an arbitrary 4KB limit on the total size of a synchronously compiled module, including the size of things like function names and type information. If we get too close to the 4KB limit, trace compilation will end at the current location. During this phase all of the generated Webassembly code is appended into a scratch buffer, with buffer offsets recorded in the CFG.
 
@@ -60,6 +61,7 @@ The second pass generates the final WebAssembly module including metadata like t
 * Blob segments, containing one or more WASM opcodes that execute sequentially. These can be copied directly into the result module
 * Branch block header segments, which represent a location targeted by forward or backward branches elsewhere in the code. We generate WebAssembly flow control structures at these locations based on the information we have about the entire trace.
 * Branch segments, which represent a conditional or unconditional branch that occurs after a blob. Conditional branch segments are surrounded by header and footer blobs, used to implement opcodes like conditional branches or null checks. These are translated into WebAssembly branch opcodes targeting a specific branch block header, and for backward branches we also set a dispatch index.
+
 For traces containing backward branches, each trace begins with a small "dispatch table" which performs a forward branch to a specific destination determined by a dispatch index. Upon trace entry the dispatch index points to the top of the trace, but when a backwards branch occurs we set a specific dispatch index and always jump to the dispatch table. This is necessary due to WebAssembly's heavily constrained flow control model that does not allow arbitrary jumps and encodes jumps based on nesting depths instead of as branches targeting specific code offsets.
 
 ### Opcode translation patterns
