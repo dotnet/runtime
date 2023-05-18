@@ -15,7 +15,7 @@ export function mono_log_info(msg: string, ...data: any) {
 }
 
 export function mono_log_info_no_prefix(msg: string, ...data: any) {
-    console.info("MONO_WASM: " + msg, ...data);
+    console.info(msg, ...data);
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
