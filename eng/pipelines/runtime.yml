@@ -107,7 +107,7 @@ extends:
             buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
             extraStepsParameters:
-              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages
+              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
