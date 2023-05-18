@@ -41,16 +41,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             _sb.AppendLine(source);
         }
 
-        public unsafe void WriteLine(ReadOnlySpan<char> source)
-        {
-            _sb.Append(' ', 4 * _indentationLevel);
-            fixed (char* ptr = source)
-            {
-                _sb.Append(ptr, source.Length);
-                WriteBlankLine();
-            }
-        }
-
         public void WriteBlock(string source)
         {
             bool isFinalLine;
@@ -117,6 +107,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             next = remainingText.Slice(0, lineLength);
             remainingText = rest;
             return next;
+        }
+
+        private unsafe void WriteLine(ReadOnlySpan<char> source)
+        {
+            _sb.Append(' ', 4 * _indentationLevel);
+            fixed (char* ptr = source)
+            {
+                _sb.Append(ptr, source.Length);
+                WriteBlankLine();
+            }
         }
     }
 }

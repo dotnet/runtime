@@ -30,4 +30,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
     }
+
+    internal enum StringParsableTypeKind
+    {
+        None = 0,
+        ConfigValue = 1,
+        Enum = 2,
+        ByteArray = 3,
+        Integer = 4,
+        Float = 5,
+        Parse = 6,
+        ParseInvariant = 7,
+        CultureInfo = 8,
+        Uri = 9,
+    }
 }
