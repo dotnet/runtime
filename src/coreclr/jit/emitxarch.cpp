@@ -1399,17 +1399,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
             case INS_vcvttsd2usi:
-            case INS_vcvttss2usi:
-            {
-                if (attr == EA_8BYTE)
-                {
-                    return true;
-                }
-
-                // TODO-Cleanup: This should really only ever be EA_4BYTE
-                assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
-                return false;
-            }
 
             case INS_vbroadcastsd:
             case INS_vpbroadcastq:
@@ -2623,7 +2612,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_vcvtsd2usi:
         case INS_vcvtss2usi:
         case INS_vcvttsd2usi:
-        case INS_vcvttss2usi:
+        case INS_vcvttss2usi32:
+        case INS_vcvttss2usi64:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -11435,7 +11425,7 @@ void emitter::emitDispIns(
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
                 case INS_vcvttsd2usi:
-                case INS_vcvttss2usi:
+                //case INS_vcvttss2usi:
                 {
                     printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
                     break;
@@ -18615,9 +18605,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvttss2si:
         case INS_cvtss2si:
         case INS_vcvtss2usi:
-        case INS_vcvttss2usi:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
+            break;
+        
+        case INS_vcvttss2usi32:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+        
+        case INS_vcvttss2usi64:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_8C;
             break;
 
         case INS_cvtss2sd:
