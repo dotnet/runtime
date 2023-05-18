@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Rational
 {
@@ -29,7 +30,8 @@ public class BringUpTest_StructFldAddr
         return rp.a.num + rp.b.num;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Rational a = new Rational();
         Rational b = new Rational();
