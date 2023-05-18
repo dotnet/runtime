@@ -3268,6 +3268,29 @@ create_call_args (TransformData *td, int num_args)
 	call_args [num_args] = -1;
 	return call_args;
 }
+
+static void
+interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_args, int prev_offset)
+{
+	for (int i = 1; i < num_args; i++) {
+		if (td->locals [sp_params [i].local].flags & INTERP_LOCAL_FLAG_SIMD) {
+			gint16 offset_amount;
+			// If the simd struct comes immediately after the previous argument we do upper align
+			// otherwise we should lower align to preserve call convention
+			if ((sp_params [i - 1].offset + sp_params [i - 1].size) == sp_params [i].offset)
+				offset_amount = (gint16)MINT_STACK_SLOT_SIZE;
+			else
+				offset_amount = -(gint16)MINT_STACK_SLOT_SIZE;
+
+			interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+			// After previous alignment, this arg will be offset by MINT_STACK_SLOT_SIZE
+			td->last_ins->data [0] = sp_params [i].offset + prev_offset;
+			td->last_ins->data [1] = offset_amount;
+			td->last_ins->data [2] = get_stack_size (td, sp_params + i, num_args - i);
+		}
+	}
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3609,23 +3632,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			// If we have any simd arguments, we broke their alignment. We need to find the first simd arg and realign it
 			// together with the following params. First argument can't be simd type otherwise we would have been aligned
 			// already.
-			for (int i = 1; i < num_args; i++) {
-				if (td->locals [td->sp [i].local].flags & INTERP_LOCAL_FLAG_SIMD) {
-					gint16 offset_amount;
-					// If the simd struct comes immediately after the previous argument we do upper align
-					// otherwise we should lower align to preserve call convention
-					if ((td->sp [i - 1].offset + td->sp [i - 1].size) == td->sp [i].offset)
-						offset_amount = (gint16)MINT_STACK_SLOT_SIZE;
-					else
-						offset_amount = -(gint16)MINT_STACK_SLOT_SIZE;
-
-					interp_add_ins (td, MINT_MOV_STACK_UNOPT);
-					// After previous alignment, this arg will be offset by MINT_STACK_SLOT_SIZE
-					td->last_ins->data [0] = td->sp [i].offset + MINT_STACK_SLOT_SIZE;
-					td->last_ins->data [1] = offset_amount;
-					td->last_ins->data [2] = get_stack_size (td, td->sp + i, num_args - i);
-				}
-			}
+			interp_realign_simd_params (td, td->sp, num_args, MINT_STACK_SLOT_SIZE);
 
 			if (calli) {
 				// fp_sreg is at the top of the stack, make sure it is not overwritten by MINT_CALL_ALIGN_STACK
@@ -6135,8 +6142,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else if (!td->optimized) {
 				int tos = get_tos_offset (td);
 				int param_offset, param_size;
-				if (csignature->param_count) {
-					td->sp -= csignature->param_count;
+				int param_count = csignature->param_count;
+				if (param_count) {
+					td->sp -= param_count;
 					param_offset = td->sp [0].offset;
 					param_size = tos - param_offset;
 				} else {
@@ -6144,35 +6152,73 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					param_size = 0;
 				}
 
-				td->cbb->contains_call_instruction = TRUE;
-				interp_add_ins (td, MINT_NEWOBJ_SLOW_UNOPT);
-				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
-				init_last_ins_call (td);
-				td->last_ins->info.call_info->call_offset = param_offset;
-				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
-				td->last_ins->data [1] = param_size;
-				if (csignature->param_count > 0) {
-					// Instruct opcode to also align params if necessary
-					if (td->locals [td->sp [0].local].flags & INTERP_LOCAL_FLAG_SIMD)
-						td->last_ins->data [3] = 1;
-				}
+				// Move params types in temporary buffer
+				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * param_count);
+				memcpy (sp_params, td->sp, sizeof (StackInfo) * param_count);
 
 				gboolean is_vt = m_class_is_valuetype (klass);
+				int vtsize = 0;
+				// We conservatively ensure stack size with an additional 2 * MINT_STACK_SLOT_SIZE since we can do
+				// at most 2 alignments
+				const int padding = 2 * MINT_STACK_SLOT_SIZE;
 				if (is_vt) {
-					int vtsize = mono_class_value_size (klass, NULL);
+					vtsize = mono_class_value_size (klass, NULL);
 					vtsize = ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE);
-					td->last_ins->data [2] = vtsize;
-					ENSURE_STACK_SIZE(td, (int)(tos + vtsize + MINT_STACK_SLOT_SIZE));
+					ENSURE_STACK_SIZE(td, (int)(tos + vtsize + MINT_STACK_SLOT_SIZE + padding));
 					if (ret_mt == MINT_TYPE_VT)
 						push_type_vt (td, klass, vtsize);
 					else
 						push_type (td, stack_type [ret_mt], klass);
 				} else {
-					td->last_ins->data [2] = 0;
-					ENSURE_STACK_SIZE(td, (int)(tos + 2 * MINT_STACK_SLOT_SIZE));
+					ENSURE_STACK_SIZE(td, (int)(tos + 2 * MINT_STACK_SLOT_SIZE + padding));
 					push_type (td, stack_type [ret_mt], klass);
 				}
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+
+				int dreg = td->sp [-1].local;
+
+				int call_offset = get_tos_offset (td);
+				call_offset = ALIGN_TO (call_offset, MINT_STACK_ALIGNMENT);
+
+				if (param_count) {
+					if (td->locals [sp_params [0].local].flags & INTERP_LOCAL_FLAG_SIMD) {
+						// if first arg is simd, move all args at next aligned offset after this ptr
+						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+						td->last_ins->data [0] = param_offset;
+						td->last_ins->data [1] = call_offset + MINT_SIMD_ALIGNMENT - param_offset;
+						td->last_ins->data [2] = param_size;
+					} else {
+						int realign_offset = call_offset + MINT_STACK_SLOT_SIZE - param_offset;
+						// otherwise we move all args immediately after this ptr
+						interp_add_ins (td, MINT_MOV_STACK_UNOPT);
+						td->last_ins->data [0] = param_offset;
+						td->last_ins->data [1] = realign_offset;
+						td->last_ins->data [2] = param_size;
+
+						if ((realign_offset % MINT_SIMD_ALIGNMENT) != 0) {
+							// the argument move broke the alignment of any potential simd arguments, realign
+							interp_realign_simd_params (td, sp_params, param_count, realign_offset);
+						}
+					}
+				}
+
+				if (!mono_class_has_finalizer (klass) &&
+					!m_class_has_weak_fields (klass)) {
+					if (is_vt) {
+						interp_add_ins (td, MINT_NEWOBJ_VT);
+						td->last_ins->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
+					} else {
+						interp_add_ins (td, MINT_NEWOBJ);
+						td->last_ins->data [1] = get_data_item_index (td, vtable);
+					}
+				} else {
+					interp_add_ins (td, MINT_NEWOBJ_SLOW);
+					g_assert (!m_class_is_valuetype (klass));
+				}
+				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
+				interp_ins_set_dreg (td->last_ins, dreg);
+				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+				init_last_ins_call (td);
+				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
 				td->sp -= csignature->param_count;
 
