@@ -117,7 +117,7 @@ namespace System
         // typeCode and boxing the result.
         //
         // The method first checks if the given object implements IConvertible. If not,
-        // the only permitted conversion is from a null to TypeCode.Empty, the
+        // the only permitted conversion is from a null to TypeCode.Empty/TypeCode.String/TypeCode.Object, the
         // result of which is null.
         [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, TypeCode typeCode)
