@@ -3440,8 +3440,9 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
             GenTreeLclVarCommon* lclVar  = op1->AsLclVarCommon();
             uint32_t             lclOffs = lclVar->GetLclOffs() + (imm8 * elemSize);
+            LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if ((lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= comp->lvaGetDesc(lclVar)->lvExactSize()))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
             {
                 GenTree* lclFld =
                     comp->gtNewLclFldNode(lclVar->GetLclNum(), simdBaseType, static_cast<uint16_t>(lclOffs));
@@ -4876,14 +4877,16 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
         if (op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
+            uint32_t elemSize = genTypeSize(simdBaseType);
+
             // We want to optimize ToScalar down to a LclFld where possible as
             // this unlocks additional containment opportunities for various nodes
 
-            GenTreeLclVarCommon* lclVar   = op1->AsLclVarCommon();
-            uint32_t             elemSize = genTypeSize(simdBaseType);
-            uint32_t             lclOffs  = lclVar->GetLclOffs() + (0 * elemSize);
+            GenTreeLclVarCommon* lclVar  = op1->AsLclVarCommon();
+            uint32_t             lclOffs = lclVar->GetLclOffs() + (0 * elemSize);
+            LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if ((lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= comp->lvaGetDesc(lclVar)->lvExactSize()))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
             {
                 GenTree* lclFld = comp->gtNewLclFldNode(lclVar->GetLclNum(), simdBaseType, lclVar->GetLclOffs());
                 BlockRange().InsertBefore(node, lclFld);
