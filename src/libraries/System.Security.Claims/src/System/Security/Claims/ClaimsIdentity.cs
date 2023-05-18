@@ -961,7 +961,8 @@ namespace System.Security.Claims
             public ClaimsIdentity? Actor => _identity.Actor;
             public string? AuthenticationType => _identity.AuthenticationType;
             public object? BootstrapContext => _identity.BootstrapContext;
-            public IEnumerable<Claim> Claims => new List<Claim>(_identity.Claims);
+            // List type has a friendly debugger view
+            public List<Claim> Claims => new List<Claim>(_identity.Claims);
             public bool IsAuthenticated => _identity.IsAuthenticated;
             public string? Label => _identity.Label;
             public string? Name => _identity.Name;

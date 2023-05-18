@@ -604,8 +604,9 @@ namespace System.Security.Claims
                 _principal = principal;
             }
 
-            public IEnumerable<Claim> Claims => new List<Claim>(_principal.Claims);
-            public IEnumerable<ClaimsIdentity> Identities => new List<ClaimsIdentity>(_principal.Identities);
+            // List type has a friendly debugger view
+            public List<Claim> Claims => new List<Claim>(_principal.Claims);
+            public List<ClaimsIdentity> Identities => new List<ClaimsIdentity>(_principal.Identities);
             public IIdentity? Identity => _principal.Identity;
         }
     }
