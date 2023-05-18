@@ -5,7 +5,7 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
-         private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite)
+         private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, UnixFileMode filePermissions, string destFullPath, bool overwrite)
          {
             // No such functionality is available on unix OSes (other than OSX-like ones).
             return false;

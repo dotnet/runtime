@@ -29,22 +29,23 @@ namespace System.IO
             UnixFileMode.OtherExecute;
 
         // TryCloneFile is defined in either FileSystem.TryCloneFile.OSX.cs or FileSystem.TryCloneFile.OtherUnix.cs.
-        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, string destFullPath, bool overwrite);
+        private static partial bool TryCloneFile(string sourceFullPath, in Interop.Sys.FileStatus srcStat, UnixFileMode filePermissions, string destFullPath, bool overwrite);
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Open the src file handle.
+            // Open the src file handle, and read the file permissions.
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus srcFileStatus);
+            UnixFileMode filePermissions = SafeFileHandle.GetFileMode(srcStat);
 
             // Try to clone the file first.
-            if (TryCloneFile(sourceFullPath, in srcFileStatus, destFullPath, overwrite))
+            if (TryCloneFile(sourceFullPath, in srcFileStatus, filePermissions, destFullPath, overwrite))
             {
                 return;
             }
 
             // Open the dst file handle.
             using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: filePermissions,
                 CreateOpenException);
 
             // Exception handler for SafeFileHandle.Open failing.
