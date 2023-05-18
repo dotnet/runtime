@@ -667,6 +667,7 @@ void emitter::emitIns_R_R_I(
     {
         assert(isGeneralRegister(reg1));
         assert(isGeneralRegister(reg2));
+        assert(isValidSimm13(imm));
         code |= reg1 << 15;
         code |= reg2 << 20;
         code |= ((imm >> 11) & 0x1) << 7;
@@ -1621,10 +1622,10 @@ void emitter::emitJumpDistBind()
 #endif // DEBUG
 
     // NOTE:
-    //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
-    //  bit1 of isLinkingEnd_LA: indicating not needed updating the size while emitTotalCodeSize <= (0x7fff << 2) or had
+    //  bit0 of isLinkingEnd: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
+    //  bit1 of isLinkingEnd: indicating not needed updating the size while emitTotalCodeSize <= 0xfff or had
     //  updated;
-    unsigned int isLinkingEnd_LA = emitTotalCodeSize <= (0x7fff << 2) ? 2 : 0;
+    unsigned int isLinkingEnd = emitTotalCodeSize <= 0xfff ? 2 : 0;
 
     UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
     // small  jump max. neg distance
@@ -1836,7 +1837,7 @@ AGAIN:
             assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd_LA & 0x2)
+            if (isLinkingEnd & 0x2)
             {
                 jmp->idAddr()->iiaSetJmpOffset(jmpDist);
             }
@@ -1879,7 +1880,7 @@ AGAIN:
                 adjIG += (UNATIVE_OFFSET)extra;
                 emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
+                isLinkingEnd |= 0x1;
             }
             continue;
         }
@@ -1923,7 +1924,7 @@ AGAIN:
             assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
-            if (isLinkingEnd_LA & 0x2)
+            if (isLinkingEnd & 0x2)
             {
                 jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
@@ -1954,7 +1955,7 @@ AGAIN:
                 }
                 else
                 {
-                    assert(ins == INS_jal || ins == INS_jalr);
+                    assert(ins == INS_jal || ins == INS_jalr || ins == INS_j);
                     assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                     continue;
                 }
@@ -1966,17 +1967,17 @@ AGAIN:
                 adjIG += (UNATIVE_OFFSET)extra;
                 emitTotalCodeSize += (UNATIVE_OFFSET)extra;
                 jmpIG->igFlags |= IGF_UPD_ISZ;
-                isLinkingEnd_LA |= 0x1;
+                isLinkingEnd |= 0x1;
             }
             continue;
         }
     } // end for each jump
 
-    if ((isLinkingEnd_LA & 0x3) < 0x2)
+    if ((isLinkingEnd & 0x3) < 0x2)
     {
         // indicating the instrDescJmp's size of the type INS_OPTS_J had updated
         // after the first round and should iterate again to update.
-        isLinkingEnd_LA = 0x2;
+        isLinkingEnd = 0x2;
 
         // Adjust offsets of any remaining blocks.
         for (; lstIG;)
@@ -2460,7 +2461,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             }
                             else
                             {
-                                assert((-0x100000 <= imm) && (imm < 0x100000));
+                                assert(isValidSimm21(imm));
                                 assert((emitInsCode(INS_bne) & 0xefff) == emitInsCode(INS_beq));
 
                                 code = emitInsCode(ins) ^ 0x1000;
@@ -2482,7 +2483,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         }
                         else if ((INS_blt <= ins) && (ins <= INS_bgeu))
                         {
-                            assert((-0x100000 <= imm) && (imm < 0x100000));
+                            assert(isValidSimm21(imm));
                             assert((emitInsCode(INS_bge) & 0xefff) == emitInsCode(INS_blt));
                             assert((emitInsCode(INS_bgeu) & 0xefff) == emitInsCode(INS_bltu));
 
@@ -2542,6 +2543,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins);
                 if (ins == INS_jal)
                 {
+                    assert(isValidSimm21(imm));
                     code |= ((imm >> 12) & 0xff) << 12;
                     code |= ((imm >> 11) & 0x1) << 20;
                     code |= ((imm >> 1) & 0x3ff) << 21;
@@ -2550,6 +2552,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if (ins == INS_j)
                 {
+                    assert(isValidSimm21(imm));
                     code |= ((imm >> 12) & 0xff) << 12;
                     code |= ((imm >> 11) & 0x1) << 20;
                     code |= ((imm >> 1) & 0x3ff) << 21;
@@ -2557,10 +2560,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if (ins == INS_jalr)
                 {
+                    assert(isValidSimm12(imm));
                     code |= ((code_t)(imm & 0xfff) << 20);
                 }
                 else if (ins == INS_bnez || ins == INS_beqz)
                 {
+                    assert(isValidSimm13(imm));
                     code |= (code_t)id->idReg1() << 15;
                     code |= ((imm >> 11) & 0x1) << 7;
                     code |= ((imm >> 1) & 0xf) << 8;
@@ -2569,6 +2574,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
                 else if ((INS_beq <= ins) && (ins <= INS_bgeu))
                 {
+                    assert(isValidSimm13(imm));
                     code |= ((code_t)id->idReg1()) << 15;
                     code |= ((code_t)id->idReg2()) << 20;
                     code |= ((imm >> 11) & 0x1) << 7;
