@@ -4569,6 +4569,7 @@ create_ref_shared_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCon
 		for (guint i = 0; i < inst->type_argc; ++i)
 			args [i] = mono_get_object_type ();
 		ctx->class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
 	}
 	if (method->is_generic) {
 		container = mono_method_get_generic_container (method);
@@ -4580,6 +4581,7 @@ create_ref_shared_inst (MonoAotCompile *acfg, MonoMethod *method, MonoGenericCon
 		for (int i = 0; i < container->type_argc; ++i)
 			args [i] = mono_get_object_type ();
 		ctx->method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
+		g_free (args);
 	}
 }
 
