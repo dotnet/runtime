@@ -945,7 +945,7 @@ namespace System.Security.Claims
                 claimsCount++;
             }
 
-            return $"Identity Name = {Name}, IsAuthenticated = {IsAuthenticated}, Claims Count = {claimsCount}";
+            return $"Identity Name = {Name ?? "(null)"}, IsAuthenticated = {IsAuthenticated}, Claims Count = {claimsCount}";
         }
     }
 }

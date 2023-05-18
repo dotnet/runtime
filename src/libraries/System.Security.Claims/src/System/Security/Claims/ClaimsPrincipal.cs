@@ -588,7 +588,7 @@ namespace System.Security.Claims
             // Return debug string optimized for the case of one identity.
             if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
             {
-                return claimsIdentity.DebuggerToString();
+                return $"Principal {claimsIdentity.DebuggerToString()}";
             }
 
             return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
