@@ -15,6 +15,7 @@ import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_n
 import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
+import { mono_log_warn } from "../logging";
 
 
 const escapeRE = /[^A-Za-z0-9_$]/g;
@@ -308,7 +309,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
-        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -341,7 +342,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
-        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -355,7 +356,7 @@ function _maybe_produce_signature_warning(converter: Converter) {
     if (converter.has_warned_about_signature)
         return;
 
-    console.warn("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
+    mono_log_warn("Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
     converter.has_warned_about_signature = true;
 }
 

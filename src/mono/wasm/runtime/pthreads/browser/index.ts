@@ -8,6 +8,7 @@ import Internals from "../shared/emscripten-internals";
 import { createPromiseController, runtimeHelpers } from "../../globals";
 import { PromiseController } from "../../types/internal";
 import { MonoConfig } from "../../types";
+import { mono_log_debug } from "../../logging";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -81,7 +82,7 @@ export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
     // TODO: add callbacks that will be called from here
-    console.debug("MONO_WASM: got message from worker on the dedicated channel", event.data, thread);
+    mono_log_debug("got message from worker on the dedicated channel", event.data, thread);
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
@@ -93,7 +94,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
         port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
     }
     else if (isMonoWorkerMessageChannelCreated(data)) {
-        console.debug("MONO_WASM: received the channel created message", data, worker);
+        mono_log_debug("received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);
@@ -107,7 +108,7 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
+    mono_log_debug("afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
 /// We call on the main thread this during startup to pre-allocate a pool of pthread workers.

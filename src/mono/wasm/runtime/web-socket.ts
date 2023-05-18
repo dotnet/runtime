@@ -7,6 +7,7 @@ import { Module, createPromiseController } from "./globals";
 import { setI32 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
+import { mono_log_warn } from "./logging";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -148,7 +149,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     else {
         if (!mono_wasm_web_socket_close_warning) {
             mono_wasm_web_socket_close_warning = true;
-            console.warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
+            mono_log_warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
         }
         if (typeof reason === "string") {
             ws.close(code, reason);

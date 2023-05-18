@@ -48,20 +48,28 @@ export class WebAssemblyResourceLoader {
         }
 
         const linkerDisabledWarning = this.bootConfig.linkerEnabled ? "%c" : "\n%cThis application was built with linking (tree shaking) disabled. Published applications will be significantly smaller.";
+        // eslint-disable-next-line no-console
         console.groupCollapsed(`%cdotnet%c Loaded ${toDataSizeString(totalResponseBytes)} resources${linkerDisabledWarning}`, "background: purple; color: white; padding: 1px 3px; border-radius: 3px;", "font-weight: bold;", "font-weight: normal;");
 
         if (cacheLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(cacheResponseBytes)} resources from cache`);
+            // eslint-disable-next-line no-console
             console.table(this.cacheLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
         if (networkLoadsEntries.length) {
+            // eslint-disable-next-line no-console
             console.groupCollapsed(`Loaded ${toDataSizeString(networkResponseBytes)} resources from network`);
+            // eslint-disable-next-line no-console
             console.table(this.networkLoads);
+            // eslint-disable-next-line no-console
             console.groupEnd();
         }
 
+        // eslint-disable-next-line no-console
         console.groupEnd();
     }
 

@@ -375,5 +375,6 @@ function onwarn(warning) {
         return;
     }
 
+    // eslint-disable-next-line no-console
     console.warn(`(!) ${warning.toString()}`);
 }
