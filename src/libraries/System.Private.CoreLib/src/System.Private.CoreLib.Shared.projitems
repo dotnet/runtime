@@ -2373,7 +2373,7 @@
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(IsOSXLike)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OtherUnix.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.CopyFile.OtherUnix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.TryCloneFile.OtherUnix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\Interop.GetEUid.cs" />
@@ -2428,7 +2428,7 @@
       <Link>Common\Interop\OSX\Interop.libc.cs</Link>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStatus.SetTimes.OSX.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.CopyFile.OSX.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileSystem.TryCloneFile.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsiOSLike)' == 'true' or '$(IsOSXLike)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
