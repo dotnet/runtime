@@ -6228,6 +6228,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params, is_protected))
 					break;
+				/* The constructor was not inlined, abort inlining of current method */
+				if (!td->aggressive_inlining)
+					INLINE_FAILURE;
+				td->cbb->contains_call_instruction = TRUE;
 
 				// Push the return value and `this` argument to the ctor
 				gboolean is_vt = m_class_is_valuetype (klass);
@@ -6251,36 +6255,22 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->sp += csignature->param_count;
 
 				if (!mono_class_has_finalizer (klass) &&
-					!m_class_has_weak_fields (klass)) {
-					InterpInst *newobj_fast;
-
+						!m_class_has_weak_fields (klass)) {
 					if (is_vt) {
-						td->cbb->contains_call_instruction = TRUE;
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ_VT);
-						interp_ins_set_dreg (newobj_fast, dreg);
-						newobj_fast->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
+						interp_add_ins (td, MINT_NEWOBJ_VT);
+						td->last_ins->data [1] = GUINTPTR_TO_UINT16 (ALIGN_TO (vtsize, MINT_STACK_SLOT_SIZE));
 					} else {
-						td->cbb->contains_call_instruction = TRUE;
-						newobj_fast = interp_add_ins (td, MINT_NEWOBJ);
-						interp_ins_set_dreg (newobj_fast, dreg);
-						newobj_fast->data [1] = get_data_item_index (td, vtable);
+						interp_add_ins (td, MINT_NEWOBJ);
+						td->last_ins->data [1] = get_data_item_index (td, vtable);
 					}
-
-					// Inlining failed. Set the method to be executed as part of newobj instruction
-					newobj_fast->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
-					/* The constructor was not inlined, abort inlining of current method */
-					if (!td->aggressive_inlining)
-						INLINE_FAILURE;
 				} else {
-					td->cbb->contains_call_instruction = TRUE;
 					interp_add_ins (td, MINT_NEWOBJ_SLOW);
 					g_assert (!m_class_is_valuetype (klass));
-					interp_ins_set_dreg (td->last_ins, dreg);
-					td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
 				}
-				goto_if_nok (error, exit);
-
+				td->last_ins->data [0] = get_data_item_index_imethod (td, mono_interp_get_imethod (m));
+				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
+
 				init_last_ins_call (td);
 				if (is_protected)
 					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
