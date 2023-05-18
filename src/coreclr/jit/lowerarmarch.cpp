@@ -874,8 +874,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cnsZero, cmp);
         LowerNode(cmp);
 
-        mod->ChangeOper(GT_CNEG_LT);
-        mod->gtOp1 = trueExpr;
+        mod->SetOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = nullptr;
+        node->gtCondition = GenCondition::SLT;
     }
     else
     {
@@ -900,9 +903,11 @@ void Lowering::LowerModPow2(GenTree* node)
         BlockRange().InsertAfter(cns2, falseExpr);
         LowerNode(falseExpr);
 
-        mod->ChangeOper(GT_CSNEG_MI);
-        mod->gtOp1 = trueExpr;
-        mod->gtOp2 = falseExpr;
+        mod->SetOper(GT_SELECT_NEGCC);
+        GenTreeOpCC* node = mod->AsOpCC();
+        node->gtOp1       = trueExpr;
+        node->gtOp2       = falseExpr;
+        node->gtCondition = GenCondition::S;
     }
 
     ContainCheckNode(mod);
@@ -2552,38 +2557,42 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
 }
 
 //----------------------------------------------------------------------------------------------
-// TryLowerCselToCinv: Try converting SELECT/SELECTCC to SELECT_INV/SELECT_INVCC. Conversion is possible only if one of
-// the operands of the select node is inverted.
+// TryLowerCselToCinvOrCneg: Try converting SELECT/SELECTCC to SELECT_INV/SELECT_INVCC. Conversion is possible only if
+// one of the operands of the select node is inverted.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
 //     cond   - The condition node that SELECT or SELECTCC uses
 //
-void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
+void Lowering::TryLowerCselToCinvOrCneg(GenTreeOp* select, GenTree* cond)
 {
     assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
     bool     shouldReverseCondition;
-    GenTree* negatedVal;
-    GenTree* nonNegatedVal;
+    GenTree* invertedOrNegatedVal;
+    GenTree* nonInvertedOrNegatedVal;
 
-    if (select->gtOp1->gtOper == GT_NOT)
+    GenTree*   trueVal  = select->gtOp1;
+    GenTree*   falseVal = select->gtOp2;
+    const bool isCneg   = ((trueVal->gtOper == GT_NEG) || (falseVal->gtOper == GT_NEG));
+
+    if ((trueVal->gtOper == GT_NOT) || (trueVal->gtOper == GT_NEG))
     {
-        shouldReverseCondition = true;
-        negatedVal             = select->gtOp1->AsOp()->gtOp1;
-        nonNegatedVal          = select->gtOp2;
-        BlockRange().Remove(select->gtOp1);
+        shouldReverseCondition  = true;
+        invertedOrNegatedVal    = trueVal->AsOp()->gtOp1;
+        nonInvertedOrNegatedVal = falseVal;
+        BlockRange().Remove(trueVal);
     }
     else
     {
-        shouldReverseCondition = false;
-        negatedVal             = select->gtOp2->AsOp()->gtOp1;
-        nonNegatedVal          = select->gtOp1;
-        BlockRange().Remove(select->gtOp2);
+        shouldReverseCondition  = false;
+        invertedOrNegatedVal    = falseVal->AsOp()->gtOp1;
+        nonInvertedOrNegatedVal = trueVal;
+        BlockRange().Remove(falseVal);
     }
 
-    select->gtOp1 = nonNegatedVal;
-    select->gtOp2 = negatedVal;
+    select->gtOp1 = nonInvertedOrNegatedVal;
+    select->gtOp2 = invertedOrNegatedVal;
 
     if (select->OperIs(GT_SELECT))
     {
@@ -2592,8 +2601,8 @@ void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
             GenTree* revCond = comp->gtReverseCond(cond);
             assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
         }
-        select->SetOper(GT_SELECT_INV);
-        JITDUMP("Converted to: SELECT_INV\n");
+        select->SetOper(isCneg ? GT_SELECT_NEG : GT_SELECT_INV);
+        JITDUMP("Converted to: ", isCneg ? "SELECT_CNEG" : "SELECT_INV", "\n");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
     }
@@ -2606,16 +2615,16 @@ void Lowering::TryLowerCselToCinv(GenTreeOp* select, GenTree* cond)
             // Reverse the condition so that op2 will be selected
             selectcc->gtCondition = GenCondition::Reverse(selectCond);
         }
-        selectcc->SetOper(GT_SELECT_INVCC);
-        JITDUMP("Converted to: SELECT_INVCC\n");
+        selectcc->SetOper(isCneg ? GT_SELECT_NEGCC : GT_SELECT_INVCC);
+        JITDUMP("Converted to: ", isCneg ? "SELECT_CNEGCC" : "SELECT_INVCC", "\n");
         DISPTREERANGE(BlockRange(), selectcc);
         JITDUMP("\n");
     }
 }
 
 //----------------------------------------------------------------------------------------------
-// TryLowerCselToCinc: Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if both the trueVal
-// and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+// TryLowerCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC. Conversion is possible only if both
+// the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
 //
 // Arguments:
 //     select - The select node that is now SELECT or SELECTCC
@@ -2650,8 +2659,8 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
                 assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
             }
             select->gtOp1 = cond->AsOp();
-            select->SetOper(GT_CINC);
-            JITDUMP("Converted to: GT_CINC\n");
+            select->SetOper(GT_SELECT_INC);
+            JITDUMP("Converted to: GT_SELECT_INC\n");
             DISPTREERANGE(BlockRange(), select);
             JITDUMP("\n");
         }
@@ -2671,8 +2680,9 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
             }
 
             BlockRange().Remove(selectcc->gtOp2, true);
-            selectcc->SetOper(GT_CINCCC);
-            JITDUMP("Converted to: GT_CINCCC\n");
+            selectcc->gtOp2 = nullptr;
+            selectcc->SetOper(GT_SELECT_INCCC);
+            JITDUMP("Converted to: GT_SELECT_INCCC\n");
             DISPTREERANGE(BlockRange(), selectcc);
             JITDUMP("\n");
         }

@@ -3852,15 +3852,15 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    if (((trueVal->gtOper == GT_NOT) || (falseVal->gtOper == GT_NOT)))
+    if ((trueVal->gtOper == GT_NOT) || (falseVal->gtOper == GT_NOT) || (trueVal->gtOper == GT_NEG) ||
+        (falseVal->gtOper == GT_NEG))
     {
-        TryLowerCselToCinv(select, cond);
+        TryLowerCselToCinvOrCneg(select, cond);
     }
     else if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
     {
         TryLowerCselToCinc(select, cond);
     }
-
 #endif
 
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;

@@ -77,96 +77,96 @@ public class ConditionalInvertTest
     {
         if (cinv_byte(72, 13) != (byte)13)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_byte() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_byte() failed");
             return 101;
         }
         if (cinv_byte(32, 13) != (byte)223)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_byte() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_byte() failed");
             return 101;
         }
 
         if (cinv_short(34, 13) != ~13)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_short() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_short() failed");
             return 101;
         }
 
         if (cinv_short(74, 13) != 74)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_short() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_short() failed");
             return 101;
         }
 
         if (cinv_short_min_max(75) != ~short.MaxValue)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_short_min_max() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_short_min_max() failed");
             return 101;
         }
 
         if (cinv_short_min_max(-35) != short.MaxValue)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_short_min_max() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_short_min_max() failed");
             return 101;
         }
 
         if (cinv_int(76, 17) != 17)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_int() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_int() failed");
             return 101;
         }
 
         if (cinv_int(36, 17) != ~36)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_int() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_int() failed");
             return 101;
         }
 
         if (cinv_int_min_max(77) != int.MaxValue)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_int_min_max() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_int_min_max() failed");
             return 101;
         }
 
         if (cinv_int_min_max(37) != ~int.MaxValue)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_int_min_max() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_int_min_max() failed");
             return 101;
         }
 
         if (cinv_long(78, 23) != 78)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_long() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_long() failed");
             return 101;
         }
 
         if (cinv_long(38, 23) != ~23)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_long() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_long() failed");
             return 101;
         }
 
         if (cinv_float(80.0f, 29) != 29)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_float() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_float() failed");
             return 101;
         }
 
         if (cinv_float(30.0f, 29) != ~29)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_float() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_float() failed");
             return 101;
         }
 
         if (cinv_double(60.0, 31) != ~31)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_double() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_double() failed");
             return 101;
         }
 
         if (cinv_double(30.0, 31) != 31)
         {
-            Console.WriteLine("ConditionalIncrementTest:cinv_double() failed");
+            Console.WriteLine("ConditionalInvertTest:cinv_double() failed");
             return 101;
         }
 
