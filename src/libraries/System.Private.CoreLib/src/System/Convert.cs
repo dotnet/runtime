@@ -113,7 +113,7 @@ namespace System
         }
 
         // Converts the given object to the given type. In general, this method is
-        // equivalent to calling the Value.ToXXX(value) method for the given
+        // equivalent to calling ((IConvertible)value).ToXXX(CultureInfo.CurrentCulture) for the given
         // typeCode and boxing the result.
         //
         // The method first checks if the given object implements IConvertible. If not,
