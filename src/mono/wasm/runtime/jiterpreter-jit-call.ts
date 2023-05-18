@@ -499,7 +499,7 @@ export function mono_interp_flush_jitcall_queue(): void {
 
         // FIXME
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
-            mono_log_info(`// MONO_WASM: ${jitQueue.length} jit call wrappers generated, blob follows //`);
+            mono_log_info(`// ${jitQueue.length} jit call wrappers generated, blob follows //`);
             for (let i = 0; i < jitQueue.length; i++)
                 mono_log_info(`// #${i} === ${jitQueue[i].name} hasThis=${jitQueue[i].hasThisReference} hasRet=${jitQueue[i].hasReturnValue} wasmArgTypes=${jitQueue[i].wasmNativeSignature}`);
 

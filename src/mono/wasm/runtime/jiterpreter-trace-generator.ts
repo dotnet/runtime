@@ -197,7 +197,7 @@ export function generateWasmBody(
         const maxBytesGenerated = 3840,
             spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
-            // mono_log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
+            // mono_log_info(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
             if (instrumentedTraceId)
                 mono_log_info(`instrumented trace ${traceName} exited because of size limit at @${(<any>ip).toString(16)} (spaceLeft=${spaceLeft}b)`);
@@ -1005,7 +1005,7 @@ export function generateWasmBody(
                     (builder.callHandlerReturnAddresses.length > 0) &&
                     (builder.callHandlerReturnAddresses.length <= maxCallHandlerReturnAddresses)
                 ) {
-                    // mono_log(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
+                    // mono_log_info(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
                     // FIXME: Clean this codegen up
                     // Load ret_ip
                     const clauseIndex = getArgU16(ip, 1),
@@ -1361,7 +1361,7 @@ export function generateWasmBody(
                 } else {
                     /*
                     if (opcodeValue > 0)
-                        mono_log(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
+                        mono_log_info(`JITERP: aborting trace for opcode ${opname} with value ${opcodeValue}`);
                     */
                     ip = abort;
                 }
@@ -1410,7 +1410,7 @@ export function generateWasmBody(
                     prologueOpcodeCounter++;
                 result += opcodeValue;
             } else if (opcodeValue < 0) {
-                // mono_log(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
+                // mono_log_info(`JITERP: opcode ${opname} did not abort but had value ${opcodeValue}`);
             }
 
             ip += <any>(opLengthU16 * 2);
@@ -1436,7 +1436,7 @@ export function generateWasmBody(
 
     builder.cfg.exitIp = rip;
 
-    // mono_log(`estimated size: ${builder.size + builder.cfg.overheadBytes + builder.bytesGeneratedSoFar}`);
+    // mono_log_info(`estimated size: ${builder.size + builder.cfg.overheadBytes + builder.bytesGeneratedSoFar}`);
 
     // HACK: Traces containing simd will be *much* shorter than non-simd traces,
     //  which will cause both the heuristic and our length requirement outside
@@ -1557,7 +1557,7 @@ function append_ldloc_cknull(builder: WasmBuilder, localOffset: number, ip: Mint
             if (leaveOnStack)
                 builder.local("cknull_ptr");
         } else {
-            // mono_log(`skipping null check for ${localOffset}`);
+            // mono_log_info(`skipping null check for ${localOffset}`);
             append_ldloc(builder, localOffset, WasmOpcode.i32_load);
             builder.local("cknull_ptr", leaveOnStack ? WasmOpcode.tee_local : WasmOpcode.set_local);
             if (traceNullCheckOptimizations)
@@ -2331,7 +2331,7 @@ function append_call_handler_store_ret_ip(
     builder.appendU8(WasmOpcode.i32_store);
     builder.appendMemarg(clauseDataOffset, 0); // FIXME: 32-bit alignment?
 
-    // mono_log(`call_handler @0x${(<any>ip).toString(16)} retIp=0x${retIp.toString(16)}`);
+    // mono_log_info(`call_handler @0x${(<any>ip).toString(16)} retIp=0x${retIp.toString(16)}`);
     builder.callHandlerReturnAddresses.push(retIp);
 }
 

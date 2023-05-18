@@ -360,7 +360,7 @@ export class WasmBuilder {
             this.appendU8(WasmOpcode.get_global);
             this.appendLeb(idx);
         } else {
-            // mono_log(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
+            // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
             this.i32_const(pointer);
         }
     }
@@ -429,7 +429,7 @@ export class WasmBuilder {
         this.appendULeb(this.functionTypeCount);
         /*
         if (trace > 1)
-            mono_log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
+            mono_log_info(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
         for (let i = 0; i < this.functionTypeCount; i++) {
             const parameters = this.functionTypesByIndex[i][0],
@@ -479,7 +479,7 @@ export class WasmBuilder {
             result.push(v);
         }
         result.sort((lhs, rhs) => lhs.index! - rhs.index!);
-        // mono_log("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
+        // mono_log_info("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
         return result;
     }
 
@@ -491,10 +491,10 @@ export class WasmBuilder {
         this.beginSection(2);
         this.appendULeb(2 + importsToEmit.length + this.constantSlots.length);
 
-        // mono_log(`referenced ${importsToEmit.length} import(s)`);
+        // mono_log_info(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
             const ifi = importsToEmit[i];
-            // mono_log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
+            // mono_log_info(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
             this.appendName(ifi.module);
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
@@ -681,7 +681,7 @@ export class WasmBuilder {
         let result = 0;
         for (const k in parms) {
             this.locals.set(k, result);
-            // mono_log(`parm ${k} -> ${result}`);
+            // mono_log_info(`parm ${k} -> ${result}`);
             result++;
         }
         return result;
@@ -734,7 +734,7 @@ export class WasmBuilder {
                     this.locals.set(k, idx);
                     break;
             }
-            // mono_log(`local ${k} ${locals[k]} -> ${idx}`);
+            // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
         return localGroupCount;
@@ -776,7 +776,7 @@ export class WasmBuilder {
             const c = counts[k];
             if (!c)
                 continue;
-            // mono_log(`${k} x${c}`);
+            // mono_log_info(`${k} x${c}`);
             this.appendULeb(c);
             this.appendU8(<any>k);
         }
@@ -1172,7 +1172,7 @@ class Cfg {
     }
 
     emitBlob(segment: CfgBlob, source: Uint8Array) {
-        // mono_log(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
+        // mono_log_info(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
         const view = source.subarray(segment.start, segment.start + segment.length);
         this.builder.appendBytes(view);
     }

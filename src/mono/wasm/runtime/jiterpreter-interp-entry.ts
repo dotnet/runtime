@@ -382,7 +382,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         }
 
         if (threw || (!rejected && ((trace >= 2) || dumpWrappers))) {
-            mono_log_info(`// MONO_WASM: ${jitQueue.length} trampolines generated, blob follows //`);
+            mono_log_info(`// ${jitQueue.length} trampolines generated, blob follows //`);
             let s = "", j = 0;
             try {
                 if (builder.inSection)

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
-import { mono_log_info, mono_log_debug, consoleWebSocket, mono_log_error } from "./logging";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
 
 export function abort_startup(reason: any, should_exit: boolean): void {
     mono_log_debug("MONO_WASM: abort_startup");
@@ -137,7 +137,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
                 if (consoleWebSocket.bufferedAmount == 0) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
-                    mono_log_info("WASM EXIT " + exit_code);
+                    mono_log_info_no_prefix("WASM EXIT " + exit_code);
                 }
                 else {
                     setTimeout(stop_when_ws_buffer_empty, 100);
@@ -145,7 +145,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
             };
             stop_when_ws_buffer_empty();
         } else {
-            mono_log_info("WASM EXIT " + exit_code);
+            mono_log_info_no_prefix("WASM EXIT " + exit_code);
         }
     }
 }

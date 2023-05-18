@@ -818,7 +818,7 @@ function generate_wasm(
 
         compileStarted = _now();
         const buffer = builder.getArrayView();
-        // mono_log(`bytes generated: ${buffer.length}`);
+        // mono_log_info(`bytes generated: ${buffer.length}`);
 
         if (trace > 0)
             mono_log_info(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
@@ -884,7 +884,7 @@ function generate_wasm(
                     mono_log_info(builder.traceBuf[i]);
             }
 
-            mono_log_info(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
+            mono_log_info(`// ${methodFullName || traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,

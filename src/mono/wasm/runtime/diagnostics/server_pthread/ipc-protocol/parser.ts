@@ -133,7 +133,7 @@ function parseProcessCommand(cmd: BinaryProtocolCommand & { commandSet: CommandS
         case ProcessCommandId.ProcessInfo2:
             throw new Error("TODO");
         default:
-            mono_log_warn("MMONO_WASM: unexpected Process command: " + cmd.command);
+            mono_log_warn("MONO_WASM: unexpected Process command: " + cmd.command);
             return { success: false, error: `unexpected Process command ${cmd.command}` };
     }
 }

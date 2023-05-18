@@ -7,20 +7,20 @@ import { CharPtr, VoidPtr } from "./types/emscripten";
 
 export function mono_log_debug(msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug(msg, ...data);
+        console.debug("MONO_WASM: " + msg, ...data);
     }
 }
 
 export function mono_log_info(msg: string, ...data: any) {
-    console.info(msg, ...data);
+    console.info("MONO_WASM: " + msg, ...data);
 }
 
 export function mono_log_warn(msg: string, ...data: any) {
-    console.warn(msg, ...data);
+    console.warn("MONO_WASM: " + msg, ...data);
 }
 
 export function mono_log_error(msg: string, ...data: any) {
-    console.error(msg, ...data);
+    console.error("MONO_WASM: " + msg, ...data);
 }
 
 export const wasm_func_map = new Map<number, string>();
