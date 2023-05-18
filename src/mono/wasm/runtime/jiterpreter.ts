@@ -21,6 +21,7 @@ import {
 import {
     generateWasmBody
 } from "./jiterpreter-trace-generator";
+import { mono_log_error, mono_log_info, mono_log_warn } from "./logging";
 
 // Controls miscellaneous diagnostic output.
 export const trace = 0;
@@ -235,7 +236,7 @@ function recordBailout(ip: number, base: MintOpcodePtr, reason: BailoutReason) {
 
     const info = traceInfo[<any>base];
     if (!info) {
-        console.error(`trace info not found for ${base}`);
+        mono_log_error(`trace info not found for ${base}`);
         return;
     }
     let table = info.bailoutCounts;
@@ -728,7 +729,7 @@ function generate_wasm(
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
             if (countLimitedPrintCounter-- >= 0)
-                console.log(`COUNT limited: ${methodFullName || methodName} @${(traceOffset).toString(16)}`);
+                mono_log_info(`COUNT limited: ${methodFullName || methodName} @${(traceOffset).toString(16)}`);
             return 0;
         }
     }
@@ -744,7 +745,7 @@ function generate_wasm(
     );
     const instrumentedTraceId = instrument ? nextInstrumentedTraceId++ : 0;
     if (instrument) {
-        console.log(`instrumenting: ${methodFullName}`);
+        mono_log_info(`instrumenting: ${methodFullName}`);
         instrumentedTraces[instrumentedTraceId] = new InstrumentedTraceState(methodFullName);
     }
     builder.compressImportNames = compressImportNames && !instrument;
@@ -811,20 +812,20 @@ function generate_wasm(
                 ti.abortReason = "trace-too-small";
 
             if (traceTooSmall && (traceValue > 1))
-                console.log(`${traceName} too small: value=${traceValue}, ${builder.current.size} wasm bytes`);
+                mono_log_info(`${traceName} too small: value=${traceValue}, ${builder.current.size} wasm bytes`);
             return 0;
         }
 
         compileStarted = _now();
         const buffer = builder.getArrayView();
-        // console.log(`bytes generated: ${buffer.length}`);
+        // mono_log_info(`bytes generated: ${buffer.length}`);
 
         if (trace > 0)
-            console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
+            mono_log_info(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
 
         if (buffer.length >= maxModuleSize) {
-            console.warn(`MONO_WASM: Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
+            mono_log_warn(`Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
             return 0;
         }
 
@@ -854,7 +855,7 @@ function generate_wasm(
         if (!idx)
             throw new Error("add_function_pointer returned a 0 index");
         else if (trace >= 2)
-            console.log(`${traceName} -> fn index ${idx}`);
+            mono_log_info(`${traceName} -> fn index ${idx}`);
 
         // Ensure that a bit of ongoing diagnostic output is printed for very long-running test
         //  suites or benchmarks if you've enabled stats
@@ -865,7 +866,7 @@ function generate_wasm(
     } catch (exc: any) {
         threw = true;
         rejected = false;
-        console.error(`MONO_WASM: ${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
+        mono_log_error(`${methodFullName || traceName} code generation failed: ${exc} ${exc.stack}`);
         recordFailure();
         return 0;
     } finally {
@@ -880,10 +881,10 @@ function generate_wasm(
         if (threw || (!rejected && ((trace >= 2) || mostRecentOptions!.dumpTraces)) || instrument) {
             if (threw || (trace >= 3) || mostRecentOptions!.dumpTraces || instrument) {
                 for (let i = 0; i < builder.traceBuf.length; i++)
-                    console.log(builder.traceBuf[i]);
+                    mono_log_info(builder.traceBuf[i]);
             }
 
-            console.log(`// MONO_WASM: ${methodFullName || traceName} generated, blob follows //`);
+            mono_log_info(`// ${methodFullName || traceName} generated, blob follows //`);
             let s = "", j = 0;
             try {
                 // We may have thrown an uncaught exception while inside a block,
@@ -906,13 +907,13 @@ function generate_wasm(
                 s += b.toString(16);
                 s += " ";
                 if ((s.length % 10) === 0) {
-                    console.log(`${j}\t${s}`);
+                    mono_log_info(`${j}\t${s}`);
                     s = "";
                     j = i + 1;
                 }
             }
-            console.log(`${j}\t${s}`);
-            console.log("// end blob //");
+            mono_log_info(`${j}\t${s}`);
+            mono_log_info("// end blob //");
         }
     }
 }
@@ -947,7 +948,7 @@ export function record_abort(traceIp: MintOpcodePtr, ip: MintOpcodePtr, traceNam
     }
 
     if ((traceAbortLocations && (reason !== "end-of-body")) || (trace >= 2))
-        console.log(`abort ${traceIp} ${traceName}@${ip} ${reason}`);
+        mono_log_info(`abort ${traceIp} ${traceName}@${ip} ${reason}`);
 
     traceInfo[<any>traceIp].abortReason = reason;
 }
@@ -1034,10 +1035,10 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
     if (!mostRecentOptions.enableStats && (b !== undefined))
         return;
 
-    console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
+    mono_log_info(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
     const tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count();
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
+    mono_log_info(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
     if (concise)
         return;
 
@@ -1047,7 +1048,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
         for (let i = 0; i < BailoutReasonNames.length; i++) {
             const bailoutCount = cwraps.mono_jiterp_get_trace_bailout_count(i);
             if (bailoutCount)
-                console.log(`// traces bailed out ${bailoutCount} time(s) due to ${BailoutReasonNames[i]}`);
+                mono_log_info(`// traces bailed out ${bailoutCount} time(s) due to ${BailoutReasonNames[i]}`);
         }
 
         for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
@@ -1055,9 +1056,9 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             if (!trace.bailoutCount)
                 continue;
             c++;
-            console.log(`${trace.name}: ${trace.bailoutCount} bailout(s)`);
+            mono_log_info(`${trace.name}: ${trace.bailoutCount} bailout(s)`);
             for (const k in trace.bailoutCounts)
-                console.log(`  ${BailoutReasonNames[<any>k]} x${trace.bailoutCounts[<any>k]}`);
+                mono_log_info(`  ${BailoutReasonNames[<any>k]} x${trace.bailoutCounts[<any>k]}`);
         }
     }
 
@@ -1079,7 +1080,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
         }
 
         if (countCallTargets) {
-            console.log("// hottest call targets:");
+            mono_log_info("// hottest call targets:");
             const targetPointers = Object.keys(callTargetCounts);
             targetPointers.sort((l, r) => callTargetCounts[Number(r)] - callTargetCounts[Number(l)]);
             for (let i = 0, c = Math.min(summaryStatCount, targetPointers.length); i < c; i++) {
@@ -1088,12 +1089,12 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
                 const targetMethodName = Module.UTF8ToString(pMethodName);
                 const hitCount = callTargetCounts[<any>targetMethod];
                 Module._free(<any>pMethodName);
-                console.log(`${targetMethodName} ${hitCount}`);
+                mono_log_info(`${targetMethodName} ${hitCount}`);
             }
         }
 
         traces.sort((l, r) => r.hitCount - l.hitCount);
-        console.log("// hottest failed traces:");
+        mono_log_info("// hottest failed traces:");
         for (let i = 0, c = 0; i < traces.length && c < summaryStatCount; i++) {
             // this means the trace has a low hit count and we don't know its identity. no value in
             //  logging it.
@@ -1142,7 +1143,7 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
             }
 
             c++;
-            console.log(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
+            mono_log_info(`${traces[i].name} @${traces[i].ip} (${traces[i].hitCount} hits) ${traces[i].abortReason}`);
         }
 
         const tuples: Array<[string, number]> = [];
@@ -1151,9 +1152,9 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
 
         tuples.sort((l, r) => r[1] - l[1]);
 
-        console.log("// heat:");
+        mono_log_info("// heat:");
         for (let i = 0; i < tuples.length; i++)
-            console.log(`// ${tuples[i][0]}: ${tuples[i][1]}`);
+            mono_log_info(`// ${tuples[i][0]}: ${tuples[i][1]}`);
     } else {
         for (let i = 0; i < MintOpcode.MINT_LASTOP; i++) {
             const opname = getOpcodeName(i);
@@ -1167,11 +1168,11 @@ export function jiterpreter_dump_stats(b?: boolean, concise?: boolean) {
         const keys = Object.keys(abortCounts);
         keys.sort((l, r) => abortCounts[r] - abortCounts[l]);
         for (let i = 0; i < keys.length; i++)
-            console.log(`// ${keys[i]}: ${abortCounts[keys[i]]} abort(s)`);
+            mono_log_info(`// ${keys[i]}: ${abortCounts[keys[i]]} abort(s)`);
     }
 
     for (const k in counters.simdFallback)
-        console.log(`// simd ${k}: ${counters.simdFallback[k]} fallback insn(s)`);
+        mono_log_info(`// simd ${k}: ${counters.simdFallback[k]} fallback insn(s)`);
 
     if ((typeof (globalThis.setTimeout) === "function") && (b !== undefined))
         setTimeout(

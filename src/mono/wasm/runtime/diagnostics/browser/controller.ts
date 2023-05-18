@@ -3,6 +3,7 @@
 
 import cwraps from "../../cwraps";
 import { INTERNAL } from "../../globals";
+import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
@@ -18,15 +19,15 @@ class ServerControllerImpl implements ServerController {
         server.port.addEventListener("message", this.onServerReply.bind(this));
     }
     start(): void {
-        console.debug("MONO_WASM: signaling the diagnostic server to start");
+        mono_log_debug("signaling the diagnostic server to start");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("start"));
     }
     stop(): void {
-        console.debug("MONO_WASM: signaling the diagnostic server to stop");
+        mono_log_debug("signaling the diagnostic server to stop");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("stop"));
     }
     postServerAttachToRuntime(): void {
-        console.debug("MONO_WASM: signal the diagnostic server to attach to the runtime");
+        mono_log_debug("signal the diagnostic server to attach to the runtime");
         this.server.postMessageToWorker(makeDiagnosticServerControlCommand("attach_to_runtime"));
     }
 
@@ -35,7 +36,7 @@ class ServerControllerImpl implements ServerController {
         if (isDiagnosticMessage(d)) {
             switch (d.cmd) {
                 default:
-                    console.warn("MONO_WASM: Unknown control reply command: ", <any>d);
+                    mono_log_warn("Unknown control reply command: ", <any>d);
                     break;
             }
         }
@@ -52,7 +53,7 @@ export function getController(): ServerController {
 
 export async function startDiagnosticServer(websocket_url: string): Promise<ServerController | null> {
     const sizeOfPthreadT = 4;
-    console.info(`MONO_WASM: starting the diagnostic server url: ${websocket_url}`);
+    mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
     const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
         if (!cwraps.mono_wasm_diagnostic_server_create_thread(websocket_url, pthreadIdPtr))
             return undefined;
@@ -60,7 +61,7 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
         return pthreadId;
     });
     if (result === undefined) {
-        console.warn("MONO_WASM: diagnostic server failed to start");
+        mono_log_warn("diagnostic server failed to start");
         return null;
     }
     // have to wait until the message port is created

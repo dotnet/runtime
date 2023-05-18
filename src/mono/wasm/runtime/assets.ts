@@ -4,7 +4,7 @@
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, loaderHelpers, runtimeHelpers } from "./globals";
-import { parseSymbolMapFile } from "./logging";
+import { mono_log_info, mono_log_debug, mono_log_warn, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntryInternal } from "./types/internal";
@@ -13,8 +13,7 @@ import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    if (runtimeHelpers.diagnosticTracing)
-        console.debug(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
@@ -50,8 +49,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
             if (fileName.startsWith("/"))
                 fileName = fileName.substr(1);
             if (parentDirectory) {
-                if (runtimeHelpers.diagnosticTracing)
-                    console.debug(`MONO_WASM: Creating directory '${parentDirectory}'`);
+                mono_log_debug(`Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
@@ -60,8 +58,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
                 parentDirectory = "/";
             }
 
-            if (runtimeHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
+            mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
                 Module.FS_createDataFile(
@@ -90,7 +87,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            Module.err(`MONO_WASM: Error loading ICU asset ${asset.name}`);
+            Module.err(`Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
@@ -110,16 +107,16 @@ export async function instantiate_wasm_asset(
     let compiledInstance: WebAssembly.Instance;
     let compiledModule: WebAssembly.Module;
     if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
-        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module streaming");
+        mono_log_debug("instantiate_wasm_module streaming");
         const streamingResult = await WebAssembly.instantiateStreaming(response, wasmModuleImports!);
         compiledInstance = streamingResult.instance;
         compiledModule = streamingResult.module;
     } else {
         if (ENVIRONMENT_IS_WEB && contentType !== "application/wasm") {
-            console.warn("MONO_WASM: WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
+            mono_log_warn("WebAssembly resource does not have the expected content type \"application/wasm\", so falling back to slower ArrayBuffer instantiation.");
         }
         const arrayBuffer = await response.arrayBuffer();
-        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module buffered");
+        mono_log_debug("instantiate_wasm_module buffered");
         if (ENVIRONMENT_IS_SHELL) {
             // workaround for old versions of V8 with https://bugs.chromium.org/p/v8/issues/detail?id=13823
             compiledModule = new WebAssembly.Module(arrayBuffer);
@@ -139,7 +136,7 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
         const text = await response.text();
         parseSymbolMapFile(text);
     } catch (error: any) {
-        console.log(`MONO_WASM: Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+        mono_log_info(`Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
 }
 
@@ -199,7 +196,7 @@ export async function wait_for_all_assets() {
         mono_assert(loaderHelpers.actual_downloaded_assets_count == loaderHelpers.expected_downloaded_assets_count, () => `Expected ${loaderHelpers.expected_downloaded_assets_count} assets to be downloaded, but only finished ${loaderHelpers.actual_downloaded_assets_count}`);
         mono_assert(loaderHelpers.actual_instantiated_assets_count == loaderHelpers.expected_instantiated_assets_count, () => `Expected ${loaderHelpers.expected_instantiated_assets_count} assets to be in memory, but only instantiated ${loaderHelpers.actual_instantiated_assets_count}`);
         loaderHelpers._loaded_files.forEach(value => loaderHelpers.loadedFiles.push(value.url));
-        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
+        mono_log_debug("all assets are loaded in wasm memory");
     }
 }
 
