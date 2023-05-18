@@ -14,6 +14,7 @@ namespace System.IO
             // Fail fast for blatantly copying onto self
             if (sourceFullPath == destFullPath)
             {
+                if (!File.Exists(sourceFullPath)) throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFullPath), sourceFullPath);
                 throw new IOException(SR.Format(overwrite ? SR.IO_SharingViolation_File : SR.IO_FileExists_Name, destFullPath));
             }
 
@@ -94,7 +95,7 @@ namespace System.IO
             {
                 // Open the dst handle
                 using SafeFileHandle dst = SafeFileHandle.Open(destFullPath, overwrite ? FileMode.Create : FileMode.CreateNew,
-                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: null,
+                    FileAccess.ReadWrite, FileShare.None, FileOptions.None, preallocationSize: 0, unixCreateMode: filePermissions,
                     CreateOpenException);
 
                 // Exception handler for SafeFileHandle.Open failing.
