@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal sealed record ConfigurationSectionTypeSpec : TypeSpec
     {
         public ConfigurationSectionTypeSpec(ITypeSymbol type) : base(type) { }
+
         public override TypeSpecKind SpecKind => TypeSpecKind.IConfigurationSection;
     }
 }

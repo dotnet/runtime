@@ -3,11 +3,9 @@
 
 //#define LAUNCH_DEBUGGER
 using System.Collections.Immutable;
-using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -15,9 +13,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     /// Generates source code to optimize binding with ConfigurationBinder.
     /// </summary>
     [Generator]
-    public sealed partial class ConfigurationBindingSourceGenerator : IIncrementalGenerator
+    public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        private const string GeneratorProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
+        internal const string ProjectName = "Microsoft.Extensions.Configuration.Binder.SourceGeneration";
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -56,7 +54,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (compilationData?.LanguageVersionIsSupported != true)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Helpers.LanguageVersionNotSupported, location: null));
+                context.ReportDiagnostic(Diagnostic.Create(ParserDiagnostics.LanguageVersionNotSupported, location: null));
                 return;
             }
 
@@ -82,52 +80,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSymbols = new KnownTypeSymbols(compilation);
                 }
             }
-        }
-
-        private enum BinderMethodKind
-        {
-            None = 0,
-            Configure = 1,
-            Get = 2,
-            Bind = 3,
-            GetValue = 4,
-        }
-
-        private sealed record BinderInvocationOperation()
-        {
-            public IInvocationOperation InvocationOperation { get; private set; }
-            public BinderMethodKind Kind { get; private set; }
-            public Location? Location { get; private set; }
-
-            public static BinderInvocationOperation? Create(GeneratorSyntaxContext context, CancellationToken cancellationToken)
-            {
-                BinderMethodKind kind;
-                if (context.Node is not InvocationExpressionSyntax invocationSyntax ||
-                    invocationSyntax.Expression is not MemberAccessExpressionSyntax memberAccessSyntax ||
-                    (kind = GetBindingMethodKind(memberAccessSyntax.Name.Identifier.ValueText)) is BinderMethodKind.None ||
-                    context.SemanticModel.GetOperation(invocationSyntax, cancellationToken) is not IInvocationOperation operation)
-                {
-                    return null;
-                }
-
-                return new BinderInvocationOperation
-                {
-                    InvocationOperation = operation,
-                    Kind = kind,
-                    Location = invocationSyntax.GetLocation()
-                };
-            }
-
-            private static BinderMethodKind GetBindingMethodKind(string name) =>
-                name switch
-                {
-                    "Bind" => BinderMethodKind.Bind,
-                    "Get" => BinderMethodKind.Get,
-                    "GetValue" => BinderMethodKind.GetValue,
-                    "Configure" => BinderMethodKind.Configure,
-                    _ => default,
-
-                };
         }
     }
 }

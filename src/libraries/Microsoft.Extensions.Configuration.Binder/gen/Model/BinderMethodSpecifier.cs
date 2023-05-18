@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     [Flags]
-    internal enum MethodSpecifier
+    internal enum BinderMethodSpecifier
     {
         None = 0x0,
 
@@ -76,9 +76,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         HasChildren = 0x4000,
 
         // Method groups
-        BindMethods = Bind_instance | Bind_instance_BinderOptions | Bind_key_instance,
-        GetMethods = Get_T | Get_T_BinderOptions | Get_TypeOf | Get_TypeOf_BinderOptions,
-        GetValueMethods = GetValue_T_key | GetValue_T_key_defaultValue | GetValue_TypeOf_key | GetValue_TypeOf_key_defaultValue,
+        Bind = Bind_instance | Bind_instance_BinderOptions | Bind_key_instance,
+        Get = Get_T | Get_T_BinderOptions | Get_TypeOf | Get_TypeOf_BinderOptions,
+        GetValue = GetValue_T_key | GetValue_T_key_defaultValue | GetValue_TypeOf_key | GetValue_TypeOf_key_defaultValue,
         RootMethodsWithConfigOptions = Bind_instance_BinderOptions | Get_T_BinderOptions | Get_TypeOf_BinderOptions,
     }
 }
