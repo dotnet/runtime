@@ -1327,9 +1327,6 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
-            ArgumentNullException.ThrowIfNull(fileName);
-            ArgumentNullException.ThrowIfNull(arguments);
-
             return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 

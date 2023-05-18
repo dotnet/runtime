@@ -1279,6 +1279,13 @@ namespace System.Diagnostics.Tests
             Assert.Equal(args, psi.ArgumentList);
         }
 
+        [Fact]
+        public void InitializeWithArgumentList_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => new ProcessStartInfo(null, new[] { "a", "b" }));
+            Assert.Throws<ArgumentNullException>("arguments", () => new ProcessStartInfo("a", (IEnumerable<string>)null));
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]

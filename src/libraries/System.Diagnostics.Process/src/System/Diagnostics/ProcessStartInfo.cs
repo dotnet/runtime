@@ -61,12 +61,11 @@ namespace System.Diagnostics
         /// </summary>
         public ProcessStartInfo(string fileName, IEnumerable<string> arguments)
         {
-            _fileName = fileName;
+            ArgumentNullException.ThrowIfNull(fileName);
+            ArgumentNullException.ThrowIfNull(arguments);
 
-            if(arguments != null)
-            {
-                _argumentList = new Collection<string>(new List<string>(arguments));
-            }
+            _fileName = fileName;
+            _argumentList = new Collection<string>(new List<string>(arguments));
         }
 
         /// <devdoc>
