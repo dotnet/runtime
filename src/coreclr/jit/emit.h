@@ -3862,7 +3862,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
         {
             return EA_4BYTE;
         }
-        
+
         case INS_movddup:
         {
             if (defaultSize == 64)

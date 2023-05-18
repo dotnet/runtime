@@ -11224,11 +11224,11 @@ void emitter::emitDispIns(
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
                 case INS_vcvttsd2usi:
-                //case INS_vcvttss2usi:
-                {
-                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
-                    break;
-                }
+                    // case INS_vcvttss2usi:
+                    {
+                        printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
+                        break;
+                    }
 
 #ifdef TARGET_AMD64
                 case INS_movsxd:
@@ -18170,12 +18170,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
             break;
-        
+
         case INS_vcvttss2usi32:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
             break;
-        
+
         case INS_vcvttss2usi64:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_8C;
