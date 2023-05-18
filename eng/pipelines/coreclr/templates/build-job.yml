@@ -232,7 +232,6 @@ jobs:
           isOfficialBuild: ${{ parameters.signBinaries }}
           timeoutInMinutes: 30
 
-    # clrTools unitests do not publish the build artifacts
     - ${{ if ne(parameters.disableClrTest, true) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
