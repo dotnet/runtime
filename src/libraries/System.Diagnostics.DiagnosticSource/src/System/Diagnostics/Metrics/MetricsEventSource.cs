@@ -245,7 +245,6 @@ namespace System.Diagnostics.Metrics
                 return _sessionId == SharedSessionId && (string.IsNullOrEmpty(commandSessionId) || commandSessionId == SharedSessionId);
             }
 
-            // ADD REF COUNTING USING SHAREDSESSIONID - IF REF COUNT IS 0, THEN DISABLE
             public void OnEventCommand(EventCommandEventArgs command)
             {
                 try
@@ -271,37 +270,21 @@ namespace System.Diagnostics.Metrics
                         || command.Command == EventCommand.Enable)
                         && _aggregationManager != null)
                     {
-
                         if (command.Command == EventCommand.Update
                             || command.Command == EventCommand.Enable)
                         {
-                            string uniqueIdentifier = commandSessionId;
-
-                            // Could be unsafe if SharedIdentifier protocol isn't followed
-                            if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
-                            {
-                                uniqueIdentifier = sharedIdentifier!;
-                            }
-
-                            if (!_sharedSessionIds.Contains(uniqueIdentifier))
-                            {
-                                _sharedSessionIds.Add(uniqueIdentifier);
-                                _sharedSessionRefCount += 1;
-                            }
+                            IncrementRefCount(commandSessionId, command);
                         }
 
                         if (IsSharedSession(commandSessionId))
                         {
-                            if (command.Command == EventCommand.Disable)
+                            if (command.Command == EventCommand.Disable && Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
                             {
-                                if (Interlocked.Decrement(ref _sharedSessionRefCount) == 0)
-                                {
-                                    _aggregationManager.Dispose();
-                                    _aggregationManager = null;
-                                    _sessionId = "";
-                                    _sharedSessionIds.Clear();
-                                }
-                                return;
+                                _aggregationManager.Dispose();
+                                _aggregationManager = null;
+                                _sessionId = "";
+                                _sharedSessionIds.Clear();
+                                Parent.Message($"Previous session with id {_sessionId} is stopped"); return;
                             }
 
                             bool validShared = true;
@@ -386,10 +369,10 @@ namespace System.Diagnostics.Metrics
                             }
                             else if (command.Command == EventCommand.Disable)
                             {
-                                _sessionId = "";
-
                                 _aggregationManager.Dispose();
                                 _aggregationManager = null;
+                                _sessionId = "";
+                                _sharedSessionIds.Clear();
                                 Parent.Message($"Previous session with id {_sessionId} is stopped");
                                 return;
                             }
@@ -487,25 +470,30 @@ namespace System.Diagnostics.Metrics
 
                         _aggregationManager.Start();
 
-                        // Copied from above, push to method
-                        string uniqueIdentifier = commandSessionId;
-
-                        // Could be unsafe if SharedIdentifier protocol isn't followed
-                        if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                        if (IsSharedSession(commandSessionId))
                         {
-                            uniqueIdentifier = sharedIdentifier!;
-                        }
-
-                        if (!_sharedSessionIds.Contains(uniqueIdentifier))
-                        {
-                            _sharedSessionIds.Add(uniqueIdentifier);
-                            _sharedSessionRefCount += 1;
+                            IncrementRefCount(commandSessionId, command);
                         }
                     }
                 }
                 catch (Exception e) when (LogError(e))
                 {
                     // this will never run
+                }
+            }
+
+            private void IncrementRefCount(string uniqueIdentifier, EventCommandEventArgs command)
+            {
+                // Could be unsafe if SharedIdentifier protocol isn't followed
+                if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                {
+                    uniqueIdentifier = sharedIdentifier!;
+                }
+
+                if (!_sharedSessionIds.Contains(uniqueIdentifier))
+                {
+                    _sharedSessionIds.Add(uniqueIdentifier);
+                    _sharedSessionRefCount += 1;
                 }
             }
 

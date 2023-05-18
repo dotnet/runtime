@@ -533,9 +533,8 @@ namespace System.Diagnostics.Metrics.Tests
                 c.Add(12);
                 listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
                 events = listener.Events.ToArray();
-                Console.Error.WriteLine("Events: " + string.Join(",", events.Select(item => "'" + item + "'")));
 
-                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeter1"))
+                using (MetricsEventListener listener2 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "TestMeter1"))
                 {
                     listener2.WaitForCollectionStop(s_waitForEventTimeout, 1);
                     c.Add(5);
@@ -543,7 +542,6 @@ namespace System.Diagnostics.Metrics.Tests
                     c.Add(12);
                     listener2.WaitForCollectionStop(s_waitForEventTimeout, 3);
                     events2 = listener2.Events.ToArray();
-                    Console.Error.WriteLine("Events2: " + string.Join(",", events2.Select(item => "'" + item + "'")));
                 }
             }
 
