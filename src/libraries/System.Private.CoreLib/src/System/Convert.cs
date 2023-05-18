@@ -119,11 +119,6 @@ namespace System
         // The method first checks if the given object implements IConvertible. If not,
         // the only permitted conversion is from a null to TypeCode.Empty, the
         // result of which is null.
-        //
-        // If the object does implement IConvertible, a check is made to see if the
-        // object already has the given type code, in which case the object is
-        // simply returned. Otherwise, the appropriate ToXXX() is invoked on the
-        // object's implementation of IConvertible.
         [return: NotNullIfNotNull(nameof(value))]
         public static object? ChangeType(object? value, TypeCode typeCode)
         {
