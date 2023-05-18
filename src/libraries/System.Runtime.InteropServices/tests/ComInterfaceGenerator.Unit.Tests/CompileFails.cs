@@ -20,6 +20,10 @@ using System.Diagnostics;
 
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 using Microsoft.Interop;
+using Newtonsoft.Json.Bson;
+using System.Security.Cryptography.X509Certificates;
+using System.Runtime.InteropServices.Marshalling;
+using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -96,6 +100,132 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateful.ByValueInParameter, new[] { invalidUnmanagedToManagedParameterDiagnostic } };
         }
 
+        public static IEnumerable<object[]> StringMarshallingCodeSnippets(GeneratorKind generator)
+        {
+            CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
+            (StringMarshalling, Type?) utf8Marshalling = (StringMarshalling.Utf8, null);
+            (StringMarshalling, Type?) utf16Marshalling = (StringMarshalling.Utf16, null);
+            (StringMarshalling, Type?) customUtf16Marshalling = (StringMarshalling.Custom, typeof(Utf16StringMarshaller));
+            DiagnosticResult[] emptyDiagnostics = new DiagnosticResult[] { };
+
+            yield return new object[] {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf16Marshalling, utf16Marshalling),
+                emptyDiagnostics };
+            yield return new object[] {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf8Marshalling),
+                emptyDiagnostics };
+            yield return new object[] {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customUtf16Marshalling, customUtf16Marshalling),
+                emptyDiagnostics };
+
+            // mismatches
+            DiagnosticResult[] mismatchAt1 = MismatchesWithLocations(1);
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf16Marshalling),
+                mismatchAt1
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf16Marshalling, utf8Marshalling),
+                mismatchAt1
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf16Marshalling, customUtf16Marshalling),
+                mismatchAt1
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customUtf16Marshalling, utf16Marshalling),
+                mismatchAt1
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, customUtf16Marshalling),
+                mismatchAt1
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customUtf16Marshalling, utf8Marshalling),
+                mismatchAt1
+            };
+
+            // Three levels inheritance
+            // Matching
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf8Marshalling, utf8Marshalling),
+                emptyDiagnostics
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf16Marshalling, utf16Marshalling, utf16Marshalling),
+                emptyDiagnostics
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling),
+                emptyDiagnostics
+            };
+
+            //Mismatches
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf8Marshalling, utf16Marshalling),
+                MismatchesWithLocations(2)
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf16Marshalling, utf16Marshalling),
+                MismatchesWithLocations(1).Concat(BaseCannotBeGeneratedWithLocations(2)).ToArray()
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf16Marshalling, utf8Marshalling),
+                MismatchesWithLocations(1, 2)
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf16Marshalling, customUtf16Marshalling),
+                MismatchesWithLocations(1, 2)
+            };
+
+
+            DiagnosticResult[] MismatchesWithLocations(params int[] locations)
+            {
+                return locations
+                    .Select(i =>
+                        new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived)
+                            .WithLocation(i))
+                   .ToArray();
+            }
+            DiagnosticResult[] BaseCannotBeGeneratedWithLocations(params int[] locations)
+            {
+                return locations
+                    .Select(i =>
+                        new DiagnosticResult(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
+                            .WithLocation(i))
+                   .ToArray();
+            }
+        }
+
         public static IEnumerable<object[]> InvalidManagedToUnmanagedCodeSnippetsToCompile(GeneratorKind generator)
         {
             // Marshallers with only support for their expected places in the signatures in
@@ -134,6 +264,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                 .WithLocation(0)
                 .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
+        }
+
+        [Theory]
+        [MemberData(nameof(StringMarshallingCodeSnippets), GeneratorKind.ComInterfaceGenerator)]
+        public async Task ValidateMismatchedStringMarshallingRaisesDiagnostic(string id, string source, DiagnosticResult[] expectedDiagnostics)
+        {
+            _ = id;
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostics);
         }
     }
 }

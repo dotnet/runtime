@@ -20,7 +20,8 @@ namespace Microsoft.Interop
         InterfaceDeclarationSyntax Declaration,
         ContainingSyntaxContext TypeDefinitionContext,
         ContainingSyntax ContainingSyntax,
-        Guid InterfaceId)
+        Guid InterfaceId,
+        LocationInfo DiagnosticLocation)
     {
         public static (ComInterfaceInfo? Info, Diagnostic? Diagnostic) From(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax)
         {
@@ -53,14 +54,25 @@ namespace Microsoft.Interop
             if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
                 return (null, baseDiagnostic);
 
+            if (baseSymbol is not null)
+            {
+                var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
+                var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
+                if (baseAttrInfo != attrInfo)
+                {
+                    return (null, Diagnostic.Create(GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived, syntax.Identifier.GetLocation()));
+                }
+            }
+
             return (new ComInterfaceInfo(
-                ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
+                    ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
                 symbol.ToDisplayString(),
                 baseSymbol?.ToDisplayString(),
-                syntax,
-                new ContainingSyntaxContext(syntax),
-                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                guid ?? Guid.Empty), null);
+                    syntax,
+                    new ContainingSyntaxContext(syntax),
+                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                guid ?? Guid.Empty,
+                LocationInfo.From(symbol)), null);
         }
 
         /// <summary>

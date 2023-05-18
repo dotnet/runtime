@@ -57,6 +57,11 @@
         <target state="translated">指定された構成は、ソースで生成された P/Invoke ではサポートされていません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
         <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
         <target state="translated">'GeneratedComInterfaceAttribute' および 'InterfaceTypeAttribute' は、'ComInterfaceType' の値 '{0}' ではサポートされていません。</target>

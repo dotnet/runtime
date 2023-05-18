@@ -17,4 +17,15 @@ namespace SharedTypes.ComInterfaces
 
         public const string _guid = "E11D5F3E-DD57-41A6-A59E-7D110551A760";
     }
+
+    [Guid(_guid)]
+    [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16)]
+    internal partial interface IUTF16MarshallingFromIUTF8
+    {
+        public string GetString2();
+
+        public void SetString2(string value);
+
+        public const string _guid = "861A0AF1-067D-48F0-8592-F7F48EB88095";
+    }
 }

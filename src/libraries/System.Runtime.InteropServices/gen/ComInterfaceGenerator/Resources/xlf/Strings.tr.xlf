@@ -57,6 +57,11 @@
         <target state="translated">Belirtilen yapılandırma, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
+      <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
         <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
         <target state="translated">'GeneratedComInterfaceAttribute' ve 'InterfaceTypeAttribute' kullanımı, 'ComInterfaceType' değeri '{0}' ile desteklenmiyor.</target>

@@ -24,6 +24,7 @@ namespace Microsoft.Interop
             public const string InvalidGeneratedComInterfaceAttributeUsage = Prefix + "1092";
             public const string MultipleComInterfaceBaseTypes = Prefix + "1093";
             public const string AnalysisFailed = Prefix + "1094";
+            public const string BaseInterfaceFailedGeneration = Prefix + "1095";
         }
 
         private const string Category = "ComInterfaceGenerator";
@@ -57,6 +58,16 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+
+        public static readonly DiagnosticDescriptor InvalidStringMarshallingMismatchBetweenBaseAndDerived =
+            new DiagnosticDescriptor(
+                Ids.InvalidGeneratedComInterfaceAttributeUsage,
+            GetResourceString(nameof(SR.InvalidGeneratedComInterfaceAttributeUsageTitle)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: GetResourceString(nameof(SR.GeneratedComInterfaceStringMarshallingMustMatchBase)));
 
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
@@ -210,6 +221,17 @@ namespace Microsoft.Interop
 
         public static readonly DiagnosticDescriptor CannotAnalyzeInterfacePattern =
             new DiagnosticDescriptor(
+                Ids.AnalysisFailed,
+                GetResourceString(nameof(SR.AnalysisFailedTitle)),
+                GetResourceString(nameof(SR.AnalysisFailedInterfaceMessage)),
+                Category,
+                DiagnosticSeverity.Warning,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.AnalysisFailedDescription)));
+
+        public static readonly DiagnosticDescriptor BaseInterfaceIsNotGenerated =
+            new DiagnosticDescriptor(
+                //TODO: Strings
                 Ids.AnalysisFailed,
                 GetResourceString(nameof(SR.AnalysisFailedTitle)),
                 GetResourceString(nameof(SR.AnalysisFailedInterfaceMessage)),

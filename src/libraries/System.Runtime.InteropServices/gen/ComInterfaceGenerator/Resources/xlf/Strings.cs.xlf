@@ -57,6 +57,11 @@
         <target state="translated">Určenou konfiguraci nepodporují zdrojem generovaná volání P/Invokes.</target>
         <note />
       </trans-unit>
+      <trans-unit id="GeneratedComInterfaceStringMarshallingMustMatchBase">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</source>
+        <target state="new">The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
         <source>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</source>
         <target state="translated">Použití GeneratedComInterfaceAttribute a InterfaceTypeAttribute se nepodporuje s hodnotou ComInterfaceType {0}.</target>
