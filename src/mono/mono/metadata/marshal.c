@@ -2110,17 +2110,8 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 * call is made to that method with the first delegate argument as this. This is
 	 * a non-documented .NET feature.
 	 */
-	if (callvirt) {
+	if (callvirt)
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
-
-		/*
-		 * We don't want to use target_method's signature because it can be freed early
-		 */
-		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
-		// target_method_sig = mono_method_signature_internal (target_method);
-
-		closed_over_null = sig->param_count == target_method_sig->param_count;
-	}
 
 	if (static_method_with_first_arg_bound) {
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
@@ -2148,6 +2139,15 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		g_assert (container);
 
 		invoke_sig = sig = mono_signature_no_pinvoke (method);
+	}
+
+	if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
+		/*
+		 * We don't want to use target_method's signature because it can be freed early
+		 */
+		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
+
+		closed_over_null = sig->param_count == target_method_sig->param_count;
 	}
 
 	/*

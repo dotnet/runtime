@@ -2530,11 +2530,7 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 	for (int i = 0 ; i < sig->param_count - 1; i ++) {
 		res->params [i] = sig->params [i + 1];
 	}
-
-    res->param_count --;
-
-	// if (res->params [res->param_count - 1])
-	// mono_metadata_free_type (res->params [res->param_count --]);
+	res->param_count --;
 
 	return res;
 }
