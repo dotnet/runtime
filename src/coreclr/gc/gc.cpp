@@ -24470,7 +24470,7 @@ void gc_heap::decommission_heap()
 
     freeable_uoh_segment                = DECOMMISSIONED_REGION_P;
 
-    memset (gen2_alloc_list, DECOMMISSIONED_INT, sizeof(gen2_alloc_list[0])*(NUM_GEN2_ALIST - 1));
+    memset ((void *)gen2_alloc_list, DECOMMISSIONED_INT, sizeof(gen2_alloc_list[0])*(NUM_GEN2_ALIST - 1));
 
 #ifdef BACKGROUND_GC
     // keep these fields
@@ -24498,8 +24498,8 @@ void gc_heap::decommission_heap()
 
     gen0_bricks_cleared                 = DECOMMISSIONED_BOOL;
 
-    memset (loh_alloc_list, DECOMMISSIONED_INT, sizeof(loh_alloc_list));
-    memset (poh_alloc_list, DECOMMISSIONED_INT, sizeof(poh_alloc_list));
+    memset ((void *)loh_alloc_list, DECOMMISSIONED_INT, sizeof(loh_alloc_list));
+    memset ((void *)poh_alloc_list, DECOMMISSIONED_INT, sizeof(poh_alloc_list));
 
     alloc_allocated                     = DECOMMISSIONED_UINT8_T_P;
     ephemeral_heap_segment              = DECOMMISSIONED_REGION_P;
@@ -24508,7 +24508,7 @@ void gc_heap::decommission_heap()
     // finalize_queue;
 
 #ifdef USE_REGIONS
-    memset (free_regions, DECOMMISSIONED_INT, sizeof(free_regions));
+    memset ((void *)free_regions, DECOMMISSIONED_INT, sizeof(free_regions));
 #endif //USE_REGIONS
 
     // put the more space locks in the decommissioned state
