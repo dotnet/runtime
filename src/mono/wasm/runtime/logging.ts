@@ -6,6 +6,7 @@ import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
 const prefix = "MONO_WASM: ";
+
 export function mono_log_debug(msg: string, ...data: any) {
     if (runtimeHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);

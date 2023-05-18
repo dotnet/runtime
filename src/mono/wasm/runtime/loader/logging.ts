@@ -5,6 +5,7 @@
 import { loaderHelpers } from "./globals";
 
 const prefix = "MONO_WASM: ";
+
 export function mono_log_debug(msg: string, ...data: any) {
     if (loaderHelpers.diagnosticTracing) {
         console.debug(prefix + msg, ...data);
