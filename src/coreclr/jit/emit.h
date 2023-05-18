@@ -3858,9 +3858,12 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
         }
 
         case INS_vcvttss2usi64:
-        case INS_vcvttss2usi32:
         {
-            return EA_4BYTE;
+            if (defaultSize == 8)
+            {
+                return EA_4BYTE;
+            }
+            return defaultSize;
         }
 
         case INS_movddup:

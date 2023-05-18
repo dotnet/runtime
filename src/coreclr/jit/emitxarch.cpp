@@ -1294,6 +1294,16 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
             case INS_vcvttsd2usi:
+            {
+                if (attr == EA_8BYTE)
+                {
+                    return true;
+                }
+
+                // TODO-Cleanup: This should really only ever be EA_4BYTE
+                assert((attr == EA_4BYTE) || (attr == EA_16BYTE));
+                return false;
+            }
 
             case INS_vbroadcastsd:
             case INS_vpbroadcastq:
@@ -11224,11 +11234,17 @@ void emitter::emitDispIns(
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
                 case INS_vcvttsd2usi:
-                    // case INS_vcvttss2usi:
-                    {
-                        printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
-                        break;
-                    }
+                {
+                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
+                    break;
+                }
+
+                case INS_vcvttss2usi32:
+                case INS_vcvttss2usi64:
+                {
+                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_4BYTE));
+                    break;
+                }
 
 #ifdef TARGET_AMD64
                 case INS_movsxd:
