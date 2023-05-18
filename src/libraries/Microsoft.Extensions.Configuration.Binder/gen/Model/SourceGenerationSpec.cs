@@ -8,8 +8,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal sealed record SourceGenerationSpec(
         Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> RootConfigTypes,
         BinderMethodSpecifier MethodsToGen,
-        HashSet<ParsableFromStringTypeSpec> PrimitivesForHelperGen,
-        HashSet<string> Namespaces)
+        HashSet<ParsableFromStringSpec> PrimitivesForHelperGen,
+        HashSet<string> TypeNamespaces)
     {
         public bool HasRootMethods() =>
             ShouldEmitMethods(BinderMethodSpecifier.Get | BinderMethodSpecifier.Bind | BinderMethodSpecifier.Configure | BinderMethodSpecifier.GetValue);
