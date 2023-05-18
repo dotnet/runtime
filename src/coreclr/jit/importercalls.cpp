@@ -5463,6 +5463,12 @@ void Compiler::impCheckForPInvokeCall(
                     return;
                 }
 
+                // Respect noinline flag ([MethodImpl(MethodImplOptions.NoInlining)] in C#)
+                if ((mflags & CORINFO_FLG_DONT_INLINE) == 0)
+                {
+                    return;
+                }
+
                 // Size-speed tradeoff: don't use inline pinvoke at rarely
                 // executed call sites.  The non-inline version is more
                 // compact.
