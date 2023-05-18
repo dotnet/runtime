@@ -35,7 +35,7 @@ namespace System.IO
         {
             // Open the src file handle, and read the file permissions.
             using SafeFileHandle src = SafeFileHandle.OpenReadOnly(sourceFullPath, FileOptions.None, out Interop.Sys.FileStatus srcFileStatus);
-            UnixFileMode filePermissions = SafeFileHandle.GetFileMode(srcStat);
+            UnixFileMode filePermissions = SafeFileHandle.GetFileMode(srcFileStatus);
 
             // Try to clone the file first.
             if (TryCloneFile(sourceFullPath, in srcFileStatus, filePermissions, destFullPath, overwrite))
