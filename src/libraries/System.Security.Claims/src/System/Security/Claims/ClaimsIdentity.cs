@@ -941,7 +941,7 @@ namespace System.Security.Claims
         {
             // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
             int claimsCount = 0;
-            foreach (var item in Claims)
+            foreach (Claim item in Claims)
             {
                 claimsCount++;
             }
@@ -961,18 +961,7 @@ namespace System.Security.Claims
             public ClaimsIdentity? Actor => _identity.Actor;
             public string? AuthenticationType => _identity.AuthenticationType;
             public object? BootstrapContext => _identity.BootstrapContext;
-            public IEnumerable<Claim> Claims
-            {
-                get
-                {
-                    List<Claim> claims = new List<Claim>();
-                    foreach (var c in _identity.Claims)
-                    {
-                        claims.Add(c);
-                    }
-                    return claims;
-                }
-            }
+            public IEnumerable<Claim> Claims => new List<Claim>(_identity.Claims);
             public bool IsAuthenticated => _identity.IsAuthenticated;
             public string? Label => _identity.Label;
             public string? Name => _identity.Name;

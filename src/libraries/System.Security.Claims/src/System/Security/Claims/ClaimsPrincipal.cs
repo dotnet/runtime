@@ -571,17 +571,17 @@ namespace System.Security.Claims
             throw new PlatformNotSupportedException();
         }
 
-        internal string DebuggerToString()
+        private string DebuggerToString()
         {
             // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
             int identitiesCount = 0;
-            foreach (var items in Identities)
+            foreach (ClaimsIdentity items in Identities)
             {
                 identitiesCount++;
             }
 
             int claimsCount = 0;
-            foreach (var item in Claims)
+            foreach (Claim item in Claims)
             {
                 claimsCount++;
             }
@@ -604,32 +604,8 @@ namespace System.Security.Claims
                 _principal = principal;
             }
 
-            public IEnumerable<Claim> Claims
-            {
-                get
-                {
-                    List<Claim> claims = new List<Claim>();
-                    foreach (var c in _principal.Claims)
-                    {
-                        claims.Add(c);
-                    }
-                    return claims;
-                }
-            }
-
-            public IEnumerable<ClaimsIdentity> Identities
-            {
-                get
-                {
-                    List<ClaimsIdentity> identities = new List<ClaimsIdentity>();
-                    foreach (var i in _principal.Identities)
-                    {
-                        identities.Add(i);
-                    }
-                    return identities;
-                }
-            }
-
+            public IEnumerable<Claim> Claims => new List<Claim>(_principal.Claims);
+            public IEnumerable<ClaimsIdentity> Identities => new List<ClaimsIdentity>(_principal.Identities);
             public IIdentity? Identity => _principal.Identity;
         }
     }
