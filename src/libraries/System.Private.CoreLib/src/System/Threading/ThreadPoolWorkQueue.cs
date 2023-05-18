@@ -935,7 +935,7 @@ namespace System.Threading
                 // us to return the thread to the pool or not.
                 //
                 int currentTickCount = Environment.TickCount;
-                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
+                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject!, currentTickCount))
                 {
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
@@ -1032,7 +1032,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
-        public readonly object threadLocalCompletionCountObject;
+        public readonly object? threadLocalCompletionCountObject;
         public readonly Random.XoshiroImpl random = new Random.XoshiroImpl();
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
