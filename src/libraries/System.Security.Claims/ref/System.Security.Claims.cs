@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics;
+
 namespace System.Security.Claims
 {
     public partial class Claim
@@ -31,6 +33,7 @@ namespace System.Security.Claims
         public virtual void WriteTo(System.IO.BinaryWriter writer) { }
         protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[]? userData) { }
     }
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public partial class ClaimsIdentity : System.Security.Principal.IIdentity
     {
         public const string DefaultIssuer = "LOCAL AUTHORITY";
@@ -41,11 +44,11 @@ namespace System.Security.Claims
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType) { }
         public ClaimsIdentity(System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType, string? nameType, string? roleType) { }
         public ClaimsIdentity(System.IO.BinaryReader reader) { }
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info) { }
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity) { }
@@ -79,13 +82,14 @@ namespace System.Security.Claims
         public virtual void WriteTo(System.IO.BinaryWriter writer) { }
         protected virtual void WriteTo(System.IO.BinaryWriter writer, byte[]? userData) { }
     }
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public partial class ClaimsPrincipal : System.Security.Principal.IPrincipal
     {
         public ClaimsPrincipal() { }
         public ClaimsPrincipal(System.Collections.Generic.IEnumerable<System.Security.Claims.ClaimsIdentity> identities) { }
         public ClaimsPrincipal(System.IO.BinaryReader reader) { }
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsPrincipal(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ClaimsPrincipal(System.Security.Principal.IIdentity identity) { }
         public ClaimsPrincipal(System.Security.Principal.IPrincipal principal) { }

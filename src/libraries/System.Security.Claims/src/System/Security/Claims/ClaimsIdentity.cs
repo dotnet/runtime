@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -12,6 +13,7 @@ namespace System.Security.Claims
     /// <summary>
     /// An Identity that is represented by a set of claims.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -932,6 +934,18 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        internal string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int claimsCount = 0;
+            foreach (var item in Claims)
+            {
+                claimsCount++;
+            }
+
+            return $"Identity Name = {Name}, IsAuthenticated = {IsAuthenticated}, Claims Count = {claimsCount}";
         }
     }
 }

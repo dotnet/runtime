@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -13,6 +14,7 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask
@@ -566,6 +568,30 @@ namespace System.Security.Claims
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        internal string DebuggerToString()
+        {
+            // DebuggerDisplayAttribute is inherited. Use virtual members instead of private fields to gather data.
+            int identitiesCount = 0;
+            foreach (var items in Identities)
+            {
+                identitiesCount++;
+            }
+
+            int claimsCount = 0;
+            foreach (var item in Claims)
+            {
+                claimsCount++;
+            }
+
+            // Return debug string optimized for the case of one identity.
+            if (identitiesCount == 1 && Identity is ClaimsIdentity claimsIdentity)
+            {
+                return claimsIdentity.DebuggerToString();
+            }
+
+            return $"Principal Identities Count: {identitiesCount}, Claims Count: {claimsCount}";
         }
     }
 }
