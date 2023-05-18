@@ -7,20 +7,19 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    public sealed partial class ConfigurationBindingSourceGenerator
+    public sealed partial class ConfigurationBindingGenerator
     {
         private sealed class Parser
         {
             private readonly SourceProductionContext _context;
             private readonly KnownTypeSymbols _typeSymbols;
 
-            private readonly Dictionary<MethodSpecifier, HashSet<TypeSpec>> _rootConfigTypes = new();
+            private readonly Dictionary<BinderMethodSpecifier, HashSet<TypeSpec>> _rootConfigTypes = new();
 
             private readonly HashSet<ITypeSymbol> _unsupportedTypes = new(SymbolEqualityComparer.Default);
             private readonly Dictionary<ITypeSymbol, TypeSpec?> _createdSpecs = new(SymbolEqualityComparer.Default);
@@ -33,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 "Microsoft.Extensions.Configuration"
             };
 
-            private MethodSpecifier _methodsToGen;
+            private BinderMethodSpecifier _methodsToGen;
 
             public Parser(SourceProductionContext context, KnownTypeSymbols typeSymbols)
             {
@@ -56,24 +55,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         continue;
                     }
 
-                    switch (operation.Kind)
+                    switch (operation.MethodGroup)
                     {
-                        case BinderMethodKind.Bind:
+                        case BinderMethodSpecifier.Bind:
                             {
                                 ProcessBindCall(operation);
                             }
                             break;
-                        case BinderMethodKind.Get:
+                        case BinderMethodSpecifier.Get:
                             {
                                 ProcessGetCall(operation);
                             }
                             break;
-                        case BinderMethodKind.GetValue:
+                        case BinderMethodSpecifier.GetValue:
                             {
                                 ProcessGetValueCall(operation);
                             }
                             break;
-                        case BinderMethodKind.Configure:
+                        case BinderMethodSpecifier.Configure:
                             {
                                 ProcessConfigureCall(operation);
                             }
@@ -96,39 +95,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ImmutableArray<IParameterSymbol> @params = operation.TargetMethod.Parameters;
                 int paramLength = @params.Length;
 
-                if (!Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[0].Type))
+                if (!SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[0].Type))
                 {
                     return;
                 }
 
-                MethodSpecifier binderMethod = MethodSpecifier.None;
+                BinderMethodSpecifier overload = BinderMethodSpecifier.None;
 
                 if (paramLength is 2)
                 {
-                    binderMethod = MethodSpecifier.Bind_instance;
+                    overload = BinderMethodSpecifier.Bind_instance;
                 }
                 else if (paramLength is 3)
                 {
                     if (@params[1].Type.SpecialType is SpecialType.System_String)
                     {
-                        binderMethod = MethodSpecifier.Bind_key_instance;
+                        overload = BinderMethodSpecifier.Bind_key_instance;
                     }
-                    else if (Helpers.TypesAreEqual(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
+                    else if (SymbolEqualityComparer.Default.Equals(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        binderMethod = MethodSpecifier.Bind_instance_BinderOptions;
+                        overload = BinderMethodSpecifier.Bind_instance_BinderOptions;
                     }
                 }
 
-                if (binderMethod is MethodSpecifier.None)
+                if (overload is BinderMethodSpecifier.None)
                 {
                     return;
                 }
 
-                int objectIndex = binderMethod switch
+                int objectIndex = overload switch
                 {
-                    MethodSpecifier.Bind_instance => 1,
-                    MethodSpecifier.Bind_instance_BinderOptions => 1,
-                    MethodSpecifier.Bind_key_instance => 2,
+                    BinderMethodSpecifier.Bind_instance => 1,
+                    BinderMethodSpecifier.Bind_instance_BinderOptions => 1,
+                    BinderMethodSpecifier.Bind_key_instance => 2,
                     _ => throw new InvalidOperationException()
                 };
 
@@ -150,7 +149,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(MethodSpecifier.BindMethods, binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(methodGroup: BinderMethodSpecifier.Bind, overload, namedType, binderOperation.Location);
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
                     conversionOperation switch
@@ -173,12 +172,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramLength = @params.Length;
 
-                if (!Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[0].Type))
+                if (!SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[0].Type))
                 {
                     return;
                 }
 
-                MethodSpecifier binderMethod = MethodSpecifier.None;
+                BinderMethodSpecifier overload = BinderMethodSpecifier.None;
                 INamedTypeSymbol? namedType;
 
                 if (targetMethod.IsGenericMethod)
@@ -192,11 +191,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramLength is 1)
                     {
-                        binderMethod = MethodSpecifier.Get_T;
+                        overload = BinderMethodSpecifier.Get_T;
                     }
-                    else if (paramLength is 2 && Helpers.TypesAreEqual(@params[1].Type, _typeSymbols.ActionOfBinderOptions))
+                    else if (paramLength is 2 && SymbolEqualityComparer.Default.Equals(@params[1].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        binderMethod = MethodSpecifier.Get_T_BinderOptions;
+                        overload = BinderMethodSpecifier.Get_T_BinderOptions;
                     }
                 }
                 else if (paramLength > 3)
@@ -210,15 +209,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramLength is 2)
                     {
-                        binderMethod = MethodSpecifier.Get_TypeOf;
+                        overload = BinderMethodSpecifier.Get_TypeOf;
                     }
-                    else if (paramLength is 3 && Helpers.TypesAreEqual(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
+                    else if (paramLength is 3 && SymbolEqualityComparer.Default.Equals(@params[2].Type, _typeSymbols.ActionOfBinderOptions))
                     {
-                        binderMethod = MethodSpecifier.Get_TypeOf_BinderOptions;
+                        overload = BinderMethodSpecifier.Get_TypeOf_BinderOptions;
                     }
                 }
 
-                if (binderMethod is MethodSpecifier.None ||
+                if (overload is BinderMethodSpecifier.None ||
                     namedType is null ||
                     namedType.SpecialType == SpecialType.System_Object ||
                     namedType.SpecialType == SpecialType.System_Void)
@@ -226,7 +225,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                AddRootConfigType(MethodSpecifier.GetMethods, binderMethod, namedType, binderOperation.Location);
+                AddRootConfigType(methodGroup: BinderMethodSpecifier.Get, overload, namedType, binderOperation.Location);
             }
 
             private void ProcessGetValueCall(BinderInvocationOperation binderOperation)
@@ -236,7 +235,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ImmutableArray<IParameterSymbol> @params = targetMethod.Parameters;
                 int paramLength = @params.Length;
 
-                MethodSpecifier binderMethod = MethodSpecifier.None;
+                BinderMethodSpecifier overload = BinderMethodSpecifier.None;
                 ITypeSymbol? type;
 
                 if (targetMethod.IsGenericMethod)
@@ -250,11 +249,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramLength is 2)
                     {
-                        binderMethod = MethodSpecifier.GetValue_T_key;
+                        overload = BinderMethodSpecifier.GetValue_T_key;
                     }
-                    else if (paramLength is 3 && Helpers.TypesAreEqual(@params[2].Type, type))
+                    else if (paramLength is 3 && SymbolEqualityComparer.Default.Equals(@params[2].Type, type))
                     {
-                        binderMethod = MethodSpecifier.GetValue_T_key_defaultValue;
+                        overload = BinderMethodSpecifier.GetValue_T_key_defaultValue;
                     }
                 }
                 else if (paramLength > 4)
@@ -273,15 +272,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (paramLength is 3)
                     {
-                        binderMethod = MethodSpecifier.GetValue_TypeOf_key;
+                        overload = BinderMethodSpecifier.GetValue_TypeOf_key;
                     }
                     else if (paramLength is 4 && @params[3].Type.SpecialType is SpecialType.System_Object)
                     {
-                        binderMethod = MethodSpecifier.GetValue_TypeOf_key_defaultValue;
+                        overload = BinderMethodSpecifier.GetValue_TypeOf_key_defaultValue;
                     }
                 }
 
-                if (binderMethod is MethodSpecifier.None ||
+                if (overload is BinderMethodSpecifier.None ||
                     type is null ||
                     type.SpecialType == SpecialType.System_Object ||
                     type.SpecialType == SpecialType.System_Void)
@@ -292,7 +291,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ITypeSymbol effectiveType = IsNullable(type, out ITypeSymbol? underlyingType) ? underlyingType : type;
                 if (IsParsableFromString(effectiveType, out _))
                 {
-                    AddRootConfigType(MethodSpecifier.GetValueMethods, binderMethod, type, binderOperation.Location);
+                    AddRootConfigType(methodGroup: BinderMethodSpecifier.GetValue, overload, type, binderOperation.Location);
                 }
             }
 
@@ -305,8 +304,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // We're looking for IServiceCollection.Configure<T>(IConfiguration).
                 if (operation is IInvocationOperation { Arguments.Length: 2 } invocationOperation &&
                     targetMethod.IsGenericMethod &&
-                    Helpers.TypesAreEqual(_typeSymbols.IServiceCollection, @params[0].Type) &&
-                    Helpers.TypesAreEqual(_typeSymbols.IConfiguration, @params[1].Type))
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.IServiceCollection, @params[0].Type) &&
+                    SymbolEqualityComparer.Default.Equals(_typeSymbols.IConfiguration, @params[1].Type))
                 {
                     ITypeSymbol? type = targetMethod.TypeArguments[0].WithNullableAnnotation(NullableAnnotation.None);
                     if (type is not INamedTypeSymbol namedType ||
@@ -315,11 +314,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    AddRootConfigType(MethodSpecifier.Configure, MethodSpecifier.Configure, namedType, binderOperation.Location);
+                    AddRootConfigType(methodGroup: BinderMethodSpecifier.Configure, overload: BinderMethodSpecifier.Configure, namedType, binderOperation.Location);
                 }
             }
 
-            private TypeSpec? AddRootConfigType(MethodSpecifier methodGroup, MethodSpecifier method, ITypeSymbol type, Location? location)
+            private TypeSpec? AddRootConfigType(BinderMethodSpecifier methodGroup, BinderMethodSpecifier overload, ITypeSymbol type, Location? location)
             {
                 if (type is INamedTypeSymbol namedType && ContainsGenericParameters(namedType))
                 {
@@ -329,10 +328,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 TypeSpec? spec = GetOrCreateTypeSpec(type, location);
                 if (spec != null)
                 {
-                    AddToRootConfigTypeCache(method, spec);
+                    AddToRootConfigTypeCache(overload, spec);
                     AddToRootConfigTypeCache(methodGroup, spec);
 
-                    _methodsToGen |= method;
+                    _methodsToGen |= overload;
                 }
 
                 return spec;
@@ -347,7 +346,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (IsNullable(type, out ITypeSymbol? underlyingType))
                 {
-                    spec = TryGetTypeSpec(underlyingType, Helpers.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingTypeSpec)
+                    spec = TryGetTypeSpec(underlyingType, ParserDiagnostics.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingTypeSpec)
                         ? new NullableSpec(type) { Location = location, UnderlyingType = underlyingTypeSpec }
                         : null;
                 }
@@ -376,7 +375,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     spec = CreateCollectionSpec((INamedTypeSymbol)type, location);
                     RegisterBindCoreGenType(spec);
                 }
-                else if (Helpers.TypesAreEqual(type, _typeSymbols.IConfigurationSection))
+                else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
                     spec = new ConfigurationSectionTypeSpec(type) { Location = location };
                 }
@@ -388,7 +387,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (spec is null)
                 {
-                    ReportUnsupportedType(type, Helpers.TypeNotSupported, location);
+                    ReportUnsupportedType(type, ParserDiagnostics.TypeNotSupported, location);
                     return null;
                 }
 
@@ -405,13 +404,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (spec is not null)
                     {
-                        AddToRootConfigTypeCache(MethodSpecifier.BindCore, spec);
-                        _methodsToGen |= MethodSpecifier.BindCore;
+                        AddToRootConfigTypeCache(BinderMethodSpecifier.BindCore, spec);
+                        _methodsToGen |= BinderMethodSpecifier.BindCore;
                     }
                 }
             }
 
-            private void AddToRootConfigTypeCache(MethodSpecifier method, TypeSpec spec)
+            private void AddToRootConfigTypeCache(BinderMethodSpecifier method, TypeSpec spec)
             {
                 Debug.Assert(spec is not null);
 
@@ -499,29 +498,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case SpecialType.None:
                         {
-                            if (Helpers.TypesAreEqual(type, _typeSymbols.CultureInfo))
+                            if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.CultureInfo))
                             {
                                 typeKind = StringParsableTypeKind.CultureInfo;
                             }
-                            else if (Helpers.TypesAreEqual(type, _typeSymbols.DateTimeOffset) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.DateOnly) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.TimeOnly) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.TimeSpan))
+                            else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.DateTimeOffset) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.DateOnly) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.TimeOnly) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.TimeSpan))
                             {
                                 typeKind = StringParsableTypeKind.ParseInvariant;
                             }
-                            else if (Helpers.TypesAreEqual(type, _typeSymbols.Int128) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.Half) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.UInt128))
+                            else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.Int128) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.Half) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.UInt128))
                             {
                                 typeKind = StringParsableTypeKind.ParseInvariant;
                             }
-                            else if (Helpers.TypesAreEqual(type, _typeSymbols.Uri))
+                            else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.Uri))
                             {
                                 typeKind = StringParsableTypeKind.Uri;
                             }
-                            else if (Helpers.TypesAreEqual(type, _typeSymbols.Version) ||
-                                Helpers.TypesAreEqual(type, _typeSymbols.Guid))
+                            else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.Version) ||
+                                SymbolEqualityComparer.Default.Equals(type, _typeSymbols.Guid))
                             {
                                 typeKind = StringParsableTypeKind.Parse;
                             }
@@ -556,7 +555,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
             {
-                if (!TryGetTypeSpec(arrayType.ElementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(arrayType.ElementType, ParserDiagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -567,7 +566,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Debug.Assert(listSpec != null);
                 if (listSpec is not null)
                 {
-                    AddToRootConfigTypeCache(MethodSpecifier.BindCore, listSpec);
+                    AddToRootConfigTypeCache(BinderMethodSpecifier.BindCore, listSpec);
                 }
 
                 return new EnumerableSpec(arrayType)
@@ -589,7 +588,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (arrayType.Rank > 1)
                 {
-                    ReportUnsupportedType(arrayType, Helpers.MultiDimArraysNotSupported, location);
+                    ReportUnsupportedType(arrayType, ParserDiagnostics.MultiDimArraysNotSupported, location);
                     return false;
                 }
 
@@ -608,15 +607,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private DictionarySpec CreateDictionarySpec(INamedTypeSymbol type, Location? location, ITypeSymbol keyType, ITypeSymbol elementType)
             {
-                if (!TryGetTypeSpec(keyType, Helpers.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
-                    !TryGetTypeSpec(elementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
+                if (!TryGetTypeSpec(keyType, ParserDiagnostics.DictionaryKeyNotSupported, out TypeSpec keySpec) ||
+                    !TryGetTypeSpec(elementType, ParserDiagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
 
                 if (keySpec.SpecKind != TypeSpecKind.ParsableFromString)
                 {
-                    ReportUnsupportedType(type, Helpers.DictionaryKeyNotSupported, location);
+                    ReportUnsupportedType(type, ParserDiagnostics.DictionaryKeyNotSupported, location);
                     return null;
                 }
 
@@ -641,7 +640,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else
                     {
-                        ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                        ReportUnsupportedType(type, ParserDiagnostics.CollectionNotSupported, location);
                         return null;
                     }
                 }
@@ -662,7 +661,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, ParserDiagnostics.CollectionNotSupported, location);
                     return null;
                 }
 
@@ -686,7 +685,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private EnumerableSpec? CreateEnumerableSpec(INamedTypeSymbol type, Location? location)
             {
                 if (!TryGetElementType(type, out ITypeSymbol? elementType) ||
-                    !TryGetTypeSpec(elementType, Helpers.ElementTypeNotSupported, out TypeSpec elementSpec))
+                    !TryGetTypeSpec(elementType, ParserDiagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
                     return null;
                 }
@@ -711,7 +710,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                     else
                     {
-                        ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                        ReportUnsupportedType(type, ParserDiagnostics.CollectionNotSupported, location);
                         return null;
                     }
                 }
@@ -751,7 +750,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    ReportUnsupportedType(type, Helpers.CollectionNotSupported, location);
+                    ReportUnsupportedType(type, ParserDiagnostics.CollectionNotSupported, location);
                     return null;
                 }
 
@@ -780,7 +779,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // Add spec to cache before traversing properties to avoid stack overflow.
                 if (!HasPublicParameterlessCtor(type))
                 {
-                    ReportUnsupportedType(type, Helpers.NeedPublicParameterlessConstructor, location);
+                    ReportUnsupportedType(type, ParserDiagnostics.NeedPublicParameterlessConstructor, location);
                     _createdSpecs.Add(type, null);
                     return null;
                 }
@@ -796,7 +795,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             if (property.Type is ITypeSymbol { } propertyType)
                             {
-                                AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => Helpers.TypesAreEqual(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                                AttributeData? attributeData = property.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                                 string propertyName = property.Name;
                                 string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
 
@@ -805,7 +804,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 if (propertyTypeSpec is null)
                                 {
-                                    _context.ReportDiagnostic(Diagnostic.Create(Helpers.PropertyNotSupported, location, new string[] { propertyName, type.ToDisplayString() }));
+                                    _context.ReportDiagnostic(Diagnostic.Create(ParserDiagnostics.PropertyNotSupported, location, new string[] { propertyName, type.ToDisplayString() }));
                                 }
                                 else
                                 {
@@ -831,7 +830,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                         TypeSpecKind.Enumerable or
                                         TypeSpecKind.Dictionary)
                 {
-                    _methodsToGen |= MethodSpecifier.HasChildren;
+                    _methodsToGen |= BinderMethodSpecifier.HasChildren;
                 }
             }
 
@@ -887,10 +886,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return type.AllInterfaces.FirstOrDefault(candidate =>
                         candidate.IsGenericType &&
                         candidate.ConstructUnboundGenericType() is INamedTypeSymbol unbound
-                        && Helpers.TypesAreEqual(unbound, @interface));
+                        && SymbolEqualityComparer.Default.Equals(unbound, @interface));
                 }
 
-                return type.AllInterfaces.FirstOrDefault(candidate => Helpers.TypesAreEqual(candidate, @interface));
+                return type.AllInterfaces.FirstOrDefault(candidate => SymbolEqualityComparer.Default.Equals(candidate, @interface));
             }
 
             private static bool IsInterfaceMatch(INamedTypeSymbol type, INamedTypeSymbol @interface)
@@ -898,10 +897,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (type.IsGenericType)
                 {
                     INamedTypeSymbol unbound = type.ConstructUnboundGenericType();
-                    return Helpers.TypesAreEqual(unbound, @interface);
+                    return SymbolEqualityComparer.Default.Equals(unbound, @interface);
                 }
 
-                return Helpers.TypesAreEqual(type, @interface);
+                return SymbolEqualityComparer.Default.Equals(type, @interface);
             }
 
             public static bool ContainsGenericParameters(INamedTypeSymbol type)
@@ -952,7 +951,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (current.GetMembers("Add").Any(member =>
                         member is IMethodSymbol { Parameters.Length: 1 } method &&
-                        Helpers.TypesAreEqual(element, method.Parameters[0].Type)))
+                        SymbolEqualityComparer.Default.Equals(element, method.Parameters[0].Type)))
                     {
                         return true;
                     }
@@ -968,8 +967,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (current.GetMembers("Add").Any(member =>
                         member is IMethodSymbol { Parameters.Length: 2 } method &&
-                        Helpers.TypesAreEqual(key, method.Parameters[0].Type) &&
-                        Helpers.TypesAreEqual(element, method.Parameters[1].Type)))
+                        SymbolEqualityComparer.Default.Equals(key, method.Parameters[0].Type) &&
+                        SymbolEqualityComparer.Default.Equals(element, method.Parameters[1].Type)))
                     {
                         return true;
                     }

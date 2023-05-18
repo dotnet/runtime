@@ -10196,6 +10196,9 @@ GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
     {
         // This is a type-changing cast so we cannot remove it entirely.
         cast->gtCastType = genActualType(castToType);
+
+        // See if we can optimize the new cast.
+        store->Data() = fgOptimizeCast(cast);
     }
 
     return store;

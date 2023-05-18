@@ -9,7 +9,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal sealed record ObjectSpec : TypeSpec
     {
         public ObjectSpec(INamedTypeSymbol type) : base(type) { }
+
         public override TypeSpecKind SpecKind => TypeSpecKind.Object;
+
         public Dictionary<string, PropertySpec?> Properties { get; } = new();
     }
 }

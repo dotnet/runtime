@@ -7,17 +7,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal abstract record CollectionSpec : TypeSpec
     {
-        public CollectionSpec(ITypeSymbol type) : base(type)
-        {
-            IsReadOnly = type.IsReadOnly;
-            IsInterface = type is INamedTypeSymbol { TypeKind: TypeKind.Interface };
-        }
+        public CollectionSpec(ITypeSymbol type) : base(type) { }
 
         public required TypeSpec ElementType { get; init; }
-
-        public bool IsReadOnly { get; }
-
-        public bool IsInterface { get; }
 
         public CollectionSpec? ConcreteType { get; set; }
 
