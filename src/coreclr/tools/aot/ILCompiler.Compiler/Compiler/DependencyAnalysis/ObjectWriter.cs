@@ -943,18 +943,14 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static unsafe void SetIdentity(ObjectWriter objectWriter)
+        private static void SetIdentity(ObjectWriter objectWriter)
         {
-            // emit compiler identity in comment section: .NET AOT {version}
-            byte[] runtimeVersionBytes = objectWriter._sb.Clear().Append(".NET AOT ")
-                .Append(Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion)
-                .Append('\0').UnderlyingArray;
-
             objectWriter.SetSection(ObjectNodeSection.CommentSection);
-            fixed (byte* version = &runtimeVersionBytes[0])
-            {
-                objectWriter.EmitBytes((IntPtr)version, runtimeVersionBytes.Length);
-            }
+
+            // stash compiler identity string in binary: .NET AOT {version}
+            objectWriter.EmitBlob(objectWriter._sb.Clear().Append(".NET AOT ")
+                .Append(Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion)
+                .Append('\0').UnderlyingArray);
         }
 
         public static void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, NodeFactory factory, ObjectWritingOptions options, IObjectDumper dumper, Logger logger)
