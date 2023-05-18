@@ -370,6 +370,8 @@ namespace System.Runtime.InteropServices.Marshalling
     public partial class GeneratedComInterfaceAttribute : System.Attribute
     {
         public GeneratedComInterfaceAttribute() { }
+        public StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass

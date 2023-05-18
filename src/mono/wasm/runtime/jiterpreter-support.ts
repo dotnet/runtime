@@ -6,6 +6,7 @@ import { Module, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
+import { mono_log_error, mono_log_info } from "./logging";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
@@ -234,8 +235,8 @@ export class WasmBuilder {
             return current.getArrayView(false).slice(0, current.size);
     }
 
-    getWasmImports () : WebAssembly.Imports {
-        const result : any = {
+    getWasmImports(): WebAssembly.Imports {
+        const result: any = {
             c: <any>this.getConstants(),
             m: { h: (<any>Module).asm.memory },
             f: { f: getWasmFunctionTable() },
@@ -262,7 +263,7 @@ export class WasmBuilder {
     // HACK: Approximate amount of space we need to generate the full module at present
     // FIXME: This does not take into account any other functions already generated if they weren't
     //  emitted into the module immediately
-    get bytesGeneratedSoFar () {
+    get bytesGeneratedSoFar() {
         const importSize = this.compressImportNames
             // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
             ? 8
@@ -293,13 +294,13 @@ export class WasmBuilder {
         return this.current.appendU8(value);
     }
 
-    appendSimd (value: WasmSimdOpcode) {
+    appendSimd(value: WasmSimdOpcode) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
         // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
         return this.current.appendULeb(value);
     }
 
-    appendU32 (value: number) {
+    appendU32(value: number) {
         return this.current.appendU32(value);
     }
 
@@ -359,7 +360,7 @@ export class WasmBuilder {
             this.appendU8(WasmOpcode.get_global);
             this.appendLeb(idx);
         } else {
-            // console.log(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
+            // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
             this.i32_const(pointer);
         }
     }
@@ -428,7 +429,7 @@ export class WasmBuilder {
         this.appendULeb(this.functionTypeCount);
         /*
         if (trace > 1)
-            console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
+            mono_log_info(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
         for (let i = 0; i < this.functionTypeCount; i++) {
             const parameters = this.functionTypesByIndex[i][0],
@@ -459,8 +460,8 @@ export class WasmBuilder {
         return imports;
     }
 
-    getCompressedName (ifi: ImportedFunctionInfo) {
-        if (!this.compressImportNames || typeof(ifi.index) !== "number")
+    getCompressedName(ifi: ImportedFunctionInfo) {
+        if (!this.compressImportNames || typeof (ifi.index) !== "number")
             return ifi.name;
 
         let result = compressedNameCache[ifi.index!];
@@ -469,7 +470,7 @@ export class WasmBuilder {
         return result;
     }
 
-    getImportsToEmit () {
+    getImportsToEmit() {
         const result = [];
         for (const k in this.importedFunctions) {
             const v = this.importedFunctions[k];
@@ -478,11 +479,11 @@ export class WasmBuilder {
             result.push(v);
         }
         result.sort((lhs, rhs) => lhs.index! - rhs.index!);
-        // console.log("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
+        // mono_log_info("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
         return result;
     }
 
-    _generateImportSection () {
+    _generateImportSection() {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
@@ -490,10 +491,10 @@ export class WasmBuilder {
         this.beginSection(2);
         this.appendULeb(2 + importsToEmit.length + this.constantSlots.length);
 
-        // console.log(`referenced ${importsToEmit.length} import(s)`);
+        // mono_log_info(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
             const ifi = importsToEmit[i];
-            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
+            // mono_log_info(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
             this.appendName(ifi.module);
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
@@ -530,7 +531,7 @@ export class WasmBuilder {
     defineImportedFunction(
         module: string, name: string, functionTypeName: string,
         permanent: boolean, func: Function | number
-    ) : ImportedFunctionInfo {
+    ): ImportedFunctionInfo {
         if (this.lockImports)
             throw new Error("Import section already generated");
         if (permanent && (this.importedFunctionCount > 0))
@@ -636,7 +637,7 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    call_indirect (functionTypeName: string, tableIndex: number) {
+    call_indirect(functionTypeName: string, tableIndex: number) {
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -646,7 +647,7 @@ export class WasmBuilder {
         this.appendULeb(tableIndex);
     }
 
-    callImport (name: string) {
+    callImport(name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
@@ -680,7 +681,7 @@ export class WasmBuilder {
         let result = 0;
         for (const k in parms) {
             this.locals.set(k, result);
-            // console.log(`parm ${k} -> ${result}`);
+            // mono_log_info(`parm ${k} -> ${result}`);
             result++;
         }
         return result;
@@ -733,7 +734,7 @@ export class WasmBuilder {
                     this.locals.set(k, idx);
                     break;
             }
-            // console.log(`local ${k} ${locals[k]} -> ${idx}`);
+            // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
         return localGroupCount;
@@ -775,7 +776,7 @@ export class WasmBuilder {
             const c = counts[k];
             if (!c)
                 continue;
-            // console.log(`${k} x${c}`);
+            // mono_log_info(`${k} x${c}`);
             this.appendULeb(c);
             this.appendU8(<any>k);
         }
@@ -1171,7 +1172,7 @@ class Cfg {
     }
 
     emitBlob(segment: CfgBlob, source: Uint8Array) {
-        // console.log(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
+        // mono_log_info(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
         const view = source.subarray(segment.start, segment.start + segment.length);
         this.builder.appendBytes(view);
     }
@@ -1235,13 +1236,13 @@ class Cfg {
 
             if (this.backDispatchOffsets.length === 0) {
                 if (this.trace > 0)
-                    console.log("No back branch targets were reachable after filtering");
+                    mono_log_info("No back branch targets were reachable after filtering");
             } else if (this.backDispatchOffsets.length === 1) {
                 if (this.trace > 0) {
                     if (this.backDispatchOffsets[0] === this.entryIp)
-                        console.log(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
+                        mono_log_info(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
                     else
-                        console.log(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
+                        mono_log_info(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
                 }
 
                 // if (disp) goto back_branch_target else fallthrough
@@ -1281,7 +1282,7 @@ class Cfg {
         }
 
         if (this.trace > 1)
-            console.log(`blockStack=${this.blockStack}`);
+            mono_log_info(`blockStack=${this.blockStack}`);
 
         for (let i = 0; i < this.segments.length; i++) {
             const segment = this.segments[i];
@@ -1312,7 +1313,7 @@ class Cfg {
                         if (this.dispatchTable.has(segment.target)) {
                             const disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace > 1)
-                                console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
+                                mono_log_info(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
 
                             // Set the back branch taken flag local so it will get flushed on monitoring exit
                             this.builder.i32_const(1);
@@ -1324,7 +1325,7 @@ class Cfg {
                             successfulBackBranch = true;
                         } else {
                             if (this.trace > 0)
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
                             indexInStack = -1;
                         }
                     }
@@ -1335,14 +1336,14 @@ class Cfg {
                         this.builder.appendU8(WasmOpcode.br);
                         this.builder.appendULeb(offset + indexInStack);
                         if (this.trace > 1)
-                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
+                            mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
                         if (this.trace > 0) {
                             const base = <any>this.base;
                             if ((segment.target >= base) && (segment.target < this.exitIp))
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
                             else if (this.trace > 1)
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
                         }
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
                     }
@@ -1393,7 +1394,7 @@ export const elapsedTimes = {
     compilation: 0
 };
 
-export const simdFallbackCounters : { [name: string] : number } = {
+export const simdFallbackCounters: { [name: string]: number } = {
 };
 
 export const counters = {
@@ -1653,7 +1654,7 @@ export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
 export function recordFailure(): void {
     counters.failures++;
     if (counters.failures >= maxFailures) {
-        console.log(`MONO_WASM: Disabling jiterpreter after ${counters.failures} failures`);
+        mono_log_info(`Disabling jiterpreter after ${counters.failures} failures`);
         applyOptions(<any>{
             enableTraces: false,
             enableInterpEntry: false,
@@ -1709,7 +1710,7 @@ export function importDef(name: string, fn: Function): [string, string, Function
     return [name, name, fn];
 }
 
-export function bytesFromHex (hex: string) : Uint8Array {
+export function bytesFromHex(hex: string): Uint8Array {
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2)
         bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
@@ -1798,7 +1799,7 @@ export function applyOptions(options: JiterpreterOptions) {
     for (const k in options) {
         const info = optionNames[k];
         if (!info) {
-            console.error(`Unrecognized jiterpreter option: ${k}`);
+            mono_log_error(`Unrecognized jiterpreter option: ${k}`);
             continue;
         }
 
@@ -1808,7 +1809,7 @@ export function applyOptions(options: JiterpreterOptions) {
         else if (typeof (v) === "number")
             cwraps.mono_jiterp_parse_option(`--${info}=${v}`);
         else
-            console.error(`Jiterpreter option must be a boolean or a number but was ${typeof (v)} '${v}'`);
+            mono_log_error(`Jiterpreter option must be a boolean or a number but was ${typeof (v)} '${v}'`);
     }
 }
 

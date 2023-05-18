@@ -841,7 +841,7 @@ int DefaultPolicy::DetermineNativeSizeEstimate()
 //    Estimates the native size (in bytes, scaled up by 10x) for the
 //    call site. While the quality of the estimate here is questionable
 //    (especially for x64) it is being left as is for legacy compatibility.
-
+//
 int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* methInfo)
 {
     int callsiteSize = 55; // Direct call take 5 native bytes; indirect call takes 6 native bytes.
@@ -856,12 +856,11 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
     for (unsigned i = 0; i < methInfo->args.numArgs; i++, argLst = comp->getArgNext(argLst))
     {
-        var_types sigType = (var_types)m_RootCompiler->eeGetArgType(argLst, &methInfo->args);
+        CORINFO_CLASS_HANDLE sigClass;
+        var_types            sigType = JITtype2varType(strip(comp->getArgType(&methInfo->args, argLst, &sigClass)));
 
         if (sigType == TYP_STRUCT)
         {
-            typeInfo verType = m_RootCompiler->verParseArgSigToTypeInfo(&methInfo->args, argLst);
-
             /*
 
             IN0028: 00009B      lea     EAX, bword ptr [EBP-14H]
@@ -873,7 +872,7 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 
             callsiteSize += 10; // "lea     EAX, bword ptr [EBP-14H]"
 
-            unsigned opsz  = roundUp(comp->getClassSize(verType.GetClassHandle()), TARGET_POINTER_SIZE);
+            unsigned opsz  = roundUp(comp->getClassSize(sigClass), TARGET_POINTER_SIZE);
             unsigned slots = opsz / TARGET_POINTER_SIZE;
 
             callsiteSize += slots * 20; // "push    gword ptr [EAX+offs]  "

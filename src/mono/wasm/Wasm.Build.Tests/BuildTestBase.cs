@@ -62,6 +62,8 @@ namespace Wasm.Build.Tests
             Path.Combine(BuildEnvironment.TestDataPath, "nuget8.config"); // for now - we are still using net7, but with
                                                                           // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
+        public const string WebcilInWasmExtension = ".wasm";
+
         static BuildTestBase()
         {
             try
@@ -80,7 +82,7 @@ namespace Wasm.Build.Tests
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 if (UseWebcil)
-                    Console.WriteLine($"=============== Using .webcil ===============");
+                    Console.WriteLine($"=============== Using webcil-in-wasm ===============");
                 Console.WriteLine($"==============================================================================================");
                 Console.WriteLine("");
             }
@@ -685,7 +687,7 @@ namespace Wasm.Build.Tests
 
             string managedDir = Path.Combine(bundleDir, "managed");
             string bundledMainAppAssembly =
-                useWebcil ? $"{projectName}.webcil" : $"{projectName}.dll";
+                useWebcil ? $"{projectName}{WebcilInWasmExtension}" : $"{projectName}.dll";
             AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = config == "Debug";
@@ -837,7 +839,7 @@ namespace Wasm.Build.Tests
                         same: dotnetWasmFromRuntimePack);
         }
 
-        protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir=null)
+        protected void AssertBlazorBootJson(string config, bool isPublish, bool isNet7AndBelow, string targetFramework = DefaultTargetFrameworkForBlazor, string? binFrameworkDir = null)
         {
             binFrameworkDir ??= FindBlazorBinFrameworkDir(config, isPublish, targetFramework);
 
@@ -932,17 +934,18 @@ namespace Wasm.Build.Tests
 
         // Keeping these methods with explicit Build/Publish in the name
         // so in the test code it is evident which is being run!
-        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test = null, string extraArgs = "--no-build")
-            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test);
+        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test = null, string extraArgs = "--no-build", Action<IConsoleMessage>? onConsoleMessage = null)
+            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test, onConsoleMessage);
 
-        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test = null, string extraArgs = "")
+        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test = null, string extraArgs = "", Action<IConsoleMessage>? onConsoleMessage = null)
             => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
                              Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
-                             test);
+                             test, onConsoleMessage);
 
         public async Task BlazorRunTest(string runArgs,
                                         string workingDirectory,
                                         Func<IPage, Task>? test = null,
+                                        Action<IConsoleMessage>? onConsoleMessage = null,
                                         bool detectRuntimeFailures = true)
         {
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
@@ -967,6 +970,8 @@ namespace Wasm.Build.Tests
                 if (EnvironmentVariables.ShowBuildOutput)
                     Console.WriteLine($"[{msg.Type}] {msg.Text}");
                 _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
+
+                onConsoleMessage?.Invoke(msg);
 
                 if (detectRuntimeFailures)
                 {

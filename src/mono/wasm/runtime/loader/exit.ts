@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
-import { consoleWebSocket } from "./logging";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
-    if (loaderHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
+    mono_log_debug("abort_startup");
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
@@ -30,7 +29,6 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_exit(exit_code: number, reason?: any): void {
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
@@ -69,11 +67,10 @@ async function flush_node_streams() {
         const stdoutFlushed = flushStream(process.stdout);
         await Promise.all([stdoutFlushed, stderrFlushed]);
     } catch (err) {
-        console.error(`flushing std* streams failed: ${err}`);
+        mono_log_error(`flushing std* streams failed: ${err}`);
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
@@ -129,18 +126,18 @@ function logErrorOnExit(exit_code: number, reason?: any) {
     if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
         if (exit_code != 0 && reason) {
             if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-                console.error(runtimeHelpers.stringify_as_error_with_stack(reason));
+                mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
             else if (typeof reason == "string")
-                console.error(reason);
+                mono_log_error(reason);
             else
-                console.error(JSON.stringify(reason));
+                mono_log_error(JSON.stringify(reason));
         }
         if (consoleWebSocket) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {
                     // tell xharness WasmTestMessagesProcessor we are done.
                     // note this sends last few bytes into the same WS
-                    console.log("WASM EXIT " + exit_code);
+                    mono_log_info_no_prefix("WASM EXIT " + exit_code);
                 }
                 else {
                     setTimeout(stop_when_ws_buffer_empty, 100);
@@ -148,7 +145,7 @@ function logErrorOnExit(exit_code: number, reason?: any) {
             };
             stop_when_ws_buffer_empty();
         } else {
-            console.log("WASM EXIT " + exit_code);
+            mono_log_info_no_prefix("WASM EXIT " + exit_code);
         }
     }
 }
