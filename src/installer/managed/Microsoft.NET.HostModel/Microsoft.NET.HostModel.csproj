@@ -21,12 +21,7 @@
   <ItemGroup>
     <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
     <PackageReference Include="System.Reflection.Metadata" Version="6.0.0" />
-    <!-- Pin to a version before .NET 8 Preview 5 breaking change: https://github.com/dotnet/docs/issues/35244
-        This gets runs on the repo's SDK, which doesn't have the corresponding change. This should be reverted
-        once the repo moves to .NET 8 Preview 5.
-    -->
-    <!-- <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" /> -->
-    <PackageReference Include="System.Text.Json" Version="8.0.0-preview.5.23251.1" />
+    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
 </Project>
