@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class BringUpTest_ArrayExc
 {
@@ -17,7 +18,8 @@ public class BringUpTest_ArrayExc
         return a[5];
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

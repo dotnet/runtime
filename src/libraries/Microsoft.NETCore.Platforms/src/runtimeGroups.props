@@ -17,7 +17,7 @@
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64;x86;arm;armv6;arm64;s390x;ppc64le</Architectures>
-      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14;3.15;3.16;3.17</Versions>
+      <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12;3.13;3.14;3.15;3.16;3.17;3.18</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="linux-bionic">
@@ -267,7 +267,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04;23.04</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04;22.10;23.04;23.10</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 

@@ -575,30 +575,44 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT128_GetElement:
         case NI_VectorT256_GetElement:
         {
+            op2 = impStackTop(0).val;
+
             switch (simdBaseType)
             {
-                // Using software fallback if simdBaseType is not supported by hardware
                 case TYP_BYTE:
                 case TYP_UBYTE:
                 case TYP_INT:
                 case TYP_UINT:
                 case TYP_LONG:
                 case TYP_ULONG:
-                    if (!compExactlyDependsOn(InstructionSet_SSE41))
+                {
+                    bool useToScalar = op2->IsIntegralConst(0);
+
+#if defined(TARGET_X86)
+                    useToScalar &= !varTypeIsLong(simdBaseType);
+#endif // TARGET_X86
+
+                    if (!useToScalar && !compExactlyDependsOn(InstructionSet_SSE41))
                     {
+                        // Using software fallback if simdBaseType is not supported by hardware
                         return nullptr;
                     }
                     break;
+                }
 
                 case TYP_DOUBLE:
                 case TYP_FLOAT:
                 case TYP_SHORT:
                 case TYP_USHORT:
+                {
                     // short/ushort/float/double is supported by SSE2
                     break;
+                }
 
                 default:
+                {
                     unreached();
+                }
             }
             break;
         }
@@ -638,19 +652,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // Integral types require SSSE3.HorizontalAdd
                 return nullptr;
             }
-            break;
-        }
-
-        case NI_VectorT128_ToScalar:
-        case NI_VectorT256_ToScalar:
-        {
-#if defined(TARGET_X86)
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to decompose this operation
-                return nullptr;
-            }
-#endif // TARGET_X86
             break;
         }
 
@@ -996,11 +997,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Quaternion_Inverse:
                 {
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone op1 for quaternion inverse (1)"));
 
                     GenTree* clonedOp2;
-                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("Clone op1 for quaternion inverse (2)"));
 
                     GenTreeVecCon* vecCon = gtNewVconNode(retType);
@@ -1023,8 +1024,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_Length:
                 {
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op1 for vector length"));
+                    op1 =
+                        impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for vector length"));
 
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
 
@@ -1038,7 +1039,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_LengthSquared:
                 {
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone op1 for vector length squared"));
 
                     return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
@@ -1112,11 +1113,11 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 case NI_Vector4_Normalize:
                 {
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone op1 for vector normalize (1)"));
 
                     GenTree* clonedOp2;
-                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    clonedOp1 = impCloneExpr(clonedOp1, &clonedOp2, CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("Clone op1 for vector normalize (2)"));
 
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
@@ -1157,6 +1158,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_ToScalar:
                 {
+#if defined(TARGET_X86)
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        op2 = gtNewIconNode(0);
+                        return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_X86
+
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
                 }
 
@@ -1205,6 +1214,14 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT256_ToScalar:
                 {
+#if defined(TARGET_X86)
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        op2 = gtNewIconNode(0);
+                        return gtNewSimdGetElementNode(retType, op1, op2, simdBaseJitType, simdSize);
+                    }
+#endif // TARGET_X86
+
                     return gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector256_ToScalar, simdBaseJitType, simdSize);
                 }
 #elif defined(TARGET_ARM64)
@@ -1373,7 +1390,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize);
 
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone diff for vector distance"));
 
                     op1 = gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
@@ -1389,7 +1406,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     op1 = gtNewSimdBinOpNode(GT_SUB, simdType, op1, op2, simdBaseJitType, simdSize);
 
                     GenTree* clonedOp1;
-                    op1 = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("Clone diff for vector distance squared"));
 
                     return gtNewSimdDotProdNode(retType, op1, clonedOp1, simdBaseJitType, simdSize);
@@ -1840,8 +1857,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                     // clonedOp3 = op3
                     GenTree* clonedOp3;
-                    op3 = impCloneExpr(op3, &clonedOp3, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op3 for vector lerp"));
+                    op3 = impCloneExpr(op3, &clonedOp3, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op3 for vector lerp"));
 
 #if defined(TARGET_XARCH)
                     // op3 = 1.0f - op3
@@ -2207,7 +2223,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     {
         assert(copyBlkSrc != nullptr);
         GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
-        GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
+        GenTree* retNode = gtNewAssignNode(dest, copyBlkSrc);
 
         return retNode;
     }

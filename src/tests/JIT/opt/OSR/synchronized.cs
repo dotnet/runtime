@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 struct S
 {
@@ -22,12 +23,12 @@ class Z
     }
 }
 
-class X
+public class X
 {
     Z z;
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
-    public S G()
+    internal S G()
     {
         S s = new S();
 
@@ -43,7 +44,8 @@ class X
         return s;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = -1;
         try

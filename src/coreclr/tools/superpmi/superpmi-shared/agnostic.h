@@ -318,8 +318,6 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         methodFlags;
     DWORD                         classFlags;
     Agnostic_CORINFO_SIG_INFO     sig;
-    DWORD                         verMethodFlags;
-    Agnostic_CORINFO_SIG_INFO     verSig;
     DWORD                         accessAllowed;
     Agnostic_CORINFO_HELPER_DESC  callsiteCalloutHelper;
     DWORD                         thisTransform;
@@ -524,6 +522,7 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
     UINT                          offsetOfThreadLocalStoragePointer;
     UINT                          offsetOfMaxThreadStaticBlocks;
     UINT                          offsetOfThreadStaticBlocks;
+    UINT                          offsetOfGCDataPointer;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo

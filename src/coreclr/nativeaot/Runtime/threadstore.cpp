@@ -430,11 +430,21 @@ C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
 #ifndef _MSC_VER
 __thread ThreadBuffer tls_CurrentThread;
+
+// the root of inlined threadstatics storage
+// there is only one now,
+// eventually this will be emitted by ILC and we may have more than one such variable
+__thread InlinedThreadStaticRoot tls_InlinedThreadStatics;
 #endif
 
 EXTERN_C ThreadBuffer* RhpGetThread()
 {
     return &tls_CurrentThread;
+}
+
+COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
+{
+    return &tls_InlinedThreadStatics.m_threadStaticsBase;
 }
 
 #endif // !DACCESS_COMPILE

@@ -18,8 +18,8 @@ namespace Microsoft.Extensions.FileProviders.Physical.Internal
             .Where(c => c != '*' && c != '|' && c != '?').ToArray();
 
 #if NET8_0_OR_GREATER
-        private static readonly IndexOfAnyValues<char> _invalidFileNameChars = IndexOfAnyValues.Create(GetInvalidFileNameChars());
-        private static readonly IndexOfAnyValues<char> _invalidFilterChars = IndexOfAnyValues.Create(GetInvalidFilterChars());
+        private static readonly SearchValues<char> _invalidFileNameChars = SearchValues.Create(GetInvalidFileNameChars());
+        private static readonly SearchValues<char> _invalidFilterChars = SearchValues.Create(GetInvalidFilterChars());
 #else
         private static readonly char[] _invalidFileNameChars = GetInvalidFileNameChars();
         private static readonly char[] _invalidFilterChars = GetInvalidFilterChars();

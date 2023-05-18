@@ -31,13 +31,11 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
       displayName: Build Tests
   - ${{ if ne(parameters.osGroup, 'windows') }}:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
       displayName: Build Tests
-
-
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
   - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
@@ -48,7 +46,7 @@ steps:
                 -arch ${{ parameters.archType }}
                 /p:BuildMonoAotCrossCompiler=true
                 /p:BuildMonoAotCrossCompilerOnly=true
-                /p:MonoLibClang="/usr/lib/llvm-9/lib/libclang-9.so.1"
+                /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                 /p:MonoAOTEnableLLVM=true
                 /p:MonoAOTLLVMUseCxx11Abi=true
                 /p:CrossBuild=true
