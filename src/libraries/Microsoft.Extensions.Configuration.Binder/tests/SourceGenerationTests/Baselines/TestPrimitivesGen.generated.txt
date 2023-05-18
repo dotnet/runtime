@@ -3,7 +3,7 @@
 
 internal static class GeneratedConfigurationBinder
 {
-    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj);
+    public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass obj) => global::Microsoft.Extensions.Configuration.Binder.SourceGeneration.Helpers.BindCore(configuration, ref obj, binderOptions: null);
 }
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -14,169 +14,258 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
     internal static class Helpers
     {
-        public static void BindCore(IConfiguration configuration, ref Program.MyClass obj)
+        public static void BindCore(IConfiguration configuration, ref Program.MyClass obj, BinderOptions? binderOptions)
         {
             if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            if (configuration["Prop0"] is string stringValue0)
+            List<string>? temp = null;
+            foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                obj.Prop0 = ParseBool(stringValue0, () => configuration.GetSection("Prop0").Path);
+                switch (section.Key)
+                {
+                    case "Prop0":
+                    {
+                        if (configuration["Prop0"] is string stringValue0)
+                        {
+                            obj.Prop0 = ParseBool(stringValue0, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop1":
+                    {
+                        if (configuration["Prop1"] is string stringValue1)
+                        {
+                            obj.Prop1 = ParseByte(stringValue1, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop2":
+                    {
+                        if (configuration["Prop2"] is string stringValue2)
+                        {
+                            obj.Prop2 = ParseSbyte(stringValue2, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop3":
+                    {
+                        if (configuration["Prop3"] is string stringValue3)
+                        {
+                            obj.Prop3 = ParseChar(stringValue3, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop4":
+                    {
+                        if (configuration["Prop4"] is string stringValue4)
+                        {
+                            obj.Prop4 = ParseDouble(stringValue4, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop5":
+                    {
+                        if (configuration["Prop5"] is string stringValue5)
+                        {
+                            obj.Prop5 = stringValue5;
+                        }
+                    }
+                    break;
+                    case "Prop6":
+                    {
+                        if (configuration["Prop6"] is string stringValue6)
+                        {
+                            obj.Prop6 = ParseInt(stringValue6, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop8":
+                    {
+                        if (configuration["Prop8"] is string stringValue7)
+                        {
+                            obj.Prop8 = ParseShort(stringValue7, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop9":
+                    {
+                        if (configuration["Prop9"] is string stringValue8)
+                        {
+                            obj.Prop9 = ParseLong(stringValue8, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop10":
+                    {
+                        if (configuration["Prop10"] is string stringValue9)
+                        {
+                            obj.Prop10 = ParseFloat(stringValue9, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop13":
+                    {
+                        if (configuration["Prop13"] is string stringValue10)
+                        {
+                            obj.Prop13 = ParseUshort(stringValue10, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop14":
+                    {
+                        if (configuration["Prop14"] is string stringValue11)
+                        {
+                            obj.Prop14 = ParseUint(stringValue11, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop15":
+                    {
+                        if (configuration["Prop15"] is string stringValue12)
+                        {
+                            obj.Prop15 = ParseUlong(stringValue12, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop16":
+                    {
+                        if (configuration["Prop16"] is string stringValue13)
+                        {
+                            obj.Prop16 = stringValue13;
+                        }
+                    }
+                    break;
+                    case "Prop17":
+                    {
+                        if (configuration["Prop17"] is string stringValue14)
+                        {
+                            obj.Prop17 = ParseCultureInfo(stringValue14, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop19":
+                    {
+                        if (configuration["Prop19"] is string stringValue15)
+                        {
+                            obj.Prop19 = ParseDateTime(stringValue15, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop20":
+                    {
+                        if (configuration["Prop20"] is string stringValue16)
+                        {
+                            obj.Prop20 = ParseDateTimeOffset(stringValue16, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop21":
+                    {
+                        if (configuration["Prop21"] is string stringValue17)
+                        {
+                            obj.Prop21 = ParseDecimal(stringValue17, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop23":
+                    {
+                        if (configuration["Prop23"] is string stringValue18)
+                        {
+                            obj.Prop23 = ParseInt(stringValue18, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop24":
+                    {
+                        if (configuration["Prop24"] is string stringValue19)
+                        {
+                            obj.Prop24 = ParseDateTime(stringValue19, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop25":
+                    {
+                        if (configuration["Prop25"] is string stringValue20)
+                        {
+                            obj.Prop25 = ParseUri(stringValue20, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop26":
+                    {
+                        if (configuration["Prop26"] is string stringValue21)
+                        {
+                            obj.Prop26 = ParseVersion(stringValue21, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop27":
+                    {
+                        if (configuration["Prop27"] is string stringValue22)
+                        {
+                            obj.Prop27 = ParseDayOfWeek(stringValue22, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop7":
+                    {
+                        if (configuration["Prop7"] is string stringValue23)
+                        {
+                            obj.Prop7 = ParseInt128(stringValue23, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop11":
+                    {
+                        if (configuration["Prop11"] is string stringValue24)
+                        {
+                            obj.Prop11 = ParseHalf(stringValue24, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop12":
+                    {
+                        if (configuration["Prop12"] is string stringValue25)
+                        {
+                            obj.Prop12 = ParseUInt128(stringValue25, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop18":
+                    {
+                        if (configuration["Prop18"] is string stringValue26)
+                        {
+                            obj.Prop18 = ParseDateOnly(stringValue26, () => section.Path);
+                        }
+                    }
+                    break;
+                    case "Prop22":
+                    {
+                        if (configuration["Prop22"] is string stringValue27)
+                        {
+                            obj.Prop22 = ParseByteArray(stringValue27, () => section.Path);
+                        }
+                    }
+                    break;
+                    default:
+                    {
+                        if (binderOptions?.ErrorOnUnknownConfiguration == true)
+                        {
+                            (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        }
+                    }
+                    break;
+                }
             }
 
-            if (configuration["Prop1"] is string stringValue1)
+            if (temp is not null)
             {
-                obj.Prop1 = ParseByte(stringValue1, () => configuration.GetSection("Prop1").Path);
-            }
-
-            if (configuration["Prop2"] is string stringValue2)
-            {
-                obj.Prop2 = ParseSbyte(stringValue2, () => configuration.GetSection("Prop2").Path);
-            }
-
-            if (configuration["Prop3"] is string stringValue3)
-            {
-                obj.Prop3 = ParseChar(stringValue3, () => configuration.GetSection("Prop3").Path);
-            }
-
-            if (configuration["Prop4"] is string stringValue4)
-            {
-                obj.Prop4 = ParseDouble(stringValue4, () => configuration.GetSection("Prop4").Path);
-            }
-
-            if (configuration["Prop5"] is string stringValue5)
-            {
-                obj.Prop5 = stringValue5;
-            }
-
-            if (configuration["Prop6"] is string stringValue6)
-            {
-                obj.Prop6 = ParseInt(stringValue6, () => configuration.GetSection("Prop6").Path);
-            }
-
-            if (configuration["Prop8"] is string stringValue7)
-            {
-                obj.Prop8 = ParseShort(stringValue7, () => configuration.GetSection("Prop8").Path);
-            }
-
-            if (configuration["Prop9"] is string stringValue8)
-            {
-                obj.Prop9 = ParseLong(stringValue8, () => configuration.GetSection("Prop9").Path);
-            }
-
-            if (configuration["Prop10"] is string stringValue9)
-            {
-                obj.Prop10 = ParseFloat(stringValue9, () => configuration.GetSection("Prop10").Path);
-            }
-
-            if (configuration["Prop13"] is string stringValue10)
-            {
-                obj.Prop13 = ParseUshort(stringValue10, () => configuration.GetSection("Prop13").Path);
-            }
-
-            if (configuration["Prop14"] is string stringValue11)
-            {
-                obj.Prop14 = ParseUint(stringValue11, () => configuration.GetSection("Prop14").Path);
-            }
-
-            if (configuration["Prop15"] is string stringValue12)
-            {
-                obj.Prop15 = ParseUlong(stringValue12, () => configuration.GetSection("Prop15").Path);
-            }
-
-            if (configuration["Prop16"] is string stringValue13)
-            {
-                obj.Prop16 = stringValue13;
-            }
-
-            if (configuration["Prop17"] is string stringValue14)
-            {
-                obj.Prop17 = ParseCultureInfo(stringValue14, () => configuration.GetSection("Prop17").Path);
-            }
-
-            if (configuration["Prop19"] is string stringValue15)
-            {
-                obj.Prop19 = ParseDateTime(stringValue15, () => configuration.GetSection("Prop19").Path);
-            }
-
-            if (configuration["Prop20"] is string stringValue16)
-            {
-                obj.Prop20 = ParseDateTimeOffset(stringValue16, () => configuration.GetSection("Prop20").Path);
-            }
-
-            if (configuration["Prop21"] is string stringValue17)
-            {
-                obj.Prop21 = ParseDecimal(stringValue17, () => configuration.GetSection("Prop21").Path);
-            }
-
-            if (configuration["Prop23"] is string stringValue18)
-            {
-                obj.Prop23 = ParseTimeSpan(stringValue18, () => configuration.GetSection("Prop23").Path);
-            }
-
-            if (configuration["Prop24"] is string stringValue19)
-            {
-                obj.Prop24 = ParseGuid(stringValue19, () => configuration.GetSection("Prop24").Path);
-            }
-
-            if (configuration["Prop25"] is string stringValue20)
-            {
-                obj.Prop25 = ParseUri(stringValue20, () => configuration.GetSection("Prop25").Path);
-            }
-
-            if (configuration["Prop26"] is string stringValue21)
-            {
-                obj.Prop26 = ParseVersion(stringValue21, () => configuration.GetSection("Prop26").Path);
-            }
-
-            if (configuration["Prop27"] is string stringValue22)
-            {
-                obj.Prop27 = ParseDayOfWeek(stringValue22, () => configuration.GetSection("Prop27").Path);
-            }
-
-            if (configuration["Prop7"] is string stringValue23)
-            {
-                obj.Prop7 = ParseInt128(stringValue23, () => configuration.GetSection("Prop7").Path);
-            }
-
-            if (configuration["Prop11"] is string stringValue24)
-            {
-                obj.Prop11 = ParseHalf(stringValue24, () => configuration.GetSection("Prop11").Path);
-            }
-
-            if (configuration["Prop12"] is string stringValue25)
-            {
-                obj.Prop12 = ParseUInt128(stringValue25, () => configuration.GetSection("Prop12").Path);
-            }
-
-            if (configuration["Prop18"] is string stringValue26)
-            {
-                obj.Prop18 = ParseDateOnly(stringValue26, () => configuration.GetSection("Prop18").Path);
-            }
-
-            if (configuration["Prop22"] is string stringValue27)
-            {
-                obj.Prop22 = ParseTimeOnly(stringValue27, () => configuration.GetSection("Prop22").Path);
-            }
-
-            if (configuration["Prop22"] is string stringValue28)
-            {
-                obj.Prop22 = ParseByteArray(stringValue28, () => configuration.GetSection("Prop22").Path);
-            }
-
-            if (configuration["Prop23"] is string stringValue29)
-            {
-                obj.Prop23 = ParseInt(stringValue29, () => configuration.GetSection("Prop23").Path);
-            }
-
-            if (configuration["Prop24"] is string stringValue30)
-            {
-                obj.Prop24 = ParseDateTime(stringValue30, () => configuration.GetSection("Prop24").Path);
+                throw new InvalidOperationException($"'ErrorOnUnknownConfiguration' was set on the provided BinderOptions, but the following properties were not found on the instance of {typeof(Program.MyClass)}: {string.Join(", ", temp)}");
             }
         }
-
 
         public static bool ParseBool(string stringValue, Func<string?> getPath)
         {

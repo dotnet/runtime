@@ -44,6 +44,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <mono/metadata/webcil-loader.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -1465,6 +1466,13 @@ bundled_assembly_match (const char *bundled_name, const char *name)
 		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
 			return TRUE;
 	}
+	/* if they want a .dll and we have the matching .wasm webcil-in-wasm, return it */
+	if (g_str_has_suffix (bundled_name, MONO_WEBCIL_IN_WASM_EXTENSION) && g_str_has_suffix (name, ".dll")) {
+		size_t bprefix = strlen (bundled_name) - strlen (MONO_WEBCIL_IN_WASM_EXTENSION);
+		size_t nprefix = strlen (name) - strlen (".dll");
+		if (bprefix == nprefix && strncmp (bundled_name, name, bprefix) == 0)
+			return TRUE;
+	}
 	return FALSE;
 #endif
 }
@@ -2734,6 +2742,12 @@ mono_assembly_load_corlib (void)
 	if (!corlib) {
 		/* Maybe its in a bundle */
 		char *corlib_name = g_strdup_printf ("%s.webcil", MONO_ASSEMBLY_CORLIB_NAME);
+		corlib = mono_assembly_request_open (corlib_name, &req, &status);
+		g_free (corlib_name);
+	}
+	if (!corlib) {
+		/* Maybe its in a bundle */
+		char *corlib_name = g_strdup_printf ("%s%s", MONO_ASSEMBLY_CORLIB_NAME, MONO_WEBCIL_IN_WASM_EXTENSION);
 		corlib = mono_assembly_request_open (corlib_name, &req, &status);
 		g_free (corlib_name);
 	}

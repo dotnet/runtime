@@ -3051,7 +3051,10 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
-	return MONO_RGCTX_ACCESS_THIS;
+	if (mono_opt_experimental_gshared_mrgctx)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+	else
+		return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*
@@ -4452,9 +4455,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM)
-		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(ENABLE_LLVM) && !(defined(TARGET_ARM64) && defined(TARGET_OSX))
+		// llvm has a nice built-in API to detect features
+		// it is not implemented on some platforms like apple arm64
+		features = mono_llvm_get_cpu_features ();
+#elif defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}

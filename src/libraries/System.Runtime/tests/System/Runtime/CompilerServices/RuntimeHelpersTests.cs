@@ -203,8 +203,6 @@ namespace System.Runtime.CompilerServices.Tests
 
         public static IEnumerable<object[]> GetUninitializedObject_NegativeTestCases()
         {
-            // TODO: Test actual function pointer types when typeof(delegate*<...>) support is available
-
             yield return new[] { typeof(string), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[]), typeof(ArgumentException) }; // variable-length type
             yield return new[] { typeof(int[,]), typeof(ArgumentException) }; // variable-length type
@@ -227,11 +225,18 @@ namespace System.Runtime.CompilerServices.Tests
             yield return new[] { typeof(Delegate), typeof(MemberAccessException) }; // abstract type
 
             yield return new[] { typeof(void), typeof(ArgumentException) }; // explicit block in place
-            yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer typedesc
-            yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref typedesc
+            yield return new[] { typeof(int).MakePointerType(), typeof(ArgumentException) }; // pointer
+            yield return new[] { typeof(int).MakeByRefType(), typeof(ArgumentException) }; // byref
 
-            yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref type
-            yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref type
+            // https://github.com/dotnet/runtime/issues/71095
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new[] { FunctionPointerType(), typeof(ArgumentException) }; // function pointer
+                static unsafe Type FunctionPointerType() => typeof(delegate*<void>);
+            }
+
+            yield return new[] { typeof(ReadOnlySpan<int>), typeof(NotSupportedException) }; // byref-like type
+            yield return new[] { typeof(ArgIterator), typeof(NotSupportedException) }; // byref-like type
 
             Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
             if (canonType != null)

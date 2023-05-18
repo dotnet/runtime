@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { createPromiseController } from "../../promise-controller";
 import type { RemoveCommandSetAndId, EventPipeCommandCollectTracing2, EventPipeCommandStopTracing } from "../server_pthread/protocol-client-commands";
 import type { FilterPredicate, MockEnvironment } from "./types";
 import Serializer from "../server_pthread/ipc-protocol/base-serializer";
 import { CommandSetId, EventPipeCommandId, ProcessCommandId } from "../server_pthread/ipc-protocol/types";
-import { assertNever, mono_assert } from "../../types";
-import { delay } from "../../promise-utils";
+import { assertNever } from "../../types/internal";
 import { pthread_self } from "../../pthreads/worker";
+import { createPromiseController } from "../../globals";
 
 
 function expectAdvertise(data: ArrayBuffer): boolean {
@@ -133,7 +132,7 @@ export function createMockEnvironment(): MockEnvironment {
         postMessageToBrowser,
         addEventListenerFromBrowser,
         createPromiseController,
-        delay,
+        delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
         command,
         reply,
         expectAdvertise

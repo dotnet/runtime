@@ -118,6 +118,7 @@
 
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
 
     <WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>
     <WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>
@@ -165,7 +166,7 @@
 
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
-          Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+          Condition="'$(IsWasiProject)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
 
     <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
@@ -220,7 +221,7 @@
   <Target Name="WasmBuildApp"
           AfterTargets="$(WasmBuildAppAfterThisTarget)"
           DependsOnTargets="$(WasmBuildAppDependsOn)"
-          Condition="'$(IsWasmProject)' == 'true' and '$(WasmBuildingForNestedPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
+          Condition="'$(IsWasiProject)' == 'true' and '$(WasmBuildingForNestedPublish)' == '' and '$(WasmBuildOnlyAfterPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'" />
 
   <Target Name="_InitializeCommonProperties">
     <Error Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == '' and ('%(ResolvedRuntimePack.PackageDirectory)' == '' or !Exists(%(ResolvedRuntimePack.PackageDirectory)))"
@@ -321,13 +322,19 @@
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
     </PropertyGroup>
 
-    <ItemGroup>
-      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+    <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
+      <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildNative)' == 'true'">
+      <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
+      <!-- Add the default ones when we don't compile one -->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm"/>
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">
       <WasmIcuDataFileNames Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
@@ -378,7 +385,7 @@
       <FileWrites Include="$(WasmRunWasmtimeScriptPath)" />
     </ItemGroup>
 
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunWasmtimeScriptPath)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">

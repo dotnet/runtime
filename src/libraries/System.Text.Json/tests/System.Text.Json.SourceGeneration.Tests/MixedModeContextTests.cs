@@ -83,7 +83,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ByteArray.SerializeHandler);
-            Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.SourceGenSampleEnum.SerializeHandler);
             Assert.Null(MixedModeContext.Default.String.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MixedModeContext.Default.JsonDocument.SerializeHandler);

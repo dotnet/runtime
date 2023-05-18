@@ -493,7 +493,7 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)
+        public static bool ShouldSkipCompilation(InstructionSetSupport instructionSetSupport, MethodDesc methodNeedingCode)
         {
             if (methodNeedingCode.IsAggressiveOptimization)
             {
@@ -520,12 +520,89 @@ namespace Internal.JitInterface
                 // Special methods on delegate types
                 return true;
             }
-            if (methodNeedingCode.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            if (ShouldCodeNotBeCompiledIntoFinalImage(instructionSetSupport, methodNeedingCode))
             {
-                // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
                 return true;
             }
 
+            return false;
+        }
+
+        public static bool ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport instructionSetSupport, MethodDesc method)
+        {
+            EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
+
+            var metadataReader = ecmaMethod.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+
+            var handle = ecmaMethod.Handle;
+
+            List<TypeDesc> compExactlyDependsOnList = null;
+
+            foreach (var attributeHandle in metadataReader.GetMethodDefinition(handle).GetCustomAttributes())
+            {
+                StringHandle namespaceHandle, nameHandle;
+                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                    continue;
+
+                if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime"))
+                {
+                    if (metadataReader.StringComparer.Equals(nameHandle, "BypassReadyToRunAttribute"))
+                    {
+                        return true;
+                    }
+                }
+                else if (metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                {
+                    if (metadataReader.StringComparer.Equals(nameHandle, "CompExactlyDependsOnAttribute"))
+                    {
+                        var customAttribute = metadataReader.GetCustomAttribute(attributeHandle);
+                        var typeProvider = new CustomAttributeTypeProvider(ecmaMethod.Module);
+                        var fixedArguments = customAttribute.DecodeValue(typeProvider).FixedArguments;
+                        if (fixedArguments.Length < 1)
+                            continue;
+
+                        TypeDesc typeForBypass = fixedArguments[0].Value as TypeDesc;
+                        if (typeForBypass != null)
+                        {
+                            if (compExactlyDependsOnList == null)
+                                compExactlyDependsOnList = new List<TypeDesc>();
+
+                            compExactlyDependsOnList.Add(typeForBypass);
+                        }
+                    }
+                }
+            }
+
+            if (compExactlyDependsOnList != null && compExactlyDependsOnList.Count > 0)
+            {
+                // Default to true, and set to false if at least one of the types is actually supported in the current environment, and none of the
+                // intrinsic types are in an opportunistic state.
+                bool doBypass = true;
+
+                foreach (var intrinsicType in compExactlyDependsOnList)
+                {
+                    InstructionSet instructionSet = InstructionSetParser.LookupPlatformIntrinsicInstructionSet(intrinsicType.Context.Target.Architecture, intrinsicType);
+                    if (instructionSet == InstructionSet.ILLEGAL)
+                    {
+                        // This instruction set isn't supported on the current platform at all.
+                        continue;
+                    }
+                    if (instructionSetSupport.IsInstructionSetSupported(instructionSet) || instructionSetSupport.IsInstructionSetExplicitlyUnsupported(instructionSet))
+                    {
+                        doBypass = false;
+                    }
+                    else
+                    {
+                        // If we reach here this is an instruction set generally supported on this platform, but we don't know what the behavior will be at runtime
+                        return true;
+                    }
+                }
+
+                return doBypass;
+            }
+
+            // No reason to bypass compilation and code generation.
             return false;
         }
 
@@ -582,7 +659,7 @@ namespace Internal.JitInterface
         public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
-            if (ShouldSkipCompilation(method) || MethodSignatureIsUnstable(method.Signature, out var _))
+            if (ShouldSkipCompilation(compilation.InstructionSetSupport, method) || MethodSignatureIsUnstable(method.Signature, out var _))
                 return false;
 
             MethodIL methodIL = compilation.GetMethodIL(method);
@@ -605,7 +682,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (ShouldSkipCompilation(MethodBeingCompiled))
+                if (ShouldSkipCompilation(_compilation.InstructionSetSupport, MethodBeingCompiled))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
@@ -897,6 +974,12 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenArray;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWFAST_MAYBEFROZEN:
+                    id = ReadyToRunHelper.NewMaybeFrozenObject;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
                     id = ReadyToRunHelper.VirtualFuncPtr;
@@ -1502,11 +1585,9 @@ namespace Internal.JitInterface
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
 
                     // TODO: Handle the case when the RVA is in the TLS range
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
-
-                    ISymbolNode node = _compilation.GetFieldRvaData(field);
-                    pResult->fieldLookup.addr = (void*)ObjectToHandle(node);
-                    pResult->fieldLookup.accessType = node.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
+                    fieldOffset = 0;
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.RvaFieldAddress(ComputeFieldWithToken(field, ref pResolvedToken)));
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
                     if (!IsClassPreInited(field.OwningType))
@@ -3015,7 +3096,7 @@ namespace Internal.JitInterface
             return 0;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+        private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             FieldDesc field = HandleToObject(fieldHandle);
@@ -3026,6 +3107,11 @@ namespace Internal.JitInterface
                 return TryReadRvaFieldData(field, buffer, bufferSize, valueOffset);
             }
             return false;
+        }
+
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* obj, byte* buffer, int bufferSize, int valueOffset)
+        {
+            throw new NotSupportedException();
         }
 
         private CORINFO_CLASS_STRUCT_* getObjectType(CORINFO_OBJECT_STRUCT_* objPtr)

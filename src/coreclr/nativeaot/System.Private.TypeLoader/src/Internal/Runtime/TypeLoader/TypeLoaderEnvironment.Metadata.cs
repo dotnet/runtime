@@ -192,177 +192,6 @@ namespace Internal.Runtime.TypeLoader
         }
 
         /// <summary>
-        /// Return the metadata handle for a TypeRef if this type was referenced indirectly by other type that pay-for-play has denoted as browsable
-        /// (for example, as part of a method signature.)
-        ///
-        /// This is only used in "debug" builds to provide better diagnostics when metadata is missing.
-        ///
-        /// Preconditions:
-        ///    runtimeTypeHandle is a typedef (not a constructed type such as an array or generic instance.)
-        /// </summary>
-        /// <param name="runtimeTypeHandle">MethodTable of the type in question</param>
-        /// <param name="metadataReader">Metadata reader for the type</param>
-        /// <param name="typeRefHandle">Located TypeRef handle</param>
-        public static unsafe bool TryGetTypeReferenceForNamedType(RuntimeTypeHandle runtimeTypeHandle, out MetadataReader metadataReader, out TypeReferenceHandle typeRefHandle)
-        {
-            int hashCode = runtimeTypeHandle.GetHashCode();
-
-            // Iterate over all modules, starting with the module that defines the MethodTable
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(runtimeTypeHandle)))
-            {
-                NativeReader typeMapReader;
-                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
-                {
-                    NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                    NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
-
-                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                    externalReferences.InitializeCommonFixupsTable(module);
-
-                    var lookup = typeHashtable.Lookup(hashCode);
-                    NativeParser entryParser;
-                    while (!(entryParser = lookup.GetNext()).IsNull)
-                    {
-                        RuntimeTypeHandle foundType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        if (foundType.Equals(runtimeTypeHandle))
-                        {
-                            Handle entryMetadataHandle = entryParser.GetUnsigned().AsHandle();
-                            if (entryMetadataHandle.HandleType == HandleType.TypeReference)
-                            {
-                                metadataReader = module.MetadataReader;
-                                typeRefHandle = entryMetadataHandle.ToTypeReferenceHandle(metadataReader);
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            metadataReader = null;
-            typeRefHandle = default(TypeReferenceHandle);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Return the RuntimeTypeHandle for the named type referenced by another type that pay-for-play denotes as browsable (for example,
-        /// in a member signature.) This will only find the typehandle if it is not defined in the current module, and is primarily used
-        /// to find non-browsable types.
-        ///
-        /// This is used to ensure that we can produce a Type object if requested and that it match up with the analogous
-        /// Type obtained via typeof().
-        ///
-        ///
-        /// Preconditions:
-        ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
-        ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
-        ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
-        /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
-        /// </summary>
-        /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
-        /// <param name="typeRefHandle">TypeRef handle to look up</param>
-        /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        /// <param name="searchAllModules">Search all modules</param>
-        public static unsafe bool TryGetNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle, bool searchAllModules = false)
-        {
-            int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
-            NativeFormatModuleInfo typeRefModule = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
-            return TryGetNamedTypeForTypeReference_Inner(metadataReader, typeRefModule, typeRefHandle, hashCode, typeRefModule, out runtimeTypeHandle);
-        }
-
-        /// <summary>
-        /// Return the RuntimeTypeHandle for the named type referenced by another type that pay-for-play denotes as browsable (for example,
-        /// in a member signature.) This lookup will attempt to resolve to an MethodTable in any module to cover situations where the type
-        /// does not have a TypeDefinition (non-browsable type) as well as cases where it does.
-        ///
-        /// Preconditions:
-        ///    metadataReader + typeRefHandle  - a valid metadata reader + typeReferenceHandle where "metadataReader" is one
-        ///                                      of the metadata readers returned by ExecutionEnvironment.MetadataReaders.
-        ///
-        /// Note: Although this method has a "bool" return value like the other mapping table accessors, the pay-for-play design
-        /// guarantees that any type that has a metadata TypeReference to it also has a RuntimeTypeHandle underneath.
-        /// </summary>
-        /// <param name="metadataReader">Metadata reader for module containing the type reference</param>
-        /// <param name="typeRefHandle">TypeRef handle to look up</param>
-        /// <param name="runtimeTypeHandle">Resolved MethodTable for the type reference</param>
-        public static unsafe bool TryResolveNamedTypeForTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeRefHandle, out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            int hashCode = typeRefHandle.ComputeHashCode(metadataReader);
-            NativeFormatModuleInfo typeRefModule = ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader);
-            runtimeTypeHandle = default(RuntimeTypeHandle);
-
-            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(typeRefModule.Handle))
-            {
-                if (TryGetNamedTypeForTypeReference_Inner(metadataReader, typeRefModule, typeRefHandle, hashCode, module, out runtimeTypeHandle))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static unsafe bool TryGetNamedTypeForTypeReference_Inner(MetadataReader metadataReader,
-            NativeFormatModuleInfo typeRefModule,
-            TypeReferenceHandle typeRefHandle,
-            int hashCode,
-            NativeFormatModuleInfo module,
-            out RuntimeTypeHandle runtimeTypeHandle)
-        {
-            Debug.Assert(typeRefModule == ModuleList.Instance.GetModuleInfoForMetadataReader(metadataReader));
-
-            NativeReader typeMapReader;
-            if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.TypeMap, out typeMapReader))
-            {
-                NativeParser typeMapParser = new NativeParser(typeMapReader, 0);
-                NativeHashtable typeHashtable = new NativeHashtable(typeMapParser);
-
-                ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
-                externalReferences.InitializeCommonFixupsTable(module);
-
-                var lookup = typeHashtable.Lookup(hashCode);
-                NativeParser entryParser;
-                while (!(entryParser = lookup.GetNext()).IsNull)
-                {
-                    var foundTypeIndex = entryParser.GetUnsigned();
-                    var handle = entryParser.GetUnsigned().AsHandle();
-
-                    if (module == typeRefModule)
-                    {
-                        if (handle.Equals(typeRefHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
-                    }
-                    else if (handle.HandleType == HandleType.TypeReference)
-                    {
-                        MetadataReader mrFoundHandle = module.MetadataReader;
-                        // We found a type reference handle in another module.. see if it matches
-                        if (MetadataReaderHelpers.CompareTypeReferenceAcrossModules(typeRefHandle, metadataReader, handle.ToTypeReferenceHandle(mrFoundHandle), mrFoundHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
-                    }
-                    else if (handle.HandleType == HandleType.TypeDefinition)
-                    {
-                        // We found a type definition handle in another module. See if it matches
-                        MetadataReader mrFoundHandle = module.MetadataReader;
-                        // We found a type definition handle in another module.. see if it matches
-                        if (MetadataReaderHelpers.CompareTypeReferenceToDefinition(typeRefHandle, metadataReader, handle.ToTypeDefinitionHandle(mrFoundHandle), mrFoundHandle))
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundTypeIndex);
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            runtimeTypeHandle = default(RuntimeTypeHandle);
-            return false;
-        }
-
-        /// <summary>
         /// Given a RuntimeTypeHandle for any non-dynamic type E, return a RuntimeTypeHandle for type E[]
         /// if the pay for play policy denotes E[] as browsable. This is used to implement Array.CreateInstance().
         /// This is not equivalent to calling TryGetMultiDimTypeForElementType() with a rank of 1!
@@ -370,13 +199,12 @@ namespace Internal.Runtime.TypeLoader
         /// Preconditions:
         ///     elementTypeHandle is a valid RuntimeTypeHandle.
         /// </summary>
-        /// <param name="elementTypeHandle">MethodTable of the array element type</param>
-        /// <param name="arrayTypeHandle">Resolved MethodTable of the array type</param>
-        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             arrayTypeHandle = new RuntimeTypeHandle();
 
-            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), -1);
+            Debug.Assert(isMdArray || rank == -1);
+            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
 
             // Note: ReflectionMapBlob.ArrayMap may not exist in the module that contains the element type.
             // So we must enumerate all loaded modules in order to find ArrayMap and the array type for
@@ -398,7 +226,8 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle foundArrayType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         RuntimeTypeHandle foundArrayElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundArrayType);
-                        if (foundArrayElementType.Equals(elementTypeHandle))
+                        if (foundArrayElementType.Equals(elementTypeHandle)
+                            && rank == RuntimeAugments.GetArrayRankOrMinusOneForSzArray(foundArrayType))
                         {
                             arrayTypeHandle = foundArrayType;
                             return true;
@@ -410,50 +239,48 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public void GetStaticFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged)
+        public static unsafe bool TryGetByRefTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
         {
-            Debug.Assert(!RuntimeAugments.IsDynamicType(functionPointerHandle));
-            Debug.Assert(RuntimeAugments.IsFunctionPointerType(functionPointerHandle));
+            int byRefHashcode = TypeHashingAlgorithms.ComputeByrefTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, byRefHashcode, ReflectionMapBlob.ByRefTypeMap, out pointerTypeHandle);
+        }
 
-            int hashCode = functionPointerHandle.GetHashCode();
+        public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+            return TryGetParameterizedTypeForNonDynamicElementType(elementTypeHandle, pointerHashcode, ReflectionMapBlob.PointerTypeMap, out pointerTypeHandle);
+        }
 
+        private static unsafe bool TryGetParameterizedTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, int hashCode, ReflectionMapBlob blob, out RuntimeTypeHandle parameterizedTypeHandle)
+        {
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.FunctionPointerTypeMap, out NativeReader fnPtrMapReader))
+                NativeReader mapReader;
+                if (TryGetNativeReaderForBlob(module, blob, out mapReader))
                 {
-                    NativeParser fnPtrMapParser = new NativeParser(fnPtrMapReader, 0);
-                    NativeHashtable fnPtrHashtable = new NativeHashtable(fnPtrMapParser);
+                    NativeParser mapParser = new NativeParser(mapReader, 0);
+                    NativeHashtable hashtable = new NativeHashtable(mapParser);
 
                     ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
                     externalReferences.InitializeCommonFixupsTable(module);
 
-                    var lookup = fnPtrHashtable.Lookup(hashCode);
+                    var lookup = hashtable.Lookup(hashCode);
                     NativeParser entryParser;
                     while (!(entryParser = lookup.GetNext()).IsNull)
                     {
-                        RuntimeTypeHandle foundFnPtrType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        if (!foundFnPtrType.Equals(functionPointerHandle))
-                            continue;
-
-                        uint countAndUnmanagedBit = entryParser.GetUnsigned();
-                        isUnmanaged = (countAndUnmanagedBit & FunctionPointerMapEntry.IsUnmanagedFlag) != 0;
-
-                        returnTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-
-                        uint count = countAndUnmanagedBit >> FunctionPointerMapEntry.ParameterCountShift;
-
-                        parameterHandles = new RuntimeTypeHandle[count];
-                        for (int i = 0; i < parameterHandles.Length; i++)
-                            parameterHandles[i] = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-
-                        return;
+                        RuntimeTypeHandle foundParameterizedType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        RuntimeTypeHandle foundElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundParameterizedType);
+                        if (foundElementType.Equals(elementTypeHandle))
+                        {
+                            parameterizedTypeHandle = foundParameterizedType;
+                            return true;
+                        }
                     }
                 }
             }
 
-            // Unreachable unless there's a compiler bug
-            Debug.Fail("Should have found a static function pointer in the hashtable");
-            throw new NotSupportedException();
+            parameterizedTypeHandle = default;
+            return false;
         }
 
         public bool TryGetStaticFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
@@ -475,33 +302,23 @@ namespace Internal.Runtime.TypeLoader
                     while (!(entryParser = lookup.GetNext()).IsNull)
                     {
                         uint foundFnPtrTypeIndex = entryParser.GetUnsigned();
+                        RuntimeTypeHandle foundTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundFnPtrTypeIndex);
 
-                        uint countAndUnmanagedBit = entryParser.GetUnsigned();
-                        bool foundIsUnmanaged = (countAndUnmanagedBit & FunctionPointerMapEntry.IsUnmanagedFlag) != 0;
-                        uint foundParamCount = countAndUnmanagedBit >> FunctionPointerMapEntry.ParameterCountShift;
-
-                        if (foundIsUnmanaged != isUnmanaged || foundParamCount != parameterHandles.Length)
+                        if (RuntimeAugments.GetFunctionPointerParameterCount(foundTypeHandle) != parameterHandles.Length)
                             continue;
 
-                        RuntimeTypeHandle foundReturnTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                        if (!foundReturnTypeHandle.Equals(returnTypeHandle))
+                        if (!RuntimeAugments.GetFunctionPointerReturnType(foundTypeHandle).Equals(returnTypeHandle))
                             continue;
 
-                        bool matches = true;
-                        for (int i = 0; i < foundParamCount; i++)
-                        {
-                            if (!externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned()).Equals(parameterHandles[i]))
-                            {
-                                matches = false;
-                                break;
-                            }
-                        }
+                        if (RuntimeAugments.IsUnmanagedFunctionPointerType(foundTypeHandle) != isUnmanaged)
+                            continue;
 
-                        if (matches)
-                        {
-                            runtimeTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundFnPtrTypeIndex);
-                            return true;
-                        }
+                        for (int i = 0; i < parameterHandles.Length; i++)
+                            if (!parameterHandles[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(foundTypeHandle, i)))
+                                continue;
+
+                        runtimeTypeHandle = foundTypeHandle;
+                        return true;
                     }
                 }
             }
@@ -673,26 +490,6 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            // If not found in the invoke map, try the default constructor map
-            NativeReader defaultCtorMapReader;
-            if (TryGetNativeReaderForBlob(mappingTableModule, ReflectionMapBlob.DefaultConstructorMap, out defaultCtorMapReader))
-            {
-                NativeParser defaultCtorMapParser = new NativeParser(defaultCtorMapReader, 0);
-                NativeHashtable defaultCtorHashtable = new NativeHashtable(defaultCtorMapParser);
-
-                ExternalReferencesTable externalReferencesForDefaultCtorMap = default(ExternalReferencesTable);
-                externalReferencesForDefaultCtorMap.InitializeCommonFixupsTable(mappingTableModule);
-                var lookup = defaultCtorHashtable.Lookup(canonHelper.LookupHashCode);
-                NativeParser defaultCtorParser;
-                while (!(defaultCtorParser = lookup.GetNext()).IsNull)
-                {
-                    RuntimeTypeHandle entryType = externalReferencesForDefaultCtorMap.GetRuntimeTypeHandleFromIndex(defaultCtorParser.GetUnsigned());
-                    if (!canonHelper.IsCanonicallyEquivalent(entryType))
-                        continue;
-
-                    return externalReferencesForDefaultCtorMap.GetFunctionPointerFromIndex(defaultCtorParser.GetUnsigned());
-                }
-            }
             return IntPtr.Zero;
         }
 

@@ -5,7 +5,7 @@ import monoWasmThreads from "consts:monoWasmThreads";
 import type {
     DiagnosticOptions,
 } from "./shared/types";
-import { is_nullish } from "../types";
+import { is_nullish } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
