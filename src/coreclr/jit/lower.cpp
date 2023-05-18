@@ -2050,8 +2050,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
                     // Special case for AVX512: we can use ternary logic instruction to perform
                     // "lXor | (l2Indir ^ r2Indir)" in a single instruction.
-                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
-                        resultOr->TypeIs(TYP_SIMD32, TYP_SIMD64))
+                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) && varTypeIsSIMD(resultOr))
                     {
                         // Create a mask representing "A | (B ^ C))" expression.
                         GenTree*    control  = comp->gtNewIconNode(static_cast<uint8_t>(0xF0 | (0xCC ^ 0xAA)));
