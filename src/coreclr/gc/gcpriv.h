@@ -234,7 +234,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-#define TRACE_GC
+//#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -359,7 +359,8 @@ void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
 #ifdef HOST_64BIT
-#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
+#define dprintf(l,x) STRESS_LOG_VA(l,x);
+//#define dprintf(l,x) {if ((l <= 2) || (l == 6666)) {STRESS_LOG_VA(l,x);}}
 #else
 #error Logging dprintf to stress log on 32 bits platforms is not supported.
 #endif
@@ -4226,7 +4227,7 @@ private:
 #ifdef DYNAMIC_HEAP_COUNT
     struct dynamic_heap_count_data_t
     {
-        static const unsigned sample_size = 3;
+        static const int sample_size = 3;
 
         struct sample
         {
