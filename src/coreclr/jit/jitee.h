@@ -77,9 +77,11 @@ public:
 
 #if defined(TARGET_ARM)
         JIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
-#else // !defined(TARGET_ARM)
+#elif defined(TARGET_XARCH)
+        JIT_FLAG_VECTOR512_THROTTLING    = 43, // On Xarch, 512-bit vector usage may incur CPU frequency throttling
+#else
         JIT_FLAG_UNUSED16                = 43,
-#endif // !defined(TARGET_ARM)
+#endif
 
         JIT_FLAG_UNUSED17                = 44,
         JIT_FLAG_UNUSED18                = 45,

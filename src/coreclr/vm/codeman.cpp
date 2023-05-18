@@ -1423,6 +1423,8 @@ void EEJitManager::SetCpuInfo()
     //      LZCNT - ECX bit 5
     // synchronously updating VM and JIT.
 
+    XarchCpuInfo xarchCpuInfo = {};
+
     int cpuidInfo[4];
 
     const int CPUID_EAX = 0;
@@ -1431,8 +1433,20 @@ void EEJitManager::SetCpuInfo()
     const int CPUID_EDX = 3;
 
     __cpuid(cpuidInfo, 0x00000000);
+
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
     _ASSERTE(maxCpuId >= 1);
+
+    if (cpuidInfo[CPUID_EBX] == 0x756E6547)                     // Genu
+    {
+        xarchCpuInfo.IsGenuineIntel = (cpuidInfo[CPUID_EDX] == 0x49656E69)   // ineI
+                                   && (cpuidInfo[CPUID_ECX] == 0x6C65746E);  // ntel
+    }
+    else if (cpuidInfo[CPUID_EBX] == 0x68747541)                // Auth
+    {
+        xarchCpuInfo.IsAuthenticAmd = (cpuidInfo[CPUID_EDX] == 0x69746E65)   // enti
+                                   && (cpuidInfo[CPUID_ECX] == 0x444D4163);  // cAMD
+    }
 
     __cpuid(cpuidInfo, 0x00000001);
 
@@ -1695,7 +1709,7 @@ void EEJitManager::SetCpuInfo()
     // Now that we've queried the actual hardware support, we need to adjust what is actually supported based
     // on some externally available config switches that exist so users can test code for downlevel hardware.
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Clear(InstructionSet_X86Base);
@@ -1818,7 +1832,8 @@ void EEJitManager::SetCpuInfo()
 
     // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
     // is a prexisting config flag that controls the SSE3+ ISAs
-    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) || !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) ||
+        !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
     {
         CPUCompileFlags.Clear(InstructionSet_SSE3);
     }
@@ -1912,6 +1927,41 @@ void EEJitManager::SetCpuInfo()
     CPUCompileFlags.EnsureValidInstructionSetSupport();
 
     m_CPUCompileFlags = CPUCompileFlags;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (xarchCpuInfo.IsGenuineIntel)
+    {
+        // Some architectures can experience frequency throttling when executing
+        // executing 512-bit width instructions. To account for this we set the
+        // default preferred vector width to 256-bits in some scenarios. Power
+        // users can override this with `DOTNET_PreferredVectorBitWith=512` to
+        // allow using such instructions where hardware support is available.
+
+        if (xarchCpuInfo.FamilyId == 0x06)
+        {
+            if (xarchCpuInfo.ExtendedModelId == 0x05)
+            {
+                if (xarchCpuInfo.Model == 0x05)
+                {
+                    // * Skylake (Server)
+                    // * Cascade Lake
+                    // * Cooper Lake
+
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                }
+            }
+            else if (xarchCpuInfo.ExtendedModelId == 0x06)
+            {
+                if (xarchCpuInfo.Model == 0x06)
+                {
+                    // * Cannon Lake
+
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                }
+            }
+        }
+    }
+#endif // TARGET_X86 || TARGET_AMD64
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.
