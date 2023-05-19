@@ -234,19 +234,19 @@ unsafe class Program
         Check("Avx512F.VL", ExpectedAvx512F, &Avx512FVLIsSupported, Avx512F.VL.IsSupported, null);
         Check("Avx512F.X64", ExpectedAvx512F, &Avx512FX64IsSupported, Avx512F.X64.IsSupported, null);
 
-        Check("Avx512BW", ExpectedAvx512BW, &Avx512BWIsSupported, Avx512BW.IsSupported, () => Avx512F.Abs(Vector512<sbyte>.Zero).Equals(Vector512<byte>.Zero));
-        Check("Avx512BW.VL", ExpectedAvx512BW && ExpectedAvx512VL, &Avx512BWVLIsSupported, Avx512BW.VL.IsSupported, null);
+        Check("Avx512BW", ExpectedAvx512BW, &Avx512BWIsSupported, Avx512BW.IsSupported, () => Avx512BW.Abs(Vector512<sbyte>.Zero).Equals(Vector512<byte>.Zero));
+        Check("Avx512BW.VL", ExpectedAvx512BW, &Avx512BWVLIsSupported, Avx512BW.VL.IsSupported, null);
         Check("Avx512BW.X64", ExpectedAvx512BW, &Avx512BWX64IsSupported, Avx512BW.X64.IsSupported, null);
 
         Check("Avx512CD", ExpectedAvx512CD, &Avx512CDIsSupported, Avx512CD.IsSupported, null);
-        Check("Avx512CD.VL", ExpectedAvx512CD && ExpectedAvx512VL, &Avx512CDVLIsSupported, Avx512CD.VL.IsSupported, null);
+        Check("Avx512CD.VL", ExpectedAvx512CD, &Avx512CDVLIsSupported, Avx512CD.VL.IsSupported, null);
         Check("Avx512CD.X64", ExpectedAvx512CD, &Avx512CDX64IsSupported, Avx512CD.X64.IsSupported, null);
 
-        Check("Avx512DQ", ExpectedAvx512DQ, &Avx512DQIsSupported, Avx512DQ.IsSupported, () => Avx512F.And(Vector512<float>.Zero, Vector512<float>.Zero).Equals(Vector512<float>.Zero));
+        Check("Avx512DQ", ExpectedAvx512DQ, &Avx512DQIsSupported, Avx512DQ.IsSupported, () => Avx512DQ.And(Vector512<float>.Zero, Vector512<float>.Zero).Equals(Vector512<float>.Zero));
         Check("Avx512DQ.VL", ExpectedAvx512DQ, &Avx512DQVLIsSupported, Avx512DQ.VL.IsSupported, null);
         Check("Avx512DQ.X64", ExpectedAvx512DQ, &Avx512DQX64IsSupported, Avx512DQ.X64.IsSupported, null);
 
-        Check("Avx512Vbmi", ExpectedAvx512Vbmi, &Avx512VbmiIsSupported, Avx512Vbmi.IsSupported, () => Avx512F.PermuteVar64x8(Vector512<sbyte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<sbyte>.Zero));
+        Check("Avx512Vbmi", ExpectedAvx512Vbmi, &Avx512VbmiIsSupported, Avx512Vbmi.IsSupported, () => Avx512Vbmi.PermuteVar64x8(Vector512<sbyte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<sbyte>.Zero));
         Check("Avx512Vbmi.VL", ExpectedAvx512Vbmi, &Avx512VbmiVLIsSupported, Avx512Vbmi.VL.IsSupported, null);
         Check("Avx512Vbmi.X64", ExpectedAvx512Vbmi, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
 
