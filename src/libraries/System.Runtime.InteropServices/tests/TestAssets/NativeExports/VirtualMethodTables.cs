@@ -50,6 +50,8 @@ namespace NativeExports
                 public delegate* unmanaged<NativeObjectInterface*, int> getData;
                 public delegate* unmanaged<NativeObjectInterface*, int, void> setData;
                 public delegate* unmanaged<NativeObjectInterface*, int*, void> exchangeData;
+                public delegate* unmanaged<NativeObjectInterface*, int*, int, int*, void> sumAndSetData;
+                public delegate* unmanaged<NativeObjectInterface*, int**, int, int*, void> sumAndSetDataWithRef;
             }
 
             public readonly VirtualFunctionTable* VTable;
@@ -69,6 +71,8 @@ namespace NativeExports
                 public delegate* unmanaged<NativeObject*, int> getData;
                 public delegate* unmanaged<NativeObject*, int, void> setData;
                 public delegate* unmanaged<NativeObject*, int*, void> exchangeData;
+                public delegate* unmanaged<NativeObject*, int*, int, int*, void> sumAndSetData;
+                public delegate* unmanaged<NativeObject*, int**, int, int*, void> sumAndSetDataWithRef;
             }
             static NativeObject()
             {
@@ -76,6 +80,8 @@ namespace NativeExports
                 VTablePointer->getData = &GetData;
                 VTablePointer->setData = &SetData;
                 VTablePointer->exchangeData = &ExchangeData;
+                VTablePointer->sumAndSetData = &SumAndSetData;
+                VTablePointer->sumAndSetDataWithRef = &SumAndSetData;
             }
 
             private static readonly VirtualFunctionTable* VTablePointer;
@@ -106,6 +112,34 @@ namespace NativeExports
                 var temp = obj->Data;
                 obj->Data = *value;
                 *value = temp;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void SumAndSetData(NativeObject* obj, int** values, int numValues, int* oldValue)
+            {
+                *oldValue = obj->Data;
+
+                Span<int> arr = new(*values, numValues);
+                int sum = 0;
+                foreach (int value in arr)
+                {
+                    sum += value;
+                }
+                obj->Data = sum;
+            }
+
+            [UnmanagedCallersOnly]
+            private static void SumAndSetData(NativeObject* obj, int* values, int numValues, int* oldValue)
+            {
+                *oldValue = obj->Data;
+
+                Span<int> arr = new(values, numValues);
+                int sum = 0;
+                foreach (int value in arr)
+                {
+                    sum += value;
+                }
+                obj->Data = sum;
             }
         }
 
@@ -145,6 +179,20 @@ namespace NativeExports
         public static void ExchangeNativeObjectData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* x)
         {
             obj->VTable->exchangeData(obj, x);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "sum_and_set_native_object_data")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void SumAndSetData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int* values, int numValues, int* oldValue)
+        {
+            obj->VTable->sumAndSetData(obj, values, numValues, oldValue);
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "sum_and_set_native_object_data_with_ref")]
+        [DNNE.C99DeclCode("struct INativeObject;")]
+        public static void SumAndSetData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int** values, int numValues, int* oldValue)
+        {
+            obj->VTable->sumAndSetDataWithRef(obj, values, numValues, oldValue);
         }
     }
 }
