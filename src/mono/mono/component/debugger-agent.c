@@ -8847,6 +8847,7 @@ set_value:
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
 		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
+		buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)));
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 

@@ -13,6 +13,9 @@
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -290,6 +293,40 @@ uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
 	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
+
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+	LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_PERFMAP
+	PerfMap::PerfMapType perfMapType = (PerfMap::PerfMapType)type;
+	if (perfMapType == PerfMap::PerfMapType::DISABLED || perfMapType > PerfMap::PerfMapType::JITDUMP)
+	{
+		return DS_IPC_E_INVALIDARG;
+	}
+
+	PerfMap::Enable(perfMapType, true);
+
+    return DS_IPC_S_OK;
+#else // FEATURE_PERFMAP
+    return DS_IPC_E_NOTSUPPORTED;
+#endif // FEATURE_PERFMAP
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+	LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_PERFMAP
+	PerfMap::Disable();
+	return DS_IPC_S_OK;
+#else // FEATURE_PERFMAP
+	return DS_IPC_E_NOTSUPPORTED;
+#endif // FEATURE_PERFMAP
 }
 
 /*

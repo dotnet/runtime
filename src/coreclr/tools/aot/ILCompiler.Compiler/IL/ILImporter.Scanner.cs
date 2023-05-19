@@ -118,7 +118,7 @@ namespace Internal.IL
                 // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
                 // Otherwise follow the rules from ECMA-335 I.8.9.5.
                 if (!_isFallbackBodyCompilation &&
-                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType))
+                    (_canonMethod.Signature.IsStatic || _canonMethod.IsConstructor || owningType.IsValueType || owningType.IsInterface))
                 {
                     // For beforefieldinit, we can wait for field access.
                     if (!((MetadataType)owningType).IsBeforeFieldInit)
@@ -143,6 +143,16 @@ namespace Internal.IL
                 {
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorEnterStatic), reason);
                     _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExitStatic), reason);
+
+                    MethodDesc method = _methodIL.OwningMethod;
+                    if (method.OwningType.IsRuntimeDeterminedSubtype)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.NecessaryTypeHandle, method.OwningType), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_factory.NecessaryTypeSymbol(method.OwningType), reason);
+                    }
                 }
                 else
                 {
@@ -308,7 +318,10 @@ namespace Internal.IL
                     {
                         // RyuJIT is going to call the "MdArray" creation helper even if this is an SzArray,
                         // hence the IsArray check above. Note that the MdArray helper can handle SzArrays.
-                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
+                        if (((ArrayType)owningType).Rank == 1)
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArrRare), reason);
+                        else
+                            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.NewMultiDimArr), reason);
                         return;
                     }
                     else
@@ -331,12 +344,6 @@ namespace Internal.IL
 
             if (method.IsIntrinsic)
             {
-                if (IsRuntimeHelpersInitializeArrayOrCreateSpan(method))
-                {
-                    if (_previousInstructionOffset >= 0 && _ilBytes[_previousInstructionOffset] == (byte)ILOpcode.ldtoken)
-                        return;
-                }
-
                 if (IsActivatorDefaultConstructorOf(method))
                 {
                     if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
@@ -901,7 +908,7 @@ namespace Internal.IL
         {
             object obj = _methodIL.GetObject(token);
 
-            if (obj is TypeDesc)
+            if (obj is TypeDesc type)
             {
                 // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
@@ -935,8 +942,6 @@ namespace Internal.IL
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
 
-                var type = (TypeDesc)obj;
-
                 ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
@@ -949,10 +954,8 @@ namespace Internal.IL
                 }
                 _dependencies.Add(reference, "ldtoken");
             }
-            else if (obj is MethodDesc)
+            else if (obj is MethodDesc method)
             {
-                var method = (MethodDesc)obj;
-
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (MethodDesc)_canonMethodIL.GetObject(token));
 
                 if (method.IsRuntimeDeterminedExactMethod)
@@ -971,22 +974,6 @@ namespace Internal.IL
                 var field = (FieldDesc)obj;
 
                 _factory.MetadataManager.GetDependenciesDueToAccess(ref _dependencies, _factory, _methodIL, (FieldDesc)_canonMethodIL.GetObject(token));
-
-                // First check if this is a ldtoken Field followed by InitializeArray or CreateSpan.
-                BasicBlock nextBasicBlock = _basicBlocks[_currentOffset];
-                if (nextBasicBlock == null)
-                {
-                    if ((ILOpcode)_ilBytes[_currentOffset] == ILOpcode.call)
-                    {
-                        int methodToken = ReadILTokenAt(_currentOffset + 1);
-                        var method = (MethodDesc)_methodIL.GetObject(methodToken);
-                        if (IsRuntimeHelpersInitializeArrayOrCreateSpan(method))
-                        {
-                            // Codegen expands this and doesn't do the normal ldtoken.
-                            return;
-                        }
-                    }
-                }
 
                 if (field.OwningType.IsRuntimeDeterminedSubtype)
                 {
@@ -1311,24 +1298,6 @@ namespace Internal.IL
         private static void ReportInvalidInstruction(ILOpcode opcode)
         {
             ThrowHelper.ThrowInvalidProgramException();
-        }
-
-        private static bool IsRuntimeHelpersInitializeArrayOrCreateSpan(MethodDesc method)
-        {
-            if (method.IsIntrinsic)
-            {
-                string name = method.Name;
-                if (name == "InitializeArray" || name == "CreateSpan")
-                {
-                    MetadataType owningType = method.OwningType as MetadataType;
-                    if (owningType != null)
-                    {
-                        return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
-                    }
-                }
-            }
-
-            return false;
         }
 
         private static bool IsTypeGetTypeFromHandle(MethodDesc method)

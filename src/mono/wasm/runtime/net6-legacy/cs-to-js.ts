@@ -99,7 +99,6 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
@@ -129,7 +128,6 @@ export function unbox_mono_obj_root(root: WasmRoot<any>): any {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
     if (mono_array === MonoArrayNull)
         return null;
@@ -146,7 +144,6 @@ function is_nested_array_ref(ele: WasmRoot<MonoObject>) {
     return legacyManagedExports._is_simple_array_ref(ele.address);
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
     if (arrayRoot.value === MonoArrayNull)
         return null;

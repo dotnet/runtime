@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Point
 {
@@ -267,7 +268,8 @@ public class BringUpTest_OpMembersOfStructLocal
     }
     
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {       
        return OpMembersOfStructLocal();
     }

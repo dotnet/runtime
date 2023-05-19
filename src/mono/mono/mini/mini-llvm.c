@@ -5207,6 +5207,14 @@ extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
 	return extract_half_elements (ctx, src_vec, FALSE);
 }
 
+static G_GNUC_UNUSED LLVMTypeRef extended_type (LLVMTypeRef src_t)
+{
+	int nelems = LLVMGetVectorSize (src_t) / 2;
+	unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
+	LLVMTypeRef int_t = LLVMIntType (width * 2);
+	return LLVMVectorType (int_t, nelems);
+}
+
 static LLVMValueRef
 keep_lowest_element (EmitContext *ctx, LLVMTypeRef dst_t, LLVMValueRef vec)
 {
@@ -9942,6 +9950,17 @@ MONO_RESTORE_WARNING
 		}
 #endif
 #if defined(TARGET_WASM)
+		case OP_WASM_SIMD_SEXT_LOWER:
+		case OP_WASM_SIMD_SEXT_UPPER:
+		case OP_WASM_SIMD_ZEXT_LOWER:
+		case OP_WASM_SIMD_ZEXT_UPPER: {
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
+			gboolean upper = (ins->opcode == OP_WASM_SIMD_SEXT_UPPER || ins->opcode == OP_WASM_SIMD_ZEXT_UPPER);
+			gboolean sext = (ins->opcode == OP_WASM_SIMD_SEXT_LOWER || ins->opcode == OP_WASM_SIMD_SEXT_UPPER);
+			LLVMValueRef ext = upper ? extract_high_elements (ctx, lhs) : extract_low_elements (ctx, lhs);
+			values [ins->dreg] = sext ? LLVMBuildSExt (builder, ext, ret_t, "") : LLVMBuildZExt (builder, ext, ret_t, "");
+			break;
+		}
 		case OP_WASM_SIMD_CONV_R8_TO_R4: {
 			LLVMValueRef val = LLVMBuildFPTrunc (builder, lhs, v64_r4_t, "");
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, LLVMConstNull(v64_r4_t), create_const_vector_4_i32 (0, 1, 2, 3), "");
@@ -10068,11 +10087,7 @@ MONO_RESTORE_WARNING
 		case OP_WASM_EXTMUL_UPPER_U:
 		case OP_WASM_EXTMUL_LOWER:
 		case OP_WASM_EXTMUL_UPPER: {
-			LLVMTypeRef src_t = LLVMTypeOf (lhs);
-			int nelems = LLVMGetVectorSize (src_t) / 2;
-			unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
-			LLVMTypeRef int_t = LLVMIntType (width * 2);
-			LLVMTypeRef ret_t = LLVMVectorType (int_t, nelems);
+			LLVMTypeRef ret_t = extended_type (LLVMTypeOf (lhs));
 			int lower = ins->opcode == OP_WASM_EXTMUL_LOWER || ins->opcode == OP_WASM_EXTMUL_LOWER_U;
 			gboolean is_unsigned = ins->opcode == OP_WASM_EXTMUL_LOWER_U || ins->opcode == OP_WASM_EXTMUL_UPPER_U;
 			LLVMValueRef part1 = lower ? extract_low_elements (ctx, lhs) : extract_high_elements(ctx, lhs);
