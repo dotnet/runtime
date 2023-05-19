@@ -103,6 +103,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
+#if !NET8_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                      Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+#endif
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
         {
             WriteEvent(TASKLAUNCHED_EVENTID, blockId, reason, availableMessages, taskId);
@@ -158,6 +162,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
+#if !NET8_0_OR_GREATER
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                                      Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+#endif
         private void DataflowBlockCompleted(int blockId, BlockCompletionReason reason, string exceptionData)
         {
             WriteEvent(BLOCKCOMPLETED_EVENTID, blockId, reason, exceptionData);
