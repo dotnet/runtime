@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">L’analyse requise pour générer du code pour cette interface ou cette méthode a échoué en raison d’un modèle de code inattendu. Si vous utilisez une syntaxe nouvelle ou syntaxe correcte, utilisez une autre syntaxe.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">Nous n’avons pas pu analyser l’interface '{0}'. ComInterfaceGenerator ne générera pas de code pour cette interface.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">Nous n’avons pas pu analyser la méthode '{0}'. ComInterfaceGenerator ne générera pas de code pour cette méthode.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">Échec de l’analyse de la génération.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">

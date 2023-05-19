@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">Произошел сбой анализа, необходимого для создания кода для этого интерфейса или метода, из-за непредвиденного шаблона кода. Если вы используйте новый или нестандартный синтаксис, попробуйте использовать другой синтаксис.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">Сбой анализа интерфейса "{0}". ComInterfaceGenerator не будет создавать код для этого интерфейса.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">Сбой анализа метода "{0}". ComInterfaceGenerator не будет создавать код для этого метода.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">Сбой анализа для создания.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Интерфейсы с атрибутом GeneratedComInterfaceAttribute должны быть частичными, не универсальными и должны указывать GUID с помощью System.Runtime.InteropServices.GuidAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
+        <target state="translated">Интерфейс "{0}" использует атрибут GeneratedComInterfaceAttribute, но является универсальным.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">

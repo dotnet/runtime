@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">예기치 않은 코드 패턴으로 인해 이 인터페이스 또는 메서드에 대한 코드를 생성하는 데 필요한 분석이 실패했습니다. 새 구문 또는 이례적 구문을 사용하는 경우 다른 구문을 사용하는 것이 좋습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">'{0}' 인터페이스를 분석하지 못했습니다. ComInterfaceGenerator에서 이 인터페이스에 대한 코드를 생성하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">'{0}' 메서드를 분석하지 못했습니다. ComInterfaceGenerator에서 이 메서드에 대한 코드를 생성하지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">생성에 필요한 분석이 실패했습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
