@@ -513,6 +513,10 @@ public:
     {
         return lvTracked && lvType != TYP_STRUCT;
     }
+#ifdef DEBUG
+    unsigned char lvTrackedWithoutIndex : 1; // Tracked but has no lvVarIndex (i.e. only valid GTF_VAR_DEATH flags, used
+                                             // by physical promotion)
+#endif
     unsigned char lvPinned : 1; // is this a pinned variable?
 
     unsigned char lvMustInit : 1; // must be initialized
@@ -3817,7 +3821,6 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void       impPushNullObjRefOnStack();
     StackEntry impPopStack();
     void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
@@ -4309,7 +4312,6 @@ private:
     BYTE impSpillCliqueGetMember(SpillCliqueDir predOrSucc, BasicBlock* blk);
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
-    void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
@@ -5999,7 +6001,6 @@ private:
     GenTree* fgMorphConst(GenTree* tree);
 
     GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
-    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
     GenTree* fgMorphReduceAddOps(GenTree* tree);
 
@@ -8589,11 +8590,6 @@ private:
         return false;
     }
 
-    bool isSIMDClass(typeInfo* pTypeInfo)
-    {
-        return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-    }
-
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8607,23 +8603,9 @@ private:
         return false;
     }
 
-    bool isHWSIMDClass(typeInfo* pTypeInfo)
-    {
-#ifdef FEATURE_HW_INTRINSICS
-        return pTypeInfo->IsStruct() && isHWSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-#else
-        return false;
-#endif
-    }
-
     bool isSIMDorHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
-    }
-
-    bool isSIMDorHWSIMDClass(typeInfo* pTypeInfo)
-    {
-        return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
 
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
@@ -8685,14 +8667,14 @@ private:
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
 
-    // maxSIMDStructBytes
+    // getMaxVectorByteLength
     // The minimum SIMD size supported by System.Numeric.Vectors or System.Runtime.Intrinsic
     // Arm.AdvSimd:  16-byte Vector<T> and Vector128<T>
     // X86.SSE:      16-byte Vector<T> and Vector128<T>
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
-    unsigned int maxSIMDStructBytes() const
+    uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -8713,9 +8695,26 @@ private:
 #elif defined(TARGET_ARM64)
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"maxSIMDStructBytes() unimplemented on target arch");
+        assert(!"getMaxVectorByteLength() unimplemented on target arch");
         unreached();
 #endif
+    }
+
+    //------------------------------------------------------------------------
+    // getPreferredVectorByteLength: Gets the preferred length, in bytes, to use for vectorization
+    //
+    uint32_t getPreferredVectorByteLength() const
+    {
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength = opts.preferredVectorByteLength;
+
+        if (preferredVectorByteLength != 0)
+        {
+            return min(getMaxVectorByteLength(), preferredVectorByteLength);
+        }
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
+        return getMaxVectorByteLength();
     }
 
     //------------------------------------------------------------------------
@@ -8733,22 +8732,25 @@ private:
     //    It's only supposed to be used for scenarios where we can
     //    perform an overlapped load/store.
     //
-    unsigned int roundUpSIMDSize(unsigned size)
+    uint32_t roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size <= XMM_REGSIZE_BYTES && maxSimdSize > XMM_REGSIZE_BYTES)
+        uint32_t maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if ((size <= XMM_REGSIZE_BYTES) && (maxSize > XMM_REGSIZE_BYTES))
         {
             return XMM_REGSIZE_BYTES;
         }
-        if (size <= YMM_REGSIZE_BYTES && maxSimdSize > YMM_REGSIZE_BYTES)
+
+        if ((size <= YMM_REGSIZE_BYTES) && (maxSize > YMM_REGSIZE_BYTES))
         {
             return YMM_REGSIZE_BYTES;
         }
-        return maxSimdSize;
+
+        return maxSize;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
         assert(!"roundUpSIMDSize() unimplemented on target arch");
@@ -8768,33 +8770,36 @@ private:
     // Arguments:
     //    size   - size of the data to process with SIMD
     //
-    unsigned int roundDownSIMDSize(unsigned size)
+    uint32_t roundDownSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        unsigned maxSimdSize = maxSIMDStructBytes();
-        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
-        if (size >= maxSimdSize)
+        uint32_t maxSize = getPreferredVectorByteLength();
+        assert(maxSize <= ZMM_REGSIZE_BYTES);
+
+        if (size >= maxSize)
         {
             // Size is bigger than max SIMD size the current target supports
-            return maxSimdSize;
+            return maxSize;
         }
-        if (size >= YMM_REGSIZE_BYTES && maxSimdSize >= YMM_REGSIZE_BYTES)
+
+        if ((size >= YMM_REGSIZE_BYTES) && (maxSize >= YMM_REGSIZE_BYTES))
         {
             // Size is >= YMM but not enough for ZMM -> YMM
             return YMM_REGSIZE_BYTES;
         }
+
         // Return 0 if size is even less than XMM, otherwise - XMM
-        return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
+        return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
-        return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
+        assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
+        return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
         unreached();
 #endif
     }
 
-    unsigned int minSIMDStructBytes()
+    uint32_t getMinVectorByteLength()
     {
         return emitTypeSize(TYP_SIMD8);
     }
@@ -8877,8 +8882,10 @@ public:
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            maxRegSize = maxSIMDStructBytes();
+            maxRegSize = getPreferredVectorByteLength();
+
 #if defined(TARGET_XARCH)
+            assert(maxRegSize <= ZMM_REGSIZE_BYTES);
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8936,7 +8943,7 @@ public:
     bool structSizeMightRepresentSIMDType(size_t structSize)
     {
 #ifdef FEATURE_SIMD
-        return (structSize >= minSIMDStructBytes()) && (structSize <= maxSIMDStructBytes());
+        return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9261,6 +9268,10 @@ public:
         unsigned lvRefCount;
 
         codeOptimize compCodeOpt; // what type of code optimizations
+
+#if defined(TARGET_XARCH)
+        uint32_t preferredVectorByteLength;
+#endif // TARGET_XARCH
 
 // optimize maximally and/or favor speed over size?
 
@@ -10476,7 +10487,6 @@ public:
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    bool verIsByRefLike(const typeInfo& ti);
 
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,

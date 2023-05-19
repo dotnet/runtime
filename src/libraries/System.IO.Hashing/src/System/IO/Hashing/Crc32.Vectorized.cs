@@ -2,94 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
-using Aes = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace System.IO.Hashing
 {
     public partial class Crc32
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyLower(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x00);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetLower());
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyUpper(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x11);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningUpper(left, right);
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> CarrylessMultiplyLeftLowerRightUpper(Vector128<ulong> left, Vector128<ulong> right)
-        {
-            if (Pclmulqdq.IsSupported)
-            {
-                return Pclmulqdq.CarrylessMultiply(left, right, 0x10);
-            }
-
-            if (Aes.IsSupported)
-            {
-                return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetUpper());
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> ShiftRightBytesInVector(Vector128<ulong> operand,
-            [ConstantExpected(Max = (byte)15)] byte numBytesToShift)
-        {
-            if (Sse2.IsSupported)
-            {
-                return Sse2.ShiftRightLogical128BitLane(operand, numBytesToShift);
-            }
-
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
-            }
-
-            ThrowHelper.ThrowUnreachableException();
-            return default;
-        }
-
         // We check for little endian byte order here in case we're ever on ARM in big endian mode.
         // All of these checks except the length check are elided by JIT, so the JITted implementation
         // will be either a return false or a length check against a constant. This means this method
         // should be inlined into the caller.
         private static bool CanBeVectorized(ReadOnlySpan<byte> source) =>
             BitConverter.IsLittleEndian
-            && (Pclmulqdq.IsSupported || (Aes.IsSupported && AdvSimd.IsSupported))
+            && VectorHelper.IsSupported
             && source.Length >= Vector128<byte>.Count * 4;
 
         // Processes the bytes in source in 64 byte chunks using carryless/polynomial multiplication intrinsics,
@@ -123,15 +50,15 @@ namespace System.IO.Hashing
             // Parallel fold blocks of 64, if any.
             while (length >= Vector128<byte>.Count * 4)
             {
-                x5 = CarrylessMultiplyLower(x1, x0);
-                Vector128<ulong> x6 = CarrylessMultiplyLower(x2, x0);
-                Vector128<ulong> x7 = CarrylessMultiplyLower(x3, x0);
-                Vector128<ulong> x8 = CarrylessMultiplyLower(x4, x0);
+                x5 = VectorHelper.CarrylessMultiplyLower(x1, x0);
+                Vector128<ulong> x6 = VectorHelper.CarrylessMultiplyLower(x2, x0);
+                Vector128<ulong> x7 = VectorHelper.CarrylessMultiplyLower(x3, x0);
+                Vector128<ulong> x8 = VectorHelper.CarrylessMultiplyLower(x4, x0);
 
-                x1 = CarrylessMultiplyUpper(x1, x0);
-                x2 = CarrylessMultiplyUpper(x2, x0);
-                x3 = CarrylessMultiplyUpper(x3, x0);
-                x4 = CarrylessMultiplyUpper(x4, x0);
+                x1 = VectorHelper.CarrylessMultiplyUpper(x1, x0);
+                x2 = VectorHelper.CarrylessMultiplyUpper(x2, x0);
+                x3 = VectorHelper.CarrylessMultiplyUpper(x3, x0);
+                x4 = VectorHelper.CarrylessMultiplyUpper(x4, x0);
 
                 Vector128<ulong> y5 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
                 Vector128<ulong> y6 = Vector128.LoadUnsafe(ref srcRef, 16).AsUInt64();
@@ -155,18 +82,18 @@ namespace System.IO.Hashing
             // Fold into 128-bits.
             x0 = Vector128.Create(0x01751997d0UL, 0x00ccaa009eUL); // k3, k4
 
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
+            x5 = VectorHelper.CarrylessMultiplyLower(x1, x0);
+            x1 = VectorHelper.CarrylessMultiplyUpper(x1, x0);
             x1 ^= x2;
             x1 ^= x5;
 
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
+            x5 = VectorHelper.CarrylessMultiplyLower(x1, x0);
+            x1 = VectorHelper.CarrylessMultiplyUpper(x1, x0);
             x1 ^= x3;
             x1 ^= x5;
 
-            x5 = CarrylessMultiplyLower(x1, x0);
-            x1 = CarrylessMultiplyUpper(x1, x0);
+            x5 = VectorHelper.CarrylessMultiplyLower(x1, x0);
+            x1 = VectorHelper.CarrylessMultiplyUpper(x1, x0);
             x1 ^= x4;
             x1 ^= x5;
 
@@ -175,8 +102,8 @@ namespace System.IO.Hashing
             {
                 x2 = Vector128.LoadUnsafe(ref srcRef).AsUInt64();
 
-                x5 = CarrylessMultiplyLower(x1, x0);
-                x1 = CarrylessMultiplyUpper(x1, x0);
+                x5 = VectorHelper.CarrylessMultiplyLower(x1, x0);
+                x1 = VectorHelper.CarrylessMultiplyUpper(x1, x0);
                 x1 ^= x2;
                 x1 ^= x5;
 
@@ -185,25 +112,25 @@ namespace System.IO.Hashing
             }
 
             // Fold 128 bits to 64 bits.
-            x2 = CarrylessMultiplyLeftLowerRightUpper(x1, x0);
+            x2 = VectorHelper.CarrylessMultiplyLeftLowerRightUpper(x1, x0);
             x3 = Vector128.Create(~0, 0, ~0, 0).AsUInt64();
-            x1 = ShiftRightBytesInVector(x1, 8);
+            x1 = VectorHelper.ShiftRightBytesInVector(x1, 8);
             x1 ^= x2;
 
             x0 = Vector128.CreateScalar(0x0163cd6124UL); // k5, k0
 
-            x2 = ShiftRightBytesInVector(x1, 4);
+            x2 = VectorHelper.ShiftRightBytesInVector(x1, 4);
             x1 &= x3;
-            x1 = CarrylessMultiplyLower(x1, x0);
+            x1 = VectorHelper.CarrylessMultiplyLower(x1, x0);
             x1 ^= x2;
 
             // Reduce to 32 bits.
             x0 = Vector128.Create(0x01db710641UL, 0x01f7011641UL); // polynomial
 
             x2 = x1 & x3;
-            x2 = CarrylessMultiplyLeftLowerRightUpper(x2, x0);
+            x2 = VectorHelper.CarrylessMultiplyLeftLowerRightUpper(x2, x0);
             x2 &= x3;
-            x2 = CarrylessMultiplyLower(x2, x0);
+            x2 = VectorHelper.CarrylessMultiplyLower(x2, x0);
             x1 ^= x2;
 
             // Process the remaining bytes, if any

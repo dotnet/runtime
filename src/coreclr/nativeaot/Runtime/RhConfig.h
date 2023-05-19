@@ -14,9 +14,6 @@
 
 #ifndef DACCESS_COMPILE
 
-#define FEATURE_EMBEDDED_CONFIG
-#define FEATURE_ENVIRONMENT_VARIABLE_CONFIG
-
 class RhConfig
 {
 
@@ -28,21 +25,19 @@ private:
     struct ConfigPair
     {
     public:
-        TCHAR Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
-        TCHAR Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
+        char Key[CONFIG_KEY_MAXLEN + 1];  //maxlen + null terminator
+        char Value[CONFIG_VAL_MAXLEN + 1]; //maxlen + null terminator
     };
 
-#ifdef FEATURE_EMBEDDED_CONFIG
     // g_embeddedSettings is a buffer of ConfigPair structs embedded in the compiled binary.
     //
     //NOTE: g_embeddedSettings is only set in ReadEmbeddedSettings and must be set atomically only once
     //      using PalInterlockedCompareExchangePointer to avoid races when initializing
     void* volatile g_embeddedSettings = NULL;
-#endif // FEATURE_EMBEDDED_CONFIG
 
 public:
 
-    bool ReadConfigValue(_In_z_ const TCHAR* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
 
 #define DEFINE_VALUE_ACCESSOR(_name, defaultVal)        \
     uint64_t Get##_name()                                 \
@@ -50,7 +45,7 @@ public:
         if (m_uiConfigValuesRead & (1 << RCV_##_name))  \
             return m_uiConfigValues[RCV_##_name];       \
         uint64_t uiValue;                               \
-        m_uiConfigValues[RCV_##_name] = ReadConfigValue(_T(#_name), &uiValue) ? uiValue : defaultVal; \
+        m_uiConfigValues[RCV_##_name] = ReadConfigValue(#_name, &uiValue) ? uiValue : defaultVal; \
         m_uiConfigValuesRead |= 1 << RCV_##_name;       \
         return m_uiConfigValues[RCV_##_name];           \
     }
@@ -96,19 +91,11 @@ private:
     //NOTE: if the method fails configPair is left in an uninitialized state
     bool ParseConfigLine(_Out_ ConfigPair* configPair, _In_z_ const char * line);
 
-#ifdef FEATURE_EMBEDDED_CONFIG
     void ReadEmbeddedSettings();
 
-    uint32_t GetEmbeddedVariable(_In_z_ const TCHAR* configName, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
-#endif // FEATURE_EMBEDDED_CONFIG
-
-    uint32_t GetConfigVariable(_In_z_ const TCHAR* configName, const ConfigPair* configPairs, _Out_writes_all_(cchOutputBuffer) TCHAR* outputBuffer, _In_ uint32_t cchOutputBuffer);
-
-    static bool priv_isspace(char c)
-    {
-        return (c == ' ') || (c == '\t') || (c == '\n') || (c == '\r');
-    }
-
+    // Gets a pointer to the embedded configuration value. Memory is held by the callee.
+    // Returns true if the variable was found, false otherwise
+    bool GetEmbeddedVariable(_In_z_ const char* configName, _Out_ const char** configValue);
 
     uint32_t  m_uiConfigValuesRead;
     uint64_t  m_uiConfigValues[RCV_Count];

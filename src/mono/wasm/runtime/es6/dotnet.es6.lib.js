@@ -111,6 +111,7 @@ let linked_functions = [
     "mono_wasm_compare_string",
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
+    "mono_wasm_index_of",
 
     "icudt68_dat",
 ];

@@ -7,26 +7,26 @@ import { Module } from "./globals";
 import cwraps from "./cwraps";
 
 export const enum MintOpArgType {
-	MintOpNoArgs = 0,
-	MintOpShortInt,
-	MintOpUShortInt,
-	MintOpInt,
-	MintOpLongInt,
-	MintOpFloat,
-	MintOpDouble,
-	MintOpBranch,
-	MintOpShortBranch,
-	MintOpSwitch,
-	MintOpMethodToken,
-	MintOpFieldToken,
-	MintOpClassToken,
-	MintOpTwoShorts,
-	MintOpTwoInts,
-	MintOpShortAndInt,
-	MintOpShortAndShortBranch,
-	MintOpPair2,
-	MintOpPair3,
-	MintOpPair4
+    MintOpNoArgs = 0,
+    MintOpShortInt,
+    MintOpUShortInt,
+    MintOpInt,
+    MintOpLongInt,
+    MintOpFloat,
+    MintOpDouble,
+    MintOpBranch,
+    MintOpShortBranch,
+    MintOpSwitch,
+    MintOpMethodToken,
+    MintOpFieldToken,
+    MintOpClassToken,
+    MintOpTwoShorts,
+    MintOpTwoInts,
+    MintOpShortAndInt,
+    MintOpShortAndShortBranch,
+    MintOpPair2,
+    MintOpPair3,
+    MintOpPair4
 }
 
 export const enum JiterpSpecialOpcode {
@@ -50,9 +50,9 @@ export type OpcodeNameTable = {
     [key: number]: string;
 }
 
-const opcodeNameCache : OpcodeNameTable = {};
+const opcodeNameCache: OpcodeNameTable = {};
 
-export function getOpcodeName (opcode: number) : string {
+export function getOpcodeName(opcode: number): string {
     let result = opcodeNameCache[opcode];
     if (typeof (result) !== "string") {
         const pName = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Name);
@@ -64,7 +64,7 @@ export function getOpcodeName (opcode: number) : string {
 export type SimdInfoSubtable = Array<string>
 
 export type SimdInfoTable = {
-    [argument_count: number] : SimdInfoSubtable
+    [argument_count: number]: SimdInfoSubtable
 }
 
 // Keep this in sync with the wasm spec (but I don't think any changes will impact it),

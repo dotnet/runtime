@@ -978,7 +978,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             call->gtType = TYP_REF;
             impSpillSpecialSideEff();
 
-            impPushOnStack(call, typeInfo(TI_REF, clsHnd));
+            impPushOnStack(call, typeInfo(clsHnd));
         }
         else
         {
@@ -1018,8 +1018,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(newobjThis->IsLclVarAddr());
 
                 unsigned lclNum = newobjThis->AsLclVarCommon()->GetLclNum();
-                impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
-                               verMakeTypeInfo(clsHnd).NormaliseForStack());
+                impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(clsHnd));
             }
             else
             {
@@ -1030,8 +1029,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
 
                 assert(newobjThis->gtOper == GT_LCL_VAR);
-                impPushOnStack(gtNewLclvNode(newobjThis->AsLclVarCommon()->GetLclNum(), TYP_REF),
-                               typeInfo(TI_REF, clsHnd));
+                impPushOnStack(gtNewLclvNode(newobjThis->AsLclVarCommon()->GetLclNum(), TYP_REF), typeInfo(clsHnd));
             }
         }
         return callRetTyp;
@@ -1314,7 +1312,6 @@ DONE_CALL:
         }
 
         typeInfo tiRetVal = verMakeTypeInfo(sig->retType, sig->retTypeClass);
-        tiRetVal.NormaliseForStack();
 
         if (call->IsCall())
         {
@@ -1463,23 +1460,20 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
     TestLabelAndNum tlAndN;
     if (numArgs == 2)
     {
-        tlAndN.m_num  = 0;
-        StackEntry se = impPopStack();
-        assert(se.seTypeInfo.GetType() == TI_INT);
-        GenTree* val = se.val;
+        tlAndN.m_num   = 0;
+        StackEntry se  = impPopStack();
+        GenTree*   val = se.val;
         assert(val->IsCnsIntOrI());
         tlAndN.m_tl = (TestLabel)val->AsIntConCommon()->IconValue();
     }
     else if (numArgs == 3)
     {
-        StackEntry se = impPopStack();
-        assert(se.seTypeInfo.GetType() == TI_INT);
-        GenTree* val = se.val;
+        StackEntry se  = impPopStack();
+        GenTree*   val = se.val;
         assert(val->IsCnsIntOrI());
         tlAndN.m_num = val->AsIntConCommon()->IconValue();
         se           = impPopStack();
-        assert(se.seTypeInfo.GetType() == TI_INT);
-        val = se.val;
+        val          = se.val;
         assert(val->IsCnsIntOrI());
         tlAndN.m_tl = (TestLabel)val->AsIntConCommon()->IconValue();
     }
@@ -2540,30 +2534,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    switch (ni)
-    {
-        // CreateSpan must be expanded for NativeAOT
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
-        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-            break;
-
-        case NI_Internal_Runtime_MethodTable_Of:
-        case NI_System_Activator_AllocatorOf:
-        case NI_System_Activator_DefaultConstructorOf:
-        case NI_System_EETypePtr_EETypePtrOf:
-            mustExpand = true;
-            break;
-
-        default:
-            break;
-    }
-
-    // Allow some lighweight intrinsics in Tier0 which can improve throughput
-    // we introduced betterToExpand here because we're fine if intrinsic decides to not expand itself
-    // in this case unlike mustExpand.
     bool betterToExpand = false;
 
+    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
     // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
     // To be fixed in https://github.com/dotnet/runtime/pull/77465
     const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
@@ -2621,6 +2595,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 betterToExpand |= ni >= NI_SRCS_UNSAFE_START && ni <= NI_SRCS_UNSAFE_END;
                 // Same for these
                 betterToExpand |= ni >= NI_PRIMITIVE_START && ni <= NI_PRIMITIVE_END;
+                break;
+        }
+    }
+
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Intrinsics that we should make every effort to expand for NativeAOT.
+        // If the intrinsic cannot possibly be expanded, it's fine, but
+        // if it can be, it should expand.
+        switch (ni)
+        {
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            case NI_Internal_Runtime_MethodTable_Of:
+            case NI_System_Activator_AllocatorOf:
+            case NI_System_Activator_DefaultConstructorOf:
+            case NI_System_EETypePtr_EETypePtrOf:
+                betterToExpand = true;
+                break;
+
+            default:
                 break;
         }
     }
@@ -5158,9 +5153,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
 
         if (varTypeIsStruct(argNode))
         {
-            // Morph trees that aren't already OBJs or MKREFANY to be OBJs
-            assert(ti.IsType(TI_STRUCT));
-
             JITDUMP("Calling impNormStructVal on:\n");
             DISPTREE(argNode);
 
@@ -5248,7 +5240,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             // This pushes on the dereferenced byref
             // This is then used immediately to box.
-            impPushOnStack(obj, verMakeTypeInfo(pConstrainedResolvedToken->hClass).NormaliseForStack());
+            impPushOnStack(obj, verMakeTypeInfo(pConstrainedResolvedToken->hClass));
 
             // This pops off the byref-to-a-value-type remaining on the stack and
             // replaces it with a boxed object.
@@ -8842,32 +8834,29 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if ((intrinsicName != NI_Array_Get) && !readonlyCall && varTypeIsGC(elemType))
     {
         // Get the call site signature
-        CORINFO_SIG_INFO LocalSig;
-        eeGetCallSiteSig(memberRef, info.compScopeHnd, impTokenLookupContextHandle, &LocalSig);
-        assert(LocalSig.hasThis());
+        CORINFO_SIG_INFO localSig;
+        eeGetCallSiteSig(memberRef, info.compScopeHnd, impTokenLookupContextHandle, &localSig);
+        assert(localSig.hasThis());
 
         CORINFO_CLASS_HANDLE actualElemClsHnd;
 
         if (intrinsicName == NI_Array_Set)
         {
             // Fetch the last argument, the one that indicates the type we are setting.
-            CORINFO_ARG_LIST_HANDLE argType = LocalSig.args;
+            CORINFO_ARG_LIST_HANDLE argList = localSig.args;
             for (unsigned r = 0; r < rank; r++)
             {
-                argType = info.compCompHnd->getArgNext(argType);
+                argList = info.compCompHnd->getArgNext(argList);
             }
 
-            typeInfo argInfo = verParseArgSigToTypeInfo(&LocalSig, argType);
-            actualElemClsHnd = argInfo.GetClassHandle();
+            actualElemClsHnd = eeGetArgClass(&localSig, argList);
         }
         else
         {
             assert(intrinsicName == NI_Array_Address);
+            assert((localSig.retType == CORINFO_TYPE_BYREF) && (localSig.retTypeClass != NO_CLASS_HANDLE));
 
-            // Fetch the return type
-            typeInfo retInfo = verMakeTypeInfo(LocalSig.retType, LocalSig.retTypeClass);
-            assert(retInfo.IsByRef());
-            actualElemClsHnd = retInfo.GetClassHandle();
+            info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
         }
 
         // if it's not final, we can't do the optimization

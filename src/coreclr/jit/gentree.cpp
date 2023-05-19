@@ -11936,7 +11936,6 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
                     printf(" ");
                     fieldVarDsc->PrintVarReg();
                 }
-
                 if (fieldVarDsc->lvTracked && fgLocalVarLivenessDone && tree->IsLastUse(index))
                 {
                     printf(" (last use)");
@@ -11946,7 +11945,8 @@ void Compiler::gtDispLocal(GenTreeLclVarCommon* tree, IndentStack* indentStack)
     }
     else // a normal not-promoted lclvar
     {
-        if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
+        if ((varDsc->lvTracked || varDsc->lvTrackedWithoutIndex) && fgLocalVarLivenessDone &&
+            ((tree->gtFlags & GTF_VAR_DEATH) != 0))
         {
             printf(" (last use)");
         }
@@ -19067,6 +19067,9 @@ bool GenTree::isContainableHWIntrinsic() const
         }
 
         case NI_Vector128_GetElement:
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToUInt32:
         case NI_SSE2_X64_ConvertToInt64:
@@ -22057,27 +22060,56 @@ GenTree* Compiler::gtNewSimdGetElementNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
 #if defined(TARGET_XARCH)
+    bool useToScalar = op2->IsIntegralConst(0);
+
+#if defined(TARGET_X86)
+    // We handle decomposition via GetElement for simplicity
+    useToScalar &= !varTypeIsLong(simdBaseType);
+#endif // TARGET_X86
+
+    if (useToScalar)
+    {
+        intrinsicId = NI_Vector128_ToScalar;
+
+        if (simdSize == 64)
+        {
+            intrinsicId = NI_Vector512_ToScalar;
+        }
+        else if (simdSize == 32)
+        {
+            intrinsicId = NI_Vector256_ToScalar;
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+    }
+
     switch (simdBaseType)
     {
-        // Using software fallback if simdBaseType is not supported by hardware
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_INT:
         case TYP_UINT:
         case TYP_LONG:
         case TYP_ULONG:
+        {
+            // Using software fallback if simdBaseType is not supported by hardware
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
             break;
+        }
 
         case TYP_DOUBLE:
         case TYP_FLOAT:
         case TYP_SHORT:
         case TYP_USHORT:
+        {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
+        }
 
         default:
+        {
             unreached();
+        }
     }
 
     if (simdSize == 64)
@@ -22089,6 +22121,18 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         intrinsicId = NI_Vector256_GetElement;
     }
 #elif defined(TARGET_ARM64)
+    if (op2->IsIntegralConst(0))
+    {
+        intrinsicId = NI_Vector128_ToScalar;
+
+        if (simdSize == 8)
+        {
+            intrinsicId = NI_Vector64_ToScalar;
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+    }
+
     if (simdSize == 8)
     {
         intrinsicId = NI_Vector64_GetElement;
@@ -24348,7 +24392,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
     }
 
     assert(intrinsic != NI_Illegal);
-    tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, 8);
+    tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, intrinsic, simdBaseJitType, 8);
 
     if (simdSize == 8)
     {
@@ -24543,8 +24587,6 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackHigh, simdBaseJitType, simdSize);
     }
 #elif defined(TARGET_ARM64)
-    GenTree* zero;
-
     if (simdSize == 16)
     {
         if (varTypeIsFloating(simdBaseType))
@@ -24586,7 +24628,6 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfo
         assert(intrinsic != NI_Illegal);
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize);
-        zero = gtNewZeroConNode(TYP_SIMD16);
         return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseJitType, 16);
     }
 #else

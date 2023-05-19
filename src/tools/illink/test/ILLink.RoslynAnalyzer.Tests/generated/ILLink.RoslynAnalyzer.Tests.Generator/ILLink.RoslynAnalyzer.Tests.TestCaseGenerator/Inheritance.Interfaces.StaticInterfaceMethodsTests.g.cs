@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,6 +9,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 
 		[Fact]
 		public Task OverrideInCopyAssembly ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task OverrideInSaveAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
