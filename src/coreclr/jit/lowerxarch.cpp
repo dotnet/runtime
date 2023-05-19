@@ -1004,154 +1004,6 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// TryLowerConstVec: Unfold the Vector to Broadcast->CreateScalarUnsafe->ConstScalar form
-//                   when the constant vector has all the same elements and is an operand
-//                   of an embedded broadcast compatible instruction.
-//
-//  Arguments:
-//     node - The constant vector node
-GenTree* Lowering::TryLowerConstVec(GenTreeVecCon* node)
-{
-    LIR::Use            use;
-    bool                foundUse         = BlockRange().TryGetUse(node, &use);
-    GenTreeHWIntrinsic* embBroadcastNode = nullptr;
-    if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
-    {
-        embBroadcastNode                = use.User()->AsHWIntrinsic();
-        var_types   simdType            = embBroadcastNode->TypeGet();
-        var_types   simdBaseType        = embBroadcastNode->GetSimdBaseType();
-        CorInfoType simdBaseJitType     = embBroadcastNode->GetSimdBaseJitType();
-        bool        isCreatedFromScalar = true;
-
-        int ElementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
-        switch (simdBaseType)
-        {
-            case TYP_FLOAT:
-            case TYP_INT:
-            case TYP_UINT:
-            {
-                uint32_t FirstElement = static_cast<uint32_t>(node->gtSimdVal.u32[0]);
-                for (int i = 1; i < ElementCount; i++)
-                {
-                    uint32_t ElementToCheck = static_cast<uint32_t>(node->gtSimdVal.u32[i]);
-                    if (FirstElement != ElementToCheck)
-                    {
-                        isCreatedFromScalar = false;
-                        break;
-                    }
-                }
-                // There are special case when all elements in the vector are 1/0,
-                // there are exsiting optimization for those case, filter them out
-                // of the embedded broadcast.
-                if (isCreatedFromScalar && (FirstElement == UINT32_MAX || FirstElement == UINT32_MIN))
-                {
-                    isCreatedFromScalar = false;
-                }
-                break;
-            }
-
-            case TYP_DOUBLE:
-#if defined(TARGET_AMD64)
-            case TYP_LONG:
-            case TYP_ULONG:
-#endif // TARGET_AMD64
-            {
-                uint64_t FirstElement = static_cast<uint64_t>(node->gtSimdVal.u64[0]);
-                for (int i = 1; i < ElementCount; i++)
-                {
-                    uint64_t ElementToCheck = static_cast<uint64_t>(node->gtSimdVal.u64[i]);
-                    if (FirstElement != ElementToCheck)
-                    {
-                        isCreatedFromScalar = false;
-                        break;
-                    }
-                }
-                // There are special case when all elements in the vector are 1/0,
-                // there are exsiting optimization for those case, filter them out
-                // of the embedded broadcast.
-                if (isCreatedFromScalar && (FirstElement == UINT64_MAX || FirstElement == UINT64_MIN))
-                {
-                    isCreatedFromScalar = false;
-                }
-                break;
-            }
-            default:
-                isCreatedFromScalar = false;
-                break;
-        }
-        if (isCreatedFromScalar)
-        {
-            NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
-            if (simdType == TYP_SIMD32)
-            {
-                broadcastName = NI_AVX2_BroadcastScalarToVector256;
-            }
-            else if (simdType == TYP_SIMD64)
-            {
-                broadcastName = NI_AVX512F_BroadcastScalarToVector512;
-            }
-            GenTree* constScalar = nullptr;
-            switch (simdBaseType)
-            {
-                case TYP_FLOAT:
-                {
-                    float scalar = static_cast<float>(node->gtSimdVal.f32[0]);
-                    constScalar  = comp->gtNewDconNode(scalar, simdBaseType);
-                    break;
-                }
-                case TYP_DOUBLE:
-                {
-                    double scalar = static_cast<double>(node->gtSimdVal.f64[0]);
-                    constScalar   = comp->gtNewDconNode(scalar, simdBaseType);
-                    break;
-                }
-                case TYP_INT:
-                {
-                    int32_t scalar = static_cast<int32_t>(node->gtSimdVal.i32[0]);
-                    constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
-                    break;
-                }
-                case TYP_UINT:
-                {
-                    uint32_t scalar = static_cast<uint32_t>(node->gtSimdVal.u32[0]);
-                    constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
-                    break;
-                }
-#if defined(TARGET_AMD64)
-                case TYP_LONG:
-                {
-                    int64_t scalar = static_cast<int64_t>(node->gtSimdVal.i64[0]);
-                    constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
-                    break;
-                }
-                case TYP_ULONG:
-                {
-                    uint64_t scalar = static_cast<uint64_t>(node->gtSimdVal.u64[0]);
-                    constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
-                    break;
-                }
-#endif // TARGET_AMD64
-                default:
-                    unreached();
-            }
-            GenTreeHWIntrinsic* createScalar =
-                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe,
-                                               simdBaseJitType, 16);
-            GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName,
-                                                                               simdBaseJitType, genTypeSize(simdType));
-            BlockRange().InsertBefore(node, broadcastNode);
-            BlockRange().InsertBefore(broadcastNode, createScalar);
-            BlockRange().InsertBefore(createScalar, constScalar);
-            use.ReplaceWith(broadcastNode);
-            BlockRange().Remove(node);
-            LowerNode(createScalar);
-            return LowerNode(broadcastNode);
-        }
-    }
-    return node->gtNext;
-}
-
-//----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
 //  Arguments:
@@ -2508,8 +2360,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 {
                     assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
                     node->ResetHWIntrinsicId(NI_AVX512F_BroadcastScalarToVector512, tmp1);
-                    // Seek for optimization opportunities using embedded broadcast.
-                    TryCanonizeEmbBroadcastCandicate(node);
                     break;
                 }
                 default:
@@ -2542,12 +2392,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-
-                if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-                {
-                    // If AVX512 is supported, seek for optimization opportunities using embedded broadcast.
-                    TryCanonizeEmbBroadcastCandicate(node);
-                }
                 return LowerNode(node);
             }
 
@@ -2622,15 +2466,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   return Avx2.BroadcastScalarToVector128(tmp1);
 
             node->ChangeHWIntrinsicId(NI_AVX2_BroadcastScalarToVector128, tmp1);
-
-            // if AVX512 is supported, seek for optimization opportunities using embedded broadcast.
-            // contain the broadcast intrinsics in the embeddebd broadcast compatible intrinsics
-            // at codegen phase, directly emit the operend on "Create" node instead of a series of broadcast.
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-            {
-                // If AVX512 is supported, seek for optimization opportunities using embedded broadcast.
-                TryCanonizeEmbBroadcastCandicate(node);
-            }
             return LowerNode(node);
         }
 
@@ -2862,11 +2697,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   return Sse3.MoveAndDuplicate(tmp1);
 
                     node->ChangeHWIntrinsicId(NI_SSE3_MoveAndDuplicate, tmp1);
-                    if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-                    {
-                        // If AVX512 is supported, seek for optimization opportunities using embedded broadcast.
-                        TryCanonizeEmbBroadcastCandicate(node);
-                    }
                     break;
                 }
 
@@ -5324,54 +5154,6 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryCanonizeEmbBroadcastCandicate:
-//    Tries to canonize the operands of an embedded broadcast op.
-//
-// Arguments:
-//    node - `Create` node being lowered
-//
-// Notes:
-//    This function will canonize the input operands of a commutive and embedded broadcast op.
-//    The operand to be broadcasted will be put to the 2nd operand.
-//
-void Lowering::TryCanonizeEmbBroadcastCandicate(GenTreeHWIntrinsic* node)
-{
-    LIR::Use use;
-    bool     foundUse   = BlockRange().TryGetUse(node, &use);
-    GenTree* createUser = nullptr;
-    // Here we assume we have the form of Broadcast -> CreateScalarUnsafe -> Scalar
-    GenTree* scalar = node->Op(1)->AsHWIntrinsic()->Op(1);
-    if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) && use.User()->AsHWIntrinsic()->OperIsEmbBroadcastCompatible())
-    {
-        createUser = use.User();
-    }
-    if (createUser != nullptr && scalar->OperIs(GT_LCL_VAR) && createUser->AsHWIntrinsic()->isCommutativeHWIntrinsic())
-    {
-        // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
-        // issue.
-        switch (scalar->TypeGet())
-        {
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_FLOAT:
-            case TYP_DOUBLE:
-            {
-                if (node == createUser->AsHWIntrinsic()->Op(1))
-                {
-                    std::swap(createUser->AsHWIntrinsic()->Op(1), createUser->AsHWIntrinsic()->Op(2));
-                }
-                break;
-            }
-
-            default:
-                break;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------------------
 // Lowering::LowerBswapOp: Tries to contain GT_BSWAP node when possible
 //
 // Arguments:
@@ -7618,9 +7400,123 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 GenTreeVecCon* vecCon = childNode->AsVecCon();
                 canBeContained        = !vecCon->IsAllBitsSet() && !vecCon->IsZero();
+                //seek for opportunities to unfold the constant vector as the embedded broadcast candidate.
+                if(canBeContained && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) && vecCon->TypeIs(TYP_SIMD16, TYP_SIMD32, TYP_SIMD64) && parentNode->OperIsEmbBroadcastCompatible())
+                {
+                    var_types simdType = parentNode->TypeGet();
+                    var_types simdBaseType = parentNode->GetSimdBaseType();
+                    CorInfoType simdBaseJitType = parentNode->GetSimdBaseJitType();
+                    bool isCreatedFromScalar = true;
+                    int elementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
+                    switch (simdBaseType)
+                    {
+                        case TYP_FLOAT:
+                        case TYP_INT:
+                        case TYP_UINT:
+                        {
+                            uint32_t firstElement = static_cast<uint32_t>(vecCon->gtSimdVal.u32[0]);
+                            for(int i = 1; i < elementCount; i++)
+                            {
+                                uint32_t elementToCheck = static_cast<uint32_t>(vecCon->gtSimdVal.u32[i]);
+                                if(firstElement != elementToCheck)
+                                {
+                                    isCreatedFromScalar = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+
+                        case TYP_DOUBLE:
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        {
+                            uint64_t firstElement = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
+                            for(int i = 1; i < elementCount; i++)
+                            {
+                                uint64_t elementToCheck = static_cast<uint64_t>(vecCon->gtSimdVal.u64[i]);
+                                if(firstElement != elementToCheck)
+                                {
+                                    isCreatedFromScalar = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                        
+                        default:
+                            isCreatedFromScalar = false;
+                            break;
+                    }
+                    if(isCreatedFromScalar)
+                    {
+                        NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;
+                        if(simdType == TYP_SIMD32)
+                        {
+                            broadcastName = NI_AVX2_BroadcastScalarToVector256;
+                        }
+                        else if(simdType == TYP_SIMD64)
+                        {
+                            broadcastName = NI_AVX512F_BroadcastScalarToVector512;
+                        }
+                        GenTree* constScalar = nullptr;
+                        switch(simdBaseType)
+                        {
+                            case TYP_FLOAT:
+                            {
+                                float scalar = static_cast<float>(vecCon->gtSimdVal.f32[0]);
+                                constScalar = comp->gtNewDconNode(scalar, simdBaseType);
+                                break;
+                            }
+                            case TYP_DOUBLE:
+                            {
+                                double scalar = static_cast<double>(vecCon->gtSimdVal.f64[0]);
+                                constScalar = comp->gtNewDconNode(scalar, simdBaseType);
+                                break;
+                            }  
+                            case TYP_INT:
+                            {
+                                int32_t scalar = static_cast<int32_t>(vecCon->gtSimdVal.i32[0]);
+                                constScalar = comp->gtNewIconNode(scalar, simdBaseType);
+                                break;
+                            }
+                            case TYP_UINT:
+                            {
+                                uint32_t scalar =  static_cast<uint32_t>(vecCon->gtSimdVal.u32[0]);
+                                constScalar = comp->gtNewIconNode(scalar, TYP_INT);
+                                break;
+                            }
+                            case TYP_LONG:
+                            {
+                                int64_t scalar = static_cast<int64_t>(vecCon->gtSimdVal.i64[0]);
+                                constScalar = comp->gtNewIconNode(scalar, simdBaseType);
+                                break;
+                            }
+                            case TYP_ULONG:
+                            {   
+                                uint64_t scalar = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
+                                constScalar = comp->gtNewIconNode(scalar, TYP_LONG);
+                                break;
+                            }
+                            default:
+                                unreached();
+                        }
+                        GenTreeHWIntrinsic* createScalar  = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType, 16);
+                        GenTreeHWIntrinsic* broadcastNode = comp->gtNewSimdHWIntrinsicNode(simdType, createScalar, broadcastName, simdBaseJitType, genTypeSize(simdType));
+                        BlockRange().InsertBefore(vecCon, broadcastNode);
+                        BlockRange().InsertBefore(broadcastNode, createScalar);
+                        BlockRange().InsertBefore(createScalar, constScalar);
+                        LIR::Use use;
+                        BlockRange().TryGetUse(childNode, &use);
+                        use.ReplaceWith(broadcastNode);
+                        BlockRange().Remove(vecCon);
+                        LowerNode(createScalar);
+                        LowerNode(broadcastNode);
+                        return IsContainableHWIntrinsicOp(parentNode, broadcastNode, supportsRegOptional);
+                    }
+                }
             }
         }
-
         return canBeContained;
     }
 
@@ -8129,7 +8025,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        MakeSrcContained(node, op2);
+                        MakeSrcContained(node, node->Op(2));
                     }
                     else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
