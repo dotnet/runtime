@@ -6,6 +6,7 @@
     <RunAnalyzers>false</RunAnalyzers>
     <DebuggerHost Condition="'$(DebuggerHost)' == '' or ('$(DebuggerHost)' != 'chrome' and '$(DebuggerHost)' != 'firefox')">chrome</DebuggerHost>
     <DefineConstants Condition="'$(DebuggerHost)' == 'chrome'">$(DefineConstants);RUN_IN_CHROME</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <BrowserHost Condition="$([MSBuild]::IsOSPlatform('windows'))">windows</BrowserHost>
     <_ProvisionBrowser Condition="'$(ContinuousIntegrationBuild)' == 'true' or Exists('/.dockerenv')">true</_ProvisionBrowser>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(DebuggerHost)' == 'chrome' and '$(_ProvisionBrowser)' == 'true'">true</InstallChromeForTests>
@@ -23,7 +24,7 @@
 
     <Compile Include="..\BrowserDebugProxy\Common\*.cs" />
 
-    <!-- TODO [ActiveIssue("https://github.com/dotnet/runtime/issues/85168")] 
+    <!-- TODO [ActiveIssue("https://github.com/dotnet/runtime/issues/85168")]
     <Compile Remove="EvaluateOnCallFrameTests.cs" />
     -->
 

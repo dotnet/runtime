@@ -879,7 +879,11 @@ namespace DebuggerTests
                 $"DebuggerTests.AsyncTests.ContinueWithTests.{method_name}");
         }
 
+# if FEATURE_WASM_THREADS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496")]
+# else
         [ConditionalTheory(nameof(RunningOnChrome))]
+# endif
         [InlineData(112, 16, 114, 16, "HiddenLinesInAnAsyncBlock")]
         [InlineData(130, 16, 133, 16, "HiddenLinesJustBeforeANestedAsyncBlock")]
         [InlineData(153, 20, 155, 16, "HiddenLinesAtTheEndOfANestedAsyncBlockWithNoLinesAtEndOfTheMethod.AnonymousMethod__1")]
