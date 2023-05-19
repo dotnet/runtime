@@ -242,7 +242,7 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
-            if (_nodeFactoryOptimizationFlags.SkipTypeValidation)
+            if (_nodeFactoryOptimizationFlags.SkipTypeValidation.HasValue && _nodeFactoryOptimizationFlags.SkipTypeValidation.Value)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
@@ -258,8 +258,8 @@ namespace ILCompiler
                 win32Resources,
                 flags,
                 _nodeFactoryOptimizationFlags,
-                _imageBase
-                );
+                _imageBase,
+                _nodeFactoryOptimizationFlags.SkipTypeValidation.HasValue ? null : singleModule);
 
             factory.CompositeImageSettings = _compositeImageSettings;
 

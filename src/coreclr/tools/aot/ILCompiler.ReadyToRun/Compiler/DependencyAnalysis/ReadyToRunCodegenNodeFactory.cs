@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
-        public bool SkipTypeValidation;
+        public bool? SkipTypeValidation;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -187,7 +187,8 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
-            ulong imageBase)
+            ulong imageBase,
+            EcmaModule associatedModule)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -199,7 +200,8 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
-            Header = new GlobalHeaderNode(flags);
+
+            Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);

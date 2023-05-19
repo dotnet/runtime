@@ -400,6 +400,6 @@
     <value>.NET Crossgen2 Compiler</value>
   </data>
   <data name="SkipTypeValidation" xml:space="preserve">
-    <value>Configure the runtime so that it does not validate metadata for types defined in compiled assemblies</value>
+    <value>Configure the runtime so that it does not validate metadata for types defined in compiled assemblies (default: automatic)</value>
   </data>
 </root>

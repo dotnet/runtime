@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
 using ILCompiler.DependencyAnalysisFramework;
+using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -96,9 +97,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly ReadyToRunFlags _flags;
+        private readonly Task<bool> _shouldAddSkipTypeValidationFlag;
+        private readonly TypeValidationChecker _typeValidationChecker = new TypeValidationChecker();
 
-        public HeaderNode(ReadyToRunFlags flags)
+        public HeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
         {
+
+            if (moduleToCheckForSkipTypeValidation != null)
+            {
+                _shouldAddSkipTypeValidationFlag = _typeValidationChecker.CanSkipValidation(moduleToCheckForSkipTypeValidation);
+            }
+            else
+            {
+                _shouldAddSkipTypeValidationFlag = Task.FromResult(false);
+            }
             _flags = flags;
         }
 
@@ -139,7 +151,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _items.MergeSort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
             // ReadyToRunHeader.Flags
-            builder.EmitInt((int)_flags);
+            int flagsInt = (int)_flags;
+            if (_shouldAddSkipTypeValidationFlag.Result)
+            {
+                flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
+            }
+            else
+            {
+//#if DIAGNOSE_TYPE_VALIDATION_RULES
+                _typeValidationChecker.LogErrors(System.Console.WriteLine);
+//#endif
+            }
+            builder.EmitInt(flagsInt);
 
             // ReadyToRunHeader.NumberOfSections
             ObjectDataBuilder.Reservation sectionCountReservation = builder.ReserveInt();
@@ -182,8 +205,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class GlobalHeaderNode : HeaderNode
     {
-        public GlobalHeaderNode(ReadyToRunFlags flags)
-            : base(flags)
+        public GlobalHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipValidation)
+            : base(flags, moduleToCheckForSkipValidation)
         {
         }
 
@@ -211,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly int _index;
 
         public AssemblyHeaderNode(ReadyToRunFlags flags, int index)
-            : base(flags)
+            : base(flags, null)
         {
             _index = index;
         }

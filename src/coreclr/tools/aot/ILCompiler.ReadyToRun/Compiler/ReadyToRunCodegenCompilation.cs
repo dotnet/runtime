@@ -407,7 +407,8 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
-            if (_nodeFactory.OptimizationFlags.SkipTypeValidation)
+            if (_nodeFactory.OptimizationFlags.SkipTypeValidation.HasValue &&
+                _nodeFactory.OptimizationFlags.SkipTypeValidation.Value)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
@@ -428,7 +429,8 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags,
                 _nodeFactory.OptimizationFlags,
-                _nodeFactory.ImageBase);
+                _nodeFactory.ImageBase,
+                _nodeFactory.OptimizationFlags.SkipTypeValidation.HasValue ? null : inputModule);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);
