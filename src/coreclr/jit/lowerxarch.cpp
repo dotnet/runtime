@@ -7408,8 +7408,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         }
 
                         case TYP_DOUBLE:
+#if defined(TARGET_AMD64)
                         case TYP_LONG:
                         case TYP_ULONG:
+#endif  // TARGET_AMD64
                         {
                             uint64_t firstElement = static_cast<uint64_t>(vecCon->gtSimdVal.u64[0]);
                             for (int i = 1; i < elementCount; i++)
@@ -7466,6 +7468,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                                 constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
                                 break;
                             }
+#if defined(TARGET_AMD64)
                             case TYP_LONG:
                             {
                                 int64_t scalar = static_cast<int64_t>(vecCon->gtSimdVal.i64[0]);
@@ -7478,6 +7481,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                                 constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
                                 break;
                             }
+#endif  // TARGET_AMD64
                             default:
                                 unreached();
                         }
