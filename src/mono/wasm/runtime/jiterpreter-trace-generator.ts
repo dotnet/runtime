@@ -21,10 +21,10 @@ import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
     append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
-    try_append_memmove_fast, counters, bytesFromHex,
+    try_append_memmove_fast, counters, getOpcodeTableValue,
     getMemberOffset, JiterpMember, BailoutReason,
-    getOpcodeTableValue
 } from "./jiterpreter-support";
+import { compileSimdFeatureDetect } from "./jiterpreter-feature-detect";
 import {
     sizeOfDataItem, sizeOfV128, sizeOfStackval,
 
@@ -2998,8 +2998,6 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
     return true;
 }
 
-const vec128Test =
-    "0061736d0100000001040160000003020100070801047465737400000a090107004100fd111a0b";
 let wasmSimdSupported: boolean | undefined;
 
 function getIsWasmSimdSupported(): boolean {
@@ -3009,10 +3007,8 @@ function getIsWasmSimdSupported(): boolean {
     // Probe whether the current environment can handle wasm v128 opcodes.
     try {
         // Load and compile a test module that uses i32x4.splat. See wasm-simd-feature-detect.wat/wasm
-        const bytes = bytesFromHex(vec128Test);
-        counters.bytesGenerated += bytes.length;
-        new WebAssembly.Module(bytes);
-        wasmSimdSupported = true;
+        const module = compileSimdFeatureDetect();
+        wasmSimdSupported = !!module;
     } catch (exc) {
         mono_log_info("Disabling WASM SIMD support due to JIT failure", exc);
         wasmSimdSupported = false;
