@@ -302,4 +302,4 @@ SIMD_AS_HWINTRINSIC_ID(VectorT128,  Xor,                                        
 
 #undef SIMD_AS_HWINTRINSIC
 
-// clang-format on
+    // clang-format on

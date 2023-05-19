@@ -930,8 +930,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (intrinsic == NI_Vector256_AsVector)
                     {
-                        return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, simdSize);
+                        return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
+                                                   simdSize);
                     }
                     else
                     {
