@@ -378,8 +378,14 @@ export class WasmBuilder {
     v128_const(value: 0 | Uint8Array) {
         if (value === 0) {
             // This encoding is much smaller than a v128_const
-            this.i52_const(0);
-            this.appendSimd(WasmSimdOpcode.i64x2_splat);
+            // But v8 doesn't optimize it :-((((((
+            /*
+                this.i52_const(0);
+                this.appendSimd(WasmSimdOpcode.i64x2_splat);
+            */
+            this.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < 16; i++)
+                this.appendU8(0);
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
             this.appendSimd(WasmSimdOpcode.v128_const);
