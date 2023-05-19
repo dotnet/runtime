@@ -77,8 +77,12 @@ namespace ILCompiler
             new(new[] { "--resilient" }, SR.ResilientOption);
         public Option<string> ImageBase { get; } =
             new(new[] { "--imagebase" }, SR.ImageBase);
-        public Option<bool> DisableGenericCycleDetection { get; } =
-            new(new[] { "--disable-generic-cycle-detection" }, SR.DisableGenericCycleDetection);
+        public Option<bool> EnableGenericCycleDetection { get; } =
+            new(new[] { "--enable-generic-cycle-detection" }, SR.EnableGenericCycleDetection);
+        public Option<int> GenericCycleDepthCutoff { get; } =
+            new(new[] { "--maxgenericcycledepth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, SR.GenericCycleDepthCutoff);
+        public Option<int> GenericCycleBreadthCutoff { get; } =
+            new(new[] { "--maxgenericcyclebreadth" }, () => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, SR.GenericCycleBreadthCutoff);
         public Option<TargetArchitecture> TargetArchitecture { get; } =
             new(new[] { "--targetarch" }, result =>
             {
@@ -227,6 +231,9 @@ namespace ILCompiler
             AddOption(SupportIbc);
             AddOption(Resilient);
             AddOption(ImageBase);
+            AddOption(EnableGenericCycleDetection);
+            AddOption(GenericCycleDepthCutoff);
+            AddOption(GenericCycleBreadthCutoff);
             AddOption(TargetArchitecture);
             AddOption(TargetOS);
             AddOption(JitPath);

@@ -249,8 +249,6 @@ namespace ILCompiler
         private readonly bool _generateProfileFile;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
-        private readonly bool _disableGenericCycleDetection;
-
         private readonly ProfileDataManager _profileData;
         private readonly ReadyToRunFileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
@@ -295,8 +293,7 @@ namespace ILCompiler
             ReadyToRunMethodLayoutAlgorithm methodLayoutAlgorithm,
             ReadyToRunFileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
-            bool verifyTypeAndFieldLayout,
-            bool disableGenericCycleDetection)
+            bool verifyTypeAndFieldLayout)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -328,7 +325,6 @@ namespace ILCompiler
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
-            _disableGenericCycleDetection = disableGenericCycleDetection;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
@@ -592,13 +588,6 @@ namespace ILCompiler
 
             using (PerfEventSource.StartStopEvents.JitEvents())
             {
-                int dependencyLevel = ReadyToRunCompilerContext.IncrementDependencyLevel();
-                Console.WriteLine("Dependency level: {0}", dependencyLevel);
-                ((ReadyToRunCompilerContext)TypeSystemContext).DumpBlockedGenericCycles();
-                if (dependencyLevel > ReadyToRunCompilerContext.DependencyLevelCutoff)
-                {
-                    Console.WriteLine("Level is above cutoff point");
-                }
 
                 // Use only main thread to compile if parallelism is 1. This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
                 if (Logger.IsVerbose)

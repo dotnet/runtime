@@ -36,14 +36,14 @@ namespace ILCompiler
         // to trigger marking the type as potentially cyclic. Considering a generic type CyclicType`1<T> marked as
         // cyclic by the initial module analysis, for instance CyclicType`1<CyclicType`1<CyclicType`1<__Canon>>> has "depth 3"
         // so it will be cut off by specifying anything less than or equal to three.
-        private const int DefaultGenericCycleDepthCutoff = 4;
+        public const int DefaultGenericCycleDepthCutoff = 4;
 
         // Breadth cutoff specifies the minimum total number of generic types identified as potentially cyclic
         // that must appear within a type instantiation to mark it as potentially cyclic. Considering generic types
         // CyclicA`1, CyclicB`1 and CyclicC`1 marked as cyclic by the initial module analysis, a hypothetical type
         // SomeType`3<CyclicA`1<__Canon>, List`1<CyclicB`1<__Canon>>, IEnumerable`1<HashSet`1<CyclicC`1<__Canon>>>>
         // will have "breadth 3" and will be cut off by specifying anything less than or equal to three.
-        private const int DefaultGenericCycleBreadthCutoff = 2;
+        public const int DefaultGenericCycleBreadthCutoff = 2;
 
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
@@ -52,14 +52,15 @@ namespace ILCompiler
         private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
 
         private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
-        private bool _disableGenericCycleDetection;
 
         public ReadyToRunCompilerContext(
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCorelib,
-            CompilerTypeSystemContext oldTypeSystemContext = null,
-            bool disableGenericCycleDetection = false)
+            CompilerTypeSystemContext oldTypeSystemContext,
+            bool enableGenericCycleDetection,
+            int genericCycleDepthCutoff,
+            int genericCycleBreadthCutoff)
             : base(details, genericsMode)
         {
             InstructionSetSupport = instructionSetSupport;
@@ -88,8 +89,10 @@ namespace ILCompiler
                 InheritOpenModules(oldTypeSystemContext);
             }
 
-            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(DefaultGenericCycleDepthCutoff, DefaultGenericCycleBreadthCutoff);
-            _disableGenericCycleDetection = disableGenericCycleDetection;
+            if (enableGenericCycleDetection)
+            {
+                _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
+            }
         }
 
         public InstructionSetSupport InstructionSetSupport { get; }
@@ -133,70 +136,10 @@ namespace ILCompiler
             _r2rFieldLayoutAlgorithm.SetCompilationGroup(compilationModuleGroup);
         }
 
-        private static int _dependencyLevel = 0;
-        public const int DependencyLevelCutoff = 8;
-        private Dictionary<string, int> _blockedGenericCycleCounts = new Dictionary<string, int>();
-        private Dictionary<string, int> _passedGenericCycleCounts = new Dictionary<string, int>();
-
-        public void RecordBlockedGenericCycle(string name)
-        {
-            lock (this)
-            {
-                _blockedGenericCycleCounts.TryGetValue(name, out int count);
-                _blockedGenericCycleCounts[name] = count + 1;
-            }
-        }
-
-        public void RecordPassedGenericCycle(string name)
-        {
-            lock (this)
-            {
-                _passedGenericCycleCounts.TryGetValue(name, out int count);
-                _passedGenericCycleCounts[name] = count + 1;
-            }
-        }
-
-        public void DumpBlockedGenericCycles()
-        {
-            Console.WriteLine("  COUNT | BLOCKED GENERIC CYCLES");
-            Console.WriteLine("--------------------------------");
-
-            foreach (KeyValuePair<string, int> kvpNameCount in _blockedGenericCycleCounts.OrderByDescending(kvp => kvp.Value))
-            {
-                Console.WriteLine("{0,7} | {1}", kvpNameCount.Value, kvpNameCount.Key);
-            }
-
-            Console.WriteLine();
-
-            Console.WriteLine("  COUNT | PASSED GENERIC CYCLES");
-            Console.WriteLine("-------------------------------");
-
-            foreach (KeyValuePair<string, int> kvpNameCount in _passedGenericCycleCounts.OrderByDescending(kvp => kvp.Value))
-            {
-                Console.WriteLine("{0,7} | {1}", kvpNameCount.Value, kvpNameCount.Key);
-            }
-
-            Console.WriteLine();
-        }
-
         public override void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee, string name)
         {
-            if (!_disableGenericCycleDetection)
-            {
-                try
-                {
-                    _genericCycleDetector.DetectCycle(caller, callee);
-                    RecordPassedGenericCycle(name);
-                }
-                catch (TypeSystemException)
-                {
-                    RecordBlockedGenericCycle(name);
-                    throw;
-                }
-            }
+            _genericCycleDetector?.DetectCycle(caller, callee);
         }
-
-        public static int IncrementDependencyLevel() => ++_dependencyLevel;
 
         /// <summary>
         /// Prevent any synthetic methods being added to types in the base CompilerTypeSystemContext

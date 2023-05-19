@@ -127,7 +127,11 @@ namespace ILCompiler
             //
             // Initialize type system context
             //
-            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib, instructionSetSupport);
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                oldTypeSystemContext: null,
+                enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
+                genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
+                genericCycleBreadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -269,7 +273,10 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext.InstructionSetSupport, _typeSystemContext);
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext,
+                            enableGenericCycleDetection: Get(_command.EnableGenericCycleDetection),
+                            genericCycleDepthCutoff: Get(_command.GenericCycleDepthCutoff),
+                            genericCycleBreadthCutoff: Get(_command.GenericCycleBreadthCutoff));
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
@@ -608,7 +615,6 @@ namespace ILCompiler
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
-                        .UseDisableGenericCycleDetection(Get(_command.DisableGenericCycleDetection))
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)
