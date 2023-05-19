@@ -2307,7 +2307,7 @@ void Compiler::compSetProcessor()
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
 
-            preferredVectorByteLength = 256;
+            preferredVectorByteLength = 256 / 8;
         }
     }
     else
