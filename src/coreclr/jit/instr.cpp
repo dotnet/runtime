@@ -1187,8 +1187,8 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 {
-    if(!GetEmitter()->UseEvexEncoding())
-    {   
+    if (!GetEmitter()->UseEvexEncoding())
+    {
         return false;
     }
     // need to check if the datatype is EB compatible, say 32-, 64-bit.
