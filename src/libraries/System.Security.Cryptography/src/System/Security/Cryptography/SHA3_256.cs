@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         /// <value>
         /// <see langword="true" /> if the algorithm is supported; otherwise, <see langword="false" />.
         /// </value>
-        public static bool IsSupported => HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_256);
+        public static bool IsSupported { get; } = HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_256);
 
         /// <summary>
         /// Creates an instance of the default implementation of <see cref="SHA3_256" />.

@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
         /// <value>
         /// <see langword="true" /> if the algorithm is supported; otherwise, <see langword="false" />.
         /// </value>
-        public static bool IsSupported => HashProviderDispenser.MacSupported(HashAlgorithmNames.SHA3_512);
+        public static bool IsSupported { get; } = HashProviderDispenser.MacSupported(HashAlgorithmNames.SHA3_512);
 
         /// <inheritdoc />
         public override byte[] Key
