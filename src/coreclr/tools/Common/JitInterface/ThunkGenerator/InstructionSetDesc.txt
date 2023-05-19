@@ -131,7 +131,7 @@ implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 
 ; While the AVX-512 ISAs can be individually lit-up, they really
-; need the 5 following to be fully functional without adding
+; need F, BW, CD, DQ, and VL to be fully functional without adding
 ; significant complexity into the JIT. Additionally, unlike AVX/AVX2
 ; there was never really any hardware that didn't provide all 5 at
 ; once, with the notable exception being Knight's Landing which
