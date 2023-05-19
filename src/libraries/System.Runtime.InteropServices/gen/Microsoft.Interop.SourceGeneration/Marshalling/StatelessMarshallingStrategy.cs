@@ -227,7 +227,7 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>, <nativeIdentifier>__buffer);
+                    // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>, <originalValueIdentifier>__buffer);
                     yield return ExpressionStatement(
                         AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
@@ -295,40 +295,21 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
     }
 
-    internal sealed class StatelessByRefFreeMarshalling : ICustomTypeMarshallingStrategy
+    internal sealed class StatelessUnmanagedToManagedOwnershipTracking : ICustomTypeMarshallingStrategy
     {
-        private const string FreeUnmanagedIdentifier = "freeUnmanaged";
-        private const string OriginalValueIdentifier = "original";
+        internal const string OwnOriginalValueIdentifier = "ownOriginal";
+        internal const string OriginalValueIdentifier = "original";
 
         private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
-        private readonly TypeSyntax _marshallerType;
 
-        public StatelessByRefFreeMarshalling(ICustomTypeMarshallingStrategy innerMarshaller, TypeSyntax marshallerType)
+        public StatelessUnmanagedToManagedOwnershipTracking(ICustomTypeMarshallingStrategy innerMarshaller)
         {
             _innerMarshaller = innerMarshaller;
-            _marshallerType = marshallerType;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
-        {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
-            {
-                yield return statement;
-            }
-            // if (<freeUnmanaged>)
-            //     <marshallerType>.Free(<original>);
-            yield return IfStatement(
-                IdentifierName(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
-                ExpressionStatement(
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            _marshallerType,
-                            IdentifierName(ShapeMemberNames.Free)),
-                        ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(context.GetAdditionalIdentifier(info, OriginalValueIdentifier))))))));
-        }
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
@@ -341,10 +322,10 @@ namespace Microsoft.Interop
             // Now that we've set the new value to pass to the caller on the <native> identifier, we need to make sure that we free the old one.
             // The caller will not see the old one any more, so it won't be able to free it.
 
-            // <freeUnmanaged> = true;
+            // <ownOriginalValue> = true;
             yield return ExpressionStatement(
                 AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
+                    IdentifierName(context.GetAdditionalIdentifier(info, OwnOriginalValueIdentifier)),
                     LiteralExpression(SyntaxKind.TrueLiteralExpression)));
         }
 
@@ -359,18 +340,18 @@ namespace Microsoft.Interop
                 yield return statement;
             }
 
-            // bool <freeUnmanaged> = false;
+            // bool <ownOriginalValue> = false;
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.BoolKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(
-                            Identifier(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
+                            Identifier(context.GetAdditionalIdentifier(info, OwnOriginalValueIdentifier)),
                             null,
                             EqualsValueClause(
                                 LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
 
-            // <nativeType> <original> = <nativeIdentifier>;
+            // <nativeType> <original> = <originalValueIdentifier>;
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     AsNativeType(info).Syntax,
@@ -386,6 +367,60 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+    }
+
+    internal sealed class FreeOwnedOriginalValueMarshalling : ICustomTypeMarshallingStrategy
+    {
+        private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
+
+        public FreeOwnedOriginalValueMarshalling(ICustomTypeMarshallingStrategy innerMarshaller)
+        {
+            _innerMarshaller = innerMarshaller;
+        }
+
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            // if (<ownOriginalValue>)
+            // {
+            //     <cleanup>
+            // }
+            yield return IfStatement(
+                IdentifierName(context.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OwnOriginalValueIdentifier)),
+                Block(_innerMarshaller.GenerateCleanupStatements(info, new OwnedValueCodeContext(context))));
+        }
+
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateMarshalStatements(info, context);
+
+        public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+        public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+
+        public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateSetupStatements(info, context);
+
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
+
+        public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+
+        private sealed record OwnedValueCodeContext(StubCodeContext InnerContext) : StubCodeContext
+        {
+            public override bool SingleFrameSpansNativeContext => InnerContext.SingleFrameSpansNativeContext;
+
+            public override bool AdditionalTemporaryStateLivesAcrossStages => InnerContext.AdditionalTemporaryStateLivesAcrossStages;
+
+            public override (TargetFramework framework, Version version) GetTargetFramework() => InnerContext.GetTargetFramework();
+
+            public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
+            {
+                var (managed, _) = InnerContext.GetIdentifiers(info);
+                return (managed, InnerContext.GetAdditionalIdentifier(info, StatelessUnmanagedToManagedOwnershipTracking.OriginalValueIdentifier));
+            }
+
+            public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => InnerContext.GetAdditionalIdentifier(info, name);
+        }
     }
 
     /// <summary>
@@ -628,23 +663,31 @@ namespace Microsoft.Interop
         private readonly IElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
+        private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
             ICustomTypeMarshallingStrategy spaceMarshallingStrategy,
             IElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
-            MarshallerShape shape)
+            MarshallerShape shape,
+            bool cleanupElementsAndSpace)
         {
             _spaceMarshallingStrategy = spaceMarshallingStrategy;
             _elementsMarshalling = elementsMarshalling;
             _unmanagedType = unmanagedType;
             _shape = shape;
+            _cleanupElementsAndSpace = cleanupElementsAndSpace;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            if (!_cleanupElementsAndSpace)
+            {
+                yield break;
+            }
+
             StatementSyntax elementCleanup = _elementsMarshalling.GenerateElementCleanupStatement(info, context);
 
             if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))

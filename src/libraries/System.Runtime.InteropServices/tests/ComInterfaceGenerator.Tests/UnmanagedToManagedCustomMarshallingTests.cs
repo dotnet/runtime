@@ -23,8 +23,7 @@ namespace ComInterfaceGenerator.Tests
             [UnmanagedObjectUnwrapper<VTableGCHandlePair<INativeObject>>]
             internal partial interface INativeObject : IUnmanagedInterfaceType
             {
-
-                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 2);
+                private static void** s_vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(INativeObject), sizeof(void*) * 5);
                 static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation
                 {
                     get
@@ -102,7 +101,7 @@ namespace ComInterfaceGenerator.Tests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_and_set_native_object_data")]
             public static partial int SumAndSetNativeObjectData(void* obj, [MarshalUsing(CountElementName = nameof(numValues))] int[] arr, int numValues, out int oldValue);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_and_set_native_object_data_wth_ref")]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_and_set_native_object_data_with_ref")]
             public static partial int SumAndSetNativeObjectData(void* obj, [MarshalUsing(CountElementName = nameof(numValues))] ref int[] arr, int numValues, out int oldValue);
         }
     }
@@ -201,14 +200,13 @@ namespace ComInterfaceGenerator.Tests
             public void ExchangeData(ref IntWrapper x) => x = Interlocked.Exchange(ref _data, x);
             public IntWrapper GetData() => _data;
             public void SetData(IntWrapper x) => _data = x;
-            public void SumAndSetData(ref IntWrapper[] values, int numValues, out IntWrapper oldValue)
+            public void SumAndSetData(ref IntWrapper[] values, int numValues, out IntWrapper oldValue) => SumAndSetData(values, numValues, out oldValue);
+            public void SumAndSetData(IntWrapper[] values, int numValues, out IntWrapper oldValue)
             {
                 int value = values.Sum(value => value.i);
                 oldValue = _data;
                 _data = new() { i = value };
             }
-
-            public void SumAndSetData([MarshalUsing(CountElementName = "numValues"), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1)] IntWrapper[] values123, int numValues, [MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] out IntWrapper oldValue) => SumAndSetData(values123, numValues, out oldValue);
         }
 
 

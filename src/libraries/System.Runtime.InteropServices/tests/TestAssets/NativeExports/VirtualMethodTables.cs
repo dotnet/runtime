@@ -190,7 +190,7 @@ namespace NativeExports
 
         [UnmanagedCallersOnly(EntryPoint = "sum_and_set_native_object_data_with_ref")]
         [DNNE.C99DeclCode("struct INativeObject;")]
-        public static void SumAndSetData([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int** values, int numValues, int* oldValue)
+        public static void SumAndSetDataWithRef([DNNE.C99Type("struct INativeObject*")] NativeObjectInterface* obj, int** values, int numValues, int* oldValue)
         {
             obj->VTable->sumAndSetDataWithRef(obj, values, numValues, oldValue);
         }
