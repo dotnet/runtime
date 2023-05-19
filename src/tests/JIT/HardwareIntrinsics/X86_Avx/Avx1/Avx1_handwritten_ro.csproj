@@ -16,12 +16,9 @@
     <Compile Include="Compare.cs" />
     <Compile Include="ConvertToVector128Int32.Double.cs" />
     <Compile Include="ConvertToVector128Single.Double.cs" />
-    <Compile Include="ConvertToVector256Int32.Single.cs" />
-    <Compile Include="ConvertToVector256Single.Int32.cs" />
+    <Compile Include="ConvertToVector128Int32WithTruncation.Double.cs" />
     <Compile Include="ConvertToVector256Double.Single.cs" />
     <Compile Include="ConvertToVector256Double.Int32.cs" />
-    <Compile Include="ConvertToVector128Int32WithTruncation.Double.cs" />
-    <Compile Include="ConvertToVector256Int32WithTruncation.Single.cs" />
     <Compile Include="DotProduct.cs" />
     <Compile Include="HorizontalAdd.cs" />
     <Compile Include="HorizontalSubtract.cs" />

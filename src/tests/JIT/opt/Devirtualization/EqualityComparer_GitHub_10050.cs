@@ -3,8 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
-class EqualityComparer_GitHub_10050
+public class EqualityComparer_GitHub_10050
 {
     // Would like to see just one call to Default per call to Hoist
     public static int Hoist()
@@ -111,7 +112,8 @@ class EqualityComparer_GitHub_10050
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int h = Hoist();
         int s = Sink(33, 33);

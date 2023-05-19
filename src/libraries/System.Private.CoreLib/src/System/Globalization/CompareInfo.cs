@@ -170,6 +170,13 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                JsInit(culture.InteropName!);
+                return;
+            }
+#endif
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
@@ -612,7 +619,12 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
+                }
+#endif
                 int tempMatchLength = 0;
                 matched = StartsWithCore(source, prefix, options, &tempMatchLength);
                 matchLength = tempMatchLength;
@@ -624,6 +636,10 @@ namespace System.Globalization
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsStartsWith(source, prefix, options) :
+#endif
                 IcuStartsWith(source, prefix, options, matchLengthPtr);
 
         public bool IsPrefix(string source, string prefix)
@@ -750,7 +766,12 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
+                }
+#endif
                 int tempMatchLength = 0;
                 matched = EndsWithCore(source, suffix, options, &tempMatchLength);
                 matchLength = tempMatchLength;
@@ -767,6 +788,10 @@ namespace System.Globalization
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsEndsWith(source, suffix, options) :
+#endif
                 IcuEndsWith(source, suffix, options, matchLengthPtr);
 
         /// <summary>
@@ -1100,6 +1125,10 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>
@@ -1606,6 +1635,12 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                }
+#endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }

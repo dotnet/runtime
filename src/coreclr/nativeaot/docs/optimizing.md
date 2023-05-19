@@ -37,12 +37,7 @@ Since `PublishTrimmed` is implied to be true with Native AOT, some framework fea
 * `<IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>`: this disables generation of stack trace metadata that provides textual names in stack traces. This is for example the text string one gets by calling `Exception.ToString()` on a caught exception. With this option disabled, stack traces will still be generated, but will be based on reflection metadata alone (they might be less complete).
 
 ## Options related to code generation
-* `<IlcOptimizationPreference>Speed</IlcOptimizationPreference>`: when generating optimized code, favor code execution speed.
-* `<IlcOptimizationPreference>Size</IlcOptimizationPreference>`: when generating optimized code, favor smaller code size.
+* `<OptimizationPreference>Speed</OptimizationPreference>`: when generating optimized code, favor code execution speed.
+* `<OptimizationPreference>Size</OptimizationPreference>`: when generating optimized code, favor smaller code size.
 * `<IlcInstructionSet>`: By default, the compiler targets the minimum instruction set supported by the target OS and architecture. This option allows targeting newer instruction sets for better performance. The native binary will require the instruction sets to be supported by the hardware in order to run. For example, `<IlcInstructionSet>avx2,bmi2,fma,pclmul,popcnt,aes</IlcInstructionSet>` will produce binary that takes advantage of instruction sets that are typically present on current Intel and AMD processors. Run `ilc --help` for the full list of available instruction sets. `ilc` can be executed from the NativeAOT package in your local nuget cache e.g. `%USERPROFILE%\.nuget\packages\runtime.win-x64.microsoft.dotnet.ilcompiler\8.0.0-...\tools\ilc.exe` on Windows or `~/.nuget/packages/runtime.linux-arm64.microsoft.dotnet.ilcompiler/8.0.0-.../tools/ilc` on Linux.
 
-## Special considerations for Linux/macOS
-
-Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To strip symbols into a separate file (`*.dbg` on Linux and `*.dwarf` on macOS), set `<StripSymbols>true</StripSymbols>`.
-
-No action is needed on Windows since the platform convention is to generate debug information into a separate file (`*.pdb`).

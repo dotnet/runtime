@@ -6176,7 +6176,7 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 	} else {
 		g_assert (!only_unmanaged_callers_only);
 	}
-	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
+	return mono_get_runtime_callbacks ()->get_ftnptr (method, FALSE, error);
 }
 
 MonoBoolean

@@ -51,6 +51,8 @@ namespace Microsoft.Interop
 
         public const string System_Exception = "System.Exception";
 
+        public const string System_GC = "System.GC";
+
         public const string System_Type = "System.Type";
 
         public const string System_Int16 = "System.Int16";
@@ -136,5 +138,9 @@ namespace Microsoft.Interop
         public const string GeneratedComClassAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComClassAttribute";
         public const string ComExposedClassAttribute = "System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute";
         public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
+
+        public const string UnreachableException = "System.Diagnostics.UnreachableException";
+
+        public const string System_Runtime_InteropServices_Marshalling_SafeHandleMarshaller_Metadata = "System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller`1";
     }
 }

@@ -115,6 +115,11 @@ public class TestSummary
                         + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
     }
 
+    public void WriteFooterToTempLog(StreamWriter tempLogSw)
+    {
+        tempLogSw.WriteLine("</assembly>");
+    }
+
     public void ReportPassedTest(string name,
                                  string containingTypeName,
                                  string methodName,

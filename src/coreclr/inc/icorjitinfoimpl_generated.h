@@ -339,10 +339,6 @@ bool canCast(
           CORINFO_CLASS_HANDLE child,
           CORINFO_CLASS_HANDLE parent) override;
 
-bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2) override;
-
 TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass) override;
@@ -415,10 +411,12 @@ void getFieldInfo(
           CORINFO_FIELD_INFO* pResult) override;
 
 uint32_t getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field) override;
+          CORINFO_FIELD_HANDLE field,
+          bool isGCtype) override;
 
 void getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
+          bool isGCType) override;
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
@@ -479,22 +477,6 @@ CORINFO_CLASS_HANDLE getArgClass(
 
 CorInfoHFAElemType getHFAType(
           CORINFO_CLASS_HANDLE hClass) override;
-
-JITINTERFACE_HRESULT GetErrorHRESULT(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-uint32_t GetErrorMessage(
-          char16_t* buffer,
-          uint32_t bufferLength) override;
-
-int FilterException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
-void ThrowExceptionForJitResult(
-          JITINTERFACE_HRESULT result) override;
-
-void ThrowExceptionForHelper(
-          const CORINFO_HELPER_DESC* throwHelper) override;
 
 bool runWithErrorTrap(
           ICorJitInfo::errorTrapFunction function,
@@ -636,12 +618,18 @@ unsigned getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection) override;
 
-bool getReadonlyStaticFieldValue(
+bool getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects) override;
+
+bool getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,

@@ -13,6 +13,8 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, object?>
         where TCollection : IList
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in object? value, ref ReadStack state)
         {
             TCollection collection = (TCollection)state.Current.ReturnValue!;

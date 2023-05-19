@@ -370,6 +370,8 @@ namespace System.Runtime.InteropServices.Marshalling
     public partial class GeneratedComInterfaceAttribute : System.Attribute
     {
         public GeneratedComInterfaceAttribute() { }
+        public StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass
@@ -623,6 +625,7 @@ namespace System.Runtime.InteropServices
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
+        public static void SetCount<T>(System.Collections.Generic.List<T> list, int count) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
     public sealed partial class ComDefaultInterfaceAttribute : System.Attribute

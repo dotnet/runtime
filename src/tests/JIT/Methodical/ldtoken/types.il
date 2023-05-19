@@ -6,7 +6,7 @@
 .assembly extern System.Console { auto }
 .assembly extern mscorlib { auto }
 
-.assembly types { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_types_ldtoken_il
 {

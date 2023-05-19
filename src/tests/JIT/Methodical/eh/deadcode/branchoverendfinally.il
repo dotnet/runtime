@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly 'branchoverendfinally' {}
+.assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
 
 .namespace Test_branchoverendfinally_il

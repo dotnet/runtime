@@ -152,7 +152,12 @@ namespace System.Text.Json.Serialization
         }
 
         // Provide a default implementation for value converters.
-        internal virtual bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
+        internal virtual bool OnTryWrite(Utf8JsonWriter writer,
+#nullable disable // T may or may not be nullable depending on the derived converter's HandleNull override.
+            T value,
+#nullable enable
+            JsonSerializerOptions options,
+            ref WriteStack state)
         {
             Write(writer, value, options);
             return true;
@@ -178,7 +183,7 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value, out bool isPopulatedValue)
         {
             // For perf and converter simplicity, handle null here instead of forwarding to the converter.
             if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead && !state.IsContinuation)
@@ -189,6 +194,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 value = default;
+                isPopulatedValue = false;
                 return true;
             }
 
@@ -233,6 +239,7 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
+                isPopulatedValue = false;
                 return true;
             }
 
@@ -248,11 +255,15 @@ namespace System.Text.Json.Serialization
             {
                 // Special case object converters since they don't
                 // require the expensive ReadStack.Push()/Pop() operations.
-                Debug.Assert(this is ObjectConverter);
+                Debug.Assert(this is ObjectConverter or ObjectConverterSlim);
                 success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 Debug.Assert(success);
+                isPopulatedValue = false;
                 return true;
             }
+
+            JsonPropertyInfo? propertyInfo = state.Current.JsonPropertyInfo;
+            object? parentObj = state.Current.ReturnValue;
 
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity
@@ -272,6 +283,12 @@ namespace System.Text.Json.Serialization
                 state.Current.OriginalDepth = reader.CurrentDepth;
             }
 #endif
+
+            if (parentObj != null && propertyInfo != null && !propertyInfo.IsForTypeInfo)
+            {
+                state.Current.HasParentObject = true;
+            }
+
             success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 #if DEBUG
             if (success)
@@ -293,6 +310,7 @@ namespace System.Text.Json.Serialization
             }
 #endif
 
+            isPopulatedValue = state.Current.IsPopulating;
             state.Pop(success);
 #if DEBUG
             Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));
@@ -309,7 +327,7 @@ namespace System.Text.Json.Serialization
 
         internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out object? value)
         {
-            bool success = TryRead(ref reader, typeToConvert, options, ref state, out T? typedValue);
+            bool success = TryRead(ref reader, typeToConvert, options, ref state, out T? typedValue, out _);
             value = typedValue;
             return success;
         }
@@ -343,9 +361,9 @@ namespace System.Text.Json.Serialization
         /// The 'in' modifier in 'TryWrite(in T Value)' causes boxing for Nullable{T}, so this helper avoids that.
         /// TODO: Remove this work-around once https://github.com/dotnet/runtime/issues/50915 is addressed.
         /// </summary>
-        private static bool IsNull(T value) => value is null;
+        private static bool IsNull(T? value) => value is null;
 
-        internal bool TryWrite(Utf8JsonWriter writer, in T value, JsonSerializerOptions options, ref WriteStack state)
+        internal bool TryWrite(Utf8JsonWriter writer, in T? value, JsonSerializerOptions options, ref WriteStack state)
         {
             if (writer.CurrentDepth >= options.EffectiveMaxDepth)
             {
@@ -591,7 +609,7 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(
             Utf8JsonWriter writer,
-#nullable disable // T may or may not be nullable depending on the derived type's overload.
+#nullable disable // T may or may not be nullable depending on the derived converter's HandleNull override.
             T value,
 #nullable restore
             JsonSerializerOptions options);
@@ -637,7 +655,7 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert. Note that the value of <seealso cref="HandleNull"/> determines if the converter handles <see langword="null" /> values.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
-        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public virtual void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
         {
             // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
             JsonConverter<T>? fallbackConverter = GetFallbackConverterForPropertyNameSerialization(options);
@@ -649,8 +667,13 @@ namespace System.Text.Json.Serialization
             fallbackConverter.WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }
 
-        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
+        internal virtual void WriteAsPropertyNameCore(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             if (isWritingExtensionDataProperty)
             {
                 // Extension data is meant as mechanism to gather unused JSON properties;
@@ -694,7 +717,7 @@ namespace System.Text.Json.Serialization
         internal virtual T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => throw new InvalidOperationException();
 
-        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+        internal virtual void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T? value, JsonNumberHandling handling)
             => throw new InvalidOperationException();
     }
 }

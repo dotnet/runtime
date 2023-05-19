@@ -31,7 +31,8 @@ usage()
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
-  echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos or solaris."
+  echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
+  echo "                                  linux-musl, linux-bionic or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -44,6 +45,7 @@ usage()
   echo "  --subset (-s)                   Build a subset, print available subsets with -subset help."
   echo "                                 '--subset' can be omitted if the subset is given as the first argument."
   echo "                                  [Default: Builds the entire repo.]"
+  echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
   echo ""
@@ -134,7 +136,7 @@ initDistroRid()
 
     local passedRootfsDir=""
     local targetOs="$1"
-    local buildArch="$2"
+    local targetArch="$2"
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
@@ -142,7 +144,7 @@ initDistroRid()
     if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
-    initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
+    initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
 }
 
 showSubsetHelp()
@@ -286,9 +288,19 @@ while [[ $# > 0 ]]; do
           os="illumos" ;;
         solaris)
           os="solaris" ;;
+        linux-bionic)
+          os="linux"
+          __PortableTargetOS=linux-bionic
+          ;;
+        linux-musl)
+          os="linux"
+          __PortableTargetOS=linux-musl
+          ;;
+        haiku)
+          os="haiku" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos and solaris."
+          echo "Try 'build.sh --help' for values supported by '--os'."
           exit 1
           ;;
       esac
@@ -358,6 +370,11 @@ while [[ $# > 0 ]]; do
       esac
       arguments="$arguments /p:RuntimeFlavor=$val"
       shift 2
+      ;;
+
+     -usemonoruntime)
+      arguments="$arguments /p:PrimaryRuntimeFlavor=Mono"
+      shift 1
       ;;
 
      -librariesconfiguration|-lc)
@@ -438,7 +455,7 @@ while [[ $# > 0 ]]; do
         echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
         exit 1
       fi
-      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      arguments="$arguments /p:OutputRID=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       shift 2
       ;;
 
@@ -516,7 +533,7 @@ if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError 0"
 fi
 
-initDistroRid $os $arch $crossBuild $portableBuild
+initDistroRid "$os" "$arch" "$crossBuild" "$portableBuild"
 
 # Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
 # The later changes are ignored when using the cache.

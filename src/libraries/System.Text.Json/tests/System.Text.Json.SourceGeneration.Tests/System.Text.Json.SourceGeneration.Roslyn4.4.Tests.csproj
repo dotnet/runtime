@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RoslynSupportsRequiredAttributes>true</RoslynSupportsRequiredAttributes>
+    <TestedRoslynVersion>4.4</TestedRoslynVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">

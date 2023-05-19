@@ -7,8 +7,7 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
     <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
-    <!-- suppress warning when referencing architecture specific NativeExports.csproj -->
-    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    <ReferencesNativeExports>true</ReferencesNativeExports>
   </PropertyGroup>
 
   <ItemGroup>

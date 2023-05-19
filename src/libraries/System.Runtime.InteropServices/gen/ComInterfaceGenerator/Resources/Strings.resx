@@ -220,7 +220,7 @@
     <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
   </data>
   <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
-    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
   </data>
   <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
     <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
@@ -236,5 +236,20 @@
   </data>
   <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
     <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</value>
+  </data>
+  <data name="AnalysisFailedDescription" xml:space="preserve">
+    <value>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</value>
+  </data>
+  <data name="AnalysisFailedInterfaceMessage" xml:space="preserve">
+    <value>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</value>
+  </data>
+  <data name="AnalysisFailedMethodMessage" xml:space="preserve">
+    <value>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</value>
+  </data>
+  <data name="AnalysisFailedTitle" xml:space="preserve">
+    <value>Analysis for generation has failed.</value>
   </data>
 </root>

@@ -776,28 +776,28 @@ namespace System.SpanTests
         private static int IndexOf(Span<char> span, char value)
         {
             int index = span.IndexOf(value);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc char[] { value })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc char[] { value })));
             return index;
         }
 
         private static int IndexOfAny(Span<char> span, char value0, char value1)
         {
             int index = span.IndexOfAny(value0, value1);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc char[] { value0, value1 })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc char[] { value0, value1 })));
             return index;
         }
 
         private static int IndexOfAny(Span<char> span, char value0, char value1, char value2)
         {
             int index = span.IndexOfAny(value0, value1, value2);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(stackalloc char[] { value0, value1, value2 })));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(stackalloc char[] { value0, value1, value2 })));
             return index;
         }
 
         private static int IndexOfAny(Span<char> span, ReadOnlySpan<char> values)
         {
             int index = span.IndexOfAny(values);
-            Assert.Equal(index, span.IndexOfAny(IndexOfAnyValues.Create(values)));
+            Assert.Equal(index, span.IndexOfAny(SearchValues.Create(values)));
             return index;
         }
     }
