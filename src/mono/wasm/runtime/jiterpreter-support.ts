@@ -1522,6 +1522,10 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (count >= maxMemsetSize)
         return false;
 
+    // FIXME
+    if (value !== 0)
+        return false;
+
     const destLocal = destOnStack ? "math_lhs32" : "pLocals";
     if (destOnStack)
         builder.local("math_lhs32", WasmOpcode.set_local);
