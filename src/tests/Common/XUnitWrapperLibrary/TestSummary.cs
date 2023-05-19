@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 namespace XUnitWrapperLibrary;
 
 public class TestSummary
@@ -43,7 +44,7 @@ public class TestSummary
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{Output}]]></output>"
+                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
@@ -112,6 +113,11 @@ public class TestSummary
                         + $"    name=\"{assemblyName}\"\n"
                         + $"    test-framework=\"XUnitWrapperGenerator-generated-runner\"\n"
                         + $"    run-date-time=\"{_testRunStart.ToString("yyyy-MM-dd HH:mm:ss")}\">");
+    }
+
+    public void WriteFooterToTempLog(StreamWriter tempLogSw)
+    {
+        tempLogSw.WriteLine("</assembly>");
     }
 
     public void ReportPassedTest(string name,

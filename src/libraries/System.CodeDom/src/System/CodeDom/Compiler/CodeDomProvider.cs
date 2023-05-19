@@ -215,10 +215,6 @@ namespace System.CodeDom.Compiler
         private sealed class ConfigurationErrorsException : SystemException
         {
             public ConfigurationErrorsException(string message) : base(message) { }
-            public ConfigurationErrorsException(SerializationInfo info, StreamingContext context) : base(info, context)
-            {
-                throw new PlatformNotSupportedException();
-            }
         }
     }
 }

@@ -574,6 +574,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.SignatureCallingConvention</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.SingleCollection</Target>
   </Suppression>
   <Suppression>
@@ -802,10 +806,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Diagnostics.Tracing.PropertyValue</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.MDArray</Target>
   </Suppression>
   <Suppression>
@@ -870,10 +870,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Resources.RuntimeResourceSet</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute</Target>
   </Suppression>
   <Suppression>
@@ -883,10 +879,6 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Runtime.CompilerServices.ForceLazyDictionaryAttribute</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Runtime.CompilerServices.ReflectionBlockedAttribute</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>

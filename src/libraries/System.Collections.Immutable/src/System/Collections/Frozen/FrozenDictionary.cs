@@ -6,8 +6,8 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -200,17 +200,28 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    if (default(TKey) is IComparable<TKey> &&
-                        source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
+                    if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                     {
-                        return (FrozenDictionary<TKey, TValue>)(object)new SmallComparableValueTypeFrozenDictionary<TKey, TValue>(source);
+                        // If the key is a something we know we can efficiently compare, use a specialized implementation
+                        // that will enable quickly ruling out values outside of the range of keys stored.
+                        if (Constants.IsKnownComparable<TKey>())
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeComparableFrozenDictionary<TKey, TValue>(source);
+                        }
+
+                        // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
+                        return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                     }
 
+                    // Use a hash-based implementation.
+
+                    // For Int32 keys, we can reuse the key storage as the hash storage, saving on space and extra indirection.
                     if (typeof(TKey) == typeof(int))
                     {
                         return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
                     }
 
+                    // Fallback to an implementation usable with any value type and the default comparer.
                     return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                 }
             }
@@ -328,7 +339,7 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the keys in the dictionary is unspecified, but it is the same order as the associated values returned by the <see cref="Values"/> property.
         /// </remarks>
-        public ImmutableArray<TKey> Keys => ImmutableArrayFactory.Create(KeysCore);
+        public ImmutableArray<TKey> Keys => ImmutableCollectionsMarshal.AsImmutableArray(KeysCore);
 
         /// <inheritdoc cref="Keys" />
         private protected abstract TKey[] KeysCore { get; }
@@ -350,7 +361,7 @@ namespace System.Collections.Frozen
         /// <remarks>
         /// The order of the values in the dictionary is unspecified, but it is the same order as the associated keys returned by the <see cref="Keys"/> property.
         /// </remarks>
-        public ImmutableArray<TValue> Values => ImmutableArrayFactory.Create(ValuesCore);
+        public ImmutableArray<TValue> Values => ImmutableCollectionsMarshal.AsImmutableArray(ValuesCore);
 
         /// <inheritdoc cref="Values" />
         private protected abstract TValue[] ValuesCore { get; }

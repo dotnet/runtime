@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>X86_Pause_ro</AssemblyName>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- https://github.com/dotnet/runtime/issues/73454;https://github.com/dotnet/runtime/pull/61707#issuecomment-973122341 -->

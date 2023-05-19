@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
 using System.Diagnostics;
+using Xunit;
 
 namespace Runtime_49489
 {
@@ -28,7 +29,8 @@ namespace Runtime_49489
 
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Caller();
         }

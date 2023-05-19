@@ -2,6 +2,26 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="ru" original="../Strings.resx">
     <body>
+      <trans-unit id="AnalysisFailedDescription">
+        <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
+        <target state="translated">Произошел сбой анализа, необходимого для создания кода для этого интерфейса или метода, из-за непредвиденного шаблона кода. Если вы используйте новый или нестандартный синтаксис, попробуйте использовать другой синтаксис.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedInterfaceMessage">
+        <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
+        <target state="translated">Сбой анализа интерфейса "{0}". ComInterfaceGenerator не будет создавать код для этого интерфейса.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedMethodMessage">
+        <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
+        <target state="translated">Сбой анализа метода "{0}". ComInterfaceGenerator не будет создавать код для этого метода.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedTitle">
+        <source>Analysis for generation has failed.</source>
+        <target state="translated">Сбой анализа для создания.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
         <target state="translated">P/Invoke с созданием источника будут игнорировать все неподдерживаемые конфигурации.</target>
@@ -93,8 +113,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">Интерфейсы с атрибутом GeneratedComInterfaceAttribute должны быть частичными и должны указывать GUID с помощью System.Runtime.InteropServices.GuidAttribute.</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">Интерфейсы с атрибутом GeneratedComInterfaceAttribute должны быть частичными, не универсальными и должны указывать GUID с помощью System.Runtime.InteropServices.GuidAttribute.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="translated">Интерфейс "{0}" использует атрибут GeneratedComInterfaceAttribute, но является универсальным.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -145,6 +170,21 @@
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
         <target state="translated">Метод объявлен в частичном объявлении, отличном от атрибута GeneratedComInterface.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">Интерфейс с атрибутом GeneratedComInterfaceAttribute может быть производным не более чем от одного другого интерфейса с атрибутом "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">Интерфейс "{0}" является производным от двух или более интерфейсов, атрибутированных с помощью "GeneratedComInterfaceAttribute".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">Указанный интерфейс является производным от двух или более интерфейсов с атрибутом "GeneratedComInterfaceAttribute".</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

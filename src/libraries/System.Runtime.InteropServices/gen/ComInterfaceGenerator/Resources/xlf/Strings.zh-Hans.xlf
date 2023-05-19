@@ -2,6 +2,26 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="zh-Hans" original="../Strings.resx">
     <body>
+      <trans-unit id="AnalysisFailedDescription">
+        <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
+        <target state="translated">由于意外的代码模式，为此接口或方法生成代码所需的分析失败。如果你使用的是新语法或非常规语法，请考虑使用其他语法。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedInterfaceMessage">
+        <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
+        <target state="translated">接口“{0}”的分析失败。ComInterfaceGenerator 将不会为此接口生成代码。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedMethodMessage">
+        <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
+        <target state="translated">方法“{0}”的分析失败。ComInterfaceGenerator 将不会为此方法生成代码。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AnalysisFailedTitle">
+        <source>Analysis for generation has failed.</source>
+        <target state="translated">生成分析失败。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
         <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
         <target state="translated">源生成的 P/Invoke 将忽略任何不受支持的配置。</target>
@@ -93,8 +113,13 @@
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
-        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="translated">通过 “GeneratedComInterfaceAttribute” 特性化的接口必须是部分的，并且必须使用 “System.Runtime.InteropServices.GuidAttribute” 指定 GUID。</target>
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">通过 "GeneratedComInterfaceAttribute" 特性化的接口必须是部分的、非泛型的，并且必须使用 "System.Runtime.InteropServices.GuidAttribute" 指定 GUID。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
+        <target state="translated">“{0}”接口通过 "GeneratedComInterfaceAttribute" 特性化，但为泛型接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
@@ -145,6 +170,21 @@
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
         <target state="translated">方法是在不同于 “GeneratedComInterface” 属性的部分声明中声明的。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="translated">“GeneratedComInterfaceAttribute”特性化接口最多只能从另一个“GeneratedComInterfaceAttribute”特性化接口派生。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="translated">接口“{0}”派生自使用 “GeneratedComInterfaceAttribute”特性化的两个或更多接口。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="translated">指定的接口派生自两个或更多“GeneratedComInterfaceAttribute”特性化接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

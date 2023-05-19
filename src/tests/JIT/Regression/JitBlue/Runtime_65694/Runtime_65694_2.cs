@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_65694_2
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var a = new StructWithObj { Obj = new object() };
         var c = new StructWithObj { Obj = new object() };

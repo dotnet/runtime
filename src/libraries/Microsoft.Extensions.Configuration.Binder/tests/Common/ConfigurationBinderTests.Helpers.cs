@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Test;
 
 namespace Microsoft.Extensions
 #if BUILDING_SOURCE_GENERATOR_TESTS
@@ -11,14 +12,23 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public static class TestHelpers
+    internal static class TestHelpers
     {
-        public static bool NotSourceGenMode
+        public const bool NotSourceGenMode
 #if BUILDING_SOURCE_GENERATOR_TESTS
             = false;
 #else
             = true;
-#endif            
+#endif
+
+        public static IConfiguration GetConfigurationFromJsonString(string json)
+        {
+            var builder = new ConfigurationBuilder();
+            var configuration = builder
+                .AddJsonStream(TestStreamHelpers.StringToStream(json))
+                .Build();
+            return configuration;
+        }
     }
 
     #region // Shared test classes

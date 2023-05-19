@@ -35,7 +35,7 @@ namespace System
 
             return longestSequenceLength > 1 ?
                 (longestSequenceStart, longestSequenceStart + longestSequenceLength) :
-                (-1, -1);
+                (-1, 0);
         }
 
         // Returns true if the IPv6 address should be formatted with an embedded IPv4 address:

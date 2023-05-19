@@ -303,8 +303,6 @@ enum {
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
 
-#define MONO_CLASS_IS_SIMD(cfg, klass) (((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass) && (COMPILE_LLVM (cfg) || mono_type_size (m_class_get_byval_arg (klass), NULL) == 16))
-
 #else
 
 #define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
@@ -313,8 +311,6 @@ enum {
 /*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
 #define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_RMOVE))
 #define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
-
-#define MONO_CLASS_IS_SIMD(cfg, klass) (0)
 
 #endif
 
@@ -1246,6 +1242,7 @@ typedef struct {
 	gboolean         have_op_tailcall_membase : 1;
 	gboolean         have_op_tailcall_reg : 1;
 	gboolean         have_volatile_non_param_register : 1;
+	guint            have_init_mrgctx : 1;
 	guint            gshared_supported : 1;
 	guint            ilp32 : 1;
 	guint            need_got_var : 1;
@@ -1254,7 +1251,6 @@ typedef struct {
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
 	guint            optimized_div : 1;
-	guint            force_float32 : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1629,6 +1625,7 @@ typedef struct {
 
 	GSList *signatures;
 	GSList *interp_in_signatures;
+	GSList *pinvoke_calli_signatures;
 
 	/* GC Maps */
 
@@ -2967,6 +2964,26 @@ mini_safepoints_enabled (void)
 #else
 	return TRUE;
 #endif
+}
+
+static inline gboolean
+mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
+{
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+	if (!(((cfg)->opt & MONO_OPT_SIMD) && m_class_is_simd_type (klass)))
+		return FALSE;
+	if (COMPILE_LLVM (cfg))
+		return TRUE;
+	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
+#ifdef TARGET_ARM64
+	if (size == 8 || size == 16)
+		return TRUE;
+#else
+	if (size == 16)
+		return TRUE;
+#endif
+#endif
+	return FALSE;
 }
 
 gpointer

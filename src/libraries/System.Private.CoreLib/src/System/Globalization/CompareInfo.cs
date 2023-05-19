@@ -170,6 +170,13 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
+            {
+                JsInit(culture.InteropName!);
+                return;
+            }
+#endif
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
@@ -487,6 +494,10 @@ namespace System.Globalization
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsCompareString(string1, string2, options) :
+#endif
                 IcuCompareString(string1, string2, options);
 
         /// <summary>
@@ -608,7 +619,12 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
+                }
+#endif
                 int tempMatchLength = 0;
                 matched = StartsWithCore(source, prefix, options, &tempMatchLength);
                 matchLength = tempMatchLength;
@@ -620,6 +636,10 @@ namespace System.Globalization
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsStartsWith(source, prefix, options) :
+#endif
                 IcuStartsWith(source, prefix, options, matchLengthPtr);
 
         public bool IsPrefix(string source, string prefix)
@@ -746,7 +766,12 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
+                }
+#endif
                 int tempMatchLength = 0;
                 matched = EndsWithCore(source, suffix, options, &tempMatchLength);
                 matchLength = tempMatchLength;
@@ -763,6 +788,10 @@ namespace System.Globalization
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsEndsWith(source, suffix, options) :
+#endif
                 IcuEndsWith(source, suffix, options, matchLengthPtr);
 
         /// <summary>
@@ -1096,6 +1125,10 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>
@@ -1421,6 +1454,10 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
                 IcuCreateSortKey(source, options);
 
         /// <summary>
@@ -1458,9 +1495,13 @@ namespace System.Globalization
         }
 
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
-           GlobalizationMode.UseNls ?
-               NlsGetSortKey(source, destination, options) :
-               IcuGetSortKey(source, destination, options);
+            GlobalizationMode.UseNls ?
+                NlsGetSortKey(source, destination, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
+                IcuGetSortKey(source, destination, options);
 
         /// <summary>
         /// Returns the length (in bytes) of the sort key that would be produced from the specified input.
@@ -1491,8 +1532,12 @@ namespace System.Globalization
         }
 
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
-          GlobalizationMode.UseNls ?
+            GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
+#endif
               IcuGetSortKeyLength(source, options);
 
         public override bool Equals([NotNullWhen(true)] object? value)
@@ -1566,6 +1611,10 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
+#if TARGET_BROWSER
+            GlobalizationMode.Hybrid ?
+                throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
+#endif
                 IcuGetHashCodeOfString(source, options);
 
         public override string ToString() => "CompareInfo - " + Name;
@@ -1586,6 +1635,12 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                }
+#endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }
@@ -1595,5 +1650,9 @@ namespace System.Globalization
         }
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
+
+#if TARGET_BROWSER
+        private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
+#endif
     }
 }

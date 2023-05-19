@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>10</NumberOfStripesToUseInStress>
+  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="commitstackonlyasneeded/**/*.??proj" />
     <MergedWrapperProjectReference Include="coverage/**/*.??proj" />

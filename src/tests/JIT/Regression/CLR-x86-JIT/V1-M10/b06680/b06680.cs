@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -12,7 +13,8 @@ namespace DefaultNamespace
     {
         private static int n = 0;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             n = 1;
             Console.WriteLine("n = " + n);

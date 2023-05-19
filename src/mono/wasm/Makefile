@@ -8,6 +8,8 @@ MSBUILD_ARGS+=/p:MonoVerboseBuild=true
 MSBUILD_ARGS+=-bl
 endif
 
+MSBUILD_ARGS+=/p:KeepNativeSymbols=true
+
 DOTNET=$(TOP)/dotnet.sh
 JSVU=$(HOME)/.jsvu
 CHROMEDRIVER?=$(HOME)/.chromedriver

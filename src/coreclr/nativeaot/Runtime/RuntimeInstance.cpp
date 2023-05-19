@@ -275,6 +275,25 @@ RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList()
     return m_TypeManagerList;
 }
 
+TypeManager* RuntimeInstance::GetSingleTypeManager()
+{
+    auto head = m_TypeManagerList.GetHead();
+    if (head != NULL && head->m_pNext == NULL)
+    {
+        return head->m_pTypeManager;
+    }
+
+    return NULL;
+}
+
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetSingleTypeManager, ())
+{
+    TypeManager* typeManager = GetRuntimeInstance()->GetSingleTypeManager();
+    ASSERT(typeManager != NULL);
+
+    return TypeManagerHandle::Create(typeManager);
+}
+
 // static
 bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 {

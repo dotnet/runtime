@@ -324,6 +324,9 @@ public:
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)
     UINT GetSize();
 
+    // If the field is a valuetype, then either pMTOfValueTypeField must not be NULL or LookupFieldTypeHandle() must not return null
+    UINT GetSize(MethodTable *pMTOfValueTypeField);
+
     // These routines encapsulate the operation of getting and setting
     // fields.
     void    GetInstanceField(OBJECTREF o, VOID * pOutVal);
@@ -331,7 +334,7 @@ public:
 
     void*   GetInstanceAddress(OBJECTREF o);
 
-        // Get the address of a field within object 'o'
+    // Get the address of a field within object 'o'
     PTR_VOID   GetAddress(PTR_VOID o);
 
     PTR_VOID GetAddressNoThrowNoGC(PTR_VOID o);

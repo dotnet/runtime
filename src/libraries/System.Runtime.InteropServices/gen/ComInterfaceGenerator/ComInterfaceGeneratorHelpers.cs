@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -58,7 +56,7 @@ namespace Microsoft.Interop
 
             generatorFactory = new ManagedHResultExceptionMarshallerFactory(generatorFactory, direction);
 
-            generatorFactory = new NativeToManagedThisMarshallerFactory(generatorFactory);
+            generatorFactory = new ComInterfaceDispatchMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 

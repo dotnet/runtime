@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test cases for issues with optVNConstantPropOnTree/optPrepareTreeForReplacement/gtExtractSideEffList.
 
@@ -11,7 +12,8 @@ public class Program
     static int[,] s_1 = new int[1, 1] { { 42 } };
     static ushort[,] s_2 = new ushort[,] { { 0 } };
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!Test1() || (s_1[0, 0] != 0))
         {

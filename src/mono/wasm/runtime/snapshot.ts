@@ -4,7 +4,8 @@
 import ProductVersion from "consts:productVersion";
 import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_warn } from "./logging";
 
 const memoryPrefix = "https://dotnet.generated.invalid/wasm-memory";
 
@@ -39,7 +40,7 @@ async function openCache(): Promise<Cache | null> {
     } catch {
         // There's no known scenario where we should get an exception here, but considering the
         // Chromium bug above, let's tolerate it and treat as "proceed without caching".
-        console.warn("MONO_WASM: Failed to open cache");
+        mono_log_warn("Failed to open cache");
         return null;
     }
 }
@@ -58,7 +59,7 @@ export async function getMemorySnapshotSize(): Promise<number | undefined> {
         const contentLength = res?.headers.get("content-length");
         return contentLength ? parseInt(contentLength) : undefined;
     } catch (ex) {
-        console.warn("MONO_WASM: Failed find memory snapshot in the cache", ex);
+        mono_log_warn("Failed find memory snapshot in the cache", ex);
         return undefined;
     }
 }
@@ -79,7 +80,7 @@ export async function getMemorySnapshot(): Promise<ArrayBuffer | undefined> {
         }
         return res.arrayBuffer();
     } catch (ex) {
-        console.warn("MONO_WASM: Failed load memory snapshot from the cache", ex);
+        mono_log_warn("Failed load memory snapshot from the cache", ex);
         return undefined;
     }
 }
@@ -110,7 +111,7 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
 
         cleanupMemorySnapshots(cacheKey); // no await
     } catch (ex) {
-        console.warn("MONO_WASM: Failed to store memory snapshot in the cache", ex);
+        mono_log_warn("Failed to store memory snapshot in the cache", ex);
         return;
     }
 }
@@ -159,7 +160,7 @@ async function getCacheKey(): Promise<string | null> {
     // Now we remove assets collection from the hash.
     delete inputs.assets;
     // some things are calculated at runtime, so we need to add them to the hash
-    inputs.preferredIcuAsset = runtimeHelpers.preferredIcuAsset;
+    inputs.preferredIcuAsset = loaderHelpers.preferredIcuAsset;
     // timezone is part of env variables, so it is already in the hash
 
     // some things are not relevant for memory snapshot
@@ -175,6 +176,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
+    delete inputs.assetUniqueQuery;
 
     inputs.GitHash = GitHash;
     inputs.ProductVersion = ProductVersion;

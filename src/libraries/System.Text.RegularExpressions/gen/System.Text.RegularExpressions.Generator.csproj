@@ -27,6 +27,7 @@
 
     <!-- Code included from System.Text.RegularExpressions -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />

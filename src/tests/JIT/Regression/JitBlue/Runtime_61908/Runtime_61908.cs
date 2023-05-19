@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class Runtime_61908
 {
     public static bool s_3;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr6 = M3(s_3);
         if (M3(vr6))

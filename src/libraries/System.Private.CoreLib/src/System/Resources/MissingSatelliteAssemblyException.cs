@@ -14,6 +14,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Resources
@@ -49,6 +50,8 @@ namespace System.Resources
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MissingSatelliteAssemblyException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

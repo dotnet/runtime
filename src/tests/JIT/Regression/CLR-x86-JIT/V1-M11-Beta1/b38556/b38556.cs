@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -16,7 +17,7 @@ namespace Test
         static void AA_Static1(ref uint param2, ref uint param4) { }
         static JJ CC_Static1() { return new JJ(); }
 
-        public static void FF_Static1(ref uint param3)
+        internal static void FF_Static1(ref uint param3)
         {
             CC_Static1();
             AA_Static1(
@@ -30,7 +31,8 @@ namespace Test
                     ref s_au[0],
                     ref s_au)[0]);
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <DefineConstants>$(DefineConstants);NONVOID_RETURN</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="InvalidHook.cs" />
+  </ItemGroup>
+</Project>

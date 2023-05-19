@@ -356,13 +356,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_STOREV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -413,12 +413,12 @@ mono_type_to_load_membase (MonoCompile *cfg, MonoType *type)
 	case MONO_TYPE_R8:
 		return OP_LOADR8_MEMBASE;
 	case MONO_TYPE_VALUETYPE:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_LOADV_MEMBASE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
+		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_LOADX_MEMBASE;
 		if (mono_type_generic_inst_is_valuetype (type))
 			return OP_LOADV_MEMBASE;
@@ -1042,7 +1042,7 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 			size = mini_type_stack_size (t, &ialign);
 			align = ialign;
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -1350,7 +1350,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			if (mono_class_has_failure (mono_class_from_mono_type_internal (t)))
 				mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
-			if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (t)))
+			if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (t)))
 				align = 16;
 		}
 
@@ -3015,8 +3015,8 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
 	backend->optimized_div = 1;
 #endif
-#ifdef MONO_ARCH_FORCE_FLOAT32
-	backend->force_float32 = 1;
+#ifdef MONO_ARCH_HAVE_INIT_MRGCTX
+	backend->have_init_mrgctx = 1;
 #endif
 }
 
@@ -3051,7 +3051,10 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
-	return MONO_RGCTX_ACCESS_THIS;
+	if (mono_opt_experimental_gshared_mrgctx)
+		return MONO_RGCTX_ACCESS_MRGCTX;
+	else
+		return MONO_RGCTX_ACCESS_THIS;
 }
 
 /*
@@ -3133,12 +3136,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	try_llvm = mono_use_llvm || llvm;
 #endif
 
-#ifndef MONO_ARCH_FLOAT32_SUPPORTED
+#ifdef MONO_ARCH_FLOAT32_SUPPORTED
+	/* Force float32 mode on platforms where its supported */
+	opts |= MONO_OPT_FLOAT32;
+#else
 	opts &= ~MONO_OPT_FLOAT32;
+#ifdef ENABLE_LLVM
+	g_assert (!llvm);
 #endif
-	if (current_backend->force_float32)
-		/* Force float32 mode on newer platforms */
-		opts |= MONO_OPT_FLOAT32;
+#endif
 
  restart_compile:
 	if (method_is_gshared) {
@@ -3214,10 +3220,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->explicit_null_checks = FALSE;
 	}
 
-	/*
-	if (!mono_debug_count ())
-		cfg->opt &= ~MONO_OPT_FLOAT32;
-	*/
 	if (!is_simd_supported (cfg))
 		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;
@@ -4453,9 +4455,11 @@ mini_get_cpu_features (MonoCompile* cfg)
 #if !defined(MONO_CROSS_COMPILE)
 	if (!cfg->compile_aot || cfg->use_current_cpu) {
 		// detect current CPU features if we are in JIT mode or AOT with use_current_cpu flag.
-#if defined(ENABLE_LLVM)
-		features = mono_llvm_get_cpu_features (); // llvm has a nice built-in API to detect features
-#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(ENABLE_LLVM) && !(defined(TARGET_ARM64) && defined(TARGET_OSX))
+		// llvm has a nice built-in API to detect features
+		// it is not implemented on some platforms like apple arm64
+		features = mono_llvm_get_cpu_features ();
+#elif defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 		features = mono_arch_get_cpu_features ();
 #endif
 	}
