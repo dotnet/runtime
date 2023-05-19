@@ -307,7 +307,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
-                namespace SharedTypes.ComInterfaces
+                namespace Test
                 {
                     {{string.Join("\n\n", declarations)}}
                 }

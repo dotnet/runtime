@@ -55,6 +55,7 @@ namespace Microsoft.Interop
             Debug.Assert(found);
             return GetDataFromAttribute(attr);
         }
+
         public static GeneratedComInterfaceCompilationData GetDataFromAttribute(AttributeData attr)
         {
             Debug.Assert(attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute);
@@ -63,7 +64,5 @@ namespace Microsoft.Interop
             generatedComInterfaceAttributeData = generatedComInterfaceAttributeData.WithValuesFromNamedArguments(args);
             return generatedComInterfaceAttributeData;
         }
-
     }
-
 }

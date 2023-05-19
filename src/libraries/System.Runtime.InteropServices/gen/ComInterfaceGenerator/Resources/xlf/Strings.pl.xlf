@@ -23,8 +23,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedDescription">
-        <source>COM interface source generation requires all base interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
-        <target state="new">COM interface source generation requires all base interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
+        <source>COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</source>
+        <target state="new">COM interface source generation requires all base COM interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</target>
         <note />
       </trans-unit>
       <trans-unit id="BaseInterfaceCannotBeGeneratedMessage">

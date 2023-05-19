@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -76,28 +77,34 @@ namespace Microsoft.Interop
         private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out Diagnostic? stringMarshallingDiagnostic)
         {
             var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
-            if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
+            if (attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || attrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
-                stringMarshallingDiagnostic = Diagnostic.Create(
-                    GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
-                    syntax.Identifier.GetLocation(),
-                    symbol.ToDisplayString(),
-                    SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.InvalidStringMarshallingConfigurationMissingCustomType);
                     return false;
-            }
-            if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo is not null)
-            {
-                stringMarshallingDiagnostic = Diagnostic.Create(
-                    GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
-                    syntax.Identifier.GetLocation(),
-                    symbol.ToDisplayString(),
-                    SR.InvalidStringMarshallingConfigurationNotCustom);
+                }
+                if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is not null)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.InvalidStringMarshallingConfigurationNotCustom);
                     return false;
+                }
             }
             if (baseSymbol is not null)
             {
+
                 var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
-                if (baseAttrInfo != attrInfo)
+                // The base can be undefined string marshalling
+                if ((baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
+                    && baseAttrInfo != attrInfo)
                 {
                     stringMarshallingDiagnostic = Diagnostic.Create(
                         GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived,

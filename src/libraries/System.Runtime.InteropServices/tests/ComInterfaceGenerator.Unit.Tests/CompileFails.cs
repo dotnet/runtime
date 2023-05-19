@@ -18,6 +18,7 @@ using System.Diagnostics;
 
 using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -96,26 +97,30 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> StringMarshallingCodeSnippets(GeneratorKind generator)
         {
+            const string CustomStringMarshallingWithNoCustomTypeMessage = @"'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.";
+            const string CustomTypeSpecifiedWithNoStringMarshallingCustom = @"'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.";
+            const string StringMarshallingMustMatchBase = "The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.";
+
             CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
             (StringMarshalling, Type?) utf8Marshalling = (StringMarshalling.Utf8, null);
             (StringMarshalling, Type?) utf16Marshalling = (StringMarshalling.Utf16, null);
             (StringMarshalling, Type?) customUtf16Marshalling = (StringMarshalling.Custom, typeof(Utf16StringMarshaller));
             (StringMarshalling, Type?) customWithNoType = (StringMarshalling.Custom, null);
-            (StringMarshalling, Type?) utf8WithType = (StringMarshalling.Custom, null);
+            (StringMarshalling, Type?) utf8WithType = (StringMarshalling.Utf8, typeof(Utf16StringMarshaller));
             DiagnosticResult[] emptyDiagnostics = new DiagnosticResult[] { };
 
-            // Custom with
+            // StringMarshalling.Custom / StringMarshallingCustomType invalid
             yield return new object[]
             {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(customWithNoType),
-                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0) }
+                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage) }
             };
             yield return new object[]
             {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(utf8WithType),
-                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0) }
+                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomTypeSpecifiedWithNoStringMarshallingCustom) }
             };
 
             // Inheritance no diagnostic
@@ -224,13 +229,63 @@ namespace ComInterfaceGenerator.Unit.Tests
                 MismatchesWithLocations(1, 2)
             };
 
+            // Base has no StringMarshalling and Derived does is okay
+            string source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+                    internal partial interface INoStringMarshalling
+                    {
+                        public int GetInt();
+                        public void SetInt(int value);
+                    }
+                    [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf8)]
+                    [Guid("0E7204B5-4B61-5E06-B872-82BA652F2ECA")]
+                    internal partial interface IStringMarshalling : INoStringMarshalling
+                    {
+                        public string GetString();
+                        public void SetString(string value);
+                    }
+                }
+                """;
+            yield return new object[] { ID(), source, emptyDiagnostics };
+            // Compilation can't find MarshalAs or MarshalUsing
+            //source = $$"""
+            //    using System;
+            //    using System.Runtime.InteropServices;
+            //    using System.Runtime.InteropServices.Marshalling;
+            //    namespace Test
+            //    {
+            //        [GeneratedComInterface]
+            //        [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            //        internal partial interface INoStringMarshalling
+            //        {
+            //            [return: MarshalUsing(typeof(Utf8StringMarshaller)]
+            //            public string GetString();
+            //            public void SetString([MarshalUsing(typeof(Utf8StringMarshaller))] string value);
+            //        }
+            //        [GeneratedComInterface(StringMarshalling = StringMarshalling.Utf16)]
+            //        [Guid("0E7204B5-4B61-5E06-B872-82BA652F2ECA")]
+            //        internal partial interface IStringMarshalling : INoStringMarshalling
+            //        {
+            //            public string GetString2();
+            //            public void SetString2(string value);
+            //        }
+            //    }
+            //    """;
+            //yield return new object[] { ID(), source, emptyDiagnostics };
 
             DiagnosticResult[] MismatchesWithLocations(params int[] locations)
             {
                 return locations
                     .Select(i =>
                         new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived)
-                            .WithLocation(i))
+                            .WithLocation(i)
+                            .WithArguments($"Test.IStringMarshalling{i}", StringMarshallingMustMatchBase))
                    .ToArray();
             }
             DiagnosticResult[] BaseCannotBeGeneratedWithLocations(params int[] locations)
@@ -239,7 +294,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .Select(i =>
                         new DiagnosticResult(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
                             .WithLocation(i)
-                            .WithArguments($"StringMarshalling{i}", $"StringMarshalling{i-1}", ))
+                            .WithArguments($"Test.IStringMarshalling{i}", $"Test.IStringMarshalling{i - 1}"))
                    .ToArray();
             }
         }
