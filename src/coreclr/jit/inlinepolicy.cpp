@@ -504,7 +504,7 @@ bool DefaultPolicy::BudgetCheck() const
         assert(m_CallsiteDepth > 0);
         bool allowOverBudget = m_IsForceInline && (m_CallsiteDepth <= strategy->GetMaxForceInlineDepth());
 
-        if (!allowOverBudget && (m_CodeSize <= (InlineStrategy::ALWAYS_INLINE_SIZE / 2)))
+        if (!allowOverBudget && (m_CodeSize <= InlineStrategy::ALWAYS_INLINE_SIZE))
         {
             // We don't want to give up on various getters/setters if we're running out of budget
             JITDUMP("Allowing over-budget for small methods\n")
