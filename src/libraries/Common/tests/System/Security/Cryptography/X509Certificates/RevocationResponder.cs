@@ -7,6 +7,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
@@ -29,6 +30,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         public string UriPrefix { get; }
 
         public bool RespondEmpty { get; set; }
+        public AiaResponseKind AiaResponseKind { get; set; }
 
         public TimeSpan ResponseDelay { get; set; }
         public DelayedActionsFlag DelayedActions { get; set; }
@@ -181,13 +183,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     Thread.Sleep(ResponseDelay);
                 }
 
-                byte[] certData = RespondEmpty ? Array.Empty<byte>() : authority.GetCertData();
+                byte[] certData = RespondEmpty ? Array.Empty<byte>() : GetCertDataForAiaResponseKind(AiaResponseKind, authority);
 
                 responded = true;
                 context.Response.StatusCode = 200;
-                context.Response.ContentType = "application/pkix-cert";
+                context.Response.ContentType = AiaResponseKindToContentType(AiaResponseKind);
                 context.Response.Close(certData, willBlock: true);
-                Trace($"Responded with {certData.Length}-byte certificate from {authority.SubjectName}.");
+                Trace($"Responded with {certData.Length}-byte {AiaResponseKind} from {authority.SubjectName}.");
                 return;
             }
 
@@ -292,6 +294,41 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 catch
                 {
                 }
+            }
+        }
+
+        private static string AiaResponseKindToContentType(AiaResponseKind kind)
+        {
+            if (kind == AiaResponseKind.Cert)
+            {
+                return "application/pkix-cert";
+            }
+            else if (kind == AiaResponseKind.Pkcs12)
+            {
+                return "application/x-pkcs12";
+            }
+            else
+            {
+                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                return null;
+            }
+        }
+
+        private static byte[] GetCertDataForAiaResponseKind(AiaResponseKind kind, CertificateAuthority authority)
+        {
+            if (kind == AiaResponseKind.Cert)
+            {
+                return authority.GetCertData();
+            }
+            else if (kind == AiaResponseKind.Pkcs12)
+            {
+                using X509Certificate2 cert = new X509Certificate2(authority.GetCertData());
+                return cert.Export(X509ContentType.Pkcs12);
+            }
+            else
+            {
+                Assert.True(false, $"Unknown value AiaResponseKind.`{kind}`.");
+                return null;
             }
         }
 
@@ -424,5 +461,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         Crl = 0b10,
         Aia = 0b100,
         All = 0b11111111
+    }
+
+    public enum AiaResponseKind
+    {
+        Cert = 0,
+        Pkcs12 = 1,
     }
 }

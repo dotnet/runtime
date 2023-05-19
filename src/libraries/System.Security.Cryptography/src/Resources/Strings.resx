@@ -822,4 +822,7 @@
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
+  <data name="Cryptography_X509_PfxWithoutPassword" xml:space="preserve">
+    <value>PKCS12 (PFX) without a supplied password has exceeded maximum allowed iterations. See https://go.microsoft.com/fwlink/?linkid=2233907 for more information.</value>
+  </data>
 </root>
