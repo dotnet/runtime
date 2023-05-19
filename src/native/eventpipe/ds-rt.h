@@ -118,6 +118,10 @@ static
 uint32_t
 ds_rt_disable_perfmap (void);
 
+static
+uint32_t
+ds_rt_appcontext_properties_get (dn_vector_ptr_t *props_array);
+
 /*
 * DiagnosticServer.
 */

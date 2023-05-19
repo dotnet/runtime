@@ -15,6 +15,7 @@
  * Diagnostics Structs.
  */
 
+typedef struct _DiagnosticsAppContextPropertiesPayload DiagnosticsAppContextPropertiesPayload;
 typedef struct _DiagnosticsAttachProfilerCommandPayload DiagnosticsAttachProfilerCommandPayload;
 typedef struct _DiagnosticsStartupProfilerCommandPayload DiagnosticsStartupProfilerCommandPayload;
 typedef struct _DiagnosticsConnectPort DiagnosticsConnectPort;
@@ -74,7 +75,8 @@ typedef enum {
 	DS_PROCESS_COMMANDID_SET_ENV_VAR = 0x03,
 	DS_PROCESS_COMMANDID_GET_PROCESS_INFO_2 = 0x04,
 	DS_PROCESS_COMMANDID_ENABLE_PERFMAP = 0x05,
-	DS_PROCESS_COMMANDID_DISABLE_PERFMAP = 0x06
+	DS_PROCESS_COMMANDID_DISABLE_PERFMAP = 0x06,
+	DS_PROCESS_COMMANDID_GET_APPCONTEXT_PROPERTIES = 0x07
 	// future
 } DiagnosticsProcessCommandId;
 

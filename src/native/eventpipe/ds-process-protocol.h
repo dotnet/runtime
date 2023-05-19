@@ -191,6 +191,35 @@ void
 ds_enable_perfmap_payload_free (DiagnosticsEnablePerfmapPayload *payload);
 
 /*
+* DiagnosticsAppContextPropertiesPayload
+*/
+
+#if defined(DS_INLINE_GETTER_SETTER) || defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsAppContextPropertiesPayload {
+#else
+struct _DiagnosticsAppContextPropertiesPayload_Internal {
+#endif
+	// The appcontext properties are sent back as an optional continuation stream of data.
+	// It is encoded in the typical length-prefixed array format as defined in
+	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
+	uint32_t incoming_bytes;
+	uint16_t future;
+	const dn_vector_ptr_t *props_array;
+};
+
+#if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)
+struct _DiagnosticsAppContextPropertiesPayload {
+	uint8_t _internal [sizeof (struct _DiagnosticsAppContextPropertiesPayload_Internal)];
+};
+#endif
+
+DiagnosticsAppContextPropertiesPayload *
+ds_appcontext_properties_payload_init (DiagnosticsAppContextPropertiesPayload *payload, const dn_vector_ptr_t *props_array);
+
+void
+ds_appcontext_properties_payload_fini (DiagnosticsAppContextPropertiesPayload *payload);
+
+/*
  * DiagnosticsProcessProtocolHelper.
  */
 

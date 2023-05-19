@@ -14,10 +14,20 @@
 #ifndef __configuration_h__
 #define __configuration_h__
 
+typedef HRESULT (*config_knob_fn)(
+    const LPCWSTR& name,
+    const LPCWSTR& value,
+    void* context
+    );
+
 class Configuration
 {
 public:
     static void InitializeConfigurationKnobs(int numberOfConfigs, LPCWSTR *configNames, LPCWSTR *configValues);
+
+    // Invokes callback with given context for each configuration knob.
+    // Returns S_OK for successful enumeration; otherwise HRESULT from failed callback.
+    static HRESULT EnumerateKnobs(config_knob_fn callback, void* context);
 
     // Returns (in priority order):
     //    - The value of the ConfigDWORDInfo if it's set

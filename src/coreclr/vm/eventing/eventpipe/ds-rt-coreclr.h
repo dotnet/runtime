@@ -10,6 +10,7 @@
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
 #include <clrconfignocache.h>
+#include <configuration.h>
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
@@ -327,6 +328,39 @@ ds_rt_disable_perfmap (void)
 #else // FEATURE_PERFMAP
 	return DS_IPC_E_NOTSUPPORTED;
 #endif // FEATURE_PERFMAP
+}
+
+static
+uint32_t
+ds_rt_appcontext_properties_get (dn_vector_ptr_t *props_array)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (props_array != NULL);
+
+	return Configuration::EnumerateKnobs([](const LPCWSTR& name, const LPCWSTR& value, void* context) {
+		dn_vector_ptr_t * props_array = static_cast<dn_vector_ptr_t *>(context);
+
+		const LPCWSTR infix = L"=";
+
+		// <name>=<value>\0
+		size_t str_len = u16_strlen(name) + u16_strlen(infix) + u16_strlen(value);
+		size_t str_size = (str_len + 1) * sizeof (ep_char16_t);
+		ep_char16_t *str_entry = reinterpret_cast<ep_char16_t *>(malloc (str_size));
+		if (!str_entry)
+			return E_OUTOFMEMORY;
+
+		swprintf_s (
+			reinterpret_cast<wchar_t *>(str_entry),
+			str_len + 1,
+			L"%s%s%s",
+			name,
+			infix,
+			value);
+		
+		dn_vector_ptr_push_back (props_array, str_entry);
+
+		return S_OK;
+	}, props_array);
 }
 
 /*

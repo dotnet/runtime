@@ -91,6 +91,12 @@ process_protocol_helper_disable_perfmap (
 
 static
 bool
+process_protocol_helper_get_appcontext_properties (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream);
+
+static
+bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream);
@@ -473,6 +479,131 @@ ds_env_info_payload_fini (DiagnosticsEnvironmentInfoPayload *payload)
 
 	dn_vector_ptr_free (payload->env_array);
 	payload->env_array = NULL;
+}
+
+/*
+ * DiagnosticsAppContextPropertiesPayload.
+ */
+
+static
+uint16_t
+ds_appcontext_properties_payload_get_size (DiagnosticsAppContextPropertiesPayload *payload)
+{
+	EP_ASSERT (payload != NULL);
+
+	size_t size = 0;
+	size += sizeof (payload->incoming_bytes);
+	size += sizeof (payload->future);
+
+	EP_ASSERT (size <= UINT16_MAX);
+	return (uint16_t)size;
+}
+
+static
+uint32_t
+ds_appcontext_properties_get_size (DiagnosticsAppContextPropertiesPayload *payload)
+{
+	EP_ASSERT (payload != NULL);
+
+	size_t size = 0;
+
+	size += sizeof (uint32_t);
+	size += (sizeof (uint32_t) * dn_vector_ptr_size (payload->props_array));
+
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, prop_value, payload->props_array) {
+		size += ((ep_rt_utf16_string_len (prop_value) + 1) * sizeof (ep_char16_t));
+	} DN_VECTOR_PTR_FOREACH_END;
+
+	EP_ASSERT (size <= UINT32_MAX);
+	return (uint32_t)size;
+}
+
+static
+bool
+ds_appcontext_properties_payload_flatten (
+	void *payload,
+	uint8_t **buffer,
+	uint16_t *size)
+{
+	DiagnosticsAppContextPropertiesPayload *props_payload = (DiagnosticsAppContextPropertiesPayload*)payload;
+
+	EP_ASSERT (payload != NULL);
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (*buffer != NULL);
+	EP_ASSERT (size != NULL);
+	EP_ASSERT (ds_appcontext_properties_payload_get_size (props_payload) == *size);
+
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
+	// for definition of serialization format
+
+	bool success = true;
+
+	// uint32_t incoming_bytes;
+	memcpy (*buffer, &props_payload->incoming_bytes, sizeof (props_payload->incoming_bytes));
+	*buffer += sizeof (props_payload->incoming_bytes);
+	*size -= sizeof (props_payload->incoming_bytes);
+
+	// uint16_t future;
+	memcpy(*buffer, &props_payload->future, sizeof (props_payload->future));
+	*buffer += sizeof (props_payload->future);
+	*size -= sizeof (props_payload->future);
+
+	// Assert we've used the whole buffer we were given
+	EP_ASSERT(*size == 0);
+
+	return success;
+}
+
+static
+bool
+ds_appcontext_properties_stream_properties (
+	DiagnosticsAppContextPropertiesPayload *payload,
+	DiagnosticsIpcStream *stream)
+{
+	DiagnosticsAppContextPropertiesPayload *props_payload = (DiagnosticsAppContextPropertiesPayload*)payload;
+
+	EP_ASSERT (payload != NULL);
+	EP_ASSERT (stream != NULL);
+
+	// see IPC spec @ https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
+	// for definition of serialization format
+
+	bool success = true;
+	uint32_t bytes_written = 0;
+
+	// Array<Array<WCHAR>>
+	uint32_t props_len = dn_vector_ptr_size (props_payload->props_array);
+	props_len = ep_rt_val_uint32_t (props_len);
+	success &= ds_ipc_stream_write (stream, (const uint8_t *)&props_len, sizeof (props_len), &bytes_written, EP_INFINITE_WAIT);
+
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, prop_value, props_payload->props_array) {
+		success &= ds_ipc_message_try_write_string_utf16_t_to_stream (stream, prop_value);
+	} DN_VECTOR_PTR_FOREACH_END;
+
+	return success;
+}
+
+DiagnosticsAppContextPropertiesPayload *
+ds_appcontext_properties_payload_init (DiagnosticsAppContextPropertiesPayload *payload, const dn_vector_ptr_t *props_array)
+{
+	ep_return_null_if_nok (payload != NULL);
+	ep_return_null_if_nok (props_array != NULL);
+
+	payload->props_array = props_array;
+	payload->incoming_bytes = ds_appcontext_properties_get_size (payload);
+	payload->future = 0;
+
+	return payload;
+}
+
+void
+ds_appcontext_properties_payload_fini (DiagnosticsAppContextPropertiesPayload *payload)
+{
+	DN_VECTOR_PTR_FOREACH_BEGIN (ep_char16_t *, prop_value, payload->props_array) {
+		ep_rt_utf16_string_free (prop_value);
+	} DN_VECTOR_PTR_FOREACH_END;
+
+	payload->props_array = NULL;
 }
 
 /*
@@ -874,6 +1005,58 @@ ep_on_error:
 
 static
 bool
+process_protocol_helper_get_appcontext_properties (
+	DiagnosticsIpcMessage *message,
+	DiagnosticsIpcStream *stream)
+{
+	EP_ASSERT (message != NULL);
+	EP_ASSERT (stream != NULL);
+
+	bool result = false;
+
+	DiagnosticsAppContextPropertiesPayload payload;
+	DiagnosticsAppContextPropertiesPayload *props_payload = nullptr;
+
+	dn_vector_ptr_t *props_array = dn_vector_ptr_alloc ();
+	ep_raise_error_if_nok (props_array);
+
+	ds_ipc_result_t ipc_result;
+	ipc_result = ds_rt_appcontext_properties_get (props_array);
+	if (ipc_result != DS_IPC_S_OK) {
+		ds_ipc_message_send_error (stream, ipc_result);
+		ep_raise_error ();
+	} else {
+		props_payload = ds_appcontext_properties_payload_init (&payload, props_array);
+		ep_raise_error_if_nok (props_payload);
+
+		ep_raise_error_if_nok (ds_ipc_message_initialize_buffer (
+			message,
+			ds_ipc_header_get_generic_success (),
+			(void *)props_payload,
+			ds_appcontext_properties_payload_get_size (props_payload),
+			ds_appcontext_properties_payload_flatten));
+
+		ep_raise_error_if_nok (ds_ipc_message_send (message, stream));
+		ep_raise_error_if_nok (ds_appcontext_properties_stream_properties (props_payload, stream));
+	}
+
+	result = true;
+
+ep_on_exit:
+	ds_appcontext_properties_payload_fini (props_payload);
+	dn_vector_ptr_free (props_array);
+	ds_ipc_stream_free (stream);
+	return result;
+
+ep_on_error:
+	EP_ASSERT (!result);
+	ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
+	DS_LOG_WARNING_0 ("Failed to send DiagnosticsIPC response");
+	ep_exit_error_handler ();
+}
+
+static
+bool
 process_protocol_helper_unknown_command (
 	DiagnosticsIpcMessage *message,
 	DiagnosticsIpcStream *stream)
@@ -915,6 +1098,9 @@ ds_process_protocol_helper_handle_ipc_message (
 		break;
 	case DS_PROCESS_COMMANDID_DISABLE_PERFMAP:
 		result = process_protocol_helper_disable_perfmap (message, stream);
+		break;
+	case DS_PROCESS_COMMANDID_GET_APPCONTEXT_PROPERTIES:
+		result = process_protocol_helper_get_appcontext_properties (message, stream);
 		break;
 	default:
 		result = process_protocol_helper_unknown_command (message, stream);

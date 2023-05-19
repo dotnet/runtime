@@ -29,6 +29,20 @@ void Configuration::InitializeConfigurationKnobs(int numberOfConfigs, LPCWSTR *n
     knobValues = values;
 }
 
+HRESULT Configuration::EnumerateKnobs(config_knob_fn callback, void* context)
+{
+    HRESULT hr = S_OK;
+
+    for (int i = 0; i < numberOfKnobs; ++i)
+    {
+        _ASSERT(knobNames[i] != nullptr);
+        if (FAILED(hr = callback(knobNames[i], knobValues[i], context)))
+            return hr;
+    }
+
+    return S_OK;
+}
+
 static LPCWSTR GetConfigurationValue(LPCWSTR name)
 {
     _ASSERT(name != nullptr);
