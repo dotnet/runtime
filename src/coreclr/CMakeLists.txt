@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-cmake_policy(VERSION 3.6.2)
 
 cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.
 
