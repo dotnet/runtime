@@ -1,8 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/* eslint-disable no-console */
 import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { CharPtr, VoidPtr } from "./types/emscripten";
+
+const prefix = "MONO_WASM: ";
+
+export function mono_log_debug(msg: string, ...data: any) {
+    if (runtimeHelpers.diagnosticTracing) {
+        console.debug(prefix + msg, ...data);
+    }
+}
+
+export function mono_log_info(msg: string, ...data: any) {
+    console.info(prefix + msg, ...data);
+}
+
+export function mono_log_warn(msg: string, ...data: any) {
+    console.warn(prefix + msg, ...data);
+}
+
+export function mono_log_error(msg: string, ...data: any) {
+    console.error(prefix + msg, ...data);
+}
 
 export const wasm_func_map = new Map<number, string>();
 const regexes: any[] = [];
@@ -54,7 +75,7 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
+        console.debug(`failed to symbolicate: ${error}`);
         return message;
     }
 }
@@ -117,5 +138,5 @@ export function parseSymbolMapFile(text: string) {
         wasm_func_map.set(Number(parts[0]), parts[1]);
     });
 
-    if (runtimeHelpers.diagnosticTracing) console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
+    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }

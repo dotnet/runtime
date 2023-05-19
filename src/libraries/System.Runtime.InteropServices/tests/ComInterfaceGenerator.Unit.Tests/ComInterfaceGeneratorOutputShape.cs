@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
 
@@ -124,6 +125,51 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifySourceGeneratorAsync(source, "I", "J");
         }
 
+        [Fact]
+        public async Task ValidateAttributesAreCopiedToShadowingMethods()
+        {
+            var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("EA4319EA-AE9A-4261-B42D-BB027AD81F5F")]
+                    partial interface IFoo
+                    {
+                        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("message")]
+                        void Bar();
+                    }
+
+                    [GeneratedComInterface]
+                    [Guid("8A501001-02CA-490A-AA23-0ECC646F07A3")]
+                    partial interface IDerivedIface : IFoo
+                    {
+                    }
+                }
+            """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                Assert.True(comp.GetTypeByMetadataName("Test.IFoo")
+                    ?.GetMembers()
+                    .Where(m => m.Kind == SymbolKind.Method && m.Name == "Bar")
+                    .SingleOrDefault()
+                    ?.GetAttributes()
+                    .Any(att => att.AttributeClass?.Name == nameof(RequiresUnreferencedCodeAttribute)));
+            }
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
@@ -134,6 +180,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await test.RunAsync();
         }
+
         class GeneratedShapeTest : VerifyCS.Test
         {
             private readonly string[] _typeNames;

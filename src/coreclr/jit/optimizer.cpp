@@ -6511,11 +6511,6 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
 
     BasicBlock* preHead = optLoopTable[lnum].lpHead;
 
-    // fgMorphTree requires that compCurBB be the block that contains
-    // (or in this case, will contain) the expression.
-    compCurBB = preHead;
-    hoist     = fgMorphTree(hoist);
-
     // Scan the tree for any new SSA uses.
     //
     optRecordSsaUses(hoist, preHead);

@@ -803,7 +803,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Initialize the availableRegs to use for each TYP_*
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf)                                    \
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf)                                             \
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
@@ -8118,7 +8118,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
-    LclVarDsc* terminatorNodeLclVarDsc = nullptr;
+    LclVarDsc* terminatorNodeLclVarDsc  = nullptr;
+    LclVarDsc* terminatorNodeLclVarDsc2 = nullptr;
     // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP/JTEST instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
@@ -8178,18 +8179,28 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 GenTree* srcOp = op->gtGetOp1();
                 consumedRegs |= genRegMask(srcOp->GetRegNum());
             }
-
-            if (op->IsLocal())
+            else if (op->IsLocal())
             {
                 GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
                 terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
             }
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-            // TODO-LOONGARCH64: Take into account that on LA64, the second
-            // operand of a JCMP can be in a register too.
-            assert(!lastNode->OperIs(GT_JCMP, GT_JTEST) || lastNode->gtGetOp2()->isContained());
-#endif
+            if (lastNode->OperIs(GT_JCMP, GT_JTEST) && !lastNode->gtGetOp2()->isContained())
+            {
+                op = lastNode->gtGetOp2();
+                consumedRegs |= genRegMask(op->GetRegNum());
+
+                if (op->OperIs(GT_COPY))
+                {
+                    GenTree* srcOp = op->gtGetOp1();
+                    consumedRegs |= genRegMask(srcOp->GetRegNum());
+                }
+                else if (op->IsLocal())
+                {
+                    GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                    terminatorNodeLclVarDsc2 = &compiler->lvaTable[lcl->GetLclNum()];
+                }
+            }
         }
     }
 
@@ -8270,6 +8281,11 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if ((terminatorNodeLclVarDsc != nullptr) &&
                 (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            {
+                sameToReg = REG_NA;
+            }
+            else if ((terminatorNodeLclVarDsc2 != nullptr) &&
+                     (terminatorNodeLclVarDsc2->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }

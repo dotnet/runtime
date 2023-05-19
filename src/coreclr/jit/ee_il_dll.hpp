@@ -17,8 +17,6 @@ class CILJit : public ICorJitCompiler
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
                               );
 
-    unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
-
     void setTargetOS(CORINFO_OS os);
 };
 
