@@ -257,7 +257,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             result.Should().Pass()
                 .And.InitializeContextForConfig(sharedState.RuntimeConfigPath)
-                .And.CreateDelegateMock_COM();
+                .And.CreateDelegateMock_COM()
+                .And.CreateDelegateMock_InMemoryAssembly();
 
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(CheckProperties.None, LogPrefix.Config, SharedTestState.ConfigPropertyName, SharedTestState.ConfigPropertyValue);
             propertyValidation.ValidateActiveContext(result, newPropertyName);
