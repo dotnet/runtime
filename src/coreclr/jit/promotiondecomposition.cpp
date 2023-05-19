@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"
@@ -32,278 +35,6 @@ public:
     }
 };
 
-// Represents significant segments of a struct operation.
-//
-// Essentially a segment tree (but not stored as a tree) that supports boolean
-// Add/Subtract operations of segments. Used to compute the remainder after
-// replacements have been handled as part of a decomposed block operation.
-class StructSegments
-{
-public:
-    struct Segment
-    {
-        unsigned Start = 0;
-        unsigned End   = 0;
-
-        Segment()
-        {
-        }
-
-        Segment(unsigned start, unsigned end) : Start(start), End(end)
-        {
-        }
-
-        bool IntersectsInclusive(const Segment& other) const
-        {
-            if (End < other.Start)
-            {
-                return false;
-            }
-
-            if (other.End < Start)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        bool Contains(const Segment& other) const
-        {
-            return other.Start >= Start && other.End <= End;
-        }
-
-        void Merge(const Segment& other)
-        {
-            Start = min(Start, other.Start);
-            End   = max(End, other.End);
-        }
-    };
-
-private:
-    jitstd::vector<Segment> m_segments;
-
-public:
-    StructSegments(CompAllocator allocator) : m_segments(allocator)
-    {
-    }
-
-    //------------------------------------------------------------------------
-    // Add:
-    //   Add a segment to the data structure.
-    //
-    // Parameters:
-    //   segment - The segment to add.
-    //
-    void Add(const Segment& segment)
-    {
-        size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
-
-        if ((ssize_t)index < 0)
-        {
-            index = ~index;
-        }
-
-        m_segments.insert(m_segments.begin() + index, segment);
-        size_t endIndex;
-        for (endIndex = index + 1; endIndex < m_segments.size(); endIndex++)
-        {
-            if (!m_segments[index].IntersectsInclusive(m_segments[endIndex]))
-            {
-                break;
-            }
-
-            m_segments[index].Merge(m_segments[endIndex]);
-        }
-
-        m_segments.erase(m_segments.begin() + index + 1, m_segments.begin() + endIndex);
-    }
-
-    //------------------------------------------------------------------------
-    // Subtract:
-    //   Subtract a segment from the data structure.
-    //
-    // Parameters:
-    //   segment - The segment to subtract.
-    //
-    void Subtract(const Segment& segment)
-    {
-        size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
-        if ((ssize_t)index < 0)
-        {
-            index = ~index;
-        }
-        else
-        {
-            // Start == segment[index].End, which makes it non-interesting.
-            index++;
-        }
-
-        if (index >= m_segments.size())
-        {
-            return;
-        }
-
-        // Here we know Start < segment[index].End. Do they not intersect at all?
-        if (m_segments[index].Start >= segment.End)
-        {
-            // Does not intersect any segment.
-            return;
-        }
-
-        assert(m_segments[index].IntersectsInclusive(segment));
-
-        if (m_segments[index].Contains(segment))
-        {
-            if (segment.Start > m_segments[index].Start)
-            {
-                // New segment (existing.Start, segment.Start)
-                if (segment.End < m_segments[index].End)
-                {
-                    m_segments.insert(m_segments.begin() + index, Segment(m_segments[index].Start, segment.Start));
-
-                    // And new segment (segment.End, existing.End)
-                    m_segments[index + 1].Start = segment.End;
-                    return;
-                }
-
-                m_segments[index].End = segment.Start;
-                return;
-            }
-            if (segment.End < m_segments[index].End)
-            {
-                // New segment (segment.End, existing.End)
-                m_segments[index].Start = segment.End;
-                return;
-            }
-
-            // Full segment is being removed
-            m_segments.erase(m_segments.begin() + index);
-            return;
-        }
-
-        if (segment.Start > m_segments[index].Start)
-        {
-            m_segments[index].End = segment.Start;
-            index++;
-        }
-
-        size_t endIndex = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.End);
-        if ((ssize_t)endIndex >= 0)
-        {
-            m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex + 1);
-            return;
-        }
-
-        endIndex = ~endIndex;
-        if (endIndex == m_segments.size())
-        {
-            m_segments.erase(m_segments.begin() + index, m_segments.end());
-            return;
-        }
-
-        if (segment.End > m_segments[endIndex].Start)
-        {
-            m_segments[endIndex].Start = segment.End;
-        }
-
-        m_segments.erase(m_segments.begin() + index, m_segments.begin() + endIndex);
-    }
-
-    //------------------------------------------------------------------------
-    // IsEmpty:
-    //   Check if the segment tree is empty.
-    //
-    // Returns:
-    //   True if so.
-    //
-    bool IsEmpty()
-    {
-        return m_segments.size() == 0;
-    }
-
-    //------------------------------------------------------------------------
-    // IsSingleSegment:
-    //   Check if the segment tree contains only a single segment, and return
-    //   it if so.
-    //
-    // Parameters:
-    //   result - [out] The single segment. Only valid if the method returns true.
-    //
-    // Returns:
-    //   True if so.
-    //
-    bool IsSingleSegment(Segment* result)
-    {
-        if (m_segments.size() == 1)
-        {
-            *result = m_segments[0];
-            return true;
-        }
-
-        return false;
-    }
-
-#ifdef DEBUG
-    //------------------------------------------------------------------------
-    // Check:
-    //   Validate that the data structure is normalized and that it equals a
-    //   specific fixed bit vector.
-    //
-    // Parameters:
-    //   vect - The bit vector
-    //
-    // Remarks:
-    //   This validates that the internal representation is normalized (i.e.
-    //   all adjacent intervals are merged) and that it contains an index iff
-    //   the specified vector contains that index.
-    //
-    void Check(FixedBitVect* vect)
-    {
-        bool     first = true;
-        unsigned last  = 0;
-        for (const Segment& segment : m_segments)
-        {
-            assert(first || (last < segment.Start));
-            assert(segment.End <= vect->bitVectGetSize());
-
-            for (unsigned i = last; i < segment.Start; i++)
-                assert(!vect->bitVectTest(i));
-
-            for (unsigned i = segment.Start; i < segment.End; i++)
-                assert(vect->bitVectTest(i));
-
-            first = false;
-            last  = segment.End;
-        }
-
-        for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
-            assert(!vect->bitVectTest(i));
-    }
-
-    //------------------------------------------------------------------------
-    // Dump:
-    //   Dump a string representation of the segment tree to stdout.
-    //
-    void Dump()
-    {
-        if (m_segments.size() == 0)
-        {
-            printf("<empty>");
-        }
-        else
-        {
-            const char* sep = "";
-            for (const Segment& segment : m_segments)
-            {
-                printf("%s[%03u..%03u)", sep, segment.Start, segment.End);
-                sep = " ";
-            }
-        }
-    }
-#endif
-};
-
 // Represents a plan for decomposing a block operation into direct treatment of
 // replacement fields and the remainder.
 class DecompositionPlan
@@ -318,19 +49,32 @@ class DecompositionPlan
         var_types    Type;
     };
 
-    Compiler*         m_compiler;
-    ArrayStack<Entry> m_entries;
-    GenTree*          m_dst;
-    GenTree*          m_src;
-    bool              m_srcInvolvesReplacements;
+    Compiler*                       m_compiler;
+    jitstd::vector<AggregateInfo*>& m_aggregates;
+    PromotionLiveness*              m_liveness;
+    GenTree*                        m_dst;
+    GenTree*                        m_src;
+    bool                            m_dstInvolvesReplacements;
+    bool                            m_srcInvolvesReplacements;
+    ArrayStack<Entry>               m_entries;
+    bool                            m_hasNonRemainderUseOfStructLocal = false;
 
 public:
-    DecompositionPlan(Compiler* comp, GenTree* dst, GenTree* src, bool srcInvolvesReplacements)
+    DecompositionPlan(Compiler*                       comp,
+                      jitstd::vector<AggregateInfo*>& aggregates,
+                      PromotionLiveness*              liveness,
+                      GenTree*                        dst,
+                      GenTree*                        src,
+                      bool                            dstInvolvesReplacements,
+                      bool                            srcInvolvesReplacements)
         : m_compiler(comp)
-        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_aggregates(aggregates)
+        , m_liveness(liveness)
         , m_dst(dst)
         , m_src(src)
+        , m_dstInvolvesReplacements(dstInvolvesReplacements)
         , m_srcInvolvesReplacements(srcInvolvesReplacements)
+        , m_entries(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -429,6 +173,17 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // MarkNonRemainderUseOfStructLocal:
+    //   Mark that some of the destination replacements are being handled via a
+    //   readback. This invalidates liveness information for the remainder
+    //   because the struct local will now also be used for the readback.
+    //
+    void MarkNonRemainderUseOfStructLocal()
+    {
+        m_hasNonRemainderUseOfStructLocal = true;
+    }
+
+    //------------------------------------------------------------------------
     // Finalize:
     //   Create IR to perform the full decomposed struct copy as specified by
     //   the entries that were added to the decomposition plan. Add the
@@ -516,84 +271,9 @@ private:
     {
         ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
 
-        COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
-
-        bool significantPadding;
-        if (dstLayout->IsBlockLayout())
-        {
-            significantPadding = true;
-            JITDUMP("  Block op has significant padding due to block layout\n");
-        }
-        else
-        {
-            uint32_t attribs = compHnd->getClassAttribs(dstLayout->GetClassHandle());
-            if ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0)
-            {
-                significantPadding = true;
-                JITDUMP("  Block op has significant padding due to indexable fields\n");
-            }
-            else if ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0)
-            {
-                significantPadding = true;
-                JITDUMP("  Block op has significant padding due to CORINFO_FLG_DONT_DIG_FIELDS\n");
-            }
-            else if (((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0) && ((attribs & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
-            {
-                significantPadding = true;
-                JITDUMP("  Block op has significant padding due to CUSTOMLAYOUT without GC pointers\n");
-            }
-            else
-            {
-                significantPadding = false;
-            }
-        }
-
-        StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
-
         // Validate with "obviously correct" but less scalable fixed bit vector implementation.
-        INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(dstLayout->GetSize(), m_compiler));
-
-        if (significantPadding)
-        {
-            segments.Add(StructSegments::Segment(0, dstLayout->GetSize()));
-
-#ifdef DEBUG
-            for (unsigned i = 0; i < dstLayout->GetSize(); i++)
-                segmentBitVect->bitVectSet(i);
-#endif
-        }
-        else
-        {
-            unsigned numFields = compHnd->getClassNumInstanceFields(dstLayout->GetClassHandle());
-            for (unsigned i = 0; i < numFields; i++)
-            {
-                CORINFO_FIELD_HANDLE fieldHnd  = compHnd->getFieldInClass(dstLayout->GetClassHandle(), (int)i);
-                unsigned             fldOffset = compHnd->getFieldOffset(fieldHnd);
-                CORINFO_CLASS_HANDLE fieldClassHandle;
-                CorInfoType          corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
-                var_types            varType = JITtype2varType(corType);
-                unsigned             size    = genTypeSize(varType);
-                if (size == 0)
-                {
-                    // TODO-CQ: Recursively handle padding in sub structures
-                    // here. Might be better to introduce a single JIT-EE call
-                    // to query the significant segments -- that would also be
-                    // usable by R2R even outside the version bubble in many
-                    // cases.
-                    size = compHnd->getClassSize(fieldClassHandle);
-                    assert(size != 0);
-                }
-
-                segments.Add(StructSegments::Segment(fldOffset, fldOffset + size));
-#ifdef DEBUG
-                for (unsigned i = 0; i < size; i++)
-                    segmentBitVect->bitVectSet(fldOffset + i);
-#endif
-            }
-        }
-
-        // TODO-TP: Cache above StructSegments per class layout and just clone
-        // it there before the following subtract operations.
+        INDEBUG(FixedBitVect * segmentBitVect);
+        StructSegments segments = Promotion::SignificantSegments(m_compiler, dstLayout DEBUGARG(&segmentBitVect));
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
@@ -653,12 +333,18 @@ private:
     //   the rest of the remainder); or by handling a specific 'hole' as a
     //   primitive.
     //
-    RemainderStrategy DetermineRemainderStrategy()
+    RemainderStrategy DetermineRemainderStrategy(const StructDeaths& dstDeaths)
     {
+        if (m_dstInvolvesReplacements && !m_hasNonRemainderUseOfStructLocal && dstDeaths.IsRemainderDying())
+        {
+            JITDUMP("  => Remainder strategy: do nothing (remainder dying)\n");
+            return RemainderStrategy(RemainderStrategy::NoRemainder);
+        }
+
         StructSegments remainder = ComputeRemainder();
         if (remainder.IsEmpty())
         {
-            JITDUMP("  => Remainder strategy: do nothing\n");
+            JITDUMP("  => Remainder strategy: do nothing (no remainder)\n");
             return RemainderStrategy(RemainderStrategy::NoRemainder);
         }
 
@@ -668,7 +354,6 @@ private:
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
-            // For
             if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
             {
                 ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
@@ -701,7 +386,7 @@ private:
             {
                 if (!IsInit() || CanInitPrimitive(primitiveType))
                 {
-                    JITDUMP("  => Remainder strategy: %s at %03u\n", varTypeName(primitiveType), segment.Start);
+                    JITDUMP("  => Remainder strategy: %s at +%03u\n", varTypeName(primitiveType), segment.Start);
                     return RemainderStrategy(RemainderStrategy::Primitive, segment.Start, primitiveType);
                 }
                 else
@@ -724,21 +409,33 @@ private:
     //
     void FinalizeInit(DecompositionStatementList* statements)
     {
-        uint8_t initPattern = GetInitPattern();
+        uint8_t      initPattern = GetInitPattern();
+        StructDeaths deaths      = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+
+        AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
+        assert((agg != nullptr) && (agg->Replacements.size() > 0));
+        Replacement* firstRep = agg->Replacements.data();
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
             assert((entry.ToLclNum != BAD_VAR_NUM) && (entry.ToReplacement != nullptr));
-            GenTree* src = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
-            GenTree* dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
-            statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < firstRep + agg->Replacements.size()));
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+
+            if (!deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                GenTree* src = m_compiler->gtNewConWithPattern(entry.Type, initPattern);
+                GenTree* dst = m_compiler->gtNewLclvNode(entry.ToLclNum, entry.Type);
+                statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
+            }
+
             entry.ToReplacement->NeedsWriteBack = true;
             entry.ToReplacement->NeedsReadBack  = false;
         }
 
-        RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(deaths);
         if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
             GenTree* asg = m_compiler->gtNewAssignNode(m_dst, m_src);
@@ -766,7 +463,13 @@ private:
     {
         assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK) && m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK));
 
-        RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
+        StructDeaths dstDeaths;
+        if (m_dstInvolvesReplacements)
+        {
+            dstDeaths = m_liveness->GetDeathsForStructLocal(m_dst->AsLclVarCommon());
+        }
+
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy(dstDeaths);
 
         // If the remainder is a full block and is going to incur write barrier
         // then avoid incurring multiple write barriers for each source
@@ -856,7 +559,7 @@ private:
         {
             for (int i = 0; i < m_entries.Height(); i++)
             {
-                if (!IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                 {
                     numAddrUses++;
                 }
@@ -879,7 +582,7 @@ private:
                     // See if our first indirection will subsume the null check (usual case).
                     for (int i = 0; i < m_entries.Height(); i++)
                     {
-                        if (IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                        if (CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))
                         {
                             continue;
                         }
@@ -985,16 +688,37 @@ private:
             statements->AddStatement(indir);
         }
 
+        StructDeaths srcDeaths;
+        if (m_srcInvolvesReplacements)
+        {
+            srcDeaths = m_liveness->GetDeathsForStructLocal(m_src->AsLclVarCommon());
+        }
+
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            if (IsHandledByRemainder(entry, remainderStrategy))
+            if (entry.ToReplacement != nullptr)
             {
-                assert(entry.FromReplacement != nullptr);
-                JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
+                entry.ToReplacement->NeedsWriteBack = true;
+                entry.ToReplacement->NeedsReadBack  = false;
+            }
+
+            if (CanSkipEntry(entry, dstDeaths, remainderStrategy))
+            {
+                if (entry.FromReplacement != nullptr)
+                {
+                    JITDUMP(
+                        "  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
                         "as part of the remainder\n",
                         entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                }
+                else if (entry.ToReplacement != nullptr)
+                {
+                    JITDUMP("  Skipping def of V%02u (%s); it is dying", entry.ToReplacement->LclNum,
+                            entry.ToReplacement->Description);
+                }
+
                 continue;
             }
 
@@ -1023,6 +747,19 @@ private:
             if (entry.FromLclNum != BAD_VAR_NUM)
             {
                 src = m_compiler->gtNewLclvNode(entry.FromLclNum, entry.Type);
+
+                if (entry.FromReplacement != nullptr)
+                {
+                    AggregateInfo* srcAgg   = m_aggregates[m_src->AsLclVarCommon()->GetLclNum()];
+                    Replacement*   firstRep = srcAgg->Replacements.data();
+                    assert((entry.FromReplacement >= firstRep) &&
+                           (entry.FromReplacement < (firstRep + srcAgg->Replacements.size())));
+                    size_t replacementIndex = entry.FromReplacement - firstRep;
+                    if (srcDeaths.IsReplacementDying((unsigned)replacementIndex))
+                    {
+                        src->gtFlags |= GTF_VAR_DEATH;
+                    }
+                }
             }
             else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
@@ -1040,11 +777,6 @@ private:
             }
 
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
-            if (entry.ToReplacement != nullptr)
-            {
-                entry.ToReplacement->NeedsWriteBack = true;
-                entry.ToReplacement->NeedsReadBack  = false;
-            }
         }
 
         if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
@@ -1091,20 +823,41 @@ private:
     }
 
     //------------------------------------------------------------------------
-    // IsHandledByRemainder:
-    //   Check if the specified entry is redundant because the remainder would
-    //   handle it anyway. This occurs when we have a source replacement that
-    //   is up-to-date in its struct local and we are going to retain a full
-    //   block operation anyway.
+    // CanSkipEntry:
+    //   Check if the specified entry can be skipped because it is writing to a
+    //   death replacement or because the remainder would handle it anyway.
     //
     // Parameters:
     //   entry             - The init/copy entry
     //   remainderStrategy - The strategy we are using for the remainder
     //
-    bool IsHandledByRemainder(const Entry& entry, const RemainderStrategy& remainderStrategy)
+    bool CanSkipEntry(const Entry& entry, const StructDeaths& deaths, const RemainderStrategy& remainderStrategy)
     {
-        return (remainderStrategy.Type == RemainderStrategy::FullBlock) && (entry.FromReplacement != nullptr) &&
-               !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+        if (entry.ToReplacement != nullptr)
+        {
+            // Check if this entry is dying anyway.
+            assert(m_dstInvolvesReplacements);
+
+            AggregateInfo* agg = m_aggregates[m_dst->AsLclVarCommon()->GetLclNum()];
+            assert((agg != nullptr) && (agg->Replacements.size() > 0));
+            Replacement* firstRep = agg->Replacements.data();
+            assert((entry.ToReplacement >= firstRep) && (entry.ToReplacement < (firstRep + agg->Replacements.size())));
+
+            size_t replacementIndex = entry.ToReplacement - firstRep;
+            if (deaths.IsReplacementDying((unsigned)replacementIndex))
+            {
+                return true;
+            }
+        }
+
+        if (entry.FromReplacement != nullptr)
+        {
+            // Check if the remainder is going to handle it.
+            return (remainderStrategy.Type == RemainderStrategy::FullBlock) && !entry.FromReplacement->NeedsWriteBack &&
+                   (entry.ToLclNum == BAD_VAR_NUM);
+        }
+
+        return false;
     }
 
     //------------------------------------------------------------------------
@@ -1254,6 +1007,8 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
 
     if (!dstInvolvesReplacements && !srcInvolvesReplacements)
     {
+        // TODO-CQ: If the destination is an aggregate we can still use liveness
+        // information for the remainder to DCE this.
         return;
     }
 
@@ -1263,6 +1018,9 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
     {
         DecompositionStatementList result;
         EliminateCommasInBlockOp(asg, &result);
+
+        DecompositionPlan plan(m_compiler, m_aggregates, m_liveness, dst, src, dstInvolvesReplacements,
+                               srcInvolvesReplacements);
 
         if (dstInvolvesReplacements)
         {
@@ -1283,6 +1041,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                     dstFirstRep->NeedsWriteBack = false;
                 }
 
+                plan.MarkNonRemainderUseOfStructLocal();
                 dstFirstRep->NeedsReadBack = true;
                 dstFirstRep++;
             }
@@ -1301,6 +1060,7 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                         dstLastRep->NeedsWriteBack = false;
                     }
 
+                    plan.MarkNonRemainderUseOfStructLocal();
                     dstLastRep->NeedsReadBack = true;
                     dstEndRep--;
                 }
@@ -1344,8 +1104,6 @@ void ReplaceVisitor::HandleAssignment(GenTree** use, GenTree* user)
                 }
             }
         }
-
-        DecompositionPlan plan(m_compiler, dst, src, srcInvolvesReplacements);
 
         if (src->IsConstInitVal())
         {
@@ -1395,61 +1153,15 @@ bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                              Replacement**        firstReplacement,
                                              Replacement**        endReplacement)
 {
-    if (m_replacements[lcl->GetLclNum()] == nullptr)
+    AggregateInfo* agg = m_aggregates[lcl->GetLclNum()];
+    if (agg == nullptr)
     {
         return false;
     }
 
-    jitstd::vector<Replacement>& replacements = *m_replacements[lcl->GetLclNum()];
-
-    unsigned offs       = lcl->GetLclOffs();
-    unsigned size       = lcl->GetLayout(m_compiler)->GetSize();
-    size_t   firstIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-    if ((ssize_t)firstIndex < 0)
-    {
-        firstIndex = ~firstIndex;
-        if (firstIndex > 0)
-        {
-            Replacement& lastRepBefore = replacements[firstIndex - 1];
-            if ((lastRepBefore.Offset + genTypeSize(lastRepBefore.AccessType)) > offs)
-            {
-                // Overlap with last entry starting before offs.
-                firstIndex--;
-            }
-            else if (firstIndex >= replacements.size())
-            {
-                // Starts after last replacement ends.
-                return false;
-            }
-        }
-
-        const Replacement& first = replacements[firstIndex];
-        if (first.Offset >= (offs + size))
-        {
-            // First candidate starts after this ends.
-            return false;
-        }
-    }
-
-    assert((firstIndex < replacements.size()) && replacements[firstIndex].Overlaps(offs, size));
-    *firstReplacement = &replacements[firstIndex];
-
-    if (endReplacement != nullptr)
-    {
-        size_t lastIndex = Promotion::BinarySearch<Replacement, &Replacement::Offset>(replacements, offs + size);
-        if ((ssize_t)lastIndex < 0)
-        {
-            lastIndex = ~lastIndex;
-        }
-
-        // Since we verified above that there is an overlapping replacement
-        // we know that lastIndex exists and is the next one that does not
-        // overlap.
-        assert(lastIndex > 0);
-        *endReplacement = replacements.data() + lastIndex;
-    }
-
-    return true;
+    unsigned offs = lcl->GetLclOffs();
+    unsigned size = lcl->GetLayout(m_compiler)->GetSize();
+    return agg->OverlappingReplacements(offs, size, firstReplacement, endReplacement);
 }
 
 //------------------------------------------------------------------------
@@ -1542,6 +1254,7 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
             // We will need to read this one back after initing the struct.
             rep->NeedsWriteBack = false;
             rep->NeedsReadBack  = true;
+            plan->MarkNonRemainderUseOfStructLocal();
             continue;
         }
 
@@ -1549,6 +1262,37 @@ void ReplaceVisitor::InitFields(GenTreeLclVarCommon* dst,
         plan->InitReplacement(rep, rep->Offset - dst->GetLclOffs());
     }
 }
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// LastUseString:
+//   Return a string indicating whether a replacement is a last use, for
+//   JITDUMP purposes.
+//
+// Parameters:
+//   lcl - A struct local
+//   rep - A replacement of that struct local
+//
+// Returns:
+//   " (last use)" if it is, and otherwise "".
+//
+const char* ReplaceVisitor::LastUseString(GenTreeLclVarCommon* lcl, Replacement* rep)
+{
+    StructDeaths   deaths = m_liveness->GetDeathsForStructLocal(lcl);
+    AggregateInfo* agg    = m_aggregates[lcl->GetLclNum()];
+    assert(agg != nullptr);
+    Replacement* firstRep = agg->Replacements.data();
+    assert((rep >= firstRep) && (rep < firstRep + agg->Replacements.size()));
+
+    size_t replacementIndex = rep - firstRep;
+    if (deaths.IsReplacementDying((unsigned)replacementIndex))
+    {
+        return " (last use)";
+    }
+
+    return "";
+}
+#endif
 
 //------------------------------------------------------------------------
 // CopyBetweenFields:
@@ -1607,7 +1351,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 // Write it directly to the destination struct local.
                 unsigned offs = srcRep->Offset - srcBaseOffs;
                 plan->CopyFromReplacement(srcRep, offs);
-                JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+                JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
                 srcRep++;
                 continue;
             }
@@ -1618,7 +1363,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 // Read it directly from the source struct local.
                 unsigned offs = dstRep->Offset - dstBaseOffs;
                 plan->CopyToReplacement(dstRep, offs);
-                JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
+                JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), offs);
                 dstRep++;
                 continue;
             }
@@ -1629,8 +1375,9 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                 (dstRep->AccessType == srcRep->AccessType))
             {
                 plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
-                JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, srcRep->LclNum,
-                        srcRep->Description);
+                JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,
+                        LastUseString(dstLcl, dstRep), srcRep->LclNum, srcRep->Description,
+                        LastUseString(srcLcl, srcRep));
 
                 dstRep++;
                 srcRep++;
@@ -1641,8 +1388,9 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             // will handle the destination replacement in a future
             // iteration of the loop.
             statements->AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
-            JITDUMP("  Partial overlap of V%02u (%s) <- V%02u (%s). Will read source back before copy\n",
-                    dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
+            JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Will read source back before copy\n",
+                    dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
+                    srcRep->Description, LastUseString(srcLcl, srcRep));
             srcRep++;
             continue;
         }
@@ -1662,7 +1410,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                     if (dsc->lvType == dstRep->AccessType)
                     {
                         plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
-                        JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, dsc->lvReason);
+                        JITDUMP("  V%02u (%s)%s <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description,
+                                LastUseString(dstLcl, dstRep), dsc->lvReason);
                         dstRep++;
                         continue;
                     }
@@ -1674,7 +1423,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             // directly to the destination's struct local and mark the
             // overlapping fields as needing read back to avoid this DNER.
             plan->CopyToReplacement(dstRep, offs);
-            JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
+            JITDUMP("  V%02u (%s)%s <- src+%03u\n", dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep),
+                    offs);
             dstRep++;
         }
         else
@@ -1692,8 +1442,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
                     if (dsc->lvType == srcRep->AccessType)
                     {
                         plan->CopyBetweenReplacements(fieldLcl, srcRep, offs);
-                        JITDUMP("  V%02u (%s) <- V%02u (%s)\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
-                                srcRep->Description);
+                        JITDUMP("  V%02u (%s) <- V%02u (%s)%s\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
+                                srcRep->Description, LastUseString(srcLcl, srcRep));
                         srcRep++;
                         continue;
                     }
@@ -1701,7 +1451,8 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    dst,
             }
 
             plan->CopyFromReplacement(srcRep, offs);
-            JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+            JITDUMP("  dst+%03u <- V%02u (%s)%s\n", offs, srcRep->LclNum, srcRep->Description,
+                    LastUseString(srcLcl, srcRep));
             srcRep++;
         }
     }
