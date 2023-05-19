@@ -6,6 +6,9 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Interop
 {
+    /// <summary>
+    /// Contains data required to reconstruct a <see cref="Location"/> without keeping any symbols or references to a <see cref="Compilation"/>
+    /// </summary>
     internal sealed record LocationInfo(
         LinePositionSpan LinePositionSpan,
         string FilePath,

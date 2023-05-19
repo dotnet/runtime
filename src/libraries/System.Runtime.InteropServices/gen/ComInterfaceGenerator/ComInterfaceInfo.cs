@@ -63,15 +63,17 @@ namespace Microsoft.Interop
             if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out Diagnostic? stringMarshallingDiagnostic))
                 return (null, stringMarshallingDiagnostic);
 
-            return (new ComInterfaceInfo(
+            return (
+                new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
-                symbol.ToDisplayString(),
-                baseSymbol?.ToDisplayString(),
+                    symbol.ToDisplayString(),
+                    baseSymbol?.ToDisplayString(),
                     syntax,
                     new ContainingSyntaxContext(syntax),
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
-                guid ?? Guid.Empty,
-                LocationInfo.From(symbol)), null);
+                    guid ?? Guid.Empty,
+                    LocationInfo.From(symbol)),
+                null);
         }
 
         private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out Diagnostic? stringMarshallingDiagnostic)
@@ -116,7 +118,6 @@ namespace Microsoft.Interop
             }
             stringMarshallingDiagnostic = null;
             return true;
-
         }
 
         /// <summary>
