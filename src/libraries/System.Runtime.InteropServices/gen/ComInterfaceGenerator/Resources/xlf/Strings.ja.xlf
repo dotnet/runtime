@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">予期しないコード パターンのため、このインターフェイスまたはメソッドのコードを生成するために必要な分析が失敗しました。新しい構文または従来とは異なる構文を使用している場合は、他の構文の使用を検討してください。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">インターフェイス '{0}' の分析に失敗しました。ComInterfaceGenerator はこのインターフェイスのコードを生成しません。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">メソッド '{0}' の分析に失敗しました。ComInterfaceGenerator はこのメソッドのコードを生成しません。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">生成の分析に失敗しました。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">'GeneratedComInterfaceAttribute' の属性を持つインターフェイスは部分的で、非ジェネリックである必要があり、'System.Runtime.InteropServices.GuidAttribute' で GUID を指定する必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
+        <target state="translated">インターフェイス '{0}' は 'GeneratedComInterfaceAttribute' で属性付けされていますが、ジェネリックです。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">

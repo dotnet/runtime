@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">由于意外的代码模式，为此接口或方法生成代码所需的分析失败。如果你使用的是新语法或非常规语法，请考虑使用其他语法。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">接口“{0}”的分析失败。ComInterfaceGenerator 将不会为此接口生成代码。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">方法“{0}”的分析失败。ComInterfaceGenerator 将不会为此方法生成代码。</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">生成分析失败。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">
@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial, non-generic, and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">通过 "GeneratedComInterfaceAttribute" 特性化的接口必须是部分的、非泛型的，并且必须使用 "System.Runtime.InteropServices.GuidAttribute" 指定 GUID。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageInterfaceIsGeneric">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is generic.</target>
+        <target state="translated">“{0}”接口通过 "GeneratedComInterfaceAttribute" 特性化，但为泛型接口。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
