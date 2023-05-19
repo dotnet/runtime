@@ -78,7 +78,12 @@ namespace System.CommandLine
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
                     throw new CommandLineException(string.Format(invalidImplicationMessage, specifiedInstructionSet, impliedInstructionSet)));
 
-            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(targetArchitecture);
+            // Due to expansion by implication, the optimistic set is most often a pure superset of the supported set
+            //
+            // However, there are some gaps in cases like Arm64 neon where none of the optimistic sets imply it. Likewise,
+            // the optimistic set would be missing the explicitly unsupported sets. So we effectively clone the list and
+            // tack on the additional optimistic bits after. This ensures the optimistic set remains an accurate superset
+            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(instructionSetSupportBuilder);
 
             // Optimistically assume some instruction sets are present.
             if (targetArchitecture == TargetArchitecture.X86 || targetArchitecture == TargetArchitecture.X64)

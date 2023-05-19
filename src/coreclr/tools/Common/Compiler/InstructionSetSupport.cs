@@ -198,13 +198,22 @@ namespace ILCompiler
             return s_nonSpecifiableInstructionSets[architecture];
         }
 
-        private readonly SortedSet<string> _supportedInstructionSets = new SortedSet<string>();
-        private readonly SortedSet<string> _unsupportedInstructionSets = new SortedSet<string>();
+        private readonly SortedSet<string> _supportedInstructionSets;
+        private readonly SortedSet<string> _unsupportedInstructionSets;
         private readonly TargetArchitecture _architecture;
 
         public InstructionSetSupportBuilder(TargetArchitecture architecture)
         {
+            _supportedInstructionSets = new SortedSet<string>();
+            _unsupportedInstructionSets = new SortedSet<string>();
             _architecture = architecture;
+        }
+
+        public InstructionSetSupportBuilder(InstructionSetSupportBuilder other)
+        {
+            _supportedInstructionSets = new SortedSet<string>(other._supportedInstructionSets);
+            _unsupportedInstructionSets = new SortedSet<string>(other._unsupportedInstructionSets);
+            _architecture = other._architecture;
         }
 
         /// <summary>
