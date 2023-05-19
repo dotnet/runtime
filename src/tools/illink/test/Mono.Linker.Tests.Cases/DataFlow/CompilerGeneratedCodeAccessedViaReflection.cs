@@ -637,20 +637,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestMethodThroughDelegate ()
 			{
 				Action<Type> a = AnnotatedMethod;
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestLambdaThroughDelegate ()
 			{
 				Action<Type> a = ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => { };
 				a (null);
 			}
 
-			[ExpectedWarning ("IL2111")]
+			[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void TestLocalFunctionThroughDelegate ()
 			{
 				Action<Type> a = LocalFunction;
