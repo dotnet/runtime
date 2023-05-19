@@ -1,5 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Diagnostics;
@@ -14,13 +14,6 @@ namespace Mono.Linker
 	{
 		public string? FileName { get; }
 		public ICustomAttributeProvider? Provider { get; }
-		readonly ICustomAttributeProvider? _suppressionContextMember;
-		public ICustomAttributeProvider? SuppressionContextMember {
-			get {
-				Debug.Assert (_suppressionContextMember == null || _suppressionContextMember is IMemberDefinition || _suppressionContextMember is AssemblyDefinition);
-				return _suppressionContextMember ?? Provider;
-			}
-		}
 
 		public int SourceLine { get; }
 		public int SourceColumn { get; }
@@ -51,36 +44,38 @@ namespace Mono.Linker
 			SourceLine = sourceLine;
 			SourceColumn = sourceColumn;
 			Provider = assembly;
-			_suppressionContextMember = null;
 			ILOffset = null;
 		}
 
 		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset)
-			: this (provider, ilOffset, null)
-		{
-		}
-
-		public MessageOrigin (ICustomAttributeProvider? provider, int? ilOffset, ICustomAttributeProvider? suppressionContextMember)
 		{
 			Debug.Assert (provider == null || provider is IMemberDefinition || provider is AssemblyDefinition);
-			Debug.Assert (suppressionContextMember == null || suppressionContextMember is IMemberDefinition || provider is AssemblyDefinition);
 			FileName = null;
 			Provider = provider;
-			_suppressionContextMember = suppressionContextMember;
 			SourceLine = 0;
 			SourceColumn = 0;
 			ILOffset = ilOffset;
 		}
 
-		public MessageOrigin (MessageOrigin other, IMemberDefinition? suppressionContextMember)
+		public MessageOrigin (MessageOrigin other)
 		{
 			FileName = other.FileName;
 			Provider = other.Provider;
-			_suppressionContextMember = suppressionContextMember;
 			SourceLine = other.SourceLine;
 			SourceColumn = other.SourceColumn;
 			ILOffset = other.ILOffset;
 		}
+
+		public MessageOrigin (MessageOrigin other, int ilOffset)
+		{
+			FileName = other.FileName;
+			Provider = other.Provider;
+			SourceLine = other.SourceLine;
+			SourceColumn = other.SourceColumn;
+			ILOffset = ilOffset;
+		}
+
+		public MessageOrigin WithInstructionOffset (int ilOffset) => new MessageOrigin (this, ilOffset);
 
 		public override string? ToString ()
 		{
@@ -88,7 +83,7 @@ namespace Mono.Linker
 			string? fileName = FileName;
 			if (Provider is MethodDefinition method &&
 				method.DebugInformation.HasSequencePoints) {
-				var offset = ILOffset ?? 0;
+				var offset = ILOffset ?? method.DebugInformation.SequencePoints[0].Offset;
 				SequencePoint? correspondingSequencePoint = method.DebugInformation.SequencePoints
 					.Where (s => s.Offset <= offset)?.Last ();
 
@@ -125,7 +120,7 @@ namespace Mono.Linker
 			(FileName, Provider, SourceLine, SourceColumn, ILOffset) == (other.FileName, other.Provider, other.SourceLine, other.SourceColumn, other.ILOffset);
 
 		public override bool Equals (object? obj) => obj is MessageOrigin messageOrigin && Equals (messageOrigin);
-		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn).GetHashCode ();
+		public override int GetHashCode () => (FileName, Provider, SourceLine, SourceColumn, ILOffset).GetHashCode ();
 		public static bool operator == (MessageOrigin lhs, MessageOrigin rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageOrigin lhs, MessageOrigin rhs) => !lhs.Equals (rhs);
 

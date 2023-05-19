@@ -1,5 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
@@ -564,8 +564,10 @@ namespace Mono.Linker
 
 				if (!isNameOnly || !acceptName) {
 					// check parameters unless we are matching a name only
+#pragma warning disable RS0030 // Do not used banned APIs
 					if (!AllParametersMatch (method.Parameters, parameters, resolver))
 						continue;
+#pragma warning restore RS0030 // Do not used banned APIs
 				}
 
 				results.Add (method);

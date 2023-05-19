@@ -1,5 +1,5 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Diagnostics;
@@ -42,7 +42,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
@@ -59,7 +59,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
-		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
 		/// <returns>New MessageContainer of 'Error' category</returns>
@@ -98,7 +98,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// /// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
@@ -118,7 +118,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
-		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/runtime/blob/main/docs/tools/illink/error-codes.md
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
 		/// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option. </param>
@@ -162,7 +162,7 @@ namespace Mono.Linker
 			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
 				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
 
-			if (context.IsWarningSuppressed (code, origin))
+			if (context.IsWarningSuppressed (code, subcategory, origin))
 				return Empty;
 
 			if (version > context.WarnVersion)
@@ -182,7 +182,7 @@ namespace Mono.Linker
 			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
 				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
 
-			if (context.IsWarningSuppressed ((int) id, origin))
+			if (context.IsWarningSuppressed ((int) id, subcategory, origin))
 				return Empty;
 
 			if (version > context.WarnVersion)
