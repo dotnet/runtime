@@ -694,7 +694,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
 
     if (host_context_handle == nullptr)
     {
-        return fx_muxer_t::get_runtime_delegate_active(delegate_type, delegate);
+        return fx_muxer_t::get_runtime_delegate(nullptr, delegate_type, delegate);
     }
     else
     {

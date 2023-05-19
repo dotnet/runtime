@@ -857,36 +857,6 @@ namespace
         g_context_initializing_cv.notify_all();
         return rc;
     }
-
-    int get_runtime_delegate_validate(const host_context_t *context, coreclr_delegate_type type)
-    {
-        switch (type)
-        {
-        case coreclr_delegate_type::com_activation:
-        case coreclr_delegate_type::load_in_memory_assembly:
-        case coreclr_delegate_type::winrt_activation:
-        case coreclr_delegate_type::com_register:
-        case coreclr_delegate_type::com_unregister:
-            if (context->is_app)
-                return StatusCode::HostApiUnsupportedScenario;
-            break;
-        default:
-            // Always allowed
-            break;
-        }
-
-        // last_known_delegate_type was added in 5.0, so old versions won't set it and it will be zero.
-        // But when get_runtime_delegate was originally implemented in 3.0,
-        // it supported up to load_assembly_and_get_function_pointer so we check that first.
-        if (type > coreclr_delegate_type::load_assembly_and_get_function_pointer
-            && (size_t)type > context->hostpolicy_context_contract.last_known_delegate_type)
-        {
-            trace::error(_X("The requested delegate type is not available in the target framework."));
-            return StatusCode::HostApiUnsupportedVersion;
-        }
-
-        return StatusCode::Success;
-    }
 }
 
 int fx_muxer_t::run_app(host_context_t *context)
@@ -914,45 +884,49 @@ int fx_muxer_t::run_app(host_context_t *context)
 
 int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
 {
-    int rc = get_runtime_delegate_validate(context, type);
-    if (!STATUS_CODE_SUCCEEDED(rc))
-    {
-        return rc;
-    }
+    const host_context_t* context_local = context == nullptr ? get_active_host_context() : context;
 
-    const corehost_context_contract &contract = context->hostpolicy_context_contract;
-    {
-        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
-
-        if (context->type != host_context_type::secondary)
-        {
-            rc = load_runtime(context);
-            if (rc != StatusCode::Success)
-                return rc;
-        }
-
-        return contract.get_runtime_delegate(type, delegate);
-    }
-}
-
-int fx_muxer_t::get_runtime_delegate_active(coreclr_delegate_type type, void **delegate)
-{
-    const host_context_t *context = get_active_host_context();
-    if (context == nullptr)
+    if (context_local == nullptr)
     {
         trace::error(_X("Hosting components context has not been initialized. Cannot get runtime delegate."));
         return StatusCode::HostInvalidState;
     }
 
-    int rc = get_runtime_delegate_validate(context, type);
-    if (!STATUS_CODE_SUCCEEDED(rc))
+    switch (type)
     {
-        return rc;
+    case coreclr_delegate_type::com_activation:
+    case coreclr_delegate_type::load_in_memory_assembly:
+    case coreclr_delegate_type::winrt_activation:
+    case coreclr_delegate_type::com_register:
+    case coreclr_delegate_type::com_unregister:
+        if (context_local->is_app)
+            return StatusCode::HostApiUnsupportedScenario;
+        break;
+    default:
+        // Always allowed
+        break;
     }
 
-    const corehost_context_contract &contract = context->hostpolicy_context_contract;
+    // last_known_delegate_type was added in 5.0, so old versions won't set it and it will be zero.
+    // But when get_runtime_delegate was originally implemented in 3.0,
+    // it supported up to load_assembly_and_get_function_pointer so we check that first.
+    if (type > coreclr_delegate_type::load_assembly_and_get_function_pointer
+        && (size_t)type > context_local->hostpolicy_context_contract.last_known_delegate_type)
     {
-        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
+        trace::error(_X("The requested delegate type is not available in the target framework."));
+        return StatusCode::HostApiUnsupportedVersion;
+    }
+
+    const corehost_context_contract &contract = context_local->hostpolicy_context_contract;
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(context_local->hostpolicy_contract.set_error_writer);
+
+        if (context_local->type != host_context_type::secondary)
+        {
+            int rc = load_runtime(context);
+            if (rc != StatusCode::Success)
+                return rc;
+        }
 
         return contract.get_runtime_delegate(type, delegate);
     }
