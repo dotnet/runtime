@@ -7778,6 +7778,205 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
     return VNForFunc(type, func, arg0VN, arg1VN);
 }
 
+template <typename TSimd>
+void EvaluateSimdWithElement(ValueNumStore* vns, var_types baseType, TSimd* arg0, int arg1, ValueNum arg2VN)
+{
+    assert(arg1 >= 0);
+
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(float));
+            arg0->f32[arg1] = vns->GetConstantSingle(arg2VN);
+            break;
+        }
+        case TYP_DOUBLE:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(double));
+            arg0->f64[arg1] = vns->GetConstantDouble(arg2VN);
+            break;
+        }
+        case TYP_BYTE:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(int8_t));
+            arg0->i8[arg1] = vns->CoercedConstantValue<int8_t>(arg2VN);
+            break;
+        }
+        case TYP_SHORT:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(int16_t));
+            arg0->i16[arg1] = vns->CoercedConstantValue<int16_t>(arg2VN);
+            break;
+        }
+        case TYP_INT:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(int));
+            arg0->i32[arg1] = vns->GetConstantInt32(arg2VN);
+            break;
+        }
+        case TYP_LONG:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(INT64));
+            arg0->i64[arg1] = vns->GetConstantInt64(arg2VN);
+            break;
+        }
+        case TYP_UBYTE:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(uint8_t));
+            arg0->u8[arg1] = vns->CoercedConstantValue<uint8_t>(arg2VN);
+            break;
+        }
+        case TYP_USHORT:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(uint16_t));
+            arg0->u16[arg1] = vns->CoercedConstantValue<uint16_t>(arg2VN);
+            break;
+        }
+        case TYP_UINT:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(uint32_t));
+            arg0->u32[arg1] = vns->GetConstantInt32(arg2VN);
+            break;
+        }
+        case TYP_ULONG:
+        {
+            assert(arg1 < sizeof(TSimd) / sizeof(uint64_t));
+            arg0->u64[arg1] = vns->GetConstantInt64(arg2VN);
+            break;
+        }
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+ValueNum EvaluateSimdWithElement(
+    ValueNumStore* vns, var_types type, var_types baseType, ValueNum arg0VN, int arg1, ValueNum arg2VN)
+{
+    switch (type)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t cnsVec = vns->GetConstantSimd8(arg0VN);
+            EvaluateSimdWithElement<simd8_t>(vns, baseType, &cnsVec, arg1, arg2VN);
+            return vns->VNForSimd8Con(cnsVec);
+        }
+        case TYP_SIMD12:
+        {
+            simd12_t cnsVec = vns->GetConstantSimd12(arg0VN);
+            EvaluateSimdWithElement<simd12_t>(vns, baseType, &cnsVec, arg1, arg2VN);
+            return vns->VNForSimd12Con(cnsVec);
+        }
+        case TYP_SIMD16:
+        {
+            simd16_t cnsVec = vns->GetConstantSimd16(arg0VN);
+            EvaluateSimdWithElement<simd16_t>(vns, baseType, &cnsVec, arg1, arg2VN);
+            return vns->VNForSimd16Con(cnsVec);
+        }
+#if defined TARGET_XARCH
+        case TYP_SIMD32:
+        {
+            simd32_t cnsVec = vns->GetConstantSimd32(arg0VN);
+            EvaluateSimdWithElement<simd32_t>(vns, baseType, &cnsVec, arg1, arg2VN);
+            return vns->VNForSimd32Con(cnsVec);
+        }
+        case TYP_SIMD64:
+        {
+            simd64_t cnsVec = vns->GetConstantSimd64(arg0VN);
+            EvaluateSimdWithElement<simd64_t>(vns, baseType, &cnsVec, arg1, arg2VN);
+            return vns->VNForSimd64Con(cnsVec);
+        }
+#endif // TARGET_XARCH
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+ValueNum ExtendConstantSimd(ValueNumStore* vns, var_types dstType, TSimd* src, var_types baseType)
+{
+    assert(genTypeSize(dstType) > sizeof(TSimd));
+
+    switch (dstType)
+    {
+        case TYP_SIMD12:
+        {
+            simd12_t newVec = simd12_t::Zero();
+            CopyConstantSimd<simd12_t, TSimd>(&newVec, src, baseType);
+            return vns->VNForSimd12Con(newVec);
+        }
+        case TYP_SIMD16:
+        {
+            simd16_t newVec = simd16_t::Zero();
+            CopyConstantSimd<simd16_t, TSimd>(&newVec, src, baseType);
+            return vns->VNForSimd16Con(newVec);
+        }
+#if defined TARGET_XARCH
+        case TYP_SIMD32:
+        {
+            simd32_t newVec = simd32_t::Zero();
+            CopyConstantSimd<simd32_t, TSimd>(&newVec, src, baseType);
+            return vns->VNForSimd32Con(newVec);
+        }
+        case TYP_SIMD64:
+        {
+            simd64_t newVec = simd64_t::Zero();
+            CopyConstantSimd<simd64_t, TSimd>(&newVec, src, baseType);
+            return vns->VNForSimd64Con(newVec);
+        }
+#endif
+        case TYP_SIMD8:
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+ValueNum ExtendConstantSimd(ValueNumStore* vns, var_types dstType, ValueNum srcVN, var_types baseType)
+{
+    assert(vns->IsVNConstant(srcVN));
+
+    switch (vns->TypeOfVN(srcVN))
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t src = vns->GetConstantSimd8(srcVN);
+            return ExtendConstantSimd<simd8_t>(vns, dstType, &src, baseType);
+        }
+        case TYP_SIMD12:
+        {
+            simd12_t src = vns->GetConstantSimd12(srcVN);
+            return ExtendConstantSimd<simd12_t>(vns, dstType, &src, baseType);
+        }
+        case TYP_SIMD16:
+        {
+            simd16_t src = vns->GetConstantSimd16(srcVN);
+            return ExtendConstantSimd<simd16_t>(vns, dstType, &src, baseType);
+        }
+#if defined TARGET_XARCH
+        case TYP_SIMD32:
+        {
+            simd32_t src = vns->GetConstantSimd32(srcVN);
+            return ExtendConstantSimd<simd32_t>(vns, dstType, &src, baseType);
+        }
+        case TYP_SIMD64:
+        {
+            simd64_t src = vns->GetConstantSimd64(srcVN);
+            return ExtendConstantSimd<simd64_t>(vns, dstType, &src, baseType);
+        }
+#endif
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
 ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
                                                   var_types      baseType,
                                                   NamedIntrinsic ni,
@@ -7788,6 +7987,39 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
                                                   bool           encodeResultType,
                                                   ValueNum       resultTypeVN)
 {
+    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
+    {
+
+        switch (ni)
+        {
+            case NI_Vector128_WithElement:
+#ifdef TARGET_ARM64
+            case NI_Vector64_WithElement:
+#else
+            case NI_Vector256_WithElement:
+            case NI_Vector512_WithElement:
+#endif
+            {
+                var_types srcType = TypeOfVN(arg0VN);
+                if (srcType != type)
+                {
+                    if (genTypeSize(srcType) > genTypeSize(type))
+                    {
+                        break;
+                    }
+
+                    arg0VN = ExtendConstantSimd(this, type, arg0VN, baseType);
+                }
+
+                return EvaluateSimdWithElement(this, type, baseType, arg0VN, GetConstantInt32(arg1VN), arg2VN);
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+
     if (encodeResultType)
     {
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
