@@ -311,25 +311,19 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax);
                 }
 
-                if (elementIsBlittable)
-                {
-                    marshallingStrategy = new StatefulLinearCollectionBlittableElementsMarshalling(marshallingStrategy, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
-                }
-                else
-                {
-                    marshallingStrategy = new StatefulLinearCollectionNonBlittableElementsMarshalling(marshallingStrategy, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
-                }
+                IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
+                IElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
+
+                marshallingStrategy = new StatefulLinearCollectionMarshalling(marshallingStrategy, marshallerData.Shape, numElementsExpression, elementsMarshalling);
             }
             else
             {
-                if (elementIsBlittable)
-                {
-                    marshallingStrategy = new StatelessLinearCollectionBlittableElementsMarshalling(marshallerTypeSyntax, nativeType, marshallerData.Shape, marshallerData.CollectionElementType.Syntax, unmanagedElementType, numElementsExpression);
-                }
-                else
-                {
-                    marshallingStrategy = new StatelessLinearCollectionNonBlittableElementsMarshalling(marshallerTypeSyntax, nativeType, marshallerData.Shape, unmanagedElementType, elementMarshaller, elementInfo, numElementsExpression);
-                }
+                marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(marshallerTypeSyntax, nativeType, marshallerData.Shape, numElementsExpression);
+
+                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
+                IElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
+
+                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape);
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
@@ -355,6 +349,23 @@ namespace Microsoft.Interop
             }
 
             return marshallingGenerator;
+        }
+
+        private static IElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, TypePositionInfo elementInfo, IMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
+        {
+            IElementsMarshalling elementsMarshalling;
+
+            bool elementIsBlittable = elementMarshaller is BlittableMarshaller;
+            if (elementIsBlittable)
+            {
+                elementsMarshalling = new BlittableElementsMarshalling(marshallerData.CollectionElementType.Syntax, unmanagedElementType, collectionSource);
+            }
+            else
+            {
+                elementsMarshalling = new NonBlittableElementsMarshalling(unmanagedElementType, elementMarshaller, elementInfo, collectionSource);
+            }
+
+            return elementsMarshalling;
         }
 
         private static bool ElementTypeIsSometimesNonBlittable(TypePositionInfo elementInfo)
