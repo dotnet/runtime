@@ -34,6 +34,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             loggingFunction("------");
         }
 
+        private void AddTypeValidationError(TypeDesc type, string error)
+        {
+            _typeLoadValidationErrors.Add((type, error));
+        }
+
         public async Task<bool> CanSkipValidation(EcmaModule module)
         {
             // The system module can always skip type validation
@@ -91,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Constraints should be satisfied
                 if (!instantiatedType.CheckConstraints())
                 {
-                    _typeLoadValidationErrors.Add((instantiatedType, "Constraint check failed"));
+                    AddTypeValidationError(instantiatedType, "Constraint check failed");
                     return Task.FromResult(false);
                 }
 
@@ -99,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             catch (Exception ex)
             {
-                _typeLoadValidationErrors.Add((instantiatedType, $"due to exception '{ex}'"));
+                AddTypeValidationError(instantiatedType, $"due to exception '{ex}'");
                 return Task.FromResult(false);
             }
 /*
@@ -116,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Constraints should be satisfied
                 if (!instantiatedType.CheckConstraints())
                 {
-                    _typeLoadValidationErrors.Add((instantiatedType, "Constraint check failed"));
+                    AddTypeValidationError(instantiatedType, "Constraint check failed");
                     return false;
                 }
 
@@ -124,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             catch (Exception ex)
             {
-                _typeLoadValidationErrors.Add((instantiatedType, $"due to exception '{ex}'"));
+                AddTypeValidationError(instantiatedType, $"due to exception '{ex}'");
                 return false;
             }
         }
@@ -161,7 +166,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     if (!await CanSkipValidationWorkerHelper(type.BaseType))
                     {
-                        _typeLoadValidationErrors.Add((type, "BaseType failed validation"));
+                        AddTypeValidationError(type, "BaseType failed validation");
                         return false;
                     }
                 }
@@ -173,7 +178,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     // Validate that the all referenced interface types are loadable
                     if (!await CanSkipValidationWorkerHelper(interfaceType))
                     {
-                        _typeLoadValidationErrors.Add((type, $"Interface type {interfaceType} failed validation"));
+                        AddTypeValidationError(type, $"Interface type {interfaceType} failed validation");
                         return false;
                     }
                 }
@@ -205,14 +210,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     catch
                     {
-                        _typeLoadValidationErrors.Add((type, $"Signature could not be loaded for method {method.Name}"));
+                        AddTypeValidationError(type, $"Signature could not be loaded for method {method.Name}");
                         return false;
                     }
 
                     // Validate that enums have no methods
                     if (type.IsEnum)
                     {
-                        _typeLoadValidationErrors.Add((type, $"Is enum type with a method"));
+                        AddTypeValidationError(type, $"Is enum type with a method");
                         return false;
                     }
 
@@ -223,26 +228,26 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // Validate that if the method has an RVA that the method is not abstract
                         if (methodDef.Attributes.HasFlag(System.Reflection.MethodAttributes.Abstract))
                         {
-                            _typeLoadValidationErrors.Add((type, $"{method} is an abstract method with a non-zero RVA"));
+                            AddTypeValidationError(type, $"{method} is an abstract method with a non-zero RVA");
                             return false;
                         }
                         // Validate that if the method has an RVA is not marked with the miRuntime flag
                         if (methodDef.ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.Runtime))
                         {
-                            _typeLoadValidationErrors.Add((type, $"{method} is an miRuntime method with a non-zero RVA"));
+                            AddTypeValidationError(type, $"{method} is an miRuntime method with a non-zero RVA");
                             return false;
                         }
                         // Validate that if the method has an RVA is not marked as InternalCall
                         if (methodDef.ImplAttributes.HasFlag(System.Reflection.MethodImplAttributes.InternalCall))
                         {
-                            _typeLoadValidationErrors.Add((type, $"{method} is an internal call method with a non-zero RVA"));
+                            AddTypeValidationError(type, $"{method} is an internal call method with a non-zero RVA");
                             return false;
                         }
                     }
                     // Validate that abstract methods cannot exist on non-abstract classes
                     if (method.IsAbstract && !type.IsAbstract)
                     {
-                        _typeLoadValidationErrors.Add((type, $"abstract method {method} defined on non-abstract type"));
+                        AddTypeValidationError(type, $"abstract method {method} defined on non-abstract type");
                         return false;
                     }
                     // Validate that for instance methods, the abstract flag can only be set on a virtual method.
@@ -250,18 +255,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (!method.IsVirtual)
                         {
-                            _typeLoadValidationErrors.Add((type, $"instance abstract method {method} not marked as virtual"));
+                            AddTypeValidationError(type, $"instance abstract method {method} not marked as virtual");
                             return false;
                         }
                     }
                     // Validate that interfaces can only have rtSpecialName methods which are "_VtblGap" or ".cctor" methods
                     if (type.IsInterface)
                     {
-                        if (method.IsSpecialName || methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
+                        if (methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
                         {
                             if ((method.Name != ".cctor") && !method.Name.StartsWith("_VtblGap"))
                             {
-                                _typeLoadValidationErrors.Add((type, $"Special name method {method} defined on interface"));
+                                AddTypeValidationError(type, $"Special name method {method} defined on interface");
                                 return false;
                             }
                         }
@@ -271,19 +276,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // Validate that if a method is virtual that it cannot be a p/invoke
                         if (method.IsPInvoke)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is both virtual and a p/invoke"));
+                            AddTypeValidationError(type, $"'{method}' is both virtual and a p/invoke");
                             return false;
                         }
                         // Validate that if a method is virtual and static it can only exist on an interface
                         if (methodDef.Attributes.HasFlag(MethodAttributes.Static) && !type.IsInterface)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is a virtual static method not defined on an interface"));
+                            AddTypeValidationError(type, $"'{method}' is a virtual static method not defined on an interface");
                             return false;
                         }
                         // Validate that constructors cannot be marked as virtual
                         if (method.IsConstructor || method.IsStaticConstructor)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is a virtual constructor"));
+                            AddTypeValidationError(type, $"'{method}' is a virtual constructor");
                             return false;
                         }
                     }
@@ -292,14 +297,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (method.IsSynchronized)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is synchronized method on a value type"));
+                            AddTypeValidationError(type, $"'{method}' is synchronized method on a value type");
                             return false;
                         }
                     }
                     // validate that the global class cannot have instance methods
                     if (type.EcmaModule.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
                     {
-                        _typeLoadValidationErrors.Add((type, $"'{method}' is an instance method defined on the global <module> type"));
+                        AddTypeValidationError(type, $"'{method}' is an instance method defined on the global <module> type");
                         return false;
                     }
                     // Validate that a generic method cannot be on a ComImport class, or a ComEventInterface  -- UNIMPLEMENTED
@@ -308,12 +313,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (type.HasInstantiation)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is an pinvoke defined on a generic type"));
+                            AddTypeValidationError(type, $"'{method}' is an pinvoke defined on a generic type");
                             return false;
                         }
                         if (method.HasInstantiation)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is an pinvoke defined as a generic method"));
+                            AddTypeValidationError(type, $"'{method}' is an pinvoke defined as a generic method");
                             return false;
                         }
                     }
@@ -322,19 +327,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (method.HasInstantiation)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is an internal call generic method"));
+                            AddTypeValidationError(type, $"'{method}' is an internal call generic method");
                             return false;
                         }
                         if (type.HasInstantiation)
                         {
-                            _typeLoadValidationErrors.Add((type, $"'{method}' is an internal call method on generic type"));
+                            AddTypeValidationError(type, $"'{method}' is an internal call method on generic type");
                             return false;
                         }
                     }
                     // Validate that a generic method cannot be marked as runtime
                     if (method.HasInstantiation && method.IsRuntimeImplemented)
                     {
-                        _typeLoadValidationErrors.Add((type, $"'{method}' is an runtime-impl generic method"));
+                        AddTypeValidationError(type, $"'{method}' is an runtime-impl generic method");
                         return false;
                     }
                     // Validate that generic variance is properly respected in method signatures -- UNIMPLEMENTED
@@ -358,40 +363,40 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
-                    if (!methodDecl.Signature.EqualsWithCovariantReturnType(methodBody.Signature))
+                    if (!methodBody.Signature.EqualsWithCovariantReturnType(methodDecl.Signature))
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' do not have matching signatures"));
+                        AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' do not have matching signatures");
                         return false;
                     }
 
                     if (!methodDecl.IsVirtual)
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Decl '{methodDecl}' points at non-virtual decl method"));
+                        AddTypeValidationError(type, $"MethodImpl with Decl '{methodDecl}' points at non-virtual decl method");
                         return false;
                     }
 
-                    if (!methodDecl.IsFinal)
+                    if (methodDecl.IsFinal)
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Decl '{methodDecl}' points at sealed decl method"));
+                        AddTypeValidationError(type, $"MethodImpl with Decl '{methodDecl}' points at sealed decl method");
                         return false;
                     }
 
                     bool isStatic = methodBody.Signature.IsStatic;
                     if (methodBody.OwningType.IsInterface && !isStatic && !methodBody.IsFinal)
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements interface on another interface with a non-sealed method"));
+                        AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements interface on another interface with a non-sealed method");
                         return false;
                     }
 
                     if (isStatic && methodBody.IsVirtual)
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements a static virtual method with a virtual static method"));
+                        AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements a static virtual method with a virtual static method");
                         return false;
                     }
 
                     if (!isStatic && !methodBody.IsVirtual)
                     {
-                        _typeLoadValidationErrors.Add((type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements a instance virtual method with a non-virtual instance method"));
+                        AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' implements a instance virtual method with a non-virtual instance method");
                         return false;
                     }
 
@@ -399,30 +404,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
 
                 // Validate that all virtual static methods are actually implemented if the type is not abstract
-                // Validate that all virtual instance methods are actually implemented if the type is concrete (Not abstract or interface)
-                bool isConcrete = !type.IsInterface && !type.IsAbstract;
+                // Validate that all virtual instance methods are actually implemented if the type is not abstract
+                if (!type.IsAbstract)
+                {
                 var virtualMethodAlgorithm = type.Context.GetVirtualMethodAlgorithmForType(type);
                 foreach (var interfaceImplemented in type.RuntimeInterfaces)
                 {
                     foreach (var interfaceMethod in interfaceImplemented.GetVirtualMethods())
                     {
-                        if (interfaceMethod.Signature.IsStatic)
-                        {
-                            var resolvedMethod = virtualMethodAlgorithm.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
+                            MethodDesc resolvedMethod;
+                            bool staticInteraceMethod = interfaceMethod.Signature.IsStatic;
+                            if (staticInteraceMethod)
                             if (null == resolvedMethod || resolvedMethod.IsAbstract)
                             {
                                 if (virtualMethodAlgorithm.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out var impl) != DefaultInterfaceMethodResolution.DefaultImplementation || impl.IsAbstract)
                                 {
-                                    _typeLoadValidationErrors.Add((type, $"Interface method '{interfaceMethod}' does not have implementation"));
+                                resolvedMethod = virtualMethodAlgorithm.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod, type);
                                     return false;
                                 }
                             }
                         }
                         else
                         {
-                            if (null == virtualMethodAlgorithm.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, type))
+                                resolvedMethod = type.ResolveInterfaceMethodTarget(interfaceMethod);
+                            }
+
+                            if (null == resolvedMethod || (staticInteraceMethod && resolvedMethod.IsAbstract))
                             {
-                                _typeLoadValidationErrors.Add((type, $"Interface method '{interfaceMethod}' does not have implementation"));
+                                if (virtualMethodAlgorithm.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out var impl) != DefaultInterfaceMethodResolution.DefaultImplementation || impl.IsAbstract)
+                            {
+                                    AddTypeValidationError(type, $"Interface method '{interfaceMethod}' does not have implementation");
                                 return false;
                             }
                         }
@@ -432,11 +443,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (var virtualMethod in type.GetAllVirtualMethods())
                 {
                     var implementationMethod = virtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type);
-                    if (implementationMethod == null ||  implementationMethod.IsAbstract)
+                        if (implementationMethod == null || implementationMethod.IsAbstract)
                     {
-                        _typeLoadValidationErrors.Add((type, $"Interface method '{virtualMethod}' does not have implementation"));
+                            AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
                         return false;
                     }
+                }
                 }
 
                 return true;
@@ -444,7 +456,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             catch (Exception ex)
             {
                 // If we throw an exception, clearly type validation skipping was not to be
-                _typeLoadValidationErrors.Add((type, ex.ToString()));
+                AddTypeValidationError(type, $"due to exception '{ex.ToString()}'");
                 return false;
             }
         }
