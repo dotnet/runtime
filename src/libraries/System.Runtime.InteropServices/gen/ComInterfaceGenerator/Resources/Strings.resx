@@ -141,7 +141,7 @@
   <data name="InvalidStringMarshallingConfigurationDescription" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</value>
   </data>
-  <data name="InvalidStringMarshallingConfigurationMessage" xml:space="preserve">
+  <data name="InvalidStringMarshallingConfigurationOnMethodMessage" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</value>
     <comment>{1} is a message containing additional details about what is not valid</comment>
   </data>
@@ -251,5 +251,17 @@
   </data>
   <data name="GeneratedComInterfaceStringMarshallingMustMatchBase" xml:space="preserve">
     <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedDescription" xml:space="preserve">
+    <value>COM interface source generation requires all base interfaces to be valid interfaces. Fix any issues on the base interface to resolve this diagnostic.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedMessage" xml:space="preserve">
+    <value>COM interface {0} inherits from {1}, which has errors. ComInterfaceGenerator will not generate source for {0}.</value>
+  </data>
+  <data name="BaseInterfaceCannotBeGeneratedTitle" xml:space="preserve">
+    <value>The base COM interface failed to generate source. ComInterfaceGenerator will not generate source for this interface.</value>
+  </data>
+  <data name="InvalidStringMarshallingConfigurationOnInterfaceMessage" xml:space="preserve">
+    <value>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on interface '{0}' is invalid. {1}</value>
   </data>
 </root>

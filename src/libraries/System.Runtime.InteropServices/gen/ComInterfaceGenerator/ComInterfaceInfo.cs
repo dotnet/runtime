@@ -54,15 +54,8 @@ namespace Microsoft.Interop
             if (!TryGetBaseComInterface(symbol, syntax, out INamedTypeSymbol? baseSymbol, out Diagnostic? baseDiagnostic))
                 return (null, baseDiagnostic);
 
-            if (baseSymbol is not null)
-            {
-                var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
-                var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
-                if (baseAttrInfo != attrInfo)
-                {
-                    return (null, Diagnostic.Create(GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived, syntax.Identifier.GetLocation()));
-                }
-            }
+            if (!StringMarshallingIsValid(symbol, syntax, baseSymbol, out Diagnostic? stringMarshallingDiagnostic))
+                return (null, stringMarshallingDiagnostic);
 
             return (new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
@@ -73,6 +66,45 @@ namespace Microsoft.Interop
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                 guid ?? Guid.Empty,
                 LocationInfo.From(symbol)), null);
+        }
+
+        private static bool StringMarshallingIsValid(INamedTypeSymbol symbol, InterfaceDeclarationSyntax syntax, INamedTypeSymbol? baseSymbol, [NotNullWhen(false)] out Diagnostic? stringMarshallingDiagnostic)
+        {
+            var attrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(symbol));
+            if (attrInfo.StringMarshalling is StringMarshalling.Custom && attrInfo.StringMarshallingCustomType is null)
+            {
+                stringMarshallingDiagnostic = Diagnostic.Create(
+                    GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                    syntax.Identifier.GetLocation(),
+                    symbol.ToDisplayString(),
+                    SR.InvalidStringMarshallingConfigurationMissingCustomType);
+                    return false;
+            }
+            if (attrInfo.StringMarshalling is not StringMarshalling.Custom && attrInfo is not null)
+            {
+                stringMarshallingDiagnostic = Diagnostic.Create(
+                    GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface,
+                    syntax.Identifier.GetLocation(),
+                    symbol.ToDisplayString(),
+                    SR.InvalidStringMarshallingConfigurationNotCustom);
+                    return false;
+            }
+            if (baseSymbol is not null)
+            {
+                var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
+                if (baseAttrInfo != attrInfo)
+                {
+                    stringMarshallingDiagnostic = Diagnostic.Create(
+                        GeneratorDiagnostics.InvalidStringMarshallingMismatchBetweenBaseAndDerived,
+                        syntax.Identifier.GetLocation(),
+                        symbol.ToDisplayString(),
+                        SR.GeneratedComInterfaceStringMarshallingMustMatchBase);
+                    return false;
+                }
+            }
+            stringMarshallingDiagnostic = null;
+            return true;
+
         }
 
         /// <summary>

@@ -16,13 +16,13 @@ namespace Microsoft.Interop
         /// </summary>
         public static ImmutableArray<(ComInterfaceContext? Context, Diagnostic? Diagnostic)> GetContexts(ImmutableArray<ComInterfaceInfo> data, CancellationToken _)
         {
-            Dictionary<string, ComInterfaceInfo> keyToInterfaceInfoMap = new();
+            Dictionary<string, ComInterfaceInfo> nameToInterfaceInfoMap = new();
             var accumulator = ImmutableArray.CreateBuilder<(ComInterfaceContext? Context, Diagnostic? Diagnostic)>(data.Length);
             foreach (var iface in data)
             {
-                keyToInterfaceInfoMap.Add(iface.ThisInterfaceKey, iface);
+                nameToInterfaceInfoMap.Add(iface.ThisInterfaceKey, iface);
             }
-            Dictionary<string, ComInterfaceContext> symbolToContextMap = new();
+            Dictionary<string, ComInterfaceContext> nameToContextMap = new();
 
             foreach (var iface in data)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Interop
 
             (ComInterfaceContext? Context, Diagnostic? Diagnostic) AddContext(ComInterfaceInfo iface)
             {
-                if (symbolToContextMap.TryGetValue(iface.ThisInterfaceKey, out var cachedValue))
+                if (nameToContextMap.TryGetValue(iface.ThisInterfaceKey, out var cachedValue))
                 {
                     return (cachedValue, null);
                 }
@@ -40,25 +40,25 @@ namespace Microsoft.Interop
                 if (iface.BaseInterfaceKey is null)
                 {
                     var baselessCtx = new ComInterfaceContext(iface, null);
-                    symbolToContextMap[iface.ThisInterfaceKey] = baselessCtx;
+                    nameToContextMap[iface.ThisInterfaceKey] = baselessCtx;
                     return (baselessCtx, null);
                 }
 
-                if (!symbolToContextMap.TryGetValue(iface.BaseInterfaceKey, out var baseContext))
+                if (!nameToContextMap.TryGetValue(iface.BaseInterfaceKey, out var baseContext))
                 {
-                    if(!keyToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo))
+                    if(!nameToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo))
                     {
                         //Diagnostic that there is an issue with the base, so the interface cannot be
                         return (null,
                             Diagnostic.Create(
                                 GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                                iface.DiagnosticLocation.AsLocation()));
+                                iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
 
                     }
                     (baseContext, var baseDiag) = AddContext(baseInfo);
                 }
                 var ctx = new ComInterfaceContext(iface, baseContext);
-                symbolToContextMap[iface.ThisInterfaceKey] = ctx;
+                nameToContextMap[iface.ThisInterfaceKey] = ctx;
                 return (ctx, null);
             }
         }

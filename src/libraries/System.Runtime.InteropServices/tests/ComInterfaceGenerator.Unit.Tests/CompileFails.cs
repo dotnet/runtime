@@ -106,20 +106,43 @@ namespace ComInterfaceGenerator.Unit.Tests
             (StringMarshalling, Type?) utf8Marshalling = (StringMarshalling.Utf8, null);
             (StringMarshalling, Type?) utf16Marshalling = (StringMarshalling.Utf16, null);
             (StringMarshalling, Type?) customUtf16Marshalling = (StringMarshalling.Custom, typeof(Utf16StringMarshaller));
+            (StringMarshalling, Type?) customWithNoType = (StringMarshalling.Custom, null);
+            (StringMarshalling, Type?) utf8WithType = (StringMarshalling.Custom, null);
             DiagnosticResult[] emptyDiagnostics = new DiagnosticResult[] { };
 
-            yield return new object[] {
+            // Custom with
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customWithNoType),
+                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0) }
+            };
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(utf8WithType),
+                new DiagnosticResult[] { new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0) }
+            };
+
+            // Inheritance no diagnostic
+            yield return new object[]
+            {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(utf16Marshalling, utf16Marshalling),
-                emptyDiagnostics };
-            yield return new object[] {
+                emptyDiagnostics
+            };
+            yield return new object[]
+            {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(utf8Marshalling, utf8Marshalling),
-                emptyDiagnostics };
-            yield return new object[] {
+                emptyDiagnostics
+            };
+            yield return new object[]
+            {
                 ID(),
                 codeSnippets.DerivedWithStringMarshalling(customUtf16Marshalling, customUtf16Marshalling),
-                emptyDiagnostics };
+                emptyDiagnostics
+            };
 
             // mismatches
             DiagnosticResult[] mismatchAt1 = MismatchesWithLocations(1);
@@ -221,7 +244,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                 return locations
                     .Select(i =>
                         new DiagnosticResult(GeneratorDiagnostics.BaseInterfaceIsNotGenerated)
-                            .WithLocation(i))
+                            .WithLocation(i)
+                            .WithArguments($"StringMarshalling{i}", $"StringMarshalling{i-1}", ))
                    .ToArray();
             }
         }
@@ -268,7 +292,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         [Theory]
         [MemberData(nameof(StringMarshallingCodeSnippets), GeneratorKind.ComInterfaceGenerator)]
-        public async Task ValidateMismatchedStringMarshallingRaisesDiagnostic(string id, string source, DiagnosticResult[] expectedDiagnostics)
+        public async Task ValidateStringMarshallingDiagnostics(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
             _ = id;
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostics);
