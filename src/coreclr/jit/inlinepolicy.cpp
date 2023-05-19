@@ -520,7 +520,7 @@ bool DefaultPolicy::BudgetCheck() const
 
         if (allowOverBudget)
         {
-            JITDUMP("Allowing over-budget top-level forceinline\n")
+            JITDUMP("Allowing over-budget: top-level forceinline, no return call, or small inlinee\n");
         }
         else
         {
