@@ -419,9 +419,9 @@ namespace Microsoft.Interop
                 yield return statement;
             }
 
-            if (!info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out)
             {
-                yield return _elementsMarshalling.GenerateByValueOutMarshalStatement(info, context);
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutMarshalStatement(info, context);
                 yield break;
             }
 
@@ -437,9 +437,10 @@ namespace Microsoft.Interop
         {
             string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
 
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            if (context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
-                yield return _elementsMarshalling.GenerateByValueOutUnmarshalStatement(info, context);
+                yield return _elementsMarshalling.GenerateManagedToUnmanagedByValueOutUnmarshalStatement(info, context);
+                yield break;
             }
 
             if (!_shape.HasFlag(MarshallerShape.ToManaged))

@@ -107,7 +107,7 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            return _enableByValueContentsMarshalling && context.Direction == MarshalDirection.ManagedToUnmanaged;
+            return _enableByValueContentsMarshalling;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)

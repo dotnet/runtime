@@ -22,9 +22,9 @@ namespace Microsoft.Interop
 
     internal interface IElementsMarshalling
     {
-        StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateManagedToUnmanagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateMarshalStatement(TypePositionInfo info, StubCodeContext context);
-        StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
+        StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
     }
@@ -45,7 +45,7 @@ namespace Microsoft.Interop
             _collectionSource = collectionSource;
         }
 
-        public StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateManagedToUnmanagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
             // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
@@ -73,7 +73,7 @@ namespace Microsoft.Interop
                     Argument(destination)));
         }
 
-        public StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             ExpressionSyntax source = CastToManagedIfNecessary(_collectionSource.GetUnmanagedValuesDestination(info, context));
 
@@ -175,7 +175,7 @@ namespace Microsoft.Interop
             _collectionSource = collectionSource;
         }
 
-        public StatementSyntax GenerateByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateManagedToUnmanagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
             // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
@@ -259,7 +259,7 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
-        public StatementSyntax GenerateByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
+        public StatementSyntax GenerateManagedToUnmanagedByValueOutUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
             // Use ManagedSource and NativeDestination spans for by-value marshalling since we're just marshalling back the contents,
             // not the array itself.
@@ -356,7 +356,9 @@ namespace Microsoft.Interop
                     VariableDeclarator(
                         Identifier(nativeSpanIdentifier))
                     .WithInitializer(EqualsValueClause(
-                        _collectionSource.GetUnmanagedValuesDestination(info, context)))))),
+                            context.Direction == MarshalDirection.ManagedToUnmanaged
+                                ? _collectionSource.GetUnmanagedValuesDestination(info, context)
+                                : _collectionSource.GetUnmanagedValuesSource(info, context)))))),
                 contentsCleanupStatements);
         }
 

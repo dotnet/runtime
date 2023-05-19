@@ -47,6 +47,10 @@ namespace ComInterfaceGenerator.Tests
                     [MarshalUsing(CountElementName = nameof(numValues))] ref int[] values,
                     int numValues,
                     out int oldValue);
+                [VirtualMethodIndex(5, ImplicitThisParameter = true)]
+                void MultiplyWithData(
+                    [MarshalUsing(CountElementName = nameof(numValues))] int[] values,
+                    int numValues);
             }
 
             [NativeMarshalling(typeof(NativeObjectMarshaller))]
@@ -142,6 +146,13 @@ namespace ComInterfaceGenerator.Tests
 
             public void ExchangeData(ref int x) => x = Interlocked.Exchange(ref _data, x);
             public int GetData() => _data;
+            public void MultiplyWithData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i] *= _data;
+                }
+            }
             public void SetData(int x) => _data = x;
             public void SumAndSetData([MarshalUsing(CountElementName = "numValues")] int[] values, int numValues, out int oldValue)
             {

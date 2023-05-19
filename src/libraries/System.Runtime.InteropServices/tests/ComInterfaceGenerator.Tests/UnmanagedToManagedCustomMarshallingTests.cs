@@ -45,42 +45,18 @@ namespace ComInterfaceGenerator.Tests
                 void ExchangeData([MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] ref IntWrapper data);
                 [VirtualMethodIndex(3, ImplicitThisParameter = true)]
                 void SumAndSetData(
-                    [MarshalUsing(CountElementName = nameof(numValues)), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1)] IntWrapper[] values123,
+                    [MarshalUsing(CountElementName = nameof(numValues)), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1)] IntWrapper[] values,
                     int numValues,
                     [MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] out IntWrapper oldValue);
                 [VirtualMethodIndex(4, ImplicitThisParameter = true)]
                 void SumAndSetData(
-                    [MarshalUsing(CountElementName = nameof(numValues)), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1)] ref IntWrapper[] values123,
+                    [MarshalUsing(CountElementName = nameof(numValues)), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1)] ref IntWrapper[] values,
                     int numValues,
                     [MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts))] out IntWrapper oldValue);
-            }
-
-            [NativeMarshalling(typeof(NativeObjectMarshaller))]
-            public class NativeObject : INativeObject.Native, IUnmanagedVirtualMethodTableProvider, IDisposable
-            {
-                private readonly void* _pointer;
-
-                public NativeObject(void* pointer)
-                {
-                    _pointer = pointer;
-                }
-
-                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type)
-                {
-                    Assert.Equal(typeof(INativeObject), type);
-                    return new VirtualMethodTableInfo(_pointer, *(void***)_pointer);
-                }
-
-                public void Dispose()
-                {
-                    DeleteNativeObject(_pointer);
-                }
-            }
-
-            [CustomMarshaller(typeof(NativeObject), MarshalMode.ManagedToUnmanagedOut, typeof(NativeObjectMarshaller))]
-            static class NativeObjectMarshaller
-            {
-                public static NativeObject ConvertToManaged(void* value) => new NativeObject(value);
+                [VirtualMethodIndex(5, ImplicitThisParameter = true)]
+                void MultiplyWithData(
+                    [MarshalUsing(CountElementName = nameof(numValues)), MarshalUsing(typeof(IntWrapperMarshallerToIntWithFreeCounts), ElementIndirectionDepth = 1), In, Out] IntWrapper[] values123,
+                    int numValues);
             }
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "new_native_object")]
@@ -103,12 +79,15 @@ namespace ComInterfaceGenerator.Tests
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_and_set_native_object_data_with_ref")]
             public static partial int SumAndSetNativeObjectData(void* obj, [MarshalUsing(CountElementName = nameof(numValues))] ref int[] arr, int numValues, out int oldValue);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "multiply_with_native_object_data")]
+            public static partial int MultiplyWithNativeObjectData(void* obj, [MarshalUsing(CountElementName = nameof(numValues))] int[] arr, int numValues);
         }
     }
     public class UnmanagedToManagedCustomMarshallingTests
     {
         [Fact]
-        public unsafe void ValidateOnlyByRefStatelessFreed()
+        public unsafe void ValidateOnlyByRefFreed_Stateless()
         {
             const int startingValue = 13;
             const int newValue = 42;
@@ -134,12 +113,12 @@ namespace ComInterfaceGenerator.Tests
             }
             finally
             {
-                VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Free(wrapper);
             }
         }
 
         [Fact]
-        public unsafe void ValidateArrayElementsAndOutParameterNotFreed()
+        public unsafe void ValidateArrayElementsAndOutParameterNotFreed_Stateless()
         {
             const int startingValue = 13;
 
@@ -159,12 +138,12 @@ namespace ComInterfaceGenerator.Tests
             }
             finally
             {
-                VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Free(wrapper);
             }
         }
 
         [Fact]
-        public unsafe void ValidateArrayElementsByRefFreed()
+        public unsafe void ValidateArrayElementsByRefFreed_Stateless()
         {
             const int startingValue = 13;
 
@@ -184,7 +163,32 @@ namespace ComInterfaceGenerator.Tests
             }
             finally
             {
-                VTableGCHandlePair<NativeExportsNE.ImplicitThis.INativeObject>.Free(wrapper);
+                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Free(wrapper);
+            }
+        }
+
+        [Fact]
+        public unsafe void ValidateArrayElementsByValueOutFreed_Stateless()
+        {
+            const int startingValue = 13;
+
+            ManagedObjectImplementation impl = new ManagedObjectImplementation(startingValue);
+
+            void* wrapper = VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Allocate(impl);
+
+            try
+            {
+                var values = new int[] { 1, 32, 63, 124, 255 };
+
+                int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
+
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.MultiplyWithNativeObjectData(wrapper, values, values.Length);
+
+                Assert.Equal(freeCalls + values.Length, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
+            }
+            finally
+            {
+                VTableGCHandlePair<NativeExportsNE.UnmanagedToManagedCustomMarshalling.INativeObject>.Free(wrapper);
             }
         }
 
@@ -199,6 +203,13 @@ namespace ComInterfaceGenerator.Tests
 
             public void ExchangeData(ref IntWrapper x) => x = Interlocked.Exchange(ref _data, x);
             public IntWrapper GetData() => _data;
+            public void MultiplyWithData(IntWrapper[] values, int numValues)
+            {
+                for (int i = 0; i < values.Length; i++)
+                {
+                    values[i].i *= _data.i;
+                }
+            }
             public void SetData(IntWrapper x) => _data = x;
             public void SumAndSetData(ref IntWrapper[] values, int numValues, out IntWrapper oldValue) => SumAndSetData(values, numValues, out oldValue);
             public void SumAndSetData(IntWrapper[] values, int numValues, out IntWrapper oldValue)
