@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="AnalysisFailedDescription">
         <source>The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</source>
-        <target state="new">The analysis required to generate code for this interface or method has failed due to an unexpected code pattern. If you are using new or unconventional syntax, consider using other syntax.</target>
+        <target state="translated">Analýza požadovaná ke generování kódu pro toto rozhraní nebo metodu se nezdařila kvůli neočekávanému vzoru kódu. Pokud používáte novou nebo nekonvenční syntaxi, zvažte použití jiné syntaxe.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedInterfaceMessage">
         <source>Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</source>
-        <target state="new">Analysis of interface '{0}' has failed. ComInterfaceGenerator will not generate code for this interface.</target>
+        <target state="translated">Analýza rozhraní {0} se nezdařila. ComInterfaceGenerator nevygeneruje kód pro toto rozhraní.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedMethodMessage">
         <source>Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</source>
-        <target state="new">Analysis of method '{0}' has failed. ComInterfaceGenerator will not generate code for this method.</target>
+        <target state="translated">Analýza metody {0} se nezdařila. ComInterfaceGenerator nevygeneruje kód pro tuto metodu.</target>
         <note />
       </trans-unit>
       <trans-unit id="AnalysisFailedTitle">
         <source>Analysis for generation has failed.</source>
-        <target state="new">Analysis for generation has failed.</target>
+        <target state="translated">Analýza pro generování se nezdařila</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescription">

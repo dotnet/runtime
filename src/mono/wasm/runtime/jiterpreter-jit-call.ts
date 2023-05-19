@@ -11,8 +11,11 @@ import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, getOptions, bytesFromHex
+    recordFailure, getOptions
 } from "./jiterpreter-support";
+import {
+    compileDoJitCall
+} from "./jiterpreter-feature-detect";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
 
@@ -225,9 +228,6 @@ export function mono_interp_jit_wasm_jit_call_trampoline(
         mono_interp_flush_jitcall_queue();
 }
 
-// pure wasm implementation of do_jit_call_indirect (using wasm EH). see do-jit-call.wat / do-jit-call.wasm
-const doJitCall16 =
-    "0061736d01000000010b0260017f0060037f7f7f00021d020169066d656d6f727902000001690b6a69745f63616c6c5f636200000302010107180114646f5f6a69745f63616c6c5f696e64697265637400010a1301110006402001100019200241013602000b0b";
 let doJitCallModule: WebAssembly.Module | undefined = undefined;
 
 function getIsWasmEhSupported(): boolean {
@@ -236,11 +236,7 @@ function getIsWasmEhSupported(): boolean {
 
     // Probe whether the current environment can handle wasm exceptions
     try {
-        // Load and compile the wasm version of do_jit_call_indirect. This serves as a way to probe for wasm EH
-        const bytes = bytesFromHex(doJitCall16);
-
-        counters.bytesGenerated += bytes.length;
-        doJitCallModule = new WebAssembly.Module(bytes);
+        doJitCallModule = compileDoJitCall();
         wasmEhSupported = true;
     } catch (exc) {
         mono_log_info("Disabling WASM EH support due to JIT failure", exc);
@@ -278,8 +274,10 @@ export function mono_jiterp_do_jit_call_indirect(
             const instance = new WebAssembly.Instance(doJitCallModule!, {
                 i: {
                     jit_call_cb: jitCallCb,
-                    memory: (<any>Module).asm.memory
-                }
+                },
+                m: {
+                    h: (<any>Module).asm.memory
+                },
             });
             const impl = instance.exports.do_jit_call_indirect;
             if (typeof (impl) !== "function")
