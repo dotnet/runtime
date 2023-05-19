@@ -1107,17 +1107,29 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($$"""
                     private static bool {{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{TypeParameter}}>({{JsonSerializerOptionsTypeRef}} options, out {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> jsonTypeInfo)
                     {
-                        foreach ({{JsonConverterTypeRef}}? converter in options.Converters)
+                        {{JsonConverterTypeRef}}? converter = GetRuntimeConverterForType(typeof({{TypeParameter}}), options);
+                        if (converter != null)
                         {
-                            if (converter?.CanConvert(typeof({{TypeParameter}})) == true)
-                            {
-                                jsonTypeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, {{ExpandConverterMethodName}}(typeof({{TypeParameter}}), converter, options));
-                                return true;
-                            }
+                            jsonTypeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, converter);
+                            return true;
                         }
 
                         jsonTypeInfo = null;
                         return false;
+                    }
+
+                    private static {{JsonConverterTypeRef}}? GetRuntimeConverterForType({{TypeTypeRef}} type, {{JsonSerializerOptionsTypeRef}} options)
+                    {
+                        for (int i = 0; i < options.Converters.Count; i++)
+                        {
+                            {{JsonConverterTypeRef}}? converter = options.Converters[i];
+                            if (converter?.CanConvert(type) == true)
+                            {
+                                return {{ExpandConverterMethodName}}(type, converter, options);
+                            }
+                        }
+
+                        return null;
                     }
 
                     private static {{JsonConverterTypeRef}} {{ExpandConverterMethodName}}({{TypeTypeRef}} type, {{JsonConverterTypeRef}} converter, {{JsonSerializerOptionsTypeRef}} options)
@@ -1125,7 +1137,7 @@ namespace System.Text.Json.SourceGeneration
                         if (converter is {{JsonConverterFactoryTypeRef}} factory)
                         {
                             converter = factory.CreateConverter(type, options);
-                            if (converter is null or {{JsonConverterFactoryTypeRef}})
+                            if (converter is null || converter is {{JsonConverterFactoryTypeRef}})
                             {
                                 throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.InvalidJsonConverterFactoryOutput}}", factory.GetType()));
                             }
