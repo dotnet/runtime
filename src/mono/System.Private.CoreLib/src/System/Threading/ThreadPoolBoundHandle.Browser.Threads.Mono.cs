@@ -10,11 +10,6 @@ namespace System.Threading
 #pragma warning disable IDE0060
         private static ThreadPoolBoundHandle BindHandlePortableCore(SafeHandle handle)
         {
-            ArgumentNullException.ThrowIfNull(handle);
-
-            if (handle.IsClosed || handle.IsInvalid)
-                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
-
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 #pragma warning restore IDE0060
