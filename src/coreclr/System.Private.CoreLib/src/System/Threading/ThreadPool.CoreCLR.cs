@@ -28,10 +28,6 @@ namespace System.Threading
 
         private static readonly bool s_initialized = InitializeConfig();
 
-        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
-        // the runtime may use the thread for processing other work
-        internal static bool YieldFromDispatchLoop => false;
-
         private static unsafe bool InitializeConfig()
         {
             int configVariableIndex = 1;

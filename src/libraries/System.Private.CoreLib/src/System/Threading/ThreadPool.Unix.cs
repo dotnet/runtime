@@ -13,11 +13,17 @@ namespace System.Threading
         private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
 #elif NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
-#else 
+#else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
-#endif    
-        
+#endif
+
+#if CORECLR || !(TARGET_BROWSER && FEATURE_WASM_THREADS) 
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work.
+        internal static bool YieldFromDispatchLoop => false;
+#elif
+
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>

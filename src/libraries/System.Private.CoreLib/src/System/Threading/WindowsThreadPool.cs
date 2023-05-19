@@ -16,14 +16,6 @@ namespace System.Threading
     // PR-Comment: Making it internal just to make it build
     internal static class WindowsThreadPool
     {
-        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
-        // the runtime may use the thread for processing other work.
-        //
-        // Windows thread pool threads need to yield back to the thread pool periodically, otherwise those threads may be
-        // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
-        // injection.
-        internal static bool YieldFromDispatchLoop => true;
-
         /// <summary>
         /// The maximum number of threads in the default thread pool on Windows 10 as computed by
         /// TppComputeDefaultMaxThreads(TppMaxGlobalPool).
