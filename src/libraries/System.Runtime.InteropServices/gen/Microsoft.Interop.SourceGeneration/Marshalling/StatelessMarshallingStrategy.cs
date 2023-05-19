@@ -297,6 +297,9 @@ namespace Microsoft.Interop
 
     internal sealed class StatelessByRefFreeMarshalling : ICustomTypeMarshallingStrategy
     {
+        private const string FreeUnmanagedIdentifier = "freeUnmanaged";
+        private const string OriginalValueIdentifier = "original";
+
         private readonly ICustomTypeMarshallingStrategy _innerMarshaller;
         private readonly TypeSyntax _marshallerType;
 
@@ -317,20 +320,37 @@ namespace Microsoft.Interop
             // if (<freeUnmanaged>)
             //     <marshallerType>.Free(<original>);
             yield return IfStatement(
-                IdentifierName(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
+                IdentifierName(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
                 ExpressionStatement(
                     InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             _marshallerType,
                             IdentifierName(ShapeMemberNames.Free)),
                         ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(context.GetAdditionalIdentifier(info, "original"))))))));
+                            Argument(IdentifierName(context.GetAdditionalIdentifier(info, OriginalValueIdentifier))))))));
         }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateMarshalStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context))
+            {
+                yield return statement;
+            }
+
+            // Now that we've set the new value to pass to the caller on the <native> identifier, we need to make sure that we free the old one.
+            // The caller will not see the old one any more, so it won't be able to free it.
+
+            // <freeUnmanaged> = true;
+            yield return ExpressionStatement(
+                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+        }
+
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinnedMarshalStatements(info, context);
+
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GeneratePinStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -345,7 +365,7 @@ namespace Microsoft.Interop
                     PredefinedType(Token(SyntaxKind.BoolKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(
-                            Identifier(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
+                            Identifier(context.GetAdditionalIdentifier(info, FreeUnmanagedIdentifier)),
                             null,
                             EqualsValueClause(
                                 LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
@@ -356,27 +376,13 @@ namespace Microsoft.Interop
                     AsNativeType(info).Syntax,
                     SingletonSeparatedList(
                         VariableDeclarator(
-                            Identifier(context.GetAdditionalIdentifier(info, "original")),
+                            Identifier(context.GetAdditionalIdentifier(info, OriginalValueIdentifier)),
                             null,
                             EqualsValueClause(
                                 IdentifierName(context.GetIdentifiers(info).native))))));
         }
 
-        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context)
-        {
-            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context))
-            {
-                yield return statement;
-            }
-
-            // Now that we've captured the new value to pass to the caller, we need to make sure that we free the old one.
-
-            // <freeUnmanaged> = true;
-            yield return ExpressionStatement(
-                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(context.GetAdditionalIdentifier(info, "freeUnmanaged")),
-                    LiteralExpression(SyntaxKind.TrueLiteralExpression)));
-        }
+        public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalStatements(info, context);
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);

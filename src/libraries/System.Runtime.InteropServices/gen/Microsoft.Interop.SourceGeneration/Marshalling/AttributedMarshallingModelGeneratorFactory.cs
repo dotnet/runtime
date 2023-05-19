@@ -246,10 +246,21 @@ namespace Microsoft.Interop
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
-                    if (context.Direction == MarshalDirection.ManagedToUnmanaged || !context.AdditionalTemporaryStateLivesAcrossStages)
+                    if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+                    {
                         marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                    }
                     else if (info.RefKind == RefKind.Ref)
-                        marshallingStrategy = new StatelessByRefFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                    {
+                        if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                        {
+                            marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                        }
+                        else
+                        {
+                            marshallingStrategy = new StatelessByRefFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                        }
+                    }
                 }
             }
 
@@ -340,7 +351,23 @@ namespace Microsoft.Interop
                 }
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
-                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+                {
+                    if (context.Direction == MarshalDirection.ManagedToUnmanaged)
+                    {
+                        marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+                    }
+                    else if (info.RefKind == RefKind.Ref)
+                    {
+                        if (!context.AdditionalTemporaryStateLivesAcrossStages)
+                        {
+                            marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+                        }
+                        else
+                        {
+                            marshallingStrategy = new StatelessByRefFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+                        }
+                    }
+                }
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
