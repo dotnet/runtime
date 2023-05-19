@@ -1105,7 +1105,7 @@ namespace System.Text.Json.SourceGeneration
                 const string TypeParameter = "TJsonMetadataType";
 
                 writer.WriteLine($$"""
-                    private bool {{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{TypeParameter}}>({{JsonSerializerOptionsTypeRef}} options, out {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> jsonTypeInfo)
+                    private static bool {{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{TypeParameter}}>({{JsonSerializerOptionsTypeRef}} options, out {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> jsonTypeInfo)
                     {
                         foreach ({{JsonConverterTypeRef}}? converter in options.Converters)
                         {
