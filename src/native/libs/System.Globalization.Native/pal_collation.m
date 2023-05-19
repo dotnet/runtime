@@ -15,7 +15,7 @@ typedef enum
     None = 0,
     IgnoreCase = 1,
     IgnoreNonSpace = 2,
-    IgnoreWidth = 16,    
+    IgnoreWidth = 16,
 } CompareOptions;
 
 #define CompareOptionsMask 0x1f
@@ -28,19 +28,19 @@ static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(
         case None:
             return NSLiteralSearch;
         case IgnoreCase:
-            return NSCaseInsensitiveSearch;
+            return NSCaseInsensitiveSearch | NSLiteralSearch;
         case IgnoreNonSpace:
-            return NSDiacriticInsensitiveSearch;
+            return NSDiacriticInsensitiveSearch | NSLiteralSearch;
         case (IgnoreNonSpace | IgnoreCase):
-            return NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+            return NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch | NSLiteralSearch;
         case IgnoreWidth:
-            return NSWidthInsensitiveSearch;
+            return NSWidthInsensitiveSearch | NSLiteralSearch;
         case (IgnoreWidth | IgnoreCase):
-            return NSWidthInsensitiveSearch | NSCaseInsensitiveSearch;
+            return NSWidthInsensitiveSearch | NSCaseInsensitiveSearch | NSLiteralSearch;
         case (IgnoreWidth | IgnoreNonSpace):
-            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch;
+            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSLiteralSearch;
         case (IgnoreWidth | IgnoreNonSpace | IgnoreCase):
-            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSCaseInsensitiveSearch;
+            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSCaseInsensitiveSearch | NSLiteralSearch;
         default:
             return 0;
     }

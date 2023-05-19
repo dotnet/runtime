@@ -279,34 +279,25 @@ There are some behaviour changes. Below are examples of such cases.
 |   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
 |   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
 
-- `StringSort` shares the same logic as None.
+- `StringSort` : 
+
+`CompareOptions.StringSort` is mapped to `NSStringCompareOptions.NSLiteralSearch` .ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric. That is how works also `NSLiteralSearch`.
 
 - `IgnoreCase`:
 
-`CompareOptions.IgnoreCase` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch`
+`CompareOptions.IgnoreCase` is mapped to `NSStringCompareOptions.NSCaseInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
 There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
-|   `\u20A9` ₩  |   `\uFFE6` ￦  |     IgnoreCase     |   0  |  -1  |    |
-|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreCase     |   0  |  1  |    |
-|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   0  |  1  |    |
+|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   1  |  -1  |    |
 
 - `IgnoreNonSpace`:
 
-`CompareOptions.IgnoreNonSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch`
+`CompareOptions.IgnoreNonSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
-There are some behaviour changes. Below are examples of such cases.
-
-| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
-|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
-|   `\uFF66` ｦ  |   `\u30F2` ヲ  |     IgnoreNonSpace     |   0  |  1  |    |
-|   `\u306F` は |   `\u3070` ば  |     IgnoreNonSpace     |   -1  |  0  |   |
-|   `\u306F` は |   `\u3071` ぱ  |     IgnoreNonSpace     |   -1  |  0  |    |
-|   `\u30CF` ハ |   `\u30D0` バ  |     IgnoreNonSpace     |   -1  |  0  |   |
-|   `\u30CF` ハ |   `\u30D1` パ  |     IgnoreNonSpace     |   -1  |  0  |   |
-
+- `IgnoreWidth` is mapped to `NSStringCompareOptions.NSWidthInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
 - All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
 
