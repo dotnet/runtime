@@ -16,8 +16,6 @@ namespace System.Threading
     // PR-Comment: Making it internal just to make it build
     internal static class WindowsThreadPool
     {
-        internal const bool IsWorkerTrackingEnabledInConfig = false;
-
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
         //
