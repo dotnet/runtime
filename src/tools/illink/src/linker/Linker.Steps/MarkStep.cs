@@ -1415,7 +1415,6 @@ namespace Mono.Linker.Steps
 				if (action != AssemblyAction.Copy ||
 					!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
 					disableMarkingOfCopyAssembliesValue != "true") {
-					Console.Error.WriteLine($"MarkEntireAssembly {assembly.Name.Name}");
 					MarkEntireAssembly (assembly);
 				}
 				return;
@@ -3209,7 +3208,7 @@ namespace Mono.Linker.Steps
 
 			if (method.HasOverrides) {
 				var assembly = Context.Resolve (method.DeclaringType.Scope);
-				// If this method is in a Copy or CopyUsed assembly, .overrides won't get swept and we need to keep all of them
+				// If this method is in a Copy, CopyUsed, or Save assembly, .overrides won't get swept and we need to keep all of them
 				bool markAllOverrides = assembly != null && Annotations.GetAction (assembly) is AssemblyAction.Copy or AssemblyAction.CopyUsed or AssemblyAction.Save;
 				foreach (MethodReference @base in method.Overrides) {
 					// Method implementing a static interface method will have an override to it - note instance methods usually don't unless they're explicit.
