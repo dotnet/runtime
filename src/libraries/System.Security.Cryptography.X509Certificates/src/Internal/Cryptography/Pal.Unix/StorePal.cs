@@ -40,7 +40,7 @@ namespace Internal.Cryptography.Pal
 
             if (PkcsFormatReader.TryReadPkcs7Der(rawData, out certPals) ||
                 PkcsFormatReader.TryReadPkcs7Pem(rawData, out certPals) ||
-                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, out certPals, out openSslException))
+                PkcsFormatReader.TryReadPkcs12(rawData, password, ephemeralSpecified, readingFromFile: false, out certPals, out openSslException))
             {
                 Debug.Assert(certPals != null);
 
@@ -111,7 +111,7 @@ namespace Internal.Cryptography.Pal
             // Capture the exception so in case of failure, the call to BioSeek does not override it.
             Exception? openSslException;
             byte[] data = File.ReadAllBytes(fileName);
-            if (PkcsFormatReader.TryReadPkcs12(data, password, ephemeralSpecified, out certPals, out openSslException))
+            if (PkcsFormatReader.TryReadPkcs12(data, password, ephemeralSpecified, readingFromFile: true, out certPals, out openSslException))
             {
                 return ListToLoaderPal(certPals);
             }

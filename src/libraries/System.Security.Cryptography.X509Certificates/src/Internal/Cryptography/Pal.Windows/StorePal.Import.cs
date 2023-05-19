@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
 
@@ -68,6 +69,11 @@ namespace Internal.Cryptography.Pal
                             {
                                 rawData = File.ReadAllBytes(fileName!);
                             }
+                            else
+                            {
+                                X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile: false, password.PasswordProvided);
+                            }
+
                             fixed (byte* pRawData2 = rawData)
                             {
                                 CRYPTOAPI_BLOB blob2 = new CRYPTOAPI_BLOB(rawData!.Length, pRawData2);

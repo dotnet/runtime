@@ -48,7 +48,7 @@ namespace Internal.Cryptography.Pal
             return new AndroidCertificatePal(handle);
         }
 
-        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
@@ -68,6 +68,8 @@ namespace Internal.Cryptography.Pal
                         throw new PlatformNotSupportedException(SR.Cryptography_X509_PKCS12_PersistKeySetNotSupported);
                     }
 
+                    X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile, password.PasswordProvided);
+
                     return ReadPkcs12(rawData, password, ephemeralSpecified);
                 case X509ContentType.Cert:
                 default:
@@ -86,10 +88,15 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException();
         }
 
+        public static ICertificatePal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
         public static ICertificatePal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         // Handles both DER and PEM

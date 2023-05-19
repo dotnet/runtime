@@ -24,6 +24,15 @@ namespace Internal.Cryptography.Pal
             SafePasswordHandle password,
             X509KeyStorageFlags keyStorageFlags)
         {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
+        private static ICertificatePal FromBlob(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool readingFromFile,
+            X509KeyStorageFlags keyStorageFlags)
+        {
             Debug.Assert(password != null);
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
@@ -47,6 +56,7 @@ namespace Internal.Cryptography.Pal
                     throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
                 }
 
+                X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile, password.PasswordProvided);
                 bool exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
 
                 bool persist =

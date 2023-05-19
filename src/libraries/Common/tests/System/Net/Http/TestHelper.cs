@@ -157,7 +157,7 @@ namespace System.Net.Http.Functional.Tests
                 X509Certificate2 cert = req.CreateSelfSigned(start, end);
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+                    cert = new X509Certificate2(cert.Export(X509ContentType.Pfx), (string?)null);
                 }
 
                 return cert;

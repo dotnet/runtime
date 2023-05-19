@@ -76,7 +76,7 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(password != null);
 
             byte[] fileBytes = System.IO.File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal AppleCertificatePal(SafeSecCertificateHandle certHandle)

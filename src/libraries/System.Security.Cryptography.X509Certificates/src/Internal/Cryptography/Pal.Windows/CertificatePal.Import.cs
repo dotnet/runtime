@@ -83,7 +83,14 @@ namespace Internal.Cryptography.Pal
                     else if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
                     {
                         if (loadFromFile)
+                        {
                             rawData = File.ReadAllBytes(fileName!);
+                        }
+                        else
+                        {
+                            X509Certificate.EnforceIterationCountLimit(rawData, readingFromFile: false, password.PasswordProvided);
+                        }
+
                         pCertContext = FilterPFXStore(rawData, password, pfxCertStoreFlags);
 
                         // If PersistKeySet is set we don't delete the key, so that it persists.
