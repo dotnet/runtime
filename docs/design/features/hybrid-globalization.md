@@ -291,13 +291,16 @@ There are some behaviour changes. Below are examples of such cases.
 
 | **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
 |:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
-|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   1  |  -1  |    |
+|   `\u3060` だ |   `\u30C0` ダ  |     IgnoreCase     |   1  |  -1  |  hiragana and katakana characters are ordered differently compared to ICU  |
+|   `\u00C0` À |   `a\u0300` à  |     IgnoreCase     |   1  |  0  |  This is related to above mentioned case under `CompareOptions.None` i.e. `\u00C0` À !=  À `A\u0300`   |
 
 - `IgnoreNonSpace`:
 
 `CompareOptions.IgnoreNonSpace` is mapped to `NSStringCompareOptions.NSDiacriticInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
-- `IgnoreWidth` is mapped to `NSStringCompareOptions.NSWidthInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
+- `IgnoreWidth`:
+
+`CompareOptions.IgnoreWidth` is mapped to `NSStringCompareOptions.NSWidthInsensitiveSearch | NSStringCompareOptions.NSLiteralSearch`
 
 - All combinations that contain below `CompareOptions` always throw `PlatformNotSupportedException`:
 
