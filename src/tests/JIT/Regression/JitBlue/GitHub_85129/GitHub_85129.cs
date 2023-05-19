@@ -8,10 +8,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
-public class Program
+public class Program_85129
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         Vector256<int> v256Shuffle = Vector256.Create(100, 101, 102, 103, 104, 105, 106, 107);
         Vector256<int> v256ShuffleExpectedResult = Vector256.Create(107, 105, 0, 101, 106, 104, 0, 100);
