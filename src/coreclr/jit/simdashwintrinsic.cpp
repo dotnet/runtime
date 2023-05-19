@@ -94,8 +94,9 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             argClass = sig->retTypeSigClass;
         }
-        else if (numArgs != 0)
+        else
         {
+            assert(numArgs != 0);
             argClass = comp->info.compCompHnd->getArgClass(sig, sig->args);
         }
 
@@ -217,14 +218,8 @@ SimdAsHWIntrinsicClassId SimdAsHWIntrinsicInfo::lookupClassId(Compiler*   comp,
                 }
 #endif // TARGET_XARCH
 
-                if (vectorTByteLength == 16)
-                {
-                    return SimdAsHWIntrinsicClassId::VectorT128;
-                }
-                else
-                {
-                    return SimdAsHWIntrinsicClassId::Unknown;
-                }
+                assert(vectorTByteLength == 16);
+                return SimdAsHWIntrinsicClassId::VectorT128;
             }
             break;
         }
