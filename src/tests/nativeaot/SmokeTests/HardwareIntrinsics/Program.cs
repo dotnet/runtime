@@ -50,39 +50,82 @@ unsafe class Program
         //
         // The test is compiled with multiple defines to test this.
 
-#if BASELINE_INTRINSICS
         bool vectorsAccelerated = true;
-        int byteVectorLength = 16;
-        bool? Sse2AndBelow = true;
+        bool? Sse12 = true;
+
+#if BASELINE_INTRINSICS
         bool? Sse3Group = null;
         bool? AesLzPcl = null;
         bool? Sse4142 = null;
         bool? PopCnt = null;
-        bool? Avx12 = false;
-        bool? FmaBmi12 = false;
+        bool? Avx1 = false;
+        bool? Avx2 = false;
+        bool? Fma = null;
+        bool? Bmi12 = null;
         bool? Avxvnni = false;
-#elif NON_VEX_INTRINSICS
-        bool vectorsAccelerated = true;
-        int byteVectorLength = 16;
-        bool? Sse2AndBelow = true;
+        bool? Avx512Group = false;
+        bool? Avx512Vbmi = false;
+        bool? X86Serialize = null;
+#elif SSE42_INTRINSICS
         bool? Sse3Group = true;
         bool? AesLzPcl = null;
         bool? Sse4142 = true;
         bool? PopCnt = null;
-        bool? Avx12 = false;
-        bool? FmaBmi12 = false;
+        bool? Avx1 = false;
+        bool? Avx2 = false;
+        bool? Fma = null;
+        bool? Bmi12 = null;
         bool? Avxvnni = false;
-#elif VEX_INTRINSICS
-        bool vectorsAccelerated = true;
-        int byteVectorLength = 32;
-        bool? Sse2AndBelow = true;
+        bool? Avx512Group = false;
+        bool? Avx512Vbmi = false;
+        bool? X86Serialize = null;
+#elif AVX_INTRINSIC
         bool? Sse3Group = true;
         bool? AesLzPcl = null;
         bool? Sse4142 = true;
         bool? PopCnt = null;
-        bool? Avx12 = true;
-        bool? FmaBmi12 = null;
+        bool? Avx1 = true;
+        bool? Avx2 = false;
+        bool? Fma = null;
+        bool? Bmi12 = null;
         bool? Avxvnni = null;
+        bool? Avx512Group = false;
+        bool? Avx512Vbmi = false;
+        bool? X86Serialize = null;
+#elif AVX2_INTRINSICS
+        bool? Sse3Group = true;
+        bool? AesLzPcl = null;
+        bool? Sse4142 = true;
+        bool? PopCnt = null;
+        bool? Avx1 = true;
+        bool? Avx2 = true;
+        bool? Fma = null;
+        bool? Bmi12 = null;
+        bool? Avxvnni = null;
+        bool? Avx512Group = false;
+        bool? Avx512Vbmi = false;
+        bool? X86Serialize = null;
+#elif AVX512_INTRINSICS
+        bool? Sse3Group = true;
+        bool? AesLzPcl = null;
+        bool? Sse4142 = true;
+        bool? PopCnt = null;
+        bool? Avx1 = true;
+        bool? Avx2 = true;
+        bool? Fma = true;
+        bool? Bmi12 = null;
+        bool? Avxvnni = null;
+        bool? Avx512Group = true;
+        bool? Avx512Vbmi = null;
+        bool? X86Serialize = null;
+#else
+#error Who dis?
+#endif
+
+#if VECTORT128_INTRINSICS
+        int byteVectorLength = 16;
+#elif VECTORT256_INTRINSICS
+        int byteVectorLength = 32;
 #else
 #error Who dis?
 #endif
@@ -97,11 +140,11 @@ unsafe class Program
             throw new Exception($"Unexpected vector length - expected {byteVectorLength}, got {Vector<byte>.Count}");
         }
 
-        Check("Sse", Sse2AndBelow, &SseIsSupported, Sse.IsSupported, () => Sse.Subtract(Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
-        Check("Sse.X64", Sse2AndBelow, &SseX64IsSupported, Sse.X64.IsSupported, () => Sse.X64.ConvertToInt64WithTruncation(Vector128<float>.Zero) == 0);
+        Check("Sse", Sse12, &SseIsSupported, Sse.IsSupported, () => Sse.Subtract(Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
+        Check("Sse.X64", Sse12, &SseX64IsSupported, Sse.X64.IsSupported, () => Sse.X64.ConvertToInt64WithTruncation(Vector128<float>.Zero) == 0);
 
-        Check("Sse2", Sse2AndBelow, &Sse2IsSupported, Sse2.IsSupported, () => Sse2.Extract(Vector128<ushort>.Zero, 0) == 0);
-        Check("Sse2.X64", Sse2AndBelow, &Sse2X64IsSupported, Sse2.X64.IsSupported, () => Sse2.X64.ConvertToInt64(Vector128<double>.Zero) == 0);
+        Check("Sse2", Sse12, &Sse2IsSupported, Sse2.IsSupported, () => Sse2.Extract(Vector128<ushort>.Zero, 0) == 0);
+        Check("Sse2.X64", Sse12, &Sse2X64IsSupported, Sse2.X64.IsSupported, () => Sse2.X64.ConvertToInt64(Vector128<double>.Zero) == 0);
 
         Check("Sse3", Sse3Group, &Sse3IsSupported, Sse3.IsSupported, () => Sse3.MoveHighAndDuplicate(Vector128<float>.Zero).Equals(Vector128<float>.Zero));
         Check("Sse3.X64", Sse3Group, &Sse3X64IsSupported, Sse3.X64.IsSupported, null);
@@ -118,20 +161,20 @@ unsafe class Program
         Check("Aes", AesLzPcl, &AesIsSupported, Aes.IsSupported, () => Aes.KeygenAssist(Vector128<byte>.Zero, 0).Equals(Vector128.Create((byte)99)));
         Check("Aes.X64", AesLzPcl, &AesX64IsSupported, Aes.X64.IsSupported, null);
 
-        Check("Avx", Avx12, &AvxIsSupported, Avx.IsSupported, () => Avx.Add(Vector256<double>.Zero, Vector256<double>.Zero).Equals(Vector256<double>.Zero));
-        Check("Avx.X64", Avx12, &AvxX64IsSupported, Avx.X64.IsSupported, null);
+        Check("Avx", Avx1, &AvxIsSupported, Avx.IsSupported, () => Avx.Add(Vector256<double>.Zero, Vector256<double>.Zero).Equals(Vector256<double>.Zero));
+        Check("Avx.X64", Avx1, &AvxX64IsSupported, Avx.X64.IsSupported, null);
 
-        Check("Avx2", Avx12, &Avx2IsSupported, Avx2.IsSupported, () => Avx2.Abs(Vector256<int>.Zero).Equals(Vector256<uint>.Zero));
-        Check("Avx2.X64", Avx12, &Avx2X64IsSupported, Avx2.X64.IsSupported, null);
+        Check("Avx2", Avx2, &Avx2IsSupported, Avx2.IsSupported, () => Avx2.Abs(Vector256<int>.Zero).Equals(Vector256<uint>.Zero));
+        Check("Avx2.X64", Avx2, &Avx2X64IsSupported, Avx2.X64.IsSupported, null);
 
-        Check("Bmi1", FmaBmi12, &Bmi1IsSupported, Bmi1.IsSupported, () => Bmi1.AndNot(0, 0) == 0);
-        Check("Bmi1.X64", FmaBmi12, &Bmi1X64IsSupported, Bmi1.X64.IsSupported, () => Bmi1.X64.AndNot(0, 0) == 0);
+        Check("Bmi1", Bmi12, &Bmi1IsSupported, Bmi1.IsSupported, () => Bmi1.AndNot(0, 0) == 0);
+        Check("Bmi1.X64", Bmi12, &Bmi1X64IsSupported, Bmi1.X64.IsSupported, () => Bmi1.X64.AndNot(0, 0) == 0);
 
-        Check("Bmi2", FmaBmi12, &Bmi2IsSupported, Bmi2.IsSupported, () => Bmi2.MultiplyNoFlags(0, 0) == 0);
-        Check("Bmi2.X64", FmaBmi12, &Bmi2X64IsSupported, Bmi2.X64.IsSupported, () => Bmi2.X64.MultiplyNoFlags(0, 0) == 0);
+        Check("Bmi2", Bmi12, &Bmi2IsSupported, Bmi2.IsSupported, () => Bmi2.MultiplyNoFlags(0, 0) == 0);
+        Check("Bmi2.X64", Bmi12, &Bmi2X64IsSupported, Bmi2.X64.IsSupported, () => Bmi2.X64.MultiplyNoFlags(0, 0) == 0);
 
-        Check("Fma", FmaBmi12, &FmaIsSupported, Fma.IsSupported, () => Fma.MultiplyAdd(Vector128<float>.Zero, Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
-        Check("Fma.X64", FmaBmi12, &FmaX64IsSupported, Fma.X64.IsSupported, null);
+        Check("Fma", Fma, &FmaIsSupported, Fma.IsSupported, () => Fma.MultiplyAdd(Vector128<float>.Zero, Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
+        Check("Fma.X64", Fma, &FmaX64IsSupported, Fma.X64.IsSupported, null);
 
         Check("Lzcnt", AesLzPcl, &LzcntIsSupported, Lzcnt.IsSupported, () => Lzcnt.LeadingZeroCount(0) == 32);
         Check("Lzcnt.X64", AesLzPcl, &LzcntX64IsSupported, Lzcnt.X64.IsSupported, () => Lzcnt.X64.LeadingZeroCount(0) == 64);
@@ -144,6 +187,29 @@ unsafe class Program
 
         Check("AvxVnni", Avxvnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", Avxvnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
+
+        Check("Avx512F", Avx512Group, &Avx512FIsSupported, Avx512F.IsSupported, () => Avx512F.Abs(Vector512<int>.Zero).Equals(Vector512<uint>.Zero));
+        Check("Avx512F.VL", Avx512Group, &Avx512FVLIsSupported, Avx512F.VL.IsSupported, null);
+        Check("Avx512F.X64", Avx512Group, &Avx512FX64IsSupported, Avx512F.X64.IsSupported, null);
+
+        Check("Avx512BW", Avx512Group, &Avx512BWIsSupported, Avx512BW.IsSupported, () => Avx512F.Abs(Vector512<sbyte>.Zero).Equals(Vector512<byte>.Zero));
+        Check("Avx512BW.VL", Avx512Group, &Avx512BWVLIsSupported, Avx512BW.VL.IsSupported, null);
+        Check("Avx512BW.X64", Avx512Group, &Avx512BWX64IsSupported, Avx512BW.X64.IsSupported, null);
+
+        Check("Avx512CD", Avx512Group, &Avx512CDIsSupported, Avx512CD.IsSupported, null);
+        Check("Avx512CD.VL", Avx512Group, &Avx512CDVLIsSupported, Avx512CD.VL.IsSupported, null);
+        Check("Avx512CD.X64", Avx512Group, &Avx512CDX64IsSupported, Avx512CD.X64.IsSupported, null);
+
+        Check("Avx512DQ", Avx512Group, &Avx512DQIsSupported, Avx512DQ.IsSupported, () => Avx512F.And(Vector512<float>.Zero, Vector512<float>.Zero).Equals(Vector512<float>.Zero));
+        Check("Avx512DQ.VL", Avx512Group, &Avx512DQVLIsSupported, Avx512DQ.VL.IsSupported, null);
+        Check("Avx512DQ.X64", Avx512Group, &Avx512DQX64IsSupported, Avx512DQ.X64.IsSupported, null);
+
+        Check("Avx512Vbmi", Avx512Group, &Avx512VbmiIsSupported, Avx512Vbmi.IsSupported, () => Avx512F.PermuteVar64x8(Vector512<sbyte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<sbyte>.Zero));
+        Check("Avx512Vbmi.VL", Avx512Group, &Avx512VbmiVLIsSupported, Avx512Vbmi.VL.IsSupported, null);
+        Check("Avx512Vbmi.X64", Avx512Group, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
+
+        Check("X86Serialize", X86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => X86Serialize.Serialize());
+        Check("X86Serialize.X64", X86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, () => null);
 
         return s_success ? 100 : 1;
     }
@@ -183,6 +249,23 @@ unsafe class Program
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+    static bool Avx512FIsSupported() => Avx512F.IsSupported;
+    static bool Avx512FVLIsSupported() => Avx512F.VL.IsSupported;
+    static bool Avx512FX64IsSupported() => Avx512F.X64.IsSupported;
+    static bool Avx512BWIsSupported() => Avx512BW.IsSupported;
+    static bool Avx512BWVLIsSupported() => Avx512BW.VL.IsSupported;
+    static bool Avx512BWX64IsSupported() => Avx512BW.X64.IsSupported;
+    static bool Avx512CDIsSupported() => Avx512CD.IsSupported;
+    static bool Avx512CDVLIsSupported() => Avx512CD.VL.IsSupported;
+    static bool Avx512CDX64IsSupported() => Avx512CD.X64.IsSupported;
+    static bool Avx512DQIsSupported() => Avx512DQ.IsSupported;
+    static bool Avx512DQVLIsSupported() => Avx512DQ.VL.IsSupported;
+    static bool Avx512DQX64IsSupported() => Avx512DQ.X64.IsSupported;
+    static bool Avx512VbmiIsSupported() => Avx512Vbmi.IsSupported;
+    static bool Avx512VbmiVLIsSupported() => Avx512Vbmi.VL.IsSupported;
+    static bool Avx512VbmiX64IsSupported() => Avx512Vbmi.X64.IsSupported;
+    static bool X86SerializeIsSupported() => X86Serialize.IsSupported;
+    static bool X86SerializeX64IsSupported() => X86Serialize.X64.IsSupported;
 
     static bool IsConstantTrue(delegate*<bool> code)
     {
