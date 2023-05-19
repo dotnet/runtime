@@ -34,8 +34,7 @@ The following are the key methods on this interface:
   It returns a pointer to the code, its size, and additional GC, EH and (optionally) debug info.
   * `getVersionIdentifier` is the mechanism by which the JIT/EE interface is versioned.
   There is a single GUID (manually generated) which the JIT and EE must agree on.
-  * `getMaxIntrinsicSIMDVectorLength` communicates to the EE the largest SIMD vector length that the JIT can support.
-* `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
+  * `ICorJitInfo` – this is the interface that the EE implements. It has many methods defined on it that allow the JIT to
 look up metadata tokens, traverse type signatures, compute field and vtable offsets, find method entry points,
 construct string literals, etc. This bulk of this interface is inherited from `ICorDynamicInfo` which is defined in
 [src/inc/corinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/corinfo.h). The implementation

@@ -1256,6 +1256,8 @@ EEJitManager::EEJitManager()
 
     m_storeRichDebugInfo = false;
     m_cleanupList = NULL;
+
+    SetCpuInfo();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1940,7 +1942,7 @@ void EEJitManager::SetCpuInfo()
         // Some architectures can experience frequency throttling when executing
         // executing 512-bit width instructions. To account for this we set the
         // default preferred vector width to 256-bits in some scenarios. Power
-        // users can override this with `DOTNET_PreferredVectorBitWith=512` to
+        // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
         // allow using such instructions where hardware support is available.
 
         if (xarchCpuInfo.FamilyId == 0x06)
@@ -2235,8 +2237,6 @@ BOOL EEJitManager::LoadJIT()
     // Did someone load the JIT before we got the lock?
     if (IsJitLoaded())
         return TRUE;
-
-    SetCpuInfo();
 
     m_storeRichDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_RichDebugInfo) != 0;
 
