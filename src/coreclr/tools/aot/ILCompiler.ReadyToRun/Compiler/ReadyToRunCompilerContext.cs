@@ -57,6 +57,7 @@ namespace ILCompiler
             TargetDetails details,
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCorelib,
+            InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext,
             bool enableGenericCycleDetection,
             int genericCycleDepthCutoff,
