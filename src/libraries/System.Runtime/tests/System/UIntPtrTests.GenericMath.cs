@@ -12,7 +12,6 @@ namespace System.Tests
         //
         // IAdditionOperators
         //
-        public static Architecture arch = RuntimeInformation.ProcessArchitecture;
 
         [Fact]
         public static void op_AdditionTest()
