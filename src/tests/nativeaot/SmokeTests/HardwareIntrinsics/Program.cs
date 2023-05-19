@@ -238,7 +238,7 @@ unsafe class Program
         Check("Avx512BW.VL", ExpectedAvx512BW, &Avx512BWVLIsSupported, Avx512BW.VL.IsSupported, null);
         Check("Avx512BW.X64", ExpectedAvx512BW, &Avx512BWX64IsSupported, Avx512BW.X64.IsSupported, null);
 
-        Check("Avx512CD", ExpectedAvx512CD, &Avx512CDIsSupported, Avx512CD.IsSupported, null);
+        Check("Avx512CD", ExpectedAvx512CD, &Avx512CDIsSupported, Avx512CD.IsSupported, () => Avx512CD.LeadingZeroCount(Vector512<uint>.AllBitsSet) == Vector512<uint>.Zero);
         Check("Avx512CD.VL", ExpectedAvx512CD, &Avx512CDVLIsSupported, Avx512CD.VL.IsSupported, null);
         Check("Avx512CD.X64", ExpectedAvx512CD, &Avx512CDX64IsSupported, Avx512CD.X64.IsSupported, null);
 
@@ -250,7 +250,7 @@ unsafe class Program
         Check("Avx512Vbmi.VL", ExpectedAvx512Vbmi, &Avx512VbmiVLIsSupported, Avx512Vbmi.VL.IsSupported, null);
         Check("Avx512Vbmi.X64", ExpectedAvx512Vbmi, &Avx512VbmiX64IsSupported, Avx512Vbmi.X64.IsSupported, null);
 
-        Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => X86Serialize.Serialize());
+        Check("X86Serialize", ExpectedX86Serialize, &X86SerializeIsSupported, X86Serialize.IsSupported, () => { X86Serialize.Serialize(); return true; } );
         Check("X86Serialize.X64", ExpectedX86Serialize, &X86SerializeX64IsSupported, X86Serialize.X64.IsSupported, () => null);
 
         return s_success ? 100 : 1;
