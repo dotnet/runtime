@@ -279,6 +279,14 @@ namespace ComInterfaceGenerator.Unit.Tests
             //    """;
             //yield return new object[] { ID(), source, emptyDiagnostics };
 
+            // Base many levels up fails, all inheriting fail
+            yield return new object[]
+            {
+                ID(),
+                codeSnippets.DerivedWithStringMarshalling(customWithNoType, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling, customUtf16Marshalling),
+               new DiagnosticResult[] {new DiagnosticResult(GeneratorDiagnostics.InvalidStringMarshallingConfigurationOnInterface).WithLocation(0).WithArguments("Test.IStringMarshalling0", CustomStringMarshallingWithNoCustomTypeMessage) }.Concat(MismatchesWithLocations(1)).Concat(BaseCannotBeGeneratedWithLocations(2, 3, 4, 5)).ToArray()
+            };
+
             DiagnosticResult[] MismatchesWithLocations(params int[] locations)
             {
                 return locations

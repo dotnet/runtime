@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -22,7 +24,7 @@ namespace Microsoft.Interop
             {
                 nameToInterfaceInfoMap.Add(iface.ThisInterfaceKey, iface);
             }
-            Dictionary<string, ComInterfaceContext> nameToContextMap = new();
+            Dictionary<string, (ComInterfaceContext? Context, Diagnostic? Diagnostic)> nameToContextCache = new();
 
             foreach (var iface in data)
             {
@@ -32,34 +34,40 @@ namespace Microsoft.Interop
 
             (ComInterfaceContext? Context, Diagnostic? Diagnostic) AddContext(ComInterfaceInfo iface)
             {
-                if (nameToContextMap.TryGetValue(iface.ThisInterfaceKey, out var cachedValue))
+                if (nameToContextCache.TryGetValue(iface.ThisInterfaceKey, out var cachedValue))
                 {
-                    return (cachedValue, null);
+                    return cachedValue;
                 }
 
                 if (iface.BaseInterfaceKey is null)
                 {
                     var baselessCtx = new ComInterfaceContext(iface, null);
-                    nameToContextMap[iface.ThisInterfaceKey] = baselessCtx;
+                    nameToContextCache[iface.ThisInterfaceKey] = (baselessCtx, null);
                     return (baselessCtx, null);
                 }
 
-                if (!nameToContextMap.TryGetValue(iface.BaseInterfaceKey, out var baseContext))
+                if (
+                    // Cached base info has a diagnostic - failure
+                    (nameToContextCache.TryGetValue(iface.BaseInterfaceKey, out var basePair) && basePair.Diagnostic is not null)
+                    // Cannot find base ComInterfaceInfo - failure (failed ComInterfaceInfo creation)
+                    || !nameToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo)
+                    // Newly calculated base context pair has a diagnostic - failure
+                    || (AddContext(baseInfo) is { } baseReturnPair && baseReturnPair.Diagnostic is not null))
                 {
-                    if(!nameToInterfaceInfoMap.TryGetValue(iface.BaseInterfaceKey, out var baseInfo))
-                    {
-                        //Diagnostic that there is an issue with the base, so the interface cannot be
-                        return (null,
-                            Diagnostic.Create(
-                                GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
-                                iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
-
-                    }
-                    (baseContext, var baseDiag) = AddContext(baseInfo);
+                    // The base has failed generation at some point, so this interface cannot be generated
+                    (ComInterfaceContext, Diagnostic?) diagnosticPair = (null,
+                        Diagnostic.Create(
+                            GeneratorDiagnostics.BaseInterfaceIsNotGenerated,
+                            iface.DiagnosticLocation.AsLocation(), iface.ThisInterfaceKey, iface.BaseInterfaceKey));
+                    nameToContextCache[iface.ThisInterfaceKey] = diagnosticPair;
+                    return diagnosticPair;
                 }
+                var baseContext = basePair.Context ?? baseReturnPair.Context;
+                Debug.Assert(baseContext != null);
                 var ctx = new ComInterfaceContext(iface, baseContext);
-                nameToContextMap[iface.ThisInterfaceKey] = ctx;
-                return (ctx, null);
+                (ComInterfaceContext, Diagnostic?) contextPair = (ctx, null);
+                nameToContextCache[iface.ThisInterfaceKey] = contextPair;
+                return contextPair;
             }
         }
 
@@ -70,6 +78,5 @@ namespace Microsoft.Interop
                 currBase = currBase.Base;
             return currBase;
         }
-
     }
 }
