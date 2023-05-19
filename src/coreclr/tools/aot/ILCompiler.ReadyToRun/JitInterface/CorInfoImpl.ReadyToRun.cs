@@ -1820,11 +1820,6 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
             }
 
-            if (originalMethod.HasInstantiation || originalMethod.OwningType.HasInstantiation)
-            {
-                _compilation.TypeSystemContext.DetectGenericCycles(callerMethod, originalMethod, "ceeInfoGetCallInfo");
-            }
-
             callerModule = ((EcmaMethod)callerMethod.GetTypicalMethodDefinition()).Module;
 
             // Spec says that a callvirt lookup ignores static methods. Since static methods
@@ -2260,6 +2255,11 @@ namespace Internal.JitInterface
                 out callerMethod,
                 out callerModule,
                 out useInstantiatingStub);
+
+            if (callerMethod.HasInstantiation || callerMethod.OwningType.HasInstantiation)
+            {
+                _compilation.TypeSystemContext.DetectGenericCycles(callerMethod, methodToCall, "ceeInfoGetCallInfo");
+            }
 
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {

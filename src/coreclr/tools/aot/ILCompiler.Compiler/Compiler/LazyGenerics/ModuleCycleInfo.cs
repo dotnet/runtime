@@ -91,11 +91,13 @@ namespace ILCompiler
             // from the key, but since this is a key/value pair, might as well use the value too...
             private readonly ConcurrentDictionary<EntityPair, ModuleCycleInfo> _actualProblems = new ConcurrentDictionary<EntityPair, ModuleCycleInfo>();
 
-            private readonly int _cutoffPoint;
+            private readonly int _depthCutoff;
+            private readonly int _breadthCutoff;
 
-            public GenericCycleDetector(int cutoffPoint)
+            public GenericCycleDetector(int depthCutoff, int breadthCutoff)
             {
-                _cutoffPoint = cutoffPoint;
+                _depthCutoff = depthCutoff;
+                _breadthCutoff = breadthCutoff;
             }
 
             private bool IsDeepPossiblyCyclicInstantiation(TypeSystemEntity entity)
@@ -110,17 +112,31 @@ namespace ILCompiler
                 }
             }
 
-            private bool IsDeepPossiblyCyclicInstantiation(TypeDesc type, List<TypeDesc> seenTypes = null)
+            private bool IsDeepPossiblyCyclicInstantiation(TypeDesc type)
+            {
+                int breadthCounter = 0;
+                return IsDeepPossiblyCyclicInstantiation(type, ref breadthCounter, seenTypes: null);
+            }
+
+            private bool IsDeepPossiblyCyclicInstantiation(TypeDesc type, ref int breadthCounter, List<TypeDesc> seenTypes = null)
             {
                 switch (type.Category)
                 {
                     case TypeFlags.Array:
                     case TypeFlags.SzArray:
-                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, seenTypes);
+                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, ref breadthCounter, seenTypes);
                     default:
                         TypeDesc typeDef = type.GetTypeDefinition();
                         if (type != typeDef)
                         {
+                            if (FormsCycle(typeDef, out ModuleCycleInfo _))
+                            {
+                                if (++breadthCounter >= _breadthCutoff)
+                                {
+                                    return true;
+                                }
+                            }
+
                             (seenTypes ??= new List<TypeDesc>()).Add(typeDef);
                             for (int i = 0; i < seenTypes.Count; i++)
                             {
@@ -133,14 +149,14 @@ namespace ILCompiler
                                         count++;
                                     }
 
-                                    if (count > _cutoffPoint)
+                                    if (count > _depthCutoff)
                                     {
                                         return true;
                                     }
                                 }
                             }
 
-                            bool result = IsDeepPossiblyCyclicInstantiation(type.Instantiation, seenTypes);
+                            bool result = IsDeepPossiblyCyclicInstantiation(type.Instantiation, ref breadthCounter, seenTypes);
                             seenTypes.RemoveAt(seenTypes.Count - 1);
                             return result;
                         }
@@ -148,11 +164,11 @@ namespace ILCompiler
                 }
             }
 
-            private bool IsDeepPossiblyCyclicInstantiation(Instantiation instantiation, List<TypeDesc> seenTypes = null)
+            private bool IsDeepPossiblyCyclicInstantiation(Instantiation instantiation, ref int breadthCounter, List<TypeDesc> seenTypes)
             {
                 foreach (TypeDesc arg in instantiation)
                 {
-                    if (IsDeepPossiblyCyclicInstantiation(arg, seenTypes))
+                    if (IsDeepPossiblyCyclicInstantiation(arg, ref breadthCounter, seenTypes))
                     {
                         return true;
                     }
@@ -163,15 +179,36 @@ namespace ILCompiler
 
             public bool IsDeepPossiblyCyclicInstantiation(MethodDesc method)
             {
-                return IsDeepPossiblyCyclicInstantiation(method.Instantiation) || IsDeepPossiblyCyclicInstantiation(method.OwningType);
+                int breadthCounter = 0;
+                return IsDeepPossiblyCyclicInstantiation(method.Instantiation, ref breadthCounter, seenTypes: null)
+                    || IsDeepPossiblyCyclicInstantiation(method.OwningType, ref breadthCounter, seenTypes: null);
             }
 
-            private HashSet<EcmaModule> _modulesReported = new HashSet<EcmaModule>();
+            private bool FormsCycle(TypeSystemEntity entity, out ModuleCycleInfo cycleInfo)
+            {
+                EcmaModule ownerModule;
+                if (entity is EcmaType ecmaType)
+                {
+                    ownerModule = ecmaType.EcmaModule;
+                }
+                else if (entity is EcmaMethod ecmaMethod)
+                {
+                    ownerModule = ecmaMethod.Module;
+                }
+                else
+                {
+                    cycleInfo = null;
+                    return false;
+                }
+
+                cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
+                return cycleInfo.FormsCycle(entity);
+            }
 
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
                 // This allows to disable cycle detection completely (typically for perf reasons as the algorithm is pretty slow)
-                if (_cutoffPoint < 0)
+                if (_depthCutoff < 0)
                     return;
 
                 // Not clear if generic recursion through fields is a thing
@@ -194,21 +231,7 @@ namespace ILCompiler
                     return;
                 }
 
-                EcmaModule ownerModule = (ownerDefinition as EcmaType)?.EcmaModule ?? ((EcmaMethod)ownerDefinition).Module;
-
-                ModuleCycleInfo cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
-                if (_modulesReported.Add(ownerModule))
-                {
-                    Console.WriteLine("Cycle info for {0}", ownerModule.Assembly.GetName().Name);
-                    int counter = 0;
-                    foreach (TypeSystemEntity entity in cycleInfo.EntitiesInCycles)
-                    {
-                        Console.WriteLine("   {0}: {1}", counter, entity);
-                        counter++;
-                    }
-                }
-
-                if (cycleInfo.FormsCycle(ownerDefinition))
+                if (FormsCycle(ownerDefinition, out ModuleCycleInfo cycleInfo))
                 {
                     // Just the presence of a cycle is not a problem, but once we start getting too deep,
                     // we need to cut our losses.

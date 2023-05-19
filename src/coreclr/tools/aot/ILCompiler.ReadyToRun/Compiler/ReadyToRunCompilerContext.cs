@@ -32,9 +32,18 @@ namespace ILCompiler
 
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
     {
-        // For Crossgen2 we don't really need a high generic cycle cutoff as arbitrary methods
-        // may be JITted at runtime. (We're already compiling too much as a rule of thumb.)
-        private const int DefaultGenericCycleCutoffPoint = 1;
+        // Depth cutoff specifies the number of repetitions of a particular generic type within a type instantiation
+        // to trigger marking the type as potentially cyclic. Considering a generic type CyclicType`1<T> marked as
+        // cyclic by the initial module analysis, for instance CyclicType`1<CyclicType`1<CyclicType`1<__Canon>>> has "depth 3"
+        // so it will be cut off by specifying anything less than or equal to three.
+        private const int DefaultGenericCycleDepthCutoff = 4;
+
+        // Breadth cutoff specifies the minimum total number of generic types identified as potentially cyclic
+        // that must appear within a type instantiation to mark it as potentially cyclic. Considering generic types
+        // CyclicA`1, CyclicB`1 and CyclicC`1 marked as cyclic by the initial module analysis, a hypothetical type
+        // SomeType`3<CyclicA`1<__Canon>, List`1<CyclicB`1<__Canon>>, IEnumerable`1<HashSet`1<CyclicC`1<__Canon>>>>
+        // will have "breadth 3" and will be cut off by specifying anything less than or equal to three.
+        private const int DefaultGenericCycleBreadthCutoff = 2;
 
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
@@ -79,7 +88,7 @@ namespace ILCompiler
                 InheritOpenModules(oldTypeSystemContext);
             }
 
-            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(DefaultGenericCycleCutoffPoint);
+            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(DefaultGenericCycleDepthCutoff, DefaultGenericCycleBreadthCutoff);
             _disableGenericCycleDetection = disableGenericCycleDetection;
         }
 
@@ -131,14 +140,20 @@ namespace ILCompiler
 
         public void RecordBlockedGenericCycle(string name)
         {
-            _blockedGenericCycleCounts.TryGetValue(name, out int count);
-            _blockedGenericCycleCounts[name] = count + 1;
+            lock (this)
+            {
+                _blockedGenericCycleCounts.TryGetValue(name, out int count);
+                _blockedGenericCycleCounts[name] = count + 1;
+            }
         }
 
         public void RecordPassedGenericCycle(string name)
         {
-            _passedGenericCycleCounts.TryGetValue(name, out int count);
-            _passedGenericCycleCounts[name] = count + 1;
+            lock (this)
+            {
+                _passedGenericCycleCounts.TryGetValue(name, out int count);
+                _passedGenericCycleCounts[name] = count + 1;
+            }
         }
 
         public void DumpBlockedGenericCycles()
@@ -166,10 +181,6 @@ namespace ILCompiler
 
         public override void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee, string name)
         {
-            if (_dependencyLevel >= DependencyLevelCutoff)
-            {
-                Internal.TypeSystem.ThrowHelper.ThrowInvalidProgramException();
-            }
             if (!_disableGenericCycleDetection)
             {
                 try

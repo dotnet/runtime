@@ -139,7 +139,7 @@ namespace ILCompiler
         public Option<string[]> DirectPInvokeLists { get; } =
             new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
         public Option<int> MaxGenericCycle { get; } =
-            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
+            new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleDepthCutoff, "Max depth of generic cycle");
         public Option<string[]> RootedAssemblies { get; } =
             new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
