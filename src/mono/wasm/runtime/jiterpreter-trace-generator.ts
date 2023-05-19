@@ -3057,9 +3057,9 @@ function emit_simd(
         case MintOpcode.MINT_SIMD_V128_LDC: {
             if (builder.options.enableSimd && getIsWasmSimdSupported()) {
                 builder.local("pLocals");
-                builder.appendSimd(WasmSimdOpcode.v128_const);
-                const view = Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128);
-                builder.appendBytes(view);
+                builder.v128_const(
+                    Module.HEAPU8.slice(<any>ip + 4, <any>ip + 4 + sizeOfV128)
+                );
                 append_simd_store(builder, ip);
             } else {
                 // dest
