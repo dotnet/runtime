@@ -109,6 +109,9 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
+#ifdef TARGET_XARCH
+    void MakeHWIntrinsicSrcContained(GenTreeHWIntrinsic* parentNode, GenTree* childNode);
+#endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef DEBUG
