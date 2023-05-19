@@ -572,9 +572,17 @@ FORCEINLINE INT64 FastDbl2Lng(double val)
 #endif
 }
 
-/*********************************************************************/
-// helper function to truncate double numbers to nearest integer (round towards zero)
-double TrucateDouble(double val)
+//------------------------------------------------------------------------
+// TruncateDouble: helper function to truncate double 
+//                 numbers to nearest integer (round towards zero).
+//
+// Arguments:
+//    val  - double number to be truncated.
+//
+// Return Value:
+//    truncated number (rounded towards zero)
+// 
+double TruncateDouble(double val)
 {
     FCALL_CONTRACT;
     int64_t *dintVal = (int64_t *)&val;
@@ -616,7 +624,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
     const double uint64_max_plus_1 = -2.0 * (double)INT64_MIN;
-    val = TrucateDouble(val);
+    val = TruncateDouble(val);
     return ((val != val) || (val < 0) || (val >= uint64_max_plus_1)) ? UINT64_MAX : (UINT64)val;
 
 #else
