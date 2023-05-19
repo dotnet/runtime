@@ -3480,7 +3480,7 @@ public:
     unsigned lvaLclSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
 
-    bool lvaHaveManyLocals() const;
+    bool lvaHaveManyLocals(float percent = 1.0f) const;
 
     unsigned lvaGrabTemp(bool shortLifetime DEBUGARG(const char* reason));
     unsigned lvaGrabTemps(unsigned cnt DEBUGARG(const char* reason));
@@ -3817,7 +3817,6 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void       impPushNullObjRefOnStack();
     StackEntry impPopStack();
     void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
@@ -3907,7 +3906,7 @@ protected:
     };
     GenTree* impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* sig, unsigned methodFlags);
-    GenTree* impExpandHalfConstEquals(GenTreeLclVar*   data,
+    GenTree* impExpandHalfConstEquals(GenTreeLclVarCommon*   data,
                                       GenTree*         lengthFld,
                                       bool             checkForNull,
                                       bool             startsWith,
@@ -3915,16 +3914,16 @@ protected:
                                       int              len,
                                       int              dataOffset,
                                       StringComparison cmpMode);
-    GenTree* impCreateCompareInd(GenTreeLclVar*        obj,
+    GenTree* impCreateCompareInd(GenTreeLclVarCommon*        obj,
                                  var_types             type,
                                  ssize_t               offset,
                                  ssize_t               value,
                                  StringComparison      ignoreCase,
                                  StringComparisonJoint joint = Eq);
     GenTree* impExpandHalfConstEqualsSWAR(
-        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+        GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTree* impExpandHalfConstEqualsSIMD(
-        GenTreeLclVar* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
+        GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
     GenTree* impIntrinsic(GenTree*                newobjThis,
@@ -4309,7 +4308,6 @@ private:
     BYTE impSpillCliqueGetMember(SpillCliqueDir predOrSucc, BasicBlock* blk);
     void impSpillCliqueSetMember(SpillCliqueDir predOrSucc, BasicBlock* blk, BYTE val);
 
-    void impPushVar(GenTree* op, typeInfo tiRetVal);
     GenTreeLclVar* impCreateLocalNode(unsigned lclNum DEBUGARG(IL_OFFSET offset));
     void impLoadVar(unsigned lclNum, IL_OFFSET offset);
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
@@ -7818,7 +7816,6 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
-    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 
@@ -8590,11 +8587,6 @@ private:
         return false;
     }
 
-    bool isSIMDClass(typeInfo* pTypeInfo)
-    {
-        return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-    }
-
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8608,23 +8600,9 @@ private:
         return false;
     }
 
-    bool isHWSIMDClass(typeInfo* pTypeInfo)
-    {
-#ifdef FEATURE_HW_INTRINSICS
-        return pTypeInfo->IsStruct() && isHWSIMDClass(pTypeInfo->GetClassHandleForValueClass());
-#else
-        return false;
-#endif
-    }
-
     bool isSIMDorHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
-    }
-
-    bool isSIMDorHWSIMDClass(typeInfo* pTypeInfo)
-    {
-        return isSIMDClass(pTypeInfo) || isHWSIMDClass(pTypeInfo);
     }
 
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
@@ -8708,7 +8686,7 @@ private:
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
     // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
-    unsigned int getMaxVectorByteLength() const
+    uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
@@ -8739,7 +8717,11 @@ private:
     //------------------------------------------------------------------------
     // getPreferredVectorByteLength: Gets the preferred length, in bytes, to use for vectorization
     //
+<<<<<<< HEAD
     unsigned int getPreferredVectorByteLength() const
+=======
+    uint32_t getPreferredVectorByteLength() const
+>>>>>>> dotnet/main
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         uint32_t preferredVectorByteLength = opts.preferredVectorByteLength;
@@ -8768,10 +8750,14 @@ private:
     //    It's only supposed to be used for scenarios where we can
     //    perform an overlapped load/store.
     //
-    unsigned int roundUpSIMDSize(unsigned size)
+    uint32_t roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+<<<<<<< HEAD
         unsigned maxSize = getPreferredVectorByteLength();
+=======
+        uint32_t maxSize = getPreferredVectorByteLength();
+>>>>>>> dotnet/main
         assert(maxSize <= ZMM_REGSIZE_BYTES);
 
         if ((size <= XMM_REGSIZE_BYTES) && (maxSize > XMM_REGSIZE_BYTES))
@@ -8806,10 +8792,14 @@ private:
     // Arguments:
     //    size   - size of the data to process with SIMD
     //
-    unsigned int roundDownSIMDSize(unsigned size)
+    uint32_t roundDownSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+<<<<<<< HEAD
         unsigned maxSize = getPreferredVectorByteLength();
+=======
+        uint32_t maxSize = getPreferredVectorByteLength();
+>>>>>>> dotnet/main
         assert(maxSize <= ZMM_REGSIZE_BYTES);
 
         if (size >= maxSize)
@@ -8835,7 +8825,11 @@ private:
 #endif
     }
 
+<<<<<<< HEAD
     unsigned int getMinVectorByteLength()
+=======
+    uint32_t getMinVectorByteLength()
+>>>>>>> dotnet/main
     {
         return emitTypeSize(TYP_SIMD8);
     }
@@ -9441,11 +9435,19 @@ public:
             return IsInstrumented() && jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
         }
 
-        bool CanBeInstrumentedOrIsOptimized() const
+        bool DoEarlyBlockMerging() const
         {
-            return IsInstrumented() || (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                        jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR_IF_LOOPS)) ||
-                   jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT);
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC) || jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_CODE))
+            {
+                return false;
+            }
+
+            if (jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         // true if we should use the PINVOKE_{BEGIN,END} helpers instead of generating
@@ -9636,9 +9638,6 @@ public:
         static const bool compUseSoftFP = false;
 #endif // ARM_SOFTFP
 #endif // CONFIGURABLE_ARM_ABI
-
-        // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
-        bool compJitEarlyExpandMDArrays;
 
         // Collect 64 bit counts for PGO data.
         bool compCollect64BitCounts;
@@ -10519,7 +10518,6 @@ public:
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-    bool verIsByRefLike(const typeInfo& ti);
 
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -11141,28 +11139,6 @@ public:
                     {
                         return result;
                     }
-                }
-                break;
-            }
-
-            case GT_ARR_OFFSET:
-            {
-                GenTreeArrOffs* const arrOffs = node->AsArrOffs();
-
-                result = WalkTree(&arrOffs->gtOffset, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtIndex, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&arrOffs->gtArrObj, arrOffs);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
                 }
                 break;
             }

@@ -262,8 +262,9 @@
 
     <ItemGroup>
       <!-- Remove the managed pdbs from our payloads.
-           This is for performance reasons to reduce our helix payload size  -->
-      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+           This is for performance reasons to reduce our helix payload size
+           Note: for Native AOT the pdb is the native PDB. !analyze wouldn't work without it at all so we keep it -->
+      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' or '$(_NativeAotTest)' == 'true'" />
 
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>

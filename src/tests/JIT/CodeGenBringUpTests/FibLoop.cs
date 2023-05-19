@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FibLoop
 {
     const int Pass = 100;
@@ -25,7 +26,8 @@ public class BringUpTest_FibLoop
         return curr;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int y = FibLoop(7);
         if (y == 13) return Pass;

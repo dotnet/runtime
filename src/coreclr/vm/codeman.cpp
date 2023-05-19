@@ -1428,7 +1428,21 @@ void EEJitManager::SetCpuInfo()
     //      LZCNT - ECX bit 5
     // synchronously updating VM and JIT.
 
-    XarchCpuInfo xarchCpuInfo = {};
+    union XarchCpuInfo
+    {
+        struct {
+            uint32_t SteppingId       : 4;
+            uint32_t Model            : 4;
+            uint32_t FamilyId         : 4;
+            uint32_t ProcessorType    : 2;
+            uint32_t Reserved1        : 2; // Unused bits in the CPUID result
+            uint32_t ExtendedModelId  : 4;
+            uint32_t ExtendedFamilyId : 8;
+            uint32_t Reserved         : 4; // Unused bits in the CPUID result
+        };
+
+        uint32_t Value;
+    } xarchCpuInfo;
 
     int cpuidInfo[4];
 
@@ -1442,20 +1456,14 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
     _ASSERTE(maxCpuId >= 1);
 
-    if (cpuidInfo[CPUID_EBX] == 0x756E6547)                     // Genu
-    {
-        xarchCpuInfo.IsGenuineIntel = (cpuidInfo[CPUID_EDX] == 0x49656E69)   // ineI
-                                   && (cpuidInfo[CPUID_ECX] == 0x6C65746E);  // ntel
-    }
-    else if (cpuidInfo[CPUID_EBX] == 0x68747541)                // Auth
-    {
-        xarchCpuInfo.IsAuthenticAmd = (cpuidInfo[CPUID_EDX] == 0x69746E65)   // enti
-                                   && (cpuidInfo[CPUID_ECX] == 0x444D4163);  // cAMD
-    }
+    bool isGenuineIntel = (cpuidInfo[CPUID_EBX] == 0x756E6547) && // Genu
+                          (cpuidInfo[CPUID_EDX] == 0x49656E69) && // ineI
+                          (cpuidInfo[CPUID_ECX] == 0x6C65746E);   // ntel
 
     __cpuid(cpuidInfo, 0x00000001);
-
     _ASSERTE((cpuidInfo[CPUID_EDX] & (1 << 15)) != 0);                                                    // CMOV
+
+    xarchCpuInfo.Value = cpuidInfo[CPUID_EAX];
 
 #if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
     // Linux may still support no SSE/SSE2 for 32-bit
@@ -1941,6 +1949,41 @@ void EEJitManager::SetCpuInfo()
 
     CPUCompileFlags.Set64BitInstructionSetVariants();
     CPUCompileFlags.EnsureValidInstructionSetSupport();
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (isGenuineIntel)
+    {
+        // Some architectures can experience frequency throttling when executing
+        // executing 512-bit width instructions. To account for this we set the
+        // default preferred vector width to 256-bits in some scenarios. Power
+        // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
+        // allow using such instructions where hardware support is available.
+
+        if (xarchCpuInfo.FamilyId == 0x06)
+        {
+            if (xarchCpuInfo.ExtendedModelId == 0x05)
+            {
+                if (xarchCpuInfo.Model == 0x05)
+                {
+                    // * Skylake (Server)
+                    // * Cascade Lake
+                    // * Cooper Lake
+
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                }
+            }
+            else if (xarchCpuInfo.ExtendedModelId == 0x06)
+            {
+                if (xarchCpuInfo.Model == 0x06)
+                {
+                    // * Cannon Lake
+
+                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                }
+            }
+        }
+    }
+#endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;
 

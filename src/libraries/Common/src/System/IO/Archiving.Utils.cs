@@ -26,9 +26,9 @@ namespace System.IO
             }
         }
 
-        public static bool IsDirEmpty(DirectoryInfo possiblyEmptyDir)
+        public static bool IsDirEmpty(string directoryFullName)
         {
-            using (IEnumerator<string> enumerator = Directory.EnumerateFileSystemEntries(possiblyEmptyDir.FullName).GetEnumerator())
+            using (IEnumerator<string> enumerator = Directory.EnumerateFileSystemEntries(directoryFullName).GetEnumerator())
                 return !enumerator.MoveNext();
         }
 

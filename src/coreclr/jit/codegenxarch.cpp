@@ -1010,7 +1010,26 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // the same code as above
     else if (op2reg == targetReg)
     {
-        noway_assert(GenTree::OperIsCommutative(oper));
+
+#ifdef DEBUG
+        unsigned lclNum1 = (unsigned)-1;
+        unsigned lclNum2 = (unsigned)-2;
+
+        GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+        GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+
+        if (op1Skip->OperIsLocalRead())
+        {
+            lclNum1 = op1Skip->AsLclVarCommon()->GetLclNum();
+        }
+        if (op2Skip->OperIsLocalRead())
+        {
+            lclNum2 = op2Skip->AsLclVarCommon()->GetLclNum();
+        }
+
+        assert(GenTree::OperIsCommutative(oper) || (lclNum1 == lclNum2));
+#endif
+
         dst = op2;
         src = op1;
     }
@@ -2082,14 +2101,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_SWITCH_TABLE:
             genTableBasedSwitch(treeNode);
-            break;
-
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
             break;
 
         case GT_CLS_VAR_ADDR:
@@ -4461,134 +4472,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     GetEmitter()->emitIns_AR_R(INS_cmp, emitTypeSize(tree), reg, reg, 0);
 }
 
-//------------------------------------------------------------------------
-// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
-//                     producing the effective index by subtracting the lower bound.
-//
-// Arguments:
-//    arrIndex - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-
-void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
-{
-    assert(!compiler->opts.compJitEarlyExpandMDArrays);
-
-    GenTree* arrObj    = arrIndex->ArrObj();
-    GenTree* indexNode = arrIndex->IndexExpr();
-
-    regNumber arrReg   = genConsumeReg(arrObj);
-    regNumber indexReg = genConsumeReg(indexNode);
-    regNumber tgtReg   = arrIndex->GetRegNum();
-
-    unsigned dim  = arrIndex->gtCurrDim;
-    unsigned rank = arrIndex->gtArrRank;
-
-    noway_assert(tgtReg != REG_NA);
-
-    // Subtract the lower bound for this dimension.
-    // TODO-XArch-CQ: make this contained if it's an immediate that fits.
-    inst_Mov(indexNode->TypeGet(), tgtReg, indexReg, /* canSkip */ true);
-    GetEmitter()->emitIns_R_AR(INS_sub, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
-                               compiler->eeGetMDArrayLowerBoundOffset(rank, dim));
-    GetEmitter()->emitIns_R_AR(INS_cmp, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
-                               compiler->eeGetMDArrayLengthOffset(rank, dim));
-    genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
-
-    genProduceReg(arrIndex);
-}
-
-//------------------------------------------------------------------------
-// genCodeForArrOffset: Generates code to compute the flattened array offset for
-//    one dimension of an array reference:
-//        result = (prevDimOffset * dimSize) + effectiveIndex
-//    where dimSize is obtained from the arrObj operand
-//
-// Arguments:
-//    arrOffset - the node for which we're generating code
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    dimSize and effectiveIndex are always non-negative, the former by design,
-//    and the latter because it has been normalized to be zero-based.
-
-void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
-{
-    assert(!compiler->opts.compJitEarlyExpandMDArrays);
-
-    GenTree* offsetNode = arrOffset->gtOffset;
-    GenTree* indexNode  = arrOffset->gtIndex;
-    GenTree* arrObj     = arrOffset->gtArrObj;
-
-    regNumber tgtReg = arrOffset->GetRegNum();
-    assert(tgtReg != REG_NA);
-
-    unsigned dim  = arrOffset->gtCurrDim;
-    unsigned rank = arrOffset->gtArrRank;
-
-    // First, consume the operands in the correct order.
-    regNumber offsetReg = REG_NA;
-    regNumber tmpReg    = REG_NA;
-    if (!offsetNode->IsIntegralConst(0))
-    {
-        offsetReg = genConsumeReg(offsetNode);
-
-        // We will use a temp register for the offset*scale+effectiveIndex computation.
-        tmpReg = arrOffset->GetSingleTempReg();
-    }
-    else
-    {
-        assert(offsetNode->isContained());
-    }
-
-    regNumber indexReg = genConsumeReg(indexNode);
-
-    // Although arrReg may not be used in the constant-index case, if we have generated
-    // the value into a register, we must consume it, otherwise we will fail to end the
-    // live range of the gc ptr.
-    // TODO-CQ: Currently arrObj will always have a register allocated to it.
-    // We could avoid allocating a register for it, which would be of value if the arrObj
-    // is an on-stack lclVar.
-    regNumber arrReg = REG_NA;
-    if (arrObj->gtHasReg(compiler))
-    {
-        arrReg = genConsumeReg(arrObj);
-    }
-
-    if (!offsetNode->IsIntegralConst(0))
-    {
-        assert(tmpReg != REG_NA);
-        assert(arrReg != REG_NA);
-
-        // Evaluate tgtReg = offsetReg*dim_size + indexReg.
-        // tmpReg is used to load dim_size and the result of the multiplication.
-        // Note that dim_size will never be negative.
-
-        GetEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tmpReg, arrReg,
-                                   compiler->eeGetMDArrayLengthOffset(rank, dim));
-        inst_RV_RV(INS_imul, tmpReg, offsetReg);
-
-        if (tmpReg == tgtReg)
-        {
-            inst_RV_RV(INS_add, tmpReg, indexReg);
-        }
-        else
-        {
-            inst_Mov(TYP_I_IMPL, tgtReg, indexReg, /* canSkip */ true);
-            inst_RV_RV(INS_add, tgtReg, tmpReg);
-        }
-    }
-    else
-    {
-        inst_Mov(TYP_INT, tgtReg, indexReg, /* canSkip */ true);
-    }
-    genProduceReg(arrOffset);
-}
-
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 {
     instruction ins;
@@ -5541,6 +5424,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                     switch (intrinsicId)
                     {
+                        case NI_Vector128_ToScalar:
+                        case NI_Vector256_ToScalar:
+                        case NI_Vector512_ToScalar:
                         case NI_SSE2_ConvertToInt32:
                         case NI_SSE2_ConvertToUInt32:
                         case NI_SSE2_X64_ConvertToInt64:

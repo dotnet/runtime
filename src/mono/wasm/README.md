@@ -198,9 +198,25 @@ Hello World!
 Args:
 ```
 
+## ES6 modules
+
+JavaScript part of the .NET runtime for WebAssembly is composed of several ES6 modules.
+
+#### dotnet.js
+
+`dotnet.js` is entry point ("loader") containing public API for interacting with .NET runtime. This is the file that you import into your JavaScript code. This file don't change during app development. Adding fingerprint on this file can be turned on by setting msbuild property `WasmFingerprintDotnetJs=true`.
+
+#### dotnet.native.js
+
+`dotnet.native.js` contains emscripten API and is loaded by the loader. This file changes when native build (relink) is invoked. The file name always contains fingerprint to avoid stale cache during app development.
+
+#### dotnet.runtime.js
+
+`dotnet.runtime.js` contains the rest JavaScript part of the .NET runtime. The file name also always contains fingerprint.
+
 ## Analyzing binary wasm files
 
-We have few tools to analyze binary wasm files. The [wa-info](https://github.com/radekdoulik/wa-info#wa-info) and [wa-diff](https://github.com/radekdoulik/wa-info#wa-info) to analyze `dotnet.wasm` in the `AppBundle` directory, once you build your app. These can be easily [installed](https://github.com/radekdoulik/wa-info#installation) as dotnet tools.
+We have few tools to analyze binary wasm files. The [wa-info](https://github.com/radekdoulik/wa-info#wa-info) and [wa-diff](https://github.com/radekdoulik/wa-info#wa-info) to analyze `dotnet.native.wasm` in the `AppBundle` directory, once you build your app. These can be easily [installed](https://github.com/radekdoulik/wa-info#installation) as dotnet tools.
 
 They are handy to quickly disassemble functions and inspect webassembly module sections. The wa-diff is able to compare 2 wasm files, so you can for example check the effect of changes in your source code. You can see changes in the functions code as well as changes in sizes of sections and of code.
 

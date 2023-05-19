@@ -7,6 +7,7 @@ import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
+import { mono_log_info } from "./logging";
 
 const dummyPerformance = {
     now: function () {
@@ -28,8 +29,8 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     }
 
     if (BuildConfiguration === "Debug") {
-        console.debug(`MONO_WASM: starting script ${loaderHelpers.scriptUrl}`);
-        console.debug(`MONO_WASM: starting in ${loaderHelpers.scriptDirectory}`);
+        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
+        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
     // prefer fetch_like over global fetch for assets

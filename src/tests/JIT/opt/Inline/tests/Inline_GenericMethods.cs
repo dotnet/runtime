@@ -4,17 +4,19 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace Inline_GenericMethods
 {
-    internal class Inline_GenericMethods
+    public class Inline_GenericMethods
     {
-        public static void GetType_NoInline<T>()
+        internal static void GetType_NoInline<T>()
         {
             Console.WriteLine(typeof(T));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

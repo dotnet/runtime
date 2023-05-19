@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Runtime 83738: need to ensure that 's' in 'Foo'
 // is marked as address exposed during OSR compiles.
@@ -35,7 +36,8 @@ public class Exposure1
         return (abc == eabc && def == edef);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Foo(50000) ? 100 : -1;
     }

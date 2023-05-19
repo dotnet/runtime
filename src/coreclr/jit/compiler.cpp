@@ -106,25 +106,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -2283,12 +2283,6 @@ void Compiler::compSetProcessor()
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
     {
-        // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-        // These have been shipped together historically and at the time of this writing
-        // there exists no hardware which doesn't support the entire feature set. To simplify
-        // the overall JIT implementation, we currently require the entire set of ISAs to be
-        // supported and disable AVX512 support otherwise.
-
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
         assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
@@ -2302,10 +2296,10 @@ void Compiler::compSetProcessor()
 
         if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
         {
-            // Some architectures can experience frequency throttling when executing
+            // Some architectures can experience frequency throttling when
             // executing 512-bit width instructions. To account for this we set the
             // default preferred vector width to 256-bits in some scenarios. Power
-            // users can override this with `DOTNET_PreferredVectorBitWith=512` to
+            // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
 
             preferredVectorByteLength = 256;
@@ -2841,8 +2835,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
 #endif // defined(TARGET_ARM64)
 
-    opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
-
     opts.disAsm       = false;
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
@@ -2960,18 +2952,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
-        }
-
-        // If JitEarlyExpandMDArrays is non-zero, then early MD expansion is enabled.
-        // If JitEarlyExpandMDArrays is zero, then conditionally enable it for functions specified by
-        // JitEarlyExpandMDArraysFilter.
-        if (JitConfig.JitEarlyExpandMDArrays() == 0)
-        {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
-                                                                  &info.compMethodInfo->args))
-            {
-                opts.compJitEarlyExpandMDArrays = true;
-            }
         }
     }
 
@@ -4740,14 +4720,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
 
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
@@ -5303,66 +5283,66 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             // Loop alignment is disabled for cold blocks
             assert((block->bbFlags & BBF_COLD) == 0);
-            BasicBlock* const loopTop = block->bbNext;
+            BasicBlock* const loopTop              = block->bbNext;
+            bool              isSpecialCallFinally = block->isBBCallAlwaysPairTail();
+            bool              unmarkedLoopAlign    = false;
 
-            // If jmp was not found, then block before the loop start is where align instruction will be added.
-            // There are two special cases:
-            // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
-            //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
-            //    region range.
-            // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
-            //    can't add alignment because we can't add instructions in that block. In the
-            //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
-            //
-            // Currently, we don't align loops for these cases.
-            //
-            if (bbHavingAlign == nullptr)
-            {
-                bool isSpecialCallFinally = block->isBBCallAlwaysPairTail();
 #if FEATURE_EH_CALLFINALLY_THUNKS
-                if (block->bbJumpKind == BBJ_CALLFINALLY)
-                {
-                    // It must be a retless BBJ_CALLFINALLY if we get here.
-                    assert(!block->isBBCallAlwaysPair());
+            if (block->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                // It must be a retless BBJ_CALLFINALLY if we get here.
+                assert(!block->isBBCallAlwaysPair());
 
-                    // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
-                    // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
-                    // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
-                    // BBJ_CALLFINALLY), we allow it.
-                    isSpecialCallFinally = true;
-                }
+                // In the case of FEATURE_EH_CALLFINALLY_THUNKS, we can't put the align instruction in a retless
+                // BBJ_CALLFINALLY either, because it alters the "cloned finally" region reported to the VM.
+                // In the x86 case (the only !FEATURE_EH_CALLFINALLY_THUNKS that supports retless
+                // BBJ_CALLFINALLY), we allow it.
+                isSpecialCallFinally = true;
+            }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-                if (isSpecialCallFinally)
+            if (isSpecialCallFinally)
+            {
+                // There are two special cases:
+                // 1. If the block before the loop start is a retless BBJ_CALLFINALLY with
+                //    FEATURE_EH_CALLFINALLY_THUNKS, we can't add alignment because it will affect reported EH
+                //    region range.
+                // 2. If the previous block is the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair, then we
+                //    can't add alignment because we can't add instructions in that block. In the
+                //    FEATURE_EH_CALLFINALLY_THUNKS case, it would affect the reported EH, as above.
+                // Currently, we don't align loops for these cases.
+
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+            else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
+            {
+                // In some odd cases we may see blocks within the loop before we see the
+                // top block of the loop. Just bail on aligning such loops.
+                //
+                loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                madeChanges       = true;
+                unmarkedLoopAlign = true;
+            }
+
+            if (!unmarkedLoopAlign)
+            {
+                if (bbHavingAlign == nullptr)
                 {
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("block before loop is special callfinally/always block"));
-                    madeChanges = true;
-                }
-                else if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) &&
-                         (block->bbNatLoopNum == loopTop->bbNatLoopNum))
-                {
-                    // In some odd cases we may see blocks within the loop before we see the
-                    // top block of the loop. Just bail on aligning such loops.
-                    //
-                    loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
-                    madeChanges = true;
-                }
-                else
-                {
+                    // If jmp was not found, then block before the loop start is where align instruction will be added.
+
                     bbHavingAlign = block;
                     JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
                             block->bbNum, loopTop->bbNum);
                 }
-            }
-            else
-            {
-                JITDUMP("Marking " FMT_BB " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB
-                        "\n",
-                        bbHavingAlign->bbNum, loopTop->bbNum);
-            }
+                else
+                {
+                    JITDUMP("Marking " FMT_BB
+                            " that ends with unconditional jump with BBF_HAS_ALIGN for loop at " FMT_BB "\n",
+                            bbHavingAlign->bbNum, loopTop->bbNum);
+                }
 
-            if (bbHavingAlign != nullptr)
-            {
                 madeChanges = true;
                 bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
