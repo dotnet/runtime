@@ -638,7 +638,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULng, double val)
         ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
     }
     return ret;
-#endif
+#endif // TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 
