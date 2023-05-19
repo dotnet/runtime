@@ -6,6 +6,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupCompileArgument ("/optimize+")]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
+	[SkipKeptItemsValidation (By = Tool.NativeAot)]
 	public class TryCatchBlocks
 	{
 		public static void Main ()
