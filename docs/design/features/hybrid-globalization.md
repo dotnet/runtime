@@ -279,7 +279,7 @@ There are some behaviour changes. Below are examples of such cases.
 |   `\u3060` だ  |   `\u30C0` ダ  |     None     |   1  |  -1  |   hiragana and katakana characters are ordered differently compared to ICU |
 |   `\u00C0` À  |   `A\u0300` À  |     None     |   1  |  0  |   This is not same character for native api |
 
-- `StringSort` : 
+- `StringSort` :
 
 `CompareOptions.StringSort` is mapped to `NSStringCompareOptions.NSLiteralSearch` .ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric. That is how works also `NSLiteralSearch`.
 

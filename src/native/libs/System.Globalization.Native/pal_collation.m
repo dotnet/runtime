@@ -22,28 +22,23 @@ typedef enum
 
 static NSStringCompareOptions ConvertFromCompareOptionsToNSStringCompareOptions(int32_t comparisonOptions)
 {
+    int32_t supportedOptions = IgnoreCase | IgnoreNonSpace | IgnoreWidth;
+    NSStringCompareOptions options = NSLiteralSearch;
     comparisonOptions &= CompareOptionsMask;
-    switch(comparisonOptions)
-    {
-        case None:
-            return NSLiteralSearch;
-        case IgnoreCase:
-            return NSCaseInsensitiveSearch | NSLiteralSearch;
-        case IgnoreNonSpace:
-            return NSDiacriticInsensitiveSearch | NSLiteralSearch;
-        case (IgnoreNonSpace | IgnoreCase):
-            return NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch | NSLiteralSearch;
-        case IgnoreWidth:
-            return NSWidthInsensitiveSearch | NSLiteralSearch;
-        case (IgnoreWidth | IgnoreCase):
-            return NSWidthInsensitiveSearch | NSCaseInsensitiveSearch | NSLiteralSearch;
-        case (IgnoreWidth | IgnoreNonSpace):
-            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSLiteralSearch;
-        case (IgnoreWidth | IgnoreNonSpace | IgnoreCase):
-            return NSWidthInsensitiveSearch | NSDiacriticInsensitiveSearch | NSCaseInsensitiveSearch | NSLiteralSearch;
-        default:
-            return 0;
-    }
+
+    if ((comparisonOptions | supportedOptions) != supportedOptions)
+        return 0;
+
+    if (comparisonOptions & IgnoreCase)
+        options |= NSCaseInsensitiveSearch;
+
+    if (comparisonOptions & IgnoreNonSpace)
+        options |= NSDiacriticInsensitiveSearch;
+
+    if (comparisonOptions & IgnoreWidth)
+        options |= NSWidthInsensitiveSearch;
+
+    return options;
 }
 
 #endif
