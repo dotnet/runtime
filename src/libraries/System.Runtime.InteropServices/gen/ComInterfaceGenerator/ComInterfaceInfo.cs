@@ -102,7 +102,6 @@ namespace Microsoft.Interop
             }
             if (baseSymbol is not null)
             {
-
                 var baseAttrInfo = GeneratedComInterfaceData.From(GeneratedComInterfaceCompilationData.GetAttributeDataFromInterfaceSymbol(baseSymbol));
                 // The base can be undefined string marshalling
                 if ((baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) || baseAttrInfo.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
