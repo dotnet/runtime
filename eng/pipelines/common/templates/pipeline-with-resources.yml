@@ -74,8 +74,8 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/riscv64
 
-    - container: debian-11-gcc12-amd64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-gcc12-amd64
+    - container: debian-12-gcc13-amd64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
 
     - container: linux_x64_llvmaot
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
