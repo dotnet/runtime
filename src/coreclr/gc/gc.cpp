@@ -49693,6 +49693,7 @@ bool gc_heap::compute_hard_limit()
 
 bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config, size_t new_current_total_committed)
 {
+#ifdef HOST_64BIT
     // If the hard limit is specified, the user is saying even if the process is already
     // running in a container, use this limit for the GC heap.
     if (!hard_limit_config_p)
@@ -49716,6 +49717,7 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
     {
         return false;
     }
+#endif //HOST_64BIT
 
 #ifdef USE_REGIONS
     {
