@@ -266,7 +266,7 @@ namespace System.Net.Sockets
         }
 
         internal unsafe bool ConnectEx(SafeSocketHandle socketHandle,
-            Span<byte> socketAddress,
+            ReadOnlySpan<byte> socketAddress,
             IntPtr buffer,
             int dataLength,
             out int bytesSent,

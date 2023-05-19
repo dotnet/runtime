@@ -174,7 +174,7 @@ namespace System.Net.Sockets
                 Marshal.SetLastPInvokeError(Marshal.GetLastSystemError());
 
             }
-            internal unsafe bool ConnectEx(SafeSocketHandle socketHandle, Span<byte> socketAddress, IntPtr buffer, int dataLength, out int bytesSent, NativeOverlapped* overlapped)
+            internal unsafe bool ConnectEx(SafeSocketHandle socketHandle, ReadOnlySpan<byte> socketAddress, IntPtr buffer, int dataLength, out int bytesSent, NativeOverlapped* overlapped)
             {
                 IntPtr __socketHandle_gen_native = default;
                 bytesSent = default;
@@ -192,7 +192,7 @@ namespace System.Net.Sockets
                     socketHandle.DangerousAddRef(ref socketHandle__addRefd);
                     __socketHandle_gen_native = socketHandle.DangerousGetHandle();
                     fixed (int* __bytesSent_gen_native = &bytesSent)
-                    fixed (void* socketAddressPtr = socketAddress)
+                    fixed (void* socketAddressPtr = &MemoryMarshal.GetReference(socketAddress))
                     {
                         __retVal_gen_native = ((delegate* unmanaged<IntPtr, void*, int, IntPtr, int, int*, NativeOverlapped*, int>)_target)(__socketHandle_gen_native, socketAddressPtr, socketAddress.Length, buffer, dataLength, __bytesSent_gen_native, overlapped);
                     }
@@ -339,7 +339,7 @@ namespace System.Net.Sockets
 
     internal unsafe delegate bool ConnectExDelegate(
                 SafeSocketHandle socketHandle,
-                Span<byte> socketAddress,
+                ReadOnlySpan<byte> socketAddress,
                 IntPtr buffer,
                 int dataLength,
                 out int bytesSent,
