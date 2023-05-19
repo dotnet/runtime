@@ -1000,6 +1000,7 @@ private:
             else if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 unsigned offs = m_src->AsLclVarCommon()->GetLclOffs() + entry.Offset;
+                // Local morph ensures we do not see local indirs here that dereference beyond UINT16_MAX.
                 noway_assert(FitsIn<uint16_t>(offs));
                 src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), entry.Type, offs);
                 m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum()
