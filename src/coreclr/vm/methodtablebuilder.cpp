@@ -1144,7 +1144,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
-    if (!CPUCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PREJIT) && CPUCompileFlags.IsSet(InstructionSet_AVX2))
+    if (CPUCompileFlags.IsSet(InstructionSet_AVX2))
     {
         numInstanceFieldBytes = 32;
     }
