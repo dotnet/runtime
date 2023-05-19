@@ -3,8 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
@@ -57,6 +60,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			RUCOnVirtualOnAnnotatedBase.Test ();
 			RUCOnVirtualOnAnnotatedBaseUsedByDerived.Test ();
 			UseByDerived.Test ();
+
+			CompilerGeneratedCode.Test (null);
 		}
 
 		[Kept]
@@ -851,6 +856,76 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public static void Test ()
 			{
 				derivedInstance.GetType ().RequiresNonPublicFields ();
+			}
+		}
+
+		// This validates that marking compiler generated code via DAM-on-Type doesn't
+		// produce warnings about the compiler generated methods, even if they're in a RUC scope.
+		[Kept]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptMember (".ctor()")]
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+		class CompilerGeneratedCode
+		{
+			[Kept]
+			[ExpectedWarning ("IL2026", "LambdaWithRUC")]
+			static void LambdaWithRUC ()
+			{
+				Action<Type> a =
+					[RequiresUnreferencedCode ("LambdaWithRUC")]
+				(Type type) => { type.GetMethods (); };
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2026", "LocalFunctionWithRUC")]
+			static void LocalFunctionWithRUC ()
+			{
+				LocalFunctionWithRUCInner (null);
+
+				[RequiresUnreferencedCode ("LocalFunctionWithRUC")]
+				void LocalFunctionWithRUCInner (Type type)
+				{
+					type.GetMethods ();
+				}
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof(IteratorStateMachineAttribute))]
+			[KeptAttributeAttribute (typeof(RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("IteratorWithRUC")]
+			[ExpectedWarning ("IL2112", "IteratorWithRUC")]
+			static IEnumerable<int> IteratorWithRUC ()
+			{
+				yield return 1;
+				yield return 0;
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[KeptAttributeAttribute (typeof(DebuggerStepThroughAttribute))]
+			[RequiresUnreferencedCode ("AsyncWithRUC")]
+			[ExpectedWarning ("IL2112", "AsyncWithRUC")]
+			static async Task AsyncWithRUC ()
+			{
+				await Task.Delay (100);
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (AsyncIteratorStateMachineAttribute))]
+			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+			[RequiresUnreferencedCode ("AsyncIteratorWithRUC")]
+			[ExpectedWarning ("IL2112", "AsyncIteratorWithRUC")]
+			static async IAsyncEnumerable<int> AsyncIteratorWithRUC ()
+			{
+				await Task.Delay (100);
+				yield return 1;
+			}
+
+			[Kept]
+			public static void Test (CompilerGeneratedCode instance)
+			{
+				instance.GetType ().RequiresAll ();
 			}
 		}
 	}

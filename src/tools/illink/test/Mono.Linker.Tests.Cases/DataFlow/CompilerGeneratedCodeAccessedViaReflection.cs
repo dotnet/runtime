@@ -29,6 +29,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			LocalFunctions.Test ();
 
 			SelfMarkingMethods.Test ();
+			DelegateAccess.Test ();
 		}
 
 		class BaseTypeWithIteratorStateMachines
@@ -630,6 +631,55 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		class DelegateAccess
+		{
+			static void AnnotatedMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+			{
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void TestMethodThroughDelegate ()
+			{
+				Action<Type> a = AnnotatedMethod;
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void TestLambdaThroughDelegate ()
+			{
+				Action<Type> a = ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => { };
+				a (null);
+			}
+
+			[ExpectedWarning ("IL2111")]
+			static void TestLocalFunctionThroughDelegate ()
+			{
+				Action<Type> a = LocalFunction;
+				a (null);
+
+				void LocalFunction ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+				{
+				}
+			}
+
+			static void TestGenericLocalFunctionThroughDelegate ()
+			{
+				Action a = LocalFunction<TestType>;
+				a ();
+
+				void LocalFunction <[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+				{
+				}
+			}
+
+			public static void Test ()
+			{
+				TestMethodThroughDelegate ();
+				TestLambdaThroughDelegate ();
+				TestLocalFunctionThroughDelegate ();
+				TestGenericLocalFunctionThroughDelegate ();
+			}
+		}
+
 		[RequiresUnreferencedCode ("--MethodWithRequires--")]
 		[RequiresAssemblyFiles ("--MethodWithRequires--")]
 		[RequiresDynamicCode ("--MethodWithRequires--")]
@@ -657,5 +707,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[DllImport ("Foo")]
 		static extern void MethodTakingObject ([MarshalAs (UnmanagedType.IUnknown)] object obj);
+
+		class TestType { }
 	}
 }
