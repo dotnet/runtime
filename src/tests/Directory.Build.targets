@@ -9,6 +9,24 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
+  <PropertyGroup>
+    <OSPlatformConfig>$(TargetOS).$(Platform).$(Configuration)</OSPlatformConfig>
+    <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
+
+    <BuildTestsOnHelix>true</BuildTestsOnHelix>
+    <ArchiveTests>true</ArchiveTests>
+
+    <PublishTestAsSelfContainedDependsOn>BuildiOSApp</PublishTestAsSelfContainedDependsOn>
+    <PublishTestAsSelfContainedAfterTargets>BuildiOSApp</PublishTestAsSelfContainedAfterTargets>
+    <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
+    <RuntimeTests>true</RuntimeTests>
+    <OutDir>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/tracing_eventpipe/</OutDir>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
+
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>

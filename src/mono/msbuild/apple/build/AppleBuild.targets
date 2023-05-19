@@ -196,10 +196,18 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
     </ItemGroup>
 
+    <RemoveDuplicates
+        Inputs="@(_AotInputAssemblies)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AotInputAssembliesDedup"/>
+    </RemoveDuplicates>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
-        Assemblies="@(_AotInputAssemblies)"
+        AdditionalAssemblySearchPaths="$(CoreRootPath)"
+        Assemblies="@(_AotInputAssembliesDedup)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
         DirectPInvokes="@(DirectPInvokes)"
@@ -211,7 +219,7 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="AsmOnly"
         UseAotDataFile="$(_UseAotDataFile)"
-        UseLLVM="$(MonoEnableLLVM)">
+        UseLLVM="false">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />
     </MonoAOTCompiler>
 
@@ -235,10 +243,18 @@
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
+
+    <RemoveDuplicates
+        Inputs="@(_AssembliesToBundleInternal)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AssembliesToBundleInternalDedup"/>
+    </RemoveDuplicates>
+
     <AppleAppBuilderTask
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
-      Assemblies="@(_AssembliesToBundleInternal)"
+      Assemblies="@(_AssembliesToBundleInternalDedup)"
       BuildAppBundle="$(GenerateXcodeProject)"
       DevTeamProvisioning="$(DevTeamProvisioning)"
       DiagnosticPorts="$(DiagnosticPorts)"

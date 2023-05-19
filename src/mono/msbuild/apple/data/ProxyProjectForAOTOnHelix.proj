@@ -30,6 +30,7 @@
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
       <MainLibraryFileName>$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(RuntimeTests)' == 'true'"></MainLibraryFileName>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 

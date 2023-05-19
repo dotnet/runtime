@@ -61,10 +61,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true'"
-                   Include="@(AppleAssembliesToBundle)"         TargetDir="publish\%(AppleAssembliesToBundle.RecursiveDir)" />
-      <BundleFiles Include="@(AppleNativeFilesToBundle)"        TargetDir="publish\%(AppleNativeFilesToBundle.RecursiveDir)" />
-      <BundleFiles Include="$(RuntimeConfigFilePath)"           TargetDir="publish" />
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' And $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetFullPath('%(AppleAssembliesToBundle.Identity)')))))) != '$(AssemblyName)'"
+                   Include="@(AppleAssembliesToBundle)"         TargetDir="publish\$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetFullPath('%(AppleAssembliesToBundle.Identity)'))))))" />
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' And $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetFullPath('%(AppleAssembliesToBundle.Identity)')))))) == '$(AssemblyName)'"
+              Include="@(AppleAssembliesToBundle)"         TargetDir="publish" />
+      <BundleFiles Include="@(AppleNativeFilesToBundle)"        TargetDir="publish" />
 
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
@@ -103,6 +104,8 @@
       <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
+      <_ApplePropertyNames Include="CoreRootPath" />
+      <_ApplePropertyNames Include="RuntimeTests" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"

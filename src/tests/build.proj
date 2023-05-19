@@ -316,7 +316,7 @@
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
     </PropertyGroup>
     <ItemGroup>
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
     </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
@@ -407,7 +407,7 @@
             TaskParameter="Filtered"
             ItemName="_AotInputAssembliesDedup"/>
     </RemoveDuplicates>
-    <Message Text="RunAOTCompilation $(RunAOTCompilation)" Importance="High"/>
+    <!-- <Message Text="RunAOTCompilation $(RunAOTCompilation)" Importance="High"/>
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
@@ -419,20 +419,20 @@
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         AdditionalAssemblySearchPaths="$(CORE_ROOT)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
-    </MonoAOTCompiler>
+    </MonoAOTCompiler> -->
 
-    <ItemGroup>
+    <!-- <ItemGroup>
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
-    </ItemGroup>
+    </ItemGroup> -->
 
-    <RemoveDuplicates
+    <!-- <RemoveDuplicates
         Inputs="@(_AppleAssembliesInternal)">
         <Output
             TaskParameter="Filtered"
             ItemName="_AppleAssembliesInternalDedup"/>
-    </RemoveDuplicates>
+    </RemoveDuplicates> -->
 
-    <AppleAppBuilderTask
+    <!-- <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
         AppDir="$(BuildDir)"
@@ -453,17 +453,22 @@
         EnableAppSandbox="$(EnableAppSandbox)">
       <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
       <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
+    </AppleAppBuilderTask> -->
 
     <!-- Apparently MSBuild cannot move directories and recursively copying a
          a directory requires writing some sort of recursive traversal
          logic yourself. -->
-    <ItemGroup>
+    <!-- <ItemGroup>
       <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
     </ItemGroup>
     <MakeDir Directories="$(FinalPath)" />
     <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
-    <RemoveDir Directories="$(AppBundlePath)" />
+    <RemoveDir Directories="$(AppBundlePath)" /> -->
+    <PropertyGroup>
+      <PublishDir>$(BuildDir)/</PublishDir>
+      <TestProjectName>$(AssemblyName)</TestProjectName>
+      <CoreRootPath>$(CORE_ROOT)</CoreRootPath>
+    </PropertyGroup>
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
