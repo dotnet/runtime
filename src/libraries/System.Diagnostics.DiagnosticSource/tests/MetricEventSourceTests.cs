@@ -1639,7 +1639,7 @@ namespace System.Diagnostics.Metrics.Tests
                 if (shared)
                 {
                     d.Add("SessionId", "SHARED");
-                    d.Add("SharedIdentifier", sessionId);
+                    d.Add("UniqueIdentifier", sessionId);
                 }
                 else
                 {

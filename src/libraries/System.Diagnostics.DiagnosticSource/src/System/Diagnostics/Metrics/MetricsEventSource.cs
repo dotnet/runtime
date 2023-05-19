@@ -204,9 +204,9 @@ namespace System.Diagnostics.Metrics
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void MultipleSessionsConfiguredIncorrectlyError(string sharedIdentifier, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
+        public void MultipleSessionsConfiguredIncorrectlyError(string uniqueIdentifier, string expectedMaxHistograms, string actualMaxHistograms, string expectedMaxTimeSeries, string actualMaxTimeSeries, string expectedRefreshInterval, string actualRefreshInterval)
         {
-            WriteEvent(17, sharedIdentifier, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
+            WriteEvent(17, uniqueIdentifier, expectedMaxHistograms, actualMaxHistograms, expectedMaxTimeSeries, actualMaxTimeSeries, expectedRefreshInterval, actualRefreshInterval);
         }
 
         /// <summary>
@@ -340,12 +340,12 @@ namespace System.Diagnostics.Metrics
                                 else
                                 {
                                     // In theory this should be required as part of the contract to do shared -> not currently safe with !
-                                    if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                                    if (command.Arguments!.TryGetValue("UniqueIdentifier", out string? uniqueIdentifier))
                                     {
                                         lock (_aggregationManager)
                                         {
-                                            // Use sharedIdentifier to identify the session that is not configured correctly (since the sessionId is just SHARED)
-                                            Parent.MultipleSessionsConfiguredIncorrectlyError(sharedIdentifier!, _aggregationManager.MaxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager.MaxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager.CollectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
+                                            // Use UniqueIdentifier to identify the session that is not configured correctly (since the sessionId is just SHARED)
+                                            Parent.MultipleSessionsConfiguredIncorrectlyError(uniqueIdentifier!, _aggregationManager.MaxHistograms.ToString(), maxHistograms.ToString(), _aggregationManager.MaxTimeSeries.ToString(), maxTimeSeries.ToString(), _aggregationManager.CollectionPeriod.TotalSeconds.ToString(), refreshInterval.ToString());
                                         }
                                     }
 
@@ -357,7 +357,7 @@ namespace System.Diagnostics.Metrics
                         {
                             if (command.Command == EventCommand.Enable || command.Command == EventCommand.Update)
                             {
-                                // trying to add more sessions is not supported (assuming the parameters are different)
+                                // trying to add more sessions is not supported for unshared sessions
                                 // EventSource doesn't provide an API that allows us to enumerate the listeners'
                                 // filter arguments independently or to easily track them ourselves. For example
                                 // removing a listener still shows up as EventCommand.Enable as long as at least
@@ -480,10 +480,10 @@ namespace System.Diagnostics.Metrics
 
             private void IncrementRefCount(string uniqueIdentifier, EventCommandEventArgs command)
             {
-                // Could be unsafe if SharedIdentifier protocol isn't followed
-                if (command.Arguments!.TryGetValue("SharedIdentifier", out string? sharedIdentifier))
+                // Could be unsafe if UniqueIdentifier protocol isn't followed
+                if (command.Arguments!.TryGetValue("UniqueIdentifier", out string? uniqueIdentifierArg))
                 {
-                    uniqueIdentifier = sharedIdentifier!;
+                    uniqueIdentifier = uniqueIdentifierArg!;
                 }
 
                 if (!_sharedSessionIds.Contains(uniqueIdentifier))
